@@ -790,21 +790,49 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	subpath := valOrDefault(req.Subpath, proj.Subpath)
 	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
-	if req.GitRemote != nil {
-		// If changing the Git remote, check the Github app is installed and caller has access on the repo
-		if safeStr(proj.GitRemote) != *req.GitRemote {
-			var userID *string
-			if claims.OwnerType() == auth.OwnerTypeUser {
-				tmp := claims.OwnerID()
-				userID = &tmp
-			}
-			githubRepoID, githubInstID, managedGitRepoID, prodBranch, err = s.githubOptsForRemote(ctx, proj.OrganizationID, prodBranch, userID, *req.GitRemote)
-			if err != nil {
-				return nil, err
-			}
-			gitRemote = req.GitRemote
+
+	transferRepo := false
+	var oldRemote string
+	if req.GitRemote != nil && safeStr(proj.GitRemote) != *req.GitRemote {
+		// check if another project deploys using the same git remote + subpath
+		projects, err := s.admin.DB.FindProjectsByGitRemote(ctx, *req.GitRemote)
+		if err != nil {
+			return nil, err
 		}
+		for _, p := range projects {
+			if p.ID == proj.ID {
+				continue
+			}
+			if p.Subpath == subpath {
+				org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+				if err != nil {
+					return nil, err
+				}
+				return nil, status.Errorf(codes.FailedPrecondition, "another project %q in org %q is already using the same git remote and subpath", p.Name, org.Name)
+			}
+		}
+
+		// check the Github app is installed and caller has access on the repo
+		var userID *string
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			tmp := claims.OwnerID()
+			userID = &tmp
+		}
+		githubRepoID, githubInstID, managedGitRepoID, prodBranch, err = s.githubOptsForRemote(ctx, proj.OrganizationID, prodBranch, userID, *req.GitRemote)
+		if err != nil {
+			return nil, err
+		}
+		if managedGitRepoID != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid git remote: cannot switch to a rill managed git repo")
+		}
+
+		gitRemote = req.GitRemote
+		managedGitRepoID = nil
 		archiveAssetID = nil
+		if proj.ManagedGitRepoID != nil {
+			transferRepo = true
+			oldRemote = *proj.GitRemote
+		}
 	}
 	if req.ArchiveAssetId != nil {
 		archiveAssetID = req.ArchiveAssetId
@@ -854,6 +882,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	// mark transfer from rill managed git repo if applicable
+	if transferRepo {
+		_, err = s.admin.DB.InsertGitRepoTransfer(ctx, oldRemote, *proj.GitRemote)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &adminv1.UpdateProjectResponse{

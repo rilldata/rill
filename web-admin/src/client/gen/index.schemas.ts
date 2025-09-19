@@ -391,10 +391,6 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
 } as const;
 
-export interface V1DisconnectProjectFromGithubResponse {
-  [key: string]: unknown;
-}
-
 export interface V1EditAlertResponse {
   [key: string]: unknown;
 }
@@ -1736,10 +1732,6 @@ export type AdminServiceGetCloneCredentialsParams = {
 
 export type AdminServiceConnectProjectToGithubBody = {
   remote?: string;
-  branch?: string;
-  subpath?: string;
-  force?: boolean;
-  create?: boolean;
 };
 
 export type AdminServiceGetDeploymentCredentialsBodyAttributes = {

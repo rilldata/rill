@@ -217,11 +217,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add HTTP handler for multipart file upload
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.UploadMultipartFile))))
 
-	// Add HTTP handler for watching files
+	// We need to manually add HTTP handlers for streaming RPCs since Vanguard can't map these to HTTP routes automatically.
 	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchFilesHandler)))
-
-	// Add HTTP handler for watching resources
 	httpMux.Handle("/v1/instances/{instance_id}/resources/-/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchResourcesHandler)))
+	httpMux.Handle("/v1/instances/{instance_id}/ai/complete/stream", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler)))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {

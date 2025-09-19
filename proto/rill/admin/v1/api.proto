@@ -494,15 +494,6 @@ service AdminService {
     };
   }
 
-  // Converts a project connected to github to a rill managed project.
-  rpc DisconnectProjectFromGithub(DisconnectProjectFromGithubRequest) returns (DisconnectProjectFromGithubResponse) {
-    option (google.api.http) = {
-      // the path is still called `upload-assets` for backward compatibility
-      post: "/v1/orgs/{org}/projects/{project}/upload-assets",
-      body: "*"
-    };
-  }
-
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/clone-credentials"};
@@ -2239,10 +2230,6 @@ message ConnectProjectToGithubRequest {
   string org = 1;
   string project = 2;
   string remote = 3;
-  string branch = 4;
-  string subpath = 5;
-  bool force = 6;
-  bool create = 7;
 }
 
 message ConnectProjectToGithubResponse {}
@@ -2261,13 +2248,6 @@ message CreateManagedGitRepoResponse {
   string default_branch = 4;
   google.protobuf.Timestamp password_expires_at = 5; 
 }
-
-message DisconnectProjectFromGithubRequest {
-  string org = 1;
-  string project = 2;
-}
-
-message DisconnectProjectFromGithubResponse {}
 
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
