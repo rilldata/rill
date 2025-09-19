@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -99,29 +97,7 @@ func (c *Connection) newClient(bucket string) (*container.Client, error) {
 
 // newStorageClient returns a service client.
 func (c *Connection) newStorageClient() (*service.Client, error) {
-	var accountKey, sasToken, connectionString string
-
-	accountName, err := c.accountName()
-	if err != nil {
-		return nil, err
-	}
-
-	if c.config.AllowHostAccess {
-		accountKey = os.Getenv("AZURE_STORAGE_KEY")
-		sasToken = os.Getenv("AZURE_STORAGE_SAS_TOKEN")
-		connectionString = os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
-	}
-
-	if c.config.Key != "" {
-		accountKey = c.config.Key
-	}
-	if c.config.SASToken != "" {
-		sasToken = c.config.SASToken
-	}
-	if c.config.ConnectionString != "" {
-		connectionString = c.config.ConnectionString
-	}
-
+	connectionString := c.config.GetConnectionString()
 	if connectionString != "" {
 		client, err := service.NewClientFromConnectionString(connectionString, nil)
 		if err != nil {
@@ -130,40 +106,8 @@ func (c *Connection) newStorageClient() (*service.Client, error) {
 		return client, nil
 	}
 
-	if accountName != "" {
-		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net/", accountName)
-
-		var sharedKeyCred *azblob.SharedKeyCredential
-
-		if accountKey != "" {
-			sharedKeyCred, err = azblob.NewSharedKeyCredential(accountName, accountKey)
-			if err != nil {
-				return nil, fmt.Errorf("failed azblob.NewSharedKeyCredential: %w", err)
-			}
-
-			client, err := service.NewClientWithSharedKeyCredential(svcURL, sharedKeyCred, nil)
-			if err != nil {
-				return nil, fmt.Errorf("failed service.NewClientWithSharedKeyCredential: %w", err)
-			}
-			return client, nil
-		}
-
-		if sasToken != "" {
-			serviceURL, err := azureblob.NewServiceURL(&azureblob.ServiceURLOptions{
-				AccountName: accountName,
-				SASToken:    sasToken,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			client, err := service.NewClientWithNoCredential(string(serviceURL), nil)
-			if err != nil {
-				return nil, fmt.Errorf("failed service.NewClientWithNoCredential: %w", err)
-			}
-			return client, nil
-		}
-
+	if c.config.GetAccount() != "" {
+		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net/", c.config.GetAccount())
 		cred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
 			DisableInstanceDiscovery: true,
 		})
@@ -181,9 +125,9 @@ func (c *Connection) newStorageClient() (*service.Client, error) {
 }
 
 func (c *Connection) newAnonymousClient(bucket string) (*container.Client, error) {
-	accountName, err := c.accountName()
-	if err != nil {
-		return nil, err
+	accountName := c.config.GetAccount()
+	if accountName == "" {
+		return nil, fmt.Errorf("AccountName can't be empty")
 	}
 
 	svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
@@ -197,16 +141,4 @@ func (c *Connection) newAnonymousClient(bucket string) (*container.Client, error
 	}
 
 	return client, nil
-}
-
-func (c *Connection) accountName() (string, error) {
-	if c.config.Account != "" {
-		return c.config.Account, nil
-	}
-
-	if c.config.AllowHostAccess {
-		return os.Getenv("AZURE_STORAGE_ACCOUNT"), nil
-	}
-
-	return "", errors.New("account name not found")
 }
