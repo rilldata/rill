@@ -44,7 +44,14 @@
     {
       accessorKey: "user",
       header: "User",
-      enableSorting: false,
+      enableSorting: true,
+      sortAscFirst: true,
+      accessorFn: (row) => row.userName ?? row.userEmail ?? row.email,
+      sortingFn: (rowA, rowB, columnId) => {
+        const a = (rowA.original.userName ?? rowA.original.userEmail ?? rowA.original.email ?? '').toLowerCase();
+        const b = (rowB.original.userName ?? rowB.original.userEmail ?? rowB.original.email ?? '').toLowerCase();
+        return a.localeCompare(b);
+      },
       cell: ({ row }) =>
         flexRender(OrgUsersTableUserCompositeCell, {
           name: row.original.userName ?? row.original.email,
