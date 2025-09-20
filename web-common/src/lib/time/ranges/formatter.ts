@@ -3,7 +3,10 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
 
 // Formats a Luxon interval for human readable display throughout the application.
-export function prettyFormatTimeRange(interval: Interval, grain: V1TimeGrain) {
+export function prettyFormatTimeRange(
+  interval: Interval | undefined,
+  grain: V1TimeGrain,
+) {
   if (!interval?.isValid || !interval.start || !interval.end)
     return "Invalid interval";
 
