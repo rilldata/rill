@@ -491,6 +491,84 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoFileExists(t, dbpath)
 }
 
+func Test_ResolveFeatureFlags(t *testing.T) {
+	featureFlagTemplates := map[string]string{
+		"rillTime":         `'{{.user.domain}}' = 'rilldata.com'`,
+		"canvasDashboards": `{{if eq (.user.domain) "rilldata.com"}}true{{end}}`,
+		"chat":             `'{{.user.domain}}' in ['rilldata.com', 'gmail.com']`,
+		"embed":            `{{.user.embed}}`,
+		"inverseEmbed":     `{{not .user.embed}}`,
+	}
+
+	tests := []struct {
+		name         string
+		userAttrs    map[string]any
+		featureFlags map[string]bool
+	}{
+		{
+			name: "rilldata user",
+			userAttrs: map[string]any{
+				"domain": "rilldata.com",
+			},
+			featureFlags: map[string]bool{
+				"rillTime":         true,
+				"canvasDashboards": true,
+				"chat":             true,
+				"inverseEmbed":     true,
+			},
+		},
+		{
+			name: "gmail user",
+			userAttrs: map[string]any{
+				"domain": "gmail.com",
+			},
+			featureFlags: map[string]bool{
+				"rillTime":     false,
+				"chat":         true,
+				"inverseEmbed": true,
+			},
+		},
+		{
+			name: "yahoo user",
+			userAttrs: map[string]any{
+				"domain": "yahoo.com",
+			},
+			featureFlags: map[string]bool{
+				"rillTime":     false,
+				"chat":         false,
+				"inverseEmbed": true,
+			},
+		},
+		{
+			name: "embedded user",
+			userAttrs: map[string]any{
+				"embed": true,
+			},
+			featureFlags: map[string]bool{
+				"rillTime":     false,
+				"chat":         false,
+				"embed":        true,
+				"inverseEmbed": false,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			featureFlags, err := ResolveFeatureFlags(
+				&drivers.Instance{
+					FeatureFlags: featureFlagTemplates,
+				},
+				&SecurityClaims{
+					UserAttributes: test.userAttrs,
+				},
+			)
+			require.NoError(t, err)
+			require.Equal(t, test.featureFlags, featureFlags)
+		})
+	}
+}
+
 // New returns a runtime configured for use in tests.
 func newTestRuntime(t *testing.T) *Runtime {
 	globalConnectors := []*runtimev1.Connector{

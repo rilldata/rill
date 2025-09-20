@@ -112,9 +112,17 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			return nil, err
 		}
 
-		i.FeatureFlags, err = mapFromJSON[bool](featureFlags)
+		featureFlagBools, err := mapFromJSON[bool](featureFlags)
 		if err != nil {
-			return nil, err
+			i.FeatureFlags, err = mapFromJSON[string](featureFlags)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			i.FeatureFlags = map[string]string{}
+			for f, v := range featureFlagBools {
+				i.FeatureFlags[f] = fmt.Sprintf("%v", v)
+			}
 		}
 
 		i.Annotations, err = mapFromJSON[string](annotations)

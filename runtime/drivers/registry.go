@@ -56,7 +56,7 @@ type Instance struct {
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
 	// FeatureFlags contains feature flags configured in rill.yaml
-	FeatureFlags map[string]bool `db:"feature_flags"`
+	FeatureFlags map[string]string `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
 	// Paths to expose over HTTP (defaults to ./public)
@@ -181,4 +181,33 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	}
 
 	return res, nil
+}
+
+var defaultFeatureFlags = map[string]string{
+	"exports":             "true",
+	"cloudDataViewer":     "false",
+	"dimensionSearch":     "false",
+	"twoTieredNavigation": "false",
+	"rillTime":            "false",
+	"hidePublicUrl":       "{{.user.embed}}",
+	"exportHeader":        "false",
+	"alerts":              "true",
+	"reports":             "true",
+	"chat":                "true",
+	"dashboardChat":       "true",
+}
+
+// SetFeatureFlags sets the feature flags for the instance. It replaces missing values with the ones from defaultFeatureFlags
+func (i *Instance) SetFeatureFlags(flags map[string]string) {
+	if flags == nil {
+		flags = make(map[string]string)
+	}
+	for f, v := range defaultFeatureFlags {
+		if _, ok := flags[f]; ok {
+			continue
+		}
+		flags[f] = v
+	}
+
+	i.FeatureFlags = flags
 }
