@@ -36,9 +36,10 @@ measures:
   name: total_revenue
 `,
 		},
+		FrontendURL: "https://ui.rilldata.com/test-org/test-project",
 	})
 
-	// Wait for reconciliation to complete
+	// Wait for reconciliation to complete (model, metrics_view)
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
 	srv, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
@@ -101,12 +102,13 @@ func TestMCPExecuteTool_Success(t *testing.T) {
 	ctx := testCtx()
 
 	// Test executing list_metrics_views tool (no parameters required)
-	textResult, err := srv.mcpExecuteTool(ctx, instanceID, "list_metrics_views", map[string]any{})
+	result, err := srv.mcpExecuteTool(ctx, instanceID, "list_metrics_views", map[string]any{})
 	require.NoError(t, err)
+	require.NotEmpty(t, result)
 
 	// The response should be valid JSON with metrics view data
 	var jsonData map[string]interface{}
-	err = json.Unmarshal([]byte(textResult), &jsonData)
+	err = json.Unmarshal([]byte(result), &jsonData)
 	require.NoError(t, err, "expected valid JSON response from successful tool execution")
 
 	// Verify the response contains the expected structure
@@ -140,4 +142,39 @@ func TestMCPExecuteTool_MissingParam(t *testing.T) {
 		t.Logf("Tool succeeded with error in response: %v", result)
 		// This is valid behavior - MCP tools return errors in response content
 	}
+}
+
+func TestMCPQueryMetricsView_IncludesURL(t *testing.T) {
+	srv, instanceID := newMCPTestServer(t)
+
+	ctx := testCtx()
+
+	// Test executing query_metrics_view tool with basic parameters
+	queryParams := map[string]any{
+		"metrics_view": "test_metrics",
+		"dimensions":   []map[string]any{{"name": "country"}},
+		"measures":     []map[string]any{{"name": "total_revenue"}},
+	}
+
+	textResult, err := srv.mcpExecuteTool(ctx, instanceID, "query_metrics_view", queryParams)
+	require.NoError(t, err)
+
+	// Parse the response
+	var jsonData map[string]interface{}
+	err = json.Unmarshal([]byte(textResult), &jsonData)
+	require.NoError(t, err)
+
+	// Verify the open URL is included
+	require.Contains(t, jsonData, "response", "response should contain response field")
+	require.Contains(t, jsonData, "open_url", "response should contain open_url field")
+
+	openURL, ok := jsonData["open_url"].(string)
+	require.True(t, ok, "open_url should be a string")
+	require.NotEmpty(t, openURL, "open_url should not be empty")
+
+	// Verify the URL has the expected format for cloud deployment
+	require.Contains(t, openURL, "https://ui.rilldata.com/test-org/test-project", "URL should use configured frontend URL")
+	require.Contains(t, openURL, "/-/open-query?query=", "URL should route to frontend query processor")
+
+	t.Logf("Generated cloud open URL: %s", openURL)
 }

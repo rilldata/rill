@@ -213,6 +213,20 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		},
 	}
 
+	// Look up project and organization to construct the full frontend URL
+	proj, err := s.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return err
+	}
+
+	// Construct the full frontend URL including custom domain (if any) and org/project path
+	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
@@ -224,6 +238,7 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		Connectors:     connectors,
 		Variables:      opts.Variables,
 		Annotations:    opts.Annotations.ToMap(),
+		FrontendUrl:    frontendURL,
 	})
 	if err != nil {
 		return err
@@ -366,6 +381,20 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 		return err
 	}
 
+	// Look up project and organization to construct the full frontend URL
+	proj, err := s.DB.FindProject(ctx, d.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return err
+	}
+
+	// Construct the full frontend URL including custom domain (if any) and org/project path
+	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
 	// Connect to the runtime, and update the instance's variables/annotations.
 	// Any call to EditInstance will also force it to check for any repo config changes (e.g. branch or archive ID).
 	rt, err := s.OpenRuntimeClient(d)
@@ -377,6 +406,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 		InstanceId:  d.RuntimeInstanceID,
 		Variables:   vars,
 		Annotations: opts.Annotations.ToMap(),
+		FrontendUrl: &frontendURL,
 	})
 	if err != nil {
 		return err
@@ -513,6 +543,7 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		orgID:              org.ID,
 		orgName:            org.Name,
 		orgBillingPlanName: orgBillingPlanName,
+		orgCustomDomain:    org.CustomDomain,
 		projID:             proj.ID,
 		projName:           proj.Name,
 		projProdSlots:      fmt.Sprint(proj.ProdSlots),
@@ -525,6 +556,7 @@ type DeploymentAnnotations struct {
 	orgID              string
 	orgName            string
 	orgBillingPlanName string
+	orgCustomDomain    string
 	projID             string
 	projName           string
 	projProdSlots      string
