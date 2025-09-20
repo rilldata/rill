@@ -9,6 +9,8 @@
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
   import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
+  import OrgUsersTableGroupsCell from "./OrgUsersTableGroupsCell.svelte";
+  import OrgUsersTableProjectsCell from "./OrgUsersTableProjectsCell.svelte";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import type {
     InfiniteData,
@@ -21,6 +23,7 @@
     invitedBy?: string;
   }
 
+  export let organization: string;
   export let data: OrgUser[];
   export let usersQuery: InfiniteQueryObserverResult<
     InfiniteData<V1ListOrganizationMemberUsersResponse, unknown>,
@@ -37,6 +40,8 @@
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
+  export let onEditUserGroup: (groupName: string) => void;
+  export let onShareProject: (projectName: string) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
 
@@ -69,6 +74,34 @@
           currentUserRole,
           isBillingContact: row.original.userEmail === billingContact,
           onAttemptChangeBillingContactUserRole,
+        }),
+      meta: {
+        widthPercent: 40,
+        marginLeft: "8px",
+      },
+    },
+    {
+      accessorKey: "usergroupsCount",
+      header: "Groups",
+      cell: ({ row }) =>
+        flexRender(OrgUsersTableGroupsCell, {
+          userId: row.original.userId,
+          organization,
+          onEditUserGroup,
+        }),
+      meta: {
+        widthPercent: 40,
+        marginLeft: "8px",
+      },
+    },
+    {
+      accessorKey: "projectsCount",
+      header: "Projects",
+      cell: ({ row }) =>
+        flexRender(OrgUsersTableProjectsCell, {
+          userId: row.original.userId,
+          organization,
+          onShareProject,
         }),
       meta: {
         widthPercent: 40,
