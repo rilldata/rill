@@ -332,7 +332,11 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 		tg := timeutil.TimeGrainUnspecified
 		if e.Grain != nil {
 			tg = grainMap[*e.Grain]
+
+			// ISO durations are mapped to `ref-iso to ref as of watermark/grain+1grain`
+			isoStart = timeutil.OffsetTime(isoStart, tg, 1, e.tz)
 			isoStart = timeutil.TruncateTime(isoStart, tg, e.tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+			isoEnd = timeutil.OffsetTime(isoEnd, tg, 1, e.tz)
 			isoEnd = timeutil.TruncateTime(isoEnd, tg, e.tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
 
