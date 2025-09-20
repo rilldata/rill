@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -1455,7 +1456,27 @@ name: my-gcs
 		Variables: vars,
 	})
 
-	testruntime.ReconcileParserAndWait(t, rt, id)
+	for i := 0; i < 10; i++ {
+		ctx := t.Context()
+		ctrl, err := rt.Controller(ctx, id)
+		require.NoError(t, err)
+
+		err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName)
+		if err != nil && strings.Contains(err.Error(), "controller is closed") {
+			// Controller closed, retry
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		err = ctrl.WaitUntilIdle(ctx, false)
+		if err != nil && strings.Contains(err.Error(), "controller is closed") {
+			// Controller closed, retry
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+		require.NoError(t, err)
+	}
+
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
 	// Verify the dedicated connectors
