@@ -47,8 +47,6 @@
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
 
-  $: console.log({ interval: interval.toISO(), activeTimeGrain });
-
   const newPicker = featureFlags.rillTime;
 
   $: rangeBuckets = bucketYamlRanges(timeRanges, minTimeGrain, $newPicker);

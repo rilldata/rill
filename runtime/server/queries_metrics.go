@@ -467,9 +467,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		}
 
 		smallestGrain := rilltime.ConvertProtoTimeGrainToTimeutil(mv.ValidSpec.SmallestTimeGrain)
-		// TODO: Remove this debug logging after confirming it works
-		fmt.Printf("DEBUG: MetricsView SmallestTimeGrain: %v -> %v\n", mv.ValidSpec.SmallestTimeGrain, smallestGrain)
-		
+	
 		start, end, grain := rillTime.Eval(rilltime.EvalOptions{
 			Now:           now,
 			MinTime:       ts.Min,

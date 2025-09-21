@@ -241,7 +241,7 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	var rt *Expression
 	var err error
 
-	rt, err = parseISO(from, parseOpts, EvalOptions{})
+	rt, err = parseISO(from, parseOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +347,9 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 
 	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.tz)
 
+
 	if e.isInfPattern && evalOpts.SmallestGrain != timeutil.TimeGrainUnspecified {
+
 		end = timeutil.OffsetTime(evalOpts.MaxTime, evalOpts.SmallestGrain, 1, e.tz)
 	}
 
@@ -688,7 +690,7 @@ func (g *GrainDurationPart) offset(tm time.Time, dir int, tz *time.Location) (ti
 	return timeutil.OffsetTime(tm, tg, offset, tz), tg
 }
 
-func parseISO(from string, parseOpts ParseOptions, evalOpts EvalOptions) (*Expression, error) {
+func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
 		return &Expression{

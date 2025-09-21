@@ -343,7 +343,7 @@ export async function deriveInterval(
     return {
       interval: allTimeRange,
       grain: undefined,
-      error: "Cannot derive interval for all time or custom range",
+      error: "Cannot derive interval for custom range",
     };
   }
 

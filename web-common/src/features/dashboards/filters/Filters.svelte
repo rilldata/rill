@@ -168,8 +168,6 @@
     ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
     : Interval.invalid("Invalid interval");
 
-  $: console.log({ selectedTimeRange });
-
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),

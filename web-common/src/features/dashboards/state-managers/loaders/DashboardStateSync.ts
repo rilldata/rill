@@ -150,7 +150,6 @@ export class DashboardStateSync {
         ],
         initExploreState.selectedTimezone,
       );
-      console.log(initExploreState.selectedTimeRange);
     }
 
     // Init the store with state we got from dataLoader

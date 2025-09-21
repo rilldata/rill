@@ -44,7 +44,6 @@ export function getChildTimeRanges(
   minTimeGrain: V1TimeGrain,
   zone: string,
 ): TimeRangeOption[] {
-  console.log("why is this being called");
   const timeRanges: TimeRangeOption[] = [];
 
   const allowedTimeGrains = getAllowedTimeGrains(start, end);
