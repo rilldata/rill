@@ -347,9 +347,7 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 
 	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.tz)
 
-
 	if e.isInfPattern && evalOpts.SmallestGrain != timeutil.TimeGrainUnspecified {
-
 		end = timeutil.OffsetTime(evalOpts.MaxTime, evalOpts.SmallestGrain, 1, e.tz)
 	}
 
