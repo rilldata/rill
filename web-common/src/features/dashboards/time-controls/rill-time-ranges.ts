@@ -22,6 +22,7 @@ export async function resolveTimeRanges(
 
   timeRanges.forEach((tr, i) => {
     timeRangesToReturn[i] = tr;
+
     if (
       !tr?.name ||
       // already resolved
@@ -61,7 +62,7 @@ export async function resolveTimeRanges(
       timeRangesToReturn[mappedIndex].start = new Date(tr.start!);
       timeRangesToReturn[mappedIndex].end = new Date(tr.end!);
     });
-
+    console.log({ timeRangesResp });
     return timeRangesToReturn;
   } catch (error) {
     console.error(

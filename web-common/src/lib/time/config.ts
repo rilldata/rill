@@ -548,7 +548,7 @@ export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,
   ...PREVIOUS_COMPLETE_DATE_RANGES,
-  [TimeRangePreset.ALL_TIME]: ALL_TIME,
+  // [TimeRangePreset.ALL_TIME]: ALL_TIME,
   CUSTOM,
   DEFAULT,
 };

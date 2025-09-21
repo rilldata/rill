@@ -10,10 +10,7 @@
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    deriveInterval,
-  } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
+  import { deriveInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
@@ -164,15 +161,6 @@
 
   async function onSelectRange(name: string) {
     if (!$allTimeRange?.end) {
-      return;
-    }
-
-    if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        $allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
       return;
     }
 

@@ -15,8 +15,6 @@ export function validateRillTime(rillTime: string): Error | undefined {
   try {
     const parser = parseRillTime(rillTime);
     if (!parser) return new Error("Unknown error");
-    // Temporary until other parts are refactored
-    if (parser.isOldFormat) return new Error("Old format");
   } catch (err) {
     return err;
   }

@@ -30,7 +30,6 @@
   } from "../stores/dashboard-stores";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import {
-    ALL_TIME_RANGE_ALIAS,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
@@ -169,6 +168,8 @@
     ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
     : Interval.invalid("Invalid interval");
 
+  $: console.log({ selectedTimeRange });
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
@@ -226,15 +227,7 @@
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
-    if (alias === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
-      return;
-    }
-
+    // This should be returned by the API, but it is not yet implemented
     const includesTimeZoneOffset = alias.includes("tz");
 
     if (includesTimeZoneOffset) {

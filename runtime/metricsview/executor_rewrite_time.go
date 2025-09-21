@@ -90,12 +90,13 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 
 	// TODO: use grain when we have timeseries from metrics_view_aggregation
 	tr.Start, tr.End, _ = rillTime.Eval(rilltime.EvalOptions{
-		Now:        ts.Now,
-		MinTime:    ts.Min,
-		MaxTime:    ts.Max,
-		Watermark:  ts.Watermark,
-		FirstDay:   int(e.metricsView.FirstDayOfWeek),
-		FirstMonth: int(e.metricsView.FirstMonthOfYear),
+		Now:           ts.Now,
+		MinTime:       ts.Min,
+		MaxTime:       ts.Max,
+		Watermark:     ts.Watermark,
+		FirstDay:      int(e.metricsView.FirstDayOfWeek),
+		FirstMonth:    int(e.metricsView.FirstMonthOfYear),
+		SmallestGrain: rilltime.ConvertProtoTimeGrainToTimeutil(e.metricsView.SmallestTimeGrain),
 	})
 
 	// Clear all other fields than Start and End

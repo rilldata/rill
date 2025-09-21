@@ -9,6 +9,7 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
@@ -112,9 +113,10 @@ type Expression struct {
 	Grain           *string        `parser:"(By @Grain)?"`
 	TimeZone        *string        `parser:"(Tz @Whitespace @TimeZone)?"`
 
-	isNewFormat bool
-	tz          *time.Location
-	isoDuration *duration.StandardDuration
+	isNewFormat  bool
+	isInfPattern bool
+	tz           *time.Location
+	isoDuration  *duration.StandardDuration
 }
 
 type Interval struct {
@@ -239,7 +241,7 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	var rt *Expression
 	var err error
 
-	rt, err = parseISO(from, parseOpts)
+	rt, err = parseISO(from, parseOpts, EvalOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -344,6 +346,10 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	}
 
 	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.tz)
+
+	if e.isInfPattern && evalOpts.SmallestGrain != timeutil.TimeGrainUnspecified {
+		end = timeutil.OffsetTime(evalOpts.MaxTime, evalOpts.SmallestGrain, 1, e.tz)
+	}
 
 	if e.Grain != nil {
 		tg = grainMap[*e.Grain]
@@ -682,7 +688,7 @@ func (g *GrainDurationPart) offset(tm time.Time, dir int, tz *time.Location) (ti
 	return timeutil.OffsetTime(tm, tg, offset, tz), tg
 }
 
-func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
+func parseISO(from string, parseOpts ParseOptions, evalOpts EvalOptions) (*Expression, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
 		return &Expression{
@@ -718,6 +724,7 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 					},
 				},
 			},
+			isInfPattern: true, // Mark this as an inf pattern for special handling during eval
 		}, nil
 	}
 
@@ -806,4 +813,30 @@ func getLowerOrderGrain(start, end time.Time, tg timeutil.TimeGrain, tz *time.Lo
 		tg = lowerOrderMap[tg]
 	}
 	return tg
+}
+
+// ConvertProtoTimeGrainToTimeutil converts a proto TimeGrain to timeutil.TimeGrain
+func ConvertProtoTimeGrainToTimeutil(protoGrain runtimev1.TimeGrain) timeutil.TimeGrain {
+	switch protoGrain {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return timeutil.TimeGrainMillisecond
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return timeutil.TimeGrainSecond
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return timeutil.TimeGrainMinute
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return timeutil.TimeGrainHour
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return timeutil.TimeGrainDay
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return timeutil.TimeGrainWeek
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return timeutil.TimeGrainMonth
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return timeutil.TimeGrainQuarter
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return timeutil.TimeGrainYear
+	default:
+		return timeutil.TimeGrainUnspecified
+	}
 }

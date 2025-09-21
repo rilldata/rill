@@ -28,12 +28,13 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr,
 	}
 
 	watermark, _, _ := rillTime.Eval(rilltime.EvalOptions{
-		Now:        time.Now(),
-		MinTime:    ts.Min,
-		MaxTime:    ts.Max,
-		Watermark:  ts.Watermark,
-		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
-		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
+		Now:           time.Now(),
+		MinTime:       ts.Min,
+		MaxTime:       ts.Max,
+		Watermark:     ts.Watermark,
+		FirstDay:      int(q.metricsViewSpec.FirstDayOfWeek),
+		FirstMonth:    int(q.metricsViewSpec.FirstMonthOfYear),
+		SmallestGrain: rilltime.ConvertProtoTimeGrainToTimeutil(q.metricsViewSpec.SmallestTimeGrain),
 	})
 
 	return &metricsview.Expression{
@@ -58,12 +59,13 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr, t
 	}
 
 	_, watermark, _ := rillTime.Eval(rilltime.EvalOptions{
-		Now:        time.Now(),
-		MinTime:    ts.Min,
-		MaxTime:    ts.Max,
-		Watermark:  ts.Watermark,
-		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
-		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
+		Now:           time.Now(),
+		MinTime:       ts.Min,
+		MaxTime:       ts.Max,
+		Watermark:     ts.Watermark,
+		FirstDay:      int(q.metricsViewSpec.FirstDayOfWeek),
+		FirstMonth:    int(q.metricsViewSpec.FirstMonthOfYear),
+		SmallestGrain: rilltime.ConvertProtoTimeGrainToTimeutil(q.metricsViewSpec.SmallestTimeGrain),
 	})
 
 	return &metricsview.Expression{
