@@ -43,6 +43,7 @@ import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -265,6 +266,7 @@ export function calculateTimeRangePartial(
     selectedTimezone,
     allTimeRange,
     defaultTimeRange,
+    minTimeGrain,
   );
   if (!selectedTimeRange) return undefined;
 
@@ -382,6 +384,7 @@ export function getTimeRange(
   selectedTimezone: string | undefined,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
+  minTimeGrain: V1TimeGrain | undefined,
 ) {
   if (!selectedTimeRange) return undefined;
 
@@ -396,12 +399,17 @@ export function getTimeRange(
     };
   } else if (selectedTimeRange?.name) {
     if (selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
+      const minTimeUnit =
+        V1TimeGrainToDateTimeUnit[
+          minTimeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+        ];
       /** rebuild off of relative time range */
       timeRange = convertTimeRangePreset(
         selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
         allTimeRange.start,
         allTimeRange.end,
         selectedTimezone,
+        minTimeUnit,
       );
     } else if (selectedTimeRange.start) {
       timeRange = {
@@ -518,10 +526,12 @@ export function selectedTimeRangeSelector([
   exploreSpec,
   timeRangeResponse,
   explorer,
+  minTimeGrain,
 ]: [
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   ExploreState,
+  V1TimeGrain | undefined,
 ]) {
   if (
     !exploreSpec ||
@@ -549,5 +559,6 @@ export function selectedTimeRangeSelector([
     explorer.selectedTimezone,
     allTimeRange,
     defaultTimeRange,
+    minTimeGrain,
   );
 }

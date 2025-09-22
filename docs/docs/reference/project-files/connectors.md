@@ -413,6 +413,7 @@ _[string]_ - Deprecated - Use init_sql instead
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
+
 ### `secrets`
 
 _[string]_ - Comma-separated list of connector names to create temporary secrets for 
@@ -424,6 +425,11 @@ _[string]_ - Name of the attached DuckDB database (auto-detected if not set)
 ### `schema_name`
 
 _[string]_ - Default schema used by the DuckDB database 
+
+
+### `mode`
+
+_[string]_ - Set the mode for the DuckDB connection. 
 
 ```yaml
 # Example: DuckDB connector configuration
@@ -437,28 +443,6 @@ pool_size: 5 # Number of concurrent connections and queries allowed
 read_write_ratio: 0.7 # Ratio of resources allocated to read vs write operations
 init_sql: "INSTALL httpfs; LOAD httpfs;" # SQL executed during database initialization
 log_queries: true # Whether to log raw SQL queries executed through OLAP
-```
-
-## DuckDB as a source
-
-### `driver`
-
-_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
-
-### `db`
-
-_[string]_ - Name of the DuckDB database _(required)_
-
-### `sql`
-
-_[string]_ - SQL to execute _(required)_
-
-```yaml
-# Example: DuckDB as a source connector configuration
-type: connector # Must be `connector` (required)
-driver: duckdb # Must be `duckdb` _(required)_
-db: "/path/to/my-duckdb-database.db" # Name of the DuckDB database  
-sql: "select * from my-table" # SQL to execute  
 ```
 
 ## GCS

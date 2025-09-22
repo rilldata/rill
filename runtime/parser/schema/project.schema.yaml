@@ -413,6 +413,10 @@ definitions:
             schema_name:
               type: string
               description: Default schema used by the DuckDB database
+            mode:
+              description: Set the mode for the DuckDB connection. 
+              enum: ["read", "readwrite"]
+              default: "read"
           examples:
             - # Example: DuckDB connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -425,33 +429,8 @@ definitions:
               read_write_ratio: 0.7                           # Ratio of resources allocated to read vs write operations
               init_sql: "INSTALL httpfs; LOAD httpfs;"        # SQL executed during database initialization
               log_queries: true                               # Whether to log raw SQL queries executed through OLAP
-
           required:
             - driver
-        - type: object
-          title: DuckDB as a source
-          properties:
-            driver:
-              type: string
-              description: Refers to the driver type and must be driver `duckdb`
-              const: duckdb
-            db:
-              type: string
-              description: Name of the DuckDB database
-            sql:
-              type: string
-              description: SQL to execute
-          examples:
-            - # Example: DuckDB as a source connector configuration
-              type: connector                                  # Must be `connector` (required)
-              driver: duckdb                                   # Must be `duckdb` _(required)_
-
-              db: "/path/to/my-duckdb-database.db"                         # Name of the DuckDB database  
-              sql: "select * from my-table"                    # SQL to execute  
-          required:
-            - driver
-            - db
-            - sql
         - type: object
           title: GCS
           properties:
