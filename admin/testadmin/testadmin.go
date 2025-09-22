@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-github/v71/github"
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
@@ -48,6 +51,23 @@ type Fixture struct {
 	Admin      *admin.Service
 	Server     *server.Server
 	ServerOpts *server.Options
+}
+
+// NewGithub creates a new Github client. In short testing mode this is a mock client which has no-op implementations of all methods.
+// Otherwise it creates a real implementation that makes real API calls to Github.
+func NewGithub(t *testing.T) admin.Github {
+	if testing.Short() {
+		return &mockGithub{}
+	}
+	err := godotenv.Load("../../../.env")
+	require.NoError(t, err)
+
+	githubAppID, err := strconv.ParseInt(os.Getenv("RILL_ADMIN_GITHUB_APP_ID"), 10, 64)
+	require.NoError(t, err)
+
+	github, err := admin.NewGithub(t.Context(), githubAppID, os.Getenv("RILL_ADMIN_GITHUB_APP_PRIVATE_KEY"), os.Getenv("RILL_ADMIN_GITHUB_MANAGED_ACCOUNT"), zap.Must(zap.NewDevelopment()))
+	require.NoError(t, err)
+	return github
 }
 
 // New creates an ephemeral admin service and server for testing.
@@ -120,7 +140,7 @@ func New(t *testing.T) *Fixture {
 		AutoscalerCron:            "",
 		ScaleDownConstraint:       0,
 	}
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, &mockGithub{}, ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, NewGithub(t), ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
 	require.NoError(t, err)
 	t.Cleanup(func() { adm.Close() })
 
@@ -135,7 +155,6 @@ func New(t *testing.T) *Fixture {
 		HTTPPort:         port,
 		GRPCPort:         port,
 		AllowedOrigins:   []string{"*"},
-		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
 		ServePrometheus:  true,
 		AuthDomain:       "gorillio-stage.auth0.com",
 		AuthClientID:     "",

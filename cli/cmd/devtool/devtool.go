@@ -28,6 +28,7 @@ func DevtoolCmd(ch *cmdutil.Helper) *cobra.Command {
 	devtoolCmd.AddCommand(DotenvCmd(ch))
 	devtoolCmd.AddCommand(SwitchEnvCmd(ch))
 	devtoolCmd.AddCommand(SubscriptionCmd(ch))
+	devtoolCmd.AddCommand(GithubTokensCmd(ch))
 
 	return devtoolCmd
 }
