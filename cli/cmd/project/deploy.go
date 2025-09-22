@@ -89,17 +89,19 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return err
 		}
-		if p != nil && ch.Interactive {
-			ok, err := cmdutil.ConfirmPrompt("Project with name %q already exists. Do you want to push current changes to the existing project?", "", true)
-			if err != nil {
-				return err
+		if p != nil {
+			if ch.Interactive {
+				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), "", true)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return fmt.Errorf("aborting deploy")
+				}
 			}
-			if !ok {
-				return fmt.Errorf("aborting deploy")
-			}
+			o.pushToProject = p
+			return nil
 		}
-		o.pushToProject = p
-		return nil
 	}
 	if o.ArchiveUpload {
 		return nil
