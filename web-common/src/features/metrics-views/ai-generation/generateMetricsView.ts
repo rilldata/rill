@@ -298,7 +298,7 @@ export async function createModelAndMetricsViewAndExplore(
       },
     });
 
-    const [_modelPath, modelName] = await createYamlModelFromTable(
+    const [, modelName] = await createYamlModelFromTable(
       queryClient,
       connector,
       database,
