@@ -22,7 +22,10 @@ func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayN
 	}
 
 	// If olap is not specified we can default to duckdb
-	if olap == "" {
+	switch olap {
+	case "duckdb":
+	case "clickhouse":
+	default:
 		olap = "duckdb"
 	}
 
@@ -46,24 +49,21 @@ mock_users:
 		return err
 	}
 
-	// Determine the driver based on olap
-	var driver string
+	// Create the connector YAML
+	var connectorYAML string
 	switch olap {
-	case "", "duckdb":
-		driver = "duckdb"
+	case "duckdb":
+		connectorYAML = `type: connector
+driver: duckdb
+`
 	case "clickhouse":
-		driver = "clickhouse"
-	default:
-		// Default to duckdb for unknown olap
-		driver = "duckdb"
+		connectorYAML = `type: connector
+driver: clickhouse
+managed: true
+`
 	}
 
-	// Create the connector YAML
-	connectorYAML := fmt.Sprintf(`type: connector
-driver: %s
-`, driver)
-
-	err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", driver), strings.NewReader(connectorYAML))
+	err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", olap), strings.NewReader(connectorYAML))
 	if err != nil {
 		return err
 	}
