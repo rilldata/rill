@@ -122,6 +122,7 @@ func TestGithubDeploy(t *testing.T) {
 		testSelfHostedDeploy(t, c, ghClient, u1)
 	})
 }
+
 func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *github.Client, adm *testcli.Fixture) {
 	result := adm.Run(t, "org", "create", "github-test")
 	require.Equal(t, 0, result.ExitCode)

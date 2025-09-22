@@ -1,8 +1,6 @@
 package deploy
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"

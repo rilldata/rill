@@ -159,6 +159,7 @@ func New(t *testing.T) *Fixture {
 		AuthDomain:       "gorillio-stage.auth0.com",
 		AuthClientID:     "",
 		AuthClientSecret: "",
+		SessionKeyPairs:  [][]byte{[]byte("1234567890abcdef1234567890abcdef"), []byte("1234567890abcdef1234567890abcdef")},
 	}
 	srv, err := server.New(logger, adm, issuer, ratelimit.NewNoop(), activity.NewNoopClient(), srvOpts)
 	require.NoError(t, err)

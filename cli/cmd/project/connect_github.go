@@ -159,7 +159,6 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Create the project (automatically deploys prod branch)
-	fmt.Printf("creating project with remoteURL: %s\n", opts.remoteURL)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
@@ -422,6 +421,7 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, gitRemote string) (*adm
 	if !res.HasAccess {
 		// Emit start telemetry
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedStart)
+
 		// Print instructions to grant access
 		ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
 		ch.Print("You need to grant Rill read only access to your repository on Github.\n\n")
