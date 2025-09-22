@@ -153,15 +153,17 @@
         {#if isModelingSupported}
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
-            <div class="connector-grid">
+            <div
+              class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+            >
               {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
                     on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button"
+                    class="connector-tile-button size-full min-w-24 min-h-16 h-20"
                   >
-                    <div class="connector-wrapper">
+                    <div class="connector-wrapper px-6 py-4 md:px-4 md:py-2">
                       <svelte:component this={ICONS[connector.name]} />
                     </div>
                   </button>
@@ -176,15 +178,17 @@
         <section>
           <Dialog.Title>Connect an OLAP engine</Dialog.Title>
 
-          <div class="connector-grid">
+          <div
+            class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+          >
             {#each connectors?.filter((c) => c.name && OLAP_ENGINES.includes(c.name)) as connector (connector.name)}
               {#if connector.name}
                 <button
                   id={connector.name}
-                  class="connector-tile-button"
+                  class="connector-tile-button size-full min-w-24 min-h-16 h-20"
                   on:click={() => goToConnectorForm(connector)}
                 >
-                  <div class="connector-wrapper">
+                  <div class="connector-wrapper px-6 py-4 md:px-4 md:py-2">
                     <svelte:component this={ICONS[connector.name]} />
                   </div>
                 </button>
@@ -255,19 +259,13 @@
     @apply flex flex-col gap-y-3;
   }
 
-  .connector-grid {
-    @apply grid grid-cols-3 gap-4;
-  }
-
   .connector-tile-button {
-    aspect-ratio: 2/1;
-    @apply basis-40;
     @apply border border-gray-300 rounded;
     @apply cursor-pointer overflow-hidden;
   }
 
   .connector-wrapper {
-    @apply py-3 px-7 size-full;
+    @apply size-full;
     @apply flex items-center justify-center;
   }
 
