@@ -95,6 +95,11 @@
       );
     }
   }
+
+  // Create both metrics view and explore dashboard in parallel
+  async function handleGenerateMetricsAndExplore() {
+    await Promise.all([createMetricsViewFromTable(), createExploreFromTable()]);
+  }
 </script>
 
 {#if isModelingSupported || showGenerateModel}
@@ -105,21 +110,10 @@
 {/if}
 
 {#if showGenerateMetricsAndDashboard}
-  <NavigationMenuItem on:click={createMetricsViewFromTable}>
+  <NavigationMenuItem on:click={handleGenerateMetricsAndExplore}>
     <MetricsViewIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
-      Generate metrics
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-  </NavigationMenuItem>
-
-  <NavigationMenuItem on:click={createExploreFromTable}>
-    <ExploreIcon slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate dashboard
+      Generate explorable metrics
       {#if $ai}
         with AI
         <WandIcon class="w-3 h-3" />

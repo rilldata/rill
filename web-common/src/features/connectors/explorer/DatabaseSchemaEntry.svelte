@@ -61,8 +61,6 @@
             hasUnsupportedDataTypes: boolean;
           }>
         | undefined);
-
-  $: console.log("connector.driver", connector.driver);
 </script>
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
