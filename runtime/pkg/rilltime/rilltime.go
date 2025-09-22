@@ -124,10 +124,9 @@ type Expression struct {
 	Grain           *string        `parser:"(By @Grain)?"`
 	TimeZone        *string        `parser:"(Tz @Whitespace @TimeZone)?"`
 
-	isNewFormat  bool
-	isInfPattern bool
-	tz           *time.Location
-	isoDuration  *duration.StandardDuration
+	isNewFormat bool
+	tz          *time.Location
+	isoDuration *duration.StandardDuration
 }
 
 type Interval struct {
