@@ -123,8 +123,7 @@
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
-    (selectedConnector?.implementsOlap &&
-      selectedConnector?.name !== "duckdb") ||
+    selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
       selectedConnector?.name !== "salesforce");
