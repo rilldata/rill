@@ -45,7 +45,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
 <div className="connector-icon-grid">
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-DuckDB.svg" alt="DuckDB" />}
-    content="DuckDB is the default engine for Rill Developer."
+    content="Add extra parameters to Rill's embedded DuckDB or connect your own."
     link="/connect/olap/duckdb"
     linkLabel="Learn more"
     referenceLink="duckdb"
