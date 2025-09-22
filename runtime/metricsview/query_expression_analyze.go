@@ -1,5 +1,7 @@
 package metricsview
 
+import "slices"
+
 // AnalyzeExpression analyzes a metrics expression and returns the field names referenced in it.
 func AnalyzeExpressionFields(e *Expression) []string {
 	fields := make(map[string]bool)
@@ -8,6 +10,7 @@ func AnalyzeExpressionFields(e *Expression) []string {
 	for k := range fields {
 		res = append(res, k)
 	}
+	slices.Sort(res)
 	return res
 }
 

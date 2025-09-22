@@ -70,7 +70,7 @@ func TestParseSQLFilter(t *testing.T) {
 			false,
 		},
 		{
-			"subquery expression",
+			"subquery expression with having",
 			"dim IN (SELECT dim FROM mv HAVING count > 10)",
 			&metricsview.Expression{
 				Condition: &metricsview.Condition{
@@ -104,7 +104,7 @@ func TestParseSQLFilter(t *testing.T) {
 			false,
 		},
 		{
-			"subquery expression",
+			"subquery expression without filters",
 			"dim IN (SELECT dim FROM mv)",
 			&metricsview.Expression{
 				Condition: &metricsview.Condition{
@@ -124,7 +124,7 @@ func TestParseSQLFilter(t *testing.T) {
 			false,
 		},
 		{
-			"subquery expression",
+			"subquery expression with where and having",
 			"dim IN (SELECT dim FROM mv WHERE country = 'US' HAVING count > 10 AND sales > 100)",
 			&metricsview.Expression{
 				Condition: &metricsview.Condition{
