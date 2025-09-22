@@ -42,12 +42,12 @@ export interface ChatOptions {
  * - Send messages: `conversation.sendMessage()` on any conversation instance (new or existing)
  */
 export class Chat {
+  // Maximum number of conversations that can have active streaming at once
+  private static readonly MAX_CONCURRENT_STREAMS = 3;
+
   private newConversation: Conversation;
   private conversations = new Map<string, Conversation>();
   private conversationSelector: ConversationSelector;
-
-  // Maximum number of conversations that can have active streaming at once
-  private static readonly MAX_CONCURRENT_STREAMS = 3;
 
   constructor(
     private instanceId: string,
@@ -78,9 +78,12 @@ export class Chat {
     }
   }
 
-  // QUERIES
+  // ===== PUBLIC API =====
 
-  listConversationsQuery(): CreateQueryResult<
+  /**
+   * Get a reactive query for the list of conversations
+   */
+  public listConversationsQuery(): CreateQueryResult<
     V1ListConversationsResponse,
     RpcStatus
   > {
@@ -90,7 +93,10 @@ export class Chat {
     );
   }
 
-  getCurrentConversation(): Readable<Conversation> {
+  /**
+   * Get a reactive store for the currently selected conversation
+   */
+  public getCurrentConversation(): Readable<Conversation> {
     return derived(
       [this.conversationSelector.currentConversationId],
       ([$conversationId]) => {
@@ -119,13 +125,37 @@ export class Chat {
     );
   }
 
-  // ACTIONS
+  /**
+   * Navigate to a specific conversation
+   */
+  public selectConversation(conversationId: string): void {
+    this.conversationSelector.selectConversation(conversationId);
+  }
 
-  enterNewConversationMode(): void {
+  /**
+   * Enter new conversation mode (clear current selection)
+   */
+  public enterNewConversationMode(): void {
     this.conversationSelector.clearSelection();
   }
 
-  // STREAM MANAGEMENT
+  /**
+   * Clean up all resources for this Chat instance
+   */
+  public cleanup(): void {
+    // Clean up all conversation instances
+    this.conversations.forEach((conversation) => {
+      conversation.cleanup();
+    });
+    this.conversations.clear();
+
+    // Clean up the new conversation instance
+    this.newConversation.cleanup();
+  }
+
+  // ===== PRIVATE IMPLEMENTATION =====
+
+  // ----- Stream Management -----
 
   /**
    * Get conversations that are currently streaming
@@ -155,23 +185,7 @@ export class Chat {
     }
   }
 
-  selectConversation(conversationId: string): void {
-    this.conversationSelector.selectConversation(conversationId);
-  }
-
-  /**
-   * Clean up all resources for this Chat instance
-   */
-  public cleanup(): void {
-    // Clean up all conversation instances
-    this.conversations.forEach((conversation) => {
-      conversation.cleanup();
-    });
-    this.conversations.clear();
-
-    // Clean up the new conversation instance
-    this.newConversation.cleanup();
-  }
+  // ----- Conversation Lifecycle -----
 
   /**
    * Handle conversation creation - rotates conversation instances, updates list cache, and navigates to it
@@ -202,6 +216,8 @@ export class Chat {
       },
     );
   }
+
+  // ----- Cache Management -----
 
   /**
    * Update the conversation list cache by adding the new conversation
@@ -282,11 +298,18 @@ export class Chat {
 
 // ===== CHAT SINGLETON MANAGEMENT =====
 
-// Chat instance singleton map
+/**
+ * Global registry of Chat instances, one per instanceId (project)
+ * Ensures consistent state across components within the same project
+ */
 const chatInstances = new Map<string, Chat>();
 
 /**
  * Get or create a Chat instance for the given instanceId
+ *
+ * @param instanceId - The project/instance identifier
+ * @param options - Configuration options for the chat instance
+ * @returns The Chat instance for this project
  */
 export function getChatInstance(
   instanceId: string,
@@ -300,6 +323,9 @@ export function getChatInstance(
 
 /**
  * Clean up and remove a Chat instance for the given instanceId
+ * Called when leaving chat context or switching projects
+ *
+ * @param instanceId - The project/instance identifier to clean up
  */
 export function cleanupChatInstance(instanceId: string): void {
   const chatInstance = chatInstances.get(instanceId);

@@ -25,6 +25,7 @@ import {
  * for a single conversation using the streaming completion endpoint.
  */
 export class Conversation {
+  // Public reactive state
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
@@ -35,6 +36,12 @@ export class Conversation {
     (error) => !!error,
   );
 
+  public readonly canSendMessage = derived(
+    [this.isStreaming],
+    ([$isStreaming]) => !$isStreaming,
+  );
+
+  // Private state
   private sseClient: SSEFetchClient<V1CompleteStreamingResponse> | null = null;
   private hasReceivedFirstUserMessage = false;
 
@@ -47,9 +54,12 @@ export class Conversation {
     },
   ) {}
 
-  // QUERIES
+  // ===== PUBLIC API =====
 
-  getConversationQuery(): CreateQueryResult<
+  /**
+   * Get a reactive query for this conversation's data
+   */
+  public getConversationQuery(): CreateQueryResult<
     V1GetConversationResponse,
     RpcStatus
   > {
@@ -68,7 +78,10 @@ export class Conversation {
     );
   }
 
-  getConversationQueryError(): Readable<string | null> {
+  /**
+   * Get a reactive store for conversation query errors
+   */
+  public getConversationQueryError(): Readable<string | null> {
     return derived(
       this.getConversationQuery(),
       ($getConversationQuery) =>
@@ -77,13 +90,12 @@ export class Conversation {
     );
   }
 
-  get canSendMessage(): Readable<boolean> {
-    return derived([this.isStreaming], ([$isStreaming]) => !$isStreaming);
-  }
-
-  // ACTIONS
-
-  async sendMessage(options?: {
+  /**
+   * Send a message and handle streaming response
+   *
+   * @param options - Callback functions for different stages of message sending
+   */
+  public async sendMessage(options?: {
     onStreamStart?: () => void;
     onMessage?: (message: V1Message) => void;
     onStreamComplete?: (conversationId: string) => void;
@@ -122,7 +134,31 @@ export class Conversation {
     }
   }
 
-  // STREAMING METHODS
+  /**
+   * Cancel the current streaming session
+   */
+  public cancelStream(): void {
+    if (this.sseClient) {
+      this.sseClient.stop();
+    }
+    this.isStreaming.set(false);
+    this.streamError.set(null);
+  }
+
+  /**
+   * Clean up all resources when conversation is no longer needed
+   */
+  public cleanup(): void {
+    if (this.sseClient) {
+      this.cleanupSSEEventListeners();
+      this.sseClient = null;
+    }
+    this.isStreaming.set(false);
+  }
+
+  // ===== PRIVATE IMPLEMENTATION =====
+
+  // ----- SSE Client Management -----
 
   /**
    * Initialize SSE client and set up event listeners
@@ -165,27 +201,7 @@ export class Conversation {
     this.sseClient.stop();
   }
 
-  /**
-   * Clean up resources when conversation is no longer needed
-   */
-  public cleanup(): void {
-    if (this.sseClient) {
-      this.cleanupSSEEventListeners();
-      this.sseClient = null;
-    }
-    this.isStreaming.set(false);
-  }
-
-  /**
-   * Cancel the current streaming session
-   */
-  public cancelStream(): void {
-    if (this.sseClient) {
-      this.sseClient.stop();
-    }
-    this.isStreaming.set(false);
-    this.streamError.set(null);
-  }
+  // ----- Streaming Operations -----
 
   /**
    * Start streaming completion responses for a given prompt
@@ -254,45 +270,6 @@ export class Conversation {
   }
 
   /**
-   * Transition from NEW_CONVERSATION_ID to real conversation ID
-   * Transfers all cached data to the new conversation cache
-   */
-  private transitionToRealConversation(realConversationId: string): void {
-    const oldCacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId, // This is still "new"
-    );
-
-    const newCacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      realConversationId,
-    );
-
-    // Get existing data from "new" conversation cache
-    const existingData =
-      queryClient.getQueryData<V1GetConversationResponse>(oldCacheKey);
-
-    if (existingData?.conversation) {
-      // Transfer the conversation data to the real conversation ID cache
-      queryClient.setQueryData<V1GetConversationResponse>(newCacheKey, {
-        conversation: {
-          ...existingData.conversation,
-          id: realConversationId,
-        },
-      });
-    }
-
-    // Clean up the old "new" conversation cache
-    queryClient.removeQueries({ queryKey: oldCacheKey });
-
-    // Update the conversation ID
-    this.conversationId = realConversationId;
-
-    // Notify that conversation was created
-    this.options?.onConversationCreated?.(realConversationId);
-  }
-
-  /**
    * Wait for stream completion by monitoring streaming state
    */
   private waitForStreamCompletion(): Promise<void> {
@@ -333,6 +310,49 @@ export class Conversation {
     });
   }
 
+  // ----- Conversation Lifecycle -----
+
+  /**
+   * Transition from NEW_CONVERSATION_ID to real conversation ID
+   * Transfers all cached data to the new conversation cache
+   */
+  private transitionToRealConversation(realConversationId: string): void {
+    const oldCacheKey = getRuntimeServiceGetConversationQueryKey(
+      this.instanceId,
+      this.conversationId, // This is still "new"
+    );
+
+    const newCacheKey = getRuntimeServiceGetConversationQueryKey(
+      this.instanceId,
+      realConversationId,
+    );
+
+    // Get existing data from "new" conversation cache
+    const existingData =
+      queryClient.getQueryData<V1GetConversationResponse>(oldCacheKey);
+
+    if (existingData?.conversation) {
+      // Transfer the conversation data to the real conversation ID cache
+      queryClient.setQueryData<V1GetConversationResponse>(newCacheKey, {
+        conversation: {
+          ...existingData.conversation,
+          id: realConversationId,
+        },
+      });
+    }
+
+    // Clean up the old "new" conversation cache
+    queryClient.removeQueries({ queryKey: oldCacheKey });
+
+    // Update the conversation ID
+    this.conversationId = realConversationId;
+
+    // Notify that conversation was created
+    this.options?.onConversationCreated?.(realConversationId);
+  }
+
+  // ----- Cache Management -----
+
   /**
    * Add optimistic user message to cache
    */
@@ -347,40 +367,6 @@ export class Conversation {
 
     this.addMessageToCache(userMessage);
     return userMessage;
-  }
-
-  /**
-   * Handle incoming tool result by merging it with the corresponding tool call
-   */
-  private handleToolResult(toolResult: any): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
-
-    // Find and merge with existing tool call
-    queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
-      if (!old?.conversation?.messages) return old;
-
-      const updatedMessages = old.conversation.messages.map((msg) => ({
-        ...msg,
-        content: msg.content?.map((block) => {
-          if (block.toolCall?.id === toolResult.id) {
-            return { ...block, toolResult };
-          }
-          return block;
-        }),
-      }));
-
-      return {
-        ...old,
-        conversation: {
-          ...old.conversation,
-          messages: updatedMessages,
-          updatedOn: new Date().toISOString(),
-        },
-      };
-    });
   }
 
   /**
@@ -474,6 +460,42 @@ export class Conversation {
       };
     });
   }
+
+  /**
+   * Handle incoming tool result by merging it with the corresponding tool call
+   */
+  private handleToolResult(toolResult: any): void {
+    const cacheKey = getRuntimeServiceGetConversationQueryKey(
+      this.instanceId,
+      this.conversationId,
+    );
+
+    // Find and merge with existing tool call
+    queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
+      if (!old?.conversation?.messages) return old;
+
+      const updatedMessages = old.conversation.messages.map((msg) => ({
+        ...msg,
+        content: msg.content?.map((block) => {
+          if (block.toolCall?.id === toolResult.id) {
+            return { ...block, toolResult };
+          }
+          return block;
+        }),
+      }));
+
+      return {
+        ...old,
+        conversation: {
+          ...old.conversation,
+          messages: updatedMessages,
+          updatedOn: new Date().toISOString(),
+        },
+      };
+    });
+  }
+
+  // ----- Error Handling -----
 
   /**
    * Handle streaming errors with rollback and user feedback
