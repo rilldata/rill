@@ -76,6 +76,15 @@ var spec = drivers.Spec{
 			Description: "Query to run on DuckDB.",
 			Placeholder: "select * from table;",
 		},
+		// DEPRECATED: use `path` in the connector properties. Should be removed.
+		{
+			Key:         "db",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Database",
+			Description: "Database path to connect to.",
+			Placeholder: "data/my_database.db",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -125,6 +134,24 @@ var motherduckSpec = drivers.Spec{
 			DisplayName: "SQL",
 			Description: "Query to extract data from MotherDuck.",
 			Placeholder: "select * from table;",
+		},
+		// DEPRECATED: use `path` in the connector properties. Should be removed.
+		{
+			Key:         "db",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Database",
+			Description: "MotherDuck database path.",
+			Placeholder: "md:my_database",
+		},
+		// DEPRECATED: use `token` in the connector properties. Should be removed.
+		{
+			Key:         "motherduck_token",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "MotherDuck Token",
+			Description: "Token for authenticating with MotherDuck.",
+			Placeholder: "your_motherduck_token",
 		},
 	},
 	ImplementsOLAP: true,
