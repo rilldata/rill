@@ -8,7 +8,6 @@ import {
   getMinGrain,
   grainAliasToDateTimeUnit,
   GrainAliasToV1TimeGrain,
-  GrainToOrder,
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 
@@ -572,20 +571,6 @@ export class RillGrainPointInTime implements RillPointInTimeVariant {
 
 export class RillGrainPointInTimePart {
   public readonly offset: Duration;
-
-  public static fromDuration(duration: Duration, prefix: string) {
-    duration = duration.shiftToAll();
-
-    return new RillGrainPointInTimePart(
-      prefix,
-      Object.keys(GrainToOrder)
-        .filter((grain) => !!duration[grain])
-        .map((grain) => ({
-          grain,
-          num: duration[grain],
-        })),
-    );
-  }
 
   public constructor(
     public readonly prefix: string,

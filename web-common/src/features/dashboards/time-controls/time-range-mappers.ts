@@ -113,21 +113,9 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
     !validateRillTime(selectedComparisonTimeRange.name)
   ) {
     if (selectedComparisonTimeRange.name === TimeComparisonOption.CONTIGUOUS) {
-      if (!timeRange.start || !timeRange.end) return undefined;
-
-      const interval = Interval.fromDateTimes(
-        DateTime.fromISO(timeRange.start),
-        DateTime.fromISO(timeRange.end),
-      );
-      if (!interval.isValid) return undefined;
-
       const rt = parseRillTime(timeRange.expression);
-      const offset = RillGrainPointInTimePart.fromDuration(
-        interval.toDuration(),
-        "-",
-      );
       return {
-        expression: rt.toString() + " offset " + offset.toString(),
+        expression: rt.toString() + " offset pp",
       };
     } else {
       return {

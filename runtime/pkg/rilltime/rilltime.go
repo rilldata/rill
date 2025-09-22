@@ -354,7 +354,7 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.tz)
 
 	if e.Offset != nil {
-		start, end = e.Offset.eval(start, end, e.tz)
+		start, end = e.Offset.eval(evalOpts, start, end, e.Interval, e.tz)
 	}
 
 	if e.Grain != nil {
@@ -392,6 +392,22 @@ func (i *Interval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location
 		return i.Iso.eval(tz)
 	}
 	return start, start, timeutil.TimeGrainUnspecified
+}
+
+func (i *Interval) previousPeriod(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time) {
+	var start, end time.Time
+	if i.Ordinal != nil {
+		o := i.Ordinal.Ordinals[0]
+		tg := grainMap[o.Grain]
+		end = tm
+		start = timeutil.OffsetTime(tm, tg, -1, tz)
+	} else if i.StartEnd != nil {
+		evalOpts.ref = tm
+		start, end, _ = i.StartEnd.eval(evalOpts, tm, tz)
+	} else if i.Iso != nil {
+		return i.Iso.previousPeriod(tm, tz)
+	}
+	return start, end
 }
 
 func (s *ShorthandInterval) expand() *StartEndInterval {
@@ -504,6 +520,21 @@ func (i *IsoInterval) eval(tz *time.Location) (time.Time, time.Time, timeutil.Ti
 		end, _, _ = i.End.eval(tz)
 	}
 	return start, end, tg
+}
+
+func (i *IsoInterval) previousPeriod(tm time.Time, tz *time.Location) (time.Time, time.Time) {
+	if i.End != nil {
+		start, end, _ := i.eval(tz)
+		diff := end.Sub(start)
+
+		end = start
+		start = end.Add(-diff)
+		return start, end
+	}
+
+	end := tm
+	start := timeutil.OffsetTime(end, i.Start.tg, -1, tz)
+	return start, end
 }
 
 /* Points in time */
@@ -662,14 +693,12 @@ func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil
 	return absStart, absEnd, a.tg
 }
 
-func (o *Offset) eval(start, end time.Time, tz *time.Location) (time.Time, time.Time) {
+func (o *Offset) eval(evalOpts EvalOptions, start, end time.Time, mainInterval *Interval, tz *time.Location) (time.Time, time.Time) {
 	if o.Grain != nil {
-		start, _ = o.Grain.eval(start, tz)
-		end, _ = o.Grain.eval(end, tz)
-	} else if o.PreviousPeriod {
-		diff := end.Sub(start)
 		end = start
-		start = end.Add(-diff)
+		start, _ = o.Grain.eval(end, tz)
+	} else if o.PreviousPeriod {
+		start, end = mainInterval.previousPeriod(evalOpts, start, tz)
 	}
 
 	return start, end
