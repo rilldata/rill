@@ -111,13 +111,26 @@ export class SSEFetchClient<T> {
   }
 
   /**
-   * Stop the current streaming session and clean up resources
+   * Stop the current streaming session
    */
   public stop(): void {
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = undefined;
     }
+  }
+
+  /**
+   * Stop streaming and clear all event listeners
+   * Call this when the client is no longer needed to prevent memory leaks
+   */
+  public cleanup(): void {
+    this.stop();
+
+    // Clear all event listeners
+    this.listeners.data = [];
+    this.listeners.error = [];
+    this.listeners.close = [];
   }
 
   /**

@@ -30,17 +30,6 @@ export class Conversation {
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
 
-  // Derived states for UI
-  public readonly hasStreamError = derived(
-    this.streamError,
-    (error) => !!error,
-  );
-
-  public readonly canSendMessage = derived(
-    [this.isStreaming],
-    ([$isStreaming]) => !$isStreaming,
-  );
-
   // Private state
   private sseClient: SSEFetchClient<V1CompleteStreamingResponse> | null = null;
   private hasReceivedFirstUserMessage = false;
@@ -110,7 +99,7 @@ export class Conversation {
     const prompt = get(this.draftMessage).trim();
     if (!prompt) throw new Error("Cannot send empty message");
 
-    // 1. Optimistic updates
+    // Optimistic updates
     this.draftMessage.set("");
     this.streamError.set(null);
     this.isStreaming.set(true);
@@ -119,23 +108,29 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
-      // 2. Start streaming
-      await this.startStreaming(prompt);
+      // Start streaming - this establishes the connection
+      const streamPromise = this.startStreaming(prompt);
 
+      // Stream has been initiated, notify caller
       options?.onStreamStart?.();
 
-      // 3. Wait for stream completion (connection closure)
-      await this.waitForStreamCompletion();
+      // Wait for streaming to complete
+      await streamPromise;
 
+      // Stream has completed successfully
       options?.onStreamComplete?.(this.conversationId);
     } catch (error) {
+      // Business logic errors: flow control, validation, business failures
+      // These require full rollback of optimistic updates
       this.handleStreamingError(error, userMessage);
       options?.onError?.(formatChatError(error));
+    } finally {
+      this.isStreaming.set(false);
     }
   }
 
   /**
-   * Cancel the current streaming session
+   * Cancel the current streaming session (user-initiated)
    */
   public cancelStream(): void {
     if (this.sseClient) {
@@ -146,72 +141,51 @@ export class Conversation {
   }
 
   /**
-   * Clean up all resources when conversation is no longer needed
+   * Clean up all resources when conversation is no longer needed (lifecycle cleanup)
    */
   public cleanup(): void {
+    // Cancel any active streaming first
+    this.cancelStream();
+
+    // Full resource cleanup
     if (this.sseClient) {
-      this.cleanupSSEEventListeners();
+      this.sseClient.cleanup();
       this.sseClient = null;
     }
-    this.isStreaming.set(false);
   }
 
   // ===== PRIVATE IMPLEMENTATION =====
 
-  // ----- SSE Client Management -----
-
-  /**
-   * Initialize SSE client and set up event listeners
-   */
-  private initializeSSEClient(): void {
-    if (this.sseClient) {
-      return; // Already initialized
-    }
-
-    this.sseClient = new SSEFetchClient<V1CompleteStreamingResponse>();
-
-    // Set up SSE client event handlers
-    this.sseClient.on("data", (response) => {
-      this.handleStreamingMessage(response);
-    });
-
-    // Handle streaming errors
-    this.sseClient.on("error", (error) => {
-      this.streamError.set(this.getDescriptiveError(error));
-      this.isStreaming.set(false);
-    });
-
-    // Handle stream completion
-    this.sseClient.on("close", () => {
-      this.isStreaming.set(false);
-    });
-  }
-
-  /**
-   * Remove event listeners from SSE client
-   */
-  private cleanupSSEEventListeners(): void {
-    if (!this.sseClient) {
-      return;
-    }
-
-    // Remove all event listeners to prevent memory leaks
-    // Note: SSEFetchClient doesn't store references to the specific handlers,
-    // so we need to rely on stopping the client to clean up resources
-    this.sseClient.stop();
-  }
-
-  // ----- Streaming Operations -----
+  // ----- Transport Layer: SSE Connection Management -----
 
   /**
    * Start streaming completion responses for a given prompt
+   * Returns a Promise that resolves when streaming completes
    */
   private async startStreaming(prompt: string): Promise<void> {
     // Initialize SSE client if not already done
-    this.initializeSSEClient();
+    if (!this.sseClient) {
+      this.sseClient = new SSEFetchClient<V1CompleteStreamingResponse>();
+
+      // Set up transport-level event handlers
+      this.sseClient.on("data", (response) => {
+        // Delegate to business logic handler
+        this.processStreamingResponse(response);
+      });
+
+      this.sseClient.on("error", (error) => {
+        // Transport errors: connection, parsing, network issues
+        // No rollback needed - these are infrastructure failures
+        this.streamError.set(this.getDescriptiveError(error));
+      });
+
+      this.sseClient.on("close", () => {
+        // Transport completed - business logic handles completion in sendMessage
+      });
+    }
 
     // Clean up any existing connection
-    this.sseClient!.stop();
+    this.sseClient.stop();
 
     // Build URL with stream parameter (like other streaming endpoints)
     const baseUrl = `${get(runtime).host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
@@ -229,17 +203,28 @@ export class Conversation {
     // Notify that streaming is about to start (for concurrent stream management)
     this.options?.onStreamStart?.();
 
-    // Start streaming using the SSE client
-    await this.sseClient!.start(baseUrl, {
+    // Start streaming - this will establish the connection and then stream until completion
+    const streamPromise = this.sseClient.start(baseUrl, {
       method: "POST",
       body: requestBody,
     });
+
+    // Stream has been initiated - we can notify that streaming started
+    // (the connection is established at this point, even though data may still be streaming)
+
+    // Wait for the stream to complete
+    await streamPromise;
   }
 
+  // ----- Business Logic Layer: Message Processing -----
+
   /**
-   * Handle incoming streaming messages and update TanStack Query cache
+   * Process streaming response data and update conversation state
+   * This handles the business logic for each streaming message
    */
-  private handleStreamingMessage(response: V1CompleteStreamingResponse): void {
+  private processStreamingResponse(
+    response: V1CompleteStreamingResponse,
+  ): void {
     // Handle conversation ID transition for new conversations
     if (
       response.conversationId &&
@@ -267,47 +252,6 @@ export class Conversation {
         this.addMessageToCache(response.message);
       }
     }
-  }
-
-  /**
-   * Wait for stream completion by monitoring streaming state
-   */
-  private waitForStreamCompletion(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.sseClient) {
-        reject(new Error("SSE client not initialized"));
-        return;
-      }
-
-      let completed = false;
-
-      // Set up one-time listeners for completion
-      const onClose = () => {
-        if (!completed) {
-          completed = true;
-          resolve();
-        }
-      };
-
-      const onError = (error: Error) => {
-        if (!completed) {
-          completed = true;
-          reject(error);
-        }
-      };
-
-      // Add listeners
-      this.sseClient.on("close", onClose);
-      this.sseClient.on("error", onError);
-
-      // Cleanup after 2 minutes to prevent memory leaks
-      setTimeout(() => {
-        if (!completed) {
-          completed = true;
-          reject(new Error("Stream completion timeout"));
-        }
-      }, 120000);
-    });
   }
 
   // ----- Conversation Lifecycle -----
@@ -501,6 +445,9 @@ export class Conversation {
    * Handle streaming errors with rollback and user feedback
    */
   private handleStreamingError(error: any, userMessage: V1Message): void {
+    // Set error state for UI display
+    this.streamError.set(this.getDescriptiveError(error));
+
     // Roll back optimistic updates
     this.removeMessageFromCache(userMessage.id!);
 

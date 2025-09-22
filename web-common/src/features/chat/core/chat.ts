@@ -170,18 +170,22 @@ export class Chat {
    * Stop streaming in oldest conversations if we exceed concurrent stream limit
    */
   private enforceMaxConcurrentStreams(): void {
-    const streamingConversations = this.getActiveStreamingConversations();
+    try {
+      const streamingConversations = this.getActiveStreamingConversations();
 
-    if (streamingConversations.length >= Chat.MAX_CONCURRENT_STREAMS) {
-      // Stop the oldest streaming conversations (simple FIFO approach)
-      const conversationsToStop = streamingConversations.slice(
-        0,
-        streamingConversations.length - Chat.MAX_CONCURRENT_STREAMS + 1,
-      );
+      if (streamingConversations.length >= Chat.MAX_CONCURRENT_STREAMS) {
+        // Stop the oldest streaming conversations (simple FIFO approach)
+        const conversationsToStop = streamingConversations.slice(
+          0,
+          streamingConversations.length - Chat.MAX_CONCURRENT_STREAMS + 1,
+        );
 
-      conversationsToStop.forEach((conv) => {
-        conv.cancelStream();
-      });
+        conversationsToStop.forEach((conv) => {
+          conv.cancelStream();
+        });
+      }
+    } catch (error) {
+      console.warn("Error enforcing max concurrent streams:", error);
     }
   }
 
@@ -270,6 +274,10 @@ export class Chat {
 
   /**
    * Generate a conversation title from the conversation data
+   *
+   * Note: This replicates the server-side title generation logic client-side
+   * to avoid making an additional network request for something we can compute
+   * trivially from the conversation data we already have in cache.
    */
   private generateConversationTitle(conversationData?: V1Conversation): string {
     // If we have conversation data with messages, generate title from first user message

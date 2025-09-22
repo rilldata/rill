@@ -12,6 +12,11 @@
     expandedBlocks[index] = !expandedBlocks[index];
   }
 
+  // TODO: This correlation logic should be moved to the Conversation class business layer.
+  // Currently we have split responsibility: Conversation handles streaming correlation,
+  // but UI handles initial fetch correlation. This creates inconsistent architecture.
+  // All correlation should happen in the business layer, with UI just displaying pre-correlated data.
+
   // Group tool calls with their results within this message
   function groupToolCallsWithResults(content: any[]) {
     const groups: any[] = [];
@@ -29,7 +34,8 @@
       if (block.text) {
         groups.push({ type: "text", content: block.text, index });
       } else if (block.toolCall) {
-        // Tool result should already be merged into this block by the data layer
+        // Streaming merges tool results into toolCall blocks.
+        // For initial fetch (GetConversation), calls/results are separate, so we attach via fallback.
         groups.push({
           type: "tool",
           toolCall: block.toolCall,
