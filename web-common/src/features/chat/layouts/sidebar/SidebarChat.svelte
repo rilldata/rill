@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { getChatInstance } from "../../core/chat";
+  import { cleanupChatInstance, getChatInstance } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
@@ -28,6 +29,16 @@
   function onNewConversation() {
     chatInputComponent?.focusInput();
   }
+
+  // Clean up chat resources when switching projects
+  beforeNavigate(({ from, to }) => {
+    const currentProject = from?.params?.project;
+    const targetProject = to?.params?.project;
+
+    if (currentProject !== targetProject) {
+      cleanupChatInstance(instanceId);
+    }
+  });
 </script>
 
 <div class="chat-sidebar" style="--sidebar-width: {$sidebarWidth}px;">

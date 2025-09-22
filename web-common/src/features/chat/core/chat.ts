@@ -160,6 +160,20 @@ export class Chat {
   }
 
   /**
+   * Clean up all resources for this Chat instance
+   */
+  public cleanup(): void {
+    // Clean up all conversation instances
+    this.conversations.forEach((conversation) => {
+      conversation.cleanup();
+    });
+    this.conversations.clear();
+
+    // Clean up the new conversation instance
+    this.newConversation.cleanup();
+  }
+
+  /**
    * Handle conversation creation - rotates conversation instances, updates list cache, and navigates to it
    */
   private handleConversationCreated(conversationId: string): void {
@@ -282,4 +296,15 @@ export function getChatInstance(
     chatInstances.set(instanceId, new Chat(instanceId, options));
   }
   return chatInstances.get(instanceId)!;
+}
+
+/**
+ * Clean up and remove a Chat instance for the given instanceId
+ */
+export function cleanupChatInstance(instanceId: string): void {
+  const chatInstance = chatInstances.get(instanceId);
+  if (chatInstance) {
+    chatInstance.cleanup();
+    chatInstances.delete(instanceId);
+  }
 }
