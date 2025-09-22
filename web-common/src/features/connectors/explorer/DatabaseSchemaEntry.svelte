@@ -61,6 +61,8 @@
             hasUnsupportedDataTypes: boolean;
           }>
         | undefined);
+
+  $: console.log("connector.driver", connector.driver);
 </script>
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
@@ -116,9 +118,9 @@
             {instanceId}
             driver={connector.driver.name}
             connector={connectorName}
-            showGenerateMetricsAndDashboard={connector.driver.implementsOlap ??
-              connector.driver.implementsWarehouse ??
-              connector.driver.implementsSqlStore ??
+            showGenerateMetricsAndDashboard={(connector.driver.implementsOlap ||
+              connector.driver.implementsWarehouse ||
+              connector.driver.implementsSqlStore) ??
               false}
             showGenerateModel={(connector.driver.implementsWarehouse ||
               connector.driver.implementsSqlStore) ??
