@@ -1,29 +1,12 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
-  import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
-  import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
   import {
     createRuntimeServiceListConnectorDrivers,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
-  import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
-  import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
-  import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
-  import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
-  import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
-  import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
-  import Https from "../../../components/icons/connectors/HTTPS.svelte";
-  import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
-  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
-  import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
-  import Postgres from "../../../components/icons/connectors/Postgres.svelte";
-  import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
-  import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
-  import SQLite from "../../../components/icons/connectors/SQLite.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -31,62 +14,20 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/olap/selectors";
+  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
+  import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
+  import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
+  import { ICONS } from "./icons";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
   let isSubmittingForm = false;
-
-  const SOURCES = [
-    "gcs",
-    "s3",
-    "azure",
-    "bigquery",
-    "athena",
-    "redshift",
-    "duckdb",
-    "motherduck",
-    "postgres",
-    "mysql",
-    "sqlite",
-    "snowflake",
-    "salesforce",
-    "local_file",
-    "https",
-  ];
-
-  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
-
-  const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
-
-  const ICONS = {
-    gcs: GoogleCloudStorage,
-    s3: AmazonS3,
-    azure: MicrosoftAzureBlobStorage,
-    bigquery: GoogleBigQuery,
-    athena: AmazonAthena,
-    redshift: AmazonRedshift,
-    duckdb: DuckDB,
-    motherduck: MotherDuck,
-    postgres: Postgres,
-    mysql: MySQL,
-    sqlite: SQLite,
-    snowflake: Snowflake,
-    salesforce: Salesforce,
-    local_file: LocalFile,
-    https: Https,
-    clickhouse: ClickHouse,
-    druid: ApacheDruid,
-    pinot: ApachePinot,
-  };
 
   const connectorsQuery = createRuntimeServiceListConnectorDrivers({
     query: {
@@ -96,17 +37,17 @@
           data.connectors &&
           data.connectors
             .filter(
-              // Only show connectors in SOURCES or OLAP_CONNECTORS
+              // Only show connectors in SOURCES or OLAP_ENGINES
               (a) =>
                 a.name &&
-                (SOURCES.includes(a.name) || OLAP_CONNECTORS.includes(a.name)),
+                (SOURCES.includes(a.name) || OLAP_ENGINES.includes(a.name)),
             )
             .sort(
               // CAST SAFETY: we have filtered out any connectors that
               // don't have a `name` in the previous filter
               (a, b) =>
-                SORT_ORDER.indexOf(a.name as string) -
-                SORT_ORDER.indexOf(b.name as string),
+                ALL_CONNECTORS.indexOf(a.name as string) -
+                ALL_CONNECTORS.indexOf(b.name as string),
             );
         return data;
       },
@@ -145,7 +86,13 @@
   }
 
   function back() {
-    window.history.back();
+    // Try to go back in browser history
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // If no history to go back to, close the modal
+      resetModal();
+    }
   }
 
   function handleSubmittingChange(event: CustomEvent) {
@@ -172,6 +119,16 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+  $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
+
+  // FIXME: excluding salesforce until we implement the table discovery APIs
+  // NOTE: DuckDB should not create connector files, only sources
+  $: isConnectorType =
+    (selectedConnector?.implementsOlap &&
+      selectedConnector?.name !== "duckdb") ||
+    selectedConnector?.implementsSqlStore ||
+    (selectedConnector?.implementsWarehouse &&
+      selectedConnector?.name !== "salesforce");
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
@@ -193,18 +150,20 @@
       noClose={step === 1}
     >
       {#if step === 1}
-        {#if $isModelingSupportedForDefaultOlapDriver}
+        {#if isModelingSupported}
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
-            <div class="connector-grid">
+            <div
+              class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+            >
               {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
                     on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button"
+                    class="connector-tile-button size-full min-w-24 min-h-16 h-20"
                   >
-                    <div class="connector-wrapper">
+                    <div class="connector-wrapper px-6 py-4 md:px-4 md:py-2">
                       <svelte:component this={ICONS[connector.name]} />
                     </div>
                   </button>
@@ -219,15 +178,17 @@
         <section>
           <Dialog.Title>Connect an OLAP engine</Dialog.Title>
 
-          <div class="connector-grid">
-            {#each connectors?.filter((c) => c.name && OLAP_CONNECTORS.includes(c.name)) as connector (connector.name)}
+          <div
+            class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+          >
+            {#each connectors?.filter((c) => c.name && OLAP_ENGINES.includes(c.name)) as connector (connector.name)}
               {#if connector.name}
                 <button
                   id={connector.name}
-                  class="connector-tile-button"
+                  class="connector-tile-button size-full min-w-24 min-h-16 h-20"
                   on:click={() => goToConnectorForm(connector)}
                 >
-                  <div class="connector-wrapper">
+                  <div class="connector-wrapper px-6 py-4 md:px-4 md:py-2">
                     <svelte:component this={ICONS[connector.name]} />
                   </div>
                 </button>
@@ -267,15 +228,15 @@
         </Dialog.Title>
 
         {#if $duplicateSourceName !== null}
-          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          <div class="p-6">
+            <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+          </div>
         {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={resetModal} on:back={back} />
         {:else if selectedConnector.name}
           <AddDataForm
             connector={selectedConnector}
-            formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-              ? "connector"
-              : "source"}
+            formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}
             on:submitting={handleSubmittingChange}
@@ -284,8 +245,10 @@
       {/if}
 
       {#if step === 2 && requestConnector}
-        <Dialog.Title>Request a connector</Dialog.Title>
-        <RequestConnectorForm on:close={resetModal} on:back={back} />
+        <div class="p-6">
+          <Dialog.Title>Request a connector</Dialog.Title>
+          <RequestConnectorForm on:close={resetModal} on:back={back} />
+        </div>
       {/if}
     </Dialog.Content>
   </Dialog.Root>
@@ -296,19 +259,13 @@
     @apply flex flex-col gap-y-3;
   }
 
-  .connector-grid {
-    @apply grid grid-cols-3 gap-4;
-  }
-
   .connector-tile-button {
-    aspect-ratio: 2/1;
-    @apply basis-40;
     @apply border border-gray-300 rounded;
     @apply cursor-pointer overflow-hidden;
   }
 
   .connector-wrapper {
-    @apply py-3 px-7 size-full;
+    @apply size-full;
     @apply flex items-center justify-center;
   }
 

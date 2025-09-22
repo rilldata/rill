@@ -15,6 +15,9 @@ test.describe("leaderboard measure names", () => {
     // Test single selection
     await page.getByTestId("leaderboard-measure-names-dropdown").click();
     await page.getByRole("menuitem", { name: "Sum of Bid Price" }).click();
+
+    // Reopen dropdown to verify selection
+    await page.getByTestId("leaderboard-measure-names-dropdown").click();
     await expect(
       page.getByRole("menuitem", { name: "Sum of Bid Price" }),
     ).toHaveAttribute("aria-checked", "true");

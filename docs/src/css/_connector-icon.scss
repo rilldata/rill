@@ -1,0 +1,308 @@
+// Hide h3 headers on pages with connect-connect class
+.connect-connect .markdown h3,
+.connect-connect h3,
+.markdown h3:has(~ div.connector-icon-grid),
+h3:has(~ div.connector-icon-grid) {
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+// Hide h3 headers on the /connect/olap page
+body[data-page-id*="connect/olap"] .markdown h3,
+body[data-page-id*="connect/olap"] h3,
+body[data-page-id*="olap"] .markdown h3,
+body[data-page-id*="olap"] h3,
+// Alternative selectors for OLAP page
+body[data-page-id="olap"] .markdown h3,
+body[data-page-id="olap"] h3,
+// Target by URL path
+body[data-page-id*="olap"] .markdown h3,
+body[data-page-id*="olap"] h3 {
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.connector-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 1000px) {
+  .connector-icon-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .connector-icon-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Compact connector tiles for /connect/connect/ page
+.connector-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 1000px) {
+  .connector-tile-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .connector-tile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.connector-tile {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem 1rem 0.75rem 1rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 140px;
+  transition: box-shadow 0.2s;
+  text-decoration: none;
+  color: inherit;
+  
+  &:hover {
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+}
+
+.connector-tile-header {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #383838;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.connector-tile-img {
+  height: 1.5rem;
+  width: 100%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.connector-tile-content {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  flex-grow: 1;
+}
+
+.connector-tile-footer {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.connector-tile-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.connector-tile-action-link {
+  font-size: 0.75rem;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.Connector-icon {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem 1.5rem 1.25rem 1.5rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 160px;
+  transition: box-shadow 0.2s;
+  text-decoration: none;
+  color: inherit;
+  
+  &:hover {
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  }
+}
+
+.Connector-icon-header {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #383838;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.Connector-icon-icon {
+  height: 2.5rem;
+  width: 100%;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  
+  svg {
+    height: 2rem;
+    width: auto;
+    max-width: 100%;
+    min-width: 120px;
+  }
+}
+
+.Connector-icon-img {
+  height: 2rem;
+  width: 100%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.sheets-icon {
+  height: 3rem !important;
+}
+
+.duckdb-icon {
+  height: 2rem !important;
+}
+
+
+.https-icon {
+  font-size: 1.8rem !important;
+  font-style: italic !important;
+  font-weight: 500 !important;
+  color: #181818 !important;
+  margin: 0 !important;
+}
+
+.Connector-icon-content {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  flex-grow: 1;
+}
+
+.Connector-icon-footer {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.Connector-icon-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.Connector-icon-action-link {
+  font-size: 0.8rem;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.Connector-icon-link {
+  color: #222;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.Connector-icon-link::after {
+  content: '\2192';
+  font-size: 1.1em;
+  margin-left: 0.15em;
+}
+
+// Hide arrow at specific screen width to prevent overlap
+@media (max-width: 1500px) and (min-width: 997px) {
+  .Connector-icon-link {
+    display: none;
+  }
+  .Connector-icon-action-link:after {
+    content: none;
+  }
+}
+
+// Dark mode styles
+[data-theme='dark'] {
+  .Connector-icon,
+  .connector-tile {
+    border-color: #404040;
+    background: #262626;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    
+    &:hover {
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+  }
+  
+  .Connector-icon-header,
+  .connector-tile-header {
+    color: #e5e5e5;
+  }
+  
+  .Connector-icon-content,
+  .connector-tile-content {
+    color: #a3a3a3;
+  }
+  
+  .Connector-icon-action-link,
+  .connector-tile-action-link {
+    color: #459BFF;
+    
+    &:hover {
+      color: #459BFF;
+    }
+  }
+  
+  .Connector-icon-link {
+    color: #e5e5e5;
+  }
+} 

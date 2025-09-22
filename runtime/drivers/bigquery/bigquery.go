@@ -25,55 +25,24 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/bigquery",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
-		{
-			Key:  "google_application_credentials",
-			Type: drivers.FilePropertyType,
-			Hint: "Enter path of file to load from.",
-		},
-		{
-			Key:         "project_id",
-			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "Project ID",
-			Description: "Default Google project ID.",
-		},
-	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from BigQuery.",
-			Placeholder: "select * from project.dataset.table;",
-		},
-		{
-			Key:         "project_id",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Project ID",
-			Description: "Google project ID.",
-			Placeholder: "my-project",
-			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
 		{
 			Key:         "google_application_credentials",
 			Type:        drivers.InformationalPropertyType,
 			DisplayName: "GCP credentials",
 			Description: "GCP credentials inferred from your local environment.",
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
+			DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs#rill-developer-local-credentials",
+		},
+		{
+			Key:         "project_id",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Project ID",
+			Description: "Google project ID.",
+			Placeholder: "my-project",
+			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
 		},
 	},
 	ImplementsWarehouse: true,
@@ -213,17 +182,17 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.InputHandle == c {
 		store, ok := opts.OutputHandle.AsObjectStore()
 		if ok && opts.OutputHandle.Driver() == "gcs" {
 			return &selfToGCSExecutor{
 				c:     c,
 				store: store,
-			}, true
+			}, nil
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

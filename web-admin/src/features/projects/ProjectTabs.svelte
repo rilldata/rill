@@ -12,11 +12,16 @@
   export let project: string;
   export let pathname: string;
 
-  const { alerts, reports } = featureFlags;
+  const { chat, reports, alerts } = featureFlags;
 
   $: tabs = [
     {
-      route: `/${organization}/${project}`,
+      route: `/${organization}/${project}/-/chat`,
+      label: "Chat",
+      hasPermission: $chat,
+    },
+    {
+      route: `/${organization}/${project}/-/dashboards`,
       label: "Dashboards",
       hasPermission: true,
     },
@@ -82,7 +87,7 @@
   {#if $width && $position}
     <span
       style:width="{$width}px"
-      style:transform="translateX({$position}px) "
+      style:transform="translateX({$position}px)"
     />
   {/if}
 </div>

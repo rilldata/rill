@@ -161,6 +161,13 @@ service QueryService {
     };
   }
 
+  rpc MetricsViewAnnotations(MetricsViewAnnotationsRequest) returns (MetricsViewAnnotationsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/annotations",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
   // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -540,7 +547,7 @@ message MetricsViewComparisonRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   // Required
-  MetricsViewAggregationDimension dimension = 3;
+  MetricsViewAggregationDimension dimension = 3 [(validate.rules).message.required = true];
   // Required
   repeated MetricsViewAggregationMeasure measures = 4 [(validate.rules).repeated.min_items = 1];
   // Measures that should be compared
@@ -835,6 +842,41 @@ message MetricsViewTimeRangesRequest {
 
 message MetricsViewTimeRangesResponse {
   repeated TimeRange time_ranges = 1;
+}
+
+message MetricsViewAnnotationsRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string measures = 3;
+  int32 priority = 4;
+  TimeRange time_range = 5;
+  // Optional
+  TimeGrain time_grain = 6;
+  // Optional
+  string time_zone = 7;
+  // Optional
+  int64 limit = 8 [(validate.rules).int64.gte = 0];
+  // Optional
+  int64 offset = 9 [(validate.rules).int64.gte = 0];
+}
+
+message MetricsViewAnnotationsResponse {
+  message Annotation {
+    // Time when the annotation applies. Maps to `time` column from the table.
+    google.protobuf.Timestamp time = 1;
+    // Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column.
+    optional google.protobuf.Timestamp time_end = 2;
+    // User defined description of the annotation applies. Maps to `description` column from the table.
+    string description = 3;
+    // Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table.
+    optional string duration = 4;
+    // Any other fields are captured here. Will be used in predicates in the future.
+    google.protobuf.Struct additional_fields = 5;
+    // List of measure names that this annotation applies to. If empty, no restrictions apply.
+    repeated string for_measures = 6;
+  }
+
+  repeated Annotation rows = 1;
 }
 
 // **********

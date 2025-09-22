@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import type { ConnectError } from "@connectrpc/connect";
-  import { isMergeConflictError } from "@rilldata/web-common/features/project/github-utils.ts";
+  import { isMergeConflictError } from "@rilldata/web-common/features/project/deploy/github-utils.ts";
   import MergeConflictResolutionDialog from "@rilldata/web-common/features/project/MergeConflictResolutionDialog.svelte";
   import ProjectContainsRemoteChangesDialog from "@rilldata/web-common/features/project/ProjectContainsRemoteChangesDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
@@ -17,6 +18,7 @@
 
   let remoteChangeDialog = false;
   let mergeConflictResolutionDialog = false;
+  $: inDeployPage = $page.route.id?.startsWith("/(misc)/deploy") ? true : false;
 
   $: if ($gitStatusQuery.data) {
     processGithubStatus($gitStatusQuery.data);
@@ -32,6 +34,8 @@
   }
 
   async function handleFetchRemoteCommits() {
+    if (inDeployPage) return; // Do not show the modal in deploy pages
+
     if ($gitStatusQuery.data!.localCommits > 0) {
       // Since we can't really merge remote commits with local commits,
       // we just show the user the merge conflicts dialog for confirmation to clear it.

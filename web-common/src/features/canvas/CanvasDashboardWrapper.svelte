@@ -1,5 +1,10 @@
 <script lang="ts">
+  import { onDestroy, onMount } from "svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
+  import { getCanvasStore } from "./state-managers/state-managers";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { page } from "$app/stores";
+  import { updateThemeVariables } from "../themes/actions";
 
   export let maxWidth: number;
   export let clientWidth = 0;
@@ -8,9 +13,25 @@
   export let canvasName: string;
   export let onClick: () => void = () => {};
 
+  onMount(async () => {
+    await restoreSnapshot();
+  });
+
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
 
+  $: ({ instanceId } = $runtime);
+
+  $: ({
+    canvasEntity: { saveSnapshot, restoreSnapshot, themeSpec },
+  } = getCanvasStore(canvasName, instanceId));
+
   $: ({ width: clientWidth } = contentRect);
+
+  $: updateThemeVariables($themeSpec);
+
+  onDestroy(() => {
+    saveSnapshot($page.url.searchParams.toString());
+  });
 </script>
 
 <main class="size-full flex flex-col dashboard-theme-boundary overflow-hidden">

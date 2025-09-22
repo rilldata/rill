@@ -45,10 +45,12 @@
   $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
   $: timeRanges = $canvasSpec?.timeRanges ?? [];
 
+  $: activeTimeZone = $selectedTimezone;
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
 </script>
@@ -87,6 +89,7 @@
   {#if localFiltersEnabled}
     <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
       <SuperPill
+        context="filters-input"
         allTimeRange={$allTimeRange}
         {selectedRangeAlias}
         showPivot={!showGrain}
@@ -99,7 +102,7 @@
         {timeStart}
         {timeEnd}
         {activeTimeGrain}
-        activeTimeZone={$selectedTimezone}
+        {activeTimeZone}
         canPanLeft={false}
         canPanRight={false}
         showFullRange={false}

@@ -64,6 +64,9 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
+	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
+	// Instead, we set the settings in the context.
+	// TODO: Fix query_settings_override not honoured here.
 	settings := map[string]any{
 		"cast_keep_nullable":        1,
 		"insert_distributed_sync":   1,
@@ -86,7 +89,8 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		return err
 	}
 
-	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	// Use write connection for Exec operations
+	conn, release, err := c.acquireWriteConn(ctx)
 	if err != nil {
 		return err
 	}
@@ -126,6 +130,9 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
 	} else {
 		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+		if c.config.QuerySettings != "" {
+			stmt.Query += ", " + c.config.QuerySettings
+		}
 	}
 
 	// Gather metrics only for actual queries
@@ -322,9 +329,24 @@ func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	return conn, release, nil
 }
 
-// acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
+// acquireConn returns a ClickHouse connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
 func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
-	conn, err := c.db.Connx(ctx)
+	conn, err := c.readDB.Connx(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	c.used()
+	release := func() error {
+		c.used()
+		return conn.Close()
+	}
+	return conn, release, nil
+}
+
+// acquireWriteConn returns a ClickHouse write connection for write operations.
+func (c *Connection) acquireWriteConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+	conn, err := c.writeDB.Connx(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

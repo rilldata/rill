@@ -22,8 +22,10 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
-import { testOLAPConnector } from "../../connectors/olap/test-connection";
-import { runtimeServicePutFileAndWaitForReconciliation } from "../../entity-management/actions";
+import {
+  runtimeServicePutFileAndWaitForReconciliation,
+  waitForResourceReconciliation,
+} from "../../entity-management/actions";
 import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { getName } from "../../entity-management/name-utils";
@@ -31,172 +33,12 @@ import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
-import { compileSourceYAML, maybeRewriteToDuckDb } from "../sourceUtils";
+import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import { OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: unknown;
-}
-
-export async function submitAddSourceForm(
-  queryClient: QueryClient,
-  connector: V1ConnectorDriver,
-  formValues: AddDataFormValues,
-): Promise<void> {
-  const instanceId = get(runtime).instanceId;
-  await beforeSubmitForm(instanceId);
-
-  const [rewrittenConnector, rewrittenFormValues] = maybeRewriteToDuckDb(
-    connector,
-    formValues,
-  );
-
-  // Make a new <source>.yaml file
-  const newSourceFilePath = getFileAPIPathFromNameAndType(
-    formValues.name as string,
-    EntityType.Table,
-  );
-  await runtimeServicePutFile(instanceId, {
-    path: newSourceFilePath,
-    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
-    create: true,
-    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-  });
-
-  // Create or update the `.env` file
-  await runtimeServicePutFile(instanceId, {
-    path: ".env",
-    blob: await updateDotEnvWithSecrets(
-      queryClient,
-      rewrittenConnector,
-      rewrittenFormValues,
-      "source",
-    ),
-    create: true,
-    createOnly: false,
-  });
-
-  await goto(`/files/${newSourceFilePath}`);
-}
-
-export async function submitAddOLAPConnectorForm(
-  queryClient: QueryClient,
-  connector: V1ConnectorDriver,
-  formValues: AddDataFormValues,
-): Promise<void> {
-  const instanceId = get(runtime).instanceId;
-  await beforeSubmitForm(instanceId);
-
-  const newConnectorName = getName(
-    connector.name as string,
-    fileArtifacts.getNamesForKind(ResourceKind.Connector),
-  );
-
-  /**
-   * Optimistic updates:
-   * 1. Make a new `<connector>.yaml` file
-   * 2. Create/update the `.env` file with connector secrets
-   */
-
-  // Make a new `<connector>.yaml` file
-  const newConnectorFilePath = getFileAPIPathFromNameAndType(
-    newConnectorName,
-    EntityType.Connector,
-  );
-  await runtimeServicePutFile(instanceId, {
-    path: newConnectorFilePath,
-    blob: compileConnectorYAML(connector, formValues),
-    create: true,
-    createOnly: false,
-  });
-
-  // Check for an existing `.env` file
-  // Store the original `.env` blob so we can restore it in case of errors
-  let originalEnvBlob: string | undefined;
-  try {
-    const envFile = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
-      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
-    });
-    originalEnvBlob = envFile.blob;
-  } catch (error) {
-    const fileNotFound =
-      error?.response?.data?.message?.includes("no such file");
-    if (fileNotFound) {
-      // Do nothing. We'll create the `.env` file below.
-    } else {
-      // We have a problem. Throw the error.
-      throw error;
-    }
-  }
-
-  // Create or update the `.env` file
-  // Make sure the file has reconciled before testing the connection
-  const newEnvBlob = await updateDotEnvWithSecrets(
-    queryClient,
-    connector,
-    formValues,
-    "connector",
-  );
-  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
-    path: ".env",
-    blob: newEnvBlob,
-    create: true,
-    createOnly: false,
-  });
-
-  /**
-   * Test the new OLAP connector:
-   * 1. Ensure the file has reconciled and has no errors
-   * 2. Test the connection to the OLAP database
-   */
-
-  // Check for file errors
-  // If the connector file has errors, rollback the changes
-  const errorMessage = await fileArtifacts.checkFileErrors(
-    queryClient,
-    instanceId,
-    newConnectorFilePath,
-  );
-  if (errorMessage) {
-    await rollbackConnectorChanges(
-      instanceId,
-      newConnectorFilePath,
-      originalEnvBlob,
-    );
-    throw new Error(errorMessage);
-  }
-
-  // Test the connection to the OLAP database
-  // If the connection test fails, rollback the changes
-  const result = await testOLAPConnector(instanceId, connector.name as string);
-  if (!result.success) {
-    await rollbackConnectorChanges(
-      instanceId,
-      newConnectorFilePath,
-      originalEnvBlob,
-    );
-    throw {
-      message: result.error || "Unable to establish a connection",
-      details: result.details,
-    };
-  }
-
-  /**
-   * Connection successful: Complete the setup
-   * Update the project configuration and navigate to the new connector
-   */
-
-  // Update the `rill.yaml` file
-  await runtimeServicePutFile(instanceId, {
-    path: "rill.yaml",
-    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
-    create: true,
-    createOnly: false,
-  });
-
-  // Go to the new connector file
-  await goto(`/files/${newConnectorFilePath}`);
 }
 
 async function beforeSubmitForm(instanceId: string) {
@@ -222,14 +64,14 @@ async function beforeSubmitForm(instanceId: string) {
   }
 }
 
-async function rollbackConnectorChanges(
+async function rollbackChanges(
   instanceId: string,
-  newConnectorFilePath: string,
+  newFilePath: string,
   originalEnvBlob: string | undefined,
 ) {
-  // Clean-up the `connector.yaml` file
+  // Clean-up the file
   await runtimeServiceDeleteFile(instanceId, {
-    path: newConnectorFilePath,
+    path: newFilePath,
   });
 
   // Clean-up the `.env` file
@@ -247,4 +89,220 @@ async function rollbackConnectorChanges(
       createOnly: false,
     });
   }
+}
+
+async function setOlapConnectorInRillYAML(
+  queryClient: QueryClient,
+  instanceId: string,
+  newConnectorName: string,
+): Promise<void> {
+  await runtimeServicePutFile(instanceId, {
+    path: "rill.yaml",
+    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
+    create: true,
+    createOnly: false,
+  });
+}
+
+// Check for an existing `.env` file
+// Store the original `.env` blob so we can restore it in case of errors
+async function getOriginalEnvBlob(
+  queryClient: QueryClient,
+  instanceId: string,
+): Promise<string | undefined> {
+  try {
+    const envFile = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+    });
+    return envFile.blob;
+  } catch (error) {
+    const fileNotFound =
+      error?.response?.data?.message?.includes("no such file");
+    if (fileNotFound) {
+      // Do nothing. We'll create the `.env` file below.
+      return undefined;
+    } else {
+      // We have a problem. Throw the error.
+      throw error;
+    }
+  }
+}
+
+export async function submitAddSourceForm(
+  queryClient: QueryClient,
+  connector: V1ConnectorDriver,
+  formValues: AddDataFormValues,
+): Promise<void> {
+  const instanceId = get(runtime).instanceId;
+  await beforeSubmitForm(instanceId);
+
+  const newSourceName = formValues.name as string;
+
+  const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+    connector,
+    formValues,
+  );
+
+  // Make a new <source>.yaml file
+  const newSourceFilePath = getFileAPIPathFromNameAndType(
+    newSourceName,
+    EntityType.Table,
+  );
+  await runtimeServicePutFile(instanceId, {
+    path: newSourceFilePath,
+    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    create: true,
+    createOnly: false,
+  });
+
+  const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
+
+  // Create or update the `.env` file
+  const newEnvBlob = await updateDotEnvWithSecrets(
+    queryClient,
+    rewrittenConnector,
+    rewrittenFormValues,
+    "source",
+  );
+
+  // Make sure the file has reconciled before testing the connection
+  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+    path: ".env",
+    blob: newEnvBlob,
+    create: true,
+    createOnly: false,
+  });
+
+  // Wait for source resource-level reconciliation
+  // This must happen after .env reconciliation since sources depend on secrets
+  try {
+    await waitForResourceReconciliation(
+      instanceId,
+      newSourceName,
+      ResourceKind.Model,
+      connector.name as string,
+    );
+  } catch (error) {
+    // The source file was already created, so we need to delete it
+    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    const errorDetails = (error as any).details;
+
+    throw {
+      message: error.message || "Unable to establish a connection",
+      details:
+        errorDetails && errorDetails !== error.message
+          ? errorDetails
+          : undefined,
+    };
+  }
+
+  // Check for file errors
+  // If the model file has errors, rollback the changes
+  const errorMessage = await fileArtifacts.checkFileErrors(
+    queryClient,
+    instanceId,
+    newSourceFilePath,
+  );
+  if (errorMessage) {
+    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    throw new Error(errorMessage);
+  }
+
+  await goto(`/files/${newSourceFilePath}`);
+}
+
+export async function submitAddConnectorForm(
+  queryClient: QueryClient,
+  connector: V1ConnectorDriver,
+  formValues: AddDataFormValues,
+): Promise<void> {
+  const instanceId = get(runtime).instanceId;
+  await beforeSubmitForm(instanceId);
+
+  const newConnectorName = getName(
+    connector.name as string,
+    fileArtifacts.getNamesForKind(ResourceKind.Connector),
+  );
+
+  /**
+   * Optimistic updates:
+   * 1. Make a new `<connector>.yaml` file
+   * 2. Create/update the `.env` file with connector secrets
+   */
+
+  // Make a new `<connector>.yaml` file
+  const newConnectorFilePath = getFileAPIPathFromNameAndType(
+    newConnectorName,
+    EntityType.Connector,
+  );
+  await runtimeServicePutFile(instanceId, {
+    path: newConnectorFilePath,
+    blob: compileConnectorYAML(connector, formValues, {
+      connectorInstanceName: newConnectorName,
+    }),
+    create: true,
+    createOnly: false,
+  });
+
+  const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
+
+  // Create or update the `.env` file
+  const newEnvBlob = await updateDotEnvWithSecrets(
+    queryClient,
+    connector,
+    formValues,
+    "connector",
+    newConnectorName,
+  );
+
+  // Make sure the file has reconciled before testing the connection
+  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+    path: ".env",
+    blob: newEnvBlob,
+    create: true,
+    createOnly: false,
+  });
+
+  // Wait for connector resource-level reconciliation
+  // This must happen after .env reconciliation since connectors depend on secrets
+  try {
+    await waitForResourceReconciliation(
+      instanceId,
+      newConnectorName,
+      ResourceKind.Connector,
+      connector.name as string,
+    );
+  } catch (error) {
+    // The connector file was already created, so we need to delete it
+    await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
+    const errorDetails = (error as any).details;
+
+    throw {
+      message: error.message || "Unable to establish a connection",
+      details:
+        errorDetails && errorDetails !== error.message
+          ? errorDetails
+          : undefined,
+    };
+  }
+
+  // Check for file errors
+  // If the connector file has errors, rollback the changes
+  const errorMessage = await fileArtifacts.checkFileErrors(
+    queryClient,
+    instanceId,
+    newConnectorFilePath,
+  );
+  if (errorMessage) {
+    await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
+    throw new Error(errorMessage);
+  }
+
+  if (OLAP_ENGINES.includes(connector.name as string)) {
+    await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);
+  }
+
+  // Go to the new connector file
+  await goto(`/files/${newConnectorFilePath}`);
 }

@@ -33,7 +33,7 @@
     canvasEntity: {
       filters: {
         whereFilter,
-        toggleDimensionValueSelection,
+        toggleMultipleDimensionValueSelections,
         applyDimensionInListMode,
         applyDimensionContainsMode,
         removeDimensionFilter,
@@ -62,6 +62,8 @@
 
   $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
 
+  $: activeTimeZone = $selectedTimezone;
+
   $: selectedComparisonTimeRange =
     $comparisonRangeStateStore?.selectedComparisonTimeRange;
 
@@ -73,10 +75,10 @@
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
-    : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+    : Interval.invalid("Unable to parse time range");
 
   $: allDimensionFilters = $allDimensionFilterItems;
 
@@ -104,7 +106,7 @@
   function onPan(direction: "left" | "right") {
     const getPanRange = getPanRangeForTimeRange(
       selectedTimeRange,
-      $selectedTimezone,
+      activeTimeZone,
     );
     const panRange = getPanRange(direction);
     if (!panRange) return;
@@ -126,6 +128,7 @@
   >
     <Calendar size="16px" />
     <SuperPill
+      context={canvasName}
       allTimeRange={$allTimeRange}
       {selectedRangeAlias}
       showPivot={false}
@@ -138,7 +141,8 @@
       {timeStart}
       {timeEnd}
       {activeTimeGrain}
-      activeTimeZone={$selectedTimezone}
+      {activeTimeZone}
+      watermark={undefined}
       allowCustomTimeRange={$canvasSpec?.allowCustomTimeRange}
       canPanLeft
       canPanRight
@@ -159,7 +163,6 @@
       {selectedComparisonTimeRange}
       showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
         false}
-      activeTimeZone={$selectedTimezone}
       onDisplayTimeComparison={set.comparison}
       onSetSelectedComparisonRange={(range) => {
         if (range.name === "CUSTOM_COMPARISON_RANGE") {
@@ -169,6 +172,7 @@
           set.comparison(range.name);
         }
       }}
+      {activeTimeZone}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
@@ -213,7 +217,9 @@
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
-                  toggleDimensionValueSelection(name, value, true)}
+                  toggleMultipleDimensionValueSelections(name, [value], true)}
+                onMultiSelect={(values) =>
+                  toggleMultipleDimensionValueSelections(name, values, true)}
                 onApplyInList={(values) =>
                   applyDimensionInListMode(name, values)}
                 onApplyContainsMode={(searchText) =>

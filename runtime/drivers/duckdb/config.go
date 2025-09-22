@@ -10,6 +10,9 @@ import (
 const (
 	poolSizeMin int = 2
 	poolSizeMax int = 5
+
+	modeReadOnly  = "read"
+	modeReadWrite = "readwrite"
 )
 
 // config represents the DuckDB driver config
@@ -35,15 +38,22 @@ type config struct {
 	// Secrets is a comma-separated list of connector names to create temporary secrets for before executing models.
 	// The secrets are not created for read queries.
 	Secrets string `mapstructure:"secrets"`
+	// Mode specifies the mode in which to open the database.
+	Mode string `mapstructure:"mode"`
 
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
 	Path string `mapstructure:"path"`
 	// Attach allows user to pass a full ATTACH statement to attach a DuckDB database.
 	// Example YAML syntax : attach: "'ducklake:metadata.ducklake' AS my_ducklake(DATA_PATH 'datafiles1')"
 	Attach string `mapstructure:"attach"`
+	// Token is the authentication token used for MotherDuck.
+	Token string `mapstructure:"token"`
 	// DatabaseName is the name of the attached DuckDB database specified in the Path.
 	// This is usually not required but can be set if our auto detection of name fails.
 	DatabaseName string `mapstructure:"database_name"`
+	// SchemaName can be set to switch the default schema used by the DuckDB database.
+	// Only applicable for the generic rduckdb implementation.
+	SchemaName string `mapstructure:"schema_name"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
@@ -53,6 +63,23 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)
+	}
+
+	// Validate mode if specified
+	if cfg.Mode != "" && cfg.Mode != modeReadOnly && cfg.Mode != modeReadWrite {
+		return nil, fmt.Errorf("invalid mode '%s': must be 'read' or 'readwrite'", cfg.Mode)
+	}
+
+	// Set the mode for the connection
+	if cfg.Mode == "" {
+		// The default mode depends on the connection type:
+		// - For generic connections (Motherduck/DuckLake with Path/Attach), default to "read"
+		// - For connections using the embedded DuckDB, default to "readwrite" to maintain compatibility
+		if cfg.Path != "" || cfg.Attach != "" {
+			cfg.Mode = modeReadOnly
+		} else {
+			cfg.Mode = modeReadWrite
+		}
 	}
 
 	// Set pool size

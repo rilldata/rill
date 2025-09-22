@@ -27,7 +27,7 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/salesforce",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/salesforce",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "username",
@@ -286,8 +286,8 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

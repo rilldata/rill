@@ -161,6 +161,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.parent.specStore,
       yamlTimeFilterStore,
       this.id,
+      this.parent.name,
     );
 
     this.localFilters = new Filters(

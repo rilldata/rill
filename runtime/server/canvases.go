@@ -3,11 +3,13 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
+	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -41,6 +43,17 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// Check if the user has access to the canvas
+	res, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply security policy: %w", err)
+	}
+	if !access {
+		return nil, status.Errorf(codes.PermissionDenied, "user does not have access to canvas %q", req.Canvas)
+	}
+
+	// Exit early if the canvas is not valid
 	spec := res.GetCanvas().State.ValidSpec
 	if spec == nil {
 		return &runtimev1.ResolveCanvasResponse{
@@ -53,7 +66,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	td := parser.TemplateData{
+	templateData := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
 		Variables:   inst.ResolveVariables(false),
@@ -62,8 +75,8 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		},
 	}
 
-	// Build map of referenced components.
 	components := make(map[string]*runtimev1.Resource)
+
 	for _, row := range spec.Rows {
 		for _, item := range row.Items {
 			// Skip if already resolved.
@@ -84,7 +97,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 			// Resolve the renderer properties in the valid_spec.
 			validSpec := cmp.GetComponent().State.ValidSpec
 			if validSpec != nil && validSpec.RendererProperties != nil {
-				v, err := parser.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), td, false)
+				v, err := parser.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), templateData, false)
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "component %q: failed to resolve templating: %s", item.Component, err.Error())
 				}
@@ -107,47 +120,81 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		}
 	}
 
-	// Build map of referenced metrics views.
-	metricsViews := make(map[string]*runtimev1.Resource)
-	for cmpName, cmp := range components {
-		// Look for a metrics view reference in the renderer properties.
-		var mvName string
+	// Extract metrics view names from components
+	metricsViews := make(map[string]bool)
+
+	for _, cmp := range components {
 		validSpec := cmp.GetComponent().State.ValidSpec
-		if validSpec != nil && validSpec.RendererProperties != nil {
-			for k, v := range validSpec.RendererProperties.Fields {
-				if k == "metrics_view" {
-					mvName = v.GetStringValue()
-					break
+		if validSpec == nil || validSpec.RendererProperties == nil {
+			continue
+		}
+
+		for k, v := range validSpec.RendererProperties.Fields {
+			switch k {
+			case "metrics_view":
+				if name := v.GetStringValue(); name != "" {
+					metricsViews[name] = true
+				}
+			case "metrics_sql":
+				// Handle single string
+				if sql := v.GetStringValue(); sql != "" {
+					claims := auth.GetClaims(ctx).SecurityClaims()
+					compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
+					q, err := compiler.Rewrite(ctx, sql)
+					if err == nil && q.MetricsView != "" {
+						metricsViews[q.MetricsView] = true
+					}
+				}
+				// Handle array of strings
+				if listValue := v.GetListValue(); listValue != nil {
+					for _, item := range listValue.Values {
+						if sql := item.GetStringValue(); sql != "" {
+							claims := auth.GetClaims(ctx).SecurityClaims()
+							compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
+							q, err := compiler.Rewrite(ctx, sql)
+							if err == nil && q.MetricsView != "" {
+								metricsViews[q.MetricsView] = true
+							}
+						}
+					}
 				}
 			}
 		}
-		if mvName == "" {
-			continue
-		}
+	}
 
-		// Skip if already resolved.
-		if _, ok := metricsViews[mvName]; ok {
-			continue
-		}
-
-		// Get metrics view resource.
+	// Lookup metrics view resources
+	referencedMetricsViews := make(map[string]*runtimev1.Resource)
+	for mvName := range metricsViews {
 		mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mvName}, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
-				return nil, status.Errorf(codes.Internal, "component %q: metrics view %q in valid spec not found", cmpName, mvName)
+				return nil, status.Errorf(codes.Internal, "metrics view %q in valid spec not found", mvName)
 			}
 			return nil, err
 		}
 
 		// Add to map.
-		metricsViews[mvName] = mv
+		referencedMetricsViews[mvName] = mv
+	}
+
+	// Apply security policies to the metrics views.
+	for name, mv := range referencedMetricsViews {
+		mv, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), mv)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply security policy: %w", err)
+		}
+		if !access {
+			delete(referencedMetricsViews, name)
+			continue
+		}
+		referencedMetricsViews[name] = mv
 	}
 
 	// Return the response
 	return &runtimev1.ResolveCanvasResponse{
 		Canvas:                 res,
 		ResolvedComponents:     components,
-		ReferencedMetricsViews: metricsViews,
+		ReferencedMetricsViews: referencedMetricsViews,
 	}, nil
 }
 

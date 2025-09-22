@@ -22,28 +22,40 @@ li.theme-doc-sidebar-item-category-level-1 {
     }
   }
   &:not(:first-of-type) .menu__list-item-collapsible {
-    margin-top: var(--space-3); /* Standardized spacing */
+    margin-top: var(--space-3);
   }
-  &:last-of-type {
-    display: block;
+  ul.menu__list {
+    margin-left: 0.5rem;
+    border-left: 1px solid  var(--ifm-menu-sidebar-color);
   }
 }
 
+li.theme-doc-sidebar-item-category-level-2 {
+  .menu__list-item-collapsible {
+    font-weight: 400 !important;
+    margin-top: 0 !important;
+    font-size: var(--default-font) !important;
+  }
+}
 li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
-  font-weight: 400 !important;
+  font-weight: 400;
   margin-top: 0 !important;
-  font-size: var(--default-font) !important;
+  font-size: var(--default-font);
 }
 
 .menu__link {
   padding-top: 0.285rem; /* 4px */
   padding-bottom: 0.285rem;
-  padding-left: 0.5rem; /* 8px */
-  font-size: var(--default-font) !important;
+  font-size: var(--default-font);
   &--active {
     font-weight: 600;
   }
+  &:hover {
+    color: var(--ifm-color-primary);
+    font-weight: 600;
+  }
 }
+
 
 .menu__caret:before,
 .menu__link--sublist-caret:after {
@@ -55,24 +67,38 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   padding-bottom: 0 !important;
 }
 
+.theme-doc-sidebar-item-link-level-1,
+.theme-doc-sidebar-item-category-level-1 {
+  padding-left: 0.5rem;
+  // .menu__list-item:hover {
+  //   border-left: 1px solid var(--ifm-color-primary);
+  //   margin-left: -1px;
+  // }
+}
 
 .theme-doc-sidebar-item-link-level-2,
 .theme-doc-sidebar-item-category-level-2 {
   padding-left: 1rem;
+  // .menu__list-item:hover {
+  //   border-left: 1px solid var(--ifm-color-primary);
+  //   margin-left: -1px;
+  // }
 }
+
+
 .theme-doc-sidebar-item-link-level-3,
 .theme-doc-sidebar-item-category-level-3,
 .theme-doc-sidebar-item-link-level-4,
 .theme-doc-sidebar-item-category-level-4 {
-  padding-left: 1.5rem;
+  padding-left: 1rem;
 }
 .theme-doc-sidebar-item-link-level-5,
 .theme-doc-sidebar-item-category-level-5 {
-  padding-left: 2.5rem;
+  padding-left: 1.5rem;
 }
 .theme-doc-sidebar-item-link-level-6,
 .theme-doc-sidebar-item-category-level-6 {
-  padding-left: 3rem;
+  padding-left: 2rem; 
 }
 li.theme-doc-sidebar-item-category-level-2 > .menu__list {
   border-left: 1px solid var(--click-color-stroke);

@@ -79,7 +79,9 @@ func (r *RuntimeConfig) AsMap() map[string]any {
 
 // ClickhouseConfig describes the expected config for a provisioned Clickhouse resource.
 type ClickhouseConfig struct {
-	DSN string `mapstructure:"dsn"`
+	DSN      string `mapstructure:"dsn"`
+	WriteDSN string `mapstructure:"write_dsn,omitempty"`
+	Cluster  string `mapstructure:"cluster,omitempty"`
 }
 
 func NewClickhouseConfig(cfg map[string]any) (*ClickhouseConfig, error) {
@@ -91,9 +93,9 @@ func NewClickhouseConfig(cfg map[string]any) (*ClickhouseConfig, error) {
 	return res, nil
 }
 
-func (r *ClickhouseConfig) AsMap() map[string]any {
+func (c *ClickhouseConfig) AsMap() map[string]any {
 	res := make(map[string]any)
-	err := mapstructure.Decode(r, &res)
+	err := mapstructure.Decode(c, &res)
 	if err != nil {
 		panic(err)
 	}

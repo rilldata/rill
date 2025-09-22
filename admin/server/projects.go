@@ -142,6 +142,78 @@ func (s *Server) ListProjectsForOrganizationAndUser(ctx context.Context, req *ad
 	}, nil
 }
 
+func (s *Server) ListProjectsForFingerprint(ctx context.Context, req *adminv1.ListProjectsForFingerprintRequest) (*adminv1.ListProjectsForFingerprintResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.directory_name", req.DirectoryName),
+		attribute.String("args.git_remote", req.GitRemote),
+		attribute.String("args.sub_path", req.SubPath),
+		attribute.String("args.rill_mgd_git_remote", req.RillMgdGitRemote),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.PermissionDenied, "only users can list projects by fingerprint")
+	}
+	userID := claims.OwnerID()
+
+	// check if rill mgd remote was transferred
+	// we do not support transfers from self hosted git repos so no need to check for that
+	rillMgdRemote := req.RillMgdGitRemote
+	transfer, err := s.admin.DB.FindGitRepoTransfer(ctx, rillMgdRemote)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if transfer != nil {
+		rillMgdRemote = transfer.To
+	}
+
+	projects, err := s.admin.DB.FindProjectsForUserAndFingerprint(ctx, userID, req.DirectoryName, normalizeGitRemote(req.GitRemote), req.SubPath, rillMgdRemote)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(projects) == 0 && req.GitRemote != "" {
+		// if no project is found check if there is project user doesn't have access to
+		projects, err = s.admin.DB.FindProjectsByGitRemote(ctx, normalizeGitRemote(req.GitRemote))
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range projects {
+			if p.Subpath != req.SubPath {
+				continue
+			}
+			org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			return &adminv1.ListProjectsForFingerprintResponse{
+				UnauthorizedProject: fmt.Sprintf("%s/%s", org.Name, p.Name),
+			}, nil
+		}
+		return &adminv1.ListProjectsForFingerprintResponse{}, nil
+	}
+
+	dtos := make([]*adminv1.Project, len(projects))
+	orgNames := make(map[string]string)
+	for i, p := range projects {
+		orgName := orgNames[p.OrganizationID]
+		if orgName == "" {
+			org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+			if err != nil {
+				return nil, err
+			}
+			orgName = org.Name
+			orgNames[p.OrganizationID] = orgName
+		}
+
+		dtos[i] = s.projToDTO(p, orgName)
+	}
+
+	return &adminv1.ListProjectsForFingerprintResponse{
+		Projects: dtos,
+	}, nil
+}
+
 func (s *Server) ListProjectsForUserByName(ctx context.Context, req *adminv1.ListProjectsForUserByNameRequest) (*adminv1.ListProjectsForUserByNameResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project", req.Name),
@@ -466,6 +538,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.project", req.Name),
 		attribute.String("args.description", req.Description),
 		attribute.Bool("args.public", req.Public),
+		attribute.String("args.directory_name", req.DirectoryName),
 		attribute.String("args.provisioner", req.Provisioner),
 		attribute.String("args.prod_version", req.ProdVersion),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
@@ -547,6 +620,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		Description:          req.Description,
 		Public:               req.Public,
 		CreatedByUserID:      userID,
+		DirectoryName:        req.DirectoryName,
 		Provisioner:          req.Provisioner,
 		ArchiveAssetID:       nil,         // Populated below
 		GitRemote:            nil,         // Populated below
@@ -646,8 +720,17 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
 	)
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
+	if req.Public != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
+	}
+	if req.DirectoryName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.directory_name", *req.DirectoryName))
 	}
 	if req.Provisioner != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.provisioner", *req.Provisioner))
@@ -707,21 +790,49 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	subpath := valOrDefault(req.Subpath, proj.Subpath)
 	prodBranch := valOrDefault(req.ProdBranch, proj.ProdBranch)
 	archiveAssetID := proj.ArchiveAssetID
-	if req.GitRemote != nil {
-		// If changing the Git remote, check the Github app is installed and caller has access on the repo
-		if safeStr(proj.GitRemote) != *req.GitRemote {
-			var userID *string
-			if claims.OwnerType() == auth.OwnerTypeUser {
-				tmp := claims.OwnerID()
-				userID = &tmp
-			}
-			githubRepoID, githubInstID, managedGitRepoID, prodBranch, err = s.githubOptsForRemote(ctx, proj.OrganizationID, prodBranch, userID, *req.GitRemote)
-			if err != nil {
-				return nil, err
-			}
-			gitRemote = req.GitRemote
+
+	transferRepo := false
+	var oldRemote string
+	if req.GitRemote != nil && safeStr(proj.GitRemote) != *req.GitRemote {
+		// check if another project deploys using the same git remote + subpath
+		projects, err := s.admin.DB.FindProjectsByGitRemote(ctx, *req.GitRemote)
+		if err != nil {
+			return nil, err
 		}
+		for _, p := range projects {
+			if p.ID == proj.ID {
+				continue
+			}
+			if p.Subpath == subpath {
+				org, err := s.admin.DB.FindOrganization(ctx, p.OrganizationID)
+				if err != nil {
+					return nil, err
+				}
+				return nil, status.Errorf(codes.FailedPrecondition, "another project %q in org %q is already using the same git remote and subpath", p.Name, org.Name)
+			}
+		}
+
+		// check the Github app is installed and caller has access on the repo
+		var userID *string
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			tmp := claims.OwnerID()
+			userID = &tmp
+		}
+		githubRepoID, githubInstID, managedGitRepoID, prodBranch, err = s.githubOptsForRemote(ctx, proj.OrganizationID, prodBranch, userID, *req.GitRemote)
+		if err != nil {
+			return nil, err
+		}
+		if managedGitRepoID != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid git remote: cannot switch to a rill managed git repo")
+		}
+
+		gitRemote = req.GitRemote
+		managedGitRepoID = nil
 		archiveAssetID = nil
+		if proj.ManagedGitRepoID != nil {
+			transferRepo = true
+			oldRemote = *proj.GitRemote
+		}
 	}
 	if req.ArchiveAssetId != nil {
 		archiveAssetID = req.ArchiveAssetId
@@ -751,6 +862,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
+		DirectoryName:        valOrDefault(req.DirectoryName, proj.DirectoryName),
 		ArchiveAssetID:       archiveAssetID,
 		GitRemote:            gitRemote,
 		GithubInstallationID: githubInstID,
@@ -770,6 +882,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	// mark transfer from rill managed git repo if applicable
+	if transferRepo {
+		_, err = s.admin.DB.InsertGitRepoTransfer(ctx, oldRemote, *proj.GitRemote)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &adminv1.UpdateProjectResponse{
@@ -1562,6 +1682,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		DirectoryName:        proj.DirectoryName,
 		ArchiveAssetID:       proj.ArchiveAssetID,
 		GitRemote:            proj.GitRemote,
 		GithubInstallationID: proj.GithubInstallationID,
@@ -1883,6 +2004,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Description:      p.Description,
 		Public:           p.Public,
 		CreatedByUserId:  safeStr(p.CreatedByUserID),
+		DirectoryName:    p.DirectoryName,
 		Provisioner:      p.Provisioner,
 		ProdVersion:      p.ProdVersion,
 		ProdSlots:        int64(p.ProdSlots),
@@ -1985,6 +2107,7 @@ func (s *Server) githubRepoIDForProject(ctx context.Context, p *database.Project
 		Name:                 p.Name,
 		Description:          p.Description,
 		Public:               p.Public,
+		DirectoryName:        p.DirectoryName,
 		ArchiveAssetID:       p.ArchiveAssetID,
 		GitRemote:            p.GitRemote,
 		GithubInstallationID: p.GithubInstallationID,

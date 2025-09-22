@@ -1,0 +1,8 @@
+# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
+
+type: model
+materialize: true
+
+connector: "duckdb"
+sql: "select * from read_csv('data/AdImpressions.tsv', auto_detect=true, ignore_errors=1, header=true)"

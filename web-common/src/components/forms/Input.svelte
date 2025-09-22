@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { IconButton } from "@rilldata/web-common/components/button";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import { IconButton } from "@rilldata/web-common/components/button";
   import FieldSwitcher from "./FieldSwitcher.svelte";
   import InputLabel from "./InputLabel.svelte";
   import Select from "./Select.svelte";
@@ -25,7 +25,7 @@
   export let optional = false;
   export let truncate = false;
   export let width: string = "100%";
-  export let size: "sm" | "md" | "lg" = "lg";
+  export let size: "sm" | "md" | "lg" | "xl" = "lg";
   export let labelGap = 1;
   export let selected: number = -1;
   export let full = false;
@@ -39,7 +39,7 @@
   export let link: string = "";
   export let lockable = false;
   export let capitalizeLabel = true;
-  export let leftPadding = 8;
+  export let textInputPrefix = "";
   export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
@@ -140,11 +140,20 @@
   {#if !options}
     <div
       class="input-wrapper {textClass}"
-      style:padding-left="{leftPadding}px"
       style:width
       class:error-input-wrapper={!!errors?.length}
       style:font-family={fontFamily}
+      class:pl-2={!textInputPrefix}
     >
+      {#if textInputPrefix}
+        <div
+          class:text-sm={size !== "xl"}
+          class="{size} bg-neutral-100 items-center flex flex-none cursor-default line-clamp-1 text-gray-500 border-r border-gray-300 text-base px-2 mr-2"
+        >
+          {textInputPrefix}
+        </div>
+      {/if}
+
       {#if $$slots.icon}
         <span class="mr-1 flex-none">
           <slot name="icon" />
@@ -247,14 +256,20 @@
     {/if}
   {/if}
 
-  {#if description}
-    <div class="description">{description}</div>
+  {#if $$slots.description || description}
+    <div class="description">
+      {#if $$slots.description}
+        <slot name="description" />
+      {:else}
+        {description}
+      {/if}
+    </div>
   {/if}
 </div>
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex  flex-col h-fit justify-center;
+    @apply flex flex-col h-fit justify-center;
   }
 
   .sm {
@@ -270,22 +285,35 @@
     height: 30px;
   }
 
+  .xl {
+    height: 38px;
+    font-size: 16px;
+  }
+
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-1;
-    @apply bg-white justify-center;
+    @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
     @apply h-fit w-fit;
   }
 
+  .input-wrapper:has(input:disabled) {
+    @apply bg-gray-50 border-gray-200 cursor-not-allowed;
+  }
+
   input,
   .multiline-input {
-    @apply p-0 bg-white;
+    @apply bg-surface p-0;
     @apply size-full;
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+  }
+
+  input:disabled {
+    @apply bg-gray-50 text-gray-500 cursor-not-allowed;
   }
 
   input {

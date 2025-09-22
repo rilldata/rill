@@ -19,7 +19,7 @@ import (
 var spec = drivers.Spec{
 	DisplayName: "Amazon S3",
 	Description: "Connect to AWS S3 Storage.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/s3",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",
@@ -260,8 +260,8 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

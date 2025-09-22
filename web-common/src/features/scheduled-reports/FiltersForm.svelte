@@ -8,6 +8,7 @@
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
+  import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
   import {
     ALL_TIME_RANGE_ALIAS,
@@ -16,6 +17,11 @@
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import {
+    mapSelectedComparisonTimeRangeToV1TimeRange,
+    mapSelectedTimeRangeToV1TimeRange,
+  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
@@ -39,42 +45,41 @@
   const ROW_HEIGHT = "26px";
   $: ({
     whereFilter,
-
     allDimensionFilterItems,
     isFilterExcludeMode,
     dimensionHasFilter,
-
     allMeasureFilterItems,
     measureHasFilter,
-
     hasFilters,
-
     removeDimensionFilter,
     toggleDimensionFilterMode,
-    toggleDimensionValueSelection,
+    toggleMultipleDimensionValueSelections,
     applyDimensionInListMode,
     applyDimensionContainsMode,
-
     removeMeasureFilter,
     setMeasureFilter,
-
     setTemporaryFilterName,
     clearAllFilters,
-
-    metricsViewMetadata: { allDimensions, allSimpleMeasures, validSpecQuery },
+    metricsViewMetadata: {
+      metricsViewName,
+      allDimensions,
+      allSimpleMeasures,
+      validSpecQuery,
+    },
   } = filters);
+
   $: ({
     selectedTimezone,
     allTimeRange,
-
     timeRangeStateStore,
     comparisonRangeStateStore,
-
     setTimeZone,
     selectTimeRange,
     setSelectedComparisonRange,
     displayTimeComparison,
   } = timeControls);
+
+  const newPicker = featureFlags.rillTime;
 
   $: exploreSpec = $validSpecQuery.data?.explore ?? {};
 
@@ -96,6 +101,17 @@
   $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
   $: availableTimeZones = exploreSpec.timeZones ?? [];
   $: timeRanges = exploreSpec.timeRanges ?? [];
+
+  $: v1TimeRange = mapSelectedTimeRangeToV1TimeRange(
+    selectedTimeRange,
+    $selectedTimezone,
+    exploreSpec,
+  );
+  $: v1ComparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
+    selectedComparisonTimeRange,
+    Boolean($comparisonRangeStateStore?.showTimeComparison),
+    v1TimeRange,
+  );
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -131,8 +147,9 @@
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
-  function selectRange(range: TimeRange) {
-    const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
+  function selectRange(range: TimeRange, grain?: V1TimeGrain) {
+    const defaultTimeGrain =
+      grain ?? getDefaultTimeGrain(range.start, range.end).grain;
 
     const comparisonOption = DEFAULT_TIME_RANGES[range.name as TimeRangePreset]
       ?.defaultComparison as TimeComparisonOption;
@@ -145,7 +162,7 @@
     } as DashboardTimeControls);
   }
 
-  function onSelectRange(name: string) {
+  async function onSelectRange(name: string) {
     if (!$allTimeRange?.end) {
       return;
     }
@@ -159,29 +176,33 @@
       return;
     }
 
-    const includesTimeZoneOffset = name.includes("@");
+    const includesTimeZoneOffset = name.includes("tz");
 
     if (includesTimeZoneOffset) {
-      const timeZone = name.match(/@ {(.*)}/)?.[1];
+      const timeZone = name.match(/tz (.*)/)?.[1];
 
       if (timeZone) setTimeZone(timeZone);
     }
 
-    const interval = deriveInterval(
+    const { interval, grain } = await deriveInterval(
       name,
-      DateTime.fromJSDate($allTimeRange.end),
+      Interval.fromDateTimes(
+        DateTime.fromJSDate($allTimeRange.start),
+        DateTime.fromJSDate($allTimeRange.end),
+      ),
+      metricsViewName,
+      $selectedTimezone,
     );
 
     if (interval?.isValid) {
       const validInterval = interval as Interval<true>;
       const baseTimeRange: TimeRange = {
-        // Temporary fix for custom syntax
         name: name as TimeRangePreset,
         start: validInterval.start.toJSDate(),
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange);
+      selectRange(baseTimeRange, grain);
     }
   }
 
@@ -219,50 +240,62 @@
   style:max-width="{maxWidth}px"
   aria-label="Filters form"
 >
-  <div
-    class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
-  >
-    <Calendar size="16px" />
-    {#if $allTimeRange}
-      <SuperPill
-        allTimeRange={$allTimeRange}
-        {selectedRangeAlias}
-        showPivot={false}
-        {defaultTimeRange}
-        {availableTimeZones}
-        {timeRanges}
-        complete={false}
-        {interval}
-        {timeStart}
-        {timeEnd}
-        {activeTimeGrain}
-        activeTimeZone={$selectedTimezone}
-        allowCustomTimeRange={false}
-        showDefaultItem
-        applyRange={selectRange}
-        {onSelectRange}
-        {onTimeGrainSelect}
-        {onSelectTimeZone}
-        canPanLeft={false}
-        canPanRight={false}
-        onPan={() => {}}
-        minTimeGrain={undefined}
-        {side}
-      />
-      <CanvasComparisonPill
-        allTimeRange={$allTimeRange}
-        {selectedTimeRange}
-        {selectedComparisonTimeRange}
-        showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-          false}
-        activeTimeZone={$selectedTimezone}
-        onDisplayTimeComparison={displayTimeComparison}
-        onSetSelectedComparisonRange={setSelectedComparisonRange}
-        allowCustomTimeRange={false}
-        {side}
-      />
+  {#if $newPicker}
+    {#if v1TimeRange}
+      <div class="flex flex-wrap gap-2">
+        <!-- We dont support the new dropdown in alert creation -->
+        <TimeRangeReadOnly
+          timeRange={v1TimeRange}
+          comparisonTimeRange={v1ComparisonTimeRange}
+        />
+      </div>
     {/if}
-  </div>
+  {:else}
+    <div
+      class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
+    >
+      <Calendar size="16px" />
+      {#if $allTimeRange}
+        <SuperPill
+          allTimeRange={$allTimeRange}
+          {selectedRangeAlias}
+          showPivot={false}
+          {defaultTimeRange}
+          {availableTimeZones}
+          {timeRanges}
+          complete={false}
+          {interval}
+          {timeStart}
+          {timeEnd}
+          {activeTimeGrain}
+          activeTimeZone={$selectedTimezone}
+          allowCustomTimeRange={false}
+          showDefaultItem
+          applyRange={selectRange}
+          {onSelectRange}
+          {onTimeGrainSelect}
+          {onSelectTimeZone}
+          canPanLeft={false}
+          canPanRight={false}
+          onPan={() => {}}
+          minTimeGrain={undefined}
+          {side}
+        />
+        <CanvasComparisonPill
+          allTimeRange={$allTimeRange}
+          {selectedTimeRange}
+          {selectedComparisonTimeRange}
+          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
+            false}
+          activeTimeZone={$selectedTimezone}
+          onDisplayTimeComparison={displayTimeComparison}
+          onSetSelectedComparisonRange={setSelectedComparisonRange}
+          allowCustomTimeRange={false}
+          {side}
+        />
+      {/if}
+    </div>
+  {/if}
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
@@ -304,7 +337,9 @@
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                 onSelect={(value) =>
-                  toggleDimensionValueSelection(name, value, true)}
+                  toggleMultipleDimensionValueSelections(name, [value], true)}
+                onMultiSelect={(values) =>
+                  toggleMultipleDimensionValueSelections(name, values, true)}
                 onApplyInList={(values) =>
                   applyDimensionInListMode(name, values)}
                 onApplyContainsMode={(searchText) =>

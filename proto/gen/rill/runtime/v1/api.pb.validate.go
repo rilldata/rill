@@ -4951,6 +4951,8 @@ func (m *UnpackEmptyRequest) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
+	// no validation rules for Olap
+
 	// no validation rules for Force
 
 	if len(errors) > 0 {
@@ -10659,6 +10661,247 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CompleteResponseValidationError{}
+
+// Validate checks the field values on CompleteStreamingRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CompleteStreamingRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CompleteStreamingRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CompleteStreamingRequestMultiError, or nil if none found.
+func (m *CompleteStreamingRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CompleteStreamingRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for ConversationId
+
+	// no validation rules for Prompt
+
+	if len(errors) > 0 {
+		return CompleteStreamingRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CompleteStreamingRequestMultiError is an error wrapping multiple validation
+// errors returned by CompleteStreamingRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CompleteStreamingRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CompleteStreamingRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CompleteStreamingRequestMultiError) AllErrors() []error { return m }
+
+// CompleteStreamingRequestValidationError is the validation error returned by
+// CompleteStreamingRequest.Validate if the designated constraints aren't met.
+type CompleteStreamingRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CompleteStreamingRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CompleteStreamingRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CompleteStreamingRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CompleteStreamingRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CompleteStreamingRequestValidationError) ErrorName() string {
+	return "CompleteStreamingRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CompleteStreamingRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCompleteStreamingRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CompleteStreamingRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CompleteStreamingRequestValidationError{}
+
+// Validate checks the field values on CompleteStreamingResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CompleteStreamingResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CompleteStreamingResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CompleteStreamingResponseMultiError, or nil if none found.
+func (m *CompleteStreamingResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CompleteStreamingResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ConversationId
+
+	if all {
+		switch v := interface{}(m.GetMessage()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteStreamingResponseValidationError{
+					field:  "Message",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteStreamingResponseValidationError{
+					field:  "Message",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMessage()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteStreamingResponseValidationError{
+				field:  "Message",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return CompleteStreamingResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CompleteStreamingResponseMultiError is an error wrapping multiple validation
+// errors returned by CompleteStreamingResponse.ValidateAll() if the
+// designated constraints aren't met.
+type CompleteStreamingResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CompleteStreamingResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CompleteStreamingResponseMultiError) AllErrors() []error { return m }
+
+// CompleteStreamingResponseValidationError is the validation error returned by
+// CompleteStreamingResponse.Validate if the designated constraints aren't met.
+type CompleteStreamingResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CompleteStreamingResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CompleteStreamingResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CompleteStreamingResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CompleteStreamingResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CompleteStreamingResponseValidationError) ErrorName() string {
+	return "CompleteStreamingResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CompleteStreamingResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCompleteStreamingResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CompleteStreamingResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CompleteStreamingResponseValidationError{}
 
 // Validate checks the field values on ListConversationsRequest with the rules
 // defined in the proto definition for this message. If any rules are

@@ -68,6 +68,7 @@ import type {
   AdminServiceListProjectInvitesParams,
   AdminServiceListProjectMemberUsergroupsParams,
   AdminServiceListProjectMemberUsersParams,
+  AdminServiceListProjectsForFingerprintParams,
   AdminServiceListProjectsForOrganizationAndUserParams,
   AdminServiceListProjectsForOrganizationParams,
   AdminServiceListProjectsForUserByNameParams,
@@ -124,7 +125,6 @@ import type {
   V1DeleteUserResponse,
   V1DeleteUsergroupResponse,
   V1DenyProjectAccessResponse,
-  V1DisconnectProjectFromGithubResponse,
   V1EditAlertResponse,
   V1EditReportResponse,
   V1EditUsergroupResponse,
@@ -177,6 +177,7 @@ import type {
   V1ListProjectMemberUsergroupsResponse,
   V1ListProjectMemberUsersResponse,
   V1ListProjectWhitelistedDomainsResponse,
+  V1ListProjectsForFingerprintResponse,
   V1ListProjectsForOrganizationAndUserResponse,
   V1ListProjectsForOrganizationResponse,
   V1ListProjectsForUserByNameResponse,
@@ -6716,115 +6717,6 @@ export const createAdminServiceIssueMagicAuthToken = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary Converts a project connected to github to a rill managed project.
- */
-export const adminServiceDisconnectProjectFromGithub = (
-  organization: string,
-  project: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1DisconnectProjectFromGithubResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/upload-assets`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
-    signal,
-  });
-};
-
-export const getAdminServiceDisconnectProjectFromGithubMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-  TError,
-  {
-    organization: string;
-    project: string;
-    data: AdminServiceTriggerReconcileBodyBody;
-  },
-  TContext
-> => {
-  const mutationKey = ["adminServiceDisconnectProjectFromGithub"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    }
-  > = (props) => {
-    const { organization, project, data } = props ?? {};
-
-    return adminServiceDisconnectProjectFromGithub(organization, project, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminServiceDisconnectProjectFromGithubMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>
->;
-export type AdminServiceDisconnectProjectFromGithubMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
-export type AdminServiceDisconnectProjectFromGithubMutationError = RpcStatus;
-
-/**
- * @summary Converts a project connected to github to a rill managed project.
- */
-export const createAdminServiceDisconnectProjectFromGithub = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-      TError,
-      {
-        organization: string;
-        project: string;
-        data: AdminServiceTriggerReconcileBodyBody;
-      },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-  TError,
-  {
-    organization: string;
-    project: string;
-    data: AdminServiceTriggerReconcileBodyBody;
-  },
-  TContext
-> => {
-  const mutationOptions =
-    getAdminServiceDisconnectProjectFromGithubMutationOptions(options);
-
-  return createMutation(mutationOptions, queryClient);
-};
-/**
  * @summary RemoveProjectMemberUsergroup revokes the project-level role for the user group
  */
 export const adminServiceRemoveProjectMemberUsergroup = (
@@ -11922,6 +11814,103 @@ export function createAdminServiceListProjectsForUserByName<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getAdminServiceListProjectsForUserByNameQueryOptions(
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+ */
+export const adminServiceListProjectsForFingerprint = (
+  params?: AdminServiceListProjectsForFingerprintParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListProjectsForFingerprintResponse>({
+    url: `/v1/projects-for-fingerprint`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListProjectsForFingerprintQueryKey = (
+  params?: AdminServiceListProjectsForFingerprintParams,
+) => {
+  return [`/v1/projects-for-fingerprint`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminServiceListProjectsForFingerprintQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>,
+  TError = RpcStatus,
+>(
+  params?: AdminServiceListProjectsForFingerprintParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListProjectsForFingerprintQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>
+  > = ({ signal }) => adminServiceListProjectsForFingerprint(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceListProjectsForFingerprintQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>
+>;
+export type AdminServiceListProjectsForFingerprintQueryError = RpcStatus;
+
+/**
+ * @summary ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+ */
+
+export function createAdminServiceListProjectsForFingerprint<
+  TData = Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>,
+  TError = RpcStatus,
+>(
+  params?: AdminServiceListProjectsForFingerprintParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceListProjectsForFingerprint>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceListProjectsForFingerprintQueryOptions(
     params,
     options,
   );

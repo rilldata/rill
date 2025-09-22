@@ -16,7 +16,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb/v2"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -41,6 +43,8 @@ type GenericOptions struct {
 	Attach string
 	// DBName is set to the name of the database identified by the Path.
 	DBName string
+	// SchemaName switches the default schema.
+	SchemaName string
 
 	// LocalDataDir is the path to the local DuckDB database file.
 	LocalDataDir string
@@ -284,7 +288,7 @@ func (m *generic) DropTable(ctx context.Context, name string) (resErr error) {
 
 func (m *generic) dropTableUnsafe(ctx context.Context, name string, conn *sqlx.Conn) (resErr error) {
 	var typ string
-	tbl, err := m.schemaUsingConn(ctx, "", name, conn)
+	tbl, _, err := m.schemaUsingConn(ctx, "", name, 0, "", conn)
 	if err != nil {
 		return err
 	}
@@ -356,7 +360,7 @@ func (m *generic) RenameTable(ctx context.Context, oldName, newName string) (res
 
 	// check the current type, if it is a view, rename it to a view
 	// if it is a table, rename it to a table
-	tbl, err := m.Schema(ctx, "", oldName)
+	tbl, _, err := m.Schema(ctx, "", oldName, 0, "")
 	if err != nil {
 		return err
 	}
@@ -391,20 +395,20 @@ func (m *generic) RenameTable(ctx context.Context, oldName, newName string) (res
 }
 
 // Schema implements DB.
-func (m *generic) Schema(ctx context.Context, ilike, name string) ([]*Table, error) {
+func (m *generic) Schema(ctx context.Context, ilike, name string, pageSize uint32, pageToken string) ([]*Table, string, error) {
 	conn, err := m.acquireConn(ctx)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer func() {
 		_ = conn.Close()
 	}()
-	return m.schemaUsingConn(ctx, ilike, name, conn)
+	return m.schemaUsingConn(ctx, ilike, name, pageSize, pageToken, conn)
 }
 
-func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, conn *sqlx.Conn) ([]*Table, error) {
+func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, pageSize uint32, pageToken string, conn *sqlx.Conn) ([]*Table, string, error) {
 	if ilike != "" && name != "" {
-		return nil, fmt.Errorf("cannot specify both `ilike` and `name`")
+		return nil, "", fmt.Errorf("cannot specify both `ilike` and `name`")
 	}
 
 	var whereClause string
@@ -417,9 +421,20 @@ func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, conn 
 		args = []any{name}
 	}
 
+	// Add pagination filter
+	if pageToken != "" {
+		var startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		whereClause += " AND t.table_name > ?"
+		args = append(args, startAfterName)
+	}
+
 	q := fmt.Sprintf(`
 		SELECT
 			coalesce(t.table_catalog, current_database()) AS "database",
+			current_schema() AS "schema",
 			t.table_name AS "name",
 			t.table_type = 'VIEW' AS "view", 
 			array_agg(c.column_name ORDER BY c.ordinal_position) AS "column_names",
@@ -432,16 +447,27 @@ func (m *generic) schemaUsingConn(ctx context.Context, ilike, name string, conn 
 		WHERE database = current_database() 
 			AND t.table_schema = current_schema()
 			%s
-		GROUP BY 1, 2, 3
-		ORDER BY 1, 2, 3
+		GROUP BY ALL
+		ORDER BY t.table_name
+		LIMIT ?
 	`, whereClause)
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	args = append(args, limit+1)
 
 	var res []*Table
 	err := conn.SelectContext(ctx, &res, q, args...)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return res, nil
+
+	next := ""
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
+	}
+
+	return res, next, nil
 }
 
 // Size implements DB.
@@ -456,13 +482,17 @@ func (m *generic) acquireConn(ctx context.Context) (*sqlx.Conn, error) {
 	if err != nil {
 		return nil, fmt.Errorf("acquire connection failed: %w", err)
 	}
-	if m.opts.DBName == "" {
-		// if dbName is not set, we are using the default database
-		return conn, nil
+	if m.opts.DBName != "" {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.DBName)))
+		if err != nil {
+			return nil, fmt.Errorf("acquire connection failed: %w", err)
+		}
 	}
-	_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.DBName)))
-	if err != nil {
-		return nil, fmt.Errorf("acquire connection failed: %w", err)
+	if m.opts.SchemaName != "" {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s", safeSQLString(m.opts.SchemaName)))
+		if err != nil {
+			return nil, fmt.Errorf("acquire connection failed: %w", err)
+		}
 	}
 	return conn, nil
 }

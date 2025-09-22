@@ -96,7 +96,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 
 :::note Big Number Formatting
 
-[Formatting of your measures](/build/metrics-view/advanced-expressions/metric-formatting) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
+[Formatting of your measures](/build/metrics-view#measures) will not change the granularity of the Big Number, but you'll see the formatting being applied to the TDD, Dimension Leaderboard, and Pivot tables. 
 :::
 
 ### Dimensions Leaderboard Panel
@@ -126,7 +126,7 @@ The main screen of any Rill dashboard is called the _Explore_ page. As seen abov
 <br/>
 
 
-- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add, remove or re-order any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](../exports.md). It is also possible to display [multiple measures in the dimension leaderboard](multi-metrics).
+- _**Dimensions:**_  All _**dimensions**_ available in the underlying model on the right-hand side via leaderboard / toplist charts. You can add, remove or re-order any dimension from the page by simply selecting them from the dropdown above the charts (see `green` boxes). You can also drill into leaderboards further (see `blue` box) to see all corresponding metrics for a specific dimension. Within that drilldown, you can also then sort by metric, search your dimensions, and/or [export data](../exports.md). It is also possible to display [multiple measures in the dimension leaderboard](/explore/dashboard-101/multi-metrics).
 
 
 :::info Search for individual attributes
@@ -144,7 +144,7 @@ After drilling into a leaderboard (or what we sometimes refer to as a _toplist_ 
 
 
 :::tip Don't have a Rill project or dashboard deployed yet?
-If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/home/example-repository) are also available on GitHub and can be deployed locally using Rill Developer.
+If you want to get hands on and see what interacting with a Rill dashboard feels like, we have a set of [demo projects](https://ui.rilldata.com/demo) already deployed on Rill Cloud and publicly available for everyone to try out. These [same projects](/#examples) are also available on GitHub and can be deployed locally using Rill Developer.
 :::
 
 

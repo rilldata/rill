@@ -32,7 +32,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Druid",
 	Description: "Connect to Apache Druid.",
-	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/druid",
+	DocsURL:     "https://docs.rilldata.com/connect/olap/druid",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -107,6 +107,8 @@ type configProperties struct {
 	MaxOpenConns int `mapstructure:"max_open_conns"`
 	// SkipVersionCheck skips the version check.
 	SkipVersionCheck bool `mapstructure:"skip_version_check"`
+	// SkipQueryPriority indicates whether to skip passing query priority to Druid.
+	SkipQueryPriority bool `mapstructure:"skip_query_priority"`
 }
 
 // Opens a connection to Apache Druid using HTTP API.
@@ -302,8 +304,8 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

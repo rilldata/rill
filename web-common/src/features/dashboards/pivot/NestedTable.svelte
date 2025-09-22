@@ -57,6 +57,7 @@
 
   $: hasRowDimension = rowDimensions.length > 0;
   $: hasExpandableRows = rowDimensions.length > 1;
+  $: hasMeasures = measures.length > 0;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
 
@@ -232,6 +233,8 @@
   class:with-row-dimension={hasRowDimension}
   class:with-col-dimension={hasColumnDimension}
   class:with-expandable-rows={hasExpandableRows}
+  class:with-totals-row={!!totalsRow}
+  class:with-measures={hasMeasures}
   role="presentation"
   style:width="{totalLength + rowDimensionWidth}px"
   on:click={modified({ shift: onCellCopy, click: onCellClick })}
@@ -442,18 +445,24 @@
   }
 
   /* The totals row */
-  tbody > tr:nth-of-type(2) {
+  .with-totals-row tbody > tr:nth-of-type(2) {
     @apply bg-surface sticky z-20;
     top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
   }
 
-  /* The totals row header */
-  .with-row-dimension tbody > tr:nth-of-type(2) > td:first-of-type {
+  /* The totals row header - only apply when there are actual measures and totals */
+  .with-row-dimension.with-totals-row.with-measures
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply font-semibold;
   }
 
-  .with-expandable-rows tbody > tr:nth-of-type(2) > td:first-of-type {
+  .with-expandable-rows.with-totals-row
+    tbody
+    > tr:nth-of-type(2)
+    > td:first-of-type {
     @apply pl-5;
   }
 

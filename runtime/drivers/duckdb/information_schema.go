@@ -10,37 +10,25 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 )
 
-func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	return nil, nil
-}
-
-func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
-}
-
-func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
-}
-
-func (c *connection) All(ctx context.Context, ilike string) ([]*drivers.OlapTable, error) {
+func (c *connection) All(ctx context.Context, ilike string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
 	// TODO: this bypasses the acquireMetaConn call in the original implementation. Fix this.
 	db, release, err := c.acquireDB()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer func() { _ = release() }()
 
-	rows, err := db.Schema(ctx, ilike, "")
+	rows, nextToken, err := db.Schema(ctx, ilike, "", pageSize, pageToken)
 	if err != nil {
-		return nil, c.checkErr(err)
+		return nil, "", c.checkErr(err)
 	}
 
 	tables, err := scanTables(rows)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return tables, nil
+	return tables, nextToken, nil
 }
 
 func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.OlapTable, error) {
@@ -51,7 +39,7 @@ func (c *connection) Lookup(ctx context.Context, _, _, name string) (*drivers.Ol
 	}
 	defer func() { _ = release() }()
 
-	rows, err := db.Schema(ctx, "", name)
+	rows, _, err := db.Schema(ctx, "", name, 0, "")
 	if err != nil {
 		return nil, c.checkErr(err)
 	}
@@ -78,11 +66,8 @@ func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 
 	for _, row := range rows {
 		t := &drivers.OlapTable{
-			Database: row.Database,
-			// the database schema changes with every ingestion in duckdb(Refer rduckdb pkg for more info)
-			// we pin the read connection to the latest schema and set schema as `main` to give impression that everything is in the same schema
-			// This also means that fully qualified names should not be used anywhere
-			DatabaseSchema:          "main",
+			Database:                row.Database,
+			DatabaseSchema:          row.Schema,
 			IsDefaultDatabase:       true,
 			IsDefaultDatabaseSchema: true,
 			Name:                    row.Name,

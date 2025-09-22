@@ -1202,12 +1202,6 @@ paths:
             properties:
               remote:
                 type: string
-              branch:
-                type: string
-              subpath:
-                type: string
-              force:
-                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
@@ -1880,35 +1874,6 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
                 description: list of resources to grant access to.
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/projects/{project}/upload-assets:
-    post:
-      summary: Converts a project connected to github to a rill managed project.
-      operationId: AdminService_DisconnectProjectFromGithub
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DisconnectProjectFromGithubResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: project
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
@@ -2785,6 +2750,11 @@ paths:
                 type: string
               public:
                 type: boolean
+              directoryName:
+                type: string
+                description: |-
+                  directory_name should be the most recently observed local directory name for the project.
+                  See ListProjectsForFingerprint for more context.
               provisioner:
                 type: string
               prodSlots:
@@ -2900,6 +2870,8 @@ paths:
                 type: string
               public:
                 type: boolean
+              directoryName:
+                type: string
               prodBranch:
                 type: string
               gitRemote:
@@ -3425,6 +3397,40 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/projects-for-fingerprint:
+    get:
+      summary: |-
+        ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+        This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+      operationId: AdminService_ListProjectsForFingerprint
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForFingerprintResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: directoryName
+          in: query
+          required: false
+          type: string
+        - name: gitRemote
+          in: query
+          required: false
+          type: string
+        - name: subPath
+          in: query
+          required: false
+          type: string
+        - name: rillMgdGitRemote
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/projects/-/redeploy:
     post:
       summary: |-
@@ -3608,6 +3614,12 @@ paths:
                   $ref: '#/definitions/v1ResourceName'
               webOpenMode:
                 type: string
+              whereFilterJson:
+                type: string
+              accessibleFields:
+                type: array
+                items:
+                  type: string
       tags:
         - AdminService
   /v1/roles:
@@ -4867,8 +4879,6 @@ definitions:
       - DEPLOYMENT_STATUS_ERROR
       - DEPLOYMENT_STATUS_STOPPED
     default: DEPLOYMENT_STATUS_UNSPECIFIED
-  v1DisconnectProjectFromGithubResponse:
-    type: object
   v1EditAlertResponse:
     type: object
   v1EditReportResponse:
@@ -5348,6 +5358,17 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1ListProjectsForFingerprintResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      unauthorizedProject:
+        type: string
+        description: unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
   v1ListProjectsForOrganizationAndUserResponse:
     type: object
     properties:
@@ -5719,6 +5740,8 @@ definitions:
       public:
         type: boolean
       createdByUserId:
+        type: string
+      directoryName:
         type: string
       provisioner:
         type: string

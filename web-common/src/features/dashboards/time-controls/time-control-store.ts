@@ -5,6 +5,7 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import {
   getComparionRangeForScrub,
   getComparisonRange,
@@ -39,7 +40,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
-import { derived } from "svelte/store";
+import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
@@ -49,10 +50,11 @@ export type TimeRangeState = {
   // In all of our queries we do a check on hasTime and pass in undefined for start and end if false.
   // Using these directly will simplify those usages since this store will take care of marking them undefined.
   timeStart?: string;
-  adjustedStart?: string;
   timeEnd?: string;
+  adjustedStart?: string;
   adjustedEnd?: string;
 };
+
 export type ComparisonTimeRangeState = {
   showTimeComparison?: boolean;
   selectedComparisonTimeRange?: DashboardTimeControls;
@@ -61,6 +63,7 @@ export type ComparisonTimeRangeState = {
   comparisonTimeEnd?: string;
   comparisonAdjustedEnd?: string;
 };
+
 export type TimeControlState = {
   isFetching: boolean;
 
@@ -152,6 +155,7 @@ export function getTimeControlState(
   const minTimeGrain =
     (metricsViewSpec.smallestTimeGrain as V1TimeGrain) ||
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
   const defaultTimeRange = isoDurationToFullTimeRange(
     exploreSpec.defaultPreset?.timeRange,
     allTimeRange.start,
@@ -264,11 +268,16 @@ export function calculateTimeRangePartial(
   );
   if (!selectedTimeRange) return undefined;
 
-  selectedTimeRange.interval = getTimeGrain(
-    currentSelectedTimeRange,
-    selectedTimeRange,
-    minTimeGrain,
-  );
+  // Temporary for the new rill-time UX to work.
+  // We can select grains that are outside allowed grains in controls behind the "rillTime" flag.
+  const skipGrainValidation = get(featureFlags.rillTime);
+  selectedTimeRange.interval =
+    !skipGrainValidation ||
+    !currentSelectedTimeRange.interval ||
+    currentSelectedTimeRange.interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+      ? getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
+      : currentSelectedTimeRange.interval;
+
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
     selectedTimeRange.start,
     selectedTimeRange.end,
@@ -394,6 +403,13 @@ export function getTimeRange(
         allTimeRange.end,
         selectedTimezone,
       );
+    } else if (selectedTimeRange.start) {
+      timeRange = {
+        name: selectedTimeRange.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+        interval: selectedTimeRange.interval,
+      };
     } else {
       timeRange = isoDurationToFullTimeRange(
         selectedTimeRange?.name,

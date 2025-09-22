@@ -1,10 +1,13 @@
 import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
 import Donut from "@rilldata/web-common/components/icons/Donut.svelte";
+import Funnel from "@rilldata/web-common/components/icons/Funnel.svelte";
 import Heatmap from "@rilldata/web-common/components/icons/Heatmap.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
+import MultiChart from "@rilldata/web-common/components/icons/MultiChart.svelte";
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
+import { isMultiFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util.ts";
 import type { BaseCanvasComponentConstructor } from "@rilldata/web-common/features/canvas/components/util";
 import type { ComponentType, SvelteComponent } from "svelte";
 import type { VisualizationSpec } from "svelte-vega";
@@ -13,6 +16,7 @@ import { generateVLBarChartSpec } from "./cartesian-charts/bar-chart/spec";
 import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
 import { CartesianChartComponent } from "./cartesian-charts/CartesianChart";
 import { generateVLLineChartSpec } from "./cartesian-charts/line-chart/spec";
+import { generateVLMultiMetricChartSpec } from "./cartesian-charts/multi-metric-chart.ts";
 import { generateVLStackedBarChartSpec } from "./cartesian-charts/stacked-bar/default";
 import { generateVLStackedBarNormalizedSpec } from "./cartesian-charts/stacked-bar/normalized";
 import {
@@ -20,6 +24,16 @@ import {
   type CircularChartSpec,
 } from "./circular-charts/CircularChart";
 import { generateVLPieChartSpec } from "./circular-charts/pie";
+import {
+  ComboChartComponent,
+  type ComboChartSpec,
+} from "./combo-charts/ComboChart";
+import { generateVLComboChartSpec } from "./combo-charts/spec";
+import {
+  FunnelChartComponent,
+  type FunnelChartSpec,
+} from "./funnel-charts/FunnelChart";
+import { generateVLFunnelChartSpec } from "./funnel-charts/spec";
 import {
   HeatmapChartComponent,
   type HeatmapChartSpec,
@@ -32,12 +46,16 @@ export { default as Chart } from "./Chart.svelte";
 export type ChartComponent =
   | typeof CartesianChartComponent
   | typeof CircularChartComponent
-  | typeof HeatmapChartComponent;
+  | typeof FunnelChartComponent
+  | typeof HeatmapChartComponent
+  | typeof ComboChartComponent;
 
 export type ChartSpec =
   | CartesianChartSpec
   | CircularChartSpec
-  | HeatmapChartSpec;
+  | FunnelChartSpec
+  | HeatmapChartSpec
+  | ComboChartSpec;
 
 export function getChartComponent(
   type: ChartType,
@@ -52,10 +70,14 @@ export function getChartComponent(
     case "donut_chart":
     case "pie_chart":
       return CircularChartComponent;
+    case "funnel_chart":
+      return FunnelChartComponent;
     case "heatmap":
       return HeatmapChartComponent;
+    case "combo_chart":
+      return ComboChartComponent;
     default:
-      throw new Error(`Unsupported chart type: ${type}`);
+      throw new Error("Unsupported chart type: " + type);
   }
 }
 
@@ -72,31 +94,65 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     title: "Bar",
     icon: BarChart,
     component: CartesianChartComponent,
-    generateSpec: generateVLBarChartSpec,
+    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
+      const cartesianConfig = config as CartesianChartSpec;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      return isMultiMeasure
+        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "grouped_bar")
+        : generateVLBarChartSpec(cartesianConfig, data);
+    },
   },
   line_chart: {
     title: "Line",
     icon: LineChart,
     component: CartesianChartComponent,
-    generateSpec: generateVLLineChartSpec,
+    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
+      const cartesianConfig = config as CartesianChartSpec;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      return isMultiMeasure
+        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "line")
+        : generateVLLineChartSpec(cartesianConfig, data);
+    },
   },
   area_chart: {
     title: "Stacked Area",
     icon: StackedArea,
     component: CartesianChartComponent,
-    generateSpec: generateVLAreaChartSpec,
+    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
+      const cartesianConfig = config as CartesianChartSpec;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      return isMultiMeasure
+        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_area")
+        : generateVLAreaChartSpec(cartesianConfig, data);
+    },
   },
   stacked_bar: {
     title: "Stacked Bar",
     icon: StackedBar,
     component: CartesianChartComponent,
-    generateSpec: generateVLStackedBarChartSpec,
+    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
+      const cartesianConfig = config as CartesianChartSpec;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      return isMultiMeasure
+        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_bar")
+        : generateVLStackedBarChartSpec(cartesianConfig, data);
+    },
   },
   stacked_bar_normalized: {
     title: "Stacked Bar Normalized",
     icon: StackedBarFull,
     component: CartesianChartComponent,
-    generateSpec: generateVLStackedBarNormalizedSpec,
+    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
+      const cartesianConfig = config as CartesianChartSpec;
+      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      return isMultiMeasure
+        ? generateVLMultiMetricChartSpec(
+            cartesianConfig,
+            data,
+            "stacked_bar_normalized",
+          )
+        : generateVLStackedBarNormalizedSpec(cartesianConfig, data);
+    },
   },
   donut_chart: {
     title: "Donut",
@@ -111,11 +167,23 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     generateSpec: generateVLPieChartSpec,
     hideFromSelector: true,
   },
+  funnel_chart: {
+    title: "Funnel",
+    icon: Funnel,
+    component: FunnelChartComponent,
+    generateSpec: generateVLFunnelChartSpec,
+  },
   heatmap: {
     title: "Heatmap",
     icon: Heatmap,
     component: HeatmapChartComponent,
     generateSpec: generateVLHeatmapSpec,
+  },
+  combo_chart: {
+    title: "Combo",
+    icon: MultiChart,
+    component: ComboChartComponent,
+    generateSpec: generateVLComboChartSpec,
   },
 };
 

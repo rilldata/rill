@@ -20,7 +20,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Azure Blob Storage",
 	Description: "Connect to Azure Blob Storage.",
-	DocsURL:     "https://docs.rilldata.com/reference/connectors/azure",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/azure",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "azure_storage_account",
@@ -204,8 +204,8 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

@@ -17,6 +17,7 @@ export const QueryPriorities = {
   "rug-histogram": 10,
   "descriptive-statistics": 10,
   totals: 30,
+  "time-range-summary": 50,
 };
 
 export function getPriority(type: string): number {

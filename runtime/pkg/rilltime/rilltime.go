@@ -28,19 +28,21 @@ var (
 		// this needs to be after Now and Latest to match to them
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
-		// this has to be at the end
 		{"ISOTime", isoTimePattern},
 		{"Prefix", `[+\-]`},
 		{"Number", `\d+`},
 		{"Snap", `[/]`},
+		// this has to be at the end
 		{"TimeZone", `[0-9a-zA-Z/+\-_]{3,}`},
 		{"To", `(?i)to`},
 		{"By", `(?i)by`},
 		{"Of", `(?i)of`},
 		{"As", `(?i)as`},
 		{"Tz", `(?i)tz`},
+		// Separate entry is needed outside of Punct
+		{"RangeSeparator", `[,]`},
 		// needed for misc. direct character references used
-		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]]`},
+		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<>.?/]]`},
 		{"Whitespace", `[ \t]+`},
 	})
 	rillTimeParser = participle.MustBuild[Expression](
@@ -108,7 +110,7 @@ type Expression struct {
 	Interval        *Interval      `parser:"@@"`
 	AnchorOverrides []*PointInTime `parser:"(As Of @@)*"`
 	Grain           *string        `parser:"(By @Grain)?"`
-	TimeZone        *string        `parser:"(Tz @TimeZone)?"`
+	TimeZone        *string        `parser:"(Tz @Whitespace @TimeZone)?"`
 
 	isNewFormat bool
 	tz          *time.Location
@@ -149,7 +151,7 @@ type StartEndInterval struct {
 // IsoInterval is an interval formed by ISO timestamps. Allows for partial timestamps in ISOPointInTime.
 type IsoInterval struct {
 	Start *ISOPointInTime `parser:"@@"`
-	End   *ISOPointInTime `parser:"((To | '/') @@)?"`
+	End   *ISOPointInTime `parser:"((To | '/' | RangeSeparator) @@)?"`
 }
 
 type PointInTime struct {
@@ -269,7 +271,7 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		rt.tz = parseOpts.TimeZoneOverride
 	} else if rt.TimeZone != nil {
 		var err error
-		rt.tz, err = time.LoadLocation(strings.Trim(*rt.TimeZone, "{}"))
+		rt.tz, err = time.LoadLocation(strings.TrimSpace(*rt.TimeZone))
 		if err != nil {
 			return nil, err
 		}

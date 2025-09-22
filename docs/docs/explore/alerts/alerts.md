@@ -68,11 +68,11 @@ For more information, refer to our documentation on [metric filters](/explore/fi
 
 On the second tab, you will have the opportunity to specify the criteria for which your alert will be triggered once certain conditions are met.
 1. For any metric in your data selection (previous tab), set your alert criteria to include an operator (e.g. less than, greater than), the value or percentage, and a comparison period and/or threshold amount.
-2. You will also have the ability to set dependencies or add multiple criteria using boolean conditions (AND/OR) to combine conditions across metrics.
+2. You will also have the ability to set dependencies or add multiple criteria using boolean conditions (AND/OR) to combine conditions across measures.
 
 ### Delivery
 
-On the final tab, you will choose how and where your alert is delivered. By default, the alert will be checked whenever the source data is [refreshed](/build/connect/source-refresh). There are a few additional things worth noting:
+On the final tab, you will choose how and where your alert is delivered. By default, the alert will be checked whenever the source data is [refreshed](/build/models/data-refresh). There are a few additional things worth noting:
 1. To limit the number of alerts, you can set an optional **Snooze** period after an alert is triggered.
 2. Depending on the available notification targets (see next section), choose which targets and/or users to subscribe to the alert.
 

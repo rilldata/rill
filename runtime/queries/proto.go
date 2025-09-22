@@ -2,10 +2,13 @@ package queries
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
+	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -172,12 +175,182 @@ func MetricsViewFromQuery(qryName, qryArgsJSON string) (string, error) {
 	return metricsView, nil
 }
 
+// SecurityFromQuery extracts security attributes like row filter, accessible fields like dimensions and measures from a JSON query.
+func SecurityFromQuery(qryName, qryArgsJSON string) (string, []string, error) {
+	if qryName == "" || qryArgsJSON == "" {
+		return "", nil, nil
+	}
+
+	var rowFilter string
+	var accessibleFields []string
+	switch qryName {
+	case "MetricsViewAggregation":
+		req := &runtimev1.MetricsViewAggregationRequest{}
+		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+		}
+
+		rowFilter, err = rowFilterJSON(req.Where, req.WhereSql, req.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		for _, d := range req.Dimensions {
+			accessibleFields = append(accessibleFields, d.Name)
+		}
+		for _, m := range req.Measures {
+			accessibleFields = append(accessibleFields, m.Name)
+		}
+		if req.TimeRange != nil && req.TimeRange.TimeDimension != "" && !slices.Contains(accessibleFields, req.TimeRange.TimeDimension) {
+			accessibleFields = append(accessibleFields, req.TimeRange.TimeDimension)
+		}
+		for _, s := range req.Sort {
+			if !slices.Contains(accessibleFields, s.Name) {
+				accessibleFields = append(accessibleFields, s.Name)
+			}
+		}
+	case "MetricsViewToplist":
+		req := &runtimev1.MetricsViewToplistRequest{}
+		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+		}
+
+		rowFilter, err = rowFilterJSON(req.Where, req.WhereSql, req.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		if req.DimensionName != "" {
+			accessibleFields = append(accessibleFields, req.DimensionName)
+		}
+		accessibleFields = append(accessibleFields, req.MeasureNames...)
+		for _, s := range req.Sort {
+			if !slices.Contains(accessibleFields, s.Name) {
+				accessibleFields = append(accessibleFields, s.Name)
+			}
+		}
+	case "MetricsViewRows":
+		req := &runtimev1.MetricsViewRowsRequest{}
+		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+		}
+
+		rowFilter, err = rowFilterJSON(req.Where, "", req.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		if req.TimeDimension != "" && !slices.Contains(accessibleFields, req.TimeDimension) {
+			accessibleFields = append(accessibleFields, req.TimeDimension)
+		}
+		for _, s := range req.Sort {
+			if !slices.Contains(accessibleFields, s.Name) {
+				accessibleFields = append(accessibleFields, s.Name)
+			}
+		}
+	case "MetricsViewTimeSeries":
+		req := &runtimev1.MetricsViewTimeSeriesRequest{}
+		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+		}
+
+		rowFilter, err = rowFilterJSON(req.Where, req.WhereSql, req.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		accessibleFields = append(accessibleFields, req.MeasureNames...)
+		if req.TimeDimension != "" && !slices.Contains(accessibleFields, req.TimeDimension) {
+			accessibleFields = append(accessibleFields, req.TimeDimension)
+		}
+	case "MetricsViewComparison":
+		req := &runtimev1.MetricsViewComparisonRequest{}
+		err := protojson.Unmarshal([]byte(qryArgsJSON), req)
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid properties for query %q: %w", qryName, err)
+		}
+
+		rowFilter, err = rowFilterJSON(req.Where, req.WhereSql, req.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		if req.Dimension != nil {
+			accessibleFields = append(accessibleFields, req.Dimension.Name)
+		}
+		for _, m := range req.Measures {
+			accessibleFields = append(accessibleFields, m.Name)
+		}
+		if req.TimeRange != nil && req.TimeRange.TimeDimension != "" && !slices.Contains(accessibleFields, req.TimeRange.TimeDimension) {
+			accessibleFields = append(accessibleFields, req.TimeRange.TimeDimension)
+		}
+		for _, s := range req.Sort {
+			if !slices.Contains(accessibleFields, s.Name) {
+				accessibleFields = append(accessibleFields, s.Name)
+			}
+		}
+	default:
+		return "", nil, fmt.Errorf("query %q not supported for reports", qryName)
+	}
+
+	return rowFilter, accessibleFields, nil
+}
+
+func rowFilterJSON(where *runtimev1.Expression, whereSQL string, filter *runtimev1.MetricsViewFilter) (string, error) {
+	if filter != nil { // Backwards compatibility
+		if where != nil {
+			return "", fmt.Errorf("both filter and where is provided")
+		}
+		where = convertFilterToExpression(filter)
+	}
+	var whereSQLExp *runtimev1.Expression
+	if whereSQL != "" {
+		mvExp, err := metricssqlparser.ParseSQLFilter(whereSQL)
+		if err != nil {
+			return "", fmt.Errorf("invalid where SQL: %w", err)
+		}
+		whereSQLExp = metricsview.ExpressionToProto(mvExp)
+	}
+
+	if whereSQLExp != nil && where != nil {
+		where = &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_AND,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: whereSQLExp.Expression,
+						},
+						{
+							Expression: where.Expression,
+						},
+					},
+				},
+			},
+		}
+	} else if whereSQLExp != nil {
+		where = whereSQLExp
+	}
+
+	b, err := protojson.Marshal(where)
+	if err != nil {
+		return "", fmt.Errorf("invalid where expression: %w", err)
+	}
+
+	return string(b), nil
+}
+
 func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRange {
 	if tr == nil {
 		tr = &runtimev1.TimeRange{}
 	}
 
-	tr.End = timestamppb.New(t)
+	if tr.Expression != "" {
+		// Do not override the `end` when we are using expression.
+		// Instead, add `as of <time>`
+		tr.Expression = fmt.Sprintf("%s as of %s", tr.Expression, t.UTC().Format(time.RFC3339Nano))
+		return tr
+	}
 
+	tr.End = timestamppb.New(t)
 	return tr
 }

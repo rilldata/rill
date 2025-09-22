@@ -1,5 +1,5 @@
 import { getCompoundQuery } from "@rilldata/web-common/features/compound-query-result";
-import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-filter-mode";
+import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import {
   createInExpression,
   createLikeExpression,
@@ -26,6 +26,9 @@ type DimensionSearchArgs = {
  *
  * 1. For Select and Contains mode, it returns the result from the search text using a `like` filter.
  * 2. For InList mode, it returns values from selection that is actually in the data source.
+ *
+ * Uses a "below the fold" strategy to ensure selected values always appear in results,
+ * even if they're not in the top 250.
  */
 export function useDimensionSearch(
   instanceId: string,
@@ -48,7 +51,8 @@ export function useDimensionSearch(
     additionalFilter,
   });
 
-  const queries = metricsViewNames.map((mvName) =>
+  // Main query: Get top 250 results (above the fold)
+  const mainQueries = metricsViewNames.map((mvName) =>
     createQueryServiceMetricsViewAggregation(
       instanceId,
       mvName,
@@ -67,12 +71,33 @@ export function useDimensionSearch(
     ),
   );
 
-  return getCompoundQuery(queries, (responses) => {
-    const values = responses
+  return getCompoundQuery(mainQueries, (responses) => {
+    // Get main results (above the fold)
+    const mainValues = responses
       .filter((r) => !!r?.data)
       .map((r) => r!.data!.map((i) => i[dimensionName]))
       .flat();
-    const dedupedValues = new Set(values);
+
+    // For Select and InList modes, ensure selected values are included
+    // This is the "below the fold" behavior - no query needed, just merge the values
+    const shouldIncludeSelectedValues =
+      (mode === DimensionFilterMode.InList && values.length > 0) ||
+      (mode === DimensionFilterMode.Select && values.length > 0);
+
+    if (shouldIncludeSelectedValues) {
+      // Merge results: main results first, then any selected values not already included
+      const mainSet = new Set(mainValues);
+      const actualSelectedValues = values.filter(
+        (value) => !mainSet.has(value),
+      );
+      const combinedValues = [...mainValues, ...actualSelectedValues];
+
+      const dedupedValues = new Set(combinedValues);
+      return [...dedupedValues] as string[];
+    }
+
+    // For Contains mode or when no selected values, just return main results
+    const dedupedValues = new Set(mainValues);
     return [...dedupedValues] as string[];
   });
 }

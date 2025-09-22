@@ -95,7 +95,7 @@
             )
           ) {
             // if the file focused has the dir then replace the dir path to the new one
-            void goto(
+            await goto(
               $page.url.pathname.replace(
                 `/files/${removeLeadingSlash(filePath)}`,
                 `/files/${removeLeadingSlash(newPath)}`,

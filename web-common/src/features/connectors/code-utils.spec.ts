@@ -4,6 +4,56 @@ import {
   replaceOrAddEnvVariable,
 } from "./code-utils";
 
+// Import the template for testing
+const YAML_MODEL_TEMPLATE = `type: model
+materialize: true\n
+connector: {{ connector }}\n
+sql: {{ sql }}{{ dev_section }}
+`;
+
+describe("YAML Model Template", () => {
+  it("should include dev section for non-Redshift connectors", () => {
+    const connector = "clickhouse";
+    const selectStatement = "select * from my_table";
+    const shouldIncludeDevSection = true;
+    const devSection = shouldIncludeDevSection
+      ? `\ndev:\n  sql: ${selectStatement} limit 10000`
+      : "";
+
+    const yamlContent = YAML_MODEL_TEMPLATE.replace(
+      "{{ connector }}",
+      connector,
+    )
+      .replace(/{{ sql }}/g, selectStatement)
+      .replace("{{ dev_section }}", devSection);
+
+    expect(yamlContent).toContain("dev:");
+    expect(yamlContent).toContain("limit 10000");
+    expect(yamlContent).toContain("connector: clickhouse");
+  });
+
+  it("should exclude dev section for Redshift connector", () => {
+    const connector = "redshift";
+    const selectStatement = "select * from my_table";
+    const shouldIncludeDevSection = false;
+    const devSection = shouldIncludeDevSection
+      ? `\ndev:\n  sql: ${selectStatement} limit 10000`
+      : "";
+
+    const yamlContent = YAML_MODEL_TEMPLATE.replace(
+      "{{ connector }}",
+      connector,
+    )
+      .replace(/{{ sql }}/g, selectStatement)
+      .replace("{{ dev_section }}", devSection);
+
+    expect(yamlContent).not.toContain("dev:");
+    expect(yamlContent).not.toContain("limit 10000");
+    expect(yamlContent).toContain("connector: redshift");
+    expect(yamlContent).toContain("sql: select * from my_table");
+  });
+});
+
 describe("replaceOrAddEnvVariable", () => {
   it("should create a new env file", () => {
     const updatedEnvBlob = replaceOrAddEnvVariable("", "KEY1", "VALUE1");

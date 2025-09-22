@@ -7,16 +7,19 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { View } from "vega-typings";
   import type { ChartSpec } from "./";
   import type { BaseChart } from "./BaseChart";
   import { getChartData } from "./selector";
-  import { generateSpec, isChartLineLike } from "./util";
+  import { generateSpec, getColorMappingForChart } from "./util";
   import { validateChartSchema } from "./validate";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let component: BaseChart<ChartSpec>;
+
+  $: themePreference = $themeControl;
 
   $: ({ instanceId } = $runtime);
 
@@ -71,6 +74,11 @@
     {},
   );
 
+  $: colorMapping = getColorMappingForChart(
+    chartSpec,
+    $chartQuery.domainValues,
+  );
+
   $: expressionFunctions = $measures.reduce((acc, measure) => {
     const fieldName = sanitizeFieldName(measure.name || "measure");
     return {
@@ -107,10 +115,12 @@
           bind:viewVL
           canvasDashboard
           data={{ "metrics-view": data }}
+          theme={themePreference === "dark" ? "dark" : "light"}
           {spec}
-          renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
+          {colorMapping}
+          renderer="canvas"
           {expressionFunctions}
-          config={getRillTheme(true)}
+          config={getRillTheme(true, themePreference === "dark")}
         />
       {/if}
     {/if}

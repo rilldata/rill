@@ -28,6 +28,7 @@ const (
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_ListProjectsForOrganizationAndUser_FullMethodName    = "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndUser"
+	AdminService_ListProjectsForFingerprint_FullMethodName            = "/rill.admin.v1.AdminService/ListProjectsForFingerprint"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_ListProjectsForUserByName_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectsForUserByName"
 	AdminService_GetProjectByID_FullMethodName                        = "/rill.admin.v1.AdminService/GetProjectByID"
@@ -92,7 +93,6 @@ const (
 	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_ConnectProjectToGithub_FullMethodName                = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
 	AdminService_CreateManagedGitRepo_FullMethodName                  = "/rill.admin.v1.AdminService/CreateManagedGitRepo"
-	AdminService_DisconnectProjectFromGithub_FullMethodName           = "/rill.admin.v1.AdminService/DisconnectProjectFromGithub"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
@@ -194,6 +194,9 @@ type AdminServiceClient interface {
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(ctx context.Context, in *ListProjectsForOrganizationAndUserRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndUserResponse, error)
+	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+	// This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+	ListProjectsForFingerprint(ctx context.Context, in *ListProjectsForFingerprintRequest, opts ...grpc.CallOption) (*ListProjectsForFingerprintResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 	// ListProjectsForUserByName returns projects matching a name accessible by the logged in user
@@ -335,8 +338,6 @@ type AdminServiceClient interface {
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
 	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
 	CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error)
-	// Converts a project connected to github to a rill managed project.
-	DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -578,6 +579,16 @@ func (c *adminServiceClient) ListProjectsForOrganizationAndUser(ctx context.Cont
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListProjectsForOrganizationAndUserResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListProjectsForOrganizationAndUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectsForFingerprint(ctx context.Context, in *ListProjectsForFingerprintRequest, opts ...grpc.CallOption) (*ListProjectsForFingerprintResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProjectsForFingerprintResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectsForFingerprint_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1218,16 +1229,6 @@ func (c *adminServiceClient) CreateManagedGitRepo(ctx context.Context, in *Creat
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateManagedGitRepoResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateManagedGitRepo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DisconnectProjectFromGithubResponse)
-	err := c.cc.Invoke(ctx, AdminService_DisconnectProjectFromGithub_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1999,6 +2000,9 @@ type AdminServiceServer interface {
 	// ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
 	// It does not include projects that the user has access to through a usergroup.
 	ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error)
+	// ListProjectsForFingerprint lists all projects the current user has access to that match the provided local project details.
+	// This can be used to produce a short list of cloud projects that are likely to have been deployed from a local project.
+	ListProjectsForFingerprint(context.Context, *ListProjectsForFingerprintRequest) (*ListProjectsForFingerprintResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	// ListProjectsForUserByName returns projects matching a name accessible by the logged in user
@@ -2140,8 +2144,6 @@ type AdminServiceServer interface {
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
 	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
 	CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error)
-	// Converts a project connected to github to a rill managed project.
-	DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -2325,6 +2327,9 @@ func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Conte
 }
 func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndUser(context.Context, *ListProjectsForOrganizationAndUserRequest) (*ListProjectsForOrganizationAndUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganizationAndUser not implemented")
+}
+func (UnimplementedAdminServiceServer) ListProjectsForFingerprint(context.Context, *ListProjectsForFingerprintRequest) (*ListProjectsForFingerprintResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForFingerprint not implemented")
 }
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
@@ -2517,9 +2522,6 @@ func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *
 }
 func (UnimplementedAdminServiceServer) CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateManagedGitRepo not implemented")
-}
-func (UnimplementedAdminServiceServer) DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DisconnectProjectFromGithub not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
@@ -2922,6 +2924,24 @@ func _AdminService_ListProjectsForOrganizationAndUser_Handler(srv interface{}, c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListProjectsForOrganizationAndUser(ctx, req.(*ListProjectsForOrganizationAndUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectsForFingerprint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsForFingerprintRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectsForFingerprint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectsForFingerprint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectsForFingerprint(ctx, req.(*ListProjectsForFingerprintRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4074,24 +4094,6 @@ func _AdminService_CreateManagedGitRepo_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).CreateManagedGitRepo(ctx, req.(*CreateManagedGitRepoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_DisconnectProjectFromGithub_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DisconnectProjectFromGithubRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).DisconnectProjectFromGithub(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_DisconnectProjectFromGithub_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).DisconnectProjectFromGithub(ctx, req.(*DisconnectProjectFromGithubRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5472,6 +5474,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListProjectsForOrganizationAndUser_Handler,
 		},
 		{
+			MethodName: "ListProjectsForFingerprint",
+			Handler:    _AdminService_ListProjectsForFingerprint_Handler,
+		},
+		{
 			MethodName: "GetProject",
 			Handler:    _AdminService_GetProject_Handler,
 		},
@@ -5726,10 +5732,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateManagedGitRepo",
 			Handler:    _AdminService_CreateManagedGitRepo_Handler,
-		},
-		{
-			MethodName: "DisconnectProjectFromGithub",
-			Handler:    _AdminService_DisconnectProjectFromGithub_Handler,
 		},
 		{
 			MethodName: "GetCloneCredentials",

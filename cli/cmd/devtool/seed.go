@@ -2,7 +2,9 @@ package devtool
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
@@ -19,12 +21,26 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("seeding not available for preset %q", preset)
 			}
 
+			// clone examples to a temp dir and deploy
+			temp, err := os.MkdirTemp("", "rill-seed-*")
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(temp)
+			_, err = git.PlainClone(temp, false, &git.CloneOptions{
+				URL: "https://github.com/rilldata/rill-examples.git",
+			})
+			if err != nil {
+				return err
+			}
+
 			return project.ConnectGithubFlow(cmd.Context(), ch, &project.DeployOpts{
-				GitPath:     "https://github.com/rilldata/rill-examples.git",
+				GitPath:     temp,
 				SubPath:     "rill-openrtb-prog-ads",
 				Name:        "rill-openrtb-prog-ads",
 				ProdVersion: "latest",
 				Slots:       2,
+				Github:      true,
 			})
 		},
 	}

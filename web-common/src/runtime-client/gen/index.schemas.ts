@@ -630,6 +630,11 @@ export interface V1CompleteResponse {
   messages?: V1Message[];
 }
 
+export interface V1CompleteStreamingResponse {
+  conversationId?: string;
+  message?: V1Message;
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -906,8 +911,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   banner?: string;
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
-  /** When true, it indicates that the explore was defined in a metrics view.
-This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores. */
+  /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
 }
 
@@ -1172,6 +1176,7 @@ export interface V1ListConversationsResponse {
 
 export interface V1ListDatabaseSchemasResponse {
   databaseSchemas?: V1DatabaseSchemaInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1ListExamplesResponse {
@@ -1198,6 +1203,7 @@ export interface V1ListResourcesResponse {
 
 export interface V1ListTablesResponse {
   tables?: V1TableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1Log {
@@ -1330,6 +1336,32 @@ export interface V1MetricsViewAggregationResponse {
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
+}
+
+export interface V1MetricsViewAnnotationsResponse {
+  rows?: V1MetricsViewAnnotationsResponseAnnotation[];
+}
+
+/**
+ * Any other fields are captured here. Will be used in predicates in the future.
+ */
+export type V1MetricsViewAnnotationsResponseAnnotationAdditionalFields = {
+  [key: string]: unknown;
+};
+
+export interface V1MetricsViewAnnotationsResponseAnnotation {
+  /** Time when the annotation applies. Maps to `time` column from the table. */
+  time?: string;
+  /** Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column. */
+  timeEnd?: string;
+  /** User defined description of the annotation applies. Maps to `description` column from the table. */
+  description?: string;
+  /** Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table. */
+  duration?: string;
+  /** Any other fields are captured here. Will be used in predicates in the future. */
+  additionalFields?: V1MetricsViewAnnotationsResponseAnnotationAdditionalFields;
+  /** List of measure names that this annotation applies to. If empty, no restrictions apply. */
+  forMeasures?: string[];
 }
 
 export interface V1MetricsViewColumn {
@@ -1467,6 +1499,8 @@ export interface V1MetricsViewSort {
 }
 
 export interface V1MetricsViewSpec {
+  /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
+  parent?: string;
   connector?: string;
   database?: string;
   databaseSchema?: string;
@@ -1483,6 +1517,9 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  parentDimensions?: V1FieldSelector;
+  parentMeasures?: V1FieldSelector;
+  annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1492,6 +1529,29 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+}
+
+/**
+ * Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
+1. The underlying model/table has to have a `time` and `description` columns.
+2. Can additionally have `time_end` column to convert the annotation to range type annotation.
+3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+ */
+export interface V1MetricsViewSpecAnnotation {
+  name?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  table?: string;
+  /** Name of the model that source of annotation. Either table or model should be set. */
+  model?: string;
+  /** Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  /** Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter. */
+  hasTimeEnd?: boolean;
+  /** Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter. */
+  hasDuration?: boolean;
 }
 
 export interface V1MetricsViewState {
@@ -1655,6 +1715,10 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  retryAttempts?: number;
+  retryDelaySeconds?: number;
+  retryExponentialBackoff?: boolean;
+  retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
   trigger?: boolean;
@@ -1760,6 +1824,7 @@ export interface V1OLAPGetTableResponse {
 
 export interface V1OLAPListTablesResponse {
   tables?: V1OlapTableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1OlapTableInfo {
@@ -2349,6 +2414,8 @@ export type ConnectorServiceBigQueryListTablesParams = {
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
   connector?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceOLAPGetTableParams = {
@@ -2372,6 +2439,8 @@ export type ConnectorServiceListTablesParams = {
   connector?: string;
   database?: string;
   databaseSchema?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {
@@ -2434,6 +2503,16 @@ export type RuntimeServiceCompleteBody = {
   messages?: V1Message[];
   toolNames?: string[];
   appContext?: V1AppContext;
+};
+
+export type RuntimeServiceCompleteStreamingBody = {
+  conversationId?: string;
+  prompt?: string;
+};
+
+export type RuntimeServiceCompleteStreaming200 = {
+  result?: V1CompleteStreamingResponse;
+  error?: RpcStatus;
 };
 
 export type RuntimeServiceGetConversationParams = {
@@ -2499,6 +2578,7 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceUnpackEmptyBody = {
   displayName?: string;
+  olap?: string;
   force?: boolean;
 };
 
@@ -2664,6 +2744,16 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+};
+
+export type QueryServiceMetricsViewAnnotationsBody = {
+  measures?: string[];
+  priority?: number;
+  timeRange?: V1TimeRange;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+  limit?: string;
+  offset?: string;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {
@@ -2982,6 +3072,8 @@ Has the same syntax and behavior as ILIKE in SQL.
 If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
  */
   searchPattern?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceS3GetBucketMetadataParams = {

@@ -1,115 +1,39 @@
 <script lang="ts">
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     createRuntimeServiceCreateTrigger,
-    createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
-    V1ReconcileStatus,
-    type V1ListResourcesResponse,
-    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient, type Query } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import { useResources } from "./selectors";
+  import { isResourceReconciling } from "@rilldata/web-admin/lib/refetch-interval-store";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
-  let isReconciling = false;
-
-  const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
-  const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
-  const BACKOFF_FACTOR = 1.5;
-  let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
 
   $: ({ instanceId } = $runtime);
 
-  function isResourceErrored(resource: V1Resource) {
-    return !!resource.meta.reconcileError;
-  }
-
-  function isResourceReconciling(resource: V1Resource) {
-    return (
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING
-    );
-  }
-
-  function calculateRefetchInterval(
-    currentInterval: number,
-    data: V1ListResourcesResponse,
-    query: Query<V1ListResourcesResponse, HTTPError>,
-  ): number | false {
-    if (query.state.error) return false;
-    if (!data) return INITIAL_REFETCH_INTERVAL;
-
-    const hasErrors = data.resources.some(isResourceErrored);
-    const hasReconcilingResources = data.resources.some(isResourceReconciling);
-
-    if (hasErrors || !hasReconcilingResources) {
-      currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-      return false;
-    }
-
-    currentRefetchInterval = Math.min(
-      currentInterval * BACKOFF_FACTOR,
-      MAX_REFETCH_INTERVAL,
-    );
-    return currentRefetchInterval;
-  }
-
-  $: resources = createRuntimeServiceListResources(
-    instanceId,
-    {
-      // Ensure admins can see all resources, regardless of the security policy
-      skipSecurityChecks: true,
-    },
-    {
-      query: {
-        select: (data: V1ListResourcesResponse) => ({
-          ...data,
-          // Filter out project parser and refresh triggers
-          resources: data?.resources?.filter(
-            (resource: V1Resource) =>
-              resource.meta.name.kind !== ResourceKind.ProjectParser &&
-              resource.meta.name.kind !== ResourceKind.RefreshTrigger,
-          ),
-        }),
-        refetchInterval: (query) =>
-          calculateRefetchInterval(
-            currentRefetchInterval,
-            query.state.data,
-            query,
-          ),
-      },
-    },
-  );
+  $: resources = useResources(instanceId);
 
   $: hasReconcilingResources = $resources.data?.resources?.some(
     isResourceReconciling,
   );
 
-  $: isReconciling = Boolean(hasReconcilingResources);
-
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
   function refreshAllSourcesAndModels() {
-    isReconciling = false;
-
     void $createTrigger
       .mutateAsync({
         instanceId,
         data: { all: true },
       })
       .then(() => {
-        currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
         void queryClient.invalidateQueries({
           queryKey: getRuntimeServiceListResourcesQueryKey(
             instanceId,
@@ -141,7 +65,7 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.data}
-    <ProjectResourcesTable data={$resources?.data?.resources} {isReconciling} />
+    <ProjectResourcesTable data={$resources?.data?.resources} />
   {/if}
 </section>
 

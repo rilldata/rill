@@ -103,6 +103,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/connectors/meta:
@@ -221,6 +230,15 @@ paths:
           required: false
           type: string
         - name: databaseSchema
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
           in: query
           required: false
           type: string
@@ -596,6 +614,44 @@ paths:
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/complete/stream:
+    post:
+      summary: CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+      operationId: RuntimeService_CompleteStreaming
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1CompleteStreamingResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1CompleteStreamingResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              conversationId:
+                type: string
+                title: If not provided, creates a new conversation
+              prompt:
+                type: string
+            title: Request message for RuntimeService.CompleteStreaming
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations:
     get:
       summary: ListConversations lists all AI chat conversations for an instance.
@@ -947,6 +1003,8 @@ paths:
             type: object
             properties:
               displayName:
+                type: string
+              olap:
                 type: string
               force:
                 type: boolean
@@ -1577,6 +1635,58 @@ paths:
               rows:
                 type: boolean
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/annotations:
+    post:
+      operationId: QueryService_MetricsViewAnnotations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewAnnotationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              measures:
+                type: array
+                items:
+                  type: string
+              priority:
+                type: integer
+                format: int32
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+              timeGrain:
+                $ref: '#/definitions/v1TimeGrain'
+                title: Optional
+              timeZone:
+                type: string
+                title: Optional
+              limit:
+                type: string
+                format: int64
+                title: Optional
+              offset:
+                type: string
+                format: int64
+                title: Optional
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -3013,6 +3123,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/ping:
@@ -4230,6 +4349,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.Complete
+  v1CompleteStreamingResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+      message:
+        $ref: '#/definitions/v1Message'
+    title: Response message for RuntimeService.CompleteStreaming
   v1Component:
     type: object
     properties:
@@ -4696,9 +4823,7 @@ definitions:
         title: Allow custom time range
       definedInMetricsView:
         type: boolean
-        description: |-
-          When true, it indicates that the explore was defined in a metrics view.
-          This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores.
+        description: When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
   v1ExploreState:
     type: object
     properties:
@@ -5062,6 +5187,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1DatabaseSchemaInfo'
+      nextPageToken:
+        type: string
   v1ListExamplesResponse:
     type: object
     properties:
@@ -5117,6 +5244,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TableInfo'
+      nextPageToken:
+        type: string
   v1Log:
     type: object
     properties:
@@ -5361,6 +5490,39 @@ definitions:
       desc:
         type: boolean
         title: Optional
+  v1MetricsViewAnnotationsResponse:
+    type: object
+    properties:
+      rows:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAnnotationsResponseAnnotation'
+  v1MetricsViewAnnotationsResponseAnnotation:
+    type: object
+    properties:
+      time:
+        type: string
+        format: date-time
+        description: Time when the annotation applies. Maps to `time` column from the table.
+      timeEnd:
+        type: string
+        format: date-time
+        description: Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column.
+      description:
+        type: string
+        description: User defined description of the annotation applies. Maps to `description` column from the table.
+      duration:
+        type: string
+        description: Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table.
+      additionalFields:
+        type: object
+        description: Any other fields are captured here. Will be used in predicates in the future.
+      forMeasures:
+        type: array
+        items:
+          type: string
+        description: List of measure names that this annotation applies to. If empty, no restrictions apply.
   v1MetricsViewColumn:
     type: object
     properties:
@@ -5622,6 +5784,9 @@ definitions:
   v1MetricsViewSpec:
     type: object
     properties:
+      parent:
+        type: string
+        description: name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
       connector:
         type: string
         title: Connector containing the table
@@ -5669,6 +5834,18 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasure'
         title: Measures in the metrics view
+      parentDimensions:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for dimensions from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+      parentMeasures:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for measures from parent metrics view. Will be processed during validation, so it will always be empty in `state.valid_spec`. Can only be used if parent is set.
+      annotations:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewSpecAnnotation'
+        title: Annotations in the metrics view
       securityRules:
         type: array
         items:
@@ -5691,6 +5868,45 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+  v1MetricsViewSpecAnnotation:
+    type: object
+    properties:
+      name:
+        type: string
+      connector:
+        type: string
+        title: Connector containing the table
+      database:
+        type: string
+        title: Name of the database where table is located (optional)
+      databaseSchema:
+        type: string
+        title: Name of the database schema where table is located (optional)
+      table:
+        type: string
+        title: Name of the model that source of annotation
+      model:
+        type: string
+        description: Name of the model that source of annotation. Either table or model should be set.
+      measures:
+        type: array
+        items:
+          type: string
+        description: Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      hasTimeEnd:
+        type: boolean
+        description: Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter.
+      hasDuration:
+        type: boolean
+        description: Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter.
+    description: |-
+      Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
+      1. The underlying model/table has to have a `time` and `description` columns.
+      2. Can additionally have `time_end` column to convert the annotation to range type annotation.
+      3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
   v1MetricsViewState:
     type: object
     properties:
@@ -5980,6 +6196,18 @@ definitions:
         type: string
       outputProperties:
         type: object
+      retryAttempts:
+        type: integer
+        format: int64
+      retryDelaySeconds:
+        type: integer
+        format: int64
+      retryExponentialBackoff:
+        type: boolean
+      retryIfErrorMatches:
+        type: array
+        items:
+          type: string
       changeMode:
         $ref: '#/definitions/v1ModelChangeMode'
         description: change_mode is the mode of change detection to use for the model.
@@ -6143,6 +6371,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OlapTableInfo'
+      nextPageToken:
+        type: string
   v1OlapTableInfo:
     type: object
     properties:

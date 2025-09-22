@@ -1,0 +1,23 @@
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
+
+version: 1
+type: metrics_view 
+
+display_name: Adimpressions
+model: AdImpressions
+
+dimensions:
+  - name: city
+    display_name: City
+    column: city
+  - name: country
+    display_name: Country
+    column: country
+
+measures:
+  - name: total_records
+    display_name: Total records
+    expression: COUNT(*)
+    description: ""
+    format_preset: humanize

@@ -18,6 +18,9 @@ service LocalService {
   // GitStatus returns the curren status of the local git repo. This is equivalent to doing a `git fetch` followed by running `git status`.
   rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {}
 
+  // GithubRepoStatus returns info about a Github user account based on the caller's installations. Forwards to admin API of the same name.
+  rpc GithubRepoStatus(GithubRepoStatusRequest) returns (GithubRepoStatusResponse) {}
+
   // GitPull fetches the latest changes from the remote git repo equivalent to `git pull` command.
   // If there are any merge conflicts the pull is aborted.
   // Force can be set to true to force the pull and overwrite any local changes.
@@ -41,6 +44,7 @@ service LocalService {
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {}
 
   // GetCurrentProject returns the rill cloud project connected to the local project
+  // Deprecated: Use ListMatchingProjects instead.
   rpc GetCurrentProject(GetCurrentProjectRequest) returns (GetCurrentProjectResponse) {}
 
   // ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
@@ -97,6 +101,8 @@ message GitStatusResponse {
   string branch = 1;
   // The remote url of the git repo.
   string github_url = 2;
+  // Subpath relative to the git repo root. This is where the project is started.
+  string subpath = 7;
   // If the repo is managed by Rill.
   bool managed_git = 3;
   // local_changes returns true if there are any staged, unstaged, or untracked changes in the local git repo.
@@ -105,6 +111,16 @@ message GitStatusResponse {
   int32 local_commits = 5;
   // remote_commits returns number of remote commits not pulled yet.
   int32 remote_commits = 6;
+}
+
+message GithubRepoStatusRequest {
+  string remote = 1;
+}
+
+message GithubRepoStatusResponse {
+  bool has_access = 1;
+  string grant_access_url = 2;
+  string default_branch = 3;
 }
 
 message GitPullRequest {
@@ -155,6 +171,7 @@ message RedeployProjectRequest {
   bool reupload = 2;
   // temporarily used for testing
   bool rearchive = 3;
+  bool create_managed_repo = 4;
 }
 
 message RedeployProjectResponse {
