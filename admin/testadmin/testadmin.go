@@ -60,7 +60,7 @@ func NewGithub(t *testing.T) admin.Github {
 		return &mockGithub{}
 	}
 	err := godotenv.Load("../../../.env")
-	require.NoError(t, err)
+	require.NoError(t, err, "failed to load env file. Run `rill devtool dotenv refresh` to create one")
 
 	githubAppID, err := strconv.ParseInt(os.Getenv("RILL_ADMIN_GITHUB_APP_ID"), 10, 64)
 	require.NoError(t, err)
@@ -155,11 +155,11 @@ func New(t *testing.T) *Fixture {
 		HTTPPort:         port,
 		GRPCPort:         port,
 		AllowedOrigins:   []string{"*"},
+		SessionKeyPairs:  [][]byte{randomBytes(16), randomBytes(16)},
 		ServePrometheus:  true,
 		AuthDomain:       "gorillio-stage.auth0.com",
 		AuthClientID:     "",
 		AuthClientSecret: "",
-		SessionKeyPairs:  [][]byte{[]byte("1234567890abcdef1234567890abcdef"), []byte("1234567890abcdef1234567890abcdef")},
 	}
 	srv, err := server.New(logger, adm, issuer, ratelimit.NewNoop(), activity.NewNoopClient(), srvOpts)
 	require.NoError(t, err)

@@ -89,7 +89,7 @@ func GithubTokensCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer f.Close()
 
 			for k, v := range output {
-				_, err := f.WriteString(fmt.Sprintf("GH_%s=%s\n", strings.ToUpper(k), v))
+				_, err := fmt.Fprintf(f, "GH_%s=%s\n", strings.ToUpper(k), v)
 				if err != nil {
 					return fmt.Errorf("error writing to gh.env: %w", err)
 				}
