@@ -85,6 +85,15 @@ var spec = drivers.Spec{
 			Description: "Database path to connect to.",
 			Placeholder: "data/my_database.db",
 		},
+		// NOTE: Should be removed. Seems like the UI relies on it, but it's not a property supported by the driver.
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -146,12 +155,21 @@ var motherduckSpec = drivers.Spec{
 		},
 		// DEPRECATED: use `token` in the connector properties. Should be removed.
 		{
-			Key:         "motherduck_token",
+			Key:         "token",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "MotherDuck Token",
 			Description: "Token for authenticating with MotherDuck.",
 			Placeholder: "your_motherduck_token",
+		},
+		// NOTE: Should be removed. Seems like the UI relies on it, but it's not a property supported by the driver.
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
 		},
 	},
 	ImplementsOLAP: true,
