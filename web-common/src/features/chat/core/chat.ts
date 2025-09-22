@@ -9,7 +9,7 @@ import {
   type V1ListConversationsResponse,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, type Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
 import { NEW_CONVERSATION_ID } from "./chat-utils";
 import { Conversation } from "./conversation";
 import {
@@ -46,6 +46,9 @@ export class Chat {
   private conversations = new Map<string, Conversation>();
   private conversationSelector: ConversationSelector;
 
+  // Maximum number of conversations that can have active streaming at once
+  private static readonly MAX_CONCURRENT_STREAMS = 3;
+
   constructor(
     private instanceId: string,
     options: ChatOptions,
@@ -54,6 +57,7 @@ export class Chat {
       this.instanceId,
       NEW_CONVERSATION_ID,
       {
+        onStreamStart: () => this.enforceMaxConcurrentStreams(),
         onConversationCreated: (conversationId: string) => {
           this.handleConversationCreated(conversationId);
         },
@@ -97,10 +101,18 @@ export class Chat {
 
         // If we already have a conversation instance for this conversation ID, return it
         const existing = this.conversations.get($conversationId);
-        if (existing) return existing;
+        if (existing) {
+          return existing;
+        }
 
         // Otherwise, create a conversation instance and store it
-        const conversation = new Conversation(this.instanceId, $conversationId);
+        const conversation = new Conversation(
+          this.instanceId,
+          $conversationId,
+          {
+            onStreamStart: () => this.enforceMaxConcurrentStreams(),
+          },
+        );
         this.conversations.set($conversationId, conversation);
         return conversation;
       },
@@ -111,6 +123,36 @@ export class Chat {
 
   enterNewConversationMode(): void {
     this.conversationSelector.clearSelection();
+  }
+
+  // STREAM MANAGEMENT
+
+  /**
+   * Get conversations that are currently streaming
+   */
+  private getActiveStreamingConversations(): Conversation[] {
+    return Array.from(this.conversations.values()).filter((conv) =>
+      get(conv.isStreaming),
+    );
+  }
+
+  /**
+   * Stop streaming in oldest conversations if we exceed concurrent stream limit
+   */
+  private enforceMaxConcurrentStreams(): void {
+    const streamingConversations = this.getActiveStreamingConversations();
+
+    if (streamingConversations.length >= Chat.MAX_CONCURRENT_STREAMS) {
+      // Stop the oldest streaming conversations (simple FIFO approach)
+      const conversationsToStop = streamingConversations.slice(
+        0,
+        streamingConversations.length - Chat.MAX_CONCURRENT_STREAMS + 1,
+      );
+
+      conversationsToStop.forEach((conv) => {
+        conv.cancelStream();
+      });
+    }
   }
 
   selectConversation(conversationId: string): void {
@@ -131,7 +173,7 @@ export class Chat {
    * and creates a fresh "new" conversation instance
    */
   private rotateNewConversation(conversationId: string): void {
-    // Store the new conversation instance in the map of existing conversations
+    // Store the new conversation instance in the conversations map
     this.conversations.set(conversationId, this.newConversation);
 
     // Create a fresh "new" conversation instance
@@ -139,6 +181,7 @@ export class Chat {
       this.instanceId,
       NEW_CONVERSATION_ID,
       {
+        onStreamStart: () => this.enforceMaxConcurrentStreams(),
         onConversationCreated: (conversationId: string) => {
           this.handleConversationCreated(conversationId);
         },

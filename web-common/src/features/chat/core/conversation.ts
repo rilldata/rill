@@ -42,6 +42,7 @@ export class Conversation {
     private readonly instanceId: string,
     public conversationId: string,
     private readonly options?: {
+      onStreamStart?: () => void;
       onConversationCreated?: (conversationId: string) => void;
     },
   ) {}
@@ -208,6 +209,9 @@ export class Conversation {
           : this.conversationId,
       prompt,
     };
+
+    // Notify that streaming is about to start (for concurrent stream management)
+    this.options?.onStreamStart?.();
 
     // Start streaming using the SSE client
     await this.sseClient!.start(baseUrl, {
