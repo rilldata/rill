@@ -468,3 +468,28 @@ export function wrapNonJoinerExpression(expr: V1Expression): V1Expression {
   if (isAndOrExpression(expr)) return expr;
   return createAndExpression([expr]);
 }
+
+export function maybeConvertEqualityToInExpressions(expr: V1Expression) {
+  if (
+    !expr.cond?.op ||
+    !expr.cond.exprs ||
+    (expr.cond.op !== V1Operation.OPERATION_EQ &&
+      expr.cond.op !== V1Operation.OPERATION_NEQ)
+  ) {
+    return expr;
+  }
+
+  const ident = expr.cond.exprs[0]?.ident;
+  if (!ident) return expr;
+
+  const valExprs = expr.cond.exprs.slice(1);
+  if (valExprs.some((ve) => !("val" in ve))) return expr;
+
+  const vals = valExprs.map((e) => e.val);
+
+  return createInExpression(
+    ident,
+    vals,
+    expr.cond.op === V1Operation.OPERATION_NEQ,
+  );
+}
