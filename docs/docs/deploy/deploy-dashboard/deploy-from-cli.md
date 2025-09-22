@@ -28,9 +28,10 @@ rill service create gitlab-ci
 ```yaml
 deploy-rill-cloud:
   stage: deploy
-  script:
+  script: 
     - curl -L -o $HOME/rill.zip https://cdn.rilldata.com/rill/latest/rill_linux_amd64.zip 
     - unzip -d $HOME $HOME/rill.zip 
+    - git checkout -B "$CI_COMMIT_REF_NAME" "$CI_COMMIT_SHA"
     - $HOME/rill project deploy --org my-org-name --project my-project-name --interactive=false --api-token $RILL_SERVICE_TOKEN
 ```
 
