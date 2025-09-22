@@ -339,40 +339,11 @@ export async function deriveInterval(
   grain?: V1TimeGrain | undefined;
   error?: string;
 }> {
-  if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
+  if (name === CUSTOM_TIME_RANGE_ALIAS) {
     return {
       interval: allTimeRange,
       grain: undefined,
-      error: "Cannot derive interval for all time or custom range",
-    };
-  }
-
-  if (!allTimeRange.isValid || !allTimeRange.end) {
-    return {
-      interval: Interval.invalid("Invalid all time range"),
-      grain: undefined,
-      error: "Invalid all time range",
-    };
-  }
-
-  if (isRillPeriodToDate(name)) {
-    const period = RILL_TO_UNIT[name];
-    return {
-      interval: getPeriodToDate(allTimeRange.end, period),
-      grain: V1TimeGrain.TIME_GRAIN_DAY,
-    };
-  }
-
-  if (isRillPreviousPeriod(name)) {
-    const period = RILL_TO_UNIT[name];
-    return { interval: getPreviousPeriodComplete(allTimeRange.end, period, 1) };
-  }
-
-  const duration = isValidISODuration(name);
-
-  if (duration) {
-    return {
-      interval: getInterval(duration, allTimeRange.end),
+      error: "Cannot derive interval for custom range",
     };
   }
 
