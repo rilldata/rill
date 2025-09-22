@@ -83,20 +83,21 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		ts.Now = *executionTime
 	}
 
-	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{})
+	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{
+		SmallestGrain: timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
+	})
 	if err != nil {
 		return err
 	}
 
 	// TODO: use grain when we have timeseries from metrics_view_aggregation
 	tr.Start, tr.End, _ = rillTime.Eval(rilltime.EvalOptions{
-		Now:           ts.Now,
-		MinTime:       ts.Min,
-		MaxTime:       ts.Max,
-		Watermark:     ts.Watermark,
-		FirstDay:      int(e.metricsView.FirstDayOfWeek),
-		FirstMonth:    int(e.metricsView.FirstMonthOfYear),
-		SmallestGrain: rilltime.ConvertProtoTimeGrainToTimeutil(e.metricsView.SmallestTimeGrain),
+		Now:        ts.Now,
+		MinTime:    ts.Min,
+		MaxTime:    ts.Max,
+		Watermark:  ts.Watermark,
+		FirstDay:   int(e.metricsView.FirstDayOfWeek),
+		FirstMonth: int(e.metricsView.FirstMonthOfYear),
 	})
 
 	// Clear all other fields than Start and End

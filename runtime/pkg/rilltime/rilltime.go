@@ -9,7 +9,6 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
@@ -85,6 +84,18 @@ var (
 		"M": timeutil.TimeGrainMonth,
 		"y": timeutil.TimeGrainYear,
 		"Y": timeutil.TimeGrainYear,
+	}
+	reverseGrainMap = map[timeutil.TimeGrain]string{
+		timeutil.TimeGrainUnspecified: "s",
+		timeutil.TimeGrainMillisecond: "s",
+		timeutil.TimeGrainSecond:      "s",
+		timeutil.TimeGrainMinute:      "m",
+		timeutil.TimeGrainHour:        "h",
+		timeutil.TimeGrainDay:         "D",
+		timeutil.TimeGrainWeek:        "W",
+		timeutil.TimeGrainMonth:       "M",
+		timeutil.TimeGrainQuarter:     "Q",
+		timeutil.TimeGrainYear:        "Y",
 	}
 	higherOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
 		timeutil.TimeGrainSecond:  timeutil.TimeGrainMinute,
@@ -222,16 +233,17 @@ type GrainDurationPart struct {
 type ParseOptions struct {
 	DefaultTimeZone  *time.Location
 	TimeZoneOverride *time.Location
+	// TODO: the correct way is perhaps add a keyword in syntax to reference smallest grain.
+	SmallestGrain timeutil.TimeGrain
 }
 
 type EvalOptions struct {
-	Now           time.Time
-	MinTime       time.Time
-	MaxTime       time.Time
-	Watermark     time.Time
-	FirstDay      int
-	FirstMonth    int
-	SmallestGrain timeutil.TimeGrain
+	Now        time.Time
+	MinTime    time.Time
+	MaxTime    time.Time
+	Watermark  time.Time
+	FirstDay   int
+	FirstMonth int
 
 	ref          time.Time
 	truncatedRef bool
@@ -346,10 +358,6 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	}
 
 	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.tz)
-
-	if e.isInfPattern && evalOpts.SmallestGrain != timeutil.TimeGrainUnspecified {
-		end = timeutil.OffsetTime(evalOpts.MaxTime, evalOpts.SmallestGrain, 1, e.tz)
-	}
 
 	if e.Grain != nil {
 		tg = grainMap[*e.Grain]
@@ -715,7 +723,7 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 									Parts: []*GrainPointInTimePart{
 										{
 											Prefix:   "+",
-											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: "s", Num: 1}}},
+											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: reverseGrainMap[parseOpts.SmallestGrain], Num: 1}}},
 										},
 									},
 								},
@@ -724,7 +732,6 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 					},
 				},
 			},
-			isInfPattern: true, // Mark this as an inf pattern for special handling during eval
 		}, nil
 	}
 
@@ -813,30 +820,4 @@ func getLowerOrderGrain(start, end time.Time, tg timeutil.TimeGrain, tz *time.Lo
 		tg = lowerOrderMap[tg]
 	}
 	return tg
-}
-
-// ConvertProtoTimeGrainToTimeutil converts a proto TimeGrain to timeutil.TimeGrain
-func ConvertProtoTimeGrainToTimeutil(protoGrain runtimev1.TimeGrain) timeutil.TimeGrain {
-	switch protoGrain {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return timeutil.TimeGrainMillisecond
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return timeutil.TimeGrainSecond
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return timeutil.TimeGrainMinute
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return timeutil.TimeGrainHour
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return timeutil.TimeGrainDay
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return timeutil.TimeGrainWeek
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return timeutil.TimeGrainMonth
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return timeutil.TimeGrainQuarter
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return timeutil.TimeGrainYear
-	default:
-		return timeutil.TimeGrainUnspecified
-	}
 }

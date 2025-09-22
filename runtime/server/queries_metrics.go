@@ -461,21 +461,19 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	for i, tr := range req.Expressions {
 		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{
 			TimeZoneOverride: tz,
+			SmallestGrain:    timeutil.TimeGrainFromAPI(mv.ValidSpec.SmallestTimeGrain),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
 		}
 
-		smallestGrain := rilltime.ConvertProtoTimeGrainToTimeutil(mv.ValidSpec.SmallestTimeGrain)
-
 		start, end, grain := rillTime.Eval(rilltime.EvalOptions{
-			Now:           now,
-			MinTime:       ts.Min,
-			MaxTime:       ts.Max,
-			Watermark:     ts.Watermark,
-			FirstDay:      int(mv.ValidSpec.FirstDayOfWeek),
-			FirstMonth:    int(mv.ValidSpec.FirstMonthOfYear),
-			SmallestGrain: smallestGrain,
+			Now:        now,
+			MinTime:    ts.Min,
+			MaxTime:    ts.Max,
+			Watermark:  ts.Watermark,
+			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
+			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})
 
 		timeRanges[i] = &runtimev1.TimeRange{
