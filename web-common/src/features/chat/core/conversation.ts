@@ -35,7 +35,7 @@ export class Conversation {
     (error) => !!error,
   );
 
-  private sseClient = new SSEFetchClient<V1CompleteStreamingResponse>();
+  private sseClient: SSEFetchClient<V1CompleteStreamingResponse> | null = null;
   private hasReceivedFirstUserMessage = false;
 
   constructor(
@@ -44,23 +44,7 @@ export class Conversation {
     private readonly options?: {
       onConversationCreated?: (conversationId: string) => void;
     },
-  ) {
-    // Set up SSE client event handlers
-    this.sseClient.on("data", (response) => {
-      this.handleStreamingMessage(response);
-    });
-
-    // Handle streaming errors
-    this.sseClient.on("error", (error) => {
-      this.streamError.set(this.getDescriptiveError(error));
-      this.isStreaming.set(false);
-    });
-
-    // Handle stream completion
-    this.sseClient.on("close", () => {
-      this.isStreaming.set(false);
-    });
-  }
+  ) {}
 
   // QUERIES
 
@@ -140,10 +124,54 @@ export class Conversation {
   // STREAMING METHODS
 
   /**
+   * Initialize SSE client and set up event listeners
+   */
+  private initializeSSEClient(): void {
+    if (this.sseClient) {
+      return; // Already initialized
+    }
+
+    this.sseClient = new SSEFetchClient<V1CompleteStreamingResponse>();
+
+    // Set up SSE client event handlers
+    this.sseClient.on("data", (response) => {
+      this.handleStreamingMessage(response);
+    });
+
+    // Handle streaming errors
+    this.sseClient.on("error", (error) => {
+      this.streamError.set(this.getDescriptiveError(error));
+      this.isStreaming.set(false);
+    });
+
+    // Handle stream completion
+    this.sseClient.on("close", () => {
+      this.isStreaming.set(false);
+    });
+  }
+
+  /**
+   * Remove event listeners from SSE client
+   */
+  private cleanupSSEEventListeners(): void {
+    if (!this.sseClient) {
+      return;
+    }
+
+    // Remove all event listeners to prevent memory leaks
+    // Note: SSEFetchClient doesn't store references to the specific handlers,
+    // so we need to rely on stopping the client to clean up resources
+    this.sseClient.stop();
+  }
+
+  /**
    * Clean up resources when conversation is no longer needed
    */
   public cleanup(): void {
-    this.sseClient.stop();
+    if (this.sseClient) {
+      this.cleanupSSEEventListeners();
+      this.sseClient = null;
+    }
     this.isStreaming.set(false);
   }
 
@@ -151,7 +179,9 @@ export class Conversation {
    * Cancel the current streaming session
    */
   public cancelStream(): void {
-    this.sseClient.stop();
+    if (this.sseClient) {
+      this.sseClient.stop();
+    }
     this.isStreaming.set(false);
     this.streamError.set(null);
   }
@@ -160,8 +190,11 @@ export class Conversation {
    * Start streaming completion responses for a given prompt
    */
   private async startStreaming(prompt: string): Promise<void> {
+    // Initialize SSE client if not already done
+    this.initializeSSEClient();
+
     // Clean up any existing connection
-    this.sseClient.stop();
+    this.sseClient!.stop();
 
     // Build URL with stream parameter (like other streaming endpoints)
     const baseUrl = `${get(runtime).host}/v1/instances/${this.instanceId}/ai/complete/stream?stream=messages`;
@@ -177,7 +210,7 @@ export class Conversation {
     };
 
     // Start streaming using the SSE client
-    await this.sseClient.start(baseUrl, {
+    await this.sseClient!.start(baseUrl, {
       method: "POST",
       body: requestBody,
     });
@@ -260,6 +293,11 @@ export class Conversation {
    */
   private waitForStreamCompletion(): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (!this.sseClient) {
+        reject(new Error("SSE client not initialized"));
+        return;
+      }
+
       let completed = false;
 
       // Set up one-time listeners for completion
