@@ -68,7 +68,6 @@ definitions:
       - [**S3**](#s3) - Amazon S3 storage
 
       ### _Other_
-      - [**DuckDB as a source**](#duckdb-as-a-source) - DuckDB as a source
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
       - [**OpenAI**](#openai) - OpenAI data
       - [**Salesforce**](#salesforce) - Salesforce data

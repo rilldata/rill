@@ -32,7 +32,6 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**S3**](#s3) - Amazon S3 storage
 
 ### _Other_
-- [**DuckDB as a source**](#duckdb-as-a-source) - DuckDB as a source
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 - [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
@@ -164,7 +163,7 @@ _[boolean]_ - Allow access to host environment configuration
 type: connector # Must be `connector` (required)
 driver: azure # Must be `azure` _(required)_
 azure_storage_account: "mystorageaccount" # Azure storage account name   _(required)_
-azure_storage_key: "credentialjsonstring" # Azure storage access key   _(required)_
+azure_storage_key: "credentialstring" # Azure storage access key   _(required)_
 # azure_storage_sas_token: "optionaltoken"         # Optional SAS token for authentication  
 # azure_storage_connection_string: "optionalconnectionstring" # Or use the connection string instead of storage account and key
 azure_storage_bucket: "mycontainer" # Azure Blob Storage container name  
@@ -413,7 +412,6 @@ _[string]_ - Deprecated - Use init_sql instead
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
-
 ### `secrets`
 
 _[string]_ - Comma-separated list of connector names to create temporary secrets for 
@@ -426,10 +424,9 @@ _[string]_ - Name of the attached DuckDB database (auto-detected if not set)
 
 _[string]_ - Default schema used by the DuckDB database 
 
-
 ### `mode`
 
-_[string]_ - Set the mode for the DuckDB connection. 
+_[no type]_ - Set the mode for the DuckDB connection. 
 
 ```yaml
 # Example: DuckDB connector configuration
