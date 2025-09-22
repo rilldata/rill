@@ -19,28 +19,22 @@ DuckDB is a very useful analytical engine but can start to hit performance and s
 
 ## Connecting to External DuckDB
 
-Along with our embedded DuckDB, Rill provides the ability to connect to external DuckDB database files. This allows you to leverage existing DuckDB databases inside of Rill.
+Along with our embedded DuckDB, Rill provides the ability to connect to external DuckDB database files. This allows you to leverage existing DuckDB databases inside of Rill to create metrics views and dashboards.
 
 ### Configuration
 
 <img src='/img/connect/connector/duckdb.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
-### Important Considerations
 
 :::warning File Location and Size
 
-When connecting to external DuckDB files, consider the following:
+When using Rill locally, you can connect to any file on your filesystem without issues. However, when deploying to Rill Cloud, Rill can only access files within its project directory. If your DuckDB file is located outside of this folder, Rill will be unable to bundle it for deployment.
 
-- **File Location**: Ensure the DuckDB file is accessible from your Rill environment
-- **File Size**: Large DuckDB files (>50GB) may impact performance
-- **Permissions**: Ensure Rill has read/write access to the database file
-- **Network Access**: For cloud deployments, ensure the file is accessible from the cloud environment
+Additionally, due to upload size limits, files larger than 100MB will fail to deploy.
 
 :::
 
-
-Once connected, you can see all the tables in your external DuckDB database within Rill and create models, metrics views, and dashboards using this data.
 
 
 ## Using DuckDB Extensions
