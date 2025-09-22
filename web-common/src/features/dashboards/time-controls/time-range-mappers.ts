@@ -3,7 +3,6 @@ import {
   parseRillTime,
   validateRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
-import { RillGrainPointInTimePart } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -17,7 +16,6 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { DateTime, Interval } from "luxon";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
 // TODO: Eventually we should support this in the backend.
@@ -110,18 +108,15 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
 
   if (
     timeRange.expression &&
-    !validateRillTime(selectedComparisonTimeRange.name)
+    TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset
   ) {
-    if (selectedComparisonTimeRange.name === TimeComparisonOption.CONTIGUOUS) {
-      const rt = parseRillTime(timeRange.expression);
-      return {
-        expression: rt.toString() + " offset pp",
-      };
-    } else {
-      return {
-        expression: selectedComparisonTimeRange.name,
-      };
-    }
+    const rt = parseRillTime(timeRange.expression);
+    return {
+      expression:
+        rt.toString() +
+        " offset " +
+        TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset,
+    };
   }
 
   const comparisonTimeRange: V1TimeRange = {};

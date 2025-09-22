@@ -67,7 +67,7 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	if tr.Expression == "" {
 		return e.resolveISOTimeRange(ctx, tr, tz, executionTime)
 	}
-	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
+	if !tr.Start.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
 		return errors.New("other fields are not supported when expression is provided")
 	}
 
@@ -76,7 +76,12 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	if err != nil {
 		return fmt.Errorf("failed to fetch timestamps: %w", err)
 	}
-	if executionTime != nil {
+	if !tr.End.IsZero() {
+		// Else if `end` is present in time range then treat it as watermark
+		ts.Watermark = tr.End
+		ts.Max = tr.End
+		ts.Now = tr.End
+	} else if executionTime != nil {
 		// If provided, all the end anchors should use the execution time.
 		ts.Watermark = *executionTime
 		ts.Max = *executionTime

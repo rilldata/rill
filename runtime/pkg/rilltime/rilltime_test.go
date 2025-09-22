@@ -455,6 +455,8 @@ func TestEval_Misc(t *testing.T) {
 		{"-5W-4M-3Q-2Y to -4W-3M-2Q-1Y as of watermark", "2022-03-08T06:32:36Z", "2023-07-15T06:32:36Z", timeutil.TimeGrainMonth, 1, 1},
 
 		{"3W18D23h as of latest-3Y", "2022-04-04T07:32:36Z", "2022-05-14T06:32:36Z", timeutil.TimeGrainWeek, 1, 1},
+
+		{"7D as of latest/D+1D offset -1M", "2025-04-08T00:00:00Z", "2025-04-15T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, nil)

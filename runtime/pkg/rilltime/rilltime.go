@@ -65,11 +65,11 @@ var (
 		"PYC": "-1Y/Y to ref/Y as of watermark",
 		// TODO: previous period is contextual. should be handled in UI
 		"PP": "",
-		"PD": "-1D^ to D^",
-		"PW": "-1W^ to W^",
-		"PM": "-1M^ to M^",
-		"PQ": "-1Q^ to Q^",
-		"PY": "-1Y^ to Y^",
+		"PD": "-1D/D to ref/D as of watermark",
+		"PW": "-1W/W to ref/W as of watermark",
+		"PM": "-1M/M to ref/M as of watermark",
+		"PQ": "-1Q/Q to ref/Q as of watermark",
+		"PY": "-1Y/Y to ref/Y as of watermark",
 	}
 	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
@@ -408,15 +408,15 @@ func (i *Interval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location
 }
 
 func (i *Interval) previousPeriod(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time) {
-	var start, end time.Time
+	var start time.Time
+	end := tm
 	if i.Ordinal != nil {
 		o := i.Ordinal.Ordinals[0]
 		tg := grainMap[o.Grain]
-		end = tm
 		start = timeutil.OffsetTime(tm, tg, -1, tz)
 	} else if i.StartEnd != nil {
 		evalOpts.ref = tm
-		start, end, _ = i.StartEnd.eval(evalOpts, tm, tz)
+		start, _, _ = i.StartEnd.eval(evalOpts, tm, tz)
 	} else if i.Iso != nil {
 		return i.Iso.previousPeriod(tm, tz)
 	}
@@ -708,8 +708,8 @@ func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil
 
 func (o *Offset) eval(evalOpts EvalOptions, start, end time.Time, mainInterval *Interval, tz *time.Location) (time.Time, time.Time) {
 	if o.Grain != nil {
-		end = start
-		start, _ = o.Grain.eval(end, tz)
+		start, _ = o.Grain.eval(start, tz)
+		end, _ = o.Grain.eval(end, tz)
 	} else if o.PreviousPeriod {
 		start, end = mainInterval.previousPeriod(evalOpts, start, tz)
 	}
