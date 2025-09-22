@@ -123,7 +123,6 @@
             showGenerateModel={(connector.driver.implementsWarehouse ||
               connector.driver.implementsSqlStore) ??
               false}
-            implementsOlap={connector.driver.implementsOlap ?? false}
             {database}
             {databaseSchema}
             table={tableInfo.name}

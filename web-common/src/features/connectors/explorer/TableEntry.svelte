@@ -27,7 +27,6 @@
   export let useNewAPI: boolean = false;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
-  export let implementsOlap: boolean = false;
 
   let contextMenuOpen = false;
 
@@ -134,7 +133,6 @@
             {showGenerateMetricsAndDashboard}
             {showGenerateModel}
             {isModelingSupported}
-            {implementsOlap}
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>
