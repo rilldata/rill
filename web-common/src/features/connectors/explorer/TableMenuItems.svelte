@@ -28,6 +28,7 @@
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
+  export let implementsOlap: boolean = false;
 
   const { ai } = featureFlags;
 
@@ -98,7 +99,17 @@
 
   // Create both metrics view and explore dashboard in parallel
   async function handleGenerateMetricsAndExplore() {
-    await Promise.all([createMetricsViewFromTable(), createExploreFromTable()]);
+    // Only create explore dashboard for OLAP connectors
+    // Non-OLAP connectors (warehouses, SQL stores) can only create metrics views
+    if (implementsOlap) {
+      await Promise.all([
+        createMetricsViewFromTable(),
+        createExploreFromTable(),
+      ]);
+    } else {
+      // For non-OLAP connectors, only create the metrics view
+      await createMetricsViewFromTable();
+    }
   }
 </script>
 
