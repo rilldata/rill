@@ -17,7 +17,52 @@ DuckDB is a very useful analytical engine but can start to hit performance and s
 
 :::
 
-### Multiple Engines 
+## Connecting to External DuckDB
+
+Along with our embedded DuckDB, Rill provides the ability to connect to external DuckDB database files. This allows you to leverage existing DuckDB databases inside of Rill.
+
+### Configuration
+
+<img src='/img/connect/connector/duckdb.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<br />
+
+### Important Considerations
+
+:::warning File Location and Size
+
+When connecting to external DuckDB files, consider the following:
+
+- **File Location**: Ensure the DuckDB file is accessible from your Rill environment
+- **File Size**: Large DuckDB files (>50GB) may impact performance
+- **Permissions**: Ensure Rill has read/write access to the database file
+- **Network Access**: For cloud deployments, ensure the file is accessible from the cloud environment
+
+:::
+
+
+Once connected, you can see all the tables in your external DuckDB database within Rill and create models, metrics views, and dashboards using this data.
+
+
+## Using DuckDB Extensions
+
+DuckDB supports a wide variety of extensions that can enhance its functionality. To use extensions with Rill's embedded DuckDB, configure them in your connector:
+
+```yaml
+# connectors/duckdb.yaml
+type: connector
+driver: duckdb
+init_sql: |
+  INSTALL httpfs;
+  LOAD httpfs;
+  INSTALL spatial;
+  LOAD spatial;
+```
+
+### Popular Extensions
+
+For a complete list of available extensions, see the [DuckDB Extensions documentation](https://duckdb.org/docs/extensions/overview).
+
+## Multiple Engines 
 
 While not recommended, it is possible in Rill to use multiple OLAP engines in a single project. For more information, see our page on [Using Multiple OLAP Engines](/connect/olap/multiple-olap).
 
@@ -25,3 +70,5 @@ While not recommended, it is possible in Rill to use multiple OLAP engines in a 
 
 - For dashboards powered by DuckDB, [measure definitions](/build/metrics-view/#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.
 - There is a known issue around creating a DuckDB source via the UI; you will need to create the YAML file manually.
+- DuckDB supports most standard SQL functions and operators, making it easy to write complex analytical queries.
+- For advanced analytics, consider using DuckDB's window functions, CTEs, and other advanced SQL features.

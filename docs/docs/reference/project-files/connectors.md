@@ -32,8 +32,9 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**S3**](#s3) - Amazon S3 storage
 
 ### _Other_
+- [**DuckDB as a source**](#duckdb-as-a-source) - DuckDB as a source
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAPI**](#openapi) - OpenAPI data
+- [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
 
@@ -362,15 +363,23 @@ ssl: true # Enable SSL for secure connection
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+_[string]_ - Must be "duckdb" _(required)_
+
+### `mode`
+
+_[string]_ - Connection mode 
+
+### `path`
+
+_[string]_ - Path to external DuckDB database 
+
+### `attach`
+
+_[string]_ - Full ATTACH statement to attach a DuckDB database 
 
 ### `pool_size`
 
 _[integer]_ - Number of concurrent connections and queries allowed 
-
-### `allow_host_access`
-
-_[boolean]_ - Whether access to the local environment and file system is allowed 
 
 ### `cpu`
 
@@ -382,27 +391,74 @@ _[integer]_ - Amount of memory in GB available to the database
 
 ### `read_write_ratio`
 
-_[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
+_[number]_ - Ratio of resources allocated to read vs write operations 
+
+### `allow_host_access`
+
+_[boolean]_ - Whether access to local environment and file system is allowed 
 
 ### `init_sql`
 
-_[string]_ - is executed during database initialization. 
+_[string]_ - SQL executed during database initialization 
 
-### `secrets`
+### `conn_init_sql`
 
-_[string]_ - Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model. 
+_[string]_ - SQL executed when a new connection is initialized 
+
+### `boot_queries`
+
+_[string]_ - Deprecated - Use init_sql instead 
 
 ### `log_queries`
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
+### `secrets`
+
+_[string]_ - Comma-separated list of connector names to create temporary secrets for 
+
+### `database_name`
+
+_[string]_ - Name of the attached DuckDB database (auto-detected if not set) 
+
+### `schema_name`
+
+_[string]_ - Default schema used by the DuckDB database 
+
 ```yaml
 # Example: DuckDB connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
+mode: "readwrite" # Set the mode for the DuckDB connection. 
 allow_host_access: true # Whether access to the local environment and file system is allowed  
 cpu: 4 # Number of CPU cores available to the database  
 memory_limit_gb: 16 # Amount of memory in GB available to the database
+pool_size: 5 # Number of concurrent connections and queries allowed
+read_write_ratio: 0.7 # Ratio of resources allocated to read vs write operations
+init_sql: "INSTALL httpfs; LOAD httpfs;" # SQL executed during database initialization
+log_queries: true # Whether to log raw SQL queries executed through OLAP
+```
+
+## DuckDB as a source
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+
+### `db`
+
+_[string]_ - Name of the DuckDB database _(required)_
+
+### `sql`
+
+_[string]_ - SQL to execute _(required)_
+
+```yaml
+# Example: DuckDB as a source connector configuration
+type: connector # Must be `connector` (required)
+driver: duckdb # Must be `duckdb` _(required)_
+db: "/path/to/my-duckdb-database.db" # Name of the DuckDB database  
+sql: "select * from my-table" # SQL to execute  
 ```
 
 ## GCS
@@ -484,6 +540,10 @@ _[string]_ - MotherDuck token _(required)_
 
 _[string]_ - SQL executed during database initialization. 
 
+### `mode`
+
+_[string]_ - Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations. 
+
 ```yaml
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
@@ -539,11 +599,11 @@ password: "mypassword" # Password for authentication
 ssl_mode: "DISABLED" # SSL mode can be DISABLED, PREFERRED or REQUIRED
 ```
 
-## OpenAPI
+## OpenAI
 
 ### `driver`
 
-_[string]_ - The driver type, must be set to "openapi" 
+_[string]_ - The driver type, must be set to "openai" 
 
 ### `api_key`
 
@@ -566,9 +626,9 @@ _[string]_ - The type of OpenAI API to use
 _[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
 
 ```yaml
-# Example: OpenAPI connector configuration
+# Example: OpenAI connector configuration
 type: connector # Must be `connector` (required)
-driver: openapi # Must be `openapi` _(required)_
+driver: openai # Must be `openai` _(required)_
 api_key: "my-api-key" # API key for connecting to OpenAI  
 model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  

@@ -68,8 +68,9 @@ definitions:
       - [**S3**](#s3) - Amazon S3 storage
 
       ### _Other_
+      - [**DuckDB as a source**](#duckdb-as-a-source) - DuckDB as a source
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-      - [**OpenAPI**](#openapi) - OpenAPI data
+      - [**OpenAI**](#openai) - OpenAI data
       - [**Salesforce**](#salesforce) - Salesforce data
       - [**Slack**](#slack) - Slack data
 
@@ -351,45 +352,106 @@ definitions:
         - type: object
           title: DuckDB
           properties:
+            # Core Properties
             driver:
               type: string
-              description: Refers to the driver type and must be driver `duckdb`
+              description: Must be "duckdb"
               const: duckdb
+            mode:
+              type: string
+              description: Connection mode
+              enum: ["read", "readwrite"]
+              default: "read"
+            path:
+              type: string
+              description: Path to external DuckDB database
+            attach:
+              type: string
+              description: Full ATTACH statement to attach a DuckDB database
+            # Resource Management
             pool_size:
               type: integer
               description: Number of concurrent connections and queries allowed
-            allow_host_access:
-              type: boolean
-              description: Whether access to the local environment and file system is allowed
+              minimum: 1
             cpu:
               type: integer
               description: Number of CPU cores available to the database
+              minimum: 1
             memory_limit_gb:
               type: integer
               description: Amount of memory in GB available to the database
+              minimum: 1
             read_write_ratio:
               type: number
-              description: Ratio of resources allocated to the read database; used to divide CPU and memory
+              description: Ratio of resources allocated to read vs write operations
+              minimum: 0
+              maximum: 1
+              default: 0.5
+            allow_host_access:
+              type: boolean
+              description: Whether access to local environment and file system is allowed
+            # SQL Configuration
             init_sql:
               type: string
-              description: is executed during database initialization.
-            secrets:
+              description: SQL executed during database initialization
+            conn_init_sql:
               type: string
-              description: Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model.
+              description: SQL executed when a new connection is initialized
+            boot_queries:
+              type: string
+              description: Deprecated - Use init_sql instead
+            # Advanced Properties
             log_queries:
               type: boolean
               description: Whether to log raw SQL queries executed through OLAP
+            secrets:
+              type: string
+              description: Comma-separated list of connector names to create temporary secrets for
+            database_name:
+              type: string
+              description: Name of the attached DuckDB database (auto-detected if not set)
+            schema_name:
+              type: string
+              description: Default schema used by the DuckDB database
           examples:
             - # Example: DuckDB connector configuration
               type: connector                                  # Must be `connector` (required)
               driver: duckdb                                   # Must be `duckdb` _(required)_
-
+              mode: "readwrite"                                # Set the mode for the DuckDB connection. 
               allow_host_access: true                          # Whether access to the local environment and file system is allowed  
               cpu: 4                                          # Number of CPU cores available to the database  
               memory_limit_gb: 16                              # Amount of memory in GB available to the database
+              pool_size: 5                                    # Number of concurrent connections and queries allowed
+              read_write_ratio: 0.7                           # Ratio of resources allocated to read vs write operations
+              init_sql: "INSTALL httpfs; LOAD httpfs;"        # SQL executed during database initialization
+              log_queries: true                               # Whether to log raw SQL queries executed through OLAP
 
           required:
             - driver
+        - type: object
+          title: DuckDB as a source
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `duckdb`
+              const: duckdb
+            db:
+              type: string
+              description: Name of the DuckDB database
+            sql:
+              type: string
+              description: SQL to execute
+          examples:
+            - # Example: DuckDB as a source connector configuration
+              type: connector                                  # Must be `connector` (required)
+              driver: duckdb                                   # Must be `duckdb` _(required)_
+
+              db: "/path/to/my-duckdb-database.db"                         # Name of the DuckDB database  
+              sql: "select * from my-table"                    # SQL to execute  
+          required:
+            - driver
+            - db
+            - sql
         - type: object
           title: GCS
           properties:
@@ -467,6 +529,11 @@ definitions:
             init_sql:
               type: string
               description: SQL executed during database initialization.
+            mode:
+              type: string
+              description: Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.
+              enum: ["read", "readwrite"]
+              default: "read"
           examples:
             - # Example: MotherDuck connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -519,11 +586,11 @@ definitions:
           required:
             - driver
         - type: object
-          title: OpenAPI
+          title: OpenAI
           properties:
             driver:
               type: string
-              description: The driver type, must be set to "openapi"
+              description: The driver type, must be set to "openai"
             api_key:
               type: string
               description: API key for connecting to OpenAI
@@ -540,9 +607,9 @@ definitions:
               type: string
               description: The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
           examples:
-            - # Example: OpenAPI connector configuration
+            - # Example: OpenAI connector configuration
               type: connector                                  # Must be `connector` (required)
-              driver: openapi                                  # Must be `openapi` _(required)_
+              driver: openai                                  # Must be `openai` _(required)_
 
               api_key: "my-api-key"                            # API key for connecting to OpenAI  
               model: "gpt-4o"                                  # The OpenAI model to use (e.g., 'gpt-4o')  
@@ -2351,9 +2418,9 @@ definitions:
             type: string
             const: api
             description: Refers to the resource type and must be `api`
-          openapi:
+          openai:
             type: object
-            description: OpenAPI specification for the API endpoint
+            description: OpenAI specification for the API endpoint
             properties:
               summary:
                 type: string

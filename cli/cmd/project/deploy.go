@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -41,6 +40,7 @@ type DeployOpts struct {
 	ProdVersion string
 	ProdBranch  string
 	Slots       int
+	PushEnv     bool
 
 	ArchiveUpload bool
 	// Managed indicates if the project should be deployed using Rill Managed Git.
@@ -227,9 +227,8 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 		// this is not possible with new flow but keeping it for consistency
 	}
 
-	if req.RillMgdGitRemote != "" {
-		// if no project found remove `__rill_remote`. This can happen if managed repo was provisioned but project was not created/failed.
-		err = removeRemote(repoRoot, "__rill_remote")
+	if len(resp.Projects) == 1 && resp.Projects[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
+		err = ch.HandleRepoTransfer(repoRoot, req.GitRemote)
 		if err != nil {
 			return err
 		}
@@ -270,6 +269,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
+	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
@@ -395,17 +395,19 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 
 	// Upload .env
-	vars, err := local.ParseDotenv(ctx, localProjectPath)
-	if err != nil {
-		ch.PrintfWarn("Failed to parse .env: %v\n", err)
-	} else if len(vars) > 0 {
-		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      opts.Name,
-			Variables:    vars,
-		})
+	if opts.PushEnv {
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
 		if err != nil {
-			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
 		}
 	}
 
@@ -483,19 +485,20 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 		}
 	}
 
-	// Also updated .env vars
-	// Fetch vars from .env
-	vars, err := local.ParseDotenv(ctx, opts.LocalProjectPath())
-	if err != nil {
-		ch.PrintfWarn("Failed to parse .env: %v\n", err)
-	} else if len(vars) > 0 {
-		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      proj.Name,
-			Variables:    vars,
-		})
+	// Upload .env
+	if opts.PushEnv {
+		vars, err := local.ParseDotenv(ctx, opts.LocalProjectPath())
 		if err != nil {
-			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      proj.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
 		}
 	}
 
@@ -622,17 +625,4 @@ func errMsgContains(err error, msg string) bool {
 		return strings.Contains(st.Message(), msg)
 	}
 	return false
-}
-
-func removeRemote(path, remoteName string) error {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return fmt.Errorf("failed to open git repository: %w", err)
-	}
-
-	err = repo.DeleteRemote(remoteName)
-	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
-		return err
-	}
-	return nil
 }

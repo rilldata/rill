@@ -266,7 +266,7 @@ const config = {
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/connect/data-source/duckdb'
+            to: '/connect/olap/motherduck'
           },
           {
             from: '/deploy/source-refresh',
