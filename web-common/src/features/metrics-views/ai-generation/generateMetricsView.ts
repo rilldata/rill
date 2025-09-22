@@ -24,7 +24,6 @@ import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import { createAndPreviewExplore } from "../create-and-preview-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
-import type { QueryClient } from "@tanstack/svelte-query";
 import { createYamlModelFromTable } from "../../connectors/code-utils";
 
 /**
@@ -268,8 +267,37 @@ export async function createModelAndMetricsViewAndExplore(
   databaseSchema: string,
   table: string,
 ) {
+  let isAICancelled = false;
+  const abortController = new AbortController();
+
+  overlay.set({
+    title: `Creating your metrics and dashboard...`,
+    detail: {
+      component: OptionToCancelAIGeneration,
+      props: {
+        onCancel: () => {
+          abortController.abort("User canceled the AI generation");
+          isAICancelled = true;
+        },
+      },
+    },
+  });
+
   try {
     // Step 1: Create model that ingests from source to OLAP
+    overlay.set({
+      title: `Creating model (ingesting from source → OLAP)...`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort("User canceled the AI generation");
+            isAICancelled = true;
+          },
+        },
+      },
+    });
+
     const [_modelPath, modelName] = await createYamlModelFromTable(
       queryClient,
       connector,
@@ -290,6 +318,25 @@ export async function createModelAndMetricsViewAndExplore(
     const metricsViewName = `${table}_metrics`;
     const metricsViewFilePath = `/metrics/${metricsViewName}.yaml`;
 
+    // Check if user cancelled
+    if (isAICancelled) {
+      throw new Error("User cancelled the operation");
+    }
+
+    // Update overlay for metrics view creation
+    overlay.set({
+      title: `Creating metrics view (on top of model)...`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort("User canceled the AI generation");
+            isAICancelled = true;
+          },
+        },
+      },
+    });
+
     // Use the backend function with the model name instead of table name
     await runtimeServiceGenerateMetricsViewFile(instanceId, {
       model: modelName, // Use model name instead of table
@@ -309,10 +356,32 @@ export async function createModelAndMetricsViewAndExplore(
       throw new Error("Failed to create a Metrics View resource");
     }
 
+    // Check if user cancelled
+    if (isAICancelled) {
+      throw new Error("User cancelled the operation");
+    }
+
+    // Update overlay for explore dashboard creation
+    overlay.set({
+      title: `Creating explore dashboard (on top of metrics view)...`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort("User canceled the AI generation");
+            isAICancelled = true;
+          },
+        },
+      },
+    });
+
     // Step 5: Create explore dashboard
     await createAndPreviewExplore(queryClient, instanceId, resource);
   } catch (err) {
     console.error("Failed to create model and metrics view:", err);
     throw err;
+  } finally {
+    // Always clean up the overlay
+    overlay.set(null);
   }
 }
