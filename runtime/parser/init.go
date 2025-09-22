@@ -46,6 +46,28 @@ mock_users:
 		return err
 	}
 
+	// Determine the driver based on olap
+	var driver string
+	switch olap {
+	case "", "duckdb":
+		driver = "duckdb"
+	case "clickhouse":
+		driver = "clickhouse"
+	default:
+		// Default to duckdb for unknown olap
+		driver = "duckdb"
+	}
+
+	// Create the connector YAML
+	connectorYAML := fmt.Sprintf(`type: connector
+driver: %s
+`, driver)
+
+	err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", driver), strings.NewReader(connectorYAML))
+	if err != nil {
+		return err
+	}
+
 	gitignore, _ := repo.Get(ctx, ".gitignore")
 	if gitignore != "" {
 		gitignore += "\n"
