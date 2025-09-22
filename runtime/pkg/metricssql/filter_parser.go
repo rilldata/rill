@@ -3,14 +3,11 @@ package metricssqlparser
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/itlightning/dateparse"
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/rilldata/rill/runtime/metricsview"
 )
@@ -71,7 +68,7 @@ func parseFilter(ctx context.Context, node, context ast.ExprNode, q *query) (*me
 	case *ast.FuncCallExpr:
 		return parseFuncCallInFilter(ctx, node, context, q)
 	default:
-		return nil, fmt.Errorf("metrics sql: unsupported expression %q", restore(node))
+		return nil, fmt.Errorf("metrics sql: unsupported type %T, expression %q", node, restore(node))
 	}
 }
 
@@ -165,10 +162,6 @@ func parseParentheses(ctx context.Context, node *ast.ParenthesesExpr, q *query) 
 }
 
 func parsePatternIn(ctx context.Context, node *ast.PatternInExpr, q *query) (*metricsview.Expression, error) {
-	if node.Sel != nil {
-		return nil, fmt.Errorf("metrics sql: sub_query is not supported")
-	}
-
 	expr, err := parseFilter(ctx, node.Expr, nil, q)
 	if err != nil {
 		return nil, err
@@ -180,22 +173,163 @@ func parsePatternIn(ctx context.Context, node *ast.PatternInExpr, q *query) (*me
 	} else {
 		op = metricsview.OperatorIn
 	}
-	values := make([]any, 0, len(node.List))
-	for _, n := range node.List {
-		val, err := parseValueExpr(n)
+
+	var right *metricsview.Expression
+	if node.Sel != nil {
+		subquery, err := parseInSubquery(ctx, node.Sel, q)
 		if err != nil {
 			return nil, err
 		}
-		values = append(values, val)
+		right = &metricsview.Expression{Subquery: subquery}
+	} else {
+		values := make([]any, 0, len(node.List))
+		for _, n := range node.List {
+			val, err := parseValueExpr(n)
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, val)
+		}
+		right = &metricsview.Expression{Value: values}
 	}
+
 	return &metricsview.Expression{
 		Condition: &metricsview.Condition{
-			Operator: op,
-			Expressions: []*metricsview.Expression{
-				expr,
-				{Value: values},
-			},
+			Operator:    op,
+			Expressions: []*metricsview.Expression{expr, right},
 		},
+	}, nil
+}
+
+func parseInSubquery(ctx context.Context, n ast.ExprNode, q *query) (*metricsview.Subquery, error) {
+	// Extract the subquery SELECT statement
+	subquery, ok := n.(*ast.SubqueryExpr)
+	if !ok {
+		return nil, fmt.Errorf("metrics sql: subquery expression type %T not supported", n)
+	}
+	sel, ok := subquery.Query.(*ast.SelectStmt)
+	if !ok {
+		return nil, fmt.Errorf("metrics sql: subquery type %T is not supported", subquery.Query)
+	}
+
+	// You can do a lot of stuff in a SELECT statement. Check it doesn't do anything we don't support.
+	switch {
+	case sel.Kind != ast.SelectStmtKindSelect:
+		return nil, fmt.Errorf("metrics sql: subquery of kind %s is not supported", sel.Kind.String())
+	case sel.SelectStmtOpts != nil && sel.SelectStmtOpts.Distinct:
+		return nil, fmt.Errorf("metrics sql: subquery with DISTINCT is not supported")
+	case len(sel.WindowSpecs) > 0:
+		return nil, fmt.Errorf("metrics sql: subquery with window specifications is not supported")
+	case sel.OrderBy != nil:
+		return nil, fmt.Errorf("metrics sql: subquery with ORDER BY is not supported")
+	case sel.Limit != nil:
+		return nil, fmt.Errorf("metrics sql: subquery with LIMIT is not supported")
+	case sel.LockInfo != nil:
+		return nil, fmt.Errorf("metrics sql: subquery with lock info is not supported")
+	case len(sel.TableHints) > 0:
+		return nil, fmt.Errorf("metrics sql: subquery with table hints is not supported")
+	case sel.IsInBraces:
+		return nil, fmt.Errorf("metrics sql: subquery with braces is not supported")
+	case sel.WithBeforeBraces:
+		return nil, fmt.Errorf("metrics sql: subquery with WITH before braces is not supported")
+	case sel.QueryBlockOffset != 0:
+		return nil, fmt.Errorf("metrics sql: subquery with query block offset is not supported")
+	case sel.SelectIntoOpt != nil:
+		return nil, fmt.Errorf("metrics sql: subquery with SELECT INTO is not supported")
+	case sel.AfterSetOperator != nil:
+		return nil, fmt.Errorf("metrics sql: subquery with set operations is not supported")
+	case len(sel.Lists) > 0:
+		return nil, fmt.Errorf("metrics sql: subquery with row expressions is not supported")
+	case sel.With != nil:
+		return nil, fmt.Errorf("metrics sql: subquery with WITH clause is not supported")
+	case sel.AsViewSchema:
+		return nil, fmt.Errorf("metrics sql: subquery as view schema is not supported")
+	}
+
+	// Validate the FROM clause is a plain `FROM metrics_view`
+	if sel.From == nil || sel.From.TableRefs == nil {
+		return nil, fmt.Errorf("metrics sql: subquery must have a FROM clause")
+	}
+	if sel.From.TableRefs.Right != nil {
+		return nil, fmt.Errorf("metrics sql: subquery with JOIN is not supported")
+	}
+	tblSrc, ok := sel.From.TableRefs.Left.(*ast.TableSource)
+	if !ok {
+		return nil, fmt.Errorf("metrics sql: subquery must select from a metrics view")
+	}
+	tbl, ok := tblSrc.Source.(*ast.TableName)
+	if !ok {
+		return nil, fmt.Errorf("metrics sql: subquery must select from a metrics view")
+	}
+	tblName := tbl.Name.String()
+	if q != nil && q.q.MetricsView != tblName {
+		return nil, fmt.Errorf("metrics sql: subquery must select from the metrics view %q", q.q.MetricsView)
+	}
+
+	// Parse the selected dimension
+	if sel.Fields == nil || len(sel.Fields.Fields) != 1 {
+		return nil, fmt.Errorf("metrics sql: subquery must select exactly one dimension (note: you can reference measures in the HAVING expression)")
+	}
+	field := sel.Fields.Fields[0]
+	if field.WildCard != nil || field.Expr == nil {
+		return nil, fmt.Errorf("metrics sql: subquery must select a specific field, not a wildcard")
+	}
+	dim, err := parseColumnNameExpr(field.Expr)
+	if err != nil {
+		return nil, err
+	}
+
+	// GROUP BY is optional, but if provided, check it matches the dimension
+	if sel.GroupBy != nil {
+		if sel.GroupBy.Rollup {
+			return nil, fmt.Errorf("metrics sql: subquery with ROLLUP in GROUP BY is not supported")
+		}
+		if len(sel.GroupBy.Items) != 1 {
+			return nil, fmt.Errorf("metrics sql: subquery must group by exactly one dimension")
+		}
+		groupByName, err := parseColumnNameExpr(sel.GroupBy.Items[0])
+		if err != nil {
+			return nil, fmt.Errorf("metrics sql: failed to parse GROUP BY expression in subquery: %w", err)
+		}
+		if groupByName != dim {
+			return nil, fmt.Errorf("metrics sql: subquery must group by the same dimension %q as the subquery's SELECT clause", dim)
+		}
+	}
+
+	// Parse the WHERE and HAVING clauses
+	var where, having *metricsview.Expression
+	if sel.Where != nil {
+		var err error
+		where, err = parseFilter(ctx, sel.Where, nil, q)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if sel.Having != nil && sel.Having.Expr != nil {
+		var err error
+		having, err = parseFilter(ctx, sel.Having.Expr, nil, q)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Extract measures from the HAVING clause.
+	// NOTE: In the future, we may want to move this into the handling of HAVING inside the metricsview package, so that you don't need to select measures that are only used in HAVING.
+	var measures []metricsview.Measure
+	if having != nil {
+		fields := metricsview.AnalyzeExpressionFields(having)
+		for _, field := range fields {
+			// NOTE: This works because metrics SQL doesn't currently supported computed measures.
+			measures = append(measures, metricsview.Measure{Name: field})
+		}
+	}
+
+	// Success
+	return &metricsview.Subquery{
+		Dimension: metricsview.Dimension{Name: dim},
+		Measures:  measures,
+		Where:     where,
+		Having:    having,
 	}, nil
 }
 
@@ -269,17 +403,23 @@ func parseBetween(ctx context.Context, n *ast.BetweenExpr, q *query) (*metricsvi
 	}, nil
 }
 
-func parseValueExpr(in ast.Node) (string, error) {
+func parseValueExpr(in ast.Node) (any, error) {
+	// Extract underlying value
 	node, ok := in.(ast.ValueExpr)
 	if !ok {
 		return "", fmt.Errorf("metrics sql: expected value expression, got %T", in)
 	}
-	var sb strings.Builder
-	rctx := format.NewRestoreCtx(format.RestoreNameBackQuotes|format.RestoreStringWithoutCharset, &sb)
-	if err := node.Restore(rctx); err != nil {
-		return "", err
+	val := node.GetValue()
+
+	// Handle a couple types that we prefer simplified
+	switch actual := val.(type) {
+	case int64:
+		val = int(actual)
+	case uint64:
+		val = int(actual)
 	}
-	return sb.String(), nil
+
+	return val, nil
 }
 
 func parseTimeUnitValueExpr(in ast.Node) (string, error) {
@@ -332,21 +472,21 @@ func parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr, context 
 		if err != nil {
 			return nil, err
 		}
-		amt, err := strconv.Atoi(expr)
-		if err != nil {
+		amt, ok := expr.(int)
+		if !ok {
 			return nil, fmt.Errorf("metrics sql: expected integer value in date_add/date_sub function")
 		}
 
-		expr, err = parseTimeUnitValueExpr(node.Args[2]) // handling of DAY
+		timeUnit, err := parseTimeUnitValueExpr(node.Args[2]) // handling of DAY
 		if err != nil {
 			return nil, err
 		}
 
 		var res time.Time
 		if node.FnName.L == "date_add" {
-			res, err = add(t, expr, amt)
+			res, err = add(t, timeUnit, amt)
 		} else {
-			res, err = sub(t, expr, amt)
+			res, err = sub(t, timeUnit, amt)
 		}
 		if err != nil {
 			return nil, err

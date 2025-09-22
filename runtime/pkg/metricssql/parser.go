@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -223,26 +222,28 @@ func (q *query) parseSelect(node *ast.FieldList) error {
 }
 
 func (q *query) parseLimit(node *ast.Limit) error {
-	limit, err := parseValueExpr(node.Count)
+	limitVal, err := parseValueExpr(node.Count)
 	if err != nil {
 		return err
 	}
-	lmt, err := strconv.ParseInt(limit, 10, 64)
-	if err != nil {
-		return err
+	limit, ok := limitVal.(int)
+	if !ok {
+		return fmt.Errorf("metrics sql: expected int for limit, got %T", limitVal)
 	}
-	q.q.Limit = &lmt
+	limit64 := int64(limit)
+	q.q.Limit = &limit64
 
 	if node.Offset != nil {
-		limit, err := parseValueExpr(node.Offset)
+		offsetVal, err := parseValueExpr(node.Offset)
 		if err != nil {
 			return err
 		}
-		lmt, err := strconv.ParseInt(limit, 10, 64)
-		if err != nil {
-			return err
+		offset, ok := offsetVal.(int)
+		if !ok {
+			return fmt.Errorf("metrics sql: expected int for offset, got %T", limit)
 		}
-		q.q.Offset = &lmt
+		offset64 := int64(offset)
+		q.q.Offset = &offset64
 	}
 	return nil
 }
@@ -303,9 +304,13 @@ func (q *query) parseFuncCallExpr(node *ast.FuncCallExpr) (*metricsview.Dimensio
 	if len(node.Args) != 2 {
 		return nil, fmt.Errorf("metrics sql: expected 2 arguments in date_trunc function")
 	}
-	grain, err := parseValueExpr(node.Args[0]) // handling of MONTH
+	grainVal, err := parseValueExpr(node.Args[0]) // handling of MONTH
 	if err != nil {
 		return nil, err
+	}
+	grain, ok := grainVal.(string)
+	if !ok {
+		return nil, fmt.Errorf("metrics sql: expected string for grain, got %T", grainVal)
 	}
 
 	col, typ, err := q.parseColumnNameExpr(node.Args[1]) // handling of col
