@@ -22,7 +22,10 @@
   import { fileArtifacts } from "../../entity-management/file-artifacts";
   import { waitUntil } from "../../../lib/waitUtils";
   import { get } from "svelte/store";
-  import { runtimeServicePutFile } from "../../../runtime-client";
+  import {
+    runtimeServicePutFile,
+    runtimeServiceGenerateMetricsViewFile,
+  } from "../../../runtime-client";
   import {
     createSqlModelFromTable,
     createYamlModelFromTable,
@@ -121,6 +124,7 @@
     }
   }
 
+  // TODO: move to generateMetricsView.ts
   async function createModelAndMetricsViewAndExplore() {
     try {
       // Step 1: Create model that ingests from source to OLAP
@@ -132,39 +136,26 @@
         table,
       );
 
-      // Step 2: Create metrics view on top of the model
+      // Step 2: Wait for model to be ready
+      const modelResource = fileArtifacts
+        .getFileArtifact(`/models/${modelName}.yaml`)
+        .getResource(queryClient, instanceId);
+
+      await waitUntil(() => get(modelResource).data !== undefined, 10000);
+
+      // Step 3: Create metrics view using the backend AI generation
+      // This will properly analyze the model's schema and generate dimensions/measures
       const metricsViewName = `${table}_metrics`;
       const metricsViewFilePath = `/metrics/${metricsViewName}.yaml`;
 
-      // Generate metrics view YAML that references the model
-      const metricsViewYaml = `# Metrics view YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
-
-version: 1
-type: metrics_view
-
-display_name: "${table} Metrics"
-model: ${modelName}
-
-timeseries: # Add your timestamp column here
-dimensions:
-  # Add your dimensions here
-measures:
-  - name: total_records
-    display_name: "Total Records"
-    expression: "COUNT(*)"
-    format_preset: "humanize"
-`;
-
-      // Write the metrics view file
-      await runtimeServicePutFile(instanceId, {
+      // Use the backend function with the model name instead of table name
+      await runtimeServiceGenerateMetricsViewFile(instanceId, {
+        model: modelName, // Use model name instead of table
         path: metricsViewFilePath,
-        blob: metricsViewYaml,
-        create: true,
-        createOnly: true,
+        useAi: get(featureFlags.ai),
       });
 
-      // Step 3: Wait for metrics view to be ready
+      // Step 4: Wait for metrics view to be ready
       const metricsViewResource = fileArtifacts
         .getFileArtifact(metricsViewFilePath)
         .getResource(queryClient, instanceId);
@@ -176,7 +167,7 @@ measures:
         throw new Error("Failed to create a Metrics View resource");
       }
 
-      // Step 4: Create explore dashboard
+      // Step 5: Create explore dashboard
       await createAndPreviewExplore(queryClient, instanceId, resource);
     } catch (err) {
       console.error("Failed to create model and metrics view:", err);
