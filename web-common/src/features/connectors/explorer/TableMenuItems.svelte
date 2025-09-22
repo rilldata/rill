@@ -16,6 +16,13 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { createAndPreviewExplore } from "../../metrics-views/create-and-preview-explore";
+  import { createResourceFile } from "../../file-explorer/new-files";
+  import { ResourceKind } from "../../entity-management/resource-selectors";
+  import { fileArtifacts } from "../../entity-management/file-artifacts";
+  import { waitUntil } from "../../../lib/waitUtils";
+  import { get } from "svelte/store";
+  import { runtimeServicePutFile } from "../../../runtime-client";
   import {
     createSqlModelFromTable,
     createYamlModelFromTable,
@@ -28,6 +35,7 @@
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
   export let isModelingSupported: boolean | undefined = false;
+  export let implementsOlap: boolean = false;
 
   const { ai } = featureFlags;
 
@@ -96,9 +104,84 @@
     }
   }
 
-  // Create both metrics view and explore dashboard in parallel
+  // Create both metrics view and explore dashboard
   async function handleGenerateMetricsAndExplore() {
-    await Promise.all([createMetricsViewFromTable(), createExploreFromTable()]);
+    if (implementsOlap) {
+      // For OLAP connectors, create both in parallel
+      await Promise.all([
+        createMetricsViewFromTable(),
+        createExploreFromTable(),
+      ]);
+    } else {
+      // For non-OLAP connectors, follow Rill architecture:
+      // 1. Create model (ingests from source → OLAP)
+      // 2. Create metrics view (on top of model)
+      // 3. Create explore dashboard (on top of metrics view)
+      await createModelAndMetricsViewAndExplore();
+    }
+  }
+
+  async function createModelAndMetricsViewAndExplore() {
+    try {
+      // Step 1: Create model that ingests from source to OLAP
+      const [_modelPath, modelName] = await createYamlModelFromTable(
+        queryClient,
+        connector,
+        database,
+        databaseSchema,
+        table,
+      );
+
+      // Step 2: Create metrics view on top of the model
+      const metricsViewName = `${table}_metrics`;
+      const metricsViewFilePath = `/metrics/${metricsViewName}.yaml`;
+
+      // Generate metrics view YAML that references the model
+      const metricsViewYaml = `# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
+
+version: 1
+type: metrics_view
+
+display_name: "${table} Metrics"
+model: ${modelName}
+
+timeseries: # Add your timestamp column here
+dimensions:
+  # Add your dimensions here
+measures:
+  - name: total_records
+    display_name: "Total Records"
+    expression: "COUNT(*)"
+    format_preset: "humanize"
+`;
+
+      // Write the metrics view file
+      await runtimeServicePutFile(instanceId, {
+        path: metricsViewFilePath,
+        blob: metricsViewYaml,
+        create: true,
+        createOnly: true,
+      });
+
+      // Step 3: Wait for metrics view to be ready
+      const metricsViewResource = fileArtifacts
+        .getFileArtifact(metricsViewFilePath)
+        .getResource(queryClient, instanceId);
+
+      await waitUntil(() => get(metricsViewResource).data !== undefined, 10000);
+
+      const resource = get(metricsViewResource).data;
+      if (!resource) {
+        throw new Error("Failed to create a Metrics View resource");
+      }
+
+      // Step 4: Create explore dashboard
+      await createAndPreviewExplore(queryClient, instanceId, resource);
+    } catch (err) {
+      console.error("Failed to create model and metrics view:", err);
+      throw err;
+    }
   }
 </script>
 
