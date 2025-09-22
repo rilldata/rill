@@ -1,4 +1,5 @@
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -78,14 +79,3 @@ Object.keys(TimeRangePreset).forEach(
     (FromURLParamTimeRangePresetMap[TimeRangePreset[tr]] =
       tr as TimeRangePreset),
 );
-
-export function reverseMap<
-  K extends string | number,
-  V extends string | number,
->(map: Partial<Record<K, V>>): Partial<Record<V, K>> {
-  const revMap = {} as Partial<Record<V, K>>;
-  for (const k in map) {
-    revMap[map[k] as string | number] = k;
-  }
-  return revMap;
-}

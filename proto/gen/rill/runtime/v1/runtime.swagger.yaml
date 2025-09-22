@@ -568,6 +568,8 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              frontendUrl:
+                type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -4580,6 +4582,8 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      frontendUrl:
+        type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -5104,6 +5108,8 @@ definitions:
         additionalProperties:
           type: string
       aiInstructions:
+        type: string
+      frontendUrl:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,

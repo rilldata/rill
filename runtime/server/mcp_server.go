@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -364,15 +365,76 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		}
 		defer res.Close()
 
+		// Get the raw response data
 		data, err := res.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
 
-		return mcp.NewToolResultText(string(data)), nil
+		// Generate an open URL for the query
+		openURL, err := s.generateOpenURL(ctx, instanceID, metricsProps)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate open URL: %w", err)
+		}
+
+		// Add the open URL to the response
+		response, err := s.addOpenURLToResponse(data, openURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add open URL to response: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(response)), nil
 	}
 
 	return tool, handler
+}
+
+// generateOpenURL generates an open URL for the given query parameters
+func (s *Server) generateOpenURL(ctx context.Context, instanceID string, metricsProps map[string]any) (string, error) {
+	// Get instance to access the configured frontend URL
+	instance, err := s.runtime.Instance(ctx, instanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance: %w", err)
+	}
+
+	// If there's no frontend URL (e.g. perhaps in test cases or during rollout), return an empty string
+	if instance.FrontendURL == "" {
+		return "", nil
+	}
+
+	// Build the complete URL for the query
+	jsonBytes, err := json.Marshal(metricsProps)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
+	}
+
+	values := make(url.Values)
+	values.Set("query", string(jsonBytes))
+
+	return fmt.Sprintf("%s/-/open-query?%s", instance.FrontendURL, values.Encode()), nil
+}
+
+// addOpenURLToResponse adds the open URL to the response data
+func (s *Server) addOpenURLToResponse(data []byte, openURL string) ([]byte, error) {
+	// Parse the JSON response to understand its structure
+	var response any
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response JSON: %w", err)
+	}
+
+	// Create a wrapper object with the response data and open URL
+	wrappedResponse := map[string]any{
+		"response": response,
+		"open_url": openURL,
+	}
+
+	// Marshal back to JSON
+	modifiedData, err := json.Marshal(wrappedResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal modified response: %w", err)
+	}
+
+	return modifiedData, nil
 }
 
 // mcpHTTPContextFunc is an MCP server middleware that adds the current instance ID to the context.
