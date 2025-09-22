@@ -83,6 +83,24 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		return err
 	}
 
+	// check if specified project already exists
+	if o.Name != "" {
+		p, err := getProject(ctx, ch, ch.Org, o.Name)
+		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			return err
+		}
+		if p != nil && ch.Interactive {
+			ok, err := cmdutil.ConfirmPrompt("Project with name %q already exists. Do you want to push current changes to the existing project?", "", true)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return fmt.Errorf("aborting deploy")
+			}
+		}
+		o.pushToProject = p
+		return nil
+	}
 	if o.ArchiveUpload {
 		return nil
 	}
@@ -602,22 +620,33 @@ func orgExists(ctx context.Context, ch *cmdutil.Helper, name string) (bool, erro
 	return true, nil
 }
 
-func projectExists(ctx context.Context, ch *cmdutil.Helper, orgName, projectName string) (bool, error) {
-	c, err := ch.Client()
+func projectExists(ctx context.Context, ch *cmdutil.Helper, org, project string) (bool, error) {
+	_, err := getProject(ctx, ch, org, project)
 	if err != nil {
-		return false, err
-	}
-
-	_, err = c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
-				return false, nil
-			}
+		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			return false, nil
 		}
 		return false, err
 	}
 	return true, nil
+}
+
+func getProject(ctx context.Context, ch *cmdutil.Helper, org, project string) (*adminv1.Project, error) {
+	c, err := ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: org, Name: project})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.NotFound {
+				return nil, cmdutil.ErrNoMatchingProject
+			}
+		}
+		return nil, err
+	}
+	return p.Project, nil
 }
 
 func errMsgContains(err error, msg string) bool {
