@@ -25,6 +25,8 @@ var (
 		{"Now", "now"},
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
+		{"PreviousPeriod", "(?i)pp"},
+		{"Offset", `(?i)offset`},
 		// this needs to be after Now and Latest to match to them
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
@@ -111,6 +113,7 @@ type Expression struct {
 	AnchorOverrides []*PointInTime `parser:"(As Of @@)*"`
 	Grain           *string        `parser:"(By @Grain)?"`
 	TimeZone        *string        `parser:"(Tz @Whitespace @TimeZone)?"`
+	Offset          *Offset        `parser:"(Offset @@)?"`
 
 	isNewFormat bool
 	tz          *time.Location
@@ -200,6 +203,11 @@ type ISOPointInTime struct {
 	nano   int
 
 	tg timeutil.TimeGrain
+}
+
+type Offset struct {
+	Grain          *GrainPointInTimePart `parser:"( @@"`
+	PreviousPeriod bool                  `parser:"| @PreviousPeriod)"`
 }
 
 type Ordinal struct {
@@ -344,6 +352,10 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	}
 
 	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.tz)
+
+	if e.Offset != nil {
+		start, end = e.Offset.eval(start, end, e.tz)
+	}
 
 	if e.Grain != nil {
 		tg = grainMap[*e.Grain]
@@ -648,6 +660,19 @@ func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil
 	absEnd := timeutil.OffsetTime(absStart, a.tg, 1, tz)
 
 	return absStart, absEnd, a.tg
+}
+
+func (o *Offset) eval(start, end time.Time, tz *time.Location) (time.Time, time.Time) {
+	if o.Grain != nil {
+		start, _ = o.Grain.eval(start, tz)
+		end, _ = o.Grain.eval(end, tz)
+	} else if o.PreviousPeriod {
+		diff := end.Sub(start)
+		end = start
+		start = end.Add(-diff)
+	}
+
+	return start, end
 }
 
 /* Durations */

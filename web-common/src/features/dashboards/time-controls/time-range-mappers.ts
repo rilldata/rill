@@ -3,6 +3,7 @@ import {
   parseRillTime,
   validateRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import { RillGrainPointInTimePart } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -16,6 +17,7 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import { DateTime, Interval } from "luxon";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
 // TODO: Eventually we should support this in the backend.
@@ -102,13 +104,36 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
   showTimeComparison: boolean,
   timeRange: V1TimeRange | undefined,
 ) {
-  if (
-    !timeRange ||
-    !showTimeComparison ||
-    !selectedComparisonTimeRange?.name ||
-    timeRange.expression
-  ) {
+  if (!timeRange || !showTimeComparison || !selectedComparisonTimeRange?.name) {
     return undefined;
+  }
+
+  if (
+    timeRange.expression &&
+    !validateRillTime(selectedComparisonTimeRange.name)
+  ) {
+    if (selectedComparisonTimeRange.name === TimeComparisonOption.CONTIGUOUS) {
+      if (!timeRange.start || !timeRange.end) return undefined;
+
+      const interval = Interval.fromDateTimes(
+        DateTime.fromISO(timeRange.start),
+        DateTime.fromISO(timeRange.end),
+      );
+      if (!interval.isValid) return undefined;
+
+      const rt = parseRillTime(timeRange.expression);
+      const offset = RillGrainPointInTimePart.fromDuration(
+        interval.toDuration(),
+        "-",
+      );
+      return {
+        expression: rt.toString() + " offset " + offset.toString(),
+      };
+    } else {
+      return {
+        expression: selectedComparisonTimeRange.name,
+      };
+    }
   }
 
   const comparisonTimeRange: V1TimeRange = {};

@@ -380,11 +380,15 @@ func Test_TimeNewYorkTimezone(t *testing.T) {
 		{"D3 of M11 as of 2024", "2024-11-03T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"3D as of 2024-11-04", "2024-11-01T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"2M as of 2024-12", "2024-10-01T04:00:00Z", "2024-12-01T05:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+		{"2M as of 2024-12 offset PP", "2024-08-01T03:00:00Z", "2024-10-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+		{"2M as of 2024-12 offset -2M", "2024-08-01T04:00:00Z", "2024-10-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 
 		// Cases of time moving backwards due to daylight savings
 		{"D10 of M3 as of 2024", "2024-03-10T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"3D as of 2024-03-11", "2024-03-08T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"2M as of 2024-04", "2024-02-01T05:00:00Z", "2024-04-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+		{"2M as of 2024-04 offset PP", "2023-12-03T06:00:00Z", "2024-02-01T05:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"2M as of 2024-04 offset -2M", "2023-12-01T05:00:00Z", "2024-02-01T05:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 	}
 
 	runTests(t, testCases, now, minTime, maxTime, watermark, tz)
