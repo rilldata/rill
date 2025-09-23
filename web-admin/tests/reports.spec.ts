@@ -34,7 +34,7 @@ test.describe.serial("Reports", () => {
 
     // Select "Last 14 Days" as time range
     await interactWithTimeRangeMenu(reportForm, async () => {
-      await reportForm.getByRole("menuitem", { name: "Last 14 Days" }).click();
+      await reportForm.getByRole("menuitem", { name: "Last 14 days" }).click();
     });
     // Enable time comparison
     await reportForm.getByLabel("Toggle time comparison").click();
@@ -124,7 +124,7 @@ test.describe.serial("Reports", () => {
 
     // Select "Last 4 Weeks" as time range
     await interactWithTimeRangeMenu(reportForm, async () => {
-      await reportForm.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+      await reportForm.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
     // Change rows/columns

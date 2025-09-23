@@ -37,7 +37,7 @@ test.describe("Bookmarks", () => {
 
       // Assert the selected filters
       await expect(adminPage.getByLabel("Readonly Filter Chips")).toHaveText(
-        ` Last 6 Hours    App Site Name FuboTV  +1 other   `,
+        ` Last 6 hours    App Site Name FuboTV  +1 other   `,
       );
       // Create a personal bookmark
       await enterBookmarkDetails(
@@ -143,7 +143,7 @@ test.describe("Bookmarks", () => {
 
       // Assert the selected filters
       await expect(adminPage.getByLabel("Readonly Filter Chips")).toHaveText(
-        ` Last 6 Hours    App Site Name FuboTV  +1 other   `,
+        ` Last 6 hours    App Site Name FuboTV  +1 other   `,
       );
       // Create a personal bookmark
       await enterBookmarkDetails(
@@ -268,7 +268,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         adminPage,
-        `tr=P7D&grain=day&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
+        `tr=7D+as+of+latest%&grain=day&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
       );
     });
 
