@@ -1,5 +1,4 @@
 <script lang="ts">
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
   import type {
@@ -14,7 +13,6 @@
   } from "../../new-time-controls";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import {
@@ -281,17 +279,12 @@
       >
         <div class="overflow-x-hidden">
           {#if showDefaultItem && defaultTimeRange}
-            <DropdownMenu.Item
-              on:click={() => {
-                handleRangeSelect(defaultTimeRange);
-              }}
-            >
-              <div class:font-bold={timeString === defaultTimeRange}>
-                Last {humaniseISODuration(defaultTimeRange)}
-              </div>
-            </DropdownMenu.Item>
-
-            <div class="h-px w-full bg-gray-200" />
+            <TimeRangeOptionGroup
+              {filter}
+              {timeString}
+              options={[parseRillTime(defaultTimeRange)]}
+              onClick={handleRangeSelect}
+            />
           {/if}
 
           <TimeRangeOptionGroup
