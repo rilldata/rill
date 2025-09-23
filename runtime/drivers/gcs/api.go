@@ -16,6 +16,8 @@ import (
 
 const defaultPageSize = 20
 
+// TODO: These APIs are not used right now.
+// Transfer these functions to drivers.ObjectStore interface when needed and use gcs/s3compatible connection accordingly.
 func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) ([]string, string, error) {
 	credentials, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
