@@ -210,6 +210,25 @@ smallest_time_grain: month
 measures:
 - expression: count(*)
 `,
+		`ok_dimension_date_default.yaml`: `
+version: 1
+type: metrics_view
+model: model
+dimensions:
+- column: t_date
+measures:
+- expression: count(*)
+`,
+		`ok_dimension_date.yaml`: `
+version: 1
+type: metrics_view
+model: model
+dimensions:
+- column: t_date
+  smallest_time_grain: month
+measures:
+- expression: count(*)
+`,
 		`fail_timestamp_millisecond.yaml`: `
 version: 1
 type: metrics_view
@@ -231,7 +250,7 @@ measures:
 	})
 
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 9, 2, 0)
+	testruntime.RequireReconcileState(t, rt, id, 11, 2, 0)
 
 	mv := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_none")
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
@@ -247,6 +266,14 @@ measures:
 
 	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_date_month")
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_MONTH, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_dimension_date_default")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_DAY, mv.GetMetricsView().State.ValidSpec.Dimensions[0].SmallestTimeGrain)
+
+	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "ok_dimension_date")
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, mv.GetMetricsView().State.ValidSpec.SmallestTimeGrain)
+	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_MONTH, mv.GetMetricsView().State.ValidSpec.Dimensions[0].SmallestTimeGrain)
 
 	mv = testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "fail_timestamp_millisecond")
 	require.NotEmpty(t, mv.Meta.ReconcileError)

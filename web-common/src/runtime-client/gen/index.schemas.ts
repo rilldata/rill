@@ -60,6 +60,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
 }
 

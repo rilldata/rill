@@ -3390,6 +3390,9 @@ definitions:
         type: string
       lookupDefaultExpression:
         type: string
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: The smallest time grain for the dimension. Only populated for time dimensions.
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the dimension. Only populated in ValidSpec.
