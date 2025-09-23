@@ -694,6 +694,9 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	// Mark the token as embed. Can be used in security policy or feature flags by `.user.embed`
+	if attr == nil {
+		attr = make(map[string]any)
+	}
 	attr["embed"] = true
 
 	ttlDuration := runtimeAccessTokenEmbedTTL
