@@ -183,7 +183,9 @@
         {#if isModelingSupported}
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
-            <div class="connector-grid">
+            <div
+              class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+            >
               {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
@@ -206,7 +208,9 @@
         <section>
           <Dialog.Title>Connect an OLAP engine</Dialog.Title>
 
-          <div class="connector-grid">
+          <div
+            class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+          >
             {#each connectors?.filter((c) => c.name && OLAP_ENGINES.includes(c.name)) as connector (connector.name)}
               {#if connector.name}
                 <button
@@ -283,10 +287,6 @@
 <style lang="postcss">
   section {
     @apply flex flex-col gap-y-3;
-  }
-
-  .connector-grid {
-    @apply grid grid-cols-3 gap-4;
   }
 
   .connector-tile-button {
