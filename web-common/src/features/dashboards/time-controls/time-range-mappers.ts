@@ -102,13 +102,21 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
   showTimeComparison: boolean,
   timeRange: V1TimeRange | undefined,
 ) {
-  if (
-    !timeRange ||
-    !showTimeComparison ||
-    !selectedComparisonTimeRange?.name ||
-    timeRange.expression
-  ) {
+  if (!timeRange || !showTimeComparison || !selectedComparisonTimeRange?.name) {
     return undefined;
+  }
+
+  if (
+    timeRange.expression &&
+    TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset
+  ) {
+    const rt = parseRillTime(timeRange.expression);
+    return {
+      expression:
+        rt.toString() +
+        " offset " +
+        TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset,
+    };
   }
 
   const comparisonTimeRange: V1TimeRange = {};
@@ -156,6 +164,7 @@ export function mapV1TimeRangeToSelectedTimeRange(
       overrideRillTimeRef(rt, end);
       selectedTimeRange = {
         name: rt.toString(),
+        interval: rt.byGrain ?? rt.rangeGrain,
       } as DashboardTimeControls;
     } catch {
       return undefined;
@@ -170,7 +179,9 @@ export function mapV1TimeRangeToSelectedTimeRange(
     return undefined;
   }
 
-  selectedTimeRange.interval = timeRange.roundToGrain;
+  if (!selectedTimeRange.interval) {
+    selectedTimeRange.interval = timeRange.roundToGrain;
+  }
 
   return selectedTimeRange;
 }

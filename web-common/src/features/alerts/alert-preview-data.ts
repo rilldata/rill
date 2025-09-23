@@ -93,7 +93,7 @@ function getAlertPreviewQueryRequest(
   if (req.timeRange && !req.timeRange.expression) {
     req.timeRange.end = timeControlArgs.selectedTimeRange.end.toISOString();
   }
-  if (req.comparisonTimeRange) {
+  if (req.comparisonTimeRange && !req.comparisonTimeRange.expression) {
     req.comparisonTimeRange.end =
       timeControlArgs.selectedTimeRange.end.toISOString();
   }
