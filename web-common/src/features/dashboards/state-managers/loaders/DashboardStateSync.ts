@@ -139,14 +139,15 @@ export class DashboardStateSync {
 
     if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
       // Resolve start/end by making a network call.
+
       [
         initExploreState.selectedTimeRange,
-        initExploreState.selectedComparisonTimeRange,
+        // initExploreState.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
         exploreSpec,
         [
           initExploreState.selectedTimeRange,
-          initExploreState.selectedComparisonTimeRange,
+          // initExploreState.selectedComparisonTimeRange,
         ],
         initExploreState.selectedTimezone,
       );
@@ -229,12 +230,12 @@ export class DashboardStateSync {
       // Resolve start/end by making a network call.
       [
         partialExplore.selectedTimeRange,
-        partialExplore.selectedComparisonTimeRange,
+        // partialExplore.selectedComparisonTimeRange,
       ] = await resolveTimeRanges(
         exploreSpec,
         [
           partialExplore.selectedTimeRange,
-          partialExplore.selectedComparisonTimeRange,
+          // partialExplore.selectedComparisonTimeRange,
         ],
         partialExplore.selectedTimezone,
       );

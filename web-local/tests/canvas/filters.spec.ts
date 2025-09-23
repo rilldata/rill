@@ -37,6 +37,13 @@ test.describe("canvas time filters", () => {
       .getByLabel("Toggle time comparison")
       .click();
 
+    await page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByLabel("Select time comparison option")
+      .click();
+
+    await page.getByRole("menuitem", { name: "Previous week" }).click();
+
     await expect(
       page.getByText("Total records 7,863 -15 ~0% vs previous week"),
     ).toBeVisible();

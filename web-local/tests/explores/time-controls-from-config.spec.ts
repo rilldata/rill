@@ -215,7 +215,7 @@ test.describe("time controls settings from explore preset", () => {
     });
     // Assert data has changed
     await expect(page.getByText("Total records 5,585 +16 ~0%")).toBeVisible();
-    await page.pause();
+
     await expect(page.getByText("Facebook 1.5k -25 -2%")).toBeVisible();
 
     // Open the time comparison

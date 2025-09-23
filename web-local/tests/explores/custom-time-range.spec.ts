@@ -15,7 +15,9 @@ test.describe("custom timerange in Explore", () => {
 
     await page.getByLabel("Select time range").click();
 
-    await expect(page.getByRole("menuitem", { name: "Custom" })).toBeVisible();
+    await expect(
+      page.getByRole("menuitem", { name: "Calendar" }),
+    ).toBeVisible();
   });
 
   test("Custom time range should not be visible when toggled off", async ({
@@ -40,6 +42,6 @@ test.describe("custom timerange in Explore", () => {
     await page.waitForTimeout(500);
 
     await page.getByLabel("Select time range").click();
-    await expect(page.getByRole("menuitem", { name: "Custom" })).toBeHidden();
+    await expect(page.getByRole("menuitem", { name: "Calendar" })).toBeHidden();
   });
 });

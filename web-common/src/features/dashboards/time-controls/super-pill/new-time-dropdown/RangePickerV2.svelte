@@ -327,6 +327,7 @@
           {#if allTimeAllowed}
             <div class="w-full h-fit px-1">
               <button
+                role="menuitem"
                 class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
                 on:click={() => {
                   handleRangeSelect("inf");
@@ -344,6 +345,7 @@
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1" />
             <button
+              role="menuitem"
               class:font-bold={false}
               on:click={() => {
                 showCalendarPicker = !showCalendarPicker;
@@ -351,7 +353,7 @@
               class="truncate w-full text-left gap-x-1 pr-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
-              <div class="mr-auto">Calendar</div>
+              <div class="mr-auto">Custom</div>
 
               <CaretDownIcon className="-rotate-90" size="14px" />
             </button>
