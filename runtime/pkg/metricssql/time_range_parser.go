@@ -79,9 +79,13 @@ func parseTimeRangeArgs(args []ast.ExprNode, mv *runtimev1.MetricsViewSpec) (*ri
 	}
 	var err error
 
-	du, err := parseValueExpr(args[0])
+	duVal, err := parseValueExpr(args[0])
 	if err != nil {
 		return nil, err
+	}
+	du, ok := duVal.(string)
+	if !ok {
+		return nil, fmt.Errorf("metrics sql: expected string for duration, got %T", duVal)
 	}
 
 	rt, err := rilltime.Parse(strings.TrimSuffix(strings.TrimPrefix(du, "'"), "'"), rilltime.ParseOptions{
