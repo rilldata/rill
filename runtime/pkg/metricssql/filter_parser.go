@@ -268,7 +268,7 @@ func parseInSubquery(ctx context.Context, n ast.ExprNode, q *query) (*metricsvie
 
 	// Parse the selected dimension
 	if sel.Fields == nil || len(sel.Fields.Fields) != 1 {
-		return nil, fmt.Errorf("metrics sql: subquery must select exactly one dimension (note: you can reference measures in the HAVING expression)")
+		return nil, fmt.Errorf("metrics sql: subquery must select exactly one dimension (note: you can still reference other measures in the HAVING expression)")
 	}
 	field := sel.Fields.Fields[0]
 	if field.WildCard != nil || field.Expr == nil {
@@ -314,12 +314,14 @@ func parseInSubquery(ctx context.Context, n ast.ExprNode, q *query) (*metricsvie
 	}
 
 	// Extract measures from the HAVING clause.
-	// NOTE: In the future, we may want to move this into the handling of HAVING inside the metricsview package, so that you don't need to select measures that are only used in HAVING.
+	//
+	// NOTE: This makes a couple assumptions that are currently viable, but may not hold in the future.
+	// Specifically that a) computed measures aren't used here, b) dimensions are not referenced in the HAVING.
+	// In the future, we may want to move this into the handling of HAVING inside the metricsview package, so that you don't need to select measures that are only used in HAVING.
 	var measures []metricsview.Measure
 	if having != nil {
 		fields := metricsview.AnalyzeExpressionFields(having)
 		for _, field := range fields {
-			// NOTE: This works because metrics SQL doesn't currently supported computed measures.
 			measures = append(measures, metricsview.Measure{Name: field})
 		}
 	}
@@ -414,9 +416,9 @@ func parseValueExpr(in ast.Node) (any, error) {
 	// Handle a couple types that we prefer simplified
 	switch actual := val.(type) {
 	case int64:
-		val = int(actual)
+		val = int(actual) // Cast to plain int
 	case uint64:
-		val = int(actual)
+		val = int(actual) // Cast to plain int
 	}
 
 	return val, nil

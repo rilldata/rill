@@ -240,7 +240,7 @@ func (q *query) parseLimit(node *ast.Limit) error {
 		}
 		offset, ok := offsetVal.(int)
 		if !ok {
-			return fmt.Errorf("metrics sql: expected int for offset, got %T", limit)
+			return fmt.Errorf("metrics sql: expected int for offset, got %T", offsetVal)
 		}
 		offset64 := int64(offset)
 		q.q.Offset = &offset64
