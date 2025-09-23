@@ -8,14 +8,15 @@ import (
 	"os"
 	"strings"
 	"time"
-	// Load IANA time zone data
-	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {

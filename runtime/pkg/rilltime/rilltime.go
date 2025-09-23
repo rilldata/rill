@@ -25,7 +25,7 @@ var (
 		{"Now", "now"},
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
-		{"PreviousPeriod", "(?i)pp"},
+		{"PreviousPeriod", "(?i)p"},
 		{"Offset", `(?i)offset`},
 		// this needs to be after Now and Latest to match to them
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
@@ -50,6 +50,7 @@ var (
 	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
+		participle.UseLookahead(2), // Needed to disambiguate `offset -1P` vs `offset -1M`
 	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
@@ -218,8 +219,13 @@ type ISOPointInTime struct {
 }
 
 type Offset struct {
-	Grain          *GrainPointInTimePart `parser:"( @@"`
-	PreviousPeriod bool                  `parser:"| @PreviousPeriod)"`
+	PreviousPeriod *PreviousPeriod       `parser:"( @@"`
+	Grain          *GrainPointInTimePart `parser:"| @@)"`
+}
+
+type PreviousPeriod struct {
+	Prefix string `parser:"@Prefix"`
+	Num    int    `parser:"@Number PreviousPeriod"`
 }
 
 type Ordinal struct {
@@ -707,14 +713,19 @@ func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil
 }
 
 func (o *Offset) eval(evalOpts EvalOptions, start, end time.Time, mainInterval *Interval, tz *time.Location) (time.Time, time.Time) {
-	if o.Grain != nil {
+	if o.PreviousPeriod != nil {
+		start, end = o.PreviousPeriod.eval(evalOpts, start, mainInterval, tz)
+	} else if o.Grain != nil {
 		start, _ = o.Grain.eval(start, tz)
 		end, _ = o.Grain.eval(end, tz)
-	} else if o.PreviousPeriod {
-		start, end = mainInterval.previousPeriod(evalOpts, start, tz)
 	}
 
 	return start, end
+}
+
+func (p *PreviousPeriod) eval(evalOpts EvalOptions, start time.Time, mainInterval *Interval, tz *time.Location) (time.Time, time.Time) {
+	// TODO: things other than -1 period
+	return mainInterval.previousPeriod(evalOpts, start, tz)
 }
 
 /* Durations */

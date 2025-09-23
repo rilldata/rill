@@ -646,7 +646,7 @@ export const TIME_COMPARISON = {
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,
     offsetIso: "",
-    rillTimeOffset: "pp",
+    rillTimeOffset: "-1P",
   },
   [TimeComparisonOption.CUSTOM]: {
     label: "Custom range",

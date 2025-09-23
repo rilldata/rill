@@ -1,7 +1,6 @@
 package rilltime
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -303,18 +302,18 @@ func TestEval_IsoTimeRanges(t *testing.T) {
 		{"2025-02-20T01:23:45Z to 2025-07-15T02:34:50Z", "2025-02-20T01:23:45Z", "2025-07-15T02:34:50Z", timeutil.TimeGrainSecond, 1, 1},
 		{"2025-02-20T01:23:45Z / 2025-07-15T02:34:50Z", "2025-02-20T01:23:45Z", "2025-07-15T02:34:50Z", timeutil.TimeGrainSecond, 1, 1},
 		{"2025-02-20T01:23:45Z,2025-07-15T02:34:50Z", "2025-02-20T01:23:45Z", "2025-07-15T02:34:50Z", timeutil.TimeGrainSecond, 1, 1},
-		{"2025-02-20T01:23:45Z,2025-07-15T02:34:50Z offset PP", "2024-09-28T00:12:40Z", "2025-02-20T01:23:45Z", timeutil.TimeGrainSecond, 1, 1},
+		{"2025-02-20T01:23:45Z,2025-07-15T02:34:50Z offset -1P", "2024-09-28T00:12:40Z", "2025-02-20T01:23:45Z", timeutil.TimeGrainSecond, 1, 1},
 
 		{"2025-02-20T01:23", "2025-02-20T01:23:00Z", "2025-02-20T01:24:00Z", timeutil.TimeGrainSecond, 1, 1},
-		{"2025-02-20T01:23 offset PP", "2025-02-20T01:22:00Z", "2025-02-20T01:23:00Z", timeutil.TimeGrainSecond, 1, 1},
+		{"2025-02-20T01:23 offset -1P", "2025-02-20T01:22:00Z", "2025-02-20T01:23:00Z", timeutil.TimeGrainSecond, 1, 1},
 		{"2025-02-20T01", "2025-02-20T01:00:00Z", "2025-02-20T02:00:00Z", timeutil.TimeGrainMinute, 1, 1},
-		{"2025-02-20T01 offset PP", "2025-02-20T00:00:00Z", "2025-02-20T01:00:00Z", timeutil.TimeGrainMinute, 1, 1},
+		{"2025-02-20T01 offset -1P", "2025-02-20T00:00:00Z", "2025-02-20T01:00:00Z", timeutil.TimeGrainMinute, 1, 1},
 		{"2025-02-20", "2025-02-20T00:00:00Z", "2025-02-21T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
-		{"2025-02-20 offset PP", "2025-02-19T00:00:00Z", "2025-02-20T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"2025-02-20 offset -1P", "2025-02-19T00:00:00Z", "2025-02-20T00:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"2025-02", "2025-02-01T00:00:00Z", "2025-03-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
-		{"2025-02 offset PP", "2025-01-01T00:00:00Z", "2025-02-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
+		{"2025-02 offset -1P", "2025-01-01T00:00:00Z", "2025-02-01T00:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"2025", "2025-01-01T00:00:00Z", "2026-01-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
-		{"2025 offset PP", "2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+		{"2025 offset -1P", "2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 
 		{"2025-02-20T01:23:45.123Z to 2025-07-15T02:34:50.123456Z", "2025-02-20T01:23:45.123Z", "2025-07-15T02:34:50.123456Z", timeutil.TimeGrainMillisecond, 1, 1},
 		{"2025-02-20T01:23:45.123456Z to 2025-07-15T02:34:50.123456789Z", "2025-02-20T01:23:45.123456Z", "2025-07-15T02:34:50.123456789Z", timeutil.TimeGrainMillisecond, 1, 1},
@@ -385,20 +384,20 @@ func Test_TimeNewYorkTimezone(t *testing.T) {
 	testCases := []testCase{
 		// Cases of time moving forward due to daylight savings
 		{"D3 of M11 as of 2024", "2024-11-03T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainHour, 1, 1},
-		{"D4 of M11 as of 2024 offset PP", "2024-11-03T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainHour, 1, 1},
-		{"D3 of M11 as of 2024 offset PP", "2024-11-02T04:00:00Z", "2024-11-03T04:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"D4 of M11 as of 2024 offset -1P", "2024-11-03T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"D3 of M11 as of 2024 offset -1P", "2024-11-02T04:00:00Z", "2024-11-03T04:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"3D as of 2024-11-04", "2024-11-01T04:00:00Z", "2024-11-04T05:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"2M as of 2024-12", "2024-10-01T04:00:00Z", "2024-12-01T05:00:00Z", timeutil.TimeGrainMonth, 1, 1},
-		{"2M as of 2024-12 offset PP", "2024-08-01T04:00:00Z", "2024-10-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+		{"2M as of 2024-12 offset -1P", "2024-08-01T04:00:00Z", "2024-10-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 		{"2M as of 2024-12 offset -2M", "2024-08-01T04:00:00Z", "2024-10-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 
 		// Cases of time moving backwards due to daylight savings
 		{"D10 of M3 as of 2024", "2024-03-10T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainHour, 1, 1},
-		{"D11 of M3 as of 2024 offset PP", "2024-03-10T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainHour, 1, 1},
-		{"D10 of M3 as of 2024 offset PP", "2024-03-09T05:00:00Z", "2024-03-10T05:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"D11 of M3 as of 2024 offset -1P", "2024-03-10T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainHour, 1, 1},
+		{"D10 of M3 as of 2024 offset -1P", "2024-03-09T05:00:00Z", "2024-03-10T05:00:00Z", timeutil.TimeGrainHour, 1, 1},
 		{"3D as of 2024-03-11", "2024-03-08T05:00:00Z", "2024-03-11T04:00:00Z", timeutil.TimeGrainDay, 1, 1},
 		{"2M as of 2024-04", "2024-02-01T05:00:00Z", "2024-04-01T04:00:00Z", timeutil.TimeGrainMonth, 1, 1},
-		{"2M as of 2024-04 offset PP", "2023-12-01T05:00:00Z", "2024-02-01T05:00:00Z", timeutil.TimeGrainMonth, 1, 1},
+		{"2M as of 2024-04 offset -1P", "2023-12-01T05:00:00Z", "2024-02-01T05:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 		{"2M as of 2024-04 offset -2M", "2023-12-01T05:00:00Z", "2024-02-01T05:00:00Z", timeutil.TimeGrainMonth, 1, 1},
 	}
 
@@ -511,7 +510,6 @@ func runTests(t *testing.T, testCases []testCase, now, minTime, maxTime, waterma
 				FirstDay:   testCase.FirstDay,
 				FirstMonth: testCase.FirstMonth,
 			})
-			fmt.Println(start, end)
 			require.Equal(t, parseTestTime(t, testCase.start), start)
 			require.Equal(t, parseTestTime(t, testCase.end), end)
 			if testCase.grain != timeutil.TimeGrainUnspecified {
