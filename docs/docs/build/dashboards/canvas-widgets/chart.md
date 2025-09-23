@@ -158,7 +158,7 @@ Donut charts display data as segments of a circle with a hollow center.
 
 ## Funnel Chart
 
-Funnel charts show the flow through a process with decreasing values at each stage.
+Funnel charts show the flow through a process with decreasing/increasing values at each stage. 
 
 <ImageCodeToggle
   image="/img/build/dashboard/canvas/components/funnel.png"
