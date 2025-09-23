@@ -25,12 +25,18 @@ test.describe("explores", () => {
     await createExploreFromSource(page);
     // Temporary timeout while the issue is looked into
     await page.waitForTimeout(1000);
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
     await assertAdBidsDashboard(page);
   });
 
   test("Autogenerate explore from model", async ({ page }) => {
     await createAdBidsModel(page);
     await createExploreFromModel(page, true);
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
     await assertAdBidsDashboard(page);
 
     // click on publisher=Facebook leaderboard value
@@ -104,6 +110,10 @@ time_ranges:
     await page.getByRole("button", { name: "Preview" }).click();
 
     await page.waitForTimeout(1000);
+
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
 
     // Check the total records are 100k
     await page

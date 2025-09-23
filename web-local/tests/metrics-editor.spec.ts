@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import { gotoNavEntry } from "./utils/waitHelpers";
 import { updateCodeEditor, wrapRetryAssertion } from "./utils/commonHelpers";
 import { test } from "./setup/base";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 
 test.describe("Metrics editor", () => {
   test.use({ project: "AdBids" });
@@ -117,6 +118,10 @@ test.describe("Metrics editor", () => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_explore.yaml");
 
     await page.getByRole("button", { name: "Preview" }).click();
+
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
 
     // check to see metrics make sense.
     await expect(page.getByText("Total Records 100k")).toBeVisible();

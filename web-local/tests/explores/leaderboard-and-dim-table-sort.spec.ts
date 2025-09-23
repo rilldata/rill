@@ -1,6 +1,7 @@
 import { expect, type Locator } from "@playwright/test";
 import { gotoNavEntry } from "../utils/waitHelpers";
 import { test } from "../setup/base";
+import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
   const topA = await locA.boundingBox().then((box) => box?.y);
@@ -22,6 +23,9 @@ test.describe("leaderboard and dimension table sorting", () => {
     await page.getByRole("button", { name: "Preview" }).click();
     await page.waitForURL(new RegExp("/explore/AdBids_metrics_explore"));
 
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
     /**
      * LEADERBOARD
      */

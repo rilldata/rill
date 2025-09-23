@@ -75,6 +75,10 @@ dimensions:
 
     await previewButton.click();
 
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
+
     /******************
      * check big nums
      ******************/

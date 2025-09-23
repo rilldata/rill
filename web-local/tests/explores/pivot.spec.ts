@@ -561,6 +561,10 @@ test.describe("pivot run through", () => {
     const previewButton = page.getByRole("button", { name: "Preview" });
     await previewButton.click();
 
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
+
     const pivotButton = page.getByRole("link", {
       name: "Pivot",
       exact: true,
