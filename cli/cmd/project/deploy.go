@@ -341,14 +341,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	// We create a default org based on the user name.
 	// TODO : Ask user prompt similar to UI instead of silently creating org based on email
 	if ch.Org == "" {
-		user, err := adminClient.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-		if err != nil {
-			return err
-		}
-		// email can have other characters like . and + what to do ?
-		username, _, _ := strings.Cut(user.User.Email, "@")
-		username = nonSlugRegex.ReplaceAllString(username, "-")
-		err = createOrgFlow(ctx, ch, username)
+		err = createOrgFlow(ctx, ch)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
 		}
@@ -527,35 +520,23 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 	return nil
 }
 
-func createOrgFlow(ctx context.Context, ch *cmdutil.Helper, defaultName string) error {
+func createOrgFlow(ctx context.Context, ch *cmdutil.Helper) error {
 	c, err := ch.Client()
 	if err != nil {
 		return err
 	}
 
+	ch.PrintfBold("No organization found for your account. Creating a new organization.\n")
+	name, err := orgNamePrompt(ctx, ch)
+	if err != nil {
+		return err
+	}
+
 	res, err := c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
-		Name: defaultName,
+		Name: name,
 	})
 	if err != nil {
-		if !errMsgContains(err, "an org with that name already exists") {
-			return err
-		}
-
-		ch.PrintfWarn("Rill organizations are derived from the owner of your Github repository.\n")
-		ch.PrintfWarn("The %q organization associated with your Github repository already exists.\n", defaultName)
-		ch.PrintfWarn("Contact your Rill admin to be added to your org or create a new organization below.\n")
-
-		name, err := orgNamePrompt(ctx, ch)
-		if err != nil {
-			return err
-		}
-
-		res, err = c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
-			Name: name,
-		})
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	// Switching to the created org

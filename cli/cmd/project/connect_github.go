@@ -126,7 +126,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Extract Github account and repo name from the gitRemote
-	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
+	_, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
 	if !ok {
 		return fmt.Errorf("remote %q is not a valid github.com remote", opts.remoteURL)
 	}
@@ -149,7 +149,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	// If no default org is set by now, it means the user is not in an org yet.
 	// We create a default org based on their Github account name.
 	if ch.Org == "" {
-		err := createOrgFlow(ctx, ch, ghAccount)
+		err := createOrgFlow(ctx, ch)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
 		}
