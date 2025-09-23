@@ -1,6 +1,6 @@
 ---
 title: Explore Dashboards
-description: Explore dashboard over view
+description: Explore dashboard overview
 sidebar_label: Explore Dashboards
 sidebar_position: 00
 ---
@@ -46,9 +46,9 @@ defaults:
 
 ### Using AI
 
-In various locations throughout the platform, you have the opportunity to fast path your dashboard creation via AI. What this does is [create the underlying metrics view with AI](/build/metrics-view/what-are-metrics-views#creating-a-metrics-view-with-ai) and creates your explore.yaml similar to the above with the required components.
+In various locations throughout the platform, you have the opportunity to fast-track your dashboard creation via AI. This feature [creates the underlying metrics view with AI](/build/metrics-view/what-are-metrics-views#creating-a-metrics-view-with-ai) and generates your explore.yaml similar to the example above with the required components.
 
-**Directly from your Connector's tables**:
+**Directly from your connector's tables:**
 
 <img src='/img/build/dashboard/explorable-metrics.png' class='rounded-gif' />
 <br />
@@ -66,8 +66,8 @@ Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/d
 <img src='/img/build/dashboard/preview.png' class='rounded-gif' />
 <br />
 
-### Setup Dashboard Access
+### Setting Up Dashboard Access
 
-If you are setting up [dashboard policies](/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying. This option will be available for you to test if you have set up access policies on the [project-level](/build/rill-project-file#mock-users), [metrics-view level](/build/metrics-view/security), or [dashboard-level](/build/dashboards/customization#define-dashboard-access).
+If you are setting up [dashboard policies](/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying. This option will be available for testing if you have set up access policies at the [project level](/build/rill-project-file#mock-users), [metrics view level](/build/metrics-view/security), or [dashboard level](/build/dashboards/customization#define-dashboard-access).
 
 <img src='/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />

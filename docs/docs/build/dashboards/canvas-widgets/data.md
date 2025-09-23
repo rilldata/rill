@@ -60,9 +60,9 @@ Tables display detailed data in a structured format with customizable columns.
   codeLanguage="yaml"
 />
 
-## Navigation 
+## Navigation
 
-All Data widgets also provide a button to "Go to explore" that can navigate to the explore dashboard if available.
+All Data widgets also provide a button to "Go to explore" that can navigate to the Explore dashboard if available.
 
 <img src = '/img/build/dashboard/canvas/go-to-explore.png' class='rounded-gif' />
 <br/>

@@ -7,22 +7,12 @@ sidebar_position: 00
 
 Rill offers two distinct dashboard experiences, each optimized for different use cases and user needs. While both are used to visualize your data, the key difference lies in how they handle [**metrics views**](/build/metrics-view) - the data sources that power your dashboards.
 
-- **Explore Dashboards** - Standardized _opinionated_ dashboards with consistent data components, visualizations, and layout structure that promotes slice-and-dice discovery and interactive data exploration that are built over a **single metrics view** using [One Big Table approach.](/build/models/models-101#one-big-table-and-dashboarding)
+- **Explore Dashboards** - Standardized _opinionated_ dashboards with consistent data components, visualizations, and layout structure that promote slice-and-dice discovery and interactive data exploration. These are built over a **single metrics view** using the [One Big Table approach](/build/models/models-101#one-big-table-and-dashboarding).
 - **Canvas Dashboards** - Traditional dashboards that allow users to customize visualizations and layout according to their specific requirements utilizing **multiple metrics views**.
-
-
-## Built on Metrics Views
-
-All dashboards in Rill are built on [metrics views](/build/metrics-view/metrics-view.md). This ensures that your defined measures and dimensions are standard throughout all of your visualizations. 
-
-The primary difference between Explore and Canvas dashboards is that:
--  **Explore Dashboards is built on a single metrics view**
--  **Canvas Dashboards can combine multiple metrics views** in one dashboard.
-
 
 ## Explore Dashboards
 
-**[Explore dashboards](/build/dashboards/explore)** are designed for interactive data exploration and analysis. They provide a powerful "slice and dice" experience focused on a single metrics view. Some key features of our Explore Dashboards include:
+**[Explore dashboards](/build/dashboards/explore)** are designed for interactive data exploration and analysis. They provide a powerful "slice and dice" experience focused on a single metrics view. Some key features of our Explore dashboards include:
 
 - [Pivot Tables](/explore/dashboard-101/pivot)
 - [Time Dimension Detail](/explore/dashboard-101/tdd)
@@ -50,17 +40,17 @@ See both dashboard types in action with our interactive demos:
 ### Live Demo
 
 See both dashboard types in action with our interactive demos:
-- **[E-commerce demo dashboard](https://ui.rilldata.com/demo/ezcommerce-demo/canvas/canvas)**
-- **[Programmatic advertising demo dashboard](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/canvas/executive_overview)**
-- **[New York City demo dashboard](https://ui.rilldata.com/demo/nyc-canvas-jam/canvas/scorecard%20canvas)**
-- **[NYC party demo dashboard 🎉](https://ui.rilldata.com/demo/nyc-canvas-jam/canvas/Leaderboard)**
+- **[E-commerce demo dashboard](https://ui.rilldata.com/demo/ezcommerce-demo/canvas/canvas)** - Sales analytics and revenue tracking with multiple visualizations
+- **[Programmatic advertising demo dashboard](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/canvas/executive_overview)** - Real-time bidding metrics and campaign performance analysis
+- **[New York City demo dashboard](https://ui.rilldata.com/demo/nyc-canvas-jam/canvas/scorecard%20canvas)** - Urban analytics and city performance metrics
+- **[NYC party demo dashboard 🎉](https://ui.rilldata.com/demo/nyc-canvas-jam/canvas/Leaderboard)** - Fun leaderboard showcasing various data insights
 
 
 ## Key Features
 
 Both dashboard types share common capabilities that make them powerful for data analysis:
 
-- **Time filtering and Comaparisons** - Navigate through time periods and compare different time ranges
+- **Time filtering and comparisons** - Navigate through time periods and compare different time ranges
 - **Dimension filtering** - Filter data by specific dimensions and values
 
 ## Learn More About Using Dashboards
