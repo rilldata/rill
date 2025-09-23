@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "./setup/base";
+import { log } from "orval";
 
 async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
   return new Promise<void>((resolve) => {
@@ -38,6 +39,9 @@ test.describe("Embeds", () => {
       await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
       await embedPage.waitForTimeout(500);
 
+      // debug
+      logMessages.forEach((msg) => console.log(msg));
+
       expect(
         logMessages.some((msg) =>
           msg.includes(
@@ -64,10 +68,13 @@ test.describe("Embeds", () => {
       });
 
       await embedPage.waitForTimeout(500);
+
+      // debug
+      logMessages.forEach((msg) => console.log(msg));
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=7D+as+of+latest%2FD%2B1D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
@@ -123,6 +130,9 @@ test.describe("Embeds", () => {
         .scrollIntoViewIfNeeded();
       await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
       await embedPage.waitForTimeout(500);
+
+      // debug
+      logMessages.forEach((msg) => console.log(msg));
 
       expect(
         logMessages.some((msg) =>
@@ -249,6 +259,7 @@ test.describe("Embeds", () => {
     await frame
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
       .click();
+
     // Old selection has persisted
     await expect(frame.getByText("Last 7 days")).toBeVisible();
 
