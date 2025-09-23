@@ -630,6 +630,11 @@ export interface V1CompleteResponse {
   messages?: V1Message[];
 }
 
+export interface V1CompleteStreamingResponse {
+  conversationId?: string;
+  message?: V1Message;
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -760,6 +765,7 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
+  frontendUrl?: string;
 }
 
 export interface V1CreateInstanceResponse {
@@ -1124,6 +1130,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
+  frontendUrl?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -2491,6 +2498,7 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
+  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
@@ -2498,6 +2506,16 @@ export type RuntimeServiceCompleteBody = {
   messages?: V1Message[];
   toolNames?: string[];
   appContext?: V1AppContext;
+};
+
+export type RuntimeServiceCompleteStreamingBody = {
+  conversationId?: string;
+  prompt?: string;
+};
+
+export type RuntimeServiceCompleteStreaming200 = {
+  result?: V1CompleteStreamingResponse;
+  error?: RpcStatus;
 };
 
 export type RuntimeServiceGetConversationParams = {

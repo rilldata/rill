@@ -139,7 +139,6 @@ rill start --environment prod
 :::
 
 
-
 ## `ai_instructions`
 Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the agent deliver more relevant and actionable insights tailored to your specific needs.
 
@@ -239,7 +238,6 @@ features:
 For a list of the current available feature flag, see our code base, [here](https://github.com/rilldata/rill/blob/db9a17259716f4b0fc70b01fb5f63d906849268e/web-common/src/features/feature-flags.ts#L36).
 
 ## Example
-
 
 Here is an example YAML that uses many of our features.
 ```yaml

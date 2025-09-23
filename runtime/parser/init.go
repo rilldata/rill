@@ -46,6 +46,25 @@ mock_users:
 		return err
 	}
 
+	// Create the connector YAML
+	var connectorYAML string
+	switch olap {
+	case "duckdb":
+		connectorYAML = `type: connector
+driver: duckdb
+`
+	case "clickhouse":
+		connectorYAML = `type: connector
+driver: clickhouse
+managed: true
+`
+	}
+
+	err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", olap), strings.NewReader(connectorYAML))
+	if err != nil {
+		return err
+	}
+
 	gitignore, _ := repo.Get(ctx, ".gitignore")
 	if gitignore != "" {
 		gitignore += "\n"
