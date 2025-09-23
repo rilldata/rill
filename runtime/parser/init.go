@@ -22,10 +22,7 @@ func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, displayN
 	}
 
 	// If olap is not specified we can default to duckdb
-	switch olap {
-	case "duckdb":
-	case "clickhouse":
-	default:
+	if olap == "" {
 		olap = "duckdb"
 	}
 
