@@ -93,8 +93,6 @@
   $: availableTimeZones = exploreSpec.timeZones ?? [];
   $: timeRanges = exploreSpec.timeRanges ?? [];
 
-  $: console.log({ timeRanges }, exploreSpec);
-
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
