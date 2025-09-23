@@ -142,10 +142,13 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 					triggeredPartitions = append(triggeredPartitions, p.Key)
 				}
 			}
-			mdl.State.TriggeredPartitions = triggeredPartitions
-			err = r.C.UpdateState(ctx, mr.Meta.Name, mr)
-			if err != nil {
-				return runtime.ReconcileResult{Err: err}
+
+			// Set the triggered flag on the partitions in the database
+			if len(triggeredPartitions) > 0 {
+				err = catalog.UpdateModelPartitionsExplicitlyTriggered(ctx, modelID, triggeredPartitions, true)
+				if err != nil {
+					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update partitions as triggered for model %s: %w", mt.Model, err)}
+				}
 			}
 
 			if mt.AllErroredPartitions {

@@ -988,49 +988,6 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if ctx.Err() != nil {
 		return "", nil, false, ctx.Err()
 	}
-	// Check for triggered partitions and handle targeted execution
-	triggeredPartitions := model.State.TriggeredPartitions
-	if len(triggeredPartitions) > 0 {
-		r.C.Logger.Info("Executing targeted partition refresh", zap.Strings("partitions", triggeredPartitions), observability.ZapCtx(ctx))
-		catalog, catalogRelease, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
-		if err != nil {
-			return "", nil, false, err
-		}
-		defer catalogRelease()
-
-		// Load the specified partitions by key
-		partitions := []drivers.ModelPartition{}
-		for _, key := range triggeredPartitions {
-			partition, err := catalog.FindModelPartitionByKey(ctx, model.State.PartitionsModelId, key)
-			if err != nil {
-				return "", nil, false, fmt.Errorf("failed to find triggered partition %q: %w", key, err)
-			}
-			partitions = append(partitions, partition)
-		}
-
-		// Execute the triggered partitions sequentially, merging results incrementally
-		result := prevResult
-		for _, partition := range partitions {
-			res, ok, err := r.executePartition(ctx, catalog, executor, self, model, result, incrementalRun, incrementalState, partition, false)
-			if err != nil {
-				return "", nil, false, err
-			}
-			if ok {
-				result = res
-			}
-		}
-
-		// After execution, clear triggered partitions
-		model.State.TriggeredPartitions = nil
-		err = r.C.UpdateState(ctx, self.Meta.Name, self)
-		if err != nil {
-			return "", nil, false, err
-		}
-
-		r.C.Logger.Info("Completed targeted partition refresh", zap.Strings("partitions", triggeredPartitions), observability.ZapCtx(ctx))
-
-		return executor.finalConnector, result, incrementalRun, nil
-	}
 
 	// If we're not partitionting execution, run the executor directly and return
 	if !usePartitions {
@@ -1069,28 +1026,56 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	defer release()
 
 	// First step is to resolve and sync the partitions.
-	err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
-	if err != nil {
-		return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
+	if !incrementalRun || model.Spec.Trigger || model.Spec.TriggerFull {
+		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
+		if err != nil {
+			return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
+		}
 	}
+
+	// Check if we have explicitly triggered partitions after resolution
+	explicitlyTriggeredPartitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID:                  model.State.PartitionsModelId,
+		WhereExplicitlyTriggered: true,
+	})
+	if err != nil {
+		return "", nil, false, fmt.Errorf("failed to find explicitly triggered partitions: %w", err)
+	}
+
+	explicitlyTargetedRefresh := len(explicitlyTriggeredPartitions) > 0
 
 	// Track execution metadata
 	var totalExecDuration atomic.Int64
 	firstRunIsIncremental := incrementalRun
 
+	var partitionFilter *drivers.FindModelPartitionsOptions
+	if explicitlyTargetedRefresh {
+		partitionFilter = &drivers.FindModelPartitionsOptions{
+			ModelID:                  model.State.PartitionsModelId,
+			WhereExplicitlyTriggered: true,
+		}
+		r.C.Logger.Info("Executing targeted partition refresh", zap.Int("triggered_partitions", len(explicitlyTriggeredPartitions)), observability.ZapCtx(ctx))
+	} else {
+		partitionFilter = &drivers.FindModelPartitionsOptions{
+			ModelID:      model.State.PartitionsModelId,
+			WherePending: true,
+		}
+	}
+
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
 	// This enables the first partition to create the initial result (such as a table) that the other partitions incrementally build upon.
 	if !incrementalRun {
-		// Find the first partition
-		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
-			ModelID:      model.State.PartitionsModelId,
-			WherePending: true,
-			Limit:        1,
-		})
+		firstPartitionFilter := *partitionFilter
+		firstPartitionFilter.Limit = 1
+		partitions, err := catalog.FindModelPartitions(ctx, &firstPartitionFilter)
 		if err != nil {
 			return "", nil, false, fmt.Errorf("failed to load first partition: %w", err)
 		}
 		if len(partitions) == 0 {
+			if explicitlyTargetedRefresh {
+				r.C.Logger.Info("No triggered partitions found, skipping execution", observability.ZapCtx(ctx))
+				return executor.finalConnector, prevResult, firstRunIsIncremental, nil
+			}
 			return "", nil, false, fmt.Errorf("no partitions found")
 		}
 		partition := partitions[0]
@@ -1112,14 +1097,12 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// Repeatedly load a batch of pending partitions and execute it with a pool of worker goroutines.
 	for {
-		// Get a batch of pending partitions
+		// Get a batch of pending partitions using the partition filter.
 		// Note: We do this when no workers are running because partitions are considered pending if they have not completed execution yet.
 		// This reduces concurrency when processing the last handful of partitions in each batch, but with large batch sizes it's worth the simplicity for now.
-		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
-			ModelID:      model.State.PartitionsModelId,
-			WherePending: true,
-			Limit:        _modelPendingPartitionsBatchSize,
-		})
+		batchFilter := *partitionFilter
+		batchFilter.Limit = _modelPendingPartitionsBatchSize
+		partitions, err := catalog.FindModelPartitions(ctx, &batchFilter)
 		if err != nil {
 			return "", nil, false, err
 		}
@@ -1200,6 +1183,19 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		if len(partitions) < _modelPendingPartitionsBatchSize {
 			break
 		}
+	}
+
+	// Clear the flag from all processed partitions if this was an explicitly targeted refresh
+	if explicitlyTargetedRefresh {
+		var partitionKeys []string
+		for _, p := range explicitlyTriggeredPartitions {
+			partitionKeys = append(partitionKeys, p.Key)
+		}
+		err = catalog.UpdateModelPartitionsExplicitlyTriggered(ctx, model.State.PartitionsModelId, partitionKeys, false)
+		if err != nil {
+			return "", nil, false, fmt.Errorf("failed to clear triggered flag: %w", err)
+		}
+		r.C.Logger.Info("Completed targeted partition refresh", zap.Int("partitions_processed", len(explicitlyTriggeredPartitions)), observability.ZapCtx(ctx))
 	}
 
 	// Should not happen, could also have been a panic
