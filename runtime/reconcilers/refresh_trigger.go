@@ -149,6 +149,13 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 				if err != nil {
 					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update partitions as triggered for model %s: %w", mt.Model, err)}
 				}
+
+				// Set the TriggerPartitions flag in the model spec to indicate individual partition refresh
+				mdl.Spec.TriggerPartitions = true
+				err = r.C.UpdateSpec(ctx, mr.Meta.Name, mr)
+				if err != nil {
+					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update TriggerPartitions for model %s: %w", mt.Model, err)}
+				}
 			}
 
 			if mt.AllErroredPartitions {

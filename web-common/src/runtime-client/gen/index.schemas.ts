@@ -1725,6 +1725,7 @@ export interface V1ModelSpec {
   tests?: V1ModelTest[];
   trigger?: boolean;
   triggerFull?: boolean;
+  triggerPartitions?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
   definedAsSource?: boolean;
 }

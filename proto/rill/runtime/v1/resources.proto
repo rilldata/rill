@@ -130,6 +130,7 @@ message ModelSpec {
   repeated ModelTest tests = 25;
   bool trigger = 9;
   bool trigger_full = 22;
+  bool trigger_partitions = 30;
   // defined_as_source is true if it was defined by user as a source but converted internally to a model.
   bool defined_as_source = 23;
   reserved 2, 3, 6, 7, 8;
