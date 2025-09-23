@@ -286,7 +286,7 @@ export async function createModelAndMetricsViewAndExplore(
   try {
     // Step 1: Create model that ingests from source to OLAP
     overlay.set({
-      title: `Creating model (ingesting from source → OLAP)...`,
+      title: `Creating model...`,
       detail: {
         component: OptionToCancelAIGeneration,
         props: {
@@ -325,7 +325,7 @@ export async function createModelAndMetricsViewAndExplore(
 
     // Update overlay for metrics view creation
     overlay.set({
-      title: `Creating metrics view (on top of model)...`,
+      title: `Creating metrics view...`,
       detail: {
         component: OptionToCancelAIGeneration,
         props: {
@@ -363,7 +363,7 @@ export async function createModelAndMetricsViewAndExplore(
 
     // Update overlay for explore dashboard creation
     overlay.set({
-      title: `Creating explore dashboard (on top of metrics view)...`,
+      title: `Creating explore dashboard...`,
       detail: {
         component: OptionToCancelAIGeneration,
         props: {
