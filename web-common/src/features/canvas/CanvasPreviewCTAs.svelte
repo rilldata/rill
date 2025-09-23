@@ -14,8 +14,8 @@
   const { readOnly } = featureFlags;
 </script>
 
-<div class="flex gap-2 flex-shrink-0 ml-auto">
-  {#if !$readOnly}
+{#if !$readOnly}
+  <div class="flex gap-2 flex-shrink-0 ml-auto">
     <Button type="secondary" href={`/files${canvasFilePath}`}>Edit</Button>
-  {/if}
-</div>
+  </div>
+{/if}
