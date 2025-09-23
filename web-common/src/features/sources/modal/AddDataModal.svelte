@@ -122,10 +122,8 @@
   $: isModelingSupported = $isModelingSupportedForDefaultOlapDriver.data;
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
-  // NOTE: DuckDB should not create connector files, only sources
   $: isConnectorType =
-    (selectedConnector?.implementsOlap &&
-      selectedConnector?.name !== "duckdb") ||
+    selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
       selectedConnector?.name !== "salesforce");
@@ -144,8 +142,8 @@
   >
     <Dialog.Content
       class={cn(
-        "overflow-hidden",
-        step === 2 ? "max-w-4xl p-0 gap-0" : "p-6 gap-4",
+        "overflow-hidden max-w-4xl",
+        step === 2 ? "p-0 gap-0" : "p-6 gap-4",
       )}
       noClose={step === 1}
     >
@@ -161,9 +159,9 @@
                   <button
                     id={connector.name}
                     on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button size-full min-w-24 min-h-16 h-20"
+                    class="connector-tile-button size-full"
                   >
-                    <div class="connector-wrapper px-6 py-4 md:px-4 md:py-2">
+                    <div class="connector-wrapper px-6 py-4">
                       <svelte:component this={ICONS[connector.name]} />
                     </div>
                   </button>
@@ -185,10 +183,10 @@
               {#if connector.name}
                 <button
                   id={connector.name}
-                  class="connector-tile-button size-full min-w-24 min-h-16 h-20"
+                  class="connector-tile-button size-full"
                   on:click={() => goToConnectorForm(connector)}
                 >
-                  <div class="connector-wrapper px-6 py-4 md:px-4 md:py-2">
+                  <div class="connector-wrapper px-6 py-4">
                     <svelte:component this={ICONS[connector.name]} />
                   </div>
                 </button>
@@ -260,12 +258,14 @@
   }
 
   .connector-tile-button {
+    aspect-ratio: 2/1;
+    @apply basis-40;
     @apply border border-gray-300 rounded;
     @apply cursor-pointer overflow-hidden;
   }
 
   .connector-wrapper {
-    @apply size-full;
+    @apply py-3 px-7 size-full;
     @apply flex items-center justify-center;
   }
 
