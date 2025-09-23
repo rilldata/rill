@@ -94,9 +94,13 @@ var motherduckSpec = drivers.Spec{
 			Placeholder: "md:my_database",
 		},
 		{
-			Key:    "token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "token",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Required:    true,
+			DisplayName: "Token",
+			Description: "MotherDuck token",
+			Placeholder: "your_motherduck_token",
 		},
 		{
 			Key:         "mode",

@@ -65,8 +65,17 @@
           (property) => property.key !== "dsn",
         )) ?? [];
 
-  // FIXME: APP-209
-  const filteredParamsProperties = properties;
+  // Filter properties based on connector type
+  const filteredParamsProperties = (() => {
+    // FIXME: https://linear.app/rilldata/issue/APP-408/support-ducklake-in-the-ui
+    if (connector.name === "duckdb") {
+      return properties.filter(
+        (property) => property.key !== "attach" && property.key !== "mode",
+      );
+    }
+    // For other connectors, filter out noPrompt properties
+    return properties.filter((property) => !property.noPrompt);
+  })();
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const initialFormValues = getInitialFormValuesFromProperties(properties);
   const {
