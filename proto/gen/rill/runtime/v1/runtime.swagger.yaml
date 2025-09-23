@@ -1528,6 +1528,10 @@ paths:
                 description: |-
                   Optional UI URL that the export originates from.
                   Only used if include_header is true.
+              executionTime:
+                type: string
+                format: date-time
+                description: Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:

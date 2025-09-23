@@ -86,7 +86,7 @@ uri: "https://storage.googleapis.com/rilldata-public/auction_data.parquet"
 
 ## Step 4: Data Models
 
-In this case, we are not joining the data models and having two unique explore models and joining the visualization in a [Canvas Dashboard](/build/canvas).
+In this case, we are not joining the data models and having two unique explore models and joining the visualization in a [Canvas Dashboard](/build/dashboards/canvas).
 
 
 ## Step 5: Creating your Metrics View

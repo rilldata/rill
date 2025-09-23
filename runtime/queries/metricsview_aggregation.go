@@ -38,6 +38,7 @@ type MetricsViewAggregation struct {
 	Exact               bool                                           `json:"exact,omitempty"`
 	FillMissing         bool                                           `json:"fill_missing,omitempty"`
 	Rows                bool                                           `json:"rows,omitempty"`
+	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
 	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
@@ -92,7 +93,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer e.Close()
 
-	res, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, q.ExecutionTime)
 	if err != nil {
 		return err
 	}
