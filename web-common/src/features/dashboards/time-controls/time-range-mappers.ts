@@ -164,6 +164,7 @@ export function mapV1TimeRangeToSelectedTimeRange(
       overrideRillTimeRef(rt, end);
       selectedTimeRange = {
         name: rt.toString(),
+        interval: rt.byGrain ?? rt.rangeGrain,
       } as DashboardTimeControls;
     } catch {
       return undefined;
@@ -178,7 +179,9 @@ export function mapV1TimeRangeToSelectedTimeRange(
     return undefined;
   }
 
-  selectedTimeRange.interval = timeRange.roundToGrain;
+  if (!selectedTimeRange.interval) {
+    selectedTimeRange.interval = timeRange.roundToGrain;
+  }
 
   return selectedTimeRange;
 }
