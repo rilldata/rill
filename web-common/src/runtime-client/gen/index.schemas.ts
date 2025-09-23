@@ -1749,7 +1749,6 @@ export interface V1ModelState {
   testHash?: string;
   /** test_errors contains the results of the model's tests. */
   testErrors?: string[];
-  triggeredPartitions?: string[];
   /** refreshed_on is the time the model was last executed. */
   refreshedOn?: string;
   /** incremental_state contains the result of the most recent invocation of the model's incremental state resolver. */
