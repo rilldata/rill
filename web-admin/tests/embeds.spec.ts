@@ -40,7 +40,9 @@ test.describe("Embeds", () => {
 
       expect(
         logMessages.some((msg) =>
-          msg.includes("tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"),
+          msg.includes(
+            "tr=7D+as+of+latest%2FD%2B1D&grain=day&f=advertiser_name+IN+('Instacart')",
+          ),
         ),
       ).toBeTruthy();
     });
@@ -65,7 +67,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"tr=7D+as+of+latest%2FD%2B1D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
@@ -125,7 +127,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            "tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')",
+            "tr=24h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')",
           ),
         ),
       ).toBeTruthy();
@@ -154,7 +156,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"tr=24h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
@@ -199,7 +201,7 @@ test.describe("Embeds", () => {
     // Open the menu
     // (Note we cannot use the `interactWithTimeRangeMenu` helper here since its interface is to check the full page)
     await frame.getByLabel("Select time range").click();
-    await frame.getByRole("menuitem", { name: "Last 14 Days" }).click();
+    await frame.getByRole("menuitem", { name: "Last 14 days" }).click();
     // Wait for menu to close
     await expect(
       frame.getByRole("menu", { name: "Select time range" }),
@@ -222,7 +224,7 @@ test.describe("Embeds", () => {
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
       .click();
     // Time range is still the default
-    await expect(frame.getByText("Last 24 Hours")).toBeVisible();
+    await expect(frame.getByText("Last 24 hours")).toBeVisible();
 
     // Select "Last 7 days" as time range
     // Open the menu
@@ -240,7 +242,7 @@ test.describe("Embeds", () => {
       .getByRole("menuitem", { name: "Programmatic Ads Bids" })
       .click();
     // Old selection has persisted
-    await expect(frame.getByText("Last 14 Days")).toBeVisible();
+    await expect(frame.getByText("Last 14 days")).toBeVisible();
 
     // Go back to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();

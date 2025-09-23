@@ -78,6 +78,7 @@
       {rangeBuckets}
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
+      {allowCustomTimeRange}
       timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}
