@@ -86,7 +86,6 @@ const (
 	AdminService_ListUserAuthTokens_FullMethodName                    = "/rill.admin.v1.AdminService/ListUserAuthTokens"
 	AdminService_IssueUserAuthToken_FullMethodName                    = "/rill.admin.v1.AdminService/IssueUserAuthToken"
 	AdminService_RevokeUserAuthToken_FullMethodName                   = "/rill.admin.v1.AdminService/RevokeUserAuthToken"
-	AdminService_RevokeRepresentativeAuthTokens_FullMethodName        = "/rill.admin.v1.AdminService/RevokeRepresentativeAuthTokens"
 	AdminService_IssueRepresentativeAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
@@ -321,9 +320,6 @@ type AdminServiceClient interface {
 	// RevokeUserAuthToken revokes a user access token.
 	// You can optionally pass "current" instead of the token ID to revoke the current token.
 	RevokeUserAuthToken(ctx context.Context, in *RevokeUserAuthTokenRequest, opts ...grpc.CallOption) (*RevokeUserAuthTokenResponse, error)
-	// RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
-	// This is primarily used for "unassume" flows.
-	RevokeRepresentativeAuthTokens(ctx context.Context, in *RevokeRepresentativeAuthTokensRequest, opts ...grpc.CallOption) (*RevokeRepresentativeAuthTokensResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email.
 	// Deprecated: Use IssueUserAuthToken with the represent_email option instead.
 	IssueRepresentativeAuthToken(ctx context.Context, in *IssueRepresentativeAuthTokenRequest, opts ...grpc.CallOption) (*IssueRepresentativeAuthTokenResponse, error)
@@ -1163,16 +1159,6 @@ func (c *adminServiceClient) RevokeUserAuthToken(ctx context.Context, in *Revoke
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RevokeUserAuthTokenResponse)
 	err := c.cc.Invoke(ctx, AdminService_RevokeUserAuthToken_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) RevokeRepresentativeAuthTokens(ctx context.Context, in *RevokeRepresentativeAuthTokensRequest, opts ...grpc.CallOption) (*RevokeRepresentativeAuthTokensResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RevokeRepresentativeAuthTokensResponse)
-	err := c.cc.Invoke(ctx, AdminService_RevokeRepresentativeAuthTokens_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2140,9 +2126,6 @@ type AdminServiceServer interface {
 	// RevokeUserAuthToken revokes a user access token.
 	// You can optionally pass "current" instead of the token ID to revoke the current token.
 	RevokeUserAuthToken(context.Context, *RevokeUserAuthTokenRequest) (*RevokeUserAuthTokenResponse, error)
-	// RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
-	// This is primarily used for "unassume" flows.
-	RevokeRepresentativeAuthTokens(context.Context, *RevokeRepresentativeAuthTokensRequest) (*RevokeRepresentativeAuthTokensResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email.
 	// Deprecated: Use IssueUserAuthToken with the represent_email option instead.
 	IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error)
@@ -2518,9 +2501,6 @@ func (UnimplementedAdminServiceServer) IssueUserAuthToken(context.Context, *Issu
 }
 func (UnimplementedAdminServiceServer) RevokeUserAuthToken(context.Context, *RevokeUserAuthTokenRequest) (*RevokeUserAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeUserAuthToken not implemented")
-}
-func (UnimplementedAdminServiceServer) RevokeRepresentativeAuthTokens(context.Context, *RevokeRepresentativeAuthTokensRequest) (*RevokeRepresentativeAuthTokensResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RevokeRepresentativeAuthTokens not implemented")
 }
 func (UnimplementedAdminServiceServer) IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueRepresentativeAuthToken not implemented")
@@ -3988,24 +3968,6 @@ func _AdminService_RevokeUserAuthToken_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).RevokeUserAuthToken(ctx, req.(*RevokeUserAuthTokenRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_RevokeRepresentativeAuthTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RevokeRepresentativeAuthTokensRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).RevokeRepresentativeAuthTokens(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_RevokeRepresentativeAuthTokens_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).RevokeRepresentativeAuthTokens(ctx, req.(*RevokeRepresentativeAuthTokensRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5742,10 +5704,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeUserAuthToken",
 			Handler:    _AdminService_RevokeUserAuthToken_Handler,
-		},
-		{
-			MethodName: "RevokeRepresentativeAuthTokens",
-			Handler:    _AdminService_RevokeRepresentativeAuthTokens_Handler,
 		},
 		{
 			MethodName: "IssueRepresentativeAuthToken",

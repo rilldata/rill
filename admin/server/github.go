@@ -887,7 +887,7 @@ func (s *Server) isCollaborator(ctx context.Context, owner, repo string, client 
 }
 
 func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
-	redirectURL := s.admin.URLs.AuthLogin(r.URL.RequestURI(), false)
+	redirectURL := s.admin.URLs.AuthLogin(r.URL.RequestURI())
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
