@@ -108,6 +108,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		Connectors:     req.Connectors,
 		Variables:      req.Variables,
 		Annotations:    req.Annotations,
+		FrontendURL:    req.FrontendUrl,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -184,6 +185,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		FeatureFlags:         oldInst.FeatureFlags,
 		Annotations:          annotations,
 		AIInstructions:       oldInst.AIInstructions,
+		FrontendURL:          valOrDefault(req.FrontendUrl, oldInst.FrontendURL),
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
@@ -308,6 +310,7 @@ func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitiv
 		UpdatedOn:      timestamppb.New(inst.UpdatedOn),
 		FeatureFlags:   featureFlags,
 		AiInstructions: inst.AIInstructions,
+		FrontendUrl:    inst.FrontendURL,
 	}
 
 	if sensitive {
