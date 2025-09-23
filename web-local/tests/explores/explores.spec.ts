@@ -352,7 +352,7 @@ time_ranges:
     await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that time dimension is now week
-    await expect(timeGrainSelector).toHaveText("by Week");
+    await expect(timeGrainSelector).toHaveText("as of latest week end");
 
     // Edit Explore
     await page.getByRole("button", { name: "Edit" }).click();
