@@ -1,6 +1,5 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "./setup/base";
-import { log } from "orval";
 
 async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
   return new Promise<void>((resolve) => {
@@ -40,13 +39,12 @@ test.describe("Embeds", () => {
       await embedPage.waitForTimeout(500);
 
       // debug
+      console.log("state is emitted explore");
       logMessages.forEach((msg) => console.log(msg));
 
       expect(
         logMessages.some((msg) =>
-          msg.includes(
-            "tr=7D+as+of+latest%2FD%2B1D&grain=day&f=advertiser_name+IN+('Instacart')",
-          ),
+          msg.includes("tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"),
         ),
       ).toBeTruthy();
     });
@@ -70,6 +68,8 @@ test.describe("Embeds", () => {
       await embedPage.waitForTimeout(500);
 
       // debug
+      // debug
+      console.log("getState returns explore");
       logMessages.forEach((msg) => console.log(msg));
       expect(
         logMessages.some((msg) =>
@@ -132,12 +132,13 @@ test.describe("Embeds", () => {
       await embedPage.waitForTimeout(500);
 
       // debug
+      console.log("state is emitted canvas");
       logMessages.forEach((msg) => console.log(msg));
 
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            "tr=24h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')",
+            "tr=PT24H&compare_tr=rill-PD&grain=hour&f=advertiser_name+IN+('Instacart')",
           ),
         ),
       ).toBeTruthy();
@@ -163,10 +164,14 @@ test.describe("Embeds", () => {
       });
 
       await embedPage.waitForTimeout(500);
+
+      // debug
+      console.log("getState returns canvas");
+      logMessages.forEach((msg) => console.log(msg));
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=24h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&grain=hour&f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
