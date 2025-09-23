@@ -1,0 +1,137 @@
+.component-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+@media (max-width: 700px) {
+  .component-icon-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.component-icon {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.5rem 1rem 1.5rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  height: 100%;
+  min-height: 200px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  
+  &:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    text-decoration: none;
+  }
+}
+
+
+.component-icon-content {
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.4;
+  margin-left: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  height: 96px;
+}
+
+.component-icon-header {
+  color: var(--ifm-color-primary);
+  font-size: 1em;
+  font-weight: 550;
+  display: flex;
+  padding-bottom: 0.5rem;
+  flex-direction: column;
+}
+
+.component-icon-header:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.component-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+}
+
+.component-icon-multiple-measures {
+  color: var(--palette_slate_600);
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+
+[data-theme='dark'] {
+  .component-icon {
+    border-color: #404040;
+    background: #262626;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    
+    &:hover {
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+  }
+  
+  .component-icon-header {
+    color: #e5e5e5;
+  }
+  
+  .component-icon-content {
+    color: #a3a3a3;
+  }
+  
+  .component-icon-action-link {
+    color: #459BFF;
+    
+    &:hover {
+      color: #459BFF;
+    }
+  }
+  
+  .component-icon-link {
+    color: #e5e5e5;
+  }
+  
+  .component-icon-multiple-measures {
+    color: #a3a3a3;
+    border-top-color: #404040;
+  }
+} 
+
+// Responsive fixes for footer overlap
+@media (max-width: 1450px) and (min-width: 1001px) {
+  .component-icon-link::after {
+    content: none;
+  }
+}
+
+// Hide linkLabel and adjust layout for medium screens
+@media (max-width: 1400px) and (min-width: 700px) {
+  .component-icon-link-right {
+    display: none;
+  }
+  
+  .component-icon-footer {
+    justify-content: flex-start;
+  }
+  
+  .component-icon-actions {
+    gap: 0.75rem;
+  }
+}
+
