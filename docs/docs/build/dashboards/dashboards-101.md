@@ -1,7 +1,7 @@
 ---
 title: Dashboards in Rill
 description: Understanding Explore vs Canvas dashboards and when to use each
-sidebar_label: Dashboard Types
+sidebar_label: Overview
 sidebar_position: 00
 ---
 
