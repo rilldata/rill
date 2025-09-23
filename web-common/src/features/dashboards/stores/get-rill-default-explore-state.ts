@@ -28,8 +28,7 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { createAndExpression } from "./filter-utils";
 import { TDDChart } from "../time-dimension-details/types";
-import { V1TimeGrainToOrder } from "@rilldata/web-local/lib/time-ranges-test";
-import { TimeRange } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
+import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains";
 
 export function getRillDefaultExploreState(
   metricsViewSpec: V1MetricsViewSpec,
