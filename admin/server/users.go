@@ -333,35 +333,6 @@ func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUse
 	return &adminv1.RevokeUserAuthTokenResponse{}, nil
 }
 
-func (s *Server) RevokeRepresentativeAuthTokens(ctx context.Context, req *adminv1.RevokeRepresentativeAuthTokensRequest) (*adminv1.RevokeRepresentativeAuthTokensResponse, error) {
-	claims := auth.GetClaims(ctx)
-
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can manage representative auth tokens")
-	}
-
-	// Error if authenticated as anything other than a user
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
-
-	u, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, err
-	}
-
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.user_id", u.ID),
-	)
-
-	err = s.admin.DB.DeleteUserAuthTokensByUserAndRepresentingUser(ctx, claims.OwnerID(), u.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &adminv1.RevokeRepresentativeAuthTokensResponse{}, nil
-}
-
 // IssueRepresentativeAuthToken returns the temporary auth token for representing email
 func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.IssueRepresentativeAuthTokenRequest) (*adminv1.IssueRepresentativeAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,

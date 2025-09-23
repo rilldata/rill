@@ -4079,27 +4079,6 @@ paths:
           type: boolean
       tags:
         - AdminService
-  /v1/users/-/tokens/representing/{email}:
-    delete:
-      summary: "RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. \nThis is primarily used for \"unassume\" flows."
-      operationId: AdminService_RevokeRepresentativeAuthTokens
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RevokeRepresentativeAuthTokensResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: email
-          description: Email of the user being represented.
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
   /v1/users/{email}:
     delete:
       summary: DeleteUser deletes the user from the organization by email
@@ -6105,8 +6084,6 @@ definitions:
   v1RevokeCurrentAuthTokenResponse:
     type: object
   v1RevokeMagicAuthTokenResponse:
-    type: object
-  v1RevokeRepresentativeAuthTokensResponse:
     type: object
   v1RevokeServiceAuthTokenResponse:
     type: object

@@ -446,14 +446,6 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
   }
 
-  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
-  // This is primarily used for "unassume" flows.
-  rpc RevokeRepresentativeAuthTokens(RevokeRepresentativeAuthTokensRequest) returns (RevokeRepresentativeAuthTokensResponse) {
-    option (google.api.http) = {
-      delete: "/v1/users/-/tokens/representing/{email}"
-    };
-  }
-
   // IssueRepresentativeAuthToken returns the temporary token for given email.
   // Deprecated: Use IssueUserAuthToken with the represent_email option instead.
   rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
@@ -2038,14 +2030,6 @@ message RevokeUserAuthTokenRequest {
 }
 
 message RevokeUserAuthTokenResponse {
-}
-
-message RevokeRepresentativeAuthTokensRequest {
-  // Email of the user being represented.
-  string email = 1 [(validate.rules).string.email = true];
-}
-
-message RevokeRepresentativeAuthTokensResponse {
 }
 
 message IssueRepresentativeAuthTokenRequest {
