@@ -13,45 +13,17 @@ For a full list of available dashboard properties and configurations, please see
 
 :::
 
+## Define Dashboard Access
 
-### Time Ranges
-
-One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses, like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
-
-```yaml
-time_ranges:
-  - PT15M 
-  - PT1H
-  - P7D
-  - P4W
-  - rill-TD ## Today
-  - rill-WTD ## Week-To-date
-```
-
-### Time Zones
-
-Rill will automatically select several time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). You can add or remove relevant time zones for your team from this list.
+Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. Access policies will be combined with metrics view policies using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard.  Only the `access` key can be set in the dashboard.
 
 ```yaml
-time_zones:
-  - America/Los_Angeles
-  - America/Chicago
-  - America/New_York
-  - Europe/London
-  - Europe/Paris
-  - Asia/Jerusalem
-  - Europe/Moscow
-  - Asia/Kolkata
-  - Asia/Shanghai
-  - Asia/Tokyo
-  - Australia/Sydney  
+security:
+  access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
 ```
+
 
 ## Setting Default Views for Dashboards
-:::tip
-Starting from version 0.50, the default views have been consolidated into a single YAML struct, `defaults:`.
-:::
-
 ### Default Time Range
 
 Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting it to the most frequently used period— in particular, avoiding `all time` if you have a large data source but only analyze more recent data.
@@ -97,10 +69,40 @@ defaults:
 
 ```
 
-## Row Access Policies
-### Security
 
-Defining security policies for your data is crucial for security. For more information on this, please refer to our [Data Access Policies](/build/metrics-view/security). Check our [examples](/build/metrics-view/security#examples) for frequently used patterns.
+
+## Time Ranges
+
+One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses, like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
+
+```yaml
+time_ranges:
+  - PT15M 
+  - PT1H
+  - P7D
+  - P4W
+  - rill-TD ## Today
+  - rill-WTD ## Week-To-date
+```
+
+## Time Zones
+
+Rill will automatically select several time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). You can add or remove relevant time zones for your team from this list.
+
+```yaml
+time_zones:
+  - America/Los_Angeles
+  - America/Chicago
+  - America/New_York
+  - Europe/London
+  - Europe/Paris
+  - Asia/Jerusalem
+  - Europe/Moscow
+  - Asia/Kolkata
+  - Asia/Shanghai
+  - Asia/Tokyo
+  - Australia/Sydney  
+```
 
 ## Changing Themes & Colors
 
@@ -128,24 +130,49 @@ For more details about configuring themes, you can refer to our [Theme YAML](/re
 ## Example
 
 ```yaml
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explores
+
 type: explore
 
-title: Title of your explore dashboard
-description: a description
-metrics_view: <your-metric-view-file-name>
+display_name: "Programmatic Ads Auction"
+metrics_view: auction_metrics
 
-dimensions: '*' #can use expressions
-measures: '*' #can use expressions
+dimensions:
+  expr: "*"
+measures:
+  - requests
+  - avg_bid_floor
+  - 1d_qps
 
-theme: #your default theme
+defaults:
+  measures:
+    - avg_bid_floor
+    - requests
+  dimensions:
+    - app_site_cat
+    - app_site_domain
+    - app_site_name
+    - pub_name
+  comparison_mode: time
+  time_range: P7D
 
-time_ranges: #was available_time_ranges
-time_zones: #was available_time_zones
-
-defaults: #define all the defaults within here
-    dimensions:
-  ...
+time_ranges:
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC
+theme:
+  colors:
+    primary: hsl(180, 100%, 50%)
+    secondary: lightgreen
 
 security:
-    access: #only access can be set on dashboard level, see metric view for detailed access policies
+    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies
 ```

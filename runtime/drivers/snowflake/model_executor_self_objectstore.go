@@ -99,7 +99,7 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 	if err != nil {
 		return "", err
 	}
-	return outputLocation, nil
+	return outputLocation + "*", nil
 }
 
 func (e *selfToObjectStoreExecutor) creds() (string, error) {

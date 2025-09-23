@@ -7,7 +7,11 @@ import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/co
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea" | "select";
 type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
-type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
+type CustomInputTypes =
+  | "rill_time"
+  | "sparkline"
+  | "comparison_options"
+  | "switcher_tab";
 type PositionalInputTypes = "alignment";
 
 export type InputType =

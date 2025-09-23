@@ -1,1 +1,1 @@
-ALTER TABLE model_partitions ADD COLUMN explicitly_triggered BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE instances ADD COLUMN frontend_url TEXT NOT NULL DEFAULT ''; 

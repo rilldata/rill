@@ -32,8 +32,9 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**S3**](#s3) - Amazon S3 storage
 
 ### _Other_
+- [**DuckDB as a source**](#duckdb-as-a-source) - DuckDB as a source
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAPI**](#openapi) - OpenAPI data
+- [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
 
@@ -397,13 +398,40 @@ _[string]_ - Comma-separated list of other connector names to create temporary s
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
+### `mode`
+
+_[string]_ - Set the mode for the DuckDB connection. 
+
 ```yaml
 # Example: DuckDB connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
+mode: "readwrite" # Set the mode for the DuckDB connection. 
 allow_host_access: true # Whether access to the local environment and file system is allowed  
 cpu: 4 # Number of CPU cores available to the database  
 memory_limit_gb: 16 # Amount of memory in GB available to the database
+```
+
+## DuckDB as a source
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+
+### `db`
+
+_[string]_ - Name of the DuckDB database _(required)_
+
+### `sql`
+
+_[string]_ - SQL to execute _(required)_
+
+```yaml
+# Example: DuckDB as a source connector configuration
+type: connector # Must be `connector` (required)
+driver: duckdb # Must be `duckdb` _(required)_
+db: "/path/to/my-duckdb-database.db" # Name of the DuckDB database  
+sql: "select * from my-table" # SQL to execute  
 ```
 
 ## GCS
@@ -485,6 +513,10 @@ _[string]_ - MotherDuck token _(required)_
 
 _[string]_ - SQL executed during database initialization. 
 
+### `mode`
+
+_[string]_ - Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations. 
+
 ```yaml
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
@@ -502,7 +534,19 @@ _[string]_ - Refers to the driver type and must be driver `mysql` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the mysql connection 
+_[string]_ - **Data Source Name (DSN)** for the MySQL connection, provided in [MySQL URI format](https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri).
+The DSN must follow the standard MySQL URI scheme:
+```text
+mysql://user:password@host:3306/my-db
+```
+Rules for special characters:
+- The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+- All other special characters must be percent-encoded (`%XX` format).
+```text
+mysql://user:pa%40ss@localhost:3306/my-db   # password contains '@'
+mysql://user:pa%3Ass@localhost:3306/my-db   # password contains ':'
+```
+ 
 
 ### `host`
 
@@ -524,27 +568,34 @@ _[string]_ - Username for authentication
 
 _[string]_ - Password for authentication 
 
-### `ssl_mode`
+### `ssl-mode`
 
-_[string]_ - SSL mode can be DISABLED, PREFERRED or REQUIRED 
+_[string]_ - ssl mode options: `disabled`, `preferred`, or `required`. 
 
 ```yaml
-# Example: MySQL connector configuration
-type: connector # Must be `connector` (required)
-driver: mysql # Must be `mysql` _(required)_
-host: "localhost" # Hostname of the MySQL server  
-port: 3306 # Port number for the MySQL server  
-database: "mydatabase" # Name of the MySQL database  
-user: "myusername" # Username for authentication  
-password: "mypassword" # Password for authentication  
-ssl_mode: "DISABLED" # SSL mode can be DISABLED, PREFERRED or REQUIRED
+# Example: MySQL connector configured using individual properties
+type: connector
+driver: mysql
+host: localhost
+port: 3306
+database: mydb
+user: user
+password: p@ss
+ssl-mode: preferred
 ```
 
-## OpenAPI
+```yaml
+# Example: MySQL connector configured using dsn
+type: connector
+driver: mysql
+dsn: mysql://user:p%40ss@localhost:3306/mydb?ssl-mode=preferred # '@' in password is encoded as %40
+```
+
+## OpenAI
 
 ### `driver`
 
-_[string]_ - The driver type, must be set to "openapi" 
+_[string]_ - The driver type, must be set to "openai" 
 
 ### `api_key`
 
@@ -567,9 +618,9 @@ _[string]_ - The type of OpenAI API to use
 _[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
 
 ```yaml
-# Example: OpenAPI connector configuration
+# Example: OpenAI connector configuration
 type: connector # Must be `connector` (required)
-driver: openapi # Must be `openapi` _(required)_
+driver: openai # Must be `openai` _(required)_
 api_key: "my-api-key" # API key for connecting to OpenAI  
 model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
@@ -646,7 +697,33 @@ _[string]_ - Refers to the driver type and must be driver `postgres` _(required)
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the postgres connection 
+_[string]_ - **Data Source Name (DSN)** for the PostgreSQL connection, provided in
+[PostgreSQL connection string format](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+PostgreSQL supports both **key=value format** and **URI format**.
+
+key=value format example:
+```text
+user=user password=password host=host port=5432 dbname=mydb
+```
+Rules for key=value format for special characters:
+- To write an empty value, or a value containing spaces, `=`, single quotes, or backslashes, surround it with single quotes.
+- Single quotes and backslashes inside a value must be escaped with a backslash (`\'` and `\\`).
+
+URI format example:
+```text
+postgres://user:password@host:5432/mydb
+```
+
+Rules for URI format:
+- The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+- All other special characters must be percent-encoded (`%XX` format).
+
+Examples (URI format with encoded characters):
+```text
+postgres://user:pa%40ss@localhost:5432/my-db   # '@' is encoded as %40
+postgres://user:pa%3Ass@localhost:5432/my-db   # ':' is encoded as %3A
+```
+ 
 
 ### `host`
 
@@ -670,18 +747,32 @@ _[string]_ - Password for authentication
 
 ### `sslmode`
 
-_[string]_ - SSL mode can be disable, allow, prefer or require 
+_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
 ```yaml
-# Example: Postgres connector configuration
-type: connector # Must be `connector` (required)
-driver: postgres # Must be `postgres` _(required)_
-host: "localhost" # Hostname of the Postgres server  
-port: 5432 # Port number for the Postgres server  
-dbname: "mydatabase" # Name of the Postgres database  
-user: "myusername" # Username for authentication  
-password: "mypassword" # Password for authentication  
-sslmode: "disable" # SSL mode can be disable, allow, prefer or require
+# Example: Postgres connector configured using individual properties
+type: connector
+driver: postgres
+host: localhost
+port: 5432
+dbname: mydatabase
+user: myusername
+password: mypassword
+sslmode: prefer
+```
+
+```yaml
+# Example: Postgres connector configured using dsn key=value format
+type: connector
+driver: postgres
+dsn: user=myusername password='my pass\'word' host=localhost port=5432 dbname=mydatabase sslmode=prefer # password is "my pass'word": space is quoted, single quote escaped with \'
+```
+
+```yaml
+# Example: Postgres connector configured using dsn URI format
+type: connector
+driver: postgres
+dsn: postgres://myusername:p%40ss@localhost:5432/mydatabase?sslmode=prefer # '@' in password: p@ss is encoded as %40
 ```
 
 ## Redshift
