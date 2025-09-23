@@ -270,8 +270,9 @@ export async function createModelAndMetricsViewAndExplore(
   let isAICancelled = false;
   const abortController = new AbortController();
 
+  const isAiEnabled = get(featureFlags.ai);
   overlay.set({
-    title: `Creating your metrics and dashboard...`,
+    title: `Creating your metrics and dashboard${isAiEnabled ? " with AI" : ""}...`,
     detail: {
       component: OptionToCancelAIGeneration,
       props: {
@@ -325,7 +326,7 @@ export async function createModelAndMetricsViewAndExplore(
 
     // Update overlay for metrics view creation
     overlay.set({
-      title: `Creating metrics view...`,
+      title: `Creating metrics view${isAiEnabled ? " with AI" : ""}...`,
       detail: {
         component: OptionToCancelAIGeneration,
         props: {
