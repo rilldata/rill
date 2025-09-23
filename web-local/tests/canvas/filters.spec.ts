@@ -28,7 +28,7 @@ test.describe("canvas time filters", () => {
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByLabel("Select time range")
       .click();
-    await page.getByRole("menuitem", { name: "Last 7 Days" }).click();
+    await page.getByRole("menuitem", { name: "Last 7 days" }).click();
 
     await page.waitForTimeout(500);
 

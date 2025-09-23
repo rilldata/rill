@@ -193,7 +193,7 @@ test.describe("Embeds", () => {
     const frame = embedPage.frameLocator("iframe");
 
     // Time range is the default
-    await expect(frame.getByText("Last 7 Days")).toBeVisible();
+    await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Select "Last 14 Days" as time range
     // Open the menu
@@ -214,7 +214,7 @@ test.describe("Embeds", () => {
       })
       .click();
     // Time range is still the default
-    await expect(frame.getByText("Last 7 Days")).toBeVisible();
+    await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Go to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
@@ -224,11 +224,11 @@ test.describe("Embeds", () => {
     // Time range is still the default
     await expect(frame.getByText("Last 24 Hours")).toBeVisible();
 
-    // Select "Last 7 Days" as time range
+    // Select "Last 7 days" as time range
     // Open the menu
     // (Note we cannot use the `interactWithTimeRangeMenu` helper here since its interface is to check the full page)
     await frame.getByLabel("Select time range").click();
-    await frame.getByRole("menuitem", { name: "Last 7 Days" }).click();
+    await frame.getByRole("menuitem", { name: "Last 7 days" }).click();
     // Wait for menu to close
     await expect(
       frame.getByRole("menu", { name: "Select time range" }),
@@ -248,7 +248,7 @@ test.describe("Embeds", () => {
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
       .click();
     // Old selection has persisted
-    await expect(frame.getByText("Last 7 Days")).toBeVisible();
+    await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
@@ -270,6 +270,6 @@ test.describe("Embeds", () => {
     // Go to `Bids Canvas Dashboard` using the links on home
     await frame.getByRole("link", { name: "Bids Canvas Dashboard" }).click();
     // Old selection has persisted
-    await expect(frame.getByText("Last 7 Days")).toBeVisible();
+    await expect(frame.getByText("Last 7 days")).toBeVisible();
   });
 });

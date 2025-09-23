@@ -231,7 +231,7 @@ test.describe("Bookmarks", () => {
 
       // Select "Last 24 Hours" as time range
       await interactWithTimeRangeMenu(adminPage, async () => {
-        await adminPage.getByRole("menuitem", { name: "Last 7 Days" }).click();
+        await adminPage.getByRole("menuitem", { name: "Last 7 days" }).click();
       });
 
       // Filter to "Not Available" "App Site Domain" via leaderboard
@@ -260,7 +260,7 @@ test.describe("Bookmarks", () => {
         .click();
 
       // saved home bookmark is restored
-      await expect(adminPage.getByText("Last 7 Days")).toBeVisible();
+      await expect(adminPage.getByText("Last 7 days")).toBeVisible();
       await expect(
         adminPage.getByText("App Site Domain Not Available"),
       ).toBeVisible();
@@ -293,7 +293,7 @@ test.describe("Bookmarks", () => {
       await adminPage.getByLabel("Home bookmark dropdown").click();
       await adminPage.getByLabel("Home Bookmark Entry").click();
       // saved home bookmark is restored
-      await expect(adminPage.getByText("Last 7 Days")).toBeVisible();
+      await expect(adminPage.getByText("Last 7 days")).toBeVisible();
       await expect(
         adminPage.getByText("App Site Domain Not Available"),
       ).toBeVisible();

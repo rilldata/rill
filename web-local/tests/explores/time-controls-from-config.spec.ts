@@ -53,11 +53,11 @@ test.describe("time controls settings from explore preset", () => {
 
     // Select a different time range
     await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 7 Days" }).click();
+      await page.getByRole("menuitem", { name: "Last 7 days" }).click();
     });
     // Wait for menu to close
     await expect(
-      page.getByRole("menuitem", { name: "Last 7 Days" }),
+      page.getByRole("menuitem", { name: "Last 7 days" }),
     ).not.toBeVisible();
     // Data has changed
     await expect(page.getByText("Total records 7,863 -15 ~0%")).toBeVisible();
