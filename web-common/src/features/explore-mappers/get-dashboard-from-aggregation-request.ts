@@ -210,9 +210,10 @@ async function mergeDashboardFromUrlState(
   const schemaResp = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewSchemaQueryKey(
       instanceId,
-      exploreState.name,
+      exploreSpec.metricsView ?? "",
     ),
-    queryFn: () => queryServiceMetricsViewSchema(instanceId, exploreState.name),
+    queryFn: () =>
+      queryServiceMetricsViewSchema(instanceId, exploreSpec.metricsView ?? ""),
   });
   if (!schemaResp.schema) return;
 
