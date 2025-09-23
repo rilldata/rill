@@ -1,13 +1,13 @@
 ---
-title: All Canvas Components
-description: Complete guide to all available components in Rill Canvas Dashboards
+title: All Canvas Widgets
+description: Complete guide to all available widgets in Rill Canvas Dashboards
 toc_max_heading_level: 3
 className: connect-connect
 ---
 
 import ComponentTile from '@site/src/components/ComponentTile';
 
-Rill Canvas dashboards are built using a variety of components that can display data, create visualizations, and add rich content. Each component can be created dynamically through the visual Canvas dashboard editor or defined in individual YAML files. For more information, refer to our [Components reference doc](/reference/project-files/component).
+Rill Canvas dashboards are built using a variety of widgets that can display data, create visualizations, and add rich content. Each component can be created dynamically through the visual Canvas dashboard editor or defined in individual YAML files. For more information, refer to our [Components reference doc](/reference/project-files/component).
 
 ## Data 
 

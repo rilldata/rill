@@ -1,16 +1,16 @@
 ---
-title: "Miscellaneous Components"
+title: "Miscellaneous Widgets"
 sidebar_label: "Miscellaneous"
 sidebar_position: 20
 ---
 
 import ImageCodeToggle from '@site/src/components/ImageCodeToggle';
 
-Miscellaneous components in Rill Canvas provide additional functionality for text, images, and other non-data elements. These components help enhance your dashboards with rich content. For more information, refer to our [Components reference doc](/reference/project-files/component).
+Miscellaneous widgets in Rill Canvas provide additional functionality for text, images, and other non-data elements. These widgets help enhance your dashboards with rich content. For more information, refer to our [Components reference doc](/reference/project-files/component).
 
 ## Text/Markdown
 
-Text components allow you to add formatted text, markdown content, and documentation directly to your dashboards.
+Text widgets allow you to add formatted text, markdown content, and documentation directly to your dashboards.
 
 <ImageCodeToggle
   image="/img/build/dashboard/canvas/components/text.png"
@@ -39,7 +39,7 @@ Text components allow you to add formatted text, markdown content, and documenta
 
 ## Image
 
-Image components let you embed images, logos, and visual elements into your dashboards. Put files in your public/ folder and reference them directly in the `url` as `public/image.png`.
+Image widgets let you embed images, logos, and visual elements into your dashboards. Put files in your public/ folder and reference them directly in the `url` as `public/image.png`.
 
 <ImageCodeToggle
   image="/img/build/dashboard/canvas/components/image.png"

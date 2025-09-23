@@ -30,7 +30,7 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 - [**Dashboards Types**](/build/dashboards/dashboards-101) - What are the visualization options in Rill, and how are they different?
 - [**Slice-and-Dice Dashboards**](/build/dashboards/explore) - Explore and find insights in your data
 - [**Traditional Visualizations**](/build/dashboards/canvas) - Visualize your data with various chart types
-- [**Canvas Components**](/build/dashboards/canvas-components) - See all of our supported components!
+- [**Canvas Components**](/build/dashboards/canvas-widgets) - See all of our supported components!
 - [**Define Dashboard Access**](/build/dashboards/customization#define-dashboard-access) - Set a SQL boolean query that defines access to dashboard
 
 ### Build Integrations with External Applications

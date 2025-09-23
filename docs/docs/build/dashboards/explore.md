@@ -7,19 +7,17 @@ sidebar_position: 00
 
 Explore dashboards are interactive, slice-and-dice interfaces that transform your metrics view data into powerful visualizations for data exploration and analysis. Built on top of a single metrics view, they provide an intuitive way for users to interact with your data through real-time filtering, drilling, and comparison capabilities.
 
-## Creating an Explore Dashboard
-
+## Creating an Explore Dashboard in Rill Developer
 
 ### Using the Code Editor
 
-In the Explore dashboard YAML, you can define which measures and dimensions are visible, as well as the default view when a user sees your dashboard.
+In the Explore dashboard YAML, you can define dashboard level parameters to customize the capabilities. For a full list, see our [explore dashboard reference](/reference/project-files/explore-dashboards) doc.
 
-* _**metrics_view**_ - A metrics view that powers the dashboard
+* _**metrics_view**_ - A single metrics view that powers the dashboard
 * _**measures**_ - `*` Which measures to include or exclude from the metrics view; using a wildcard will include all.
 * _**dimensions**_ - `*` Which dimensions to include or exclude from the metrics view; using a wildcard will include all.
 
-When including dimensions and measures, only the named resources will be included.
-Rill also supports the ability to exclude a set of named dimensions and measures.
+In some cases, a specific dashboard will not need to include all of the underlying metrics view's measures and/or dimensions. In this case, you can use the `measures` and `dimensions` parameters to filter these out. Rill supports providing a single value, list, or regex to filter out unnecessary measures and dimensions.
 
 ```yaml
 type: explore
@@ -28,22 +26,48 @@ title: Title of your Explore Dashboard
 description: a description for your explore dashboard
 metrics_view: my_metricsview
 
-dimensions: '*' # can use expressions
-measures: '*' # can use expressions
+dimensions:
+    expr: "^public_.*$"
+measures:
+  - total_downloads
+  - total_impressions 
 
-defaults: # define all the defaults within here, was default_* in previous dashboard YAML
-    dimensions: 
-    measures:
-    ...
+defaults:
+    comparison_mode: time
+    time_range: P3M
+  measures:
+    - total_downloads
+    - total_impressions 
+  dimensions:
+    - show_name
+    - season
+    - program_name
 ```
 
 ### Using AI
 
-In various locations throughout the platform, you have the opportunity to create a dashboard via AI. What this does is create the underlying metrics view with AI and creates your explore.yaml similar to the above with the required components.
+In various locations throughout the platform, you have the opportunity to fast path your dashboard creation via AI. What this does is [create the underlying metrics view with AI](/build/metrics-view/what-are-metrics-views#creating-a-metrics-view-with-ai) and creates your explore.yaml similar to the above with the required components.
+
+**Directly from your Connector's tables**:
+
+<img src='/img/build/dashboard/explorable-metrics.png' class='rounded-gif' />
+<br />
+
+**From an ingested model:**
+
+
+<img src='/img/build/metrics-view/create-with-ai.png' class='rounded-gif' />
+<br />
 
 ## Preview a Dashboard in Rill Developer
 
-Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying.
+Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer.
+
+<img src='/img/build/dashboard/preview.png' class='rounded-gif' />
+<br />
+
+### Setup Dashboard Access
+
+If you are setting up [dashboard policies](/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying. This option will be available for you to test if you have set up access policies on the [project-level](/build/rill-project-file#mock-users), [metrics-view level](/build/metrics-view/security), or [dashboard-level](/build/dashboards/customization#define-dashboard-access).
 
 <img src='/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />
-<br />

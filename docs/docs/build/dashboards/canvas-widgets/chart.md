@@ -1,12 +1,12 @@
 ---
-title: "Chart Components"
+title: "Chart Widgets"
 sidebar_label: "Chart"
 sidebar_position: 10
 ---
 
 import ImageCodeToggle from '@site/src/components/ImageCodeToggle';
 
-Chart components in Rill Canvas allow you to visualize your data in various formats. You can create charts dynamically in the Canvas Dashboard or through individual component files. For more information, refer to our [Components reference doc](/reference/project-files/component).
+Chart widgets in Rill Canvas allow you to visualize your data in various formats. You can create charts dynamically in the Canvas Dashboard or through individual component files. For more information, refer to our [Components reference doc](/reference/project-files/component).
 
 ## Bar Chart
 

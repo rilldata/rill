@@ -19,7 +19,7 @@ Rill provides powerful dashboard capabilities to visualize and explore your data
 ### Canvas Dashboards
 
 - [**Create a Canvas Dashboard**](/build/dashboards/canvas) - Traditional dashboard, can be built on multiple metrics views allow you to conslidate key measures in a single view.
-- [**Canvas Components**](/build/dashboards/canvas-components) - See all of our supported components!
+- [**Canvas Components**](/build/dashboards/canvas-widgets) - See all of our supported components!
 
 ### Customize Dashboards
 

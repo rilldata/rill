@@ -5,18 +5,20 @@ sidebar_label: Dashboard Types
 sidebar_position: 00
 ---
 
-Rill offers two distinct dashboard experiences, each optimized for different use cases and user needs. The key difference lies in how they handle **metrics views** - the data sources that power your dashboards.
+Rill offers two distinct dashboard experiences, each optimized for different use cases and user needs. While both are used to visualize your data, the key difference lies in how they handle [**metrics views**](/build/metrics-view) - the data sources that power your dashboards.
 
-- **Explore Dashboards** - Standardized _opinionated_ dashboards with consistent data components, visualizations, and layout structure that promotes slice-and-dice discovery and interactive data exploration
-- **Canvas Dashboards** - Traditional dashboards that allow users to customize visualizations and layout according to their specific requirements, enabling comprehensive multi-metric reporting
+- **Explore Dashboards** - Standardized _opinionated_ dashboards with consistent data components, visualizations, and layout structure that promotes slice-and-dice discovery and interactive data exploration that are built over a **single metrics view** using [One Big Table approach.](/build/models/models-101#one-big-table-and-dashboarding)
+- **Canvas Dashboards** - Traditional dashboards that allow users to customize visualizations and layout according to their specific requirements utilizing **multiple metrics views**.
 
 
 ## Built on Metrics Views
 
-All dashboards in Rill are built on [metrics views](/build/metrics-view/metrics-view.md). This ensures that your defined measures and dimensions are standard throughout all of your visualizations. The primary difference between Explore and Canvas dashboards is that **Explore is built on a single metrics view**, while **Canvas can combine multiple metrics views** in one dashboard.
-<img src = '/img/build/dashboard/explore-metrics.png'  style={{width: '75%', display: 'block', margin: '0 auto'}} />
+All dashboards in Rill are built on [metrics views](/build/metrics-view/metrics-view.md). This ensures that your defined measures and dimensions are standard throughout all of your visualizations. 
 
-<img src = '/img/build/dashboard/canvas-metrics.png'  style={{width: '75%', display: 'block', margin: '0 auto'}} />
+The primary difference between Explore and Canvas dashboards is that:
+-  **Explore Dashboards is built on a single metrics view**
+-  **Canvas Dashboards can combine multiple metrics views** in one dashboard.
+
 
 ## Explore Dashboards
 
@@ -26,14 +28,33 @@ All dashboards in Rill are built on [metrics views](/build/metrics-view/metrics-
 - [Time Dimension Detail](/explore/dashboard-101/tdd)
 - [Leaderboards](/explore/dashboard-101/multi-metrics)
 
-<img src = '/img/build/dashboard/explore.png' class='rounded-gif' />
+<img src = '/img/build/dashboard/explore.png' class='rounded-gif' /> <br/>
+
+### Live Demo
+
+See both dashboard types in action with our interactive demos:
+
+
+- **[Programmatic Advertising Explore Dashboard](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/auction_explore?tr=-24h+to+ref+as+of+latest%2FD&tz=UTC&grain=day&measures=1d_qps%2Cavg_bid_floor%2Crequests&dims=pub_name%2Capp_site_name%2Cad_size%2Capp_site_domain%2Cdevice_osv&leaderboard_measures=1d_qps%2Cavg_bid_floor%2Crequests)** - Real-time bidding and auction data exploration
+- **[Mobile App Engagement Explore Dashboard](https://ui.rilldata.com/demo/rill-app-engagement/explore/mobile_events_explore)** - Mobile app user behavior and engagement metrics
+- **[GitHub Analytics Explore Dashboard](https://ui.rilldata.com/demo/rill-github-analytics/explore/rill_commits_explore?tr=P12M&grain=week&dims=username%2Cfile_path%2Cfilename%2Cfile_extension%2Cfirst_directory%2Csecond_directory%2Cprevious_file_path%2Cis_merge_commit)** - Code repository and commit analysis
+- **[E-commerce Explore Dashboard](https://ui.rilldata.com/demo/ezcommerce-demo/explore/data_metrics_explore)** - Interactive exploration of sales data
 
 ## Canvas Dashboards
 
-**[Canvas dashboards](/build/dashboards/canvas)** provide a traditional dashboard experience where you can combine multiple metrics views and create custom layouts. See our [list of components](/build/dashboards/canvas-components) to start creating your custom dashboard.
+**[Canvas dashboards](/build/dashboards/canvas)** provide a traditional dashboard experience where you can combine multiple metrics views and create custom layouts. See our [list of components](/build/dashboards/canvas-widgets) to start creating your custom dashboard.
 
 
-<img src = '/img/build/dashboard/canvas/RTBAds-Canvas-2.png' class='rounded-gif' />
+<img src = '/img/build/dashboard/canvas/RTBAds-Canvas-2.png' class='rounded-gif' /> <br/>
+
+### Live Demo
+
+See both dashboard types in action with our interactive demos:
+- **[E-commerce demo dashboard](https://ui.rilldata.com/demo/ezcommerce-demo/canvas/canvas)**
+- **[Programmatic advertising demo dashboard](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/canvas/executive_overview)**
+- **[New York City demo dashboard](https://ui.rilldata.com/demo/nyc-canvas-jam/canvas/scorecard%20canvas)**
+- **[NYC party demo dashboard 🎉](https://ui.rilldata.com/demo/nyc-canvas-jam/canvas/Leaderboard)**
+
 
 ## Key Features
 
@@ -52,16 +73,4 @@ For comprehensive guidance on using dashboards as an analyst, see our [Analyst's
 - [Time dimension details](/explore/dashboard-101/tdd)
 - [Bookmarks and sharing](/explore/bookmarks)
 - [Alerts and notifications](/explore/alerts)
-
-<!-- Separate this list into two once explore changes merged -->
-<!-- Canvas Dashboard Specific: -->
-  
-## Live Demo
-
-See both dashboard types in action with our interactive demos:
-
-- **[E-commerce Explore Dashboard](https://ui.rilldata.com/demo/ezcommerce-demo/explore/data_metrics_explore)** - Interactive exploration of sales data
-- **[Programmatic Advertising Canvas Dashboard](https://ui.rilldata.com/demo/rill-openrtb-prog-ads/canvas/executive_overview)** - Multi-metrics executive dashboard
-
-
 
