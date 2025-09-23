@@ -85,6 +85,18 @@ var (
 		"y": timeutil.TimeGrainYear,
 		"Y": timeutil.TimeGrainYear,
 	}
+	reverseGrainMap = map[timeutil.TimeGrain]string{
+		timeutil.TimeGrainUnspecified: "s",
+		timeutil.TimeGrainMillisecond: "s",
+		timeutil.TimeGrainSecond:      "s",
+		timeutil.TimeGrainMinute:      "m",
+		timeutil.TimeGrainHour:        "h",
+		timeutil.TimeGrainDay:         "D",
+		timeutil.TimeGrainWeek:        "W",
+		timeutil.TimeGrainMonth:       "M",
+		timeutil.TimeGrainQuarter:     "Q",
+		timeutil.TimeGrainYear:        "Y",
+	}
 	higherOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
 		timeutil.TimeGrainSecond:  timeutil.TimeGrainMinute,
 		timeutil.TimeGrainMinute:  timeutil.TimeGrainHour,
@@ -220,16 +232,17 @@ type GrainDurationPart struct {
 type ParseOptions struct {
 	DefaultTimeZone  *time.Location
 	TimeZoneOverride *time.Location
+	// TODO: the correct way is perhaps add a keyword in syntax to reference smallest grain.
+	SmallestGrain timeutil.TimeGrain
 }
 
 type EvalOptions struct {
-	Now           time.Time
-	MinTime       time.Time
-	MaxTime       time.Time
-	Watermark     time.Time
-	FirstDay      int
-	FirstMonth    int
-	SmallestGrain timeutil.TimeGrain
+	Now        time.Time
+	MinTime    time.Time
+	MaxTime    time.Time
+	Watermark  time.Time
+	FirstDay   int
+	FirstMonth int
 
 	ref          time.Time
 	truncatedRef bool
@@ -332,7 +345,11 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 		tg := timeutil.TimeGrainUnspecified
 		if e.Grain != nil {
 			tg = grainMap[*e.Grain]
+
+			// ISO durations are mapped to `ref-iso to ref as of watermark/grain+1grain`
+			isoStart = timeutil.OffsetTime(isoStart, tg, 1, e.tz)
 			isoStart = timeutil.TruncateTime(isoStart, tg, e.tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+			isoEnd = timeutil.OffsetTime(isoEnd, tg, 1, e.tz)
 			isoEnd = timeutil.TruncateTime(isoEnd, tg, e.tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
 
@@ -705,7 +722,7 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 									Parts: []*GrainPointInTimePart{
 										{
 											Prefix:   "+",
-											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: "s", Num: 1}}},
+											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: reverseGrainMap[parseOpts.SmallestGrain], Num: 1}}},
 										},
 									},
 								},
