@@ -47,6 +47,7 @@ type CatalogStore interface {
 	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error
 	UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error
+	UpdateModelPartitionsExplicitlyTriggered(ctx context.Context, modelID string, partitionKeys []string, triggered bool) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
 	FindModelPartitionByKey(ctx context.Context, modelID, partitionKey string) (ModelPartition, error)
@@ -89,16 +90,19 @@ type ModelPartition struct {
 	Error string
 	// Elapsed is the duration of the last execution of the partition.
 	Elapsed time.Duration
+	// ExplicitlyTriggered indicates if the partition was explicitly triggered for execution.
+	ExplicitlyTriggered bool
 }
 
 // FindModelPartitionsOptions is used to filter model partitions.
 type FindModelPartitionsOptions struct {
-	ModelID          string
-	Limit            int
-	WherePending     bool
-	WhereErrored     bool
-	BeforeExecutedOn time.Time
-	AfterKey         string
+	ModelID                  string
+	Limit                    int
+	WherePending             bool
+	WhereErrored             bool
+	WhereExplicitlyTriggered bool
+	BeforeExecutedOn         time.Time
+	AfterKey                 string
 }
 
 // InstanceHealth represents the health of an instance.
