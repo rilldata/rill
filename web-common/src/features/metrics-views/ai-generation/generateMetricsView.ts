@@ -73,7 +73,7 @@ export function useCreateMetricsViewFromTableUIAction(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort("User canceled the AI generation");
+            abortController.abort();
             isAICancelled = true;
           },
         },
@@ -276,7 +276,7 @@ export async function createModelAndMetricsViewAndExplore(
       component: OptionToCancelAIGeneration,
       props: {
         onCancel: () => {
-          abortController.abort("User canceled the AI generation");
+          abortController.abort();
           isAICancelled = true;
         },
       },
@@ -291,7 +291,7 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort("User canceled the AI generation");
+            abortController.abort();
             isAICancelled = true;
           },
         },
@@ -330,7 +330,7 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort("User canceled the AI generation");
+            abortController.abort();
             isAICancelled = true;
           },
         },
@@ -338,11 +338,40 @@ export async function createModelAndMetricsViewAndExplore(
     });
 
     // Use the backend function with the model name instead of table name
-    await runtimeServiceGenerateMetricsViewFile(instanceId, {
-      model: modelName, // Use model name instead of table
-      path: metricsViewFilePath,
-      useAi: get(featureFlags.ai),
-    });
+    void runtimeServiceGenerateMetricsViewFile(
+      instanceId,
+      {
+        model: modelName, // Use model name instead of table
+        path: metricsViewFilePath,
+        useAi: get(featureFlags.ai),
+      },
+      abortController.signal,
+    );
+
+    // Poll every second until the AI generation is complete or canceled
+    while (!isAICancelled) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      try {
+        await runtimeServiceGetFile(instanceId, {
+          path: metricsViewFilePath,
+        });
+
+        // success, AI is done
+        break;
+      } catch {
+        // 404 error, AI is not done
+      }
+    }
+
+    // If the user canceled the AI request, submit another request with `useAi=false`
+    if (isAICancelled) {
+      await runtimeServiceGenerateMetricsViewFile(instanceId, {
+        model: modelName,
+        path: metricsViewFilePath,
+        useAi: false,
+      });
+    }
 
     // Step 4: Wait for metrics view to be ready
     const metricsViewResource = fileArtifacts
@@ -356,11 +385,6 @@ export async function createModelAndMetricsViewAndExplore(
       throw new Error("Failed to create a Metrics View resource");
     }
 
-    // Check if user cancelled
-    if (isAICancelled) {
-      throw new Error("User cancelled the operation");
-    }
-
     // Update overlay for explore dashboard creation
     overlay.set({
       title: `Creating explore dashboard...`,
@@ -368,7 +392,7 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort("User canceled the AI generation");
+            abortController.abort();
             isAICancelled = true;
           },
         },
