@@ -218,7 +218,7 @@ func TestDuckDBModeDefaults(t *testing.T) {
 		},
 		{
 			name:         "motherduck defaults to readonly",
-			config:       map[string]any{"path": "md:my_db"},
+			config:       map[string]any{"path": "md:my_db", "token": "not_real"},
 			expectedMode: modeReadOnly,
 		},
 	}
