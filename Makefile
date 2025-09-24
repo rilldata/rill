@@ -46,7 +46,7 @@ coverage.go:
 docs.generate:
 	# Temporarily replaces ~/.rill/config.yaml to avoid including user-defined defaults in generated docs.
 	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
-	rm -rf docs/docs/reference/cli docs/docs/reference/project-files/
+	rm -rf docs/docs/reference/cli/*.md docs/docs/reference/project-files/*.md
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
 	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-cli docs/docs/reference/cli/
 	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-project docs/docs/reference/project-files/

@@ -2,7 +2,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
-  import type { ISODurationString, NamedRange } from "../../new-time-controls";
+  import type {
+    ISODurationString,
+    NamedRange,
+    RangeBuckets,
+  } from "../../new-time-controls";
   import {
     ALL_TIME_RANGE_ALIAS,
     getRangeLabel,
@@ -14,20 +18,18 @@
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import {
+    RillAllTimeInterval,
     RillIsoInterval,
     RillPeriodToGrainInterval,
     type RillTime,
   } from "../../../url-state/time-ranges/RillTime";
-  import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
   import {
-    getAllowedGrains,
     getGrainOrder,
     getLowerOrderGrain,
     getSmallestGrainFromISODuration,
     GrainAliasToV1TimeGrain,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
   import TruncationSelector from "./TruncationSelector.svelte";
@@ -40,18 +42,19 @@
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import {
     constructAsOfString,
-    isUsingLegacyTime,
     constructNewString,
   } from "../../new-time-controls";
   import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
+  export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
   export let minDate: DateTime;
   export let maxDate: DateTime;
+  export let rangeBuckets: RangeBuckets;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
@@ -63,7 +66,7 @@
   export let onSelectRange: (range: string) => void;
   export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
 
-  let firstVisibleMonth: DateTime<true> = interval.start;
+  let firstVisibleMonth = interval?.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
@@ -77,20 +80,21 @@
     try {
       parsedTime = parseRillTime(timeString);
     } catch {
-      // This is not necessarily an error as the parser does not work with Legacy syntax
       parsedTime = undefined;
     }
   }
 
-  $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
+  $: hideTruncationSelector =
+    parsedTime?.interval instanceof RillIsoInterval ||
+    parsedTime?.interval instanceof RillAllTimeInterval;
 
-  $: usingLegacyTime = isUsingLegacyTime(timeString);
+  $: usingLegacyTime = parsedTime?.isOldFormat;
 
   $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
   $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
 
   $: truncationGrain = usingLegacyTime
-    ? timeString?.startsWith("rill")
+    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
       ? V1TimeGrain.TIME_GRAIN_DAY
       : getSmallestGrainFromISODuration(timeString ?? "PT1M")
     : parsedTime?.asOfLabel?.snap
@@ -101,51 +105,31 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
-
-  $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
-
   $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
 
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
-  $: groups = allOptions.reduce(
-    (acc, options) => {
-      acc.lastN.push(...options.lastN);
-      acc.this.push(...options.this);
-      acc.previous.push(...options.previous);
-
-      return acc;
-    },
-    {
-      lastN: [],
-      this: [],
-      previous: [],
-      grainBy: [],
-    } as TimeGrainOptions,
-  );
-
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
-    if (range === ALL_TIME_RANGE_ALIAS) {
-      onSelectRange(ALL_TIME_RANGE_ALIAS);
-      closeMenu();
-    } else {
-      try {
-        const parsed = parseRillTime(range);
+    try {
+      const parsed = parseRillTime(range);
 
-        const isPeriodToDate =
-          parsed.interval instanceof RillPeriodToGrainInterval;
+      const isPeriodToDate =
+        parsed.interval instanceof RillPeriodToGrainInterval;
 
-        const rangeGrainOrder =
-          getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
-        const asOfGrainOrder = getGrainOrder(truncationGrain);
+      const rangeGrainOrder =
+        getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
 
-        if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-          truncationGrain = isPeriodToDate
-            ? getLowerOrderGrain(parsed.rangeGrain)
-            : parsed.rangeGrain;
-        }
+      const hasAsOfString = !!parsed.asOfLabel;
 
+      const asOfGrainOrder = getGrainOrder(truncationGrain);
+
+      if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
+        truncationGrain = isPeriodToDate
+          ? getLowerOrderGrain(parsed.rangeGrain)
+          : parsed.rangeGrain;
+      }
+
+      if (!hasAsOfString) {
         const newAsOfString = constructAsOfString(
           ref,
           ignoreSnap
@@ -157,11 +141,12 @@
         );
 
         overrideRillTimeRef(parsed, newAsOfString);
-        onSelectRange(parsed.toString());
-        closeMenu();
-      } catch {
-        // This function is called in a controlled manner and should not throw
       }
+
+      onSelectRange(parsed.toString());
+      closeMenu();
+    } catch {
+      // This function is called in a controlled manner and should not throw
     }
   }
 
@@ -249,7 +234,7 @@
           {/if}
 
           {#if showFullRange}
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} {timeGrain} />
 
             <div
               class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
@@ -282,7 +267,7 @@
       {timeString}
       onSelectRange={(range) => {
         open = false;
-        onSelectRange(range);
+        handleRangeSelect(range);
       }}
     />
 
@@ -312,21 +297,28 @@
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.lastN}
+            options={rangeBuckets.custom}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.this}
+            options={rangeBuckets.latest}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.previous}
+            options={rangeBuckets.periodToDate}
+            onClick={handleRangeSelect}
+          />
+
+          <TimeRangeOptionGroup
+            {filter}
+            {timeString}
+            options={rangeBuckets.previous}
             onClick={(r) => {
               handleRangeSelect(r, true);
             }}

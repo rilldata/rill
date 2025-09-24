@@ -1,6 +1,7 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrainToAlias } from "@rilldata/web-common/lib/time/new-grains";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import type { RangeBuckets } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
 
 const defaultLastNValues: Record<V1TimeGrain, number[]> = {
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: [],
@@ -15,85 +16,55 @@ const defaultLastNValues: Record<V1TimeGrain, number[]> = {
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: [],
 };
 
-export interface TimeRangeMenuOption {
-  string: string;
-  label: string;
-}
+export function getDefaultRangeBuckets(
+  allowedGrains: V1TimeGrain[],
+): RangeBuckets {
+  const rangeBuckets: RangeBuckets = {
+    latest: [],
+    periodToDate: [],
+    previous: [],
+    custom: [],
+    allTime: false,
+  };
 
-export interface TimeRangeAlt {
-  string: string;
-  label: string;
-}
+  allowedGrains.forEach((grain) => {
+    const primaryGrainAlias = V1TimeGrainToAlias[grain];
 
-export interface TimeGrainOptions {
-  lastN: TimeRangeMenuOption[];
-  previous: TimeRangeMenuOption[];
-  this: TimeRangeMenuOption[];
-}
+    if (
+      grain === V1TimeGrain.TIME_GRAIN_MILLISECOND ||
+      grain === V1TimeGrain.TIME_GRAIN_SECOND
+    ) {
+      return;
+    }
 
-export function getTimeRangeOptionsByGrain(
-  grain: V1TimeGrain,
-): TimeGrainOptions {
-  const primaryGrainAlias = V1TimeGrainToAlias[grain];
+    defaultLastNValues[grain].forEach((v) => {
+      const timeRange = `${v}${primaryGrainAlias}`;
 
-  const lastN: TimeRangeMenuOption[] = [];
-  const previous: TimeRangeMenuOption[] = [];
+      try {
+        const parsed = parseRillTime(timeRange);
+        rangeBuckets.latest.push(parsed);
+      } catch {
+        // no-op
+      }
+    });
 
-  if (
-    grain === V1TimeGrain.TIME_GRAIN_MILLISECOND ||
-    grain === V1TimeGrain.TIME_GRAIN_SECOND
-  ) {
-    return {
-      lastN: [],
-      this: [],
-      previous: [],
-    };
-  }
-
-  defaultLastNValues[grain].forEach((v) => {
-    const timeRange = `${v}${primaryGrainAlias}`;
+    const timeRange = `-1${primaryGrainAlias}/${primaryGrainAlias} to ref/${primaryGrainAlias}`;
 
     try {
       const parsed = parseRillTime(timeRange);
-      lastN.push({
-        string: timeRange,
-        label: parsed.getLabel(),
-      });
+      rangeBuckets.previous.push(parsed);
     } catch {
       // no-op
     }
+
+    if (grain === V1TimeGrain.TIME_GRAIN_MINUTE) {
+      return;
+    }
+
+    const periodToDate = parseRillTime(`${primaryGrainAlias}TD`);
+
+    rangeBuckets.periodToDate.push(periodToDate);
   });
 
-  const timeRange = `-1${primaryGrainAlias}/${primaryGrainAlias} to ref/${primaryGrainAlias}`;
-
-  try {
-    const parsed = parseRillTime(timeRange);
-    previous.push({
-      string: timeRange,
-      label: parsed.getLabel(),
-    });
-  } catch {
-    // no-op
-  }
-
-  if (grain === V1TimeGrain.TIME_GRAIN_MINUTE) {
-    return {
-      lastN,
-      this: [],
-      previous: [],
-    };
-  }
-
-  const thisOption = [
-    {
-      string: `${primaryGrainAlias}TD`,
-      label: parseRillTime(`${primaryGrainAlias}TD`).getLabel(),
-    },
-  ];
-
-  return {
-    lastN,
-    this: thisOption,
-    previous,
-  };
+  return rangeBuckets;
 }

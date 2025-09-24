@@ -215,10 +215,13 @@ func (u *URLs) GithubConnectUI(redirect string) string {
 }
 
 // GithubConnectRetryUI returns the page in the Rill frontend for retrying the Github connect flow.
-func (u *URLs) GithubConnectRetryUI(remote string) string {
+func (u *URLs) GithubConnectRetryUI(remote, redirect string) string {
 	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect/retry-install") // NOTE: Always using the primary frontend URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
+	}
+	if redirect != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	}
 	return res
 }
@@ -242,13 +245,16 @@ func (u *URLs) GithubConnectSuccessUI(autoclose bool) string {
 }
 
 // GithubRetryAuthUI returns the page in the Rill frontend for retrying the Github auth flow.
-func (u *URLs) GithubRetryAuthUI(remote, username string) string {
+func (u *URLs) GithubRetryAuthUI(remote, username, redirect string) string {
 	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect/retry-auth") // NOTE: Always using the primary frontend URL.
 	if remote != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"remote": remote})
 	}
 	if username != "" {
 		res = urlutil.MustWithQuery(res, map[string]string{"githubUsername": username})
+	}
+	if redirect != "" {
+		res = urlutil.MustWithQuery(res, map[string]string{"redirect": redirect})
 	}
 	return res
 }
@@ -310,6 +316,9 @@ func (u *URLs) ReportOpen(org, project, report, token string, executionTime time
 
 // ReportExport returns the URL for exporting a report in the frontend.
 func (u *URLs) ReportExport(org, project, report, token string) string {
+	if token == "" {
+		return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
+	}
 	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export"), map[string]string{"token": token})
 }
 

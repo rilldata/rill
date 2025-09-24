@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/duckdb",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -48,32 +48,33 @@ var spec = drivers.Spec{
 			Description: "Path to external DuckDB database.",
 			Placeholder: "/path/to/main.db",
 		},
-	},
-	// NOTE: reinstated SourceProperties to address https://github.com/rilldata/rill/pull/7726#discussion_r2271449022
-	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "path",
+			Key:         "attach",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Path",
-			Description: "Path to DuckDB database",
-			Placeholder: "/path/to/duckdb.db",
+			Required:    false,
+			DisplayName: "Attach",
+			Description: "Attach to an existing DuckDB database. This is an alternative to `path` that supports attach options.",
+			Placeholder: "'ducklake:metadata.ducklake' AS my_ducklake(DATA_PATH 'datafiles')",
 		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "SQL",
-			Description: "Query to extract data from DuckDB.",
+			Description: "Query to run on DuckDB.",
 			Placeholder: "select * from table;",
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
 		},
 	},
 	ImplementsOLAP: true,
@@ -85,23 +86,42 @@ var motherduckSpec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Path",
+			Description: "Path to Motherduck database. Must be prefixed with `md:`",
+			Placeholder: "md:my_database",
 		},
 		{
-			Key:  "db",
-			Type: drivers.StringPropertyType,
+			Key:         "token",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Required:    true,
+			DisplayName: "Token",
+			Description: "MotherDuck token",
+			Placeholder: "your_motherduck_token",
+		},
+		{
+			Key:         "mode",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Mode",
+			Description: "Set the mode for the DuckDB connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.",
+			Placeholder: modeReadOnly,
+			Default:     modeReadOnly,
+			NoPrompt:    true,
+		},
+		{
+			Key:         "schema_name",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Schema name",
+			Placeholder: "your_schema_name",
+			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "dsn",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "MotherDuck Connection String",
-			Placeholder: "md:motherduck.db",
-		},
 		{
 			Key:         "sql",
 			Type:        drivers.StringPropertyType,
@@ -110,24 +130,8 @@ var motherduckSpec = drivers.Spec{
 			Description: "Query to extract data from MotherDuck.",
 			Placeholder: "select * from table;",
 		},
-		{
-			Key:         "token",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "Access token",
-			Description: "MotherDuck access token",
-			Placeholder: "your.access_token.here",
-			Secret:      true,
-		},
-		{
-			Key:         "name",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "Source name",
-			Description: "The name of the source",
-			Placeholder: "my_new_source",
-			Required:    true,
-		},
 	},
+	ImplementsOLAP: true,
 }
 
 type Driver struct {
@@ -383,45 +387,52 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	if c.config.Mode != modeReadWrite {
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
+	}
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c}, true
+		return &selfToSelfExecutor{c}, nil
 	}
 	if opts.OutputHandle == c {
 		if w, ok := opts.InputHandle.AsWarehouse(); ok {
-			return &warehouseToSelfExecutor{c, w}, true
+			return &warehouseToSelfExecutor{c, w}, nil
 		}
 		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
-			return &localFileToSelfExecutor{c, f}, true
+			return &localFileToSelfExecutor{c, f}, nil
 		}
 		switch opts.InputHandle.Driver() {
 		case "mysql", "postgres":
-			return &sqlStoreToSelfExecutor{c}, true
+			return &sqlStoreToSelfExecutor{c}, nil
 		case "https":
-			return &httpsToSelfExecutor{c}, true
+			return &httpsToSelfExecutor{c}, nil
 		case "motherduck":
-			return &mdToSelfExecutor{c}, true
+			return &mdToSelfExecutor{c}, nil
 		}
 		if _, ok := opts.InputHandle.AsObjectStore(); ok {
-			return &objectStoreToSelfExecutor{c}, true
+			return &objectStoreToSelfExecutor{c}, nil
 		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
 			outputProps := &file.ModelOutputProperties{}
 			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
-				return nil, false
+				return nil, drivers.ErrNotImplemented
 			}
 			if supportsExportFormat(outputProps.Format, outputProps.Headers) {
-				return &selfToFileExecutor{c}, true
+				return &selfToFileExecutor{c}, nil
 			}
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	if c.config.Mode != modeReadWrite {
+		c.logger.Warn("Model execution is disabled. To enable modeling on this DuckDB database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
+		return nil, false
+	}
 	return c, true
 }
 

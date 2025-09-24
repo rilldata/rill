@@ -71,6 +71,29 @@ _[string]_ - Refers to a SQL query that is run after the main query, available f
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
+### `retry`
+
+_[object]_ - Refers to the retry configuration for the model. (optional) 
+
+  - **`attempts`** - _[integer]_ - The number of attempts to retry the model. 
+
+  - **`delay`** - _[string]_ - The delay between attempts. 
+
+  - **`exponential_backoff`** - _[boolean]_ - Whether to use exponential backoff. 
+
+  - **`if_error_matches`** - _[array of string]_ - The error messages to match. 
+
+```yaml
+retry:
+    attempts: 5
+    delay: 10s
+    exponential_backoff: true
+    if_error_matches:
+        - ".*OvercommitTracker.*"
+        - ".*Timeout.*"
+        - ".*Bad Gateway.*"
+```
+
 ### `timeout`
 
 _[string]_ - The maximum time to wait for model ingestion 

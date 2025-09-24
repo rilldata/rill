@@ -366,8 +366,9 @@ func SetRemote(path string, config *Config) error {
 		return fmt.Errorf("failed to get remote: %w", err)
 	}
 	if remote != nil {
-		if remote.Config().URLs[0] == config.Remote {
+		if remote.Config().URLs[0] == config.Remote || !config.ManagedRepo {
 			// remote already exists with the same URL, no need to create it again
+			// remote other than managed git exists, can't overwrite user's remote
 			return nil
 		}
 		// if the remote already exists with a different URL, delete it
@@ -385,7 +386,9 @@ func SetRemote(path string, config *Config) error {
 }
 
 func IsGitRepo(path string) bool {
-	_, err := git.PlainOpen(path)
+	_, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
+		DetectDotGit: true,
+	})
 	return err == nil
 }
 
@@ -407,8 +410,18 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 		// should never happen because repoRoot is detected from path
 		return "", "", err
 	}
-	if subPath != "." {
-		return repoRoot, subPath, nil
+	if subPath == "." || subPath == "" {
+		// no subpath
+		return repoRoot, "", nil
 	}
-	return repoRoot, "", nil
+	// check if subpath is in .gitignore
+	ignored, err := isGitIgnored(repoRoot, subPath)
+	if err != nil {
+		return "", "", err
+	}
+	if ignored {
+		// if subpath is ignored this is not a valid git path
+		return "", "", ErrNotAGitRepository
+	}
+	return repoRoot, subPath, nil
 }

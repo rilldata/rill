@@ -1,3 +1,4 @@
+import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -25,7 +26,7 @@ export type ChartType =
   | "pie_chart"
   | "heatmap"
   | "funnel_chart"
-  | "multi_metric_chart";
+  | "combo_chart";
 
 export type ChartDataQuery = CreateQueryResult<
   V1MetricsViewAggregationResponse,
@@ -82,22 +83,29 @@ interface NominalFieldConfig {
   showNull?: boolean;
   labelAngle?: number;
   legendOrientation?: ChartLegend;
-  colorMapping?: { value: string; color: string }[];
+  colorMapping?: ColorMapping;
+}
+
+interface MarkFieldConfig {
+  mark?: "bar" | "line";
 }
 
 interface QuantitativeFieldConfig {
   zeroBasedOrigin?: boolean; // Default is false
   min?: number;
   max?: number;
+  showTotal?: boolean;
 }
 
 export interface FieldConfig
   extends NominalFieldConfig,
-    QuantitativeFieldConfig {
+    QuantitativeFieldConfig,
+    MarkFieldConfig {
   field: string;
-  type: "quantitative" | "ordinal" | "nominal" | "temporal";
+  type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
   timeUnit?: string; // For temporal fields
+  fields?: string[]; // To support multi metric chart variants
 }
 
 export interface CommonChartProperties {
