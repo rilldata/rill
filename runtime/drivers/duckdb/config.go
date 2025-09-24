@@ -43,6 +43,9 @@ type config struct {
 	// CanScaleToZero indicates if the underlying duckdb service may scale to zero when idle.
 	// When set to true, we try to avoid too frequent non-user queries to the database (such as alert checks and fetching metrics).
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
+	// Managed indicates whether to use Rill-managed embedded DuckDB (true) or external DuckDB (false).
+	// When true, ignores Path and Attach settings and uses embedded database.
+	Managed bool `mapstructure:"managed"`
 
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
 	Path string `mapstructure:"path"`
@@ -76,12 +79,12 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	// Set the mode for the connection
 	if cfg.Mode == "" {
 		// The default mode depends on the connection type:
-		// - For generic connections (Motherduck/DuckLake with Path/Attach), default to "read"
-		// - For connections using the embedded DuckDB, default to "readwrite" to maintain compatibility
-		if cfg.Path != "" || cfg.Attach != "" {
-			cfg.Mode = modeReadOnly
-		} else {
+		// - For managed/embedded DuckDB, default to "readwrite" to maintain compatibility
+		// - For external connections (Path/Attach), default to "read"
+		if cfg.Managed || (cfg.Path == "" && cfg.Attach == "") {
 			cfg.Mode = modeReadWrite
+		} else {
+			cfg.Mode = modeReadOnly
 		}
 	}
 
