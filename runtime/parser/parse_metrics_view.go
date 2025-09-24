@@ -282,6 +282,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if err != nil {
 		return fmt.Errorf(`invalid "smallest_time_grain": %w`, err)
 	}
+	if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && smallestTimeGrain < runtimev1.TimeGrain_TIME_GRAIN_SECOND {
+		return errors.New(`"smallest_time_grain" must be at least "second"`)
+	}
 
 	if tmp.DefaultTimeRange != "" {
 		_, err := rilltime.Parse(tmp.DefaultTimeRange, rilltime.ParseOptions{})
@@ -389,6 +392,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		smallestTimeGrain, err := parseTimeGrain(dim.SmallestTimeGrain)
 		if err != nil {
 			return fmt.Errorf(`invalid "smallest_time_grain" for dimension %q: %w`, dim.Name, err)
+		}
+		if smallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && smallestTimeGrain < runtimev1.TimeGrain_TIME_GRAIN_SECOND {
+			return fmt.Errorf(`invalid "smallest_time_grain" for dimension %q: must be at least "second"`, dim.Name)
 		}
 
 		// Dimension is valid, add to the list
