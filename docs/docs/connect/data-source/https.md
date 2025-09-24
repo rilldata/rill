@@ -30,7 +30,7 @@ The HTTPS connector allows you to import data from publicly accessible files hos
 Create a YAML configuration file in your project's `sources` directory:
 
 ```yaml
-type: source
+type: model
 connector: https
 path: https://example.com/data.csv
 ```

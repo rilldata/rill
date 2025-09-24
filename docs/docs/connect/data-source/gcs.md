@@ -43,7 +43,9 @@ You have now configured Google Cloud access from your local environment. Rill wi
 
 ### Service Account JSON 
 
-Alternatively, we recommend creating explicit credentials in plug into Rill as this will facilitate an easier deploy to Rill Cloud. Assuming you've followed step 1 and 2 above, you'll need to create your json credential with the following command.
+`GOOGLE_APPLICATION_CREDENTIALS` is an environment variable that tells Google Cloud SDK and applications which service account key file to use for authentication. It should point to the full path of your JSON key file. We recommend creating using this credential for Rill, as this makes deployment to Rill Cloud easier. For more information on JSON keys, see the [Google Cloud documentation](https://cloud.google.com/iam/docs/keys-create-delete?hl=en#gcloud).
+
+Assuming you've followed steps 1 and 2 above, you'll need to create your Service Account JSON with the following command.
 
 ```bash
 gcloud iam service-accounts keys create ~/key.json \
@@ -51,16 +53,17 @@ gcloud iam service-accounts keys create ~/key.json \
 ```
 
 :::note Permission denied?
-You'll need to contact your internal cloud admin to create your JSON credentials for you.
+You'll need to contact your internal cloud admin to create your Service Account JSONs for you.
 :::
 
-To configure Rill to use these credentials, create a `.env` file in your project directory (if one doesn't already exist) and add your service account JSON credentials as a single-line string:
+To configure Rill to use these credentials, create a `.env` file in your project directory (if one doesn't already exist) and add your service account `google_application_credentials` as a single-line string:
 
 ```bash
 google_application_credentials='{"type": "service_account", "project_id": "your-project", ...}'
 ```
 
 Once configured, Rill will automatically use these credentials for all Google Cloud Platform connections, including [BigQuery](/connect/data-source/bigquery).
+
 
 :::tip Cloud Credentials Management
 If your project has already been deployed to Rill Cloud with configured credentials, you can use `rill env pull` to [retrieve and sync these cloud credentials](/connect/credentials/#rill-env-pull) to your local `.env` file. Note that this operation will overwrite any existing local credentials for this source.

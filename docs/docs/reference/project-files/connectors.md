@@ -165,9 +165,7 @@ type: connector # Must be `connector` (required)
 driver: azure # Must be `azure` _(required)_
 azure_storage_account: "mystorageaccount" # Azure storage account name   _(required)_
 azure_storage_key: "credentialstring" # Azure storage access key   _(required)_
-# azure_storage_sas_token: "optionaltoken"         # Optional SAS token for authentication  
-# azure_storage_connection_string: "optionalconnectionstring" # Or use the connection string instead of storage account and key
-azure_storage_bucket: "mycontainer" # Azure Blob Storage container name  
+azure_storage_bucket: "azure://..." # Azure Blob Storage container name  
 ```
 
 ## BigQuery

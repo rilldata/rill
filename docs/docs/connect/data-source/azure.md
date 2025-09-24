@@ -33,7 +33,7 @@ You have now configured Azure access from your local environment. Rill will dete
 
 For seamless deployment to Rill Cloud, you can configure Azure Storage Account Key directly in your project's `.env` file instead of relying solely on Azure CLI authentication, which only configures credentials for local usage.
 
-Create or update your `.env` file with the following Azure Storage Account credentials:
+Create or update your `.env` file with the Azure Storage Account credentials:
 
 ```env
 azure_storage_account=your_storage_account_name
@@ -46,7 +46,7 @@ This approach ensures that your Azure Blob Storage sources can authenticate cons
 
 For seamless deployment to Rill Cloud, you can configure Azure Blob Storage credentials using a connection string directly in your project's `.env` file instead of relying solely on Azure CLI authentication, which only configures credentials for local usage.
 
-Create or update your `.env` file with the following Azure Storage connection string:
+Create or update your `.env` file with the Azure Storage connection string:
 
 ```env
 azure_storage_connection_string='DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net'
@@ -58,17 +58,13 @@ This approach ensures that your Azure Blob Storage sources can authenticate cons
 
 An alternative authentication method for Azure Blob Storage is using Shared Access Signature (SAS) tokens. This approach generates a token with specific permissions and expiration time for secure access to your storage resources.
 
-Generate SAS tokens using the Azure Portal or programmatically with the Azure SDKs:
-
-[Learn how to create SAS tokens using this guide](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers).
-
-Configure the SAS token in your `.env` file:
+Create or update your .env file with the Azure SAS token:
 
 ```env
 azure_storage_sas_token='se=2025-09-18T23%3A59%3A...'
 ```
 
-This method provides fine-grained access control and enhanced security for your Azure Blob Storage connections.
+This method provides fine-grained access control and enhanced security for your Azure Blob Storage connections. Please review [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) on how to create your Azure SAS token.
 
 :::tip Cloud Credentials Management
 
