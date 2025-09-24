@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -24,10 +23,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var (
-	nonSlugRegex      = regexp.MustCompile(`[^\w-]`)
-	ErrInvalidProject = errors.New("invalid project")
-)
+var ErrInvalidProject = errors.New("invalid project")
 
 type DeployOpts struct {
 	GitPath     string
@@ -134,7 +130,8 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			return fmt.Errorf("aborting deploy")
 		}
 		if o.pushToProject.ManagedGitId != "" && o.Github {
-			ch.PrintfError("Found another rill managed project %s/%s connected to this folder\n", o.pushToProject.OrgName, o.pushToProject.Name)
+			ch.Printf("Found another rill managed project %s/%s connected to this folder\n", o.pushToProject.OrgName, o.pushToProject.Name)
+			ch.PrintfBold("Run `rill project edit --remote-url <github_remote>` to tranfer the project to GitHub.\n")
 			return fmt.Errorf("aborting deploy")
 		}
 		if o.pushToProject.OrgName != ch.Org {
