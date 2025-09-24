@@ -7,7 +7,7 @@ sidebar_position: 10
 
 [DuckDB](https://duckdb.org/why_duckdb.html) is an in-memory, columnar SQL database designed for analytical (OLAP) workloads, offering high-speed data processing and analysis. Its columnar storage model and vectorized query execution make it highly efficient for OLAP tasks, enabling fast aggregation, filtering, and joins on large datasets.
 
-## Rill's Embedded DuckDB
+## Rill Managed DuckDB
 
 By default, Rill includes DuckDB as an embedded OLAP engine that ingests data from [data sources](/connect) and powers your dashboards. When you start a new project, you'll see a `connectors/duckdb.yaml` file alongside other project files. No additional configuration is needed to use DuckDB with Rill Developer or Rill Cloud.
 

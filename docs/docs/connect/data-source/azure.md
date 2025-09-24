@@ -35,7 +35,7 @@ For seamless deployment to Rill Cloud, you can configure Azure Storage Account K
 
 Create or update your `.env` file with the Azure Storage Account credentials:
 
-```env
+```bash
 azure_storage_account=your_storage_account_name
 azure_storage_key=oFUw8vZplXd...
 ```
@@ -48,7 +48,7 @@ For seamless deployment to Rill Cloud, you can configure Azure Blob Storage cred
 
 Create or update your `.env` file with the Azure Storage connection string:
 
-```env
+```bash
 azure_storage_connection_string='DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net'
 ```
 
@@ -60,7 +60,7 @@ An alternative authentication method for Azure Blob Storage is using Shared Acce
 
 Create or update your .env file with the Azure SAS token:
 
-```env
+```bash
 azure_storage_sas_token='se=2025-09-18T23%3A59%3A...'
 ```
 
