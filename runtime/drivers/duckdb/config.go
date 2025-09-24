@@ -1,7 +1,6 @@
 package duckdb
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -81,11 +80,6 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		} else {
 			cfg.Mode = modeReadWrite
 		}
-	}
-
-	// Validate Motherduck token
-	if cfg.isMotherduck() && cfg.Token == "" {
-		return nil, errors.New("you must configure the 'token' connector property when using Motherduck")
 	}
 
 	// Set pool size

@@ -1534,11 +1534,10 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 	}
 
 	executorName := opts.InputConnector
-	e, err := ic.AsModelExecutor(r.C.InstanceID, opts)
-	if err != nil {
+	e, inputErr := ic.AsModelExecutor(r.C.InstanceID, opts)
+	if inputErr != nil {
 		// Try the other connector
 		executorName = opts.OutputConnector
-		inputErr := err
 		var outputErr error
 		e, outputErr = oc.AsModelExecutor(r.C.InstanceID, opts)
 		if outputErr != nil {
