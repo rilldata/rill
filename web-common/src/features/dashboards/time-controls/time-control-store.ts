@@ -48,7 +48,6 @@ import {
   V1TimeGrainToDateTimeUnit,
 } from "@rilldata/web-common/lib/time/new-grains";
 import { parseRillTime } from "../url-state/time-ranges/parser";
-import type { N } from "vitest/dist/chunks/environment.d.Dmw5ulng.js";
 import type { RillTime } from "../url-state/time-ranges/RillTime";
 
 export type TimeRangeState = {

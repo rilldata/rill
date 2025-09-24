@@ -29,7 +29,7 @@
   export let filters: Filters;
   export let timeControls: TimeControls;
   export let readOnly = false;
-  export let maxWidth: number;
+  export let maxWidth: number | undefined = undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   /** the height of a row of chips */

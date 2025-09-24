@@ -139,7 +139,6 @@ export class DashboardStateSync {
 
     if (metricsViewSpec.timeDimension && !import.meta.env.VITEST) {
       // Resolve start/end by making a network call.
-
       [
         initExploreState.selectedTimeRange,
         // initExploreState.selectedComparisonTimeRange,
