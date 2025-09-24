@@ -220,9 +220,9 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 		case "__rill_remote":
 			req.RillMgdGitRemote = remote.URL
 		case o.RemoteName:
-			req.GitRemote, err = remote.Github()
-			if err != nil {
-				return err
+			gitremote, err := remote.Github()
+			if err == nil {
+				req.GitRemote = gitremote
 			}
 		}
 	}
