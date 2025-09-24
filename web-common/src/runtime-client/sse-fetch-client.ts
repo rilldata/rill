@@ -19,6 +19,11 @@ export class SSEFetchClient<T> {
     close: [],
   };
 
+  constructor(private readonly options?: { includeAuth?: boolean }) {
+    // Default to including auth for backward compatibility
+    this.options = { includeAuth: true, ...options };
+  }
+
   /**
    * Add event listener for SSE events
    */
@@ -72,9 +77,12 @@ export class SSEFetchClient<T> {
       ...customHeaders,
     };
 
-    const jwt = get(runtime).jwt;
-    if (jwt) {
-      headers["Authorization"] = `Bearer ${jwt.token}`;
+    // Only include auth if explicitly requested
+    if (this.options?.includeAuth) {
+      const jwt = get(runtime).jwt;
+      if (jwt) {
+        headers["Authorization"] = `Bearer ${jwt.token}`;
+      }
     }
 
     try {
