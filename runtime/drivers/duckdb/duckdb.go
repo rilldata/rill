@@ -476,7 +476,13 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
-	if strings.HasPrefix(strings.TrimSpace(c.config.Path), "md:") {
+	normalize := func(s string) string {
+		s = strings.TrimSpace(s)
+		s = strings.Trim(s, `"'`)
+		return s
+	}
+
+	if strings.HasPrefix(normalize(c.config.Path), "md:") || strings.HasPrefix(normalize(c.config.Attach), "md:") {
 		dbInitQueries = append(dbInitQueries,
 			"INSTALL 'motherduck'",
 			"LOAD 'motherduck'",
