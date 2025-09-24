@@ -11,30 +11,21 @@ sidebar_position: 10
 
 By default, Rill includes DuckDB as an embedded OLAP engine that ingests data from [data sources](/connect) and powers your dashboards. When you start a new project, you'll see a `connectors/duckdb.yaml` file alongside other project files. No additional configuration is needed to use DuckDB with Rill Developer or Rill Cloud.
 
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
+
+driver: duckdb
+managed: true
+```
+
 :::tip Performance Considerations
 
 DuckDB is an excellent analytical engine but can face performance challenges as data size grows significantly. As a general guideline, we recommend keeping your data size in DuckDB **under 50GB** along with other [performance recommendations](/guides/performance). For larger datasets, Rill still provides excellent performance but may require additional backend optimizations. [Contact us](/contact) if you need assistance with large-scale deployments.
 
 :::
-
-## Using DuckDB Extensions
-
-DuckDB supports a wide variety of extensions that can enhance its functionality. To use extensions with Rill's embedded DuckDB, configure them in your connector:
-
-```yaml
-# connectors/duckdb.yaml
-type: connector
-driver: duckdb
-init_sql: |
-  INSTALL httpfs;
-  LOAD httpfs;
-  INSTALL spatial;
-  LOAD spatial;
-```
-
-### Popular Extensions
-
-For a complete list of available extensions, see the [DuckDB Extensions documentation](https://duckdb.org/docs/extensions/overview).
 
 ## Live Connect to External DuckDB
 
@@ -54,10 +45,38 @@ For production deployments, consider using our [external DuckDB data source](/co
 
 ### Configuration
 
-Using the UI, select the DuckDB icon under the OLAP section to add a new DuckDB connector. Note that any connectors that you create and ingest data with will write to your external database and not Rill's embedded database.
+Using the UI, select the DuckDB icon under the OLAP section to add a new DuckDB connector. Any existing connectors with data models will need to be refreshed to ingest the data into your external DuckDB. 
 
 <img src='/img/connect/olap-engines/duckdb/duckdb.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
+
+### Setting the Default OLAP Connection
+
+Creating a connection to MotherDuck will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to `duckdb`.
+
+```yaml
+olap_connector: duckdb
+```
+
+
+## Using DuckDB Extensions
+
+DuckDB supports a wide variety of extensions that can enhance its functionality. To use extensions with Rill's embedded DuckDB, configure them in your connector:
+
+```yaml
+# connectors/duckdb.yaml
+type: connector
+driver: duckdb
+init_sql: |
+  INSTALL httpfs;
+  LOAD httpfs;
+  INSTALL spatial;
+  LOAD spatial;
+```
+
+### Popular Extensions
+
+For a complete list of available extensions, see the [DuckDB Extensions documentation](https://duckdb.org/docs/extensions/overview).
 
 ## Multiple OLAP Engines
 

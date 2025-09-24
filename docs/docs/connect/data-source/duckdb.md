@@ -7,55 +7,66 @@ sidebar_position: 11
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-[DuckDB](https://duckdb.org/docs/) is a fast, lightweight database designed for data analysis. While Rill includes a [built-in DuckDB database](/connect/olap/duckdb) that stores all your ingested data by default, you may want to import existing data from your own DuckDB files.
+While not recommended for production use, Rill allows you to `attach` external DuckDB databases to ingest data from them as a data source. This approach has several caveats and limitations during deployment and is primarily intended for local testing scenarios.
 
-## Overview
+:::warning Local Development Only
 
-While we support local usage of your [external DuckDB](/connect/olap/duckdb) as a "live connector", this approach isn't scalable when deploying your project to Rill Cloud. Instead, you can use the DuckDB connector to ingest the required tables into Rill's managed DuckDB database, ensuring your project works seamlessly in both local and cloud environments.
+There are several limitations with deployment to Rill Cloud, so we do not recommend this method for production environments. Key limitations include:
 
-:::warning Location of local DuckDB
+- Moving your DuckDB file into the `data/` folder within your project directory
+- A size limitation of 100MB when deploying to Rill Cloud
 
-If your DuckDB file exists outside of your project folder, it will not be included in the deployment. To ensure a smooth deployment process, move your DuckDB file into the `data/` folder within your project directory. Also, there is a file limitation of 100MB. [Contact us](/contact) if you are having issues with deploying to Rill Cloud.
+[Contact us](/contact) if you have questions or encounter issues with these limitations.
 
 :::
 
-## Connecting to External DuckDB
+## Attaching to External DuckDB
 
-To import your existing DuckDB data into Rill, you'll need to establish a connection to your external DuckDB database. Once connected, the data will be read from your external database and ingested into Rill's built-in DuckDB database.
-
-When creating a new DuckDB source from the UI, provide the appropriate path to your DuckDB database file in the **path** field. For a complete list of available properties, see our [reference documentation](/reference/project-files/connectors#external-duckdb).
-
-<img src='/img/connect/data-sources/duckdb.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
-
-## Using DuckDB Extensions
-
-DuckDB supports a wide variety of extensions that can enhance its functionality. To use extensions with Rill's embedded DuckDB, configure them in your connector:
+In the default `connectors/duckdb.yaml` file, you can add `init_sql` or `attach` statements to attach an external database to Rill's embedded DuckDB. The `attach` statement runs before `init_sql`, allowing you to attach your database and execute subsequent SQL queries. For more details on the YAML configuration, see the [DuckDB reference page](/reference/project-files/connectors#duckdb).
 
 ```yaml
-# connectors/duckdb.yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
 type: connector
+
 driver: duckdb
+managed: true
+
+ATTACH: |
+  '/path/to/your/duckdb.db' AS external_duckdb;
+  use external_duckdb;
+
+database_name: external_duckdb
+schema: main
+
 init_sql: |
   INSTALL httpfs;
   LOAD httpfs;
-  INSTALL spatial;
-  LOAD spatial;
 ```
+
+## Using DuckDB Extensions
+
+DuckDB supports a wide variety of extensions that can enhance its functionality. To use extensions with Rill's embedded DuckDB, configure them in your connector's `init_sql` parameter.
+
 
 ### Popular Extensions
 
 For a complete list of available extensions, see the [DuckDB Extensions documentation](https://duckdb.org/docs/extensions/overview).
 
 
-## Creating a Model
+## Importing Data to Your External DuckDB
 
-After establishing the connection, create a model through the connector UI. This process will read data from your external DuckDB database and ingest it into Rill's managed DuckDB database, making it available for analysis and visualization.
+After establishing a connection, you can import data through the connector UI. This process will write the data into your attached DuckDB database.
 
 <img src='/img/connect/data-sources/create-model.png' class='rounded-gif' />
 <br />
 
-## Cloud Deployment Considerations
 
-When deploying to Rill Cloud, only the contents of your Rill project directory will be uploaded. If your DuckDB file exists outside of your project folder, it will not be included in the deployment. To ensure a smooth deployment process, move your DuckDB file into the `data/` folder within your project directory.
+## Common Issues
 
+### Lock on File 
+
+`Could not set lock on file "/path/to/your/duckdb.db": Conflicting lock is held in /path/to/your/rill (PID 21942) by user <user>. See also https://duckdb.org/docs/stable/connect/concurrency`
+
+According to the DuckDB documentation cited above: "Writing to DuckDB from multiple processes is not supported automatically and is not a primary design goal (see Handling Concurrency)." You'll need to stop any local process using this file to access it in Rill, or vice versa.

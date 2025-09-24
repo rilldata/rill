@@ -43,7 +43,7 @@ You have now configured Google Cloud access from your local environment. Rill wi
 
 ### Service Account JSON 
 
-`GOOGLE_APPLICATION_CREDENTIALS` is an environment variable that tells Google Cloud SDK and applications which service account key file to use for authentication. It should point to the full path of your JSON key file. We recommend creating using this credential for Rill, as this makes deployment to Rill Cloud easier. For more information on JSON keys, see the [Google Cloud documentation](https://cloud.google.com/iam/docs/keys-create-delete?hl=en#gcloud).
+`google_application_credentials` is an environment variable that tells Google Cloud SDK and applications which service account key file to use for authentication. It should point to the full path of your JSON key file. We recommend using this credential approach for Rill, as it makes deployment to Rill Cloud easier. For more information on JSON keys, see the [Google Cloud documentation](https://cloud.google.com/iam/docs/keys-create-delete?hl=en#gcloud).
 
 Assuming you've followed steps 1 and 2 above, you'll need to create your Service Account JSON with the following command.
 
@@ -56,7 +56,7 @@ gcloud iam service-accounts keys create ~/key.json \
 You'll need to contact your internal cloud admin to create your Service Account JSONs for you.
 :::
 
-To configure Rill to use these credentials, create a `.env` file in your project directory (if one doesn't already exist) and add your service account `google_application_credentials` as a single-line string:
+To configure Rill to use these credentials, create a `.env` file in your project directory (if one doesn't already exist) and add your `google_application_credentials` environment variable as a single-line string:
 
 ```bash
 google_application_credentials='{"type": "service_account", "project_id": "your-project", ...}'
