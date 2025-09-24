@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"math"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 
@@ -34,7 +32,7 @@ var (
 // It also provides pointers to the actual database/sql and database/sql/driver connections.
 // It's called with two contexts: wrappedCtx wraps the input context (including cancellation),
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
-type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
+type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context) error
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 type OLAPStore interface {
@@ -77,9 +75,18 @@ type Statement struct {
 	ExecutionTimeout time.Duration
 }
 
-// Result wraps the results of query.
+// Rows is an iterator for rows returned by a query. It mimics the behavior of sqlx.Rows.
+type Rows interface {
+	Next() bool
+	Err() error
+	Close() error
+	Scan(dest ...any) error
+	MapScan(dest map[string]any) error
+}
+
+// Result is the result of a query. It wraps a Rows iterator with additional functionality.
 type Result struct {
-	*sqlx.Rows
+	Rows
 	Schema    *runtimev1.StructType
 	cleanupFn func() error
 	cap       int64
