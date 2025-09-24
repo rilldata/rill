@@ -1,5 +1,4 @@
 import {
-  overrideRillTimeRef,
   parseRillTime,
   validateRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
