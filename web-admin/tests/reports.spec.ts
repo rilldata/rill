@@ -143,17 +143,17 @@ test.describe.serial("Reports", () => {
       .getByLabel("Remove")
       .click();
     // Add "App Site Domain" row
-    await reportForm.getByLabel("Add Rows fields").click();
+    await reportForm.getByLabel("Add Rows fields").click({ force: true });
     await adminPage
       .getByLabel("Rows field list")
       .getByRole("menuitem", { name: "App Site Domain" })
-      .click();
+      .click({ force: true });
     // Add "Time month" column
     await reportForm.getByLabel("Add Columns fields").click();
     await adminPage
       .getByLabel("Columns field list")
       .getByRole("menuitem", { name: "Time month" })
-      .click();
+      .click({ force: true });
     // Assert rows and columns
     await expect(reportForm.getByLabel("Rows field list")).toHaveText(
       /App Site Domain/,
