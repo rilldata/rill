@@ -382,13 +382,13 @@
   // Handle file upload for credential files
   async function handleFileUpload(file: File): Promise<string> {
     try {
-      // Read the file content as text
       const content = await file.text();
 
-      // Optional: validate JSON content
-      JSON.parse(content);
+      // Parse and re-stringify JSON to sanitize whitespace
+      const parsedJson = JSON.parse(content);
+      const sanitizedJson = JSON.stringify(parsedJson);
 
-      return content; // Return JSON string instead of File object
+      return sanitizedJson;
     } catch (error) {
       if (error instanceof SyntaxError) {
         throw new Error(`Invalid JSON file: ${error.message}`);

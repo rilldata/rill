@@ -120,6 +120,7 @@
 
 <div class="container grid">
   <button
+    type="button"
     class="upload-button"
     on:click={() => fileInput.click()}
     on:dragenter|preventDefault|stopPropagation={() => (dragOver = true)}
