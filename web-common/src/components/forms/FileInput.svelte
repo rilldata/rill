@@ -7,9 +7,11 @@
     undefined;
   export let multiple: boolean = false;
   export let accept: string | undefined = undefined;
+  export let fileType: "image" | "credential" = "image";
+  export let validateJson: boolean = false; // Only for credential files
   // Currently we upload either to runtime or cloud.
   // Implementation of it will be upto the caller of this component.
-  export let uploadFile: (file: File) => Promise<string>;
+  export let uploadFile: (file: File) => Promise<string | File>;
 
   $: values = value ? (multiple ? (value as string[]) : [value as string]) : [];
   $: errors = error ? (multiple ? error : { 0: error }) : [];
@@ -17,6 +19,17 @@
   $: uploading = {};
   $: uploadErrors = {};
   let fileInput: HTMLInputElement;
+
+  // File validation function
+  function validateFile(file: File): string | null {
+    if (fileType === "credential" && validateJson) {
+      if (!file.name.toLowerCase().endsWith(".json")) {
+        return "File must be a JSON file";
+      }
+    }
+
+    return null;
+  }
 
   // maintain a list of filenames to show in error messages.
   // since the final uploaded url set in `value` is usually not the same this is needed.
@@ -44,16 +57,39 @@
 
   async function uploadFileWrapper(file: File, i: number) {
     uploading[i] = true;
+
+    // Validate file before upload
+    const validationError = validateFile(file);
+    if (validationError) {
+      uploadErrors[i] = validationError;
+      uploading[i] = false;
+      return;
+    }
+
     try {
       fileNames[i] = file.name;
-      const url = await uploadFile(file);
-      if (multiple) {
-        if (value === undefined) {
-          value = [];
+      const result = await uploadFile(file);
+
+      if (fileType === "credential") {
+        // For credentials, store the JSON string content
+        if (multiple) {
+          if (value === undefined) {
+            value = [];
+          }
+          (value as string[])[i] = result as string;
+        } else {
+          value = result as string;
         }
-        (value as string[])[i] = url;
       } else {
-        value = url;
+        // For images, store the URL (existing behavior)
+        if (multiple) {
+          if (value === undefined) {
+            value = [];
+          }
+          (value as string[])[i] = result as string;
+        } else {
+          value = result as string;
+        }
       }
     } catch (err) {
       uploadErrors[i] = err.message;
@@ -98,14 +134,19 @@
         {#each fileNames as _, i (i)}
           {@const isUploading = !!uploading[i]}
           {@const hasError =
-            (!!uploadErrors[i] || !!errors?.[i]) && !isUploading}
+            (!!uploadErrors[i] || !!(errors && errors[i])) && !isUploading}
           {@const val = values[i]}
           {#if (val || isUploading) && !hasError}
             <div class="border border-neutral-400 p-1">
               {#if isUploading}
                 <LoadingSpinner size="36px" />
+              {:else if fileType === "credential"}
+                <div class="file-info">
+                  <span class="file-name">{fileNames[i]}</span>
+                  <span class="file-size">JSON credentials loaded</span>
+                </div>
               {:else}
-                <img src={val} alt="upload" class="h-10 w-fit" />
+                <img src={String(val)} alt="upload" class="h-10 w-fit" />
               {/if}
             </div>
           {/if}
@@ -114,7 +155,11 @@
     {:else}
       <Viz size="28px" class="text-gray-400 pointer-events-none" />
       <div class="container-flex-col pointer-events-none">
-        <span class="upload-title"> Upload an image </span>
+        {#if fileType === "credential"}
+          <span class="upload-title"> Upload credentials file </span>
+        {:else}
+          <span class="upload-title"> Upload an image </span>
+        {/if}
         {#if multiple}
           <span class="upload-description">
             Support for a single or bulk upload.
@@ -164,6 +209,18 @@
 
   .upload-preview {
     @apply flex flex-wrap w-full gap-x-1 items-center justify-center pointer-events-none px-4;
+  }
+
+  .file-info {
+    @apply flex flex-col items-center gap-1 p-2 min-w-32;
+  }
+
+  .file-name {
+    @apply text-sm font-medium text-gray-700 truncate max-w-48;
+  }
+
+  .file-size {
+    @apply text-xs text-gray-500;
   }
 
   .error {
