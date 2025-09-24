@@ -2,5 +2,5 @@ compiler: rillv1
 
 display_name: "Untitled Rill Project"
 
-featureFlags:
+features:
   chat: false

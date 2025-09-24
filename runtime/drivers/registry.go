@@ -190,7 +190,7 @@ var defaultFeatureFlags = map[string]string{
 	"cloudDataViewer":     "false",
 	"dimensionSearch":     "false",
 	"twoTieredNavigation": "false",
-	"rillTime":            "false",
+	"rillTime":            "true",
 	"hidePublicUrl":       "{{.user.embed}}",
 	"exportHeader":        "false",
 	"alerts":              "true",
