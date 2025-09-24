@@ -1,6 +1,7 @@
 package duckdb
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -82,6 +83,11 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		}
 	}
 
+	// Validate Motherduck token
+	if cfg.isMotherduck() && cfg.Token == "" {
+		return nil, errors.New("you must configure the 'token' connector property when using Motherduck")
+	}
+
 	// Set pool size
 	poolSize := cfg.PoolSize
 	if poolSize == 0 && cfg.CPU != 0 {
@@ -114,4 +120,15 @@ func (c *config) secretConnectors() []string {
 		res[i] = strings.TrimSpace(s)
 	}
 	return res
+}
+
+// isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
+func (c *config) isMotherduck() bool {
+	if c.Path != "" && strings.HasPrefix(c.Path, "md:") {
+		return true
+	}
+	if c.Attach != "" && strings.HasPrefix(c.Attach, "'md:") {
+		return true
+	}
+	return false
 }
