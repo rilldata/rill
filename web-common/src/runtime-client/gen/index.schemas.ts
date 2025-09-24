@@ -2723,6 +2723,8 @@ export type QueryServiceExportBody = {
   /** Optional UI URL that the export originates from.
 Only used if include_header is true. */
   originUrl?: string;
+  /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
