@@ -15,8 +15,8 @@ const RETRY_COUNT_DELAY = 500; // Delay before resetting retry count
 const RECONNECT_CALLBACK_DELAY = 150; // Delay before firing reconnect callbacks
 
 // Throttling configuration
-const OUT_OF_FOCUS_DELAY = 120000; // 2 minutes
-const OUT_OF_FOCUS_THROTTLE = 20000; // 20 seconds
+const OUT_OF_FOCUS_TIMEOUT = 120000; // 2 minutes
+const OUT_OF_FOCUS_SHORT_TIMEOUT = 20000; // 20 seconds
 
 type WatchResponse =
   | V1WatchFilesResponse
@@ -44,7 +44,7 @@ interface WatchRequestClientOptions {
  * - Retry logic with exponential backoff (up to 5 attempts)
  * - Out-of-focus throttling (closes connections when page is not visible)
  * - Automatic reconnection management with callback notifications
- * - Event mapping (SSE "data" events → "response" events for backward compatibility)
+ * - Event mapping (SSE "data" events → "response" events for semantic clarity)
  *
  * TODO: Consider moving retry/throttling functionality into SSEFetchClient itself
  * to avoid this additional abstraction layer. Currently this wrapper exists because
@@ -55,8 +55,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private sseClient: SSEFetchClient<Res> | undefined;
   private outOfFocusThrottler = new Throttler(
-    OUT_OF_FOCUS_DELAY,
-    OUT_OF_FOCUS_THROTTLE,
+    OUT_OF_FOCUS_TIMEOUT,
+    OUT_OF_FOCUS_SHORT_TIMEOUT,
   );
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -69,7 +69,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private isReconnecting = false;
 
   constructor(private readonly options?: WatchRequestClientOptions) {
-    // Default to no auth for backward compatibility with local dev
+    // Default to no auth
     this.options = { includeAuth: false, ...options };
   }
 
@@ -94,7 +94,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
     void this.startSSE();
 
-    // Enable auto-close behavior for power management
+    // Enable auto-close behavior to manage HTTP connection quota (browsers limit ~6 concurrent connections per host)
     this.throttle();
   }
 
@@ -107,7 +107,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
         console.error("Reconnection failed:", e);
       });
     }
-    // Reset auto-close timer on user activity
+    // Reset auto-close timer to keep this tab's connection active
     this.throttle();
   };
 
@@ -258,10 +258,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     });
 
     this.sseClient.on("close", () => {
-      // Connection closed - attempt reconnect if not intentionally closed
-      if (!get(this.closed)) {
-        this.handleError();
-      }
+      // No action
     });
   }
 

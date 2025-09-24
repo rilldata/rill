@@ -20,7 +20,7 @@ export class SSEFetchClient<T> {
   };
 
   constructor(private readonly options?: { includeAuth?: boolean }) {
-    // Default to including auth for backward compatibility
+    // Default to including auth
     this.options = { includeAuth: true, ...options };
   }
 
