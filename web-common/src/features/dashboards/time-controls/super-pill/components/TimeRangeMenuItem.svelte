@@ -13,6 +13,7 @@
 </script>
 
 <button
+  type="button"
   role="menuitem"
   class:font-bold={selected}
   class="group truncate h-7 p-2 justify-between overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"

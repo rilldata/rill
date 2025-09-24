@@ -23,6 +23,7 @@
   } from "@rilldata/web-common/lib/time/types.ts";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
+  import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
 
@@ -127,7 +128,11 @@
     selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
-  function selectRange(range: TimeRange, grain?: V1TimeGrain) {
+  function selectRange(
+    range: TimeRange,
+    grain?: V1TimeGrain,
+    rangeOnly: boolean = false,
+  ) {
     const defaultTimeGrain =
       grain ?? getDefaultTimeGrain(range.start, range.end).grain;
 
@@ -137,12 +142,18 @@
     // Get valid option for the new time range
     const validComparison = $allTimeRange && comparisonOption;
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
-      name: validComparison,
-    } as DashboardTimeControls);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      range,
+      defaultTimeGrain,
+      rangeOnly
+        ? undefined
+        : ({
+            name: validComparison,
+          } as DashboardTimeControls),
+    );
   }
 
-  async function onSelectRange(name: string) {
+  async function onSelectRange(name: string, rangeOnly: boolean = false) {
     if (!$allTimeRange?.end) {
       return;
     }
@@ -173,7 +184,7 @@
         end: validInterval.end.toJSDate(),
       };
 
-      selectRange(baseTimeRange, grain);
+      selectRange(baseTimeRange, grain, rangeOnly);
     }
   }
 
@@ -204,6 +215,10 @@
 
     setTimeZone(timeZone);
   }
+
+  onMount(() => {
+    if (selectedRangeAlias) onSelectRange(selectedRangeAlias, true);
+  });
 </script>
 
 <div

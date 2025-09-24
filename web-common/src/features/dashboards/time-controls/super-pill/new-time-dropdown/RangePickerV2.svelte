@@ -217,6 +217,7 @@
           {...getAttrs([builder, tooltipBuilder])}
           class="flex gap-x-1.5"
           aria-label="Select time range"
+          type="button"
         >
           {#if timeString}
             <b class="line-clamp-1 flex-none">
@@ -317,6 +318,7 @@
           {#if allTimeAllowed}
             <div class="w-full h-fit px-1">
               <button
+                type="button"
                 role="menuitem"
                 class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
                 on:click={() => {
@@ -335,6 +337,7 @@
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1" />
             <button
+              type="button"
               role="menuitem"
               class:font-bold={false}
               on:click={() => {
@@ -366,6 +369,7 @@
                   class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
+                    type="button"
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >
