@@ -7,7 +7,7 @@ sidebar_position: 10
 
 [DuckDB](https://duckdb.org/why_duckdb.html) is an in-memory, columnar SQL database designed for analytical (OLAP) workloads, offering high-speed data processing and analysis. Its columnar storage model and vectorized query execution make it highly efficient for OLAP tasks, enabling fast aggregation, filtering, and joins on large datasets. DuckDB's ease of integration with data science tools and its ability to run directly within analytical environments like Python and R, without the need for a separate server, make it an attractive choice for OLAP applications seeking simplicity and performance.
 
-By default, Rill includes DuckDB as an embedded OLAP engine that is used to ingest data from [sources](/connect) and power your dashboards. Nothing more needs to be done if you wish to power your dashboards on Rill Developer or Rill Cloud. 
+By default, Rill includes DuckDB as an embedded OLAP engine that is used to ingest data from [data sources](/connect) and power your dashboards. Nothing more needs to be done if you wish to power your dashboards on Rill Developer or Rill Cloud. 
 
 However, you may need to add additional extensions into the embedded DuckDB Engine. To do so, you'll need to define the [Connector YAML](/reference/project-files/connectors#duckdb) and use `init_sql` to install/load/set `extension_name`.
 
@@ -19,22 +19,22 @@ DuckDB is a very useful analytical engine but can start to hit performance and s
 
 ## Connecting to External DuckDB
 
-Along with our embedded DuckDB, Rill provides the ability to connect to external DuckDB database files. This allows you to leverage existing DuckDB databases inside of Rill to create metrics views and dashboards.
+Along with our embedded DuckDB, Rill provides the ability to connect to your external DuckDB database files as a "live connector". This allows you to leverage existing DuckDB databases inside of Rill to create metrics views and dashboards.
 
-### Configuration
+:::warning LOCAL USE ONLY
 
-<img src='/img/connect/connector/duckdb.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
-
-
-:::warning File Location and Size
-
-When using Rill locally, you can connect to any file on your filesystem without issues. However, when deploying to Rill Cloud, Rill can only access files within its project directory. If your DuckDB file is located outside of this folder, Rill will be unable to bundle it for deployment.
+This setup is equivalent to connecting to a localhost database for local testing and will not be deployable in Rill Cloud under most circumstances. This is because when deploying to Rill Cloud, Rill can only access files within its project directory. If your DuckDB file is located outside of this folder, Rill will be unable to bundle it for deployment.
 
 Additionally, due to upload size limits, files larger than 100MB will fail to deploy.
 
 :::
 
+### Configuration
+
+<img src='/img/connect/olap-engines/duckdb/duckdb.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<br />
+
+<!-- ## Attaching  Ducklake -->
 
 
 ## Using DuckDB Extensions

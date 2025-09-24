@@ -68,6 +68,7 @@ definitions:
       - [**S3**](#s3) - Amazon S3 storage
 
       ### _Other_
+      - [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
       - [**OpenAI**](#openai) - OpenAI data
       - [**Salesforce**](#salesforce) - Salesforce data
@@ -431,6 +432,31 @@ definitions:
           required:
             - driver
         - type: object
+          title: External DuckDB
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `duckdb`
+              const: duckdb
+            path:
+              type: string
+              description: Path to the DuckDB database
+            mode:
+              type: string
+              description: Set the mode for the DuckDB connection.
+              enum: ["read", "readwrite"]
+              default: "read"
+          examples:
+            - # Example: DuckDB as a source connector configuration
+              type: connector                                  # Must be `connector` (required)
+              driver: duckdb                                   # Must be `duckdb` _(required)_
+
+              path: "/path/to/my-duckdb-database.db"           # Name of the DuckDB database  
+              mode: "read"                                     # Set the mode for the DuckDB connection. 
+          required:
+            - driver
+            - db
+        - type: object
           title: GCS
           properties:
             driver:
@@ -493,7 +519,7 @@ definitions:
           properties:
             driver:
               type: string
-              description: Refers to the driver type and must be driver `motherduck`
+              description: Refers to the driver type and must be driver `duckdb`. 
               const: duckdb
             path:
               type: string
@@ -515,7 +541,7 @@ definitions:
           examples:
             - # Example: MotherDuck connector configuration
               type: connector                                  # Must be `connector` (required)
-              driver: motherduck                               # Must be `motherduck` _(required)_
+              driver: duckdb                               # Must be `duckdb` _(required)_
               token: '{{ .env.connector.motherduck.token }}'    # Set the MotherDuck token from your .env file _(required)_
               path: "md:my_database"                           # Path to your MD database  
               schema_name: "my_schema"                        # Define your schema if not main, uses main by default  

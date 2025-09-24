@@ -32,6 +32,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**S3**](#s3) - Amazon S3 storage
 
 ### _Other_
+- [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 - [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
@@ -442,6 +443,28 @@ init_sql: "INSTALL httpfs; LOAD httpfs;" # SQL executed during database initiali
 log_queries: true # Whether to log raw SQL queries executed through OLAP
 ```
 
+## External DuckDB
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+
+### `path`
+
+_[string]_ - Path to the DuckDB database 
+
+### `mode`
+
+_[string]_ - Set the mode for the DuckDB connection. 
+
+```yaml
+# Example: DuckDB as a source connector configuration
+type: connector # Must be `connector` (required)
+driver: duckdb # Must be `duckdb` _(required)_
+path: "/path/to/my-duckdb-database.db" # Name of the DuckDB database  
+mode: "read" # Set the mode for the DuckDB connection. 
+```
+
 ## GCS
 
 ### `driver`
@@ -503,7 +526,7 @@ headers:
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `motherduck` _(required)_
+_[string]_ - Refers to the driver type and must be driver `duckdb`. _(required)_
 
 ### `path`
 
@@ -528,7 +551,7 @@ _[string]_ - Set the mode for the MotherDuck connection. By default, it is set t
 ```yaml
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
-driver: motherduck # Must be `motherduck` _(required)_
+driver: duckdb # Must be `duckdb` _(required)_
 token: '{{ .env.connector.motherduck.token }}' # Set the MotherDuck token from your .env file _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
@@ -547,7 +570,7 @@ The DSN must follow the standard MySQL URI scheme:
 ```text
 mysql://user:password@host:3306/my-db
 ```
-Rules for special characters:
+Rules for special characters in password:
 - The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
 - All other special characters must be percent-encoded (`%XX` format).
 ```text
