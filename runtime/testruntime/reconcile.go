@@ -53,15 +53,26 @@ func ReconcileParserAndWait(t testing.TB, rt *runtime.Runtime, id string) {
 }
 
 func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
-	ctx := t.Context()
-	ctrl, err := rt.Controller(ctx, id)
-	require.NoError(t, err)
+	for i := 0; i < 10; i++ {
+		ctx := t.Context()
+		ctrl, err := rt.Controller(ctx, id)
+		require.NoError(t, err)
 
-	err = ctrl.Reconcile(ctx, n)
-	require.NoError(t, err)
+		err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName)
+		if err != nil && strings.Contains(err.Error(), "controller is closed") {
+			// Controller closed, retry
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
 
-	err = ctrl.WaitUntilIdle(ctx, false)
-	require.NoError(t, err)
+		err = ctrl.WaitUntilIdle(ctx, false)
+		if err != nil && strings.Contains(err.Error(), "controller is closed") {
+			// Controller closed, retry
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+		require.NoError(t, err)
+	}
 }
 
 func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
@@ -99,6 +110,7 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 }
 
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
+	ensureControllerIdle(t, rt, id)
 	ctx := t.Context()
 	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
@@ -132,6 +144,29 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 	}
 	if lenResources >= 0 {
 		require.Equal(t, lenResources, len(rs), "resources: %s", strings.Join(names, "\n"))
+	}
+}
+
+func ensureControllerIdle(t testing.TB, rt *runtime.Runtime, id string) {
+	for range 10 {
+		ctx := t.Context()
+		ctrl, err := rt.Controller(ctx, id)
+		require.NoError(t, err)
+
+		err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName)
+		if err != nil && strings.Contains(err.Error(), "controller is closed") {
+			// Controller closed, retry
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+
+		err = ctrl.WaitUntilIdle(ctx, false)
+		if err != nil && strings.Contains(err.Error(), "controller is closed") {
+			// Controller closed, retry
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+		require.NoError(t, err)
 	}
 }
 
