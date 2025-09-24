@@ -50,7 +50,7 @@ test.describe.serial("Reports", () => {
     await adminPage
       .getByLabel("Columns field list")
       .getByRole("menuitem", { name: "App Site Name" })
-      .click();
+      .click({ force: true });
     // Assert columns
     await expect(reportForm.getByLabel("Columns field list")).toHaveText(
       /Requests\s*Avg Bid Floor\s*1D QPS\s*App Site Name/,

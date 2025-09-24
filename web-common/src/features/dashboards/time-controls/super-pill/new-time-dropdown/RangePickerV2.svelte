@@ -62,7 +62,6 @@
   export let showFullRange = true;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
-  export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
 
   let firstVisibleMonth = interval?.start;
   let open = false;
@@ -102,8 +101,6 @@
   $: dateTimeAnchor = returnAnchor(ref, zone);
 
   $: selectedLabel = getRangeLabel(timeString);
-
-  $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
 
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
