@@ -19,7 +19,7 @@
 
   async function onSave(assetId: string) {
     await mutateAsync({
-      organization,
+      org: organization,
       data: {
         logoAssetId: assetId,
       },
@@ -32,7 +32,7 @@
 
   async function onRemove() {
     await mutateAsync({
-      organization,
+      org: organization,
       data: {
         logoAssetId: "",
       },

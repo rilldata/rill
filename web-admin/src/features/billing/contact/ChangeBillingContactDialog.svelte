@@ -59,7 +59,7 @@
 
     try {
       await $updateOrg.mutateAsync({
-        organization,
+        org: organization,
         data: {
           billingEmail: selectedBillingContact,
         },

@@ -81,7 +81,7 @@
 
   async function handleDeleteAlert() {
     await $deleteAlert.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: $alertQuery.data.resource.meta.name.name,
     });

@@ -50,7 +50,7 @@
 
         try {
           await $updateOrgMutation.mutateAsync({
-            organization,
+            org: organization,
             data: {
               displayName: values.name,
               newName: newOrg,

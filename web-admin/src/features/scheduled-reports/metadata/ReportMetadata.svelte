@@ -73,7 +73,7 @@
 
   async function handleDeleteReport() {
     await $deleteReport.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: $reportQuery.data.resource.meta.name.name,
     });
