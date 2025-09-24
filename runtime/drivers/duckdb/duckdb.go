@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/duckdb",
+	DocsURL:     "https://docs.rilldata.com/connect/data-source/duckdb",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -94,9 +94,13 @@ var motherduckSpec = drivers.Spec{
 			Placeholder: "md:my_database",
 		},
 		{
-			Key:    "token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "token",
+			Type:        drivers.StringPropertyType,
+			Secret:      true,
+			Required:    true,
+			DisplayName: "Token",
+			Description: "MotherDuck token",
+			Placeholder: "your_motherduck_token",
 		},
 		{
 			Key:         "mode",
@@ -385,7 +389,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if c.config.Mode != modeReadWrite {
-		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
 	if opts.InputHandle == c && opts.OutputHandle == c {
 		return &selfToSelfExecutor{c}, nil
@@ -472,7 +476,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
-	if c.driverName == "motherduck" {
+	if c.driverName == "motherduck" || c.config.isMotherduck() {
 		dbInitQueries = append(dbInitQueries,
 			"INSTALL 'motherduck'",
 			"LOAD 'motherduck'",

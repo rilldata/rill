@@ -402,9 +402,9 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 			if r.Name == "__rill_remote" {
 				req.RillMgdGitRemote = r.URL
 			} else {
-				req.GitRemote, err = r.Github()
-				if err != nil {
-					return nil, err
+				gitRemote, err := r.Github()
+				if err == nil {
+					req.GitRemote = gitRemote
 				}
 			}
 		}

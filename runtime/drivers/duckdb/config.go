@@ -115,3 +115,8 @@ func (c *config) secretConnectors() []string {
 	}
 	return res
 }
+
+// isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
+func (c *config) isMotherduck() bool {
+	return strings.HasPrefix(c.Path, "md:") || strings.HasPrefix(c.Attach, "'md:")
+}

@@ -11,6 +11,7 @@
   export let canvasName: string;
   export let metricName: string;
   export let selectedItems: string[] = [];
+  export let chipItems: string[] = [];
   export let types: FieldType[] = ["measure", "dimension"];
   export let excludedValues: string[] | undefined = undefined;
   export let onMultiSelect: (items: string[]) => void = () => {};
@@ -25,7 +26,7 @@
 
 <div class="w-full flex flex-col gap-y-2">
   <FieldChips
-    items={selectedItems}
+    items={chipItems}
     displayMap={$fieldData.displayMap}
     onUpdate={onMultiSelect}
   />
