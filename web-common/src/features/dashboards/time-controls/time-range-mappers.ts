@@ -1,5 +1,4 @@
 import {
-  overrideRillTimeRef,
   parseRillTime,
   validateRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
@@ -161,7 +160,6 @@ export function mapV1TimeRangeToSelectedTimeRange(
   } else if (timeRange.expression) {
     try {
       const rt = parseRillTime(timeRange.expression);
-      overrideRillTimeRef(rt, end);
       selectedTimeRange = {
         name: rt.toString(),
         interval: rt.byGrain ?? rt.rangeGrain,
