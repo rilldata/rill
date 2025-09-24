@@ -476,7 +476,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
-	if c.driverName == "motherduck" {
+	if strings.HasPrefix(strings.TrimSpace(c.config.Path), "md:") {
 		dbInitQueries = append(dbInitQueries,
 			"INSTALL 'motherduck'",
 			"LOAD 'motherduck'",
