@@ -112,6 +112,7 @@
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
             id="more-actions-{tableId}"
+            testId="more-actions-context-button"
             tooltipText="More actions"
             label="{tableId} actions menu trigger"
             builders={[builder]}
