@@ -48,10 +48,10 @@ func listProjectMemberUsergroups(cmd *cobra.Command, ch *cmdutil.Helper, org, pr
 	}
 
 	members, err := client.ListProjectMemberUsergroups(cmd.Context(), &adminv1.ListProjectMemberUsergroupsRequest{
-		Organization: org,
-		Project:      project,
-		PageSize:     pageSize,
-		PageToken:    pageToken,
+		Org:       org,
+		Project:   project,
+		PageSize:  pageSize,
+		PageToken: pageToken,
 	})
 	if err != nil {
 		return err
@@ -74,9 +74,9 @@ func listOrgMemberUsergroups(cmd *cobra.Command, ch *cmdutil.Helper, org, pageTo
 	}
 
 	members, err := client.ListOrganizationMemberUsergroups(cmd.Context(), &adminv1.ListOrganizationMemberUsergroupsRequest{
-		Organization: org,
-		PageSize:     pageSize,
-		PageToken:    pageToken,
+		Org:       org,
+		PageSize:  pageSize,
+		PageToken: pageToken,
 	})
 	if err != nil {
 		return err

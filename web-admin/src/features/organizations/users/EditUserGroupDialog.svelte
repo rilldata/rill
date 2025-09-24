@@ -69,7 +69,7 @@
   async function handleRename(groupName: string, newName: string) {
     try {
       await $renameUserGroup.mutateAsync({
-        organization: organization,
+        org: organization,
         usergroup: groupName,
         data: {
           name: newName,
@@ -112,7 +112,7 @@
     try {
       for (const email of pendingAdditions) {
         await $addUsergroupMemberUser.mutateAsync({
-          organization: organization,
+          org: organization,
           usergroup: groupName,
           email: email,
           data: {},
@@ -121,7 +121,7 @@
 
       for (const email of pendingRemovals) {
         await $removeUserGroupMember.mutateAsync({
-          organization: organization,
+          org: organization,
           usergroup: groupName,
           email: email,
         });

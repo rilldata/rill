@@ -31,7 +31,7 @@
   $: planCanceller = createAdminServiceCancelBillingSubscription();
   async function handleCancelPlan() {
     await $planCanceller.mutateAsync({
-      organization,
+      org: organization,
     });
     eventBus.emit("notification", {
       type: "success",

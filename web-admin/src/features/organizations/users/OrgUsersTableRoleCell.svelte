@@ -58,7 +58,7 @@
       }
 
       await $setOrganizationMemberUserRole.mutateAsync({
-        organization: organization,
+        org: organization,
         email: email,
         data: {
           role: role,
@@ -89,7 +89,7 @@
   async function handleUpgrade(email: string, role: string) {
     try {
       await $setOrganizationMemberUserRole.mutateAsync({
-        organization: organization,
+        org: organization,
         email: email,
         data: {
           role: role,

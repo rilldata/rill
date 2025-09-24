@@ -97,7 +97,7 @@ export interface V1ApproveProjectAccessResponse {
 }
 
 export interface V1BillingIssue {
-  organization?: string;
+  org?: string;
   type?: V1BillingIssueType;
   level?: V1BillingIssueLevel;
   metadata?: V1BillingIssueMetadata;
@@ -444,7 +444,7 @@ export interface V1GetAlertYAMLResponse {
 }
 
 export interface V1GetBillingProjectCredentialsRequest {
-  organization?: string;
+  org?: string;
 }
 
 export interface V1GetBillingProjectCredentialsResponse {
@@ -516,7 +516,7 @@ export interface V1GetGithubUserStatusResponse {
   userInstallationPermission?: V1GithubPermission;
   organizationInstallationPermissions?: V1GetGithubUserStatusResponseOrganizationInstallationPermissions;
   /** DEPRECATED: Use organization_installation_permissions instead. */
-  organizations?: string[];
+  orgs?: string[];
 }
 
 export interface V1GetIFrameResponse {
@@ -1276,7 +1276,7 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
 }
 
 export interface V1SudoExtendTrialRequest {
-  organization?: string;
+  org?: string;
   days?: number;
 }
 
@@ -1313,7 +1313,7 @@ export type V1SudoUpdateAnnotationsRequestAnnotations = {
 };
 
 export interface V1SudoUpdateAnnotationsRequest {
-  organization?: string;
+  org?: string;
   project?: string;
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
 }
@@ -1323,7 +1323,7 @@ export interface V1SudoUpdateAnnotationsResponse {
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
-  organization?: string;
+  org?: string;
   billingCustomerId?: string;
   paymentCustomerId?: string;
 }
@@ -1343,7 +1343,7 @@ export interface V1SudoUpdateOrganizationCustomDomainResponse {
 }
 
 export interface V1SudoUpdateOrganizationQuotasRequest {
-  organization?: string;
+  org?: string;
   projects?: number;
   deployments?: number;
   slotsTotal?: number;
@@ -1391,7 +1391,7 @@ export interface V1TriggerReconcileResponse {
 }
 
 export interface V1TriggerRedeployRequest {
-  organization?: string;
+  org?: string;
   project?: string;
   deploymentId?: string;
 }
@@ -1625,6 +1625,14 @@ Note: The final name will be suffixed with a random string to ensure uniqueness.
   name?: string;
 };
 
+export type AdminServiceCreateAssetBody = {
+  type?: string;
+  name?: string;
+  extension?: string;
+  public?: boolean;
+  estimatedSizeBytes?: string;
+};
+
 export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1664,10 +1672,58 @@ export type AdminServiceListProjectMemberUsergroupsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListProjectsForOrganizationParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceCreateProjectBody = {
+  project?: string;
+  description?: string;
+  public?: boolean;
+  /** directory_name should be the most recently observed local directory name for the project.
+See ListProjectsForFingerprint for more context. */
+  directoryName?: string;
+  provisioner?: string;
+  prodSlots?: string;
+  subpath?: string;
+  prodBranch?: string;
+  /** git_remote is set for projects whose project files are stored in Git.
+It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+Either git_remote or archive_asset_id should be set. */
+  gitRemote?: string;
+  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
+  archiveAssetId?: string;
+  prodVersion?: string;
+  skipDeploy?: boolean;
+};
+
 export type AdminServiceListProjectsForOrganizationAndUserParams = {
   userId?: string;
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceGetProjectParams = {
+  accessTokenTtlSeconds?: number;
+  superuserForceAccess?: boolean;
+  issueSuperuserToken?: boolean;
+};
+
+export type AdminServiceUpdateProjectBody = {
+  description?: string;
+  public?: boolean;
+  directoryName?: string;
+  prodBranch?: string;
+  gitRemote?: string;
+  subpath?: string;
+  archiveAssetId?: string;
+  prodSlots?: string;
+  provisioner?: string;
+  newName?: string;
+  prodTtlSeconds?: string;
+  prodVersion?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceGetCloneCredentialsParams = {
@@ -1688,6 +1744,15 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   userId?: string;
   userEmail?: string;
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
+};
+
+export type AdminServiceListDeploymentsParams = {
+  environment?: string;
+  userId?: string;
+};
+
+export type AdminServiceCreateDeploymentBody = {
+  environment?: string;
 };
 
 export type AdminServiceHibernateProjectParams = {
@@ -1825,6 +1890,27 @@ It is NOT NECESSARY to pass all variables, existing variables not included in th
   unsetVariables?: string[];
 };
 
+export type AdminServiceCreateServiceBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceCreateServiceBody = {
+  name?: string;
+  orgRoleName?: string;
+  project?: string;
+  projectRoleName?: string;
+  attributes?: AdminServiceCreateServiceBodyAttributes;
+};
+
+export type AdminServiceUpdateServiceBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceUpdateServiceBody = {
+  newName?: string;
+  attributes?: AdminServiceUpdateServiceBodyAttributes;
+};
+
 export type AdminServiceListOrganizationMemberUsergroupsParams = {
   /**
    * Optionally filter by role
@@ -1856,92 +1942,6 @@ export type AdminServiceEditUsergroupBody = {
 export type AdminServiceListUsergroupMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
-};
-
-export type AdminServiceCreateAssetBody = {
-  type?: string;
-  name?: string;
-  extension?: string;
-  public?: boolean;
-  estimatedSizeBytes?: string;
-};
-
-export type AdminServiceListProjectsForOrganizationParams = {
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type AdminServiceCreateProjectBody = {
-  name?: string;
-  description?: string;
-  public?: boolean;
-  /** directory_name should be the most recently observed local directory name for the project.
-See ListProjectsForFingerprint for more context. */
-  directoryName?: string;
-  provisioner?: string;
-  prodSlots?: string;
-  subpath?: string;
-  prodBranch?: string;
-  /** git_remote is set for projects whose project files are stored in Git.
-It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
-Either git_remote or archive_asset_id should be set. */
-  gitRemote?: string;
-  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
-  archiveAssetId?: string;
-  prodVersion?: string;
-  skipDeploy?: boolean;
-};
-
-export type AdminServiceGetProjectParams = {
-  accessTokenTtlSeconds?: number;
-  superuserForceAccess?: boolean;
-  issueSuperuserToken?: boolean;
-};
-
-export type AdminServiceUpdateProjectBody = {
-  description?: string;
-  public?: boolean;
-  directoryName?: string;
-  prodBranch?: string;
-  gitRemote?: string;
-  subpath?: string;
-  archiveAssetId?: string;
-  prodSlots?: string;
-  provisioner?: string;
-  newName?: string;
-  prodTtlSeconds?: string;
-  prodVersion?: string;
-  superuserForceAccess?: boolean;
-};
-
-export type AdminServiceListDeploymentsParams = {
-  environment?: string;
-  userId?: string;
-};
-
-export type AdminServiceCreateDeploymentBody = {
-  environment?: string;
-};
-
-export type AdminServiceCreateServiceBodyAttributes = {
-  [key: string]: unknown;
-};
-
-export type AdminServiceCreateServiceBody = {
-  name?: string;
-  orgRoleName?: string;
-  projectName?: string;
-  projectRoleName?: string;
-  attributes?: AdminServiceCreateServiceBodyAttributes;
-};
-
-export type AdminServiceUpdateServiceBodyAttributes = {
-  [key: string]: unknown;
-};
-
-export type AdminServiceUpdateServiceBody = {
-  newName?: string;
-  attributes?: AdminServiceUpdateServiceBodyAttributes;
 };
 
 export type AdminServiceListProjectsForUserByNameParams = {

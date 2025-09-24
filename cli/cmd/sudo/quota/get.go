@@ -24,7 +24,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if org != "" {
 				res, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-					Name:                 org,
+					Org:                  org,
 					SuperuserForceAccess: true,
 				})
 				if err != nil {

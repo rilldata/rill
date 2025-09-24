@@ -26,7 +26,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if org != "" {
 				req := &adminv1.SudoUpdateOrganizationQuotasRequest{
-					Organization: org,
+					Org: org,
 				}
 
 				if cmd.Flags().Changed("projects") {

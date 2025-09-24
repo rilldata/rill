@@ -35,7 +35,7 @@
           // Handle as email
           try {
             await $userInvite.mutateAsync({
-              organization,
+              org: organization,
               project,
               data: {
                 email: input,
@@ -50,7 +50,7 @@
           // Handle as group name
           try {
             await $addUsergroup.mutateAsync({
-              organization,
+              org: organization,
               project,
               usergroup: input,
               data: {

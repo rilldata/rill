@@ -33,7 +33,7 @@
   async function uploadFile(file: File) {
     const ext = extractFileExtension(file.name);
     const assetResp = await $assetCreator.mutateAsync({
-      organizationName: organization,
+      org: organization,
       data: {
         type: "image",
         name: label,

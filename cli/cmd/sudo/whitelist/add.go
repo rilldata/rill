@@ -37,9 +37,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				_, err = client.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
-					Organization: org,
-					Domain:       domain,
-					Role:         role,
+					Org:    org,
+					Domain: domain,
+					Role:   role,
 				})
 				if err != nil {
 					return err
@@ -67,10 +67,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.CreateProjectWhitelistedDomain(ctx, &adminv1.CreateProjectWhitelistedDomainRequest{
-				Organization: org,
-				Project:      project,
-				Domain:       domain,
-				Role:         role,
+				Org:     org,
+				Project: project,
+				Domain:  domain,
+				Role:    role,
 			})
 			if err != nil {
 				return err

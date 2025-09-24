@@ -33,9 +33,9 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.SudoUpdateAnnotations(ctx, &adminv1.SudoUpdateAnnotationsRequest{
-				Organization: args[0],
-				Project:      args[1],
-				Annotations:  annotations,
+				Org:         args[0],
+				Project:     args[1],
+				Annotations: annotations,
 			})
 			if err != nil {
 				return err

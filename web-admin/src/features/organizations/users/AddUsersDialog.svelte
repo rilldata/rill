@@ -42,7 +42,7 @@
     isSuperUser: boolean = false,
   ) {
     await $addOrganizationMemberUser.mutateAsync({
-      organization: organization,
+      org: organization,
       data: {
         email: newEmail,
         role: newRole,

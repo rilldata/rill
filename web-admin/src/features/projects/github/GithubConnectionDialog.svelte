@@ -55,7 +55,7 @@
 
         await $connectProjectToGithub.mutateAsync({
           project: project,
-          organization: organization,
+          org: organization,
           data: {
             remote,
           },

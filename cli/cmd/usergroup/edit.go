@@ -30,9 +30,9 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.EditUsergroup(cmd.Context(), &adminv1.EditUsergroupRequest{
-				Organization: ch.Org,
-				Usergroup:    name,
-				Description:  description,
+				Org:         ch.Org,
+				Usergroup:   name,
+				Description: description,
 			})
 			if err != nil {
 				return err

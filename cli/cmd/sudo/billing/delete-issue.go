@@ -55,8 +55,8 @@ func DeleteIssueCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.SudoDeleteOrganizationBillingIssue(ctx, &adminv1.SudoDeleteOrganizationBillingIssueRequest{
-				Organization: org,
-				Type:         t,
+				Org:  org,
+				Type: t,
 			})
 			if err != nil {
 				return err

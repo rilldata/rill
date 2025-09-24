@@ -61,7 +61,7 @@ async function redeployProject(
   projectDeployer: ReturnType<typeof createAdminServiceRedeployProject>,
 ) {
   const resp = await get(projectDeployer).mutateAsync({
-    organization,
+    org: organization,
     project: project.name ?? "",
   });
   void queryClient.refetchQueries({

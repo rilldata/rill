@@ -46,7 +46,7 @@
   async function handleCreate(newName: string) {
     try {
       await $createUserGroup.mutateAsync({
-        organization: organization,
+        org: organization,
         data: {
           name: newName,
         },
@@ -84,7 +84,7 @@
       // Add pending users to the group
       for (const email of pendingAdditions) {
         await $addUsergroupMemberUser.mutateAsync({
-          organization: organization,
+          org: organization,
           usergroup: usergroup,
           email: email,
           data: {},

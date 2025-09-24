@@ -30,7 +30,7 @@
   async function onDelete(deletedName: string) {
     try {
       await $updateProjectVariables.mutateAsync({
-        organization,
+        org: organization,
         project,
         data: {
           environment,

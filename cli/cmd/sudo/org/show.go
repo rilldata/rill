@@ -21,7 +21,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.GetOrganization(cmd.Context(), &adminv1.GetOrganizationRequest{
-				Name:                 args[0],
+				Org:                  args[0],
 				SuperuserForceAccess: true,
 			})
 			if err != nil {

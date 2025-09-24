@@ -33,8 +33,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			req := &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
+				Org:     ch.Org,
+				Project: name,
 			}
 
 			var flagSet bool

@@ -96,7 +96,7 @@
 
         try {
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
-            organization,
+            org: organization,
             project,
             data: {
               resourceType: ResourceKind.Explore as string,

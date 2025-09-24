@@ -29,8 +29,8 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.CreateUsergroup(cmd.Context(), &adminv1.CreateUsergroupRequest{
-				Organization: ch.Org,
-				Name:         name,
+				Org:  ch.Org,
+				Name: name,
 			})
 			if err != nil {
 				return err
