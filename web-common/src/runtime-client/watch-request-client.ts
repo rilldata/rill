@@ -8,10 +8,15 @@ import { get, writable } from "svelte/store";
 import { asyncWait } from "../lib/waitUtils";
 import { SSEFetchClient } from "./sse-fetch-client";
 
+// Retry configuration
 const MAX_RETRIES = 5;
-const BACKOFF_DELAY = 1000;
-const RETRY_COUNT_DELAY = 500;
-const RECONNECT_CALLBACK_DELAY = 150;
+const BACKOFF_DELAY = 1000; // Base delay in ms
+const RETRY_COUNT_DELAY = 500; // Delay before resetting retry count
+const RECONNECT_CALLBACK_DELAY = 150; // Delay before firing reconnect callbacks
+
+// Throttling configuration
+const OUT_OF_FOCUS_DELAY = 120000; // 2 minutes
+const OUT_OF_FOCUS_THROTTLE = 20000; // 20 seconds
 
 type WatchResponse =
   | V1WatchFilesResponse
@@ -29,6 +34,10 @@ type Callback<T, K extends keyof EventMap<T>> = (
   eventData: EventMap<T>[K],
 ) => void | Promise<void>;
 
+interface WatchRequestClientOptions {
+  includeAuth?: boolean;
+}
+
 /**
  * A wrapper around SSEFetchClient that adds watch-specific functionality:
  *
@@ -45,7 +54,10 @@ type Callback<T, K extends keyof EventMap<T>> = (
 export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private sseClient: SSEFetchClient<Res> | undefined;
-  private outOfFocusThrottler = new Throttler(120000, 20000);
+  private outOfFocusThrottler = new Throttler(
+    OUT_OF_FOCUS_DELAY,
+    OUT_OF_FOCUS_THROTTLE,
+  );
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -56,11 +68,16 @@ export class WatchRequestClient<Res extends WatchResponse> {
   public closed = writable(false);
   private isReconnecting = false;
 
-  constructor(private readonly options?: { includeAuth?: boolean }) {
+  constructor(private readonly options?: WatchRequestClientOptions) {
     // Default to no auth for backward compatibility with local dev
     this.options = { includeAuth: false, ...options };
   }
 
+  // ===== PUBLIC API =====
+
+  /**
+   * Register an event listener
+   */
   public on<K extends keyof EventMap<Res>>(
     event: K,
     listener: Callback<Res, K>,
@@ -68,26 +85,45 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.listeners.get(event)?.push(listener);
   }
 
-  public heartbeat = () => {
-    if (get(this.closed)) {
-      this.reconnect().catch((e) => {
-        console.error("Reconnection failed:", e);
-        throw e;
-      });
-    }
-    this.throttle();
-  };
-
+  /**
+   * Start watching a URL for SSE events
+   */
   public watch(url: string) {
     this.cancel();
     this.url = url;
 
     void this.startSSE();
 
-    // Start throttling after the first connection
+    // Enable auto-close behavior for power management
     this.throttle();
   }
 
+  /**
+   * Keep the connection alive (called on user interaction)
+   */
+  public heartbeat = () => {
+    if (get(this.closed)) {
+      void this.reconnect().catch((e) => {
+        console.error("Reconnection failed:", e);
+      });
+    }
+    // Reset auto-close timer on user activity
+    this.throttle();
+  };
+
+  /**
+   * Enable auto-close behavior (closes connection after period of inactivity)
+   *
+   * Note: The name 'throttle' is historical - this actually starts a timer to close the connection
+   */
+  public throttle(prioritize: boolean = false) {
+    this.outOfFocusThrottler.cancel();
+    this.outOfFocusThrottler.throttle(this.close, prioritize);
+  }
+
+  /**
+   * Close the connection and clean up all resources
+   */
   public close = () => {
     this.cancel();
     this.closed.set(true);
@@ -99,11 +135,43 @@ export class WatchRequestClient<Res extends WatchResponse> {
     }
   };
 
-  public throttle(prioritize: boolean = false) {
-    this.outOfFocusThrottler.cancel();
-    this.outOfFocusThrottler.throttle(this.close, prioritize);
+  // ===== PRIVATE CORE FUNCTIONALITY =====
+
+  /**
+   * Start the SSE connection
+   */
+  private async startSSE() {
+    if (!this.url) throw new Error("URL not set");
+
+    try {
+      this.closed.set(false);
+
+      // Always create a fresh SSE client to avoid connection reuse issues
+      if (this.sseClient) {
+        this.sseClient.cleanup();
+      }
+
+      this.sseClient = new SSEFetchClient<Res>(this.options);
+
+      // Set up event handlers for the new client
+      this.setupSSEEventHandlers();
+
+      // Start streaming
+      await this.sseClient.start(this.url);
+
+      // Only set up retry timeout reset if the connection was successful
+      this.retryTimeout = setTimeout(() => {
+        this.retryAttempts.set(0);
+      }, RETRY_COUNT_DELAY);
+    } catch (error) {
+      console.error("Failed to start SSE:", error);
+      this.handleError();
+    }
   }
 
+  /**
+   * Handle reconnection with exponential backoff
+   */
   private async reconnect() {
     // Prevent concurrent reconnection attempts
     if (this.isReconnecting) return;
@@ -116,8 +184,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
         this.outOfFocusThrottler.cancel();
       }
 
-      // Don't reconnect if client is streaming or if we're closed
-      if (this.sseClient?.isStreaming() || get(this.closed)) {
+      // Don't reconnect if client is already streaming
+      if (this.sseClient?.isStreaming()) {
         return;
       }
 
@@ -134,12 +202,20 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
       this.retryAttempts.update((n) => n + 1);
 
-      void this.startSSE(true);
+      // Fire reconnect callbacks after a short delay
+      this.reconnectTimeout = setTimeout(() => {
+        this.fireCallbacks("reconnect", undefined);
+      }, RECONNECT_CALLBACK_DELAY);
+
+      void this.startSSE();
     } finally {
       this.isReconnecting = false;
     }
   }
 
+  /**
+   * Cancel the current connection and clean up timeouts
+   */
   private cancel() {
     // Clean up SSE connection
     if (this.sseClient) {
@@ -151,63 +227,51 @@ export class WatchRequestClient<Res extends WatchResponse> {
     clearTimeout(this.retryTimeout);
   }
 
-  private async startSSE(reconnect = false) {
-    clearTimeout(this.reconnectTimeout);
-
-    if (!this.url) throw new Error("URL not set");
-
-    try {
-      if (reconnect) {
-        this.reconnectTimeout = setTimeout(() => {
-          this.listeners.get("reconnect")?.forEach((cb) => void cb());
-        }, RECONNECT_CALLBACK_DELAY);
-      }
-
-      this.closed.set(false);
-
-      // Always create a fresh SSE client to avoid connection reuse issues
-      if (this.sseClient) {
-        this.sseClient.cleanup();
-      }
-
-      this.sseClient = new SSEFetchClient<Res>(this.options);
-
-      // Set up event handlers for the new client
-      this.sseClient.on("data", (data) => {
-        this.listeners.get("response")?.forEach((cb) => void cb(data));
-      });
-
-      this.sseClient.on("error", (error) => {
-        console.error("SSE error:", error);
-        this.handleError();
-      });
-
-      this.sseClient.on("close", () => {
-        // Connection closed - attempt reconnect if not intentionally closed
-        if (!get(this.closed)) {
-          this.handleError();
-        }
-      });
-
-      // Start streaming
-      await this.sseClient.start(this.url);
-
-      // Only set up retry timeout reset if the connection was successful
-      this.retryTimeout = setTimeout(() => {
-        this.retryAttempts.set(0);
-      }, RETRY_COUNT_DELAY);
-    } catch (error) {
-      console.error("Failed to start SSE:", error);
-      this.handleError();
-    }
-  }
-
+  /**
+   * Handle errors by canceling and attempting to reconnect
+   */
   private handleError() {
     this.cancel();
     if (get(this.closed)) return;
 
-    this.reconnect().catch((e) => {
+    void this.reconnect().catch((e) => {
       console.error("Reconnection failed:", e);
     });
+  }
+
+  // ===== PRIVATE HELPER METHODS =====
+
+  /**
+   * Set up event handlers for the SSE client
+   */
+  private setupSSEEventHandlers() {
+    if (!this.sseClient) return;
+
+    this.sseClient.on("data", (data) => {
+      // Map SSE "data" events to "response" events for semantic clarity
+      this.fireCallbacks("response", data);
+    });
+
+    this.sseClient.on("error", (error) => {
+      console.error("SSE error:", error);
+      this.handleError();
+    });
+
+    this.sseClient.on("close", () => {
+      // Connection closed - attempt reconnect if not intentionally closed
+      if (!get(this.closed)) {
+        this.handleError();
+      }
+    });
+  }
+
+  /**
+   * Fire callbacks for a specific event
+   */
+  private fireCallbacks<K extends keyof EventMap<Res>>(
+    event: K,
+    data: EventMap<Res>[K],
+  ) {
+    this.listeners.get(event)?.forEach((cb) => void cb(data));
   }
 }
