@@ -62,11 +62,3 @@ After establishing a connection, you can import data through the connector UI. T
 <img src='/img/connect/data-sources/create-model.png' class='rounded-gif' />
 <br />
 
-
-## Common Issues
-
-### Lock on File 
-
-`Could not set lock on file "/path/to/your/duckdb.db": Conflicting lock is held in /path/to/your/rill (PID 21942) by user <user>. See also https://duckdb.org/docs/stable/connect/concurrency`
-
-According to the DuckDB documentation cited above: "Writing to DuckDB from multiple processes is not supported automatically and is not a primary design goal (see Handling Concurrency)." You'll need to stop any local process using this file to access it in Rill, or vice versa.
