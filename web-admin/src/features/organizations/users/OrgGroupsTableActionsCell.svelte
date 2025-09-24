@@ -10,10 +10,16 @@
   export let groupName: string;
   export let currentUserEmail: string;
   export let searchUsersList: V1OrganizationMemberUser[];
+  export let ensureAllUsersLoaded: (() => Promise<void>) | undefined = undefined;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
   let isEditDialogOpen = false;
+
+  // Ensure all users are loaded when edit dialog opens
+  $: if (isEditDialogOpen && ensureAllUsersLoaded) {
+    ensureAllUsersLoaded();
+  }
 </script>
 
 <!-- Managed groups cannot be deleted or edited -->
