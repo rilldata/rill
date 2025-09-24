@@ -82,9 +82,7 @@ For a complete list of available extensions, see the [DuckDB Extensions document
 
 While not recommended, Rill supports using multiple OLAP engines in a single project. For more information, see [Using Multiple OLAP Engines](/connect/olap/multiple-olap).
 
-## Additional Information
+## Additional Notes
 
-- **SQL Syntax**: For dashboards powered by DuckDB, [measure definitions](/build/metrics-view/#measures) must follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax
-- **UI Limitation**: There is a known issue with creating DuckDB sources via the UI; you'll need to create the YAML file manually
-- **SQL Features**: DuckDB supports most standard SQL functions and operators, making it easy to write complex analytical queries
-- **Advanced Analytics**: Consider using DuckDB's window functions, CTEs, and other advanced SQL features for sophisticated analysis
+- For dashboards powered by DuckDB, [measure definitions](/build/metrics-view/#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.
+- There is a known issue around creating a DuckDB source via the UI; you will need to create the YAML file manually.
