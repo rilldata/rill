@@ -1,11 +1,11 @@
 <script lang="ts">
+  import Banner from "@rilldata/web-common/components/banner/Banner.svelte";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { WatchFilesClient } from "@rilldata/web-common/features/entity-management/WatchFilesClient";
   import { WatchResourcesClient } from "@rilldata/web-common/features/entity-management/WatchResourcesClient";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import Banner from "@rilldata/web-common/components/banner/Banner.svelte";
 
   const fileWatcher = new WatchFilesClient().client;
   const resourceWatcher = new WatchResourcesClient().client;
@@ -19,12 +19,10 @@
 
   $: fileWatcher.watch(
     `${host}/v1/instances/${instanceId}/files/watch?stream=files`,
-    true,
   );
 
   $: resourceWatcher.watch(
     `${host}/v1/instances/${instanceId}/resources/-/watch?stream=resources`,
-    true,
   );
 
   $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;

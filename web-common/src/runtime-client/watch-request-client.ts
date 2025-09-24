@@ -1,5 +1,4 @@
 import { Throttler } from "@rilldata/web-common/lib/throttler";
-import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import type {
   V1WatchFilesResponse,
   V1WatchLogsResponse,
@@ -7,7 +6,6 @@ import type {
 } from "@rilldata/web-common/runtime-client/index";
 import { get, writable } from "svelte/store";
 import { asyncWait } from "../lib/waitUtils";
-import { runtime } from "./runtime-store";
 
 const MAX_RETRIES = 5;
 const BACKOFF_DELAY = 1000;
@@ -18,11 +16,6 @@ type WatchResponse =
   | V1WatchFilesResponse
   | V1WatchResourcesResponse
   | V1WatchLogsResponse;
-
-type StreamingFetchResponse<Res extends WatchResponse> = {
-  result?: Res;
-  error?: { code: number; message: string };
-};
 
 type EventMap<T> = {
   response: T;
@@ -37,10 +30,7 @@ type Callback<T, K extends keyof EventMap<T>> = (
 
 export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
-  private controller: AbortController | undefined;
-  private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
   private eventSource: EventSource | undefined;
-  private useSSE: boolean = false;
   private outOfFocusThrottler = new Throttler(120000, 20000);
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -50,10 +40,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
     ["reconnect", []],
   ]);
   public closed = writable(false);
-
-  constructor(useSSE: boolean = false) {
-    this.useSSE = useSSE;
-  }
 
   public on<K extends keyof EventMap<Res>>(
     event: K,
@@ -72,19 +58,11 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.throttle();
   };
 
-  public watch(url: string, useSSE: boolean = false) {
+  public watch(url: string) {
     this.cancel();
     this.url = url;
 
-    if (useSSE !== undefined) {
-      this.useSSE = useSSE;
-    }
-
-    if (this.useSSE) {
-      this.listenSSE();
-    } else {
-      this.listen().catch(console.error);
-    }
+    this.listenSSE();
 
     // Start throttling after the first connection
     this.throttle();
@@ -107,11 +85,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
       this.outOfFocusThrottler.cancel();
     }
 
-    // The stream was not cancelled, so don't reconnect
-    if (
-      (this.controller && !this.controller.signal.aborted) ||
-      (this.eventSource && this.eventSource.readyState !== EventSource.CLOSED)
-    )
+    // The SSE connection was not cancelled, so don't reconnect
+    if (this.eventSource && this.eventSource.readyState !== EventSource.CLOSED)
       return;
 
     const currentAttempts = get(this.retryAttempts);
@@ -125,18 +100,10 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
     this.retryAttempts.update((n) => n + 1);
 
-    if (this.useSSE) {
-      this.listenSSE(true);
-    } else {
-      this.listen(true).catch(console.error);
-    }
+    this.listenSSE(true);
   }
 
   private cancel() {
-    // Clean up fetch stream
-    this.controller?.abort();
-    this.stream = this.controller = undefined;
-
     // Clean up SSE connection
     if (this.eventSource) {
       this.eventSource.close();
@@ -200,62 +167,5 @@ export class WatchRequestClient<Res extends WatchResponse> {
         throw e;
       });
     }
-  }
-
-  private async listen(reconnect = false) {
-    clearTimeout(this.reconnectTimeout);
-
-    if (!this.url) throw new Error("URL not set");
-
-    this.controller = new AbortController();
-    this.stream = this.getFetchStream(this.url, this.controller);
-
-    try {
-      this.retryTimeout = setTimeout(() => {
-        this.retryAttempts.set(0);
-      }, RETRY_COUNT_DELAY);
-
-      if (reconnect) {
-        this.reconnectTimeout = setTimeout(() => {
-          this.listeners.get("reconnect")?.forEach((cb) => void cb());
-        }, RECONNECT_CALLBACK_DELAY);
-      }
-
-      this.closed.set(false);
-      for await (const res of this.stream) {
-        if (this.controller?.signal.aborted) break;
-        if (res.error) throw new Error(res.error.message);
-
-        if (res.result)
-          this.listeners.get("response")?.forEach((cb) => void cb(res.result));
-      }
-    } catch {
-      clearTimeout(this.retryTimeout);
-
-      this.cancel();
-      if (get(this.closed)) return;
-
-      this.reconnect().catch((e) => {
-        console.error("Reconnection failed:", e);
-        // Or rethrow the original error if needed
-        throw e;
-      });
-    }
-  }
-
-  private getFetchStream(url: string, controller: AbortController) {
-    const headers = { "Content-Type": "application/json" };
-    const jwt = get(runtime).jwt;
-    if (jwt) {
-      headers["Authorization"] = `Bearer ${jwt.token}`;
-    }
-
-    return streamingFetchWrapper<StreamingFetchResponse<Res>>(
-      url,
-      "GET",
-      undefined,
-      headers,
-      controller.signal,
-    );
   }
 }
