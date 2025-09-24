@@ -476,7 +476,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		connInitQueries []string
 	)
 
-	if c.driverName == "motherduck" {
+	if c.driverName == "motherduck" || c.config.isMotherduck() {
 		dbInitQueries = append(dbInitQueries,
 			"INSTALL 'motherduck'",
 			"LOAD 'motherduck'",
