@@ -37,7 +37,7 @@ test.describe("Bookmarks", () => {
 
       // Assert the selected filters
       await expect(adminPage.getByLabel("Readonly Filter Chips")).toHaveText(
-        ` Last 6 Hours    App Site Name FuboTV  +1 other   `,
+        ` Last 6 hours    App Site Name FuboTV  +1 other   `,
       );
       // Create a personal bookmark
       await enterBookmarkDetails(
@@ -89,7 +89,7 @@ test.describe("Bookmarks", () => {
       // NOTE: comparison time range is not added for filter-only as per requirement
       assertUrlParams(
         adminPage,
-        `view=tdd&tr=PT6H&f=app_site_name IN ('FuboTV','My+Little+Universe')&measure=requests&chart_type=line`,
+        `view=tdd&tr=6h+as+of+latest%2Fh%2B1h&f=app_site_name IN ('FuboTV','My+Little+Universe')&measure=requests&chart_type=line`,
       );
 
       // Open bookmark dropdown and verify the "filled" state for the bookmark
@@ -143,7 +143,7 @@ test.describe("Bookmarks", () => {
 
       // Assert the selected filters
       await expect(adminPage.getByLabel("Readonly Filter Chips")).toHaveText(
-        ` Last 6 Hours    App Site Name FuboTV  +1 other   `,
+        ` Last 6 hours    App Site Name FuboTV  +1 other   `,
       );
       // Create a personal bookmark
       await enterBookmarkDetails(
@@ -198,7 +198,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         adminPage,
-        `tr=PT6H&compare_tr=rill-PP&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
+        `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
       );
 
       // Open bookmark dropdown and verify the "filled" state for the bookmark
@@ -231,7 +231,7 @@ test.describe("Bookmarks", () => {
 
       // Select "Last 24 Hours" as time range
       await interactWithTimeRangeMenu(adminPage, async () => {
-        await adminPage.getByRole("menuitem", { name: "Last 7 Days" }).click();
+        await adminPage.getByRole("menuitem", { name: "Last 7 days" }).click();
       });
 
       // Filter to "Not Available" "App Site Domain" via leaderboard
@@ -260,7 +260,7 @@ test.describe("Bookmarks", () => {
         .click();
 
       // saved home bookmark is restored
-      await expect(adminPage.getByText("Last 7 Days")).toBeVisible();
+      await expect(adminPage.getByText("Last 7 days")).toBeVisible();
       await expect(
         adminPage.getByText("App Site Domain Not Available"),
       ).toBeVisible();
@@ -268,7 +268,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         adminPage,
-        `tr=P7D&grain=day&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
+        `tr=7D+as+of+latest%2FD%2B1D&grain=day&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
       );
     });
 
@@ -293,7 +293,7 @@ test.describe("Bookmarks", () => {
       await adminPage.getByLabel("Home bookmark dropdown").click();
       await adminPage.getByLabel("Home Bookmark Entry").click();
       // saved home bookmark is restored
-      await expect(adminPage.getByText("Last 7 Days")).toBeVisible();
+      await expect(adminPage.getByText("Last 7 days")).toBeVisible();
       await expect(
         adminPage.getByText("App Site Domain Not Available"),
       ).toBeVisible();
@@ -301,7 +301,7 @@ test.describe("Bookmarks", () => {
       // make sure the url has the correct params
       assertUrlParams(
         adminPage,
-        `tr=P7D&grain=day&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
+        `tr=7D+as+of+latest%2FD%2B1D&grain=day&f=app_site_domain IN ('Not Available') AND pub_name IN ('Not Available')`,
       );
     });
 

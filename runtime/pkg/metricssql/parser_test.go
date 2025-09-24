@@ -103,7 +103,7 @@ func TestCompile(t *testing.T) {
 			"select pub, dom,measure_0 from ad_bids_metrics  where tld = 'Yahoo' having measure_0 > 10 order by pub desc, dom asc limit 10",
 			"SELECT (t1.\"pub\") AS \"pub\", (t1.\"dom\") AS \"dom\", (t1.\"measure_0\") AS \"measure_0\" FROM (SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)) = ?) GROUP BY 1, 2) t1 WHERE ((t1.\"measure_0\") > ?) ORDER BY \"pub\" DESC NULLS LAST, \"dom\" NULLS LAST LIMIT 10",
 			mv,
-			[]any{"Yahoo", "10"},
+			[]any{"Yahoo", 10},
 		},
 		{
 			"select pub, dom from ad_bids_metrics where tld = '{{.user.domain}}'",
