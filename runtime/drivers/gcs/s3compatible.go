@@ -16,9 +16,11 @@ type s3CompatibleConn struct {
 	s3Conn *s3.Connection
 }
 
-var _ drivers.ObjectStore = (*s3CompatibleConn)(nil)
-var _ drivers.Handle = (*s3CompatibleConn)(nil)
-var _ drivers.ModelManager = (*s3CompatibleConn)(nil)
+var (
+	_ drivers.ObjectStore  = (*s3CompatibleConn)(nil)
+	_ drivers.Handle       = (*s3CompatibleConn)(nil)
+	_ drivers.ModelManager = (*s3CompatibleConn)(nil)
+)
 
 // Ping implements drivers.Handle.
 func (s *s3CompatibleConn) Ping(ctx context.Context) error {
@@ -113,7 +115,7 @@ func (s *s3CompatibleConn) Migrate(ctx context.Context) error {
 }
 
 // MigrationStatus implements drivers.Handle.
-func (s *s3CompatibleConn) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+func (s *s3CompatibleConn) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
@@ -152,7 +154,7 @@ func (s *s3CompatibleConn) Exists(ctx context.Context, res *drivers.ModelResult)
 }
 
 // MergePartitionResults implements drivers.ModelManager.
-func (s *s3CompatibleConn) MergePartitionResults(a *drivers.ModelResult, b *drivers.ModelResult) (*drivers.ModelResult, error) {
+func (s *s3CompatibleConn) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
 	return s.s3Conn.MergePartitionResults(a, b)
 }
 
