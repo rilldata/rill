@@ -38,11 +38,11 @@ var spec = drivers.Spec{
 		// },
 		{
 			Key:         "google_application_credentials",
-			Type:        drivers.StringPropertyType, // TODO: Change to FilePropertyType
+			Type:        drivers.FilePropertyType,
 			DisplayName: "GCP Credentials",
 			Description: "GCP credentials as JSON string",
 			Placeholder: "Paste your GCP service account JSON here",
-			Required:    false,
+			Required:    true,
 			Secret:      true,
 			Hint:        "Paste your GCP service account JSON credentials",
 		},
