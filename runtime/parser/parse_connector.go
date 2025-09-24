@@ -49,6 +49,14 @@ func (p *Parser) parseConnector(node *Node) error {
 		default:
 			return fmt.Errorf("invalid type for 'managed': expected boolean or map of args")
 		}
+	} else if tmp.Driver == "duckdb" {
+		// For backwards compatibility with DuckDB projects that don't have the 'managed' key,
+		// default to true unless path or attach are explicitly configured
+		_, hasPath := tmp.Defaults["path"]
+		_, hasAttach := tmp.Defaults["attach"]
+		if !hasPath && !hasAttach {
+			provision = true
+		}
 	}
 
 	// Find out if any properties are templated
