@@ -6,7 +6,7 @@
 
   // utilize the ID for easier UI testing.
   export let id: string;
-  export let testId: string;
+  export let testId: string = "";
   export let suppressTooltip = false;
   export let tooltipText: string;
   export let label: string | undefined = undefined;
