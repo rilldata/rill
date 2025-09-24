@@ -100,6 +100,9 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 				}
 			}
 			o.pushToProject = p
+			o.Managed = o.pushToProject.ManagedGitId != ""
+			o.Github = o.pushToProject.ManagedGitId == "" && o.pushToProject.GitRemote != ""
+			o.ArchiveUpload = o.pushToProject.ArchiveAssetId != ""
 			return nil
 		}
 	}
