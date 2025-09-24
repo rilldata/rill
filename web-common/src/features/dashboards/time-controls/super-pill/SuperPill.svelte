@@ -86,7 +86,6 @@
       {showFullRange}
       {onSelectTimeZone}
       {onSelectRange}
-      {onTimeGrainSelect}
     />
   {:else if interval.isValid && activeTimeGrain}
     <Elements.RangePicker
