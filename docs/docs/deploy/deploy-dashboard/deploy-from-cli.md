@@ -27,6 +27,7 @@ If your repo contains multiple branches ensure the branch you want to deploy fro
 ```bash
 rill project edit --project my-project-name --prod-branch my-branch-name
 ```
+:::
 
 4. Provision a Rill Cloud [service account](/reference/cli/service/create.md) called `gitlab-ci` and copy its access token:
 ```
@@ -50,4 +51,4 @@ Your Rill project should now automatically deploy to `ui.rilldata.com/my-org-nam
 
 :::note File size limits
 We enforce a file size limit of 100mb so ensure you do not unpack the rill binary in the repo root or add it to your .gitignore
-
+:::
