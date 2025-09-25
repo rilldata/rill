@@ -195,6 +195,7 @@ var defaultFeatureFlags = map[string]string{
 	"exportHeader":        "false",
 	"alerts":              "true",
 	"reports":             "true",
+	"darkMode":            "false",
 	"chat":                "true",
 	"dashboardChat":       "true",
 }
