@@ -593,8 +593,6 @@ export function bucketYamlRanges(
       } else {
         skeleton.custom.push(parsed);
       }
-
-      console.log(parsed);
     } catch (e) {
       console.error("Error parsing RillTime", e);
     }

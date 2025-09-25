@@ -11984,6 +11984,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 
 	// no validation rules for LookupDefaultExpression
 
+	// no validation rules for SmallestTimeGrain
+
 	if all {
 		switch v := interface{}(m.GetDataType()).(type) {
 		case interface{ ValidateAll() error }:

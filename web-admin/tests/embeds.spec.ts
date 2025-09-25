@@ -40,7 +40,7 @@ test.describe("Embeds", () => {
 
       expect(
         logMessages.some((msg) =>
-          msg.includes("tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"),
+          msg.includes("f=advertiser_name+IN+('Instacart')"),
         ),
       ).toBeTruthy();
     });
@@ -66,7 +66,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
