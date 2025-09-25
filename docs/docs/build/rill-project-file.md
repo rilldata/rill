@@ -1,22 +1,27 @@
 ---
 title: "Rill Project"
-description: For documenting required migrations
+description: Introduction to a Rill project file
 sidebar_label: "Rill Project"
 sidebar_position: 00
 ---
 
-A Rill project consists of several code artifacts that are processed into a visual dashboard. The workflow begins with [creating a connection](/connect) to your data, data ingestion via [models](/build/models), progresses to defining measures and dimensions in [metrics views](/build/metrics-view), and finally culminates in building your [visualizations](/build/dashboards) to consume the data.
+A Rill project consists of several data assets that work together to create a dashboard. The data pipeline begins with [connecting](/connect) to your data sources, transforms raw data through [models](/build/models), defines metrics and dimensions in [metrics views](/build/metrics-view), and results in interactive [dashboards](/build/dashboards) for data analysis.
 
 When deploying to [Rill Cloud for the first time](/deploy/deploy-dashboard), your Rill Developer project will create a project in Rill Cloud. Updates to your local project via GitHub merge flows or pressing the Deploy button in the UI will automatically update the Rill Cloud deployment. Users can [clone the Rill Cloud project](/guides/clone-a-project) locally and also push changes back to the cloud instance. This allows for users to work on a single project async.
 
 
-## Rill Project File
+## Rill Project Files
 
 The `rill.yaml` file is automatically generated when you start any project in Rill and serves as the central configuration hub for your entire project. While often overlooked, this powerful file enables you to set project-wide defaults, configure environment variables, define connector settings, create test users, and establish security policies across all your metrics views and dashboards.
 
 Let's walk through the key capabilities of `rill.yaml`, including setting up [`mock_users`](/build/metrics-view/security#testing-policies-in-rill-developer) to test row access policies, configuring default [security settings](#metrics-views-security-policy) for your metrics views and explore dashboards, establishing [refresh schedules](#model-refresh-schedule), defining MCP [`ai_instructions`](#ai_instructions), setting the [default OLAP connector](#olap-connector) and more.
 
 For a list of all supported settings, see our [project YAML reference page](/reference/project-files/rill-yaml).
+
+### .env
+
+The `.env` file stores environment variables and sensitive configuration data for your Rill project. This includes database connection strings, API keys, and other credentials that should not be committed to version control. Use this file to securely manage [connection credentials](/connect/credentials) and environment-specific settings.
+
 ##  OLAP Connector
 When adding an OLAP connector to your project, this will automatically populate with the new OLAP connector. e.g., `ClickHouse`, `Druid` If you create multiple connectors, we will append "_#" to the file name and use this as the default connector.
 
