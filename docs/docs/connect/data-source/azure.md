@@ -56,7 +56,7 @@ type: connector
 
 driver: azure
 
-azure_storage_connection_string: '{{.env.connector.azure.AZURE_STORAGE_CONNECTION_STRING}}'
+azure_storage_connection_string: '{{.env.connector.azure.azure_storage_connection_string}'
 ```
 
 This approach ensures that your Azure Blob Storage sources can authenticate consistently across both local development and cloud deployment environments. Please review [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) on how to retrieve your connection string.

@@ -23,8 +23,8 @@ In Rill Developer, Connect to Redshift via Add Data. This will automatically cre
 type: connector
 
 driver: redshift
-aws_access_key_id: "{{ .env.redshift.aws_access_key_id }}"
-aws_secret_access_key: "{{ .env.redshift.aws_secret_access_key }}"
+aws_access_key_id: "{{ .env.connector.redshift.aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.connector.redshift.aws_secret_access_key }}"
 database: "dev"
 ```
 
