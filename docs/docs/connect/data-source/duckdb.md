@@ -35,10 +35,6 @@ managed: true
 
 ATTACH: |
   '/path/to/your/duckdb.db' AS external_duckdb;
-  use external_duckdb;
-
-database_name: external_duckdb
-schema: main
 
 init_sql: |
   INSTALL httpfs;
@@ -57,8 +53,16 @@ For a complete list of available extensions, see the [DuckDB Extensions document
 
 ## Importing Data to Your External DuckDB
 
-After establishing a connection, you can import data through the connector UI. This process will write the data into your attached DuckDB database.
+After establishing a connection, you can import data through the connector UI. This process will write data from your attached database to [Rill's embedded DuckDB.](/connect/olap/duckdb#rill-managed-duckdb)
 
-<img src='/img/connect/data-sources/create-model.png' class='rounded-gif' />
-<br />
+```yaml
+# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
+type: model
+materialize: true
+
+connector: duckdb
+
+sql: SELECT * from external_duckdb.local_table
+```
