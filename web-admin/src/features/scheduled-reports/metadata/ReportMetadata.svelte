@@ -65,10 +65,12 @@
 
   $: exploreUrl = getMappedExploreUrl(
     {
-      exploreName: $exploreName.data ?? "",
+      exploreName: $exploreName.data,
       queryName: reportSpec?.queryName,
       queryArgsJson: reportSpec?.queryArgsJson,
-      annotations: reportSpec?.annotations ?? {},
+    },
+    {
+      exploreProtoState: reportSpec?.annotations?.web_open_state,
       forceOpenPivot: true,
     },
     {

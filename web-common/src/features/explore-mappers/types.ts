@@ -29,7 +29,7 @@ export type TransformerArgs<R extends TransformerProperties> = {
   explore: V1ExploreSpec;
   timeRangeSummary: V1TimeRangeSummary;
   executionTime?: string;
-  annotations: Record<string, string>;
+  exploreProtoState?: string;
   forceOpenPivot: boolean;
 };
 

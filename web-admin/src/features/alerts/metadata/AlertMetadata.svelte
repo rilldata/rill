@@ -65,12 +65,10 @@
 
   $: queryArgsJson =
     (alertSpec?.resolverProperties?.query_args_json as string) ||
-    alertSpec?.queryArgsJson ||
-    "{}";
+    alertSpec?.queryArgsJson;
   $: queryName =
     alertSpec?.queryName ||
-    (alertSpec?.resolverProperties?.query_name as string) ||
-    "";
+    (alertSpec?.resolverProperties?.query_name as string);
   $: metricsViewAggregationRequest = JSON.parse(
     queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
@@ -84,10 +82,12 @@
 
   $: exploreUrl = getMappedExploreUrl(
     {
-      exploreName: $exploreName.data ?? "",
+      exploreName: $exploreName.data,
       queryName,
       queryArgsJson,
-      annotations: alertSpec?.annotations ?? {},
+    },
+    {
+      exploreProtoState: alertSpec?.annotations?.web_open_state,
     },
     {
       instanceId,

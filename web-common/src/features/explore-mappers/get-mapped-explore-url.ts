@@ -4,31 +4,36 @@ import { getTimeControlState } from "@rilldata/web-common/features/dashboards/ti
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
 import {
   type MapQueryRequest,
+  type MapQueryStateOptions,
   mapQueryToDashboard,
 } from "@rilldata/web-common/features/explore-mappers/map-to-explore.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { derived } from "svelte/store";
+import { derived, readable } from "svelte/store";
 
+export type MapExploreUrlContext = {
+  instanceId: string;
+  organization: string;
+  project: string;
+  token?: string;
+};
+
+/**
+ * Returns a store of explore URL with state filled in based on a query and queryRequestProperties.
+ * Takes {@link MapQueryRequest} and {@link MapQueryStateOptions} that is directly passed to {@link mapQueryToDashboard}
+ * Also takes {@link MapExploreUrlContext} to finally build the url.
+ */
 export function getMappedExploreUrl(
-  req: MapQueryRequest,
-  {
-    instanceId,
-    organization,
-    project,
-    token,
-  }: {
-    instanceId: string;
-    organization: string;
-    project: string;
-    token?: string;
-  },
+  req: MapQueryRequest, // Request object passed directly to mapQueryToDashboard
+  opts: MapQueryStateOptions, // Map options passed directly to mapQueryToDashboard
+  { instanceId, organization, project, token }: MapExploreUrlContext,
 ) {
-  const queryRequestProperties = JSON.parse(req.queryArgsJson ?? "{}");
-  const metricsViewName =
-    queryRequestProperties.metricsView ??
-    queryRequestProperties.metricsViewName ??
-    "";
+  if (!req.queryArgsJson) return readable("");
+  const queryRequestProperties = JSON.parse(req.queryArgsJson);
+  const metricsViewName: string | undefined =
+    queryRequestProperties.metricsView ||
+    queryRequestProperties.metricsViewName;
+  if (!metricsViewName) return readable("");
 
   return derived(
     [
@@ -39,7 +44,7 @@ export function getMappedExploreUrl(
         undefined,
         queryClient,
       ),
-      mapQueryToDashboard(req),
+      mapQueryToDashboard(req, opts),
       page,
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardState, pageState]) => {

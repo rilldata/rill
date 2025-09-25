@@ -21,10 +21,13 @@ import { derived, get, readable, type Readable } from "svelte/store";
 
 export type MapQueryRequest = {
   exploreName: string;
-  queryName: string;
-  queryArgsJson: string;
+  queryName?: string;
+  queryArgsJson?: string;
   executionTime?: string;
-  annotations: Record<string, string>;
+};
+
+export type MapQueryStateOptions = {
+  exploreProtoState?: string;
   forceOpenPivot?: boolean;
 };
 
@@ -39,14 +42,10 @@ export type MapQueryResponse = {
  * Builds the dashboard url from query name and args.
  * Used to show the relevant dashboard for a report/alert.
  */
-export function mapQueryToDashboard({
-  exploreName,
-  queryName,
-  queryArgsJson,
-  executionTime,
-  annotations,
-  forceOpenPivot = false,
-}: MapQueryRequest): Readable<MapQueryResponse> {
+export function mapQueryToDashboard(
+  { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
+  { exploreProtoState, forceOpenPivot = false }: MapQueryStateOptions,
+): Readable<MapQueryResponse> {
   if (!queryName || !queryArgsJson)
     return readable({
       isFetching: false,
@@ -183,7 +182,7 @@ export function mapQueryToDashboard({
         explore,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
-        annotations,
+        exploreProtoState,
         forceOpenPivot,
       })
         .then((newExploreState) => {
