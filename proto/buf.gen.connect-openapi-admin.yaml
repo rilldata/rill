@@ -1,0 +1,18 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/rilldata/rill/proto/gen
+plugins:
+  - remote: buf.build/community/sudorandom-connect-openapi:v0.21.2
+    out: gen
+    opt:
+      - format=yaml
+      - path=rill/admin/v1/admin-connect.openapi.yaml
+      - features=connectrpc;gnostic;protovalidate
+      - trim-unused-types
+      - with-google-error-detail
+      - content-types=json
+      - short-operation-ids
+      - services=rill.admin.v1.AdminService
