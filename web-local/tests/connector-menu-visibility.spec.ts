@@ -17,6 +17,9 @@ test.describe("Connector Table Menu Visibility", () => {
     await page.locator(".table-entry-header").first().hover();
     await page.getByTestId("more-actions-context-button").click();
 
+    // Wait for the menu to open
+    await page.getByRole("menu").waitFor({ state: "visible" });
+
     await expect(
       page.getByRole("menuitem", { name: "Create model" }),
     ).toBeVisible({ timeout: 10000 });
