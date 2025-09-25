@@ -93,6 +93,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			AccessKeyID:     conf.KeyID,
 			SecretAccessKey: conf.Secret,
 			Endpoint:        "storage.googleapis.com",
+			AllowHostAccess: conf.AllowHostAccess,
 		}
 		config := make(map[string]any)
 		err := mapstructure.WeakDecode(s3Config, &config)
