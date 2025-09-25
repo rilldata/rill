@@ -59,7 +59,7 @@ func (s *s3CompatibleConn) AsModelExecutor(instanceID string, opts *drivers.Mode
 
 // AsModelManager implements drivers.Handle.
 func (s *s3CompatibleConn) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+	return s, true
 }
 
 // AsNotifier implements drivers.Handle.
