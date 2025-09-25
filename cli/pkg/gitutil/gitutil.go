@@ -274,20 +274,15 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, true)
 	}
 
-	pushOpts := &git.PushOptions{
-		RemoteName: config.RemoteName(),
-		RemoteURL:  config.Remote,
-		Force:      true,
-	}
-	if config.Username != "" && config.Password != "" {
-		pushOpts.Auth = &githttp.BasicAuth{
-			Username: config.Username,
-			Password: config.Password,
-		}
-	}
-	err = repo.PushContext(ctx, pushOpts)
+	u, err := url.Parse(config.Remote)
 	if err != nil {
-		return fmt.Errorf("failed to push to remote : %w", err)
+		return fmt.Errorf("failed to parse remote URL: %w", err)
+	}
+	u.User = url.UserPassword(config.Username, config.Password)
+
+	err = runGitPushUsingURL(ctx, projectPath, u.String(), config.DefaultBranch)
+	if err != nil {
+		return fmt.Errorf("failed to push to remote: %w", err)
 	}
 	return nil
 }
@@ -424,4 +419,18 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 		return "", "", ErrNotAGitRepository
 	}
 	return repoRoot, subPath, nil
+}
+
+func runGitPushUsingURL(ctx context.Context, path, remoteURL, branchName string) error {
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "push", "--force", remoteURL, branchName)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git push failed: %s(%s)", string(out), string(execErr.Stderr))
+		}
+		return fmt.Errorf("git push failed: %s(%w)", string(out), err)
+	}
+	fmt.Printf("git push output: %s\n", string(out))
+	return nil
 }
