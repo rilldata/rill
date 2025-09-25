@@ -613,7 +613,9 @@
     {/if}
 
     <div>
-      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
+      <div class="text-sm leading-none font-medium mb-4">
+        {isSourceForm ? "Model preview" : "Connector preview"}
+      </div>
       <div class="relative">
         <button
           class="absolute top-2 right-2 p-1 rounded"
