@@ -175,13 +175,15 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	}
 
 	// Redirect to <canonical-domain>/auth/login (custom domain flow)
-	if a.admin.URLs.IsCustomDomain(r.Host) {
-		fmt.Printf("r.Host = %q\n", r.Host)
-		fmt.Printf("Host header = %q\n", r.Header.Get("Host"))
-		fmt.Printf("X-Forwarded-Host = %q\n", r.Header.Get("X-Forwarded-Host"))
-		fmt.Printf("Forwarded = %q\n", r.Header.Get("Forwarded"))
-		// Redirect to canonical domain with custom domain callback as redirect
-		customCallbackURL := a.admin.URLs.WithCustomDomain(r.Host).AuthCustomDomainCallback(state)
+	a.logger.Info("incoming request host headers",
+		zap.String("r.Host", r.Host),
+		zap.String("Host", r.Header.Get("Host")),
+		zap.String("X-Forwarded-Host", r.Header.Get("X-Forwarded-Host")),
+		zap.String("Forwarded", r.Header.Get("Forwarded")),
+	)
+	host := originalHost(r)
+	if a.admin.URLs.IsCustomDomain(host) {
+		customCallbackURL := a.admin.URLs.WithCustomDomain(host).AuthCustomDomainCallback(state)
 		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL, true)
 		http.Redirect(w, r, canonicalLoginURL, http.StatusTemporaryRedirect)
 		return
@@ -688,4 +690,11 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	} else {
 		a.getAccessTokenForAuthorizationCode(w, r, values)
 	}
+}
+
+func originalHost(r *http.Request) string {
+	if xfHost := r.Header.Get("X-Forwarded-Host"); xfHost != "" {
+		return xfHost
+	}
+	return r.Host
 }
