@@ -650,8 +650,11 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 // buildProjectChatSystemPrompt constructs the system prompt for the project chat context
 func buildProjectChatSystemPrompt(aiInstructions string) string {
 	// TODO: call 'list_metrics_views' and seed the result in the system prompt
-	basePrompt := `<role>
+	currentTime := time.Now()
+	basePrompt := fmt.Sprintf(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights. You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+
+Today's date is %s (%s).
 </role>
 
 <communication_style>
@@ -724,7 +727,7 @@ After each query in Phase 2, think through:
 
 <output_format>
 Format your analysis as follows:
-` + "```markdown" + `
+`+"```markdown"+`
 [Brief acknowledgment and explanation of approach]
 
 Based on my systematic analysis, here are the key insights:
@@ -739,8 +742,8 @@ Based on my systematic analysis, here are the key insights:
    [Finding with business context and implications]
 
 [Offer specific follow-up analysis options]
-` + "```" + `
-</output_format>`
+`+"```"+`
+</output_format>`, currentTime.Format("Monday, January 2, 2006"), currentTime.Format("2006-01-02"))
 
 	if aiInstructions != "" {
 		return basePrompt + "\n\n## Additional Instructions (provided by the Rill project developer)\n" + aiInstructions
