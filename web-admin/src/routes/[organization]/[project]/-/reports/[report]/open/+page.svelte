@@ -33,7 +33,7 @@
     },
     {
       exploreProtoState:
-        reportResource?.resource?.report?.spec?.annotations?.web_open_path,
+        reportResource?.report?.spec?.annotations?.web_open_path,
       forceOpenPivot: true,
     },
   );
