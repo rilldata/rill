@@ -269,7 +269,7 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 	}
 
 	// Get time range information for the metrics view
-	timeRangeSummary, err := toolService.ExecuteTool(ctx, "query_metrics_view_time_range", map[string]any{
+	timeRangeSummary, err := toolService.ExecuteTool(ctx, "query_metrics_view_summary", map[string]any{
 		"metrics_view": metricsViewName,
 	})
 	if err != nil {

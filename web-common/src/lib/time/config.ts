@@ -646,6 +646,7 @@ export const TIME_COMPARISON = {
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,
     offsetIso: "",
+    rillTimeOffset: "-1P",
   },
   [TimeComparisonOption.CUSTOM]: {
     label: "Custom range",
@@ -661,6 +662,7 @@ export const TIME_COMPARISON = {
       "Compare the current time range to the same time range the day before",
     comparisonType: TimeComparisonOption.DAY,
     offsetIso: "P1D",
+    rillTimeOffset: "-1D",
   },
   [TimeComparisonOption.WEEK]: {
     label: "Previous week",
@@ -669,6 +671,7 @@ export const TIME_COMPARISON = {
       "Compare the current time range to the same time range the week before",
     comparisonType: TimeComparisonOption.WEEK,
     offsetIso: "P1W",
+    rillTimeOffset: "-1W",
   },
   [TimeComparisonOption.MONTH]: {
     label: "Previous month",
@@ -677,6 +680,7 @@ export const TIME_COMPARISON = {
       "Compare the current time range to the same time range the month before",
     comparisonType: TimeComparisonOption.MONTH,
     offsetIso: "P1M",
+    rillTimeOffset: "-1M",
   },
   [TimeComparisonOption.QUARTER]: {
     label: "Previous quarter",
@@ -685,6 +689,7 @@ export const TIME_COMPARISON = {
       "Compare the current time range to the same time range the quarter before",
     comparisonType: TimeComparisonOption.QUARTER,
     offsetIso: "P3M",
+    rillTimeOffset: "-1Q",
   },
 
   [TimeComparisonOption.YEAR]: {
@@ -694,6 +699,7 @@ export const TIME_COMPARISON = {
       "Compare the current time range to the same time range the year before",
     comparisonType: TimeComparisonOption.YEAR,
     offsetIso: "P1Y",
+    rillTimeOffset: "-1Y",
   },
 };
 

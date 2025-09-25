@@ -568,6 +568,8 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              frontendUrl:
+                type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -1526,6 +1528,10 @@ paths:
                 description: |-
                   Optional UI URL that the export originates from.
                   Only used if include_header is true.
+              executionTime:
+                type: string
+                format: date-time
+                description: Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -4580,6 +4586,8 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      frontendUrl:
+        type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -5104,6 +5112,8 @@ definitions:
         additionalProperties:
           type: string
       aiInstructions:
+        type: string
+      frontendUrl:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,

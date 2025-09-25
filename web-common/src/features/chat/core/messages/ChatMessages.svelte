@@ -15,16 +15,15 @@
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
 
-  // Loading states
-  $: isSendingMessageStore = currentConversation.isSendingMessage;
-  $: isConversationLoading =
-    !!$getConversationQuery.isLoading && !$isSendingMessageStore;
-  $: isResponseLoading = $isSendingMessageStore;
+  // Loading states - access the store from the conversation instance
+  $: isStreamingStore = currentConversation.isStreaming;
+  $: isStreaming = $isStreamingStore;
+  $: isConversationLoading = !!$getConversationQuery.isLoading;
 
   // Error handling
-  $: sendMessageErrorStore = currentConversation.errorMessage;
+  $: streamErrorStore = currentConversation.streamError;
   $: conversationQueryError = currentConversation.getConversationQueryError();
-  $: hasError = $conversationQueryError || $sendMessageErrorStore;
+  $: hasError = $conversationQueryError || $streamErrorStore;
 
   // Data
   $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
@@ -57,11 +56,23 @@
   {:else if hasError}
     <div class="chat-error">
       <AlertCircle size="1.2em" />
-      {#if $conversationQueryError}
-        Unable to load conversation: {$conversationQueryError}
-      {:else if $sendMessageErrorStore}
-        {$sendMessageErrorStore}
-      {/if}
+      <div class="error-content">
+        <div class="error-message">
+          {#if $conversationQueryError}
+            Unable to load conversation: {$conversationQueryError}
+          {:else if $streamErrorStore}
+            {$streamErrorStore}
+          {/if}
+        </div>
+        {#if $streamErrorStore}
+          <button
+            class="retry-button"
+            on:click={() => currentConversation.sendMessage()}
+          >
+            Try Again
+          </button>
+        {/if}
+      </div>
     </div>
   {:else if messages.length === 0}
     <div class="chat-empty">
@@ -74,9 +85,10 @@
       <ChatMessage message={msg} />
     {/each}
   {/if}
-  {#if isResponseLoading}
+  {#if isStreaming}
     <div class="response-loading">
-      <LoadingSpinner size="1.2em" /> Thinking...
+      <LoadingSpinner size="1.2em" />
+      Thinking...
     </div>
   {/if}
 </div>
@@ -130,24 +142,46 @@
   .response-loading {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: start;
     color: #3b82f6;
     gap: 0.5rem;
-    padding: 1rem;
+    padding: 0.5rem;
     font-size: 0.875rem;
   }
 
   .chat-error {
     display: flex;
     align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #fef7f7;
+    border-left: 4px solid #f87171;
+    border-radius: 0.5rem;
+    margin: 0.5rem 1rem;
+  }
+
+  .error-content {
+    flex: 1;
+  }
+
+  .error-message {
     font-size: 0.875rem;
     color: #991b1b;
-    background: #fef7f7;
-    border-left: 3px solid #f87171;
+    margin-bottom: 0.5rem;
+  }
+
+  .retry-button {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 0.375rem 0.75rem;
     border-radius: 0.375rem;
-    margin: 0.5rem 1rem 0 1rem;
-    box-sizing: border-box;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .retry-button:hover {
+    background: #b91c1c;
   }
 </style>

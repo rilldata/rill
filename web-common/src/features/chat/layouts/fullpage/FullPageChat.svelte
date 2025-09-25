@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { Chat } from "../../core/chat";
+  import { cleanupChatInstance, getChatInstance } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
@@ -9,7 +10,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: chat = new Chat(instanceId, {
+  $: chat = getChatInstance(instanceId, {
     conversationState: "url",
   });
 
@@ -26,6 +27,14 @@
   function onMessageSend() {
     chatInputComponent?.focusInput();
   }
+
+  // Clean up chat resources when leaving the chat context entirely
+  beforeNavigate(({ to }) => {
+    const isChatRoute = to?.route?.id?.includes("chat");
+    if (!isChatRoute) {
+      cleanupChatInstance(instanceId);
+    }
+  });
 </script>
 
 <div class="chat-fullpage">
