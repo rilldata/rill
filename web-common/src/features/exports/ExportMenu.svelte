@@ -1,20 +1,22 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { getPivotExploreParams } from "@rilldata/web-common/features/exports/get-pivot-explore-params.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import {
     createQueryServiceExport,
     V1ExportFormat,
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
-  import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
-  import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   export let disabled: boolean = false;
@@ -24,7 +26,6 @@
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
 
-  let showScheduledReportDialog = false;
   let open = false;
 
   let exportQuery: V1Query | undefined;
@@ -39,6 +40,10 @@
 
   const exportDash = createQueryServiceExport();
   const { reports, adminServer, exportHeader } = featureFlags;
+
+  $: ({ instanceId } = $runtime);
+  $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
+  $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
 
   async function handleExport(options: {
     format: V1ExportFormat;
@@ -63,16 +68,17 @@
     window.open(downloadUrl, "_self");
   }
 
-  // Only import the Scheduled Report dialog if in the Cloud context.
-  // This ensures Rill Developer doesn't try and fail to import the admin-client.
-  let ScheduledReportDialog: typeof TScheduledReportDialog;
-  onMount(async () => {
-    if (includeScheduledReport) {
-      ({ default: ScheduledReportDialog } = await import(
-        "../scheduled-reports/ScheduledReportDialog.svelte"
-      ));
-    }
-  });
+  function createScheduledReport() {
+    const pageState = get(page);
+    const { organization, project } = pageState.params;
+    const search = getPivotExploreParams(
+      pageState.url.searchParams,
+      exploreSpec,
+    );
+    void goto(
+      `/${organization}/${project}/-/reports/create/${exploreName}?${search}`,
+    );
+  }
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -145,7 +151,7 @@
     {/if}
     {#if includeScheduledReport && $reports && exploreName}
       <DropdownMenu.Item
-        on:click={() => (showScheduledReportDialog = true)}
+        on:click={createScheduledReport}
         disabled={!scheduledReportQuery}
       >
         Create scheduled report...
@@ -153,15 +159,3 @@
     {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-{#if includeScheduledReport && ScheduledReportDialog && showScheduledReportDialog && scheduledReportQuery && exploreName}
-  <svelte:component
-    this={ScheduledReportDialog}
-    bind:open={showScheduledReportDialog}
-    props={{
-      mode: "create",
-      query: scheduledReportQuery,
-      exploreName,
-    }}
-  />
-{/if}
