@@ -27,9 +27,6 @@ When using ClickHouse for local development, you can connect via connection para
 
 After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI.
 
-<img src='/img/connect/olap-engines/clickhouse/byob-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
-<br />
-
 For more information on supported parameters, see our [ClickHouse connector YAML reference docs](/reference/project-files/connectors#clickhouse).
 
 ```yaml
@@ -57,9 +54,6 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 ### Connection String (DSN)
 
 Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
-
-<img src='/img/connect/olap-engines/clickhouse/byob-clickhouse-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
-<br />
 
 ```bash
 connector.clickhouse.dsn="clickhouse://<hostname>:<port>?username=<username>&password=<password>"
@@ -98,9 +92,6 @@ If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/c
 
 Using the information in the ClickHouse UI, populate the parameters of your connection. 
 
-<img src='/img/connect/olap-engines/clickhouse/clickhouse-ssl.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
-
 ### Connection String (DSN)
 
 Because ClickHouse Cloud requires a secure connection over [https](https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#http-support-experimental), you will need to pass in `secure=true` and `skip_verify=true` as additional URL parameters as part of your https URL (for your DSN).
@@ -116,9 +107,6 @@ If you would like to connect Rill to an existing ClickHouse instance, please don
 :::
 
 ## Rill Managed ClickHouse
-
-<img src='/img/connect/olap-engines/clickhouse/managed-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
 
 By setting `managed: true` in your ClickHouse connector, you will enable an embedded ClickHouse server to spin up with Rill. This will allow you to import data directly into this ClickHouse server without having to worry about managing an external database.
 

@@ -21,22 +21,28 @@ Using the same example, this would be an equivalent connection URI:
 postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
-<img src='/img/connect/data-sources/postgres.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
 
-## Local credentials
+## Connect to PostgreSQL
 
-When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors/#postgres) for more details.
+When using Rill Developer on your local machine (i.e., `rill start`), Connect to PostgreSQL via Add Data. This will automatically create the `postgres.yaml` file in your connectors/ folder and populate the `.env` file with `connector.postgres.*` parameters depending on if you inputted parameters or connection string.
 
-:::tip Updating the project environmental variable
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
 
-If you've already deployed to Rill Cloud, you can either [push/pull the credential](/manage/project-management/variables-and-credentials#pushing-and-pulling-credentials-to--from-rill-cloud-via-the-cli) from the CLI with:
+driver: postgres
+host: "localhost"
+port: "5432"
+user: "postgres"
+password: "{{ .env.connector.postgres.password }}"
+dbname: "postgres"
 ```
-rill env push
-rill env pull
-```
 
-Or, if its your first deployment, Rill will automatically deploy the .env into your Rill project.
+:::tip Did you know?
+
+If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials.md#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 
@@ -48,8 +54,15 @@ For more details, see our [Dev/Prod setup docs](/connect/templating).
 
 ## Cloud deployment
 
-Once a project with a PostgreSQL source has been deployed, Rill requires you to explicitly provide the connection string using the following command:
+Once a project with a MySQL source has been deployed, Rill requires you to explicitly provide the connection string using the following command:
 
 ```
 rill env configure
 ```
+
+
+:::tip Did you know?
+
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+
+:::

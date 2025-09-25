@@ -17,9 +17,6 @@ When using Rill for local development, there are a few options to configure Rill
 
 For more information on supported parameters, see our [Druid connector YAML reference docs](/reference/project-files/connectors#druid).
 
-<img src='/img/connect/olap-engines/druid/druid-parameters.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
-
 ```yaml
 # Connector YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors

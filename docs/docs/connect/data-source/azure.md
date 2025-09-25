@@ -14,12 +14,9 @@ sidebar_position: 05
 azure://<account>.blob.core.windows.net/<container>/path/file.csv
 ```
 
-<img src='/img/connect/data-sources/abs.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
+## Connect to Azure Blob Storage
 
-## Rill Developer (Local credentials)
-
-When using Rill Developer on your local machine, Rill will use credentials configured in your local environment using the Azure CLI (`az`) or explicitly defined [credentials in a connector YAML](/reference/project-files/connectors#azure).
+When using Rill Developer on your local machine, Rill will use credentials configured in your local environment using the Azure CLI (`az`) or explicitly defined [credentials in a connector YAML](/reference/project-files/connectors#azure) via the Add Data UI.
 
 ### Inferred Credentials
 
@@ -33,11 +30,16 @@ You have now configured Azure access from your local environment. Rill will dete
 
 For seamless deployment to Rill Cloud, you can configure Azure Storage Account Key directly in your project's `.env` file instead of relying solely on Azure CLI authentication, which only configures credentials for local usage.
 
-Create or update your `.env` file with the Azure Storage Account credentials:
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
 
-```bash
-azure_storage_account=your_storage_account_name
-azure_storage_key=oFUw8vZplXd...
+type: connector
+
+driver: azure
+
+azure_storage_account: rilltest
+azure_storage_key: '{{.env.connector.azure.azure_storage_key}}'
 ```
 
 This approach ensures that your Azure Blob Storage sources can authenticate consistently across both local development and cloud deployment environments. Please review [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) on how to retrieve your storage account keys.
@@ -46,10 +48,15 @@ This approach ensures that your Azure Blob Storage sources can authenticate cons
 
 For seamless deployment to Rill Cloud, you can configure Azure Blob Storage credentials using a connection string directly in your project's `.env` file instead of relying solely on Azure CLI authentication, which only configures credentials for local usage.
 
-Create or update your `.env` file with the Azure Storage connection string:
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
 
-```bash
-azure_storage_connection_string='DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net'
+type: connector
+
+driver: azure
+
+azure_storage_connection_string: '{{.env.connector.azure.AZURE_STORAGE_CONNECTION_STRING}}'
 ```
 
 This approach ensures that your Azure Blob Storage sources can authenticate consistently across both local development and cloud deployment environments. Please review [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) on how to retrieve your connection string.
@@ -58,10 +65,16 @@ This approach ensures that your Azure Blob Storage sources can authenticate cons
 
 An alternative authentication method for Azure Blob Storage is using Shared Access Signature (SAS) tokens. This approach generates a token with specific permissions and expiration time for secure access to your storage resources.
 
-Create or update your .env file with the Azure SAS token:
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
 
-```bash
-azure_storage_sas_token='se=2025-09-18T23%3A59%3A...'
+type: connector
+
+driver: azure
+
+azure_storage_account: rilltest 
+azure_storage_sas_token: '{{.env.connector.azure.azure_storage_sas_token}}'
 ```
 
 This method provides fine-grained access control and enhanced security for your Azure Blob Storage connections. Please review [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) on how to create your Azure SAS token.

@@ -11,11 +11,24 @@ sidebar_position: 55
 
 [Amazon Redshift](https://docs.aws.amazon.com/redshift/) is a fully managed, petabyte-scale data warehouse service in the cloud, offering fast query and I/O performance for data analysis applications. It enables users to run complex analytical queries against structured data using SQL, ETL processes, and BI tools, leveraging massively parallel processing (MPP) to efficiently handle large volumes of data. Redshift's architecture is designed for high performance on large datasets, supporting data warehousing and analytics of all sizes, making it a pivotal component in a modern data-driven decision-making ecosystem. By leveraging the AWS SDK for Go and utilizing intermediary Parquet files in S3 (to ensure performance), Rill is able to connect to and read from Redshift as a source.
 
-<img src='/img/connect/data-sources/redshift.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
 
+## Connect to Redshift
 
-## Local credentials
+In Rill Developer, Connect to Redshift via Add Data. This will automatically create the `redshift.yaml` file in your connectors/ folder and populate the `.env` file with `connector.redshift.aws_access_key_id` and `connector.redshift.aws_secret_access_key.`
+
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
+
+driver: redshift
+aws_access_key_id: "{{ .env.redshift.aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.redshift.aws_secret_access_key }}"
+database: "dev"
+```
+
+### Inferred Credentials
 
 When using Rill Developer on your local machine (i.e., `rill start`), Rill will either use  the credentials configured in your local environment using the AWS CLI or an [explicitly defined connector YAML](/reference/project-files/connectors#redshift) file.
 
@@ -44,7 +57,7 @@ You have now configured AWS access from your local environment. Rill will detect
 
 :::tip Did you know?
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
+If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 
