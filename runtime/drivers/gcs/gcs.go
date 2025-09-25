@@ -100,19 +100,17 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if err != nil {
 			return nil, err
 		}
-		s3Conn, err := drivers.Open("s3", instanceID, config, st, ac, logger)
+		handle, err := drivers.Open("s3", instanceID, config, st, ac, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open s3 connection for gcs in s3 compatible mode: %w", err)
 		}
-		store, ok := s3Conn.AsObjectStore()
+		s3Conn, ok := handle.(*s3.Connection)
 		if !ok {
-			return nil, fmt.Errorf("internal error: s3 compatible connection does not implement object store")
+			return nil, fmt.Errorf("internal error: expected s3 connector handle")
 		}
-		conn := &Connection{
-			config:  conf,
-			storage: st,
-			logger:  logger,
-			s3Conn:  store,
+		conn := &s3CompatibleConn{
+			config: conf,
+			s3Conn: s3Conn,
 		}
 		return conn, nil
 	}
@@ -164,7 +162,8 @@ func (c *Connection) Ping(ctx context.Context) error {
 	}
 
 	if c.config.KeyID != "" && c.config.Secret != "" {
-		// TODO: handle in case of HMAC key secret
+		// If both secret json and hmac keys are set it only validates the secret json
+		// If only hmac keys are set then it validates them by pinging using s3 connection via s3CompatibleConn
 		return nil
 	}
 
