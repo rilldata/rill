@@ -100,6 +100,9 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 				}
 			}
 			o.pushToProject = p
+			o.Managed = o.pushToProject.ManagedGitId != ""
+			o.Github = o.pushToProject.ManagedGitId == "" && o.pushToProject.GitRemote != ""
+			o.ArchiveUpload = o.pushToProject.ArchiveAssetId != ""
 			return nil
 		}
 	}
@@ -220,9 +223,9 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 		case "__rill_remote":
 			req.RillMgdGitRemote = remote.URL
 		case o.RemoteName:
-			req.GitRemote, err = remote.Github()
-			if err != nil {
-				return err
+			gitremote, err := remote.Github()
+			if err == nil {
+				req.GitRemote = gitremote
 			}
 		}
 	}

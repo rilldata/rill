@@ -2,7 +2,6 @@ package clickhouse
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -68,7 +67,7 @@ func TestClickhouseCluster(t *testing.T) {
 }
 
 func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.WithConnection(context.Background(), 1, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+	err := olap.WithConnection(context.Background(), 1, func(ctx, ensuredCtx context.Context) error {
 		err := olap.Exec(ctx, &drivers.Statement{
 			Query: "CREATE table tbl engine=Memory AS SELECT 1 AS id, 'Earth' AS planet",
 		})

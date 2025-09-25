@@ -1171,6 +1171,10 @@ export interface V1RevokeMagicAuthTokenResponse {
   [key: string]: unknown;
 }
 
+export interface V1RevokeRepresentativeAuthTokensResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RevokeServiceAuthTokenResponse {
   [key: string]: unknown;
 }
