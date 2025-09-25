@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
@@ -64,10 +63,17 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return nil
 	}
 
-	if tr.Expression == "" {
-		return e.resolveISOTimeRange(ctx, tr, tz, executionTime)
+	// Start and End are hardcoded, skip the rest of the code
+	if !tr.Start.IsZero() && !tr.End.IsZero() {
+		// Clear all other fields than Start and End
+		tr.Expression = ""
+		tr.IsoDuration = ""
+		tr.IsoOffset = ""
+		tr.RoundToGrain = TimeGrainUnspecified
+		return nil
 	}
-	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
+
+	if tr.Expression != "" && (!tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified) {
 		return errors.New("other fields are not supported when expression is provided")
 	}
 
@@ -83,15 +89,22 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		ts.Now = *executionTime
 	}
 
-	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{
-		SmallestGrain: timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
-	})
+	var rt *rilltime.Expression
+	if tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
+		rt, err = rilltime.ParseISO(tr.IsoDuration, tr.IsoOffset, tr.End, tr.RoundToGrain.ToTimeutil(), rilltime.ParseOptions{
+			SmallestGrain: timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
+		})
+	} else {
+		rt, err = rilltime.Parse(tr.Expression, rilltime.ParseOptions{
+			SmallestGrain: timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
+		})
+	}
 	if err != nil {
 		return err
 	}
 
 	// TODO: use grain when we have timeseries from metrics_view_aggregation
-	tr.Start, tr.End, _ = rillTime.Eval(rilltime.EvalOptions{
+	tr.Start, tr.End, _ = rt.Eval(rilltime.EvalOptions{
 		Now:        ts.Now,
 		MinTime:    ts.Min,
 		MaxTime:    ts.Max,
@@ -102,89 +115,6 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 
 	// Clear all other fields than Start and End
 	tr.Expression = ""
-	tr.IsoDuration = ""
-	tr.IsoOffset = ""
-	tr.RoundToGrain = TimeGrainUnspecified
-
-	return nil
-}
-
-// resolveISOTimeRange resolves the given time range where either only start/end is specified along with ISO duration/offset, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
-	if tr.Start.IsZero() && tr.End.IsZero() {
-		if executionTime == nil {
-			ts, err := e.Timestamps(ctx, tr.TimeDimension)
-			if err != nil {
-				return fmt.Errorf("failed to fetch timestamps: %w", err)
-			}
-			executionTime = &ts.Watermark
-		}
-
-		tr.End = *executionTime
-	}
-
-	var isISO bool
-	if tr.IsoDuration != "" {
-		d, err := duration.ParseISO8601(tr.IsoDuration)
-		if err != nil {
-			return fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
-		}
-
-		if !tr.Start.IsZero() && !tr.End.IsZero() {
-			return errors.New(`cannot resolve "iso_duration" for a time range with fixed "start" and "end" timestamps`)
-		} else if !tr.Start.IsZero() {
-			tr.End = d.Add(tr.Start)
-		} else if !tr.End.IsZero() {
-			tr.Start = d.Sub(tr.End)
-		} else {
-			// In practice, this shouldn't happen since we resolve a time anchor dynamically if both start and end are zero.
-			return errors.New(`cannot resolve "iso_duration" for a time range without "start" and "end" timestamps`)
-		}
-
-		isISO = true
-	}
-
-	if tr.IsoOffset != "" {
-		d, err := duration.ParseISO8601(tr.IsoOffset)
-		if err != nil {
-			return fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
-		}
-
-		if !tr.Start.IsZero() {
-			tr.Start = d.Sub(tr.Start)
-		}
-		if !tr.End.IsZero() {
-			tr.End = d.Sub(tr.End)
-		}
-
-		isISO = true
-	}
-
-	// Only modify the start and end if ISO duration or offset was sent.
-	// This is to maintain backwards compatibility for calls from the UI.
-	if isISO {
-		fdow := int(e.metricsView.FirstDayOfWeek)
-		if fdow > 7 || fdow <= 0 {
-			fdow = 1
-		}
-		fmoy := int(e.metricsView.FirstMonthOfYear)
-		if fmoy > 12 || fmoy <= 0 {
-			fmoy = 1
-		}
-		if !tr.RoundToGrain.Valid() {
-			return fmt.Errorf("invalid time grain %q", tr.RoundToGrain)
-		}
-		if tr.RoundToGrain != TimeGrainUnspecified {
-			if !tr.Start.IsZero() {
-				tr.Start = timeutil.TruncateTime(tr.Start, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
-			}
-			if !tr.End.IsZero() {
-				tr.End = timeutil.TruncateTime(tr.End, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
-			}
-		}
-	}
-
-	// Clear all other fields than Start and End
 	tr.IsoDuration = ""
 	tr.IsoOffset = ""
 	tr.RoundToGrain = TimeGrainUnspecified
