@@ -27,13 +27,24 @@ var spec = drivers.Spec{
 	Description: "Import data from BigQuery.",
 	DocsURL:     "https://docs.rilldata.com/connect/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
+		// Deprecated: when the credentials used to be inferred from the local environment.
+		// {
+		// 	Key:         "google_application_credentials",
+		// 	Type:        drivers.InformationalPropertyType,
+		// 	DisplayName: "GCP credentials",
+		// 	Description: "GCP credentials inferred from your local environment.",
+		// 	Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
+		// 	DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs#rill-developer-local-credentials",
+		// },
 		{
 			Key:         "google_application_credentials",
-			Type:        drivers.InformationalPropertyType,
-			DisplayName: "GCP credentials",
-			Description: "GCP credentials inferred from your local environment.",
-			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs#rill-developer-local-credentials",
+			Type:        drivers.FilePropertyType,
+			DisplayName: "GCP Credentials",
+			Description: "GCP credentials as JSON string",
+			Placeholder: "Paste your GCP service account JSON here",
+			Required:    true,
+			Secret:      true,
+			Hint:        "Paste your GCP service account JSON credentials",
 		},
 		{
 			Key:         "project_id",
