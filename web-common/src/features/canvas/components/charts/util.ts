@@ -11,6 +11,7 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
+import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { CHART_CONFIG, type ChartSpec } from "./";
@@ -316,4 +317,21 @@ export function getColorMappingForChart(
   }
 
   return colorMapping;
+}
+
+export function resolveColor(
+  theme: { primary: Color; secondary: Color },
+  color: string,
+): string {
+  if (color === "primary") {
+    // Vega lite requires scale hsl colors to be comma separated
+    const hslColor = theme.primary
+      .css("hsl")
+      .replace("deg", "")
+      .replaceAll(" ", ", ");
+    return hslColor;
+  } else if (color === "secondary") {
+    return theme.secondary.css("hsl").replace("deg", "").replaceAll(" ", ", ");
+  }
+  return color;
 }
