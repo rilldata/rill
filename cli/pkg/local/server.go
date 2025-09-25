@@ -543,7 +543,6 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			if err != nil {
 				return nil, err
 			}
-			// TODO : handle when project deploys from branch other than current branch
 			config := &gitutil.Config{
 				Remote:        projResp.Project.GitRemote,
 				DefaultBranch: projResp.Project.ProdBranch,
