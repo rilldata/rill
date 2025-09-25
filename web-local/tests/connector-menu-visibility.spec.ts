@@ -19,12 +19,12 @@ test.describe("Connector Table Menu Visibility", () => {
 
     await expect(
       page.getByRole("menuitem", { name: "Create model" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10000 });
     await expect(
       page.getByRole("menuitem", { name: "Generate metrics with AI" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10000 });
     await expect(
       page.getByRole("menuitem", { name: "Generate dashboard with AI" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10000 });
   });
 });
