@@ -20,7 +20,7 @@ When reading from a data source (or using a different OLAP engine), Rill will at
 
 :::warning **Highly Recommended: Use .env for credentials**
 
-While Rill **can** infer credentials from your local environment (AWS CLI, Azure CLI, Google Cloud CLI), **we HIGHLY recommend explicitly configuring credentials in your `.env` file** for better security, reliability, and portability. Inferred credentials can be unpredictable and may not work consistently across different environments, team members or when deploying to Rill Cloud.
+While Rill **can** infer credentials from your local environment (AWS CLI, Azure CLI, Google Cloud CLI), **we HIGHLY recommend explicitly configuring credentials in your `.env` file** for better security, reliability, and portability. Environment-inferred credentials may vary across different setupsand may not work consistently across different environments, team members or when deploying to Rill Cloud.
 
 :::
 
@@ -41,7 +41,6 @@ If you plan to deploy a project (to Rill Cloud), it is not recommended to pass i
 
 
 ## Variables
-
 
 Project variables work exactly the same way as credentials and can be defined when starting rill via `--env key=value`, set in the `.env `file in the project directory, or defined in the rill.yaml.
 
