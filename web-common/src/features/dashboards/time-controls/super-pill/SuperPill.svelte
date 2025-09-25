@@ -49,7 +49,7 @@
 
   const newPicker = featureFlags.rillTime;
 
-  $: rangeBuckets = bucketYamlRanges(timeRanges);
+  $: rangeBuckets = bucketYamlRanges(timeRanges, minTimeGrain, $newPicker);
 
   $: v2TimeString = normalizeRangeString(selectedRangeAlias);
 
@@ -75,8 +75,10 @@
       {watermark}
       {showDefaultItem}
       {defaultTimeRange}
+      {rangeBuckets}
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
+      {allowCustomTimeRange}
       timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}
@@ -84,7 +86,6 @@
       {showFullRange}
       {onSelectTimeZone}
       {onSelectRange}
-      {onTimeGrainSelect}
     />
   {:else if interval.isValid && activeTimeGrain}
     <Elements.RangePicker

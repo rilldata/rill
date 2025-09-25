@@ -70,7 +70,7 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 		span.SetAttributes(attribute.String("metrics_view", metricsViewName))
 	}
 
-	q, err := queries.ProtoToQuery(qpb, opts.Claims)
+	q, err := queries.ProtoToQuery(qpb, opts.Claims, args.ExecutionTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}

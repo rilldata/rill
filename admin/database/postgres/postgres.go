@@ -1133,6 +1133,11 @@ func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	return checkDeleteRow("auth token", res, err)
 }
 
+func (c *connection) DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE user_id = $1 AND representing_user_id = $2", userID, representingUserID)
+	return parseErr("auth token", err)
+}
+
 func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
 	return parseErr("auth token", err)

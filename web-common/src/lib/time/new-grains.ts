@@ -1,3 +1,4 @@
+import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 
@@ -97,6 +98,7 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_QUARTER]: "quarter",
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
+export const DateTimeUnitToV1TimeGrain = reverseMap(V1TimeGrainToDateTimeUnit);
 
 export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
   const v1TimeGrain = GrainAliasToV1TimeGrain[alias];

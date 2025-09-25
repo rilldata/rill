@@ -43,6 +43,12 @@ import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  GrainAliasToV1TimeGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains";
+import { parseRillTime } from "../url-state/time-ranges/parser";
+import type { RillTime } from "../url-state/time-ranges/RillTime";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -265,8 +271,21 @@ export function calculateTimeRangePartial(
     selectedTimezone,
     allTimeRange,
     defaultTimeRange,
+    minTimeGrain,
   );
   if (!selectedTimeRange) return undefined;
+
+  let parsed: RillTime | undefined;
+
+  try {
+    parsed = parseRillTime(currentSelectedTimeRange.name || "");
+  } catch (e) {
+    console.error("Error parsing rill time", e);
+  }
+
+  const rillTimeGrain = parsed?.asOfLabel?.snap
+    ? GrainAliasToV1TimeGrain[parsed.asOfLabel.snap]
+    : parsed?.interval.getGrain();
 
   // Temporary for the new rill-time UX to work.
   // We can select grains that are outside allowed grains in controls behind the "rillTime" flag.
@@ -275,7 +294,8 @@ export function calculateTimeRangePartial(
     !skipGrainValidation ||
     !currentSelectedTimeRange.interval ||
     currentSelectedTimeRange.interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-      ? getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
+      ? rillTimeGrain ||
+        getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
       : currentSelectedTimeRange.interval;
 
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
@@ -382,6 +402,7 @@ export function getTimeRange(
   selectedTimezone: string | undefined,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
+  minTimeGrain: V1TimeGrain | undefined,
 ) {
   if (!selectedTimeRange) return undefined;
 
@@ -396,12 +417,17 @@ export function getTimeRange(
     };
   } else if (selectedTimeRange?.name) {
     if (selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
+      const minTimeUnit =
+        V1TimeGrainToDateTimeUnit[
+          minTimeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+        ];
       /** rebuild off of relative time range */
       timeRange = convertTimeRangePreset(
         selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
         allTimeRange.start,
         allTimeRange.end,
         selectedTimezone,
+        minTimeUnit,
       );
     } else if (selectedTimeRange.start) {
       timeRange = {
@@ -518,10 +544,12 @@ export function selectedTimeRangeSelector([
   exploreSpec,
   timeRangeResponse,
   explorer,
+  minTimeGrain,
 ]: [
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   ExploreState,
+  V1TimeGrain | undefined,
 ]) {
   if (
     !exploreSpec ||
@@ -549,5 +577,6 @@ export function selectedTimeRangeSelector([
     explorer.selectedTimezone,
     allTimeRange,
     defaultTimeRange,
+    minTimeGrain,
   );
 }

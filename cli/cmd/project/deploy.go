@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -41,6 +40,7 @@ type DeployOpts struct {
 	ProdVersion string
 	ProdBranch  string
 	Slots       int
+	PushEnv     bool
 
 	ArchiveUpload bool
 	// Managed indicates if the project should be deployed using Rill Managed Git.
@@ -83,6 +83,29 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 		return err
 	}
 
+	// check if specified project already exists
+	if o.Name != "" {
+		p, err := getProject(ctx, ch, ch.Org, o.Name)
+		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			return err
+		}
+		if p != nil {
+			if ch.Interactive {
+				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Project with name %q already exists. Do you want to push current changes to the existing project?", o.Name), "", true)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return fmt.Errorf("aborting deploy")
+				}
+			}
+			o.pushToProject = p
+			o.Managed = o.pushToProject.ManagedGitId != ""
+			o.Github = o.pushToProject.ManagedGitId == "" && o.pushToProject.GitRemote != ""
+			o.ArchiveUpload = o.pushToProject.ArchiveAssetId != ""
+			return nil
+		}
+	}
 	if o.ArchiveUpload {
 		return nil
 	}
@@ -200,9 +223,9 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 		case "__rill_remote":
 			req.RillMgdGitRemote = remote.URL
 		case o.RemoteName:
-			req.GitRemote, err = remote.Github()
-			if err != nil {
-				return err
+			gitremote, err := remote.Github()
+			if err == nil {
+				req.GitRemote = gitremote
 			}
 		}
 	}
@@ -227,9 +250,8 @@ func (o *DeployOpts) detectGitRemoteAndProject(ctx context.Context, ch *cmdutil.
 		// this is not possible with new flow but keeping it for consistency
 	}
 
-	if req.RillMgdGitRemote != "" {
-		// if no project found remove `__rill_remote`. This can happen if managed repo was provisioned but project was not created/failed.
-		err = removeRemote(repoRoot, "__rill_remote")
+	if len(resp.Projects) == 1 && resp.Projects[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
+		err = ch.HandleRepoTransfer(repoRoot, req.GitRemote)
 		if err != nil {
 			return err
 		}
@@ -270,6 +292,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
+	deployCmd.Flags().BoolVar(&opts.PushEnv, "push-env", true, "Push local .env file to Rill Cloud")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
@@ -395,17 +418,19 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 
 	// Upload .env
-	vars, err := local.ParseDotenv(ctx, localProjectPath)
-	if err != nil {
-		ch.PrintfWarn("Failed to parse .env: %v\n", err)
-	} else if len(vars) > 0 {
-		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      opts.Name,
-			Variables:    vars,
-		})
+	if opts.PushEnv {
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
 		if err != nil {
-			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
 		}
 	}
 
@@ -483,19 +508,20 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 		}
 	}
 
-	// Also updated .env vars
-	// Fetch vars from .env
-	vars, err := local.ParseDotenv(ctx, opts.LocalProjectPath())
-	if err != nil {
-		ch.PrintfWarn("Failed to parse .env: %v\n", err)
-	} else if len(vars) > 0 {
-		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-			Organization: ch.Org,
-			Project:      proj.Name,
-			Variables:    vars,
-		})
+	// Upload .env
+	if opts.PushEnv {
+		vars, err := local.ParseDotenv(ctx, opts.LocalProjectPath())
 		if err != nil {
-			ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      proj.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
 		}
 	}
 
@@ -599,22 +625,33 @@ func orgExists(ctx context.Context, ch *cmdutil.Helper, name string) (bool, erro
 	return true, nil
 }
 
-func projectExists(ctx context.Context, ch *cmdutil.Helper, orgName, projectName string) (bool, error) {
-	c, err := ch.Client()
+func projectExists(ctx context.Context, ch *cmdutil.Helper, org, project string) (bool, error) {
+	_, err := getProject(ctx, ch, org, project)
 	if err != nil {
-		return false, err
-	}
-
-	_, err = c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
-				return false, nil
-			}
+		if errors.Is(err, cmdutil.ErrNoMatchingProject) {
+			return false, nil
 		}
 		return false, err
 	}
 	return true, nil
+}
+
+func getProject(ctx context.Context, ch *cmdutil.Helper, org, project string) (*adminv1.Project, error) {
+	c, err := ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: org, Name: project})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.NotFound {
+				return nil, cmdutil.ErrNoMatchingProject
+			}
+		}
+		return nil, err
+	}
+	return p.Project, nil
 }
 
 func errMsgContains(err error, msg string) bool {
@@ -622,17 +659,4 @@ func errMsgContains(err error, msg string) bool {
 		return strings.Contains(st.Message(), msg)
 	}
 	return false
-}
-
-func removeRemote(path, remoteName string) error {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return fmt.Errorf("failed to open git repository: %w", err)
-	}
-
-	err = repo.DeleteRemote(remoteName)
-	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
-		return err
-	}
-	return nil
 }

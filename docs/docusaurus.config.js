@@ -76,6 +76,15 @@ const config = {
         appId: "4U01DM4NS4",
         apiKey: "c0399915ae21a35c6d34a473d017c15b",
         indexName: "rilldata",
+
+        // Navbar button text (before clicking)
+        translations: {
+          button: {
+            buttonText: 'Search...',
+            buttonAriaLabel: 'Open search',
+          },
+        },
+        placeholder: "Looking for something?",
         debug: false // Set debug to true if you want to inspect the modal        
       },
       metadata: [
@@ -257,7 +266,7 @@ const config = {
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/connect/data-source/duckdb'
+            to: '/connect/olap/motherduck'
           },
           {
             from: '/deploy/source-refresh',
@@ -537,6 +546,18 @@ const config = {
           {
             from: '/home/get-started',
             to: '/get-started/quickstart'
+          },
+          {
+            from: '/build/canvas/canvas',
+            to: '/build/dashboards/canvas',
+          },
+          {
+            from: '/build/canvas/customization',
+            to: '/build/dashboards/customization',
+          },
+          {
+            from: '/build/canvas',
+            to: '/build/dashboards/canvas',
           },
           // {
           //   from: '/old-page',

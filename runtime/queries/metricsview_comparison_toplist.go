@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -36,6 +37,7 @@ type MetricsViewComparison struct {
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact"`
 	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
+	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
 
 	Result       *runtimev1.MetricsViewComparisonResponse `json:"-"`
 	measuresMeta map[string]metricsViewMeasureMeta        `json:"-"`
@@ -102,7 +104,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	res, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, q.ExecutionTime)
 	if err != nil {
 		return err
 	}
