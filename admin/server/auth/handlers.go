@@ -175,12 +175,6 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	}
 
 	// Redirect to <canonical-domain>/auth/login (custom domain flow)
-	a.logger.Info("incoming request host headers",
-		zap.String("r.Host", r.Host),
-		zap.String("Host", r.Header.Get("Host")),
-		zap.String("X-Forwarded-Host", r.Header.Get("X-Forwarded-Host")),
-		zap.String("Forwarded", r.Header.Get("Forwarded")),
-	)
 	host := originalHost(r)
 	if a.admin.URLs.IsCustomDomain(host) {
 		customCallbackURL := a.admin.URLs.WithCustomDomain(host).AuthCustomDomainCallback(state)
