@@ -161,6 +161,30 @@ func TestProjectPromptEvals(t *testing.T) {
 		require.GreaterOrEqual(t, score, 7.0, "Should politely reject unrelated questions and redirect to data analysis")
 	})
 
+	t.Run("correctly_identifies_current_date", func(t *testing.T) {
+		server, instanceID := setupEvalServer(t)
+
+		// Get the actual current date for comparison
+		currentTime := time.Now()
+		currentDate := currentTime.Format("2006-01-02")
+		currentWeekday := currentTime.Weekday().String()
+
+		response := runProjectChatCompletion(t, server, instanceID, "What day is today?")
+
+		responseText := extractResponseText(response)
+
+		// Use LLM-as-a-judge to evaluate if the AI correctly identifies the current date
+		criteria := fmt.Sprintf(`
+		Evaluate if this response correctly identifies the current date and day:
+		1. Correctly identifies today as %s, %s
+		2. Does NOT provide an outdated date from its training data
+		
+		Rate 1-10 where 10 = perfectly identifies the correct current date and day.`, currentWeekday, currentDate)
+
+		score := evaluateWithLLM(t, server, instanceID, responseText, criteria)
+		require.GreaterOrEqual(t, score, 7.0, fmt.Sprintf("Should correctly identify current date (%s, %s)", currentWeekday, currentDate))
+	})
+
 	t.Run("uses_rill_comparison_features", func(t *testing.T) {
 		server, instanceID := setupEvalServer(t)
 
