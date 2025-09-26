@@ -1,6 +1,7 @@
 import {
   createAdminServiceGetGithubUserStatus,
   getAdminServiceGetGithubUserStatusQueryKey,
+  getAdminServiceListGithubUserReposQueryKey,
 } from "@rilldata/web-admin/client";
 import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
@@ -21,18 +22,20 @@ export class GithubAccessManager {
   );
 
   private userPromptWindow = new PopupWindow();
+  private reSelectingRepos = false;
 
   /**
    * Used to reselect connected orgs.
    * Opens the grantAccessUrl page to achieve this.
    */
-  public async reselectOrgs() {
+  public async reselectOrgOrRepos(reSelectingRepos: boolean) {
     await waitUntil(() => !get(this.userStatus).isFetching);
     const userStatus = get(this.userStatus).data;
     if (!userStatus?.grantAccessUrl) {
       return;
     }
 
+    this.reSelectingRepos = reSelectingRepos;
     this.userPromptWindow
       .openAndWaitForClose(userStatus.grantAccessUrl + "?remote=autoclose")
       .then(() => this.refetch());
@@ -71,5 +74,14 @@ export class GithubAccessManager {
       return;
     }
     this.githubConnectionFailed.set(false);
+
+    if (!this.reSelectingRepos) {
+      this.reSelectingRepos = false;
+      return;
+    }
+
+    await queryClient.resetQueries({
+      queryKey: getAdminServiceListGithubUserReposQueryKey(),
+    });
   }
 }
