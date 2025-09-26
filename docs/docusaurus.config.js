@@ -62,6 +62,24 @@ const config = {
         },
       }),
     ],
+    [
+      'redocusaurus',
+      {
+        specs: [
+          {
+            id: 'admin-api',
+            spec: '../proto/gen/rill/admin/v1/admin-connect.openapi.yaml',
+            route: '/api/admin/',
+          },
+        ],
+        theme: {
+          primaryColor: '#1890ff',
+          redocOptions: {
+            hideLoading: false,
+          },
+        },
+      },
+    ],
   ],
 
   themeConfig:
@@ -122,6 +140,12 @@ const config = {
             sidebarId: "refSidebar",
             position: "left",
             label: "Reference",
+          },
+
+          {
+            to: "/api/admin/",
+            position: "left",
+            label: "API",
           },
 
           {
@@ -568,6 +592,7 @@ const config = {
   stylesheets: [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
   ],
+
 };
 
 module.exports = config;

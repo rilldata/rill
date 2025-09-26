@@ -51,11 +51,7 @@ docs.generate:
 	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-cli docs/docs/reference/cli/
 	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-project docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
-
-.PHONY: docs.api.serve
-docs.api.serve:
 	cd proto && buf generate --template buf.gen.connect-openapi-admin.yaml --path rill/admin
-	npx redoc-cli serve proto/gen/rill/admin/v1/admin-connect.openapi.yaml
 
 .PHONY: proto.generate
 proto.generate:
