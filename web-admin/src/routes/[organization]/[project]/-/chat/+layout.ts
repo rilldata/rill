@@ -15,6 +15,10 @@ export const load = async ({
   // Wait for the feature flags to load
   await parent();
 
+  // There is a potential race condition where feature flags from instance is not loaded yet.
+  // So wait until it is ready before checking for "chat"
+  await featureFlags.ready;
+
   // Redirect to `/-/dashboards` if chat feature is disabled
   // NOTE: In the future, we'll use user-level `ai` permissions for more granular access control
   const chatEnabled = get(featureFlags.chat);

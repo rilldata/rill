@@ -63,7 +63,7 @@ mock_users:
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string
-		want    map[string]bool
+		want    map[string]string
 		wantErr bool
 	}{
 		{
@@ -76,11 +76,11 @@ func TestRillYAMLFeatures(t *testing.T) {
 		},
 		{
 			yaml: `features: []`,
-			want: map[string]bool{},
+			want: map[string]string{},
 		},
 		{
 			yaml: `features: {}`,
-			want: map[string]bool{},
+			want: map[string]string{},
 		},
 		{
 			yaml: `
@@ -88,7 +88,7 @@ features:
   foo: true
   bar: false
 `,
-			want: map[string]bool{"foo": true, "bar": false},
+			want: map[string]string{"foo": "true", "bar": "false"},
 		},
 		{
 			yaml: `
@@ -96,7 +96,7 @@ features:
 - foo
 - bar
 `,
-			want: map[string]bool{"foo": true, "bar": true},
+			want: map[string]string{"foo": "true", "bar": "true"},
 		},
 	}
 

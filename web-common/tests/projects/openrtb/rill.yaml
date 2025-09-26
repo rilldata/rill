@@ -15,5 +15,6 @@ mock_users:
 ai_connector: mock_ai
 
 features:
-- chat
-- cloudDataViewer
+  chat: true
+  cloudDataViewer: true
+  reports: '{{not (.user.embed)}}'
