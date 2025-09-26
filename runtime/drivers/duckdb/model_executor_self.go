@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -22,7 +23,10 @@ type selfToSelfExecutor struct {
 	c *connection
 }
 
-var _ drivers.ModelExecutor = &selfToSelfExecutor{}
+var (
+	_                 drivers.ModelExecutor = &selfToSelfExecutor{}
+	createSecretRegex                       = regexp.MustCompile(`(?i)^\s*CREATE\s+(OR\s+REPLACE\s+)?(TEMPORARY\s+)?SECRET\s+\S+`)
+)
 
 func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 	if desired > 1 {
@@ -99,8 +103,10 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 	// Add PreExec statements that create temporary secrets for object store connectors.
 	secretConnectors := e.c.config.secretConnectors()
-	if len(secretConnectors) == 0 {
+	if len(secretConnectors) == 0 && !createSecretRegex.MatchString(inputProps.PreExec) {
 		// if nothing is configured then configure every applicable connector
+		// if the preexec already has a create secret statement then do not add any connector by default
+		// this handles a edge case when user is using different creds then the ones configured in connector config
 		for _, connector := range opts.Env.Connectors {
 			switch connector.Type {
 			case "s3", "azure", "gcs":
