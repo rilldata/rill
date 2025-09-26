@@ -44,9 +44,6 @@ Connect to your OLAP engine via Add Data. This will automatically create the mot
 
 For more information on supported parameters, see our [MotherDuck connector YAML reference docs](/reference/project-files/connectors#motherduck).
 
-<img src='/img/connect/olap-engines/motherduck/motherduck-connector.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} /> <br/>
-
-Once completed, you'll see a similar file generated under `connectors/motherduck.yaml`.
 
 ```yaml
 # Connector YAML

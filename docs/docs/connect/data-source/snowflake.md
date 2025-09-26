@@ -17,15 +17,20 @@ Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/bl
 
 [Snowflake](https://docs.snowflake.com/en/user-guide-intro) is a cloud-based data platform designed to facilitate data warehousing, data lakes, data engineering, data science, data application development, and data sharing. It separates compute and storage, enabling users to scale up or down instantly without downtime, providing a cost-effective solution for data management. With its unique architecture and support for multi-cloud environments, including AWS, Azure, and Google Cloud Platform, Snowflake offers seamless data integration, secure data sharing across organizations, and real-time access to data insights, making it a common choice to power many business intelligence applications and use cases. Rill supports natively connecting to and reading from Snowflake as a source using the [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake).
 
-<img src='/img/connect/data-sources/snowflake.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
 
+## Connect to Snowflake
 
-## Local credentials
+In Rill Developer, Connect to Snowflake via Add Data. This will automatically create the `snowflake.yaml` file in your connectors/ folder and populate the `.env` file with `connector.snowflake.*` depending on if you inputted parameters or connection string.
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill will use the credentials passed via the Snowflake connection string in one of several ways:
-1. As defined in the [Connector YAML configuration](/reference/project-files/connectors#snowflake) directly via the `dsn` property or distinct parameters
-2. As defined in the optional _Snowflake Connection String_ field within the UI source creation workflow (this is equivalent to setting the `dsn` property in the underlying source YAML file)
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+
+type: connector
+driver: snowflake
+
+dsn: '{{ .env.connector.snowflake.dsn }}' 
+```
 
 :::warning Beware of committing credentials to Git
 

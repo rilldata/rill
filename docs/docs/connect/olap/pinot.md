@@ -16,9 +16,19 @@ When using Rill for local development, there are a few options to configure Rill
 1. Connect to an OLAP engine via Add Data. This will automatically create the `pinot.yaml` file in your `connectors` folder and populate the `.env` file with `connector.pinot.password` or `connector.pinot.dsn` depending on which you select in the UI.
 
 For more information on supported parameters, see our [Pinot connector YAML reference docs](/reference/project-files/connectors#pinot).
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
 
+driver: pinot
+
+dsn: "{{ .env.connector.pinot.dsn }}"
+```
+<!-- 
 <img src='/img/connect/olap-engines/pinot/pinot-parameters.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
+<br /> -->
 
 2. You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud.
 
