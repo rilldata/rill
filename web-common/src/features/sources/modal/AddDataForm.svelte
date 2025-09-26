@@ -65,8 +65,17 @@
           (property) => property.key !== "dsn",
         )) ?? [];
 
-  // FIXME: APP-209
-  const filteredParamsProperties = properties;
+  // Filter properties based on connector type
+  const filteredParamsProperties = (() => {
+    // FIXME: https://linear.app/rilldata/issue/APP-408/support-ducklake-in-the-ui
+    if (connector.name === "duckdb") {
+      return properties.filter(
+        (property) => property.key !== "attach" && property.key !== "mode",
+      );
+    }
+    // For other connectors, filter out noPrompt properties
+    return properties.filter((property) => !property.noPrompt);
+  })();
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const initialFormValues = getInitialFormValuesFromProperties(properties);
   const {
@@ -180,6 +189,19 @@
       if ($dsnTainted) dsnError = null;
     } else {
       if ($paramsTainted) paramsError = null;
+    }
+  })();
+
+  // Clear errors when switching tabs
+  $: (() => {
+    if (hasDsnFormOption) {
+      if (connectionTab === "dsn") {
+        paramsError = null;
+        paramsErrorDetails = undefined;
+      } else {
+        dsnError = null;
+        dsnErrorDetails = undefined;
+      }
     }
   })();
 
@@ -337,13 +359,16 @@
         error = humanReadable;
         details =
           humanReadable !== originalMessage ? originalMessage : undefined;
+      } else if (e?.message) {
+        error = e.message;
+        details = undefined;
       } else {
         error = "Unknown error";
         details = undefined;
       }
 
-      // Keep error state for each form
-      if (connectionTab === "dsn") {
+      // Keep error state for each form - match the display logic
+      if (hasOnlyDsn() || connectionTab === "dsn") {
         dsnError = error;
         dsnErrorDetails = details;
       } else {
@@ -535,6 +560,12 @@
         disabled={connector.name === "clickhouse"
           ? clickhouseSubmitting || clickhouseIsSubmitDisabled
           : submitting || isSubmitDisabled}
+        loading={connector.name === "clickhouse"
+          ? clickhouseSubmitting
+          : submitting}
+        loadingCopy={connector.name === "clickhouse"
+          ? "Connecting..."
+          : "Testing connection..."}
         form={connector.name === "clickhouse" ? clickhouseFormId : formId}
         submitForm
         type="primary"
@@ -555,10 +586,10 @@
           {#if submitting}
             Testing connection...
           {:else}
-            Connect
+            Test and Connect
           {/if}
         {:else}
-          Add data
+          Test and Add data
         {/if}
       </Button>
     </div>
@@ -582,7 +613,9 @@
     {/if}
 
     <div>
-      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
+      <div class="text-sm leading-none font-medium mb-4">
+        {isSourceForm ? "Model preview" : "Connector preview"}
+      </div>
       <div class="relative">
         <button
           class="absolute top-2 right-2 p-1 rounded"

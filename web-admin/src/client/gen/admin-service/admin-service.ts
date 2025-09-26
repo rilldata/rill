@@ -125,7 +125,6 @@ import type {
   V1DeleteUserResponse,
   V1DeleteUsergroupResponse,
   V1DenyProjectAccessResponse,
-  V1DisconnectProjectFromGithubResponse,
   V1EditAlertResponse,
   V1EditReportResponse,
   V1EditUsergroupResponse,
@@ -210,6 +209,7 @@ import type {
   V1RequestProjectAccessResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1RevokeMagicAuthTokenResponse,
+  V1RevokeRepresentativeAuthTokensResponse,
   V1RevokeServiceAuthTokenResponse,
   V1RevokeUserAuthTokenResponse,
   V1SearchProjectNamesResponse,
@@ -6714,115 +6714,6 @@ export const createAdminServiceIssueMagicAuthToken = <
 > => {
   const mutationOptions =
     getAdminServiceIssueMagicAuthTokenMutationOptions(options);
-
-  return createMutation(mutationOptions, queryClient);
-};
-/**
- * @summary Converts a project connected to github to a rill managed project.
- */
-export const adminServiceDisconnectProjectFromGithub = (
-  organization: string,
-  project: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1DisconnectProjectFromGithubResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/upload-assets`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
-    signal,
-  });
-};
-
-export const getAdminServiceDisconnectProjectFromGithubMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-    TError,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-  TError,
-  {
-    organization: string;
-    project: string;
-    data: AdminServiceTriggerReconcileBodyBody;
-  },
-  TContext
-> => {
-  const mutationKey = ["adminServiceDisconnectProjectFromGithub"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-    {
-      organization: string;
-      project: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    }
-  > = (props) => {
-    const { organization, project, data } = props ?? {};
-
-    return adminServiceDisconnectProjectFromGithub(organization, project, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminServiceDisconnectProjectFromGithubMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>
->;
-export type AdminServiceDisconnectProjectFromGithubMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
-export type AdminServiceDisconnectProjectFromGithubMutationError = RpcStatus;
-
-/**
- * @summary Converts a project connected to github to a rill managed project.
- */
-export const createAdminServiceDisconnectProjectFromGithub = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-      TError,
-      {
-        organization: string;
-        project: string;
-        data: AdminServiceTriggerReconcileBodyBody;
-      },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof adminServiceDisconnectProjectFromGithub>>,
-  TError,
-  {
-    organization: string;
-    project: string;
-    data: AdminServiceTriggerReconcileBodyBody;
-  },
-  TContext
-> => {
-  const mutationOptions =
-    getAdminServiceDisconnectProjectFromGithubMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
@@ -14315,6 +14206,89 @@ export const createAdminServiceRevokeUserAuthToken = <
 > => {
   const mutationOptions =
     getAdminServiceRevokeUserAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+This is primarily used for "unassume" flows.
+ */
+export const adminServiceRevokeRepresentativeAuthTokens = (email: string) => {
+  return httpClient<V1RevokeRepresentativeAuthTokensResponse>({
+    url: `/v1/users/-/tokens/representing/${email}`,
+    method: "DELETE",
+  });
+};
+
+export const getAdminServiceRevokeRepresentativeAuthTokensMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRevokeRepresentativeAuthTokens>>,
+    TError,
+    { email: string },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceRevokeRepresentativeAuthTokens>>,
+  TError,
+  { email: string },
+  TContext
+> => {
+  const mutationKey = ["adminServiceRevokeRepresentativeAuthTokens"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRevokeRepresentativeAuthTokens>>,
+    { email: string }
+  > = (props) => {
+    const { email } = props ?? {};
+
+    return adminServiceRevokeRepresentativeAuthTokens(email);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceRevokeRepresentativeAuthTokensMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceRevokeRepresentativeAuthTokens>>
+  >;
+
+export type AdminServiceRevokeRepresentativeAuthTokensMutationError = RpcStatus;
+
+/**
+ * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+This is primarily used for "unassume" flows.
+ */
+export const createAdminServiceRevokeRepresentativeAuthTokens = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRevokeRepresentativeAuthTokens>>,
+      TError,
+      { email: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceRevokeRepresentativeAuthTokens>>,
+  TError,
+  { email: string },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceRevokeRepresentativeAuthTokensMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
