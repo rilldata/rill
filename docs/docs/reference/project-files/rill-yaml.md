@@ -76,6 +76,10 @@ _[object]_ - Defines project-wide default settings for metrics_views. Unless ove
 
 _[object]_ - Defines project-wide default settings for explores. Unless overridden, individual explores will inherit these defaults. 
 
+### `canvases`
+
+_[object]_ - Defines project-wide default settings for canvases. Unless overridden, individual canvases will inherit these defaults. 
+
 ```yaml
 # For example, the following YAML configuration below will set a project-wide default for:
 # Models - Configure a [source refresh](/build/build/models/data-refresh.md).
@@ -91,25 +95,30 @@ explores:
     defaults:
         time_range: P24M
     time_zones:
-        - America/Denver
         - UTC
         - America/Los_Angeles
-        - America/Chicago
         - America/New_York
         - Europe/London
         - Europe/Paris
-        - Asia/Jerusalem
-        - Europe/Moscow
-        - Asia/Kolkata
-        - Asia/Shanghai
         - Asia/Tokyo
         - Australia/Sydney
     time_ranges:
         - PT24H
-        - P7D
-        - P14D
-        - P30D
-        - P3M
+        - P6M
+        - P12M
+canvases:
+    defaults:
+        time_range: P24M
+    time_zones:
+        - UTC
+        - America/Los_Angeles
+        - America/New_York
+        - Europe/London
+        - Europe/Paris
+        - Asia/Tokyo
+        - Australia/Sydney
+    time_ranges:
+        - PT24H
         - P6M
         - P12M
 ```
