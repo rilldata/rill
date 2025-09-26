@@ -185,17 +185,30 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	return res, nil
 }
 
+// DefaultFeatureFlags feature flags used in UI to add/remove certain features. In future backend will also honor these flags.
 var DefaultFeatureFlags = map[string]string{
-	"exports":               "true",
-	"cloud_data_viewer":     "false",
-	"dimension_search":      "false",
+	// Controls whether the export functionality is visible
+	"exports": "true",
+	// Controls visibility of the source data viewer table in Rill Cloud for metrics views
+	"cloud_data_viewer": "false",
+	// Controls visibility of the global dimension search feature
+	"dimension_search": "false",
+	// TODO: more info
 	"two_tiered_navigation": "false",
-	"rill_time":             "true",
-	"hide_public_url":       "{{.user.embed}}",
-	"export_header":         "false",
-	"alerts":                "true",
-	"reports":               "true",
-	"dark_mode":             "false",
-	"chat":                  "true",
-	"dashboard_chat":        "true",
+	// Controls visibility of the RillTime syntax range picker
+	"rill_time": "true",
+	// Controls visibility of the public URL sharing option in dashboards
+	"hide_public_url": "{{.user.embed}}",
+	// TODO: more info
+	"export_header": "false",
+	// Controls visibility of alert creation functionality 
+	"alerts": "true",
+	// Controls visibility of report creation functionality
+	"reports": "true",
+	// Controls visibility of theme switching between light/dark modes
+	"dark_mode": "false",
+	// Controls visibility of project-level chat functionality
+	"chat": "true",
+	// Controls visibility of dashboard-level chat functionality
+	"dashboard_chat": "true",
 }
