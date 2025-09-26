@@ -171,20 +171,6 @@
           >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
         >
       </DropdownMenu.Item>
-      {#if isAdmin}
-        <DropdownMenu.Item
-          class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
-          'guest'
-            ? 'bg-slate-100'
-            : ''}"
-          on:click={() => handleSetRole(OrgUserRoles.Guest)}
-        >
-          <span class="text-xs font-medium text-slate-700">Guest</span>
-          <span class="text-[11px] text-slate-500"
-            >{ORG_ROLES_DESCRIPTION_MAP.guest}</span
-          >
-        </DropdownMenu.Item>
-      {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}

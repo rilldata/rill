@@ -44,15 +44,6 @@
     </DropdownMenu.CheckboxItem>
     <DropdownMenu.CheckboxItem
       class="font-normal flex items-center"
-      checked={filterSelection === "guests"}
-      on:click={() => {
-        filterSelection = "guests";
-      }}
-    >
-      <span>Guests</span>
-    </DropdownMenu.CheckboxItem>
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
       checked={filterSelection === "pending"}
       on:click={() => {
         filterSelection = "pending";

@@ -37,11 +37,13 @@
   export let currentUserRole: string;
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
+  export let guestOnly: boolean;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
   export let onEditUserGroup: (groupName: string) => void;
   export let onShareProject: (projectName: string) => void;
+  export let onConvertToMember: (user: string) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
 
@@ -63,23 +65,27 @@
         widthPercent: 50,
       },
     },
-    {
-      accessorKey: "roleName",
-      header: "Organization Role",
-      cell: ({ row }) =>
-        flexRender(OrgUsersTableRoleCell, {
-          email: row.original.userEmail,
-          role: row.original.roleName,
-          isCurrentUser: row.original.userEmail === currentUserEmail,
-          currentUserRole,
-          isBillingContact: row.original.userEmail === billingContact,
-          onAttemptChangeBillingContactUserRole,
-        }),
-      meta: {
-        widthPercent: 40,
-        marginLeft: "8px",
-      },
-    },
+    ...(guestOnly
+      ? []
+      : [
+          {
+            accessorKey: "roleName",
+            header: "Organization Role",
+            cell: ({ row }) =>
+              flexRender(OrgUsersTableRoleCell, {
+                email: row.original.userEmail,
+                role: row.original.roleName,
+                isCurrentUser: row.original.userEmail === currentUserEmail,
+                currentUserRole,
+                isBillingContact: row.original.userEmail === billingContact,
+                onAttemptChangeBillingContactUserRole,
+              }),
+            meta: {
+              widthPercent: 40,
+              marginLeft: "8px",
+            },
+          },
+        ]),
     {
       accessorKey: "usergroupsCount",
       header: "Groups",
@@ -120,6 +126,7 @@
           currentUserRole,
           isBillingContact: row.original.userEmail === billingContact,
           onAttemptRemoveBillingContactUser,
+          onConvertToMember,
         }),
       meta: {
         widthPercent: 5,
