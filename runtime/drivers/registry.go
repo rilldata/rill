@@ -3,7 +3,6 @@ package drivers
 import (
 	"context"
 	"fmt"
-	"maps"
 	"strings"
 	"time"
 
@@ -186,34 +185,17 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	return res, nil
 }
 
-var defaultFeatureFlags = map[string]string{
-	"exports":             "true",
-	"cloudDataViewer":     "false",
-	"dimensionSearch":     "false",
-	"twoTieredNavigation": "false",
-	"rillTime":            "true",
-	"hidePublicUrl":       "{{.user.embed}}",
-	"exportHeader":        "false",
-	"alerts":              "true",
-	"reports":             "true",
-	"darkMode":            "false",
-	"chat":                "true",
-	"dashboardChat":       "true",
-}
-
-// MergeDefaultFeatureFlags sets the feature flags for the instance. It replaces missing values with the ones from defaultFeatureFlags
-func MergeDefaultFeatureFlags(flags map[string]string) map[string]string {
-	if flags == nil {
-		flags = make(map[string]string)
-	}
-	mergedFlags := maps.Clone(flags)
-
-	for f, v := range defaultFeatureFlags {
-		if _, ok := mergedFlags[f]; ok {
-			continue
-		}
-		mergedFlags[f] = v
-	}
-
-	return mergedFlags
+var DefaultFeatureFlags = map[string]string{
+	"exports":               "true",
+	"cloud_data_viewer":     "false",
+	"dimension_search":      "false",
+	"two_tiered_navigation": "false",
+	"rill_time":             "true",
+	"hide_public_url":       "{{.user.embed}}",
+	"export_header":         "false",
+	"alerts":                "true",
+	"reports":               "true",
+	"dark_mode":             "false",
+	"chat":                  "true",
+	"dashboard_chat":        "true",
 }

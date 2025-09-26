@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
 )
@@ -273,6 +274,13 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		}
 	}
 
+	// We used to have camelCase for feature flags before. Convert it to snake_case to maintain backwards compatibility.
+	snakeCaseFeatureFlags := make(map[string]string, len(featureFlags))
+	for f, v := range featureFlags {
+		sf := strcase.ToSnake(f)
+		snakeCaseFeatureFlags[sf] = v
+	}
+
 	if len(tmp.PublicPaths) == 0 {
 		tmp.PublicPaths = []string{"public"}
 	}
@@ -299,7 +307,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Connectors:     make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:      make([]*VariableDef, len(vars)),
 		Defaults:       defaults,
-		FeatureFlags:   featureFlags,
+		FeatureFlags:   snakeCaseFeatureFlags,
 		PublicPaths:    tmp.PublicPaths,
 	}
 

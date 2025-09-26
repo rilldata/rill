@@ -493,11 +493,11 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 
 func Test_ResolveFeatureFlags(t *testing.T) {
 	featureFlagTemplates := map[string]string{
-		"dimensionSearch": `{{if eq (.user.domain) "rilldata.com"}}true{{end}}`,
+		"dimension_search": `{{if eq (.user.domain) "rilldata.com"}}true{{end}}`,
 		"alerts":          `'{{.user.domain}}' = 'rilldata.com'`,
 		"reports":         `'{{.user.domain}}' in ['rilldata.com', 'gmail.com']`,
 		"chat":            `{{not .user.embed}}`,
-		"dashboardChat":   `{{.user.embed}}`,
+		"dashboard_chat":   `{{.user.embed}}`,
 	}
 
 	tests := []struct {

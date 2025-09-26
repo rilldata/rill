@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/iancoleman/strcase"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -127,7 +128,9 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			// If the parse succeeded, convert to map[string]string by converting to "true"/"false"
 			i.FeatureFlags = map[string]string{}
 			for f, v := range featureFlagBools {
-				i.FeatureFlags[f] = fmt.Sprintf("%v", v)
+				// Old map[string]bool stored feature flags as camelCase. So convert it to snake_case here.
+				sf := strcase.ToSnake(f)
+				i.FeatureFlags[sf] = fmt.Sprintf("%v", v)
 			}
 		}
 

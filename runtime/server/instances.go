@@ -34,7 +34,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 	for i, inst := range instances {
 		featureFlags, err := runtime.ResolveFeatureFlags(inst, claims)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		pbs[i] = instanceToPB(inst, featureFlags, true)
 	}
@@ -74,7 +74,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.GetInstanceResponse{
@@ -118,7 +118,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.CreateInstanceResponse{
@@ -208,7 +208,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 
 	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.EditInstanceResponse{

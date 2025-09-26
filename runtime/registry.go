@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/iancoleman/strcase"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
@@ -163,8 +165,10 @@ func ResolveFeatureFlags(inst *drivers.Instance, claims *SecurityClaims) (map[st
 		Variables:   vars,
 	}
 
+	mergedFeatureFlags := maps.Clone(drivers.DefaultFeatureFlags)
+	maps.Copy(mergedFeatureFlags, inst.FeatureFlags)
+
 	featureFlags := make(map[string]bool)
-	mergedFeatureFlags := drivers.MergeDefaultFeatureFlags(inst.FeatureFlags)
 	for f, v := range mergedFeatureFlags {
 		rv, err := parser.ResolveTemplate(v, templateData, false)
 		if err != nil {
@@ -182,7 +186,9 @@ func ResolveFeatureFlags(inst *drivers.Instance, claims *SecurityClaims) (map[st
 			}
 		}
 
-		featureFlags[f] = bv
+		// Return as camelCase since UI expects in that format
+		cf := strcase.ToLowerCamel(f)
+		featureFlags[cf] = bv
 	}
 
 	return featureFlags, nil
