@@ -385,7 +385,11 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow {['clickhouse', 'snowflake', 'salesforce'].includes(connector.name)
+      class="flex flex-col flex-grow {[
+        'clickhouse',
+        'snowflake',
+        'salesforce',
+      ].includes(connector.name ?? '')
         ? 'max-h-[38.5rem] min-h-[38.5rem]'
         : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
     >
