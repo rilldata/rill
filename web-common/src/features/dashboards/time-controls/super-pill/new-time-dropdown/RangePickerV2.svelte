@@ -154,6 +154,7 @@
       snapToEnd: grain === truncationGrain ? false : snapToEnd,
       ref: ref,
     });
+    if (grain) onTimeGrainSelect(grain);
 
     onSelectRange(newString);
   }
