@@ -1562,7 +1562,12 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 // newModelEnv makes a ModelEnv configured using the current instance.
 func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, error) {
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access instance: %w", err)
+	}
+
+	cfg, err := inst.Config()
 	if err != nil {
 		return nil, fmt.Errorf("failed to access instance config: %w", err)
 	}
@@ -1583,6 +1588,7 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 		RepoRoot:           repoRoot,
 		StageChanges:       cfg.StageChanges,
 		DefaultMaterialize: cfg.ModelDefaultMaterialize,
+		Connectors:         inst.ResolveConnectors(),
 		AcquireConnector:   r.C.AcquireConn,
 	}, nil
 }
