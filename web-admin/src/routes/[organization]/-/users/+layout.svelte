@@ -21,6 +21,11 @@
       hasPermission: hasManageOrgMembers,
     },
     {
+      label: "Guests",
+      route: "/guests",
+      hasPermission: hasManageOrgMembers,
+    },
+    {
       label: "Groups",
       route: "/groups",
       hasPermission: hasManageOrgMembers,

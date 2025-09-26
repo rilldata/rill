@@ -23,6 +23,7 @@
   // Changing billing contact is not an action for this user. So handle it upstream
   // This also avoids rendering the modal per row.
   export let onAttemptRemoveBillingContactUser: () => void;
+  export let onConvertToMember: (user: string) => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
@@ -30,13 +31,14 @@
   $: organization = $page.params.organization;
   $: isAdmin = currentUserRole === OrgUserRoles.Admin;
   $: isEditor = currentUserRole === OrgUserRoles.Editor;
-  $: canManageUser =
-    !isCurrentUser &&
-    (isAdmin ||
-      (isEditor &&
-        (role === OrgUserRoles.Editor ||
-          role === OrgUserRoles.Viewer ||
-          role === OrgUserRoles.Guest)));
+  $: canManageUser = true;
+  // $: canManageUser =
+  //   !isCurrentUser &&
+  //   (isAdmin ||
+  //     (isEditor &&
+  //       (role === OrgUserRoles.Editor ||
+  //         role === OrgUserRoles.Viewer ||
+  //         role === OrgUserRoles.Guest)));
 
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =
@@ -118,6 +120,14 @@
         <Trash2Icon size="12px" />
         <span class="ml-2">Remove</span>
       </DropdownMenu.Item>
+      {#if role === OrgUserRoles.Guest}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={() => onConvertToMember(email)}
+        >
+          Convert to member
+        </DropdownMenu.Item>
+      {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}

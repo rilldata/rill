@@ -9,6 +9,8 @@
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
   import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
+  import OrgUsersTableGroupsCell from "./OrgUsersTableGroupsCell.svelte";
+  import OrgUsersTableProjectsCell from "./OrgUsersTableProjectsCell.svelte";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import type {
     InfiniteData,
@@ -21,6 +23,7 @@
     invitedBy?: string;
   }
 
+  export let organization: string;
   export let data: OrgUser[];
   export let usersQuery: InfiniteQueryObserverResult<
     InfiniteData<V1ListOrganizationMemberUsersResponse, unknown>,
@@ -34,9 +37,13 @@
   export let currentUserRole: string;
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
+  export let guestOnly: boolean;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
+  export let onEditUserGroup: (groupName: string) => void;
+  export let onShareProject: (projectName: string) => void;
+  export let onConvertToMember: (user: string) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
 
@@ -58,17 +65,49 @@
         widthPercent: 50,
       },
     },
+    ...(guestOnly
+      ? []
+      : [
+          {
+            accessorKey: "roleName",
+            header: "Organization Role",
+            cell: ({ row }) =>
+              flexRender(OrgUsersTableRoleCell, {
+                email: row.original.userEmail,
+                role: row.original.roleName,
+                isCurrentUser: row.original.userEmail === currentUserEmail,
+                currentUserRole,
+                isBillingContact: row.original.userEmail === billingContact,
+                onAttemptChangeBillingContactUserRole,
+              }),
+            meta: {
+              widthPercent: 40,
+              marginLeft: "8px",
+            },
+          },
+        ]),
     {
-      accessorKey: "roleName",
-      header: "Organization Role",
+      accessorKey: "usergroupsCount",
+      header: "Groups",
       cell: ({ row }) =>
-        flexRender(OrgUsersTableRoleCell, {
-          email: row.original.userEmail,
-          role: row.original.roleName,
-          isCurrentUser: row.original.userEmail === currentUserEmail,
-          currentUserRole,
-          isBillingContact: row.original.userEmail === billingContact,
-          onAttemptChangeBillingContactUserRole,
+        flexRender(OrgUsersTableGroupsCell, {
+          userId: row.original.userId,
+          organization,
+          onEditUserGroup,
+        }),
+      meta: {
+        widthPercent: 40,
+        marginLeft: "8px",
+      },
+    },
+    {
+      accessorKey: "projectsCount",
+      header: "Projects",
+      cell: ({ row }) =>
+        flexRender(OrgUsersTableProjectsCell, {
+          userId: row.original.userId,
+          organization,
+          onShareProject,
         }),
       meta: {
         widthPercent: 40,
@@ -87,6 +126,7 @@
           currentUserRole,
           isBillingContact: row.original.userEmail === billingContact,
           onAttemptRemoveBillingContactUser,
+          onConvertToMember,
         }),
       meta: {
         widthPercent: 5,
