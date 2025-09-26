@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -200,17 +201,19 @@ var defaultFeatureFlags = map[string]string{
 	"dashboardChat":       "true",
 }
 
-// SetFeatureFlags sets the feature flags for the instance. It replaces missing values with the ones from defaultFeatureFlags
-func (i *Instance) SetFeatureFlags(flags map[string]string) {
+// MergeDefaultFeatureFlags sets the feature flags for the instance. It replaces missing values with the ones from defaultFeatureFlags
+func MergeDefaultFeatureFlags(flags map[string]string) map[string]string {
 	if flags == nil {
 		flags = make(map[string]string)
 	}
+	mergedFlags := maps.Clone(flags)
+
 	for f, v := range defaultFeatureFlags {
-		if _, ok := flags[f]; ok {
+		if _, ok := mergedFlags[f]; ok {
 			continue
 		}
-		flags[f] = v
+		mergedFlags[f] = v
 	}
 
-	i.FeatureFlags = flags
+	return mergedFlags
 }

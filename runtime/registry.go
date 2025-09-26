@@ -164,20 +164,24 @@ func ResolveFeatureFlags(inst *drivers.Instance, claims *SecurityClaims) (map[st
 	}
 
 	featureFlags := make(map[string]bool)
-	for f, v := range inst.FeatureFlags {
+	mergedFeatureFlags := drivers.MergeDefaultFeatureFlags(inst.FeatureFlags)
+	for f, v := range mergedFeatureFlags {
 		rv, err := parser.ResolveTemplate(v, templateData, false)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve feature flag %q with template %q: %w", f, v, err)
 		}
+
+		var bv bool
 		rv = strings.TrimSpace(rv)
 		if rv == "" || rv == "<no value>" {
-			continue
+			bv = false
+		} else {
+			bv, err = parser.EvaluateBoolExpression(rv)
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate feature flag %q with template %q: %w", f, v, err)
+			}
 		}
 
-		bv, err := parser.EvaluateBoolExpression(rv)
-		if err != nil {
-			return nil, fmt.Errorf("failed to evaluate feature flag %q with template %q: %w", f, v, err)
-		}
 		featureFlags[f] = bv
 	}
 

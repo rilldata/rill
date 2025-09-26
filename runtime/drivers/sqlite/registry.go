@@ -114,13 +114,17 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			return nil, err
 		}
 
+		// We used to store feature flags as map[string]bool
+		// So we need to first try to parse it as such
 		featureFlagBools, err := mapFromJSON[bool](featureFlags)
 		if err != nil {
+			// If the parse failed, parse as map[string]string
 			i.FeatureFlags, err = mapFromJSON[string](featureFlags)
 			if err != nil {
 				return nil, err
 			}
 		} else {
+			// If the parse succeeded, convert to map[string]string by converting to "true"/"false"
 			i.FeatureFlags = map[string]string{}
 			for f, v := range featureFlagBools {
 				i.FeatureFlags[f] = fmt.Sprintf("%v", v)
