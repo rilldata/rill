@@ -25,7 +25,7 @@ type selfToSelfExecutor struct {
 
 var (
 	_                 drivers.ModelExecutor = &selfToSelfExecutor{}
-	createSecretRegex                       = regexp.MustCompile(`(?i)^\s*CREATE\s+(OR\s+REPLACE\s+)?(TEMPORARY\s+)?SECRET\s+\S+`)
+	createSecretRegex                       = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\b`)
 )
 
 func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
