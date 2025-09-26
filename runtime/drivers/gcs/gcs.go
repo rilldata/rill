@@ -139,9 +139,6 @@ type Connection struct {
 	config  *ConfigProperties
 	storage *storage.Client
 	logger  *zap.Logger
-
-	// s3Conn is used when connecting to GCS in S3 compatible mode
-	s3Conn drivers.ObjectStore
 }
 
 var _ drivers.Handle = &Connection{}
