@@ -109,8 +109,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, fmt.Errorf("internal error: expected s3 connector handle")
 		}
 		conn := &s3CompatibleConn{
-			config: conf,
-			s3Conn: s3Conn,
+			s3Conn,
+			conf,
 		}
 		return conn, nil
 	}
