@@ -326,39 +326,42 @@ func (c *catalogStore) UpdateModelPartitionPending(ctx context.Context, modelID,
 	return nil
 }
 
-func (c *catalogStore) UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
-		c.instanceID,
-		modelID,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *catalogStore) UpdateModelPartitionsExplicitlyTriggered(ctx context.Context, modelID string, partitionKeys []string, triggered bool) error {
-	if len(partitionKeys) == 0 {
-		return nil
-	}
-
+func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored, triggered bool) error {
 	var qry strings.Builder
 	var args []any
-	qry.WriteString("UPDATE model_partitions SET explicitly_triggered=? WHERE instance_id=? AND model_id=? AND key IN (")
+
+	qry.WriteString("UPDATE model_partitions SET explicitly_triggered=?, executed_on=NULL WHERE instance_id=? AND model_id=?")
 	args = append(args, triggered, c.instanceID, modelID)
 
-	for i, k := range partitionKeys {
-		if i == 0 {
-			qry.WriteString("?")
-		} else {
-			qry.WriteString(",?")
+	// Add conditions based on parameters
+	if whereErrored && len(wherePartitionKeyIn) > 0 {
+		// Both conditions: errored AND key in list
+		qry.WriteString(" AND error != '' AND key IN (")
+		for i, k := range wherePartitionKeyIn {
+			if i == 0 {
+				qry.WriteString("?")
+			} else {
+				qry.WriteString(",?")
+			}
+			args = append(args, k)
 		}
-		args = append(args, k)
+		qry.WriteString(")")
+	} else if whereErrored {
+		// Only errored condition
+		qry.WriteString(" AND error != ''")
+	} else if len(wherePartitionKeyIn) > 0 {
+		// Only key in list condition
+		qry.WriteString(" AND key IN (")
+		for i, k := range wherePartitionKeyIn {
+			if i == 0 {
+				qry.WriteString("?")
+			} else {
+				qry.WriteString(",?")
+			}
+			args = append(args, k)
+		}
+		qry.WriteString(")")
 	}
-	qry.WriteString(")")
 
 	_, err := c.db.ExecContext(ctx, qry.String(), args...)
 	if err != nil {

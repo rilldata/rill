@@ -129,47 +129,24 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 				continue
 			}
 
-			// Store triggered partitions in model state for targeted execution
-			var triggeredPartitions []string
+			// Handle specific partitions vs all errored partitions
 			if len(mt.Partitions) > 0 {
-				triggeredPartitions = mt.Partitions
+				// Set the triggered flag on specific partitions
+				err = catalog.UpdateModelPartitionsTriggered(ctx, modelID, mt.Partitions, false, true)
 			} else if mt.AllErroredPartitions {
-				erroredPartitions, err := catalog.FindModelPartitionsWithErrors(ctx, modelID)
-				if err != nil {
-					return runtime.ReconcileResult{Err: fmt.Errorf("failed to find errored partitions for model %s: %w", mt.Model, err)}
-				}
-				for _, p := range erroredPartitions {
-					triggeredPartitions = append(triggeredPartitions, p.Key)
-				}
+				// Update all errored partitions - this sets both pending and explicitly_triggered
+				err = catalog.UpdateModelPartitionsTriggered(ctx, modelID, nil, true, true)
 			}
 
-			// Set the triggered flag on the partitions in the database
-			if len(triggeredPartitions) > 0 {
-				err = catalog.UpdateModelPartitionsExplicitlyTriggered(ctx, modelID, triggeredPartitions, true)
-				if err != nil {
-					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update partitions as triggered for model %s: %w", mt.Model, err)}
-				}
-
-				// Set the TriggerPartitions flag in the model spec to indicate individual partition refresh
-				mdl.Spec.TriggerPartitions = true
-				err = r.C.UpdateSpec(ctx, mr.Meta.Name, mr)
-				if err != nil {
-					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update TriggerPartitions for model %s: %w", mt.Model, err)}
-				}
+			if err != nil {
+				return runtime.ReconcileResult{Err: fmt.Errorf("failed to update partitions as triggered for model %s: %w", mt.Model, err)}
 			}
 
-			if mt.AllErroredPartitions {
-				err := catalog.UpdateModelPartitionsPendingIfError(ctx, modelID)
-				if err != nil {
-					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update partitions for model %s: %w", mt.Model, err)}
-				}
-			}
-
-			for _, partition := range mt.Partitions {
-				err := catalog.UpdateModelPartitionPending(ctx, modelID, partition)
-				if err != nil {
-					return runtime.ReconcileResult{Err: fmt.Errorf("failed to mark partition %q pending for model %q: %w", partition, mt.Model, err)}
-				}
+			// Set the TriggerPartitions flag in the model spec to indicate individual partition refresh
+			mdl.Spec.TriggerPartitions = true
+			err = r.C.UpdateSpec(ctx, mr.Meta.Name, mr)
+			if err != nil {
+				return runtime.ReconcileResult{Err: fmt.Errorf("failed to update TriggerPartitions for model %s: %w", mt.Model, err)}
 			}
 		}
 

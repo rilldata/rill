@@ -1027,18 +1027,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	defer release()
 
 	// First step is to resolve and sync the partitions.
-	if !incrementalRun || model.Spec.Trigger || model.Spec.TriggerFull || model.Spec.TriggerPartitions {
-		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
-		if err != nil {
-			return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
-		}
-	}
-
-	// Check if we have explicitly triggered partitions after resolution
-	explicitlyTriggeredPartitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
-		ModelID:                  model.State.PartitionsModelId,
-		WhereExplicitlyTriggered: true,
-	})
+	err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
 	if err != nil {
 		return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
 	}
@@ -1047,13 +1036,16 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	var totalExecDuration atomic.Int64
 	firstRunIsIncremental := incrementalRun
 
-	explicitlyTargetedRefresh := len(explicitlyTriggeredPartitions) > 0
+	var explicitlyTriggeredPartitions []drivers.ModelPartition
+	explicitlyTargetedRefresh := model.Spec.TriggerPartitions
 	partitionFilter := &drivers.FindModelPartitionsOptions{
 		ModelID: model.State.PartitionsModelId,
 	}
 
 	if model.Spec.TriggerPartitions {
+		// When partitions are explicitly triggered, process both explicitly triggered partitions AND any pending partitions in the same run
 		partitionFilter.WhereExplicitlyTriggered = true
+		partitionFilter.WherePending = true
 	} else {
 		partitionFilter.WherePending = true
 	}
@@ -1075,6 +1067,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			return "", nil, false, fmt.Errorf("no partitions found")
 		}
 		partition := partitions[0]
+
+		// If this is an explicitly targeted refresh, collect this partition for cleanup
+		if explicitlyTargetedRefresh {
+			explicitlyTriggeredPartitions = append(explicitlyTriggeredPartitions, partition)
+		}
 
 		// Execute the first partition (with returnErr=true because for the first partition, we do not log and skip erroring partitions)
 		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, partition, true)
@@ -1104,6 +1101,11 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		}
 		if len(partitions) == 0 {
 			break
+		}
+
+		// If this is an explicitly targeted refresh, collect these partitions for cleanup
+		if explicitlyTargetedRefresh {
+			explicitlyTriggeredPartitions = append(explicitlyTriggeredPartitions, partitions...)
 		}
 
 		// Determine how many workers goroutines to start
@@ -1187,7 +1189,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		for _, p := range explicitlyTriggeredPartitions {
 			partitionKeys = append(partitionKeys, p.Key)
 		}
-		err = catalog.UpdateModelPartitionsExplicitlyTriggered(ctx, model.State.PartitionsModelId, partitionKeys, false)
+		err = catalog.UpdateModelPartitionsTriggered(ctx, model.State.PartitionsModelId, partitionKeys, false, false)
 		if err != nil {
 			return "", nil, false, fmt.Errorf("failed to clear triggered flag: %w", err)
 		}
