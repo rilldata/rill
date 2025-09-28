@@ -134,7 +134,7 @@ export function createColorEncoding(
         baseEncoding.scale = {
           scheme: colorRange.scheme,
         };
-      } else if (colorRange.mode === "range") {
+      } else if (colorRange.mode === "gradient") {
         baseEncoding.scale = {
           range: [
             resolveColor(data.theme, colorRange.start),

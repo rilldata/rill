@@ -86,7 +86,7 @@ export type ColorRangeMapping =
       scheme: ColorScheme;
     }
   | {
-      mode: "range";
+      mode: "gradient";
       start: string;
       end: string;
     };

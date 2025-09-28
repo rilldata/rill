@@ -1,7 +1,7 @@
 <!--
   ColorRangeSelector - Component for configuring continuous color ranges in charts like heatmaps.
-  Supports both predefined color schemes (tealblues, magma, etc.) and custom color ranges.
-  Defaults to tealblues scheme but allows switching to custom range mode.
+  Supports both predefined color schemes (tealblues, magma, etc.) and custom color gradients.
+  Defaults to tealblues scheme but allows switching to custom gradient mode.
 -->
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -61,10 +61,10 @@
 
   $: currentMode = currentColorRange.mode || "scheme";
 
-  function isRangeMode(
+  function isGradientMode(
     colorRange: ColorRangeMapping,
-  ): colorRange is { mode: "range"; start: string; end: string } {
-    return colorRange.mode === "range";
+  ): colorRange is { mode: "gradient"; start: string; end: string } {
+    return colorRange.mode === "gradient";
   }
 
   const resolveColor = (color: string): string => {
@@ -78,7 +78,7 @@
     return color;
   };
 
-  function handleModeSwitch(mode: "scheme" | "range") {
+  function handleModeSwitch(mode: "scheme" | "gradient") {
     let updatedRange: ColorRangeMapping;
 
     if (mode === "scheme") {
@@ -88,7 +88,7 @@
       };
     } else {
       updatedRange = {
-        mode: "range",
+        mode: "gradient",
         start: "primary",
         end: "secondary",
       };
@@ -108,12 +108,12 @@
   function handleStartColorChange(newColor: string) {
     let currentEnd = "secondary";
 
-    if (isRangeMode(currentColorRange)) {
+    if (isGradientMode(currentColorRange)) {
       currentEnd = currentColorRange.end;
     }
 
     const updatedRange: ColorRangeMapping = {
-      mode: "range",
+      mode: "gradient",
       start: newColor,
       end: currentEnd,
     };
@@ -123,12 +123,12 @@
   function handleEndColorChange(newColor: string) {
     let currentStart = "primary";
 
-    if (isRangeMode(currentColorRange)) {
+    if (isGradientMode(currentColorRange)) {
       currentStart = currentColorRange.start;
     }
 
     const updatedRange: ColorRangeMapping = {
-      mode: "range",
+      mode: "gradient",
       start: currentStart,
       end: newColor,
     };
@@ -149,10 +149,10 @@
       <!-- Mode Switcher -->
       <FieldSwitcher
         small
-        fields={["Scheme", "Range"]}
+        fields={["Scheme", "Graident"]}
         selected={currentMode === "scheme" ? 0 : 1}
         onClick={(i, value) =>
-          handleModeSwitch(value === "Scheme" ? "scheme" : "range")}
+          handleModeSwitch(value === "Scheme" ? "scheme" : "gradient")}
       />
 
       {#if currentMode === "scheme"}
@@ -168,11 +168,11 @@
           onChange={handleSchemeChange}
         />
       {:else}
-        <!-- Custom Range Selectors -->
+        <!-- Custom Graident Selectors -->
         <ColorInput
           small
           stringColor={resolveColor(
-            isRangeMode(currentColorRange)
+            isGradientMode(currentColorRange)
               ? currentColorRange.start
               : "primary",
           )}
@@ -185,7 +185,7 @@
         <ColorInput
           small
           stringColor={resolveColor(
-            isRangeMode(currentColorRange)
+            isGradientMode(currentColorRange)
               ? currentColorRange.end
               : "secondary",
           )}
