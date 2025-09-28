@@ -230,7 +230,7 @@ func mergeAccessRules(rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
 			condition.WriteString(" AND ")
 		}
 		condition.WriteString("(")
-		condition.WriteString(access.Condition)
+		condition.WriteString(access.ConditionExpression)
 		condition.WriteString(")")
 	}
 
@@ -242,8 +242,8 @@ func mergeAccessRules(rules []*runtimev1.SecurityRule) *runtimev1.SecurityRule {
 	return &runtimev1.SecurityRule{
 		Rule: &runtimev1.SecurityRule_Access{
 			Access: &runtimev1.SecurityRuleAccess{
-				Condition: condition.String(),
-				Allow:     true,
+				ConditionExpression: condition.String(),
+				Allow:               true,
 			},
 		},
 	}

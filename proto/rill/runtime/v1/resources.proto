@@ -323,10 +323,20 @@ message SecurityRule {
     SecurityRuleTransitiveAccess transitive_access = 4;
   }
 }
-  
+
 message SecurityRuleAccess {
-  string condition = 1;
+  // The condition under which this rule applies.
+  // It is ANDed together with the condition_kinds and condition_resources.
+  string condition_expression = 1;
+  // The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+  repeated string condition_kinds = 3;
+  // The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+  // It is ORed together with the condition_kinds.
+  repeated ResourceName condition_resources = 4;
+  // Whether to allow or deny access to the resources covered by the conditions.
   bool allow = 2;
+  // If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true).
+  bool exclusive = 5;
 }
 
 message SecurityRuleFieldAccess {

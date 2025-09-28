@@ -3755,9 +3755,45 @@ func (m *SecurityRuleAccess) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Condition
+	// no validation rules for ConditionExpression
+
+	for idx, item := range m.GetConditionResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleAccessValidationError{
+					field:  fmt.Sprintf("ConditionResources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Allow
+
+	// no validation rules for Exclusive
 
 	if len(errors) > 0 {
 		return SecurityRuleAccessMultiError(errors)

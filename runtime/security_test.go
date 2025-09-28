@@ -36,7 +36,7 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "{{.user.admin}}", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "{{.user.admin}}", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "domain = '{{.user.domain}}'"}}},
 					},
 				},
@@ -57,7 +57,7 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "groups IN ('{{ .user.groups | join \"', '\" }}')"}}},
 					},
 				},
@@ -78,7 +78,7 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "groups IN ('{{ .user.groups | join \"', '\" }}')"}}},
 					},
 				},
@@ -99,7 +99,7 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "{{.user.admin}}", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "{{.user.admin}}", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "groups IN ('{{ .user.groups | join \"', '\" }}')"}}},
 					},
 				},
@@ -120,7 +120,7 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "groups IN ('{{ .user.groups | join \"', '\" }}')"}}},
 						{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
 							Condition: "'{{.user.domain}}' = 'test.com'",
@@ -157,7 +157,7 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "groups IN ('{{ .user.groups | join \"', '\" }}')"}}},
 						{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
 							Condition: "'{{.user.domain}}' = 'test.com'",
@@ -401,7 +401,7 @@ func TestResolveMetricsView(t *testing.T) {
 				attr: nil,
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "'{{.user.domain}}' = 'rilldata.com'", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "domain = '{{.user.domain}}'"}}},
 					},
 				},
@@ -442,7 +442,7 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "'{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com'", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "'{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com'", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "groups IN ('{{ .user.groups | join \"', '\" }}')"}}},
 					},
 				},
@@ -463,7 +463,7 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{
 					SecurityRules: []*runtimev1.SecurityRule{
-						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{Condition: "('{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com') AND {{.user.admin}}", Allow: true}}},
+						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: "('{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com') AND {{.user.admin}}", Allow: true}}},
 						{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{Sql: "groups IN ('{{ .user.groups | join \"', '\" }}')"}}},
 					},
 				},

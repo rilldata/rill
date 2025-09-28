@@ -40,8 +40,8 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
-					Condition: p.Access,
-					Allow:     true,
+					ConditionExpression: p.Access,
+					Allow:               true,
 				},
 			},
 		})
@@ -215,8 +215,8 @@ func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
-					Condition: condition,
-					Allow:     *allow,
+					ConditionExpression: condition,
+					Allow:               *allow,
 				},
 			},
 		}, nil

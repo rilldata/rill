@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
+	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -207,7 +209,7 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 		return ResolvedSecurityOpen, nil
 	}
 
-	expandedRules, err := p.expandRules(ctx, instanceID, claims)
+	expandedRules, err := p.expandTransitiveAccessRules(ctx, instanceID, claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to expand security rules: %w", err)
 	}
@@ -482,29 +484,64 @@ func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, c
 }
 
 // applySecurityRuleAccess applies an access rule to the resolved security.
-func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleAccess, td parser.TemplateData) error {
+func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleAccess, td parser.TemplateData) error {
 	// If already explicitly denied, do nothing (explicit denies take precedence over explicit allows)
 	if res.access != nil && !*res.access {
 		return nil
 	}
 
-	if rule.Condition != "" {
-		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
-		if err != nil {
-			return err
-		}
-		apply, err := parser.EvaluateBoolExpression(expr)
-		if err != nil {
-			return err
-		}
-
-		if !apply {
-			return nil
-		}
+	// Evaluate resource-based conditions
+	var resourceMatches *bool
+	if len(rule.ConditionKinds) > 0 || len(rule.ConditionResources) > 0 {
+		matches := slices.Contains(rule.ConditionKinds, r.Meta.Name.Kind) ||
+			slices.ContainsFunc(rule.ConditionResources, func(res *runtimev1.ResourceName) bool {
+				return res.Kind == r.Meta.Name.Kind && res.Name == r.Meta.Name.Name
+			})
+		resourceMatches = &matches
 	}
 
-	res.access = &rule.Allow
+	// Evaluate expression-based conditions
+	var expressionMatches *bool
+	if rule.ConditionExpression != "" {
+		expr, err := parser.ResolveTemplate(rule.ConditionExpression, td, false)
+		if err != nil {
+			return err
+		}
+		matches, err := parser.EvaluateBoolExpression(expr)
+		if err != nil {
+			return err
+		}
+		expressionMatches = &matches
+	}
 
+	// Early return if no conditions are provided
+	if resourceMatches == nil && expressionMatches == nil {
+		// No conditions provided
+		res.access = &rule.Allow
+		return nil
+	}
+
+	// Combine conditions (both must be true if both are present)
+	conditionsMatch := true
+	if resourceMatches != nil {
+		conditionsMatch = *resourceMatches
+	}
+	if expressionMatches != nil {
+		conditionsMatch = conditionsMatch && *expressionMatches
+	}
+
+	// Determine final access value
+	allow := rule.Allow
+	if rule.Exclusive {
+		// Exclusive rules: apply the opposite when conditions don't match
+		if !conditionsMatch {
+			allow = !allow
+		}
+	} else if !conditionsMatch { // Non-exclusive rules: do nothing when conditions don't match
+		return nil
+	}
+
+	res.access = &allow
 	return nil
 }
 
@@ -623,8 +660,15 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *ru
 	return nil
 }
 
-func (p *securityEngine) expandRules(ctx context.Context, instanceID string, claims *SecurityClaims) ([]*runtimev1.SecurityRule, error) {
+// expandTransitiveAccessRules expands any transitive access rules in the provided list of rules.
+// This involves looking up the referenced resource, determining its dependencies, and adding the necessary access rules for those dependencies.
+// For example, a transitive access rule on a report will add access rules for the underlying metrics view, explore, and any fields or rows that are accessible in the report.
+func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instanceID string, claims *SecurityClaims) ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
+	// gather all conditions kinds and resources mentioned in the rules so that we can add a single security rule access policy for them at the end.
+	// making sure only a single rule with the exclusive flag is added, otherwise we may get false rejections depending on which rule with the exclusive flag is evaluated first
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
 	for _, rule := range claims.AdditionalRules {
 		if rule.GetTransitiveAccess() == nil {
 			rules = append(rules, rule)
@@ -645,33 +689,55 @@ func (p *securityEngine) expandRules(ctx context.Context, instanceID string, cla
 		}
 		switch res.GetResource().(type) {
 		case *runtimev1.Resource_Report:
-			resolvedRules, err := p.resolveTransitiveAccessRuleForReport(ctx, instanceID, claims, res)
+			resolvedRules, ck, cr, err := p.resolveTransitiveAccessRuleForReport(ctx, instanceID, claims, res)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve transitive access rule for report: %w", err)
 			}
 			rules = append(rules, resolvedRules...)
+			conditionKinds = append(conditionKinds, ck...)
+			conditionResources = append(conditionResources, cr...)
 		case *runtimev1.Resource_Alert:
-			resolvedRules, err := p.resolveTransitiveAccessRuleForAlert(ctx, instanceID, claims, res)
+			resolvedRules, ck, cr, err := p.resolveTransitiveAccessRuleForAlert(ctx, instanceID, claims, res)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve transitive access rule for alert: %w", err)
 			}
 			rules = append(rules, resolvedRules...)
+			conditionKinds = append(conditionKinds, ck...)
+			conditionResources = append(conditionResources, cr...)
 		case *runtimev1.Resource_Explore:
-			resolvedRules, err := p.resolveTransitiveAccessRuleForExplore(res)
+			resolvedRules, ck, cr, err := p.resolveTransitiveAccessRuleForExplore(res)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve transitive access rule for explore: %w", err)
 			}
 			rules = append(rules, resolvedRules...)
+			conditionKinds = append(conditionKinds, ck...)
+			conditionResources = append(conditionResources, cr...)
 		case *runtimev1.Resource_Canvas:
-			resolvedRules, err := p.resolveTransitiveAccessRuleForCanvas(ctx, instanceID, res)
+			resolvedRules, ck, cr, err := p.resolveTransitiveAccessRuleForCanvas(ctx, instanceID, res)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve transitive access rule for canvas: %w", err)
 			}
 			rules = append(rules, resolvedRules...)
+			conditionKinds = append(conditionKinds, ck...)
+			conditionResources = append(conditionResources, cr...)
 		default:
 			return nil, fmt.Errorf("transitive access rule for resource kind %q is not supported", res.Meta.Name.Kind)
 		}
 	}
+	// add a security rule access policy for the resources mentioned in the conditions with exclusive flag set so that access is denied to everything else.
+	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionKinds:     conditionKinds,
+					ConditionResources: conditionResources,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
 	return rules, nil
 }
 
@@ -679,39 +745,27 @@ func (p *securityEngine) expandRules(ctx context.Context, instanceID string, cla
 // This determines all the resources needed to access the report like the underlying metrics view, explore, etc. and adds the corresponding security rules to the list of rules to be applied.
 // Also use the underlying query to determine the fields that are accessible in the report and where clause that needs to be applied.
 // Restricts access to these fields and rows by adding corresponding field access and row filter rules to the resolved security rules.
-func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
 	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionRes []*runtimev1.ResourceName
 
 	report := res.GetReport()
 	if report == nil {
-		return nil, fmt.Errorf("resource is not a report")
+		return nil, nil, nil, fmt.Errorf("resource is not a report")
 	}
 
 	spec := report.GetSpec()
 	if spec == nil {
-		return nil, fmt.Errorf("report spec is nil")
+		return nil, nil, nil, fmt.Errorf("report spec is nil")
 	}
-	// explicitly allow access to the report itself
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))),
-				Allow:     true,
-			},
-		},
-	})
-
-	// deny everything except the report itself, themes, explore, canvas and metrics view
-	var denyCondition strings.Builder
-	// self report
-	denyCondition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
-	// all themes
-	denyCondition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
+	conditionRes = append(conditionRes, res.Meta.Name)
+	conditionKinds = append(conditionKinds, ResourceKindTheme)
 
 	if spec.QueryName != "" {
 		initializer, ok := ResolverInitializers["legacy_metrics"]
 		if !ok {
-			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
+			return nil, nil, nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
 		}
 		resolver, err := initializer(ctx, &ResolverOptions{
 			Runtime:    p.rt,
@@ -724,12 +778,12 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 			ForExport: false,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		defer resolver.Close()
 		inferred, err := resolver.InferRequiredSecurityRules()
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		rules = append(rules, inferred...)
 
@@ -737,16 +791,7 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 		refs := resolver.Refs()
 		for _, ref := range refs {
 			// allow access to the referenced resource
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Condition: fmt.Sprintf("'{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
-						Allow:     true,
-					},
-				},
-			})
-			// add to deny condition
-			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
+			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 			if ref.Kind == ResourceKindMetricsView {
 				mvName = ref.Name
 			}
@@ -778,60 +823,40 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 		}
 
 		if explore != "" {
-			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(explore))))
+			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ResourceKindExplore, Name: explore})
 		}
 		if canvas != "" {
-			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(canvas))))
+			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: canvas})
 		}
 	}
 
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", denyCondition.String()),
-				Allow:     false,
-			},
-		},
-	})
-
-	return rules, nil
+	return rules, conditionKinds, conditionRes, nil
 }
 
-func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
 	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
 
 	alert := res.GetAlert()
 	if alert == nil {
-		return nil, fmt.Errorf("resource is not an alert")
+		return nil, nil, nil, fmt.Errorf("resource is not an alert")
 	}
 
 	spec := alert.GetSpec()
 	if spec == nil {
-		return nil, fmt.Errorf("alert spec is nil")
+		return nil, nil, nil, fmt.Errorf("alert spec is nil")
 	}
 
 	// explicitly allow access to the alert itself
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindAlert, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))),
-				Allow:     true,
-			},
-		},
-	})
+	conditionResources = append(conditionResources, res.Meta.Name)
+	conditionKinds = append(conditionKinds, ResourceKindTheme)
 
 	var mvName string
-	// deny everything except the alert itself and themes
-	var denyCondition strings.Builder
-	// self alert
-	denyCondition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindAlert, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
-	// all themes
-	denyCondition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
-
 	if spec.QueryName != "" {
 		initializer, ok := ResolverInitializers["legacy_metrics"]
 		if !ok {
-			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
+			return nil, nil, nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
 		}
 		resolver, err := initializer(ctx, &ResolverOptions{
 			Runtime:    p.rt,
@@ -844,38 +869,25 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 			ForExport: false,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		defer resolver.Close()
 		inferred, err := resolver.InferRequiredSecurityRules()
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		rules = append(rules, inferred...)
 
 		refs := resolver.Refs()
 		for _, ref := range refs {
-			// allow access to the referenced resource
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Condition: fmt.Sprintf("'{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
-						Allow:     true,
-					},
-				},
-			})
-			// add to deny condition
-			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
-			if ref.Kind == ResourceKindMetricsView {
-				mvName = ref.Name
-			}
+			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 		}
 	}
 
 	if spec.Resolver != "" {
 		initializer, ok := ResolverInitializers[spec.Resolver]
 		if !ok {
-			return nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
+			return nil, nil, nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
 		}
 		resolver, err := initializer(ctx, &ResolverOptions{
 			Runtime:    p.rt,
@@ -885,28 +897,18 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 			ForExport:  false,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		defer resolver.Close()
 		inferred, err := resolver.InferRequiredSecurityRules()
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		rules = append(rules, inferred...)
 
 		refs := resolver.Refs()
 		for _, ref := range refs {
-			// allow access to the referenced resource
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Condition: fmt.Sprintf("'{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
-						Allow:     true,
-					},
-				},
-			})
-			// add to deny condition
-			denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
+			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 		}
 	}
 
@@ -936,90 +938,57 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 	}
 
 	if explore != "" {
-		denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(explore))))
+		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindExplore, Name: explore})
 	}
 	if canvas != "" {
-		denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(canvas))))
+		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: canvas})
 	}
 
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", denyCondition.String()),
-				Allow:     false,
-			},
-		},
-	})
-
-	return rules, nil
+	return rules, conditionKinds, conditionResources, nil
 }
 
-func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	var rules []*runtimev1.SecurityRule
+func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
 
 	explore := res.GetExplore()
 	if explore == nil {
-		return nil, fmt.Errorf("resource is not an explore")
+		return nil, nil, nil, fmt.Errorf("resource is not an explore")
 	}
 
 	spec := explore.GetState().GetValidSpec()
 	if spec == nil {
-		return nil, fmt.Errorf("explore valid spec is nil")
+		return nil, nil, nil, fmt.Errorf("explore valid spec is nil")
 	}
 
 	if spec.MetricsView == "" {
-		return nil, fmt.Errorf("explore does not reference a metrics view")
+		return nil, nil, nil, fmt.Errorf("explore does not reference a metrics view")
 	}
 
-	// explicitly allow access to the explore itself
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))),
-				Allow:     true,
-			},
-		},
-	})
+	conditionResources = append(conditionResources, res.Meta.Name)
+	conditionKinds = append(conditionKinds, ResourceKindTheme)
 
 	// give access to the underlying metrics view
 	if spec.MetricsView != "" {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))),
-					Allow:     true,
-				},
-			},
-		})
+		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: spec.MetricsView})
 	}
 
-	// deny everything except the explore, mv and themes
-	var denyCondition strings.Builder
-	// self canvas
-	denyCondition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindExplore, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
-	// underlying mv
-	denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
-	// all themes
-	denyCondition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
-
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", denyCondition.String()),
-				Allow:     false,
-			},
-		},
-	})
-
-	return rules, nil
+	return nil, conditionKinds, conditionResources, nil
 }
 
-func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Context, instanceID string, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Context, instanceID string, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
 	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
+	refs := &rendererRefs{
+		metricsViews: make(map[string]bool),
+		mvFields:     make(map[string]map[string]bool),
+		mvFilters:    make(map[string][]string),
+	}
 
 	canvas := res.GetCanvas()
 	if canvas == nil {
-		return nil, fmt.Errorf("resource is not a canvas")
+		return nil, nil, nil, fmt.Errorf("resource is not a canvas")
 	}
 
 	spec := canvas.GetState().GetValidSpec()
@@ -1027,30 +996,17 @@ func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Contex
 		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
 	}
 	if spec == nil {
-		return nil, fmt.Errorf("canvas spec is nil")
+		return nil, nil, nil, fmt.Errorf("canvas spec is nil")
 	}
 
 	// explicitly allow access to the canvas itself
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))),
-				Allow:     true,
-			},
-		},
-	})
-
-	// deny everything except the canvas itself, themes, and components
-	var denyCondition strings.Builder
-	// self canvas
-	denyCondition.WriteString(fmt.Sprintf("('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindCanvas, duckdbsql.EscapeStringValue(strings.ToLower(res.Meta.Name.Name))))
-	// all themes
-	denyCondition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s'", ResourceKindTheme))
+	conditionResources = append(conditionResources, res.Meta.Name)
+	conditionKinds = append(conditionKinds, ResourceKindTheme)
 
 	// Get controller to fetch components
 	ctr, err := p.rt.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get controller: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to get controller: %w", err)
 	}
 
 	// Collect all component names referenced by the canvas
@@ -1061,30 +1017,16 @@ func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Contex
 		}
 	}
 
-	// for deduplicating and combing fields for metrics view referenced by multiple components
-	mvSecInfoCache := make(map[string]*metricsViewSecurityInfo)
-	seenRefs := make(map[string]bool) // optional optimization to avoid adding access rule and deny condition multiple times for the same resource
-
 	// Process each component
 	for componentName := range componentNames {
-		// Allow access to the component itself
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindComponent, duckdbsql.EscapeStringValue(strings.ToLower(componentName))),
-					Allow:     true,
-				},
-			},
-		})
-
-		// Add to deny condition
-		denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", ResourceKindComponent, duckdbsql.EscapeStringValue(strings.ToLower(componentName))))
-
-		// Get component resource
 		componentRef := &runtimev1.ResourceName{
 			Kind: ResourceKindComponent,
 			Name: componentName,
 		}
+		// Allow access to the component itself
+		conditionResources = append(conditionResources, componentRef)
+
+		// Get component resource
 		componentRes, err := ctr.Get(ctx, componentRef, false)
 		if err != nil {
 			// If component is not found, skip it but still allow access to the component name
@@ -1097,70 +1039,34 @@ func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Contex
 			componentSpec = componentRes.GetComponent().Spec
 		}
 
-		// Allow access to metrics views referenced by this component and create field/row filter rules
-		for _, ref := range componentRes.Meta.Refs {
-			_, seen := seenRefs[fmt.Sprintf("%s:%s", ref.Kind, strings.ToLower(ref.Name))]
-			if !seen {
-				// allow access to the referenced resource
-				rules = append(rules, &runtimev1.SecurityRule{
-					Rule: &runtimev1.SecurityRule_Access{
-						Access: &runtimev1.SecurityRuleAccess{
-							Condition: fmt.Sprintf("'{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
-							Allow:     true,
-						},
-					},
-				})
-				// add to deny condition
-				denyCondition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(ref.Kind), duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))))
-			}
-			seenRefs[fmt.Sprintf("%s:%s", ref.Kind, strings.ToLower(ref.Name))] = true
+		if componentSpec.RendererProperties == nil {
+			continue
+		}
 
-			// handle metrics view
-			if ref.Kind == ResourceKindMetricsView && componentSpec.RendererProperties != nil {
-				mvSecInfo, exists := mvSecInfoCache[ref.Name]
-				if !exists {
-					mvSecInfo = &metricsViewSecurityInfo{fieldSet: make(map[string]bool)}
-					mvSecInfoCache[ref.Name] = mvSecInfo
-				}
-
-				// Extract renderer properties
-				rendererProps := componentSpec.RendererProperties.AsMap()
-
-				// Extract fields using the comprehensive helper method that handles all renderer types
-				fields, err := extractFieldsFromRendererProperties(componentSpec.Renderer, rendererProps)
-				if err != nil {
-					return nil, fmt.Errorf("failed to extract fields from renderer properties for component %q: %w", componentName, err)
-				}
-				for _, field := range fields {
-					mvSecInfo.fieldSet[field] = true
-				}
-
-				// Parse dimension_filters and create row filter rule
-				if dimFilter, ok := rendererProps["dimension_filters"].(string); ok && dimFilter != "" {
-					mvSecInfo.rowFilters = append(mvSecInfo.rowFilters, fmt.Sprintf("(%s)", dimFilter))
-
-					// Extract fields from dimension_filters SQL expression
-					dimFilterFields := extractFieldsFromSQLFilter(dimFilter)
-					for _, field := range dimFilterFields {
-						mvSecInfo.fieldSet[field] = true
-					}
-				}
-			}
+		rendererProps := componentSpec.RendererProperties.AsMap()
+		err = populateRendererRefs(refs, componentSpec.Renderer, rendererProps)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to parse renderer properties for component %q: %w", componentName, err)
 		}
 	}
 
-	// add field access and row filter rules for each metrics view
-	for mvName, mvSecInfo := range mvSecInfoCache {
-		// Create field access rule if we have fields
-		if len(mvSecInfo.fieldSet) > 0 {
-			fields := make([]string, 0, len(mvSecInfo.fieldSet))
-			for f := range mvSecInfo.fieldSet {
+	// Now build security rules based on the collected references
+	// First, allow access to all referenced metrics views
+	// Then, for each metrics view, add field access and row filter rules as needed
+	for mv := range refs.metricsViews {
+		// allow access to the referenced metrics view
+		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: mv})
+
+		mvf, ok := refs.mvFields[mv]
+		if ok && len(mvf) > 0 {
+			fields := make([]string, 0, len(mvf))
+			for f := range mvf {
 				fields = append(fields, f)
 			}
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_FieldAccess{
 					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mvName))),
+						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mv))),
 						Fields:    fields,
 						Allow:     true,
 					},
@@ -1168,14 +1074,14 @@ func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Contex
 			})
 		}
 
-		// Create row filter rule if we have row filters
-		if len(mvSecInfo.rowFilters) > 0 {
+		mvr, ok := refs.mvFilters[mv]
+		if ok && len(mvr) > 0 {
 			// Combine multiple row filters with OR
-			rowFilter := strings.Join(mvSecInfo.rowFilters, " OR ")
+			rowFilter := strings.Join(mvr, " OR ")
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_RowFilter{
 					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mvName))),
+						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mv))),
 						Sql:       rowFilter,
 					},
 				},
@@ -1183,17 +1089,7 @@ func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Contex
 		}
 	}
 
-	// Add deny rule for everything else
-	rules = append(rules, &runtimev1.SecurityRule{
-		Rule: &runtimev1.SecurityRule_Access{
-			Access: &runtimev1.SecurityRuleAccess{
-				Condition: fmt.Sprintf("NOT (%s)", denyCondition.String()),
-				Allow:     false,
-			},
-		},
-	})
-
-	return rules, nil
+	return rules, conditionKinds, conditionResources, nil
 }
 
 // computeCacheKey computes a cache key for a resolved security policy.
@@ -1224,6 +1120,128 @@ func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *
 		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// populateRendererRefs extracts all metricsview and its field names and filters from renderer properties based on the renderer type
+// Depending on the component, fields will be named differently - Also there can be computed time dimension like <time_dim>_rill_TIME_GRAIN_<GRAIN>
+//
+//		"leaderboard" - "dimensions" and "measures"
+//		"kpi_grid" - "dimensions" and "measures"
+//		"table" - "columns" (can have computed time dim)
+//		"pivot" - "row_dimensions", "col_dimensions" and "measures" (row/col can have computed time dim)
+//		"heatmap" - "color"."field", "x"."field" and "y"."field"
+//	 	"multi_metric_chart" - "measures" and "x"."field"
+//		"funnel_chart" - "stage"."field", "measure"."field"
+//		"donut_chart" - "color"."field", "measure"."field"
+//		"bar_chart" - "color"."field", "x"."field" and "y"."field"
+//		"line_chart" - "color"."field", "x"."field" and "y"."field"
+//		"area_chart" - "color"."field", "x"."field" and "y"."field"
+//		"stacked_bar" - "color"."field", "x"."field" and "y"."field"
+//		"stacked_bar_normalized" - "color"."field", "x"."field" and "y"."field"
+func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[string]any) error {
+	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
+	if !ok {
+		return nil
+	}
+	res.metricsView(mv)
+	filter, ok := pathutil.GetPath(rendererProps, "dimension_filters")
+	if ok {
+		res.metricsViewRowFilter(mv, filter)
+	}
+	switch renderer {
+	case "leaderboard":
+		dims, ok := pathutil.GetPath(rendererProps, "dimensions")
+		if ok {
+			res.metricsViewFields(mv, dims)
+		}
+		meas, ok := pathutil.GetPath(rendererProps, "measures")
+		if ok {
+			res.metricsViewFields(mv, meas)
+		}
+	case "kpi_grid":
+		dims, ok := pathutil.GetPath(rendererProps, "dimensions")
+		if ok {
+			res.metricsViewFields(mv, dims)
+		}
+		meas, ok := pathutil.GetPath(rendererProps, "measures")
+		if ok {
+			res.metricsViewFields(mv, meas)
+		}
+	case "table":
+		cols, ok := pathutil.GetPath(rendererProps, "columns")
+		if ok {
+			res.metricsViewFields(mv, cols)
+		}
+	case "pivot":
+		rowDims, ok := pathutil.GetPath(rendererProps, "row_dimensions")
+		if ok {
+			res.metricsViewFields(mv, rowDims)
+		}
+		colDims, ok := pathutil.GetPath(rendererProps, "col_dimensions")
+		if ok {
+			res.metricsViewFields(mv, colDims)
+		}
+		meas, ok := pathutil.GetPath(rendererProps, "measures")
+		if ok {
+			res.metricsViewFields(mv, meas)
+		}
+	case "heatmap":
+		colorField, ok := pathutil.GetPath(rendererProps, "color.field")
+		if ok {
+			res.metricsViewField(mv, colorField)
+		}
+		xField, ok := pathutil.GetPath(rendererProps, "x.field")
+		if ok {
+			res.metricsViewField(mv, xField)
+		}
+		yField, ok := pathutil.GetPath(rendererProps, "y.field")
+		if ok {
+			res.metricsViewField(mv, yField)
+		}
+	case "multi_metric_chart":
+		meas, ok := pathutil.GetPath(rendererProps, "measures")
+		if ok {
+			res.metricsViewFields(mv, meas)
+		}
+		xField, ok := pathutil.GetPath(rendererProps, "x.field")
+		if ok {
+			res.metricsViewField(mv, xField)
+		}
+	case "funnel_chart":
+		stageField, ok := pathutil.GetPath(rendererProps, "stage.field")
+		if ok {
+			res.metricsViewField(mv, stageField)
+		}
+		measureField, ok := pathutil.GetPath(rendererProps, "measure.field")
+		if ok {
+			res.metricsViewField(mv, measureField)
+		}
+	case "donut_chart":
+		colorField, ok := pathutil.GetPath(rendererProps, "color.field")
+		if ok {
+			res.metricsViewField(mv, colorField)
+		}
+		measureField, ok := pathutil.GetPath(rendererProps, "measure.field")
+		if ok {
+			res.metricsViewField(mv, measureField)
+		}
+	case "bar_chart", "line_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
+		colorField, ok := pathutil.GetPath(rendererProps, "color.field")
+		if ok {
+			res.metricsViewField(mv, colorField)
+		}
+		xField, ok := pathutil.GetPath(rendererProps, "x.field")
+		if ok {
+			res.metricsViewField(mv, xField)
+		}
+		yField, ok := pathutil.GetPath(rendererProps, "y.field")
+		if ok {
+			res.metricsViewField(mv, yField)
+		}
+	default:
+		return fmt.Errorf("unknown renderer type %q", renderer)
+	}
+	return nil
 }
 
 // extractFieldsFromRendererProperties extracts field names from renderer properties based on the renderer type, can contain duplicate fields
@@ -1379,4 +1397,51 @@ func extractFieldsFromNode(node ast.Node, fields map[string]bool) {
 type metricsViewSecurityInfo struct {
 	fieldSet   map[string]bool
 	rowFilters []string
+}
+
+type rendererRefs struct {
+	metricsViews map[string]bool
+	mvFields     map[string]map[string]bool
+	mvFilters    map[string][]string
+}
+
+func (r *rendererRefs) metricsView(mv any) {
+	if mv, ok := mv.(string); ok {
+		r.metricsViews[mv] = true
+	}
+}
+
+func (r *rendererRefs) metricsViewFields(mv any, fields any) {
+	metricsView, ok1 := mv.(string)
+	fs, ok2 := fields.([]string)
+	if ok1 && ok2 {
+		if r.mvFields[metricsView] == nil {
+			r.mvFields[metricsView] = make(map[string]bool)
+		}
+		for _, f := range fs {
+			r.mvFields[metricsView][extractDimension(f)] = true
+		}
+	}
+}
+
+func (r *rendererRefs) metricsViewField(mv any, field any) {
+	metricsView, ok1 := mv.(string)
+	f, ok2 := field.(string)
+	if ok1 && ok2 && f != "" {
+		if r.mvFields[metricsView] == nil {
+			r.mvFields[metricsView] = make(map[string]bool)
+		}
+		r.mvFields[metricsView][extractDimension(f)] = true
+	}
+}
+
+func (r *rendererRefs) metricsViewRowFilter(mv any, filter any) {
+	metricsView, ok1 := mv.(string)
+	f, ok2 := filter.(string)
+	if ok1 && ok2 && f != "" {
+		r.mvFilters[metricsView] = append(r.mvFilters[metricsView], fmt.Sprintf("(%s)", f)) // wrap in () to ensure correct precedence when combining multiple filters with OR
+	}
+	// Extract fields from dimension_filters SQL expression
+	dimFilterFields := extractFieldsFromSQLFilter(f)
+	r.metricsViewFields(mv, dimFilterFields)
 }

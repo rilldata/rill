@@ -1001,8 +1001,8 @@ security:
 				FirstDayOfWeek: 7,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 				},
 			},
@@ -1024,8 +1024,8 @@ security:
 				FirstDayOfWeek: 1,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "true",
@@ -1220,8 +1220,8 @@ security:
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "",
-						Allow:     false,
+						ConditionExpression: "",
+						Allow:               false,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "true",
@@ -2219,8 +2219,8 @@ security:
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "partner_id IN (SELECT partner_id FROM {{ ref \"mappings\" }} WHERE domain = '{{ .user.domain }}')",

@@ -2061,14 +2061,41 @@ export class SecurityRule extends Message<SecurityRule> {
  */
 export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
   /**
-   * @generated from field: string condition = 1;
+   * The condition under which this rule applies.
+   * It is ANDed together with the condition_kinds and condition_resources.
+   *
+   * @generated from field: string condition_expression = 1;
    */
-  condition = "";
+  conditionExpression = "";
 
   /**
+   * The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+   *
+   * @generated from field: repeated string condition_kinds = 3;
+   */
+  conditionKinds: string[] = [];
+
+  /**
+   * The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+   * It is ORed together with the condition_kinds.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName condition_resources = 4;
+   */
+  conditionResources: ResourceName[] = [];
+
+  /**
+   * Whether to allow or deny access to the resources covered by the conditions.
+   *
    * @generated from field: bool allow = 2;
    */
   allow = false;
+
+  /**
+   * If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true).
+   *
+   * @generated from field: bool exclusive = 5;
+   */
+  exclusive = false;
 
   constructor(data?: PartialMessage<SecurityRuleAccess>) {
     super();
@@ -2078,8 +2105,11 @@ export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleAccess";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "condition_kinds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "condition_resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "exclusive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleAccess {
@@ -2212,7 +2242,7 @@ export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
  */
 export class SecurityRuleTransitiveAccess extends Message<SecurityRuleTransitiveAccess> {
   /**
-   * this rules resolves to rules that provides access to whatever is needed to access this resource. Currently only used for reports and alerts.
+   * this rules resolves to rules that provides access to whatever is needed to access this resource.
    *
    * @generated from field: rill.runtime.v1.ResourceName resource = 1;
    */

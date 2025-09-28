@@ -6,13 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -162,13 +160,12 @@ func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *
 func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
 
-	// allow explicit access to the references
 	for _, ref := range r.Refs() {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
-					Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ref.Kind, duckdbsql.EscapeStringValue(strings.ToLower(ref.Name))),
-					Allow:     true,
+					ConditionResources: []*runtimev1.ResourceName{ref},
+					Allow:              true,
 				},
 			},
 		})
