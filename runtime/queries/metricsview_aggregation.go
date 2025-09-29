@@ -14,7 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 )
 
 type MetricsViewAggregation struct {
@@ -527,7 +527,7 @@ func (q *MetricsViewAggregation) getDisplayName(ctx context.Context, rt *runtime
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
 	if expr != nil && sql != "" {
-		sqlExpr, err := metricssqlparser.ParseSQLFilter(sql)
+		sqlExpr, err := metricssql.ParseSQLFilter(sql)
 		if err != nil {
 			return nil, err
 		}
@@ -545,7 +545,7 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 		return metricsview.NewExpressionFromProto(expr), nil
 	}
 	if sql != "" {
-		return metricssqlparser.ParseSQLFilter(sql)
+		return metricssql.ParseSQLFilter(sql)
 	}
 	return nil, nil
 }

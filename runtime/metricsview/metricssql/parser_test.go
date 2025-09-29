@@ -1,4 +1,4 @@
-package metricssqlparser_test
+package metricssql_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +31,7 @@ func TestCompile(t *testing.T) {
 	require.NoError(t, err)
 
 	claims := &runtime.SecurityClaims{}
-	compiler := metricssqlparser.New(ctrl, instanceID, claims, 1)
+	compiler := metricssql.New(ctrl, instanceID, claims, 1)
 	passTests := []struct {
 		inSQL    string
 		outSQL   string

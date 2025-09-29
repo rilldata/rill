@@ -1,4 +1,4 @@
-package metricssqlparser
+package metricssql
 
 import (
 	"context"
