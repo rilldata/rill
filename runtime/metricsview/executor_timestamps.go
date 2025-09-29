@@ -233,7 +233,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (Timestamp
 			if err != nil {
 				return err
 			}
-			return errors.New("no rows returned for min time")
+			// don't return error if there are no rows as druid does not return any rows when where clause does not match
 		}
 
 		return nil
@@ -269,7 +269,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (Timestamp
 			if err != nil {
 				return err
 			}
-			return errors.New("no rows returned for max time")
+			// don't return error if there are no rows as druid does not return any rows when where clause does not match
 		}
 		return nil
 	})
@@ -305,7 +305,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (Timestamp
 				if err != nil {
 					return err
 				}
-				return errors.New("no rows returned for max time")
+				// don't return error if there are no rows as druid does not return any rows when where clause does not match
 			}
 			return nil
 		})
