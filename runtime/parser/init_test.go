@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInitEmptyDefault(t *testing.T) {
+func TestInitDefaultOLAP(t *testing.T) {
 	require := require.New(t)
 
 	repo := makeRepo(t, map[string]string{})
@@ -28,12 +28,13 @@ func TestInitEmptyDefault(t *testing.T) {
 	require.Contains(gitignore, ".env")
 	require.Contains(gitignore, "tmp")
 
-	// Verify that NO connector file is created for default (DuckDB) to allow user-guided initialization
-	_, err = repo.Get(t.Context(), "connectors/duckdb.yaml")
-	require.Error(err) // Should error because file doesn't exist
+	duckdbYAML, err := repo.Get(t.Context(), "connectors/duckdb.yaml")
+	require.NoError(err)
+	require.Contains(duckdbYAML, "type: connector")
+	require.Contains(duckdbYAML, "driver: duckdb")
 }
 
-func TestInitEmptyDuckDB(t *testing.T) {
+func TestInitWithDuckDB(t *testing.T) {
 	require := require.New(t)
 
 	repo := makeRepo(t, map[string]string{})
@@ -56,11 +57,13 @@ func TestInitEmptyDuckDB(t *testing.T) {
 	require.Contains(gitignore, "tmp")
 
 	// Verify that NO connector file is created for DuckDB to allow user-guided initialization
-	_, err = repo.Get(t.Context(), "connectors/duckdb.yaml")
-	require.Error(err) // Should error because file doesn't exist
+	duckdbYAML, err := repo.Get(t.Context(), "connectors/duckdb.yaml")
+	require.NoError(err)
+	require.Contains(duckdbYAML, "type: connector")
+	require.Contains(duckdbYAML, "driver: duckdb")
 }
 
-func TestInitEmpty(t *testing.T) {
+func TestInitWithClickHouse(t *testing.T) {
 	require := require.New(t)
 
 	repo := makeRepo(t, map[string]string{})
@@ -81,4 +84,14 @@ func TestInitEmpty(t *testing.T) {
 	require.Contains(gitignore, "# Rill")
 	require.Contains(gitignore, ".env")
 	require.Contains(gitignore, "tmp")
+
+	// Verify the contents of the connectors/clickhouse.yaml file
+	clickhouseYAML, err := repo.Get(t.Context(), "connectors/clickhouse.yaml")
+	require.NoError(err)
+	require.Contains(clickhouseYAML, "type: connector")
+	require.Contains(clickhouseYAML, "driver: clickhouse")
+
+	// Verify that duckdb.yaml is NOT created for ClickHouse projects
+	_, err = repo.Get(t.Context(), "connectors/duckdb.yaml")
+	require.Error(err)
 }

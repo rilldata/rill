@@ -2,7 +2,7 @@
 title: MySQL
 description: Connect to data in MySQL
 sidebar_label: MySQL
-sidebar_position: 9
+sidebar_position: 40
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
@@ -23,8 +23,9 @@ When connecting to MySQL, an appropriate Data Source Name (DSN) must be specifie
 
 For more details, see the [MySQL documentation on DSN formats](https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri).
 
-<img src='/img/reference/connectors/mysql/mysql.png' class='centered' />
+<img src='/img/connect/data-sources/mysql.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
+
 
 ## Local credentials
 

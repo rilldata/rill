@@ -27,7 +27,7 @@ When using ClickHouse for local development, you can connect via connection para
 
 After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI.
 
-<img src='/img/connect/connector/byob-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
+<img src='/img/connect/olap-engines/clickhouse/byob-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 <br />
 
 For more information on supported parameters, see our [ClickHouse connector YAML reference docs](/reference/project-files/connectors#clickhouse).
@@ -58,7 +58,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 Rill is able to connect to ClickHouse using the [ClickHouse Go Driver](https://clickhouse.com/docs/en/integrations/go). An appropriate connection string (DSN) will need to be set through the `connector.clickhouse.dsn` property in Rill.
 
-<img src='/img/connect/connector/byob-clickhouse-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
+<img src='/img/connect/olap-engines/clickhouse/byob-clickhouse-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}} />
 <br />
 
 ```bash
@@ -93,12 +93,12 @@ For more information about available DSN properties and setting an appropriate c
 
 If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
 
-<img src='/img/connect/connector/clickhouse-cloud.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/clickhouse/clickhouse-cloud.png' class='rounded-gif' />
 <br />
 
-Using the information in the ClickHouse UI, populate the parameters of your connection. As ClickHouse Cloud requires a secure connection, keep the SSL option checked.
+Using the information in the ClickHouse UI, populate the parameters of your connection. 
 
-<img src='/img/connect/connector/clickhouse-ssl.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<img src='/img/connect/olap-engines/clickhouse/clickhouse-ssl.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 ### Connection String (DSN)
@@ -117,7 +117,7 @@ If you would like to connect Rill to an existing ClickHouse instance, please don
 
 ## Rill Managed ClickHouse
 
-<img src='/img/connect/connector/managed-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<img src='/img/connect/olap-engines/clickhouse/managed-clickhouse.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 By setting `managed: true` in your ClickHouse connector, you will enable an embedded ClickHouse server to spin up with Rill. This will allow you to import data directly into this ClickHouse server without having to worry about managing an external database.
@@ -141,6 +141,16 @@ You can configure your ClickHouse connector to operate in read-only mode by addi
 
 ```yaml
 mode: read # readwrite
+```
+
+## Advanced Configuration Options
+
+### Optimize Temporary Tables Before Partition Replace
+
+When using incremental models with partition overwrite strategies, you can enable automatic optimization of temporary tables before partition replacement operations. This can improve query performance by reducing the number of parts in each partition, but may increase processing time during model refreshes.
+
+```yaml
+optimize_temporary_tables_before_partition_replace: true # default: false
 ```
 
 ## Configuring Rill Cloud

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -30,7 +31,7 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 ## Workflow Overview
 1. **List metrics views:** Use "list_metrics_views" to discover available metrics views in the project.
 2. **Get metrics view spec:** Use "get_metrics_view" to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
-3. **Query the time range:** Use "query_metrics_view_time_range" to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
+3. **Query the summary:** Use "query_metrics_view_summary" to obtain the available time range for a metrics view and sample values with their data types for each dimension. This provides a richer context for understanding the data.
 4. **Query the metrics:** Use "query_metrics_view" to run queries to get aggregated results.
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
@@ -47,7 +48,7 @@ func (s *Server) newMCPServer() *server.MCPServer {
 		server.WithToolHandlerMiddleware(mcpErrorMappingMiddleware),
 		server.WithToolHandlerMiddleware(middleware.TimeoutMCPToolHandlerMiddleware(func(tool string) time.Duration {
 			switch tool {
-			case "query_metrics_view_time_range", "query_metrics_view":
+			case "query_metrics_view_summary", "query_metrics_view":
 				return 120 * time.Second
 			default:
 				return 20 * time.Second
@@ -61,8 +62,8 @@ func (s *Server) newMCPServer() *server.MCPServer {
 	// Rill capabilities
 	mcpServer.AddTool(s.mcpListMetricsViews())
 	mcpServer.AddTool(s.mcpGetMetricsView())
-	mcpServer.AddTool(s.mcpQueryMetricsViewTimeRange())
 	mcpServer.AddTool(s.mcpQueryMetricsView())
+	mcpServer.AddTool(s.mcpQueryMetricsViewSummary())
 
 	return mcpServer
 }
@@ -178,30 +179,25 @@ func (s *Server) mcpGetMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	return tool, handler
 }
 
-func (s *Server) mcpQueryMetricsViewTimeRange() (mcp.Tool, server.ToolHandlerFunc) {
-	tool := mcp.NewTool("query_metrics_view_time_range",
+func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc) {
+	tool := mcp.NewTool("query_metrics_view_summary",
 		mcp.WithDescription(`
-            Retrieve the total time range available for a given metrics view.
-            Note: All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
-        `),
+			Retrieve summary statistics for a metrics view including:
+			- Total time range available
+			- Sample values and data types for each dimension
+			Note: All subsequent queries of the metrics view should be constrained to this time range to ensure accurate results.
+		`),
 		mcp.WithString("metrics_view",
 			mcp.Required(),
 			mcp.Description("Name of the metrics view"),
 		),
-		mcp.WithString("time_dimension",
-			mcp.Description("Optional time dimension to use for resolving the time range. If not provided, the default time dimension defined under timeseries field of the metrics view will be used."),
-		),
 	)
-
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		instanceID := mcpInstanceIDFromContext(ctx)
-		name, err := req.RequireString("metrics_view")
+		metricsViewName, err := req.RequireString("metrics_view")
 		if err != nil {
 			return nil, err
 		}
-
-		// optional time dimension to use for resolving time range
-		timeDim := req.GetString("time_dimension", "")
 
 		claims := auth.GetClaims(ctx)
 		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
@@ -210,12 +206,9 @@ func (s *Server) mcpQueryMetricsViewTimeRange() (mcp.Tool, server.ToolHandlerFun
 
 		res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 			InstanceID: instanceID,
-			Resolver:   "metrics_time_range",
+			Resolver:   "metrics_summary",
 			ResolverProperties: map[string]any{
-				"metrics_view": name,
-			},
-			Args: map[string]any{
-				"time_dimension": timeDim,
+				"metrics_view": metricsViewName,
 			},
 			Claims: claims.SecurityClaims(),
 		})
@@ -369,15 +362,76 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		}
 		defer res.Close()
 
+		// Get the raw response data
 		data, err := res.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
 
-		return mcp.NewToolResultText(string(data)), nil
+		// Generate an open URL for the query
+		openURL, err := s.generateOpenURL(ctx, instanceID, metricsProps)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate open URL: %w", err)
+		}
+
+		// Add the open URL to the response
+		response, err := s.addOpenURLToResponse(data, openURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add open URL to response: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(response)), nil
 	}
 
 	return tool, handler
+}
+
+// generateOpenURL generates an open URL for the given query parameters
+func (s *Server) generateOpenURL(ctx context.Context, instanceID string, metricsProps map[string]any) (string, error) {
+	// Get instance to access the configured frontend URL
+	instance, err := s.runtime.Instance(ctx, instanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance: %w", err)
+	}
+
+	// If there's no frontend URL (e.g. perhaps in test cases or during rollout), return an empty string
+	if instance.FrontendURL == "" {
+		return "", nil
+	}
+
+	// Build the complete URL for the query
+	jsonBytes, err := json.Marshal(metricsProps)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
+	}
+
+	values := make(url.Values)
+	values.Set("query", string(jsonBytes))
+
+	return fmt.Sprintf("%s/-/open-query?%s", instance.FrontendURL, values.Encode()), nil
+}
+
+// addOpenURLToResponse adds the open URL to the response data
+func (s *Server) addOpenURLToResponse(data []byte, openURL string) ([]byte, error) {
+	// Parse the JSON response to understand its structure
+	var response any
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response JSON: %w", err)
+	}
+
+	// Create a wrapper object with the response data and open URL
+	wrappedResponse := map[string]any{
+		"response": response,
+		"open_url": openURL,
+	}
+
+	// Marshal back to JSON
+	modifiedData, err := json.Marshal(wrappedResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal modified response: %w", err)
+	}
+
+	return modifiedData, nil
 }
 
 // mcpHTTPContextFunc is an MCP server middleware that adds the current instance ID to the context.
