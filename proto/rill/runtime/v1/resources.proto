@@ -340,14 +340,28 @@ message SecurityRuleAccess {
 }
 
 message SecurityRuleFieldAccess {
-  string condition = 1;
+  // The condition under which this rule applies.
+  // It is ANDed together with the condition_kinds and condition_resources.
+  string condition_expression = 1;
+  // The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+  repeated string condition_kinds = 5;
+  // The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+  // It is ORed together with the condition_kinds.
+  repeated ResourceName condition_resources = 6;
   bool allow = 2;
   repeated string fields = 3;
   bool all_fields = 4;
 }
 
 message SecurityRuleRowFilter {
-  string condition = 1;
+  // The condition under which this rule applies.
+  // It is ANDed together with the condition_kinds and condition_resources.
+  string condition_expression = 1;
+  // The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+  repeated string condition_kinds = 4;
+  // The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+  // It is ORed together with the condition_kinds.
+  repeated ResourceName condition_resources = 5;
   string sql = 2; // Raw SQL expression to apply to the underlying table
   Expression expression = 3; // Regular query expression referencing dimension names
 }

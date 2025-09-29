@@ -18,7 +18,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/parser"
-	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
@@ -490,54 +489,25 @@ func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, r *runti
 		return nil
 	}
 
-	// Evaluate resource-based conditions
-	var resourceMatches *bool
-	if len(rule.ConditionKinds) > 0 || len(rule.ConditionResources) > 0 {
-		matches := slices.Contains(rule.ConditionKinds, r.Meta.Name.Kind) ||
-			slices.ContainsFunc(rule.ConditionResources, func(res *runtimev1.ResourceName) bool {
-				return res.Kind == r.Meta.Name.Kind && res.Name == r.Meta.Name.Name
-			})
-		resourceMatches = &matches
+	apply, err := evaluateConditions(r, rule.ConditionExpression, rule.ConditionKinds, rule.ConditionResources, td)
+	if err != nil {
+		return err
 	}
 
-	// Evaluate expression-based conditions
-	var expressionMatches *bool
-	if rule.ConditionExpression != "" {
-		expr, err := parser.ResolveTemplate(rule.ConditionExpression, td, false)
-		if err != nil {
-			return err
-		}
-		matches, err := parser.EvaluateBoolExpression(expr)
-		if err != nil {
-			return err
-		}
-		expressionMatches = &matches
-	}
-
-	// Early return if no conditions are provided
-	if resourceMatches == nil && expressionMatches == nil {
-		// No conditions provided
+	if apply == nil {
+		// no conditions are provided
 		res.access = &rule.Allow
 		return nil
-	}
-
-	// Combine conditions (both must be true if both are present)
-	conditionsMatch := true
-	if resourceMatches != nil {
-		conditionsMatch = *resourceMatches
-	}
-	if expressionMatches != nil {
-		conditionsMatch = conditionsMatch && *expressionMatches
 	}
 
 	// Determine final access value
 	allow := rule.Allow
 	if rule.Exclusive {
 		// Exclusive rules: apply the opposite when conditions don't match
-		if !conditionsMatch {
+		if !*apply {
 			allow = !allow
 		}
-	} else if !conditionsMatch { // Non-exclusive rules: do nothing when conditions don't match
+	} else if !*apply { // Non-exclusive rules: do nothing when conditions don't match
 		return nil
 	}
 
@@ -580,20 +550,12 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 		res.fieldAccess = make(map[string]bool)
 	}
 
-	// Determine if the rule should be applied
-	if rule.Condition != "" {
-		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
-		if err != nil {
-			return err
-		}
-		apply, err := parser.EvaluateBoolExpression(expr)
-		if err != nil {
-			return err
-		}
-
-		if !apply {
-			return nil
-		}
+	apply, err := evaluateConditions(r, rule.ConditionExpression, rule.ConditionKinds, rule.ConditionResources, td)
+	if err != nil {
+		return err
+	}
+	if apply == nil || !*apply {
+		return nil
 	}
 
 	// Set if the field should be allowed or denied
@@ -617,21 +579,14 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 }
 
 // applySecurityRuleRowFilter applies a row filter rule to the resolved security.
-func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *runtimev1.Resource, rule *runtimev1.SecurityRuleRowFilter, td parser.TemplateData) error {
+func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleRowFilter, td parser.TemplateData) error {
 	// Determine if the rule should be applied
-	if rule.Condition != "" {
-		expr, err := parser.ResolveTemplate(rule.Condition, td, false)
-		if err != nil {
-			return err
-		}
-		apply, err := parser.EvaluateBoolExpression(expr)
-		if err != nil {
-			return err
-		}
-
-		if !apply {
-			return nil
-		}
+	apply, err := evaluateConditions(r, rule.ConditionExpression, rule.ConditionKinds, rule.ConditionResources, td)
+	if err != nil {
+		return err
+	}
+	if apply == nil || !*apply {
+		return nil
 	}
 
 	// Handle raw SQL row filters
@@ -705,11 +660,10 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 			conditionKinds = append(conditionKinds, ck...)
 			conditionResources = append(conditionResources, cr...)
 		case *runtimev1.Resource_Explore:
-			resolvedRules, ck, cr, err := p.resolveTransitiveAccessRuleForExplore(res)
+			ck, cr, err := p.resolveTransitiveAccessRuleForExplore(res)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve transitive access rule for explore: %w", err)
 			}
-			rules = append(rules, resolvedRules...)
 			conditionKinds = append(conditionKinds, ck...)
 			conditionResources = append(conditionResources, cr...)
 		case *runtimev1.Resource_Canvas:
@@ -947,22 +901,22 @@ func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context
 	return rules, conditionKinds, conditionResources, nil
 }
 
-func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
+func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Resource) ([]string, []*runtimev1.ResourceName, error) {
 	var conditionKinds []string
 	var conditionResources []*runtimev1.ResourceName
 
 	explore := res.GetExplore()
 	if explore == nil {
-		return nil, nil, nil, fmt.Errorf("resource is not an explore")
+		return nil, nil, fmt.Errorf("resource is not an explore")
 	}
 
 	spec := explore.GetState().GetValidSpec()
 	if spec == nil {
-		return nil, nil, nil, fmt.Errorf("explore valid spec is nil")
+		return nil, nil, fmt.Errorf("explore valid spec is nil")
 	}
 
 	if spec.MetricsView == "" {
-		return nil, nil, nil, fmt.Errorf("explore does not reference a metrics view")
+		return nil, nil, fmt.Errorf("explore does not reference a metrics view")
 	}
 
 	conditionResources = append(conditionResources, res.Meta.Name)
@@ -973,7 +927,7 @@ func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Re
 		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: spec.MetricsView})
 	}
 
-	return nil, conditionKinds, conditionResources, nil
+	return conditionKinds, conditionResources, nil
 }
 
 func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Context, instanceID string, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
@@ -1066,9 +1020,9 @@ func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Contex
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_FieldAccess{
 					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mv))),
-						Fields:    fields,
-						Allow:     true,
+						ConditionResources: []*runtimev1.ResourceName{{Kind: ResourceKindMetricsView, Name: mv}},
+						Fields:             fields,
+						Allow:              true,
 					},
 				},
 			})
@@ -1081,8 +1035,8 @@ func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Contex
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_RowFilter{
 					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(mv))),
-						Sql:       rowFilter,
+						ConditionResources: []*runtimev1.ResourceName{{Kind: ResourceKindMetricsView, Name: mv}},
+						Sql:                rowFilter,
 					},
 				},
 			})
@@ -1090,6 +1044,48 @@ func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Contex
 	}
 
 	return rules, conditionKinds, conditionResources, nil
+}
+
+func evaluateConditions(r *runtimev1.Resource, expression string, kinds []string, resources []*runtimev1.ResourceName, td parser.TemplateData) (*bool, error) {
+	// Evaluate resource-based conditions
+	var resourceMatches *bool
+	if len(kinds) > 0 || len(resources) > 0 {
+		matches := slices.Contains(kinds, r.Meta.Name.Kind) ||
+			slices.ContainsFunc(resources, func(res *runtimev1.ResourceName) bool {
+				return res.Kind == r.Meta.Name.Kind && res.Name == r.Meta.Name.Name
+			})
+		resourceMatches = &matches
+	}
+
+	// Evaluate expression-based conditions
+	var expressionMatches *bool
+	if expression != "" {
+		expr, err := parser.ResolveTemplate(expression, td, false)
+		if err != nil {
+			return nil, err
+		}
+		matches, err := parser.EvaluateBoolExpression(expr)
+		if err != nil {
+			return nil, err
+		}
+		expressionMatches = &matches
+	}
+
+	if resourceMatches == nil && expressionMatches == nil {
+		// No conditions to evaluate
+		return nil, nil
+	}
+
+	// Combine conditions (both must be true if both are present)
+	conditionsMatch := true
+	if resourceMatches != nil {
+		conditionsMatch = *resourceMatches
+	}
+	if expressionMatches != nil {
+		conditionsMatch = conditionsMatch && *expressionMatches
+	}
+
+	return &conditionsMatch, nil
 }
 
 // computeCacheKey computes a cache key for a resolved security policy.
@@ -1244,68 +1240,6 @@ func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[
 	return nil
 }
 
-// extractFieldsFromRendererProperties extracts field names from renderer properties based on the renderer type, can contain duplicate fields
-// Depending on the component, fields will be named differently - Also there can be computed time dimension like <time_dim>_rill_TIME_GRAIN_<GRAIN>
-//
-//		"leaderboard" - "dimensions" and "measures"
-//		"kpi_grid" - "dimensions" and "measures"
-//		"table" - "columns" (can have computed time dim)
-//		"pivot" - "row_dimensions", "col_dimensions" and "measures" (row/col can have computed time dim)
-//		"heatmap" - "color"."field", "x"."field" and "y"."field"
-//	 	"multi_metric_chart" - "measures" and "x"."field"
-//		"funnel_chart" - "stage"."field", "measure"."field"
-//		"donut_chart" - "color"."field", "measure"."field"
-//		"bar_chart" - "color"."field", "x"."field" and "y"."field"
-//		"line_chart" - "color"."field", "x"."field" and "y"."field"
-//		"area_chart" - "color"."field", "x"."field" and "y"."field"
-//		"stacked_bar" - "color"."field", "x"."field" and "y"."field"
-//		"stacked_bar_normalized" - "color"."field", "x"."field" and "y"."field"
-func extractFieldsFromRendererProperties(renderer string, rendererProps map[string]any) ([]string, error) {
-	switch renderer {
-	case "leaderboard", "kpi_grid", "table", "pivot", "heatmap", "multi_metric_chart", "bar_chart", "line_chart", "area_chart", "stacked_bar", "stacked_bar_normalized", "funnel_chart", "donut_chart":
-	default:
-		return nil, fmt.Errorf("unknown renderer type %q", renderer)
-	}
-
-	var fields []string
-
-	// Try common array fields
-	arrayFields := []string{"dimensions", "measures", "columns", "row_dimensions", "col_dimensions"}
-	for _, key := range arrayFields {
-		if arr, ok := rendererProps[key]; ok {
-			rawFields := extractFieldsFromArray(arr)
-			for _, field := range rawFields {
-				fields = append(fields, extractDimension(field))
-			}
-		}
-	}
-
-	// Try common nested object fields
-	objectFields := []string{"color", "x", "y", "stage", "measure"}
-	for _, key := range objectFields {
-		if obj, ok := rendererProps[key].(map[string]interface{}); ok {
-			if field, ok := obj["field"].(string); ok && field != "" {
-				fields = append(fields, extractDimension(field))
-			}
-		}
-	}
-
-	return fields, nil
-}
-
-// extractFieldsFromArray extracts field names from string array
-func extractFieldsFromArray(arr interface{}) []string {
-	var fields []string
-	if arrSlice, ok := arr.([]interface{}); ok {
-		for _, item := range arrSlice {
-			if str, ok := item.(string); ok {
-				fields = append(fields, str)
-			}
-		}
-	}
-	return fields
-}
-
 // extractDimension return the dimension or extracts the base time dimension from computed time field if present
 // example - from "<time_dim>_rill_TIME_GRAIN_<GRAIN>" extracts "<time_dim>"
 func extractDimension(field string) string {
@@ -1394,11 +1328,6 @@ func extractFieldsFromNode(node ast.Node, fields map[string]bool) {
 	}
 }
 
-type metricsViewSecurityInfo struct {
-	fieldSet   map[string]bool
-	rowFilters []string
-}
-
 type rendererRefs struct {
 	metricsViews map[string]bool
 	mvFields     map[string]map[string]bool
@@ -1411,20 +1340,24 @@ func (r *rendererRefs) metricsView(mv any) {
 	}
 }
 
-func (r *rendererRefs) metricsViewFields(mv any, fields any) {
+func (r *rendererRefs) metricsViewFields(mv, fields any) {
 	metricsView, ok1 := mv.(string)
-	fs, ok2 := fields.([]string)
+	fs, ok2 := fields.([]interface{})
 	if ok1 && ok2 {
 		if r.mvFields[metricsView] == nil {
 			r.mvFields[metricsView] = make(map[string]bool)
 		}
 		for _, f := range fs {
-			r.mvFields[metricsView][extractDimension(f)] = true
+			fstr, ok := f.(string)
+			if !ok {
+				panic("field is not a string")
+			}
+			r.mvFields[metricsView][extractDimension(fstr)] = true
 		}
 	}
 }
 
-func (r *rendererRefs) metricsViewField(mv any, field any) {
+func (r *rendererRefs) metricsViewField(mv, field any) {
 	metricsView, ok1 := mv.(string)
 	f, ok2 := field.(string)
 	if ok1 && ok2 && f != "" {
@@ -1435,7 +1368,7 @@ func (r *rendererRefs) metricsViewField(mv any, field any) {
 	}
 }
 
-func (r *rendererRefs) metricsViewRowFilter(mv any, filter any) {
+func (r *rendererRefs) metricsViewRowFilter(mv, filter any) {
 	metricsView, ok1 := mv.(string)
 	f, ok2 := filter.(string)
 	if ok1 && ok2 && f != "" {
@@ -1443,5 +1376,10 @@ func (r *rendererRefs) metricsViewRowFilter(mv any, filter any) {
 	}
 	// Extract fields from dimension_filters SQL expression
 	dimFilterFields := extractFieldsFromSQLFilter(f)
-	r.metricsViewFields(mv, dimFilterFields)
+	if r.mvFields[metricsView] == nil {
+		r.mvFields[metricsView] = make(map[string]bool)
+	}
+	for _, f := range dimFilterFields {
+		r.mvFields[metricsView][extractDimension(f)] = true
+	}
 }

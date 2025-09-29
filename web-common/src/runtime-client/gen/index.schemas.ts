@@ -2178,14 +2178,28 @@ It is ORed together with the condition_kinds. */
 }
 
 export interface V1SecurityRuleFieldAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   allow?: boolean;
   fields?: string[];
   allFields?: boolean;
 }
 
 export interface V1SecurityRuleRowFilter {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   sql?: string;
   expression?: V1Expression;
 }

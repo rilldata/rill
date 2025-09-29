@@ -99,10 +99,10 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Condition: inc.Condition,
-					Allow:     true,
-					Fields:    names,
-					AllFields: all,
+					ConditionExpression: inc.Condition,
+					Allow:               true,
+					Fields:              names,
+					AllFields:           all,
 				},
 			},
 		})
@@ -147,10 +147,10 @@ func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Condition: exc.Condition,
-					Allow:     false,
-					Fields:    names,
-					AllFields: all,
+					ConditionExpression: exc.Condition,
+					Allow:               false,
+					Fields:              names,
+					AllFields:           all,
 				},
 			},
 		})
@@ -234,10 +234,10 @@ func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Condition: condition,
-					Allow:     *allow,
-					Fields:    r.Names,
-					AllFields: r.All,
+					ConditionExpression: condition,
+					Allow:               *allow,
+					Fields:              r.Names,
+					AllFields:           r.All,
 				},
 			},
 		}, nil
@@ -251,8 +251,8 @@ func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_RowFilter{
 				RowFilter: &runtimev1.SecurityRuleRowFilter{
-					Condition: condition,
-					Sql:       r.SQL,
+					ConditionExpression: condition,
+					Sql:                 r.SQL,
 				},
 			},
 		}, nil

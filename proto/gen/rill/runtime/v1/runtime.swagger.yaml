@@ -6854,8 +6854,24 @@ definitions:
   v1SecurityRuleFieldAccess:
     type: object
     properties:
-      condition:
+      conditionExpression:
         type: string
+        description: |-
+          The condition under which this rule applies.
+          It is ANDed together with the condition_kinds and condition_resources.
+      conditionKinds:
+        type: array
+        items:
+          type: string
+        description: The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+      conditionResources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        description: |-
+          The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+          It is ORed together with the condition_kinds.
       allow:
         type: boolean
       fields:
@@ -6867,8 +6883,24 @@ definitions:
   v1SecurityRuleRowFilter:
     type: object
     properties:
-      condition:
+      conditionExpression:
         type: string
+        description: |-
+          The condition under which this rule applies.
+          It is ANDed together with the condition_kinds and condition_resources.
+      conditionKinds:
+        type: array
+        items:
+          type: string
+        description: The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+      conditionResources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        description: |-
+          The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+          It is ORed together with the condition_kinds.
       sql:
         type: string
         title: Raw SQL expression to apply to the underlying table
