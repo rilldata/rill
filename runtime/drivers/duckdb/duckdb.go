@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/duckdb",
+	DocsURL:     "https://docs.rilldata.com/connect/olap/duckdb",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -323,7 +323,7 @@ func (c *connection) Ping(ctx context.Context) error {
 	return errors.Join(err, c.hangingConnErr)
 }
 
-// Driver implements drivers.Connection.
+// Driver implements drivers.Handle.
 func (c *connection) Driver() string {
 	return c.driverName
 }
@@ -333,7 +333,7 @@ func (c *connection) Config() map[string]any {
 	return maps.Clone(c.driverConfig)
 }
 
-// Close implements drivers.Connection.
+// Close implements drivers.Handle.
 func (c *connection) Close() error {
 	c.cancel()
 	_ = c.registration.Unregister()
@@ -346,17 +346,17 @@ func (c *connection) Close() error {
 	return nil
 }
 
-// AsRegistry Registry implements drivers.Connection.
+// AsRegistry Registry implements drivers.Handle.
 func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// AsCatalogStore Catalog implements drivers.Connection.
+// AsCatalogStore Catalog implements drivers.Handle.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// AsRepoStore Repo implements drivers.Connection.
+// AsRepoStore Repo implements drivers.Handle.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
@@ -371,17 +371,17 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-// AsOLAP OLAP implements drivers.Connection.
+// AsOLAP OLAP implements drivers.Handle.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
 }
 
-// AsInformationSchema implements drivers.Connection.
+// AsInformationSchema implements drivers.Handle.
 func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
-// AsObjectStore implements drivers.Connection.
+// AsObjectStore implements drivers.Handle.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
@@ -445,7 +445,7 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsNotifier implements drivers.Connection.
+// AsNotifier implements drivers.Handle.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
