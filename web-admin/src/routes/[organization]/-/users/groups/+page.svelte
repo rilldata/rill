@@ -3,11 +3,11 @@
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
-    createAdminServiceListOrganizationMemberUsersInfinite,
   } from "@rilldata/web-admin/client";
   import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
   import OrgGroupsTable from "@rilldata/web-admin/features/organizations/users/OrgGroupsTable.svelte";
+  import { getOrgUserMembers } from "@rilldata/web-admin/features/organizations/users/selectors.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -28,23 +28,10 @@
       pageToken,
       includeCounts: true,
     });
-  $: listOrganizationMemberUsersInfinite =
-    createAdminServiceListOrganizationMemberUsersInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
+  $: listOrganizationMemberUsersInfinite = getOrgUserMembers(
+    organization,
+    false,
+  );
 
   const currentUser = createAdminServiceGetCurrentUser();
 

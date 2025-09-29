@@ -5,6 +5,7 @@
     V1ListOrganizationMemberUsersResponse,
     V1OrganizationMemberUser,
     V1OrganizationInvite,
+    V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
@@ -34,7 +35,7 @@
     RpcStatus
   >;
   export let currentUserEmail: string;
-  export let currentUserRole: string;
+  export let organizationPermissions: V1OrganizationPermissions;
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
   export let guestOnly: boolean;
@@ -43,7 +44,7 @@
   export let onAttemptChangeBillingContactUserRole: () => void;
   export let onEditUserGroup: (groupName: string) => void;
   export let onShareProject: (projectName: string) => void;
-  export let onConvertToMember: (user: string) => void;
+  export let onConvertToMember: (user: V1OrganizationMemberUser) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
 
@@ -76,7 +77,7 @@
                 email: row.original.userEmail,
                 role: row.original.roleName,
                 isCurrentUser: row.original.userEmail === currentUserEmail,
-                currentUserRole,
+                organizationPermissions,
                 isBillingContact: row.original.userEmail === billingContact,
                 onAttemptChangeBillingContactUserRole,
               }),
@@ -123,10 +124,10 @@
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
-          currentUserRole,
+          organizationPermissions,
           isBillingContact: row.original.userEmail === billingContact,
           onAttemptRemoveBillingContactUser,
-          onConvertToMember,
+          onConvertToMember: () => onConvertToMember(row.original),
         }),
       meta: {
         widthPercent: 5,

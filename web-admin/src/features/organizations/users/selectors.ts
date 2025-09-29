@@ -1,7 +1,10 @@
 import {
+  createAdminServiceListOrganizationInvitesInfinite,
   createAdminServiceListOrganizationMemberUsergroups,
+  createAdminServiceListOrganizationMemberUsersInfinite,
   createAdminServiceListUsergroupsForOrganizationAndUser,
 } from "@rilldata/web-admin/client";
+import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
 import { derived, type Readable } from "svelte/store";
 
 const PAGE_SIZE = 50;
@@ -36,7 +39,7 @@ export function getUserGroupsForUsersInOrg(
       const error = allOrgGroupsResp.error ?? groupsForUserResp.error;
 
       const nonManagedGroups =
-        groupsForUserResp.data?.usergroups.filter((g) => !g.managed) ?? [];
+        groupsForUserResp.data?.usergroups?.filter((g) => !g.managed) ?? [];
       const groups = nonManagedGroups.map((g) => {
         const orgGroup = allOrgGroupsResp.data?.members?.find(
           (m) => m.groupId === g.groupId,
@@ -52,6 +55,70 @@ export function getUserGroupsForUsersInOrg(
         isPending,
         error,
         data: groups,
+      };
+    },
+  );
+}
+
+const INFINITE_PAGE_SIZE = 12;
+
+export function getOrgUserMembers(organization: string, guestOnly: boolean) {
+  return createAdminServiceListOrganizationMemberUsersInfinite(
+    organization,
+    {
+      pageSize: INFINITE_PAGE_SIZE,
+      role: guestOnly ? OrgUserRoles.Guest : undefined,
+      includeCounts: true,
+    },
+    {
+      query: {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
+      },
+    },
+  );
+}
+
+export function getOrgUserInvites(organization: string) {
+  return createAdminServiceListOrganizationInvitesInfinite(
+    organization,
+    {
+      pageSize: INFINITE_PAGE_SIZE,
+    },
+    {
+      query: {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
+      },
+    },
+  );
+}
+
+export function getUserCounts(organization: string) {
+  return derived(
+    [
+      getOrgUserMembers(organization, false),
+      getOrgUserMembers(organization, true),
+      getOrgUserInvites(organization),
+    ],
+    ([allOrgUserMembersResp, guestOrgUserMembersResp, orgUserInvitesResp]) => {
+      const allUsersCounts =
+        allOrgUserMembersResp.data?.pages?.[0]?.totalCount ?? 0;
+      const guestUsersCounts =
+        guestOrgUserMembersResp.data?.pages?.[0]?.totalCount ?? 0;
+      const userInvitesCounts =
+        orgUserInvitesResp.data?.pages?.[0]?.totalCount ?? 0;
+      return {
+        membersCount: allUsersCounts + userInvitesCounts - guestUsersCounts,
+        guestsCount: guestUsersCounts,
       };
     },
   );

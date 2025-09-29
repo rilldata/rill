@@ -1,23 +1,25 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import type { V1OrganizationInvite } from "@rilldata/web-admin/client";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListOrganizationInvitesInfinite,
-    createAdminServiceListOrganizationMemberUsersInfinite,
+  import type {
+    V1OrganizationInvite,
+    V1OrganizationMemberUser,
   } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import ConvertGuestToMemberDialog from "@rilldata/web-admin/features/organizations/users/ConvertGuestToMemberDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
+  import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
+  import {
+    getOrgUserInvites,
+    getOrgUserMembers,
+  } from "@rilldata/web-admin/features/organizations/users/selectors.ts";
   import ShareProjectDialog from "@rilldata/web-admin/features/projects/user-management/ShareProjectDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import type { PageData } from "./$types";
-
-  const PAGE_SIZE = 12;
 
   export let data: PageData;
   $: ({ organizationPermissions } = data);
@@ -31,7 +33,7 @@
   let editingUserGroupName = "";
   let isShareProjectDialogOpen = false;
   let sharingProject = "";
-  let convertGuestEmail = "";
+  let convertGuestUser: V1OrganizationMemberUser | undefined = undefined;
   let convertGuestDialogOpen = false;
 
   let searchText = "";
@@ -45,41 +47,8 @@
 
   $: organization = $page.params.organization;
 
-  $: orgMemberUsersInfiniteQuery =
-    createAdminServiceListOrganizationMemberUsersInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-        role: OrgUserRoles.Guest,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
-  $: orgInvitesInfiniteQuery =
-    createAdminServiceListOrganizationInvitesInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
+  $: orgMemberUsersInfiniteQuery = getOrgUserMembers(organization, true);
+  $: orgInvitesInfiniteQuery = getOrgUserInvites(organization);
 
   $: allOrgMemberUsersRows =
     $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
@@ -103,10 +72,6 @@
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
-  $: currentUserRole = allOrgMemberUsersRows.find(
-    (member) => member.userEmail === $currentUser.data?.user.email,
-  )?.roleName;
-
   // Filter by role
   // Filter by search text
   $: filteredUsers = combinedRows.filter((user) => {
@@ -116,7 +81,24 @@
       ("userName" in user &&
         (user.userName?.toLowerCase() || "").includes(searchLower));
 
-    return matchesSearch;
+    let matchesRole = false;
+
+    if (filterSelection === "all") {
+      // All org users (members + guests + pending invites)
+      matchesRole = true;
+    } else if (filterSelection === "members") {
+      // Only members (org admin, editor, viewer)
+      matchesRole =
+        !("invitedBy" in user) &&
+        (user.roleName === OrgUserRoles.Admin ||
+          user.roleName === OrgUserRoles.Editor ||
+          user.roleName === OrgUserRoles.Viewer);
+    } else if (filterSelection === "pending") {
+      // Only users with pending invites
+      matchesRole = "invitedBy" in user;
+    }
+
+    return matchesSearch && matchesRole;
   });
 
   const currentUser = createAdminServiceGetCurrentUser();
@@ -145,6 +127,7 @@
           autofocus={false}
           showBorderOnFocus={false}
         />
+        <OrgUsersFilters bind:filterSelection showMembers={false} />
       </div>
       <div class="mt-6">
         <OrgUsersTable
@@ -153,7 +136,7 @@
           usersQuery={$orgMemberUsersInfiniteQuery}
           invitesQuery={$orgInvitesInfiniteQuery}
           currentUserEmail={$currentUser.data?.user.email}
-          {currentUserRole}
+          {organizationPermissions}
           billingContact={$billingContactUser?.email}
           {scrollToTopTrigger}
           guestOnly
@@ -168,20 +151,11 @@
             isShareProjectDialogOpen = true;
           }}
           onConvertToMember={(user) => {
-            convertGuestEmail = user;
+            convertGuestUser = user;
             convertGuestDialogOpen = true;
           }}
         />
       </div>
-      {#if filteredUsers.length > 0}
-        <div class="px-2 py-3">
-          <span class="font-medium text-sm text-gray-500">
-            {filteredUsers.length} total user{filteredUsers.length === 1
-              ? ""
-              : "s"}
-          </span>
-        </div>
-      {/if}
     </div>
   {/if}
 </div>
@@ -214,6 +188,5 @@
 
 <ConvertGuestToMemberDialog
   bind:open={convertGuestDialogOpen}
-  email={convertGuestEmail}
-  {isSuperUser}
+  user={convertGuestUser}
 />

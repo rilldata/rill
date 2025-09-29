@@ -1,11 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import type { V1OrganizationInvite } from "@rilldata/web-admin/client";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListOrganizationInvitesInfinite,
-    createAdminServiceListOrganizationMemberUsersInfinite,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
@@ -14,6 +10,10 @@
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
   import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
+  import {
+    getOrgUserInvites,
+    getOrgUserMembers,
+  } from "@rilldata/web-admin/features/organizations/users/selectors.ts";
   import ShareProjectDialog from "@rilldata/web-admin/features/projects/user-management/ShareProjectDialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
@@ -21,8 +21,6 @@
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Plus } from "lucide-svelte";
   import type { PageData } from "./$types";
-
-  const PAGE_SIZE = 12;
 
   export let data: PageData;
   $: ({ organizationPermissions } = data);
@@ -51,40 +49,8 @@
 
   $: organization = $page.params.organization;
 
-  $: orgMemberUsersInfiniteQuery =
-    createAdminServiceListOrganizationMemberUsersInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
-  $: orgInvitesInfiniteQuery =
-    createAdminServiceListOrganizationInvitesInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
+  $: orgMemberUsersInfiniteQuery = getOrgUserMembers(organization, false);
+  $: orgInvitesInfiniteQuery = getOrgUserInvites(organization);
 
   $: allOrgMemberUsersRows =
     $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
@@ -107,10 +73,6 @@
     ...allOrgMemberUsersRows,
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
-
-  $: currentUserRole = allOrgMemberUsersRows.find(
-    (member) => member.userEmail === $currentUser.data?.user.email,
-  )?.roleName;
 
   // Filter by role
   // Filter by search text
@@ -193,7 +155,7 @@
           usersQuery={$orgMemberUsersInfiniteQuery}
           invitesQuery={$orgInvitesInfiniteQuery}
           currentUserEmail={$currentUser.data?.user.email}
-          {currentUserRole}
+          {organizationPermissions}
           billingContact={$billingContactUser?.email}
           {scrollToTopTrigger}
           guestOnly={false}
@@ -212,15 +174,6 @@
           onConvertToMember={() => {}}
         />
       </div>
-      {#if filteredUsers.length > 0}
-        <div class="px-2 py-3">
-          <span class="font-medium text-sm text-gray-500">
-            {filteredUsers.length} total user{filteredUsers.length === 1
-              ? ""
-              : "s"}
-          </span>
-        </div>
-      {/if}
     </div>
   {/if}
 </div>

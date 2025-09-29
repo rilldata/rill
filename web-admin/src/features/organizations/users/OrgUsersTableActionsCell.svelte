@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { canManageOrgUser } from "@rilldata/web-admin/features/organizations/users/permission-utils.ts";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -10,6 +11,7 @@
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
+    type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -18,27 +20,20 @@
   export let email: string;
   export let role: string;
   export let isCurrentUser: boolean;
-  export let currentUserRole: string;
+  export let organizationPermissions: V1OrganizationPermissions;
   export let isBillingContact: boolean;
   // Changing billing contact is not an action for this user. So handle it upstream
   // This also avoids rendering the modal per row.
   export let onAttemptRemoveBillingContactUser: () => void;
-  export let onConvertToMember: (user: string) => void;
+  export let onConvertToMember: () => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
 
   $: organization = $page.params.organization;
-  $: isAdmin = currentUserRole === OrgUserRoles.Admin;
-  $: isEditor = currentUserRole === OrgUserRoles.Editor;
-  $: canManageUser = true;
-  // $: canManageUser =
-  //   !isCurrentUser &&
-  //   (isAdmin ||
-  //     (isEditor &&
-  //       (role === OrgUserRoles.Editor ||
-  //         role === OrgUserRoles.Viewer ||
-  //         role === OrgUserRoles.Guest)));
+  $: canManageUser =
+    // TODO: backend doesnt restrict removing oneself, revisit this UI check.
+    !isCurrentUser && canManageOrgUser(organizationPermissions, role);
 
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =
@@ -112,6 +107,14 @@
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
+      {#if role === OrgUserRoles.Guest}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={onConvertToMember}
+        >
+          Convert to member
+        </DropdownMenu.Item>
+      {/if}
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"
@@ -120,14 +123,6 @@
         <Trash2Icon size="12px" />
         <span class="ml-2">Remove</span>
       </DropdownMenu.Item>
-      {#if role === OrgUserRoles.Guest}
-        <DropdownMenu.Item
-          class="font-normal flex items-center"
-          on:click={() => onConvertToMember(email)}
-        >
-          Convert to member
-        </DropdownMenu.Item>
-      {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}

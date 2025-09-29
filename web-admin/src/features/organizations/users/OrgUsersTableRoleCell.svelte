@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { canManageOrgUser } from "@rilldata/web-admin/features/organizations/users/permission-utils.ts";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -6,6 +7,7 @@
     createAdminServiceSetOrganizationMemberUserRole,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
+    type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import { page } from "$app/stores";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
@@ -17,7 +19,7 @@
   export let email: string;
   export let role: string;
   export let isCurrentUser: boolean;
-  export let currentUserRole: string;
+  export let organizationPermissions: V1OrganizationPermissions;
   export let isBillingContact: boolean;
   // Changing billing contact is not an action for this user. So handle it upstream
   // This also avoids rendering the modal per row.
@@ -28,16 +30,10 @@
   let newRole = "";
 
   $: organization = $page.params.organization;
-  $: isAdmin = currentUserRole === OrgUserRoles.Admin;
-  $: isEditor = currentUserRole === OrgUserRoles.Editor;
   $: isGuest = role === OrgUserRoles.Guest;
   $: canManageUser =
-    !isCurrentUser &&
-    (isAdmin ||
-      (isEditor &&
-        (role === OrgUserRoles.Editor ||
-          role === OrgUserRoles.Viewer ||
-          role === OrgUserRoles.Guest)));
+    // TODO: backend doesnt restrict removing oneself, revisit this UI check.
+    !isCurrentUser && canManageOrgUser(organizationPermissions, role);
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
@@ -133,7 +129,7 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-[200px]">
-      {#if isAdmin}
+      {#if organizationPermissions.manageOrgAdmins}
         <DropdownMenu.Item
           class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
           'admin'
