@@ -1,12 +1,16 @@
-package metricsview
+package executor
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/rilldata/rill/runtime/metricsview"
+)
 
 // rewriteQueryEnforceCaps rewrites the query to enforce system limits.
 // It works by adding a limit just above the system cap.
 // It returns a cap that the result reader should check and error on if exceeded.
 // If it returns 0, no cap should be enforced.
-func (e *Executor) rewriteQueryEnforceCaps(qry *Query) (int64, error) {
+func (e *Executor) rewriteQueryEnforceCaps(qry *metricsview.Query) (int64, error) {
 	limitCap := e.instanceCfg.InteractiveSQLRowLimit
 
 	// No magic if there is no cap

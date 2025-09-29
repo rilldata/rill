@@ -1,4 +1,4 @@
-package metricsview_test
+package executor_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -28,7 +28,7 @@ func TestValidateMetricsView(t *testing.T) {
 		},
 	}
 
-	e, err := metricsview.NewExecutor(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0)
 	require.NoError(t, err)
 
 	res, err := e.ValidateAndNormalizeMetricsView(context.Background())

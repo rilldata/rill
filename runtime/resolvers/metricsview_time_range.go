@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -23,7 +24,7 @@ type metricsViewTimeRangeResolver struct {
 	runtime    *runtime.Runtime
 	instanceID string
 	mvName     string
-	executor   *metricsview.Executor
+	executor   *executor.Executor
 	args       *metricsViewTimeRangeResolverArgs
 }
 
@@ -80,7 +81,7 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, runtime.ErrForbidden
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
+	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
 	if err != nil {
 		return nil, err
 	}
