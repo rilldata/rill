@@ -196,7 +196,8 @@ func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, c
 // processAppContext processes the app context and generates contextual system messages
 func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appContext *runtimev1.AppContext, toolService ToolService) ([]*runtimev1.Message, error) {
 	if appContext == nil {
-		return nil, nil
+		// If no app context, use project chat context
+		return r.processProjectChatContext(ctx, instanceID)
 	}
 
 	switch appContext.ContextType {
@@ -205,7 +206,8 @@ func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appC
 	case runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD:
 		return r.processExploreDashboardContext(ctx, instanceID, appContext.ContextMetadata, toolService)
 	default:
-		return nil, nil // Unknown context type, no system message will be added
+		// Unknown context type, use project chat context
+		return r.processProjectChatContext(ctx, instanceID)
 	}
 }
 
