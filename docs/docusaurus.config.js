@@ -9,6 +9,7 @@ const darkCodeTheme = themes.dracula;
 const llmsTxtPlugin = require('./plugins/llms-txt-plugin');
 
 const def = require("redocusaurus");
+const path = require('path');
 def;
 
 /** @type {import('@docusaurus/types').Config} */
@@ -65,21 +66,21 @@ const config = {
     [
       'redocusaurus',
       {
+        config: path.join(__dirname, 'redocly.yaml'),
         specs: [
           {
             id: 'admin-api',
-            spec: '../proto/gen/rill/admin/v1/admin-connect.openapi.yaml',
+            spec: 'api/rill/admin/v1/admin-connect.openapi.yaml',
             route: '/api/admin/',
+            layout: {
+              title: "Rill API",
+              description: "Rill API documentation",
+            },
           },
         ],
-        theme: {
-          primaryColor: '#1890ff',
-          redocOptions: {
-            hideLoading: false,
-          },
-        },
+        theme: {},
       },
-    ],
+    ]
   ],
 
   themeConfig:

@@ -4,9 +4,29 @@ package rill.admin.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "gnostic/openapi/v3/annotations.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
+
+option (gnostic.openapi.v3.document) = {
+  info: {
+    title: "Admin API";
+    description: "API for managing Rill Cloud organizations, projects, deployments, and users.";
+    license: {
+      name: "Apache License 2.0",
+      url: "https://github.com/rilldata/rill/blob/main/LICENSE.md";
+    }
+  }
+  servers: {
+    url: "https://api.rilldata.com"
+    description: "Production server (uses live data)";
+  }
+  tags: {
+    name: "Public"
+    description: "Publicly accessible endpoints"
+  }
+};
 
 service AdminService {
   // Ping returns information about the server
@@ -17,11 +37,17 @@ service AdminService {
   // ListOrganizations lists all the organizations currently managed by the admin
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
     option (google.api.http) = {get: "/v1/orgs"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // GetOrganization returns information about a specific organization
   rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // GetOrganizationNameForDomain finds the org name for a custom domain.
@@ -37,11 +63,17 @@ service AdminService {
       post: "/v1/orgs",
       body: "*"
     };
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // DeleteOrganization deletes an organization
   rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // UpdateOrganization deletes an organizations
@@ -50,11 +82,17 @@ service AdminService {
       patch: "/v1/orgs/{org}",
       body: "*"
     };
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // ListProjectsForOrganization lists all the projects currently available for given organizations.
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
@@ -72,6 +110,9 @@ service AdminService {
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
@@ -95,11 +136,17 @@ service AdminService {
       post: "/v1/orgs/{org}/projects",
       body: "*"
     };
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // DeleteProject deletes an project
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // UpdateProject updates a project
@@ -108,11 +155,17 @@ service AdminService {
       patch: "/v1/orgs/{org}/projects/{project}",
       body: "*"
     };
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // GetProjectVariables returns project variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/variables"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // UpdateProjectVariables updates variables for a project.
@@ -120,6 +173,9 @@ service AdminService {
     option (google.api.http) = {
       put: "/v1/orgs/{org}/projects/{project}/variables",
       body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
     };
   }
 
@@ -233,11 +289,17 @@ service AdminService {
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/members"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // ListOrganizationInvites lists all the org invites
   rpc ListOrganizationInvites(ListOrganizationInvitesRequest) returns (ListOrganizationInvitesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/invites"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // AddOrganizationMemberUser adds a user to the organization
@@ -246,11 +308,17 @@ service AdminService {
       post: "/v1/orgs/{org}/members",
       body: "*"
     };
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // RemoveOrganizationMemberUser removes member from the organization
   rpc RemoveOrganizationMemberUser(RemoveOrganizationMemberUserRequest) returns (RemoveOrganizationMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/members/{email}"};
+    option (gnostic.openapi.v3.operation) = {
+      tags: ["Public"]
+    };
   }
 
   // LeaveOrganization removes the current user from the organization
