@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"context"
@@ -6,14 +6,15 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
-func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error {
-	var measures []Measure
+func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.Query) error {
+	var measures []metricsview.Measure
 	var measureIndices []int
 	for i, measure := range qry.Measures {
 		if measure.Compute != nil && measure.Compute.PercentOfTotal != nil {
-			measures = append(measures, Measure{
+			measures = append(measures, metricsview.Measure{
 				Name: measure.Compute.PercentOfTotal.Measure,
 			})
 			measureIndices = append(measureIndices, i)
@@ -24,7 +25,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 		return nil
 	}
 
-	totalsQry := &Query{
+	totalsQry := &metricsview.Query{
 		MetricsView:         qry.MetricsView,
 		Dimensions:          nil,
 		Measures:            measures,
@@ -43,7 +44,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.
-	ast, err := NewAST(e.metricsView, e.security, totalsQry, e.olap.Dialect())
+	ast, err := metricsview.NewAST(e.metricsView, e.security, totalsQry, e.olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("percent of totals: failed to build the totals query AST: %w", err)
 	}

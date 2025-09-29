@@ -1,9 +1,10 @@
-package metricsview
+package executor
 
 import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 // rewriteApproxComparisons rewrites the AST to use a LEFT or RIGHT join instead of a FULL joins for comparisons,
@@ -12,7 +13,7 @@ import (
 // Extracts out the base or comparison query into a CTE depending on the sort field.
 // This is done to prevent running a group by query on comparison time range without a limit which can fail in some olap engines if dim cardinality is very high by adding filter in the join query to select only dimension values present in the CTE.
 // This does cause CTE to be scanned twice but at least query will not fail.
-func (e *Executor) rewriteApproxComparisons(ast *AST, isMultiPhase bool) {
+func (e *Executor) rewriteApproxComparisons(ast *metricsview.AST, isMultiPhase bool) {
 	if !e.instanceCfg.MetricsApproximateComparisons {
 		return
 	}
@@ -20,7 +21,7 @@ func (e *Executor) rewriteApproxComparisons(ast *AST, isMultiPhase bool) {
 	_ = e.rewriteApproxComparisonsWalk(ast, ast.Root, isMultiPhase)
 }
 
-func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode, isMultiPhase bool) bool {
+func (e *Executor) rewriteApproxComparisonsWalk(a *metricsview.AST, n *metricsview.SelectNode, isMultiPhase bool) bool {
 	// If n is a comparison node, rewrite it
 	var rewrote bool
 	if n.JoinComparisonSelect != nil {
@@ -42,7 +43,7 @@ func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode, isMultiPh
 	return rewrote
 }
 
-func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPhase bool) bool {
+func (e *Executor) rewriteApproxComparisonNode(a *metricsview.AST, n *metricsview.SelectNode, isMultiPhase bool) bool {
 	// Can only rewrite when sorting by exactly one field.
 	if len(a.Root.OrderBy) != 1 {
 		return false
@@ -65,7 +66,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 	var sortUnderlyingMeasure string
 	if len(a.Root.OrderBy) > 0 {
 		// Check if it's a measure
-		for _, qm := range a.query.Measures {
+		for _, qm := range a.Query.Measures {
 			if qm.Name != sortField.Name {
 				continue
 			}
@@ -89,7 +90,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 
 		if !sortBase && !sortComparison && !sortDelta {
 			// It wasn't a measure. Check if it's a dimension.
-			for _, qd := range a.query.Dimensions {
+			for _, qd := range a.Query.Dimensions {
 				if qd.Name == sortField.Name {
 					sortDim = true
 					break
@@ -102,14 +103,14 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 	if sortUnderlyingMeasure != "" {
 		sortField.Name = sortUnderlyingMeasure
 	}
-	order := []OrderFieldNode{sortField}
+	order := []metricsview.OrderFieldNode{sortField}
 
 	// Note: All these cases are approximations in different ways.
 	if sortBase {
 		// We're sorting by a measure in FromSelect. We do a LEFT JOIN and push down the order/limit to it.
 		// This should remain correct when the limit is lower than the number of rows in the base query.
 		// The approximate part here is when the base query returns fewer rows than the limit, then dimension values that are only in the comparison query will be missing.
-		n.JoinComparisonType = JoinTypeLeft
+		n.JoinComparisonType = metricsview.JoinTypeLeft
 		n.FromSelect.OrderBy = order
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
@@ -117,20 +118,20 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 		if cteRewrite {
 			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
-			a.convertToCTE(n.FromSelect)
+			a.ConvertToCTE(n.FromSelect)
 
 			// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
 			for _, dim := range n.JoinComparisonSelect.DimFields {
-				dimName := a.dialect.EscapeIdentifier(dim.Name)
+				dimName := a.Dialect.EscapeIdentifier(dim.Name)
 				dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
-				n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
+				n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.And(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
 			}
 		}
 	} else if sortComparison {
 		// We're sorting by a measure in JoinComparisonSelect. We can do a RIGHT JOIN and push down the order/limit to it.
 		// This should remain correct when the limit is lower than the number of rows in the comparison query.
 		// The approximate part here is when the comparison query returns fewer rows than the limit, then dimension values that are only in the base query will be missing.
-		n.JoinComparisonType = JoinTypeRight
+		n.JoinComparisonType = metricsview.JoinTypeRight
 		n.JoinComparisonSelect.OrderBy = order
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
@@ -138,19 +139,19 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 		if cteRewrite {
 			// rewrite comparison query as CTE and use results from CTE in the base query
 			// make JoinComparisonSelect a CTE
-			a.convertToCTE(n.JoinComparisonSelect)
+			a.ConvertToCTE(n.JoinComparisonSelect)
 
 			// now change the FromSelect WHERE clause to use selected dim values from CTE
 			for _, dim := range n.FromSelect.DimFields {
-				dimName := a.dialect.EscapeIdentifier(dim.Name)
+				dimName := a.Dialect.EscapeIdentifier(dim.Name)
 				dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
-				n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.JoinComparisonSelect.Alias, dimName), nil)
+				n.FromSelect.Where = n.FromSelect.Where.And(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.JoinComparisonSelect.Alias, dimName), nil)
 			}
 		}
 	} else if sortDim {
 		// We're sorting by a dimension. We do a LEFT JOIN that only returns values present in the base query.
 		// The approximate part here is that dimension values only present in the comparison query will be missing.
-		n.JoinComparisonType = JoinTypeLeft
+		n.JoinComparisonType = metricsview.JoinTypeLeft
 		n.FromSelect.OrderBy = order
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
@@ -158,13 +159,13 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 		if cteRewrite {
 			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
-			a.convertToCTE(n.FromSelect)
+			a.ConvertToCTE(n.FromSelect)
 
 			// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
 			for _, dim := range n.JoinComparisonSelect.DimFields {
-				dimName := a.dialect.EscapeIdentifier(dim.Name)
+				dimName := a.Dialect.EscapeIdentifier(dim.Name)
 				dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
-				n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
+				n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.And(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
 			}
 		}
 	} else if sortDelta {
