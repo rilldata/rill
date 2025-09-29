@@ -3,7 +3,6 @@ package metricsview
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -146,7 +145,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 	}
 	defer release()
 	var path string
-	err = olap.WithConnection(ctx, e.priority, func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
+	err = olap.WithConnection(ctx, e.priority, func(wrappedCtx context.Context, ensuredCtx context.Context) error {
 		// Stage the underlying data in a temporary table
 		alias, err := randomString("t", 8)
 		if err != nil {

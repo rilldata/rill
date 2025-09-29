@@ -568,6 +568,8 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              frontendUrl:
+                type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -612,6 +614,44 @@ paths:
               appContext:
                 $ref: '#/definitions/v1AppContext'
             title: Request message for RuntimeService.Complete
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/complete/stream:
+    post:
+      summary: CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+      operationId: RuntimeService_CompleteStreaming
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1CompleteStreamingResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1CompleteStreamingResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              conversationId:
+                type: string
+                title: If not provided, creates a new conversation
+              prompt:
+                type: string
+            title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/conversations:
@@ -1488,6 +1528,10 @@ paths:
                 description: |-
                   Optional UI URL that the export originates from.
                   Only used if include_header is true.
+              executionTime:
+                type: string
+                format: date-time
+                description: Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -3085,6 +3129,15 @@ paths:
           in: query
           required: false
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/ping:
@@ -4302,6 +4355,14 @@ definitions:
           type: object
           $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.Complete
+  v1CompleteStreamingResponse:
+    type: object
+    properties:
+      conversationId:
+        type: string
+      message:
+        $ref: '#/definitions/v1Message'
+    title: Response message for RuntimeService.CompleteStreaming
   v1Component:
     type: object
     properties:
@@ -4525,6 +4586,8 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      frontendUrl:
+        type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -5052,6 +5115,8 @@ definitions:
         additionalProperties:
           type: string
       aiInstructions:
+        type: string
+      frontendUrl:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
@@ -6319,6 +6384,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1OlapTableInfo'
+      nextPageToken:
+        type: string
   v1OlapTableInfo:
     type: object
     properties:

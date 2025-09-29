@@ -89,13 +89,8 @@
   let dsnErrorDetails: string | undefined = undefined;
 
   $: submitting =
-    connectorType === "clickhouse-cloud" || connectionTab === "parameters"
-      ? $paramsSubmitting
-      : $dsnSubmitting;
-  $: formId =
-    connectorType === "clickhouse-cloud" || connectionTab === "parameters"
-      ? paramsFormId
-      : dsnFormId;
+    connectionTab === "parameters" ? $paramsSubmitting : $dsnSubmitting;
+  $: formId = connectionTab === "parameters" ? paramsFormId : dsnFormId;
 
   // Reset connectionTab if switching to Rill-managed
   $: if (connectorType === "rill-managed") {
@@ -103,13 +98,19 @@
   }
 
   // Reset errors when form is modified
-  $: if (
-    connectorType === "clickhouse-cloud" ||
-    connectionTab === "parameters"
-  ) {
+  $: if (connectionTab === "parameters") {
     if ($paramsTainted) paramsError = null;
   } else if (connectionTab === "dsn") {
     if ($dsnTainted) dsnError = null;
+  }
+
+  // Clear errors when switching tabs
+  $: if (connectionTab === "dsn") {
+    paramsError = null;
+    paramsErrorDetails = undefined;
+  } else {
+    dsnError = null;
+    dsnErrorDetails = undefined;
   }
 
   // Emit the submitting state to the parent
@@ -213,7 +214,11 @@
     const values = { ...event.form.data };
 
     // Ensure ClickHouse Cloud specific requirements are met
-    if (connectorType === "clickhouse-cloud") {
+    // Only apply these when using parameters tab, not DSN tab
+    if (
+      connectorType === "clickhouse-cloud" &&
+      connectionTab === "parameters"
+    ) {
       (values as any).ssl = true;
       (values as any).port = "8443";
     }
@@ -240,14 +245,14 @@
         error = humanReadable;
         details =
           humanReadable !== originalMessage ? originalMessage : undefined;
+      } else if (e?.message) {
+        error = e.message;
+        details = undefined;
       } else {
         error = "Unknown error";
         details = undefined;
       }
-      if (
-        connectorType === "clickhouse-cloud" ||
-        connectionTab === "parameters"
-      ) {
+      if (connectionTab === "parameters") {
         paramsError = error;
         paramsErrorDetails = details;
         setError(paramsError, paramsErrorDetails);

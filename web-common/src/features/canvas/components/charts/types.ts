@@ -1,4 +1,7 @@
-import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
+import type {
+  ColorMapping,
+  ColorRangeMapping,
+} from "@rilldata/web-common/features/canvas/inspector/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -94,6 +97,8 @@ interface QuantitativeFieldConfig {
   zeroBasedOrigin?: boolean; // Default is false
   min?: number;
   max?: number;
+  showTotal?: boolean;
+  colorRange?: ColorRangeMapping;
 }
 
 export interface FieldConfig

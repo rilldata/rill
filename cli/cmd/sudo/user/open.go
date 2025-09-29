@@ -1,7 +1,9 @@
 package user
 
 import (
+	"errors"
 	"net/url"
+	"strconv"
 
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
@@ -10,27 +12,37 @@ import (
 )
 
 func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
+	var ttlMinutes int
 	openCmd := &cobra.Command{
 		Use:   "open",
 		Args:  cobra.NoArgs,
-		Short: "Open browser as the current user",
+		Short: "Open browser as the assume user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			authURL := ch.AdminURL()
-			withTokenURI, err := url.JoinPath(authURL, "auth", "with-token")
+			assumeOpenURI, err := url.JoinPath(authURL, "auth", "assume-open")
 			if err != nil {
 				return err
 			}
-
-			qry := map[string]string{"token": ch.AdminToken()}
-			withTokenURL, err := urlutil.WithQuery(withTokenURI, qry)
+			representingUser, err := ch.DotRill.GetRepresentingUser()
 			if err != nil {
 				return err
 			}
-
-			_ = browser.Open(withTokenURL)
+			if representingUser == "" {
+				return errors.New("please assume a user first")
+			}
+			qry := map[string]string{
+				"representing_user": representingUser,
+				"ttl_minutes":       strconv.Itoa(ttlMinutes),
+			}
+			assumeOpenURI, err = urlutil.WithQuery(assumeOpenURI, qry)
+			if err != nil {
+				return err
+			}
+			_ = browser.Open(assumeOpenURI)
 
 			return nil
 		},
 	}
+	openCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 60, "Minutes until the token should expire")
 	return openCmd
 }

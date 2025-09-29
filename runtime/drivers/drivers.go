@@ -83,8 +83,8 @@ type Handle interface {
 
 	// MigrationStatus returns the handle's current and desired migration version (if applicable).
 	MigrationStatus(ctx context.Context) (current int, desired int, err error)
-	// Close closes the handle.
 
+	// Close closes the handle.
 	Close() error
 
 	// AsRegistry returns a RegistryStore if the handle can serve as such, otherwise returns false.

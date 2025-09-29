@@ -95,7 +95,7 @@ func (e *selfToGCSExecutor) export(ctx context.Context, props map[string]any, ou
 		return "", fmt.Errorf("query job failed: %w", err)
 	}
 
-	return outputLocation, nil
+	return outputLocation + "*", nil
 }
 
 func exportOptions(outputLocation string, format drivers.FileFormat) (string, error) {

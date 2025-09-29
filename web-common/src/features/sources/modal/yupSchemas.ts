@@ -36,17 +36,14 @@ export const getYupSchema = {
   }),
 
   duckdb: yup.object().shape({
-    path: yup.string().required("Path is required"),
+    path: yup.string().required("path is required"),
+    attach: yup.string().optional(),
   }),
 
   motherduck: yup.object().shape({
-    dsn: yup.string().required("Connection string is required"),
-    sql: yup.string().required("SQL is required"),
-    token: yup.string().required("Access token is required"),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
+    token: yup.string().required("Token is required"),
+    path: yup.string().required("Path is required"),
+    schema_name: yup.string().required("Schema name is required"),
   }),
 
   sqlite: yup.object().shape({

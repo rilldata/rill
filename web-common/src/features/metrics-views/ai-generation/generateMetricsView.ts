@@ -24,6 +24,7 @@ import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import { createAndPreviewExplore } from "../create-and-preview-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
+import { createYamlModelFromTable } from "../../connectors/code-utils";
 
 /**
  * TanStack Query does not support mutation cancellation (at least as of v4).
@@ -72,7 +73,7 @@ export function useCreateMetricsViewFromTableUIAction(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort("User canceled the AI generation");
+            abortController.abort();
             isAICancelled = true;
           },
         },
@@ -250,4 +251,162 @@ export async function createDashboardFromTableInMetricsEditor(
 
   // Done, remove the overlay
   overlay.set(null);
+}
+
+/**
+ * Creates a model from a table, then generates a metrics view and explore dashboard.
+ * This is used for non-OLAP connectors that need to follow the Rill architecture:
+ * 1. Create model (ingests from source → OLAP)
+ * 2. Create metrics view (on top of model)
+ * 3. Create explore dashboard (on top of metrics view)
+ */
+export async function createModelAndMetricsViewAndExplore(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  table: string,
+) {
+  let isAICancelled = false;
+  const abortController = new AbortController();
+
+  const isAiEnabled = get(featureFlags.ai);
+  overlay.set({
+    title: `Creating your metrics and dashboard${isAiEnabled ? " with AI" : ""}...`,
+    detail: {
+      component: OptionToCancelAIGeneration,
+      props: {
+        onCancel: () => {
+          abortController.abort();
+          isAICancelled = true;
+        },
+      },
+    },
+  });
+
+  try {
+    // Step 1: Create model that ingests from source to OLAP
+    overlay.set({
+      title: `Creating model...`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort();
+            isAICancelled = true;
+          },
+        },
+      },
+    });
+
+    const [, modelName] = await createYamlModelFromTable(
+      queryClient,
+      connector,
+      database,
+      databaseSchema,
+      table,
+    );
+
+    // Step 2: Wait for model to be ready
+    const modelResource = fileArtifacts
+      .getFileArtifact(`/models/${modelName}.yaml`)
+      .getResource(queryClient, instanceId);
+
+    await waitUntil(() => get(modelResource).data !== undefined, 10000);
+
+    // Step 3: Create metrics view using the backend AI generation
+    // This will properly analyze the model's schema and generate dimensions/measures
+    const metricsViewName = `${table}_metrics`;
+    const metricsViewFilePath = `/metrics/${metricsViewName}.yaml`;
+
+    // Check if user cancelled
+    if (isAICancelled) {
+      throw new Error("User cancelled the operation");
+    }
+
+    // Update overlay for metrics view creation
+    overlay.set({
+      title: `Creating metrics view${isAiEnabled ? " with AI" : ""}...`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort();
+            isAICancelled = true;
+          },
+        },
+      },
+    });
+
+    // Use the backend function with the model name instead of table name
+    void runtimeServiceGenerateMetricsViewFile(
+      instanceId,
+      {
+        model: modelName, // Use model name instead of table
+        path: metricsViewFilePath,
+        useAi: get(featureFlags.ai),
+      },
+      abortController.signal,
+    );
+
+    // Poll every second until the AI generation is complete or canceled
+    while (!isAICancelled) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      try {
+        await runtimeServiceGetFile(instanceId, {
+          path: metricsViewFilePath,
+        });
+
+        // success, AI is done
+        break;
+      } catch {
+        // 404 error, AI is not done
+      }
+    }
+
+    // If the user canceled the AI request, submit another request with `useAi=false`
+    if (isAICancelled) {
+      await runtimeServiceGenerateMetricsViewFile(instanceId, {
+        model: modelName,
+        path: metricsViewFilePath,
+        useAi: false,
+      });
+    }
+
+    // Step 4: Wait for metrics view to be ready
+    const metricsViewResource = fileArtifacts
+      .getFileArtifact(metricsViewFilePath)
+      .getResource(queryClient, instanceId);
+
+    await waitUntil(() => get(metricsViewResource).data !== undefined, 10000);
+
+    const resource = get(metricsViewResource).data;
+    if (!resource) {
+      throw new Error("Failed to create a Metrics View resource");
+    }
+
+    // Update overlay for explore dashboard creation
+    overlay.set({
+      title: `Creating explore dashboard...`,
+      detail: {
+        component: OptionToCancelAIGeneration,
+        props: {
+          onCancel: () => {
+            abortController.abort();
+            isAICancelled = true;
+          },
+        },
+      },
+    });
+
+    // Step 5: Create explore dashboard
+    await createAndPreviewExplore(queryClient, instanceId, resource);
+  } catch (err) {
+    console.error("Failed to create model and metrics view:", err);
+    throw err;
+  } finally {
+    // Always clean up the overlay
+    overlay.set(null);
+  }
 }

@@ -3936,22 +3936,7 @@ func (m *ListProjectsForFingerprintRequest) validate(all bool) error {
 
 	// no validation rules for SubPath
 
-	if m.GetPageSize() != 0 {
-
-		if m.GetPageSize() > 1000 {
-			err := ListProjectsForFingerprintRequestValidationError{
-				field:  "PageSize",
-				reason: "value must be less than or equal to 1000",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	// no validation rules for PageToken
+	// no validation rules for RillMgdGitRemote
 
 	if len(errors) > 0 {
 		return ListProjectsForFingerprintRequestMultiError(errors)
@@ -4092,7 +4077,7 @@ func (m *ListProjectsForFingerprintResponse) validate(all bool) error {
 
 	}
 
-	// no validation rules for NextPageToken
+	// no validation rules for UnauthorizedProject
 
 	if len(errors) > 0 {
 		return ListProjectsForFingerprintResponseMultiError(errors)
@@ -24777,6 +24762,279 @@ var _ interface {
 	ErrorName() string
 } = RevokeUserAuthTokenResponseValidationError{}
 
+// Validate checks the field values on RevokeRepresentativeAuthTokensRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *RevokeRepresentativeAuthTokensRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeRepresentativeAuthTokensRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// RevokeRepresentativeAuthTokensRequestMultiError, or nil if none found.
+func (m *RevokeRepresentativeAuthTokensRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeRepresentativeAuthTokensRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = RevokeRepresentativeAuthTokensRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RevokeRepresentativeAuthTokensRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *RevokeRepresentativeAuthTokensRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *RevokeRepresentativeAuthTokensRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
+}
+
+// RevokeRepresentativeAuthTokensRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// RevokeRepresentativeAuthTokensRequest.ValidateAll() if the designated
+// constraints aren't met.
+type RevokeRepresentativeAuthTokensRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeRepresentativeAuthTokensRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeRepresentativeAuthTokensRequestMultiError) AllErrors() []error { return m }
+
+// RevokeRepresentativeAuthTokensRequestValidationError is the validation error
+// returned by RevokeRepresentativeAuthTokensRequest.Validate if the
+// designated constraints aren't met.
+type RevokeRepresentativeAuthTokensRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeRepresentativeAuthTokensRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeRepresentativeAuthTokensRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeRepresentativeAuthTokensRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeRepresentativeAuthTokensRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeRepresentativeAuthTokensRequestValidationError) ErrorName() string {
+	return "RevokeRepresentativeAuthTokensRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeRepresentativeAuthTokensRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeRepresentativeAuthTokensRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeRepresentativeAuthTokensRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeRepresentativeAuthTokensRequestValidationError{}
+
+// Validate checks the field values on RevokeRepresentativeAuthTokensResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *RevokeRepresentativeAuthTokensResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// RevokeRepresentativeAuthTokensResponse with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// RevokeRepresentativeAuthTokensResponseMultiError, or nil if none found.
+func (m *RevokeRepresentativeAuthTokensResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeRepresentativeAuthTokensResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RevokeRepresentativeAuthTokensResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeRepresentativeAuthTokensResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// RevokeRepresentativeAuthTokensResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RevokeRepresentativeAuthTokensResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeRepresentativeAuthTokensResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeRepresentativeAuthTokensResponseMultiError) AllErrors() []error { return m }
+
+// RevokeRepresentativeAuthTokensResponseValidationError is the validation
+// error returned by RevokeRepresentativeAuthTokensResponse.Validate if the
+// designated constraints aren't met.
+type RevokeRepresentativeAuthTokensResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeRepresentativeAuthTokensResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeRepresentativeAuthTokensResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeRepresentativeAuthTokensResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeRepresentativeAuthTokensResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeRepresentativeAuthTokensResponseValidationError) ErrorName() string {
+	return "RevokeRepresentativeAuthTokensResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeRepresentativeAuthTokensResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeRepresentativeAuthTokensResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeRepresentativeAuthTokensResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeRepresentativeAuthTokensResponseValidationError{}
+
 // Validate checks the field values on IssueRepresentativeAuthTokenRequest with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the first error encountered is returned, or nil if there are
@@ -29188,12 +29446,6 @@ func (m *ConnectProjectToGithubRequest) validate(all bool) error {
 
 	// no validation rules for Remote
 
-	// no validation rules for Branch
-
-	// no validation rules for Subpath
-
-	// no validation rules for Force
-
 	if len(errors) > 0 {
 		return ConnectProjectToGithubRequestMultiError(errors)
 	}
@@ -29624,220 +29876,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CreateManagedGitRepoResponseValidationError{}
-
-// Validate checks the field values on DisconnectProjectFromGithubRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *DisconnectProjectFromGithubRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DisconnectProjectFromGithubRequest
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// DisconnectProjectFromGithubRequestMultiError, or nil if none found.
-func (m *DisconnectProjectFromGithubRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DisconnectProjectFromGithubRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Organization
-
-	// no validation rules for Project
-
-	if len(errors) > 0 {
-		return DisconnectProjectFromGithubRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// DisconnectProjectFromGithubRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// DisconnectProjectFromGithubRequest.ValidateAll() if the designated
-// constraints aren't met.
-type DisconnectProjectFromGithubRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DisconnectProjectFromGithubRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DisconnectProjectFromGithubRequestMultiError) AllErrors() []error { return m }
-
-// DisconnectProjectFromGithubRequestValidationError is the validation error
-// returned by DisconnectProjectFromGithubRequest.Validate if the designated
-// constraints aren't met.
-type DisconnectProjectFromGithubRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DisconnectProjectFromGithubRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DisconnectProjectFromGithubRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DisconnectProjectFromGithubRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DisconnectProjectFromGithubRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DisconnectProjectFromGithubRequestValidationError) ErrorName() string {
-	return "DisconnectProjectFromGithubRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DisconnectProjectFromGithubRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDisconnectProjectFromGithubRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DisconnectProjectFromGithubRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DisconnectProjectFromGithubRequestValidationError{}
-
-// Validate checks the field values on DisconnectProjectFromGithubResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *DisconnectProjectFromGithubResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DisconnectProjectFromGithubResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// DisconnectProjectFromGithubResponseMultiError, or nil if none found.
-func (m *DisconnectProjectFromGithubResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DisconnectProjectFromGithubResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return DisconnectProjectFromGithubResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// DisconnectProjectFromGithubResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// DisconnectProjectFromGithubResponse.ValidateAll() if the designated
-// constraints aren't met.
-type DisconnectProjectFromGithubResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DisconnectProjectFromGithubResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DisconnectProjectFromGithubResponseMultiError) AllErrors() []error { return m }
-
-// DisconnectProjectFromGithubResponseValidationError is the validation error
-// returned by DisconnectProjectFromGithubResponse.Validate if the designated
-// constraints aren't met.
-type DisconnectProjectFromGithubResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DisconnectProjectFromGithubResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DisconnectProjectFromGithubResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DisconnectProjectFromGithubResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DisconnectProjectFromGithubResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DisconnectProjectFromGithubResponseValidationError) ErrorName() string {
-	return "DisconnectProjectFromGithubResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DisconnectProjectFromGithubResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDisconnectProjectFromGithubResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DisconnectProjectFromGithubResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DisconnectProjectFromGithubResponseValidationError{}
 
 // Validate checks the field values on GetCloneCredentialsRequest with the
 // rules defined in the proto definition for this message. If any rules are

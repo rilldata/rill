@@ -1,8 +1,11 @@
 <script lang="ts">
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
-  import type { ISODurationString, NamedRange } from "../../new-time-controls";
+  import type {
+    ISODurationString,
+    NamedRange,
+    RangeBuckets,
+  } from "../../new-time-controls";
   import {
     ALL_TIME_RANGE_ALIAS,
     getRangeLabel,
@@ -10,24 +13,21 @@
   } from "../../new-time-controls";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import {
+    RillAllTimeInterval,
     RillIsoInterval,
     RillPeriodToGrainInterval,
     type RillTime,
   } from "../../../url-state/time-ranges/RillTime";
-  import { getTimeRangeOptionsByGrain } from "@rilldata/web-common/lib/time/defaults";
   import {
-    getAllowedGrains,
     getGrainOrder,
     getLowerOrderGrain,
     getSmallestGrainFromISODuration,
     GrainAliasToV1TimeGrain,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
-  import type { TimeGrainOptions } from "@rilldata/web-common/lib/time/defaults";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
   import RangeDisplay from "../components/RangeDisplay.svelte";
   import TruncationSelector from "./TruncationSelector.svelte";
@@ -46,11 +46,13 @@
 
   export let timeString: string | undefined;
   export let interval: Interval<true>;
+  export let timeGrain: V1TimeGrain | undefined;
   export let zone: string;
   export let showDefaultItem: boolean;
   export let context: string;
   export let minDate: DateTime;
   export let maxDate: DateTime;
+  export let rangeBuckets: RangeBuckets;
   export let watermark: DateTime | undefined;
   export let smallestTimeGrain: V1TimeGrain | undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
@@ -60,9 +62,8 @@
   export let showFullRange = true;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
-  export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
 
-  let firstVisibleMonth: DateTime<true> = interval.start;
+  let firstVisibleMonth = interval?.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
@@ -80,7 +81,9 @@
     }
   }
 
-  $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
+  $: hideTruncationSelector =
+    parsedTime?.interval instanceof RillIsoInterval ||
+    parsedTime?.interval instanceof RillAllTimeInterval;
 
   $: usingLegacyTime = parsedTime?.isOldFormat;
 
@@ -99,51 +102,29 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: timeGrainOptions = getAllowedGrains(smallestTimeGrain);
-
-  $: allOptions = timeGrainOptions.map(getTimeRangeOptionsByGrain);
-
-  $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
-
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
-  $: groups = allOptions.reduce(
-    (acc, options) => {
-      acc.lastN.push(...options.lastN);
-      acc.this.push(...options.this);
-      acc.previous.push(...options.previous);
-
-      return acc;
-    },
-    {
-      lastN: [],
-      this: [],
-      previous: [],
-      grainBy: [],
-    } as TimeGrainOptions,
-  );
-
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
-    if (range === ALL_TIME_RANGE_ALIAS) {
-      onSelectRange(ALL_TIME_RANGE_ALIAS);
-      closeMenu();
-    } else {
-      try {
-        const parsed = parseRillTime(range);
+    try {
+      const parsed = parseRillTime(range);
 
-        const isPeriodToDate =
-          parsed.interval instanceof RillPeriodToGrainInterval;
+      const isPeriodToDate =
+        parsed.interval instanceof RillPeriodToGrainInterval;
 
-        const rangeGrainOrder =
-          getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
-        const asOfGrainOrder = getGrainOrder(truncationGrain);
+      const rangeGrainOrder =
+        getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
 
-        if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-          truncationGrain = isPeriodToDate
-            ? getLowerOrderGrain(parsed.rangeGrain)
-            : parsed.rangeGrain;
-        }
+      const hasAsOfString = !!parsed.asOfLabel;
 
+      const asOfGrainOrder = getGrainOrder(truncationGrain);
+
+      if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
+        truncationGrain = isPeriodToDate
+          ? getLowerOrderGrain(parsed.rangeGrain)
+          : parsed.rangeGrain;
+      }
+
+      if (!hasAsOfString) {
         const newAsOfString = constructAsOfString(
           ref,
           ignoreSnap
@@ -155,11 +136,12 @@
         );
 
         overrideRillTimeRef(parsed, newAsOfString);
-        onSelectRange(parsed.toString());
-        closeMenu();
-      } catch {
-        // This function is called in a controlled manner and should not throw
       }
+
+      onSelectRange(parsed.toString());
+      closeMenu();
+    } catch {
+      // This function is called in a controlled manner and should not throw
     }
   }
 
@@ -235,6 +217,7 @@
           {...getAttrs([builder, tooltipBuilder])}
           class="flex gap-x-1.5"
           aria-label="Select time range"
+          type="button"
         >
           {#if timeString}
             <b class="line-clamp-1 flex-none">
@@ -247,7 +230,7 @@
           {/if}
 
           {#if showFullRange}
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} {timeGrain} />
 
             <div
               class="font-bold bg-gray-100 rounded-[2px] p-1 py-0 text-gray-600 text-[11px]"
@@ -280,7 +263,7 @@
       {timeString}
       onSelectRange={(range) => {
         open = false;
-        onSelectRange(range);
+        handleRangeSelect(range);
       }}
     />
 
@@ -294,37 +277,39 @@
       >
         <div class="overflow-x-hidden">
           {#if showDefaultItem && defaultTimeRange}
-            <DropdownMenu.Item
-              on:click={() => {
-                handleRangeSelect(defaultTimeRange);
-              }}
-            >
-              <div class:font-bold={timeString === defaultTimeRange}>
-                Last {humaniseISODuration(defaultTimeRange)}
-              </div>
-            </DropdownMenu.Item>
-
-            <div class="h-px w-full bg-gray-200" />
+            <TimeRangeOptionGroup
+              {filter}
+              {timeString}
+              options={[parseRillTime(defaultTimeRange)]}
+              onClick={handleRangeSelect}
+            />
           {/if}
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.lastN}
+            options={rangeBuckets.custom}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.this}
+            options={rangeBuckets.latest}
             onClick={handleRangeSelect}
           />
 
           <TimeRangeOptionGroup
             {filter}
             {timeString}
-            options={groups.previous}
+            options={rangeBuckets.periodToDate}
+            onClick={handleRangeSelect}
+          />
+
+          <TimeRangeOptionGroup
+            {filter}
+            {timeString}
+            options={rangeBuckets.previous}
             onClick={(r) => {
               handleRangeSelect(r, true);
             }}
@@ -333,6 +318,8 @@
           {#if allTimeAllowed}
             <div class="w-full h-fit px-1">
               <button
+                type="button"
+                role="menuitem"
                 class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
                 on:click={() => {
                   handleRangeSelect("inf");
@@ -350,6 +337,8 @@
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1" />
             <button
+              type="button"
+              role="menuitem"
               class:font-bold={false}
               on:click={() => {
                 showCalendarPicker = !showCalendarPicker;
@@ -357,7 +346,7 @@
               class="truncate w-full text-left gap-x-1 pr-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
-              <div class="mr-auto">Calendar</div>
+              <div class="mr-auto">Custom</div>
 
               <CaretDownIcon className="-rotate-90" size="14px" />
             </button>
@@ -380,6 +369,7 @@
                   class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
+                    type="button"
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >

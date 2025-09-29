@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -70,7 +69,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
+		return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
 			// views return duplicate column names, so we need to create a temporary table
 			temporaryTableName := tempName("profile_columns_")
 			err = olap.Exec(ctx, &drivers.Statement{
@@ -107,7 +106,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			i := 0
 			for rows.Next() {
 				pc := runtimev1.ProfileColumn{}
-				if err := rows.StructScan(&pc); err != nil {
+				if err := rows.Scan(&pc.Name, &pc.Type); err != nil {
 					return err
 				}
 				// TODO: Find a better way to handle this, this is ugly

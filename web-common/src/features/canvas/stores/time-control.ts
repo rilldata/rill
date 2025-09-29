@@ -151,35 +151,24 @@ export class TimeControls {
           DateTime.fromJSDate(allTimeRange.end),
         );
 
-        let interval: Interval;
-        let grain: V1TimeGrain | undefined;
+        const result = await deriveInterval(
+          finalRange,
+          allTimeInterval,
+          firstMetricsViewName,
+          timeZone,
+        );
 
-        // Handle "inf" (All Time) case specially
-        if (finalRange === "inf") {
-          interval = allTimeInterval;
-          grain = undefined;
-        } else {
-          const result = await deriveInterval(
-            finalRange,
-            allTimeInterval,
-            firstMetricsViewName,
-            timeZone,
-          );
-
-          if (result.error || !result.interval.start || !result.interval.end)
-            return;
-          interval = result.interval;
-          grain = result.grain;
-        }
+        if (result.error || !result.interval.start || !result.interval.end)
+          return;
 
         const selectedTimeRange: DashboardTimeControls = {
           name: finalRange,
-          start: interval.start?.toJSDate() ?? new Date(),
-          end: interval.end?.toJSDate() ?? new Date(),
-          interval: urlGrain || grain,
+          start: result.interval.start?.toJSDate() ?? new Date(),
+          end: result.interval.end?.toJSDate() ?? new Date(),
+          interval: urlGrain || result.grain,
         };
 
-        this.interval.set(interval);
+        this.interval.set(result.interval);
 
         this.selectedTimezone.set(timeZone);
 

@@ -536,6 +536,11 @@ export class Instance extends Message$1<Instance> {
    */
   aiInstructions = "";
 
+  /**
+   * @generated from field: string frontend_url = 24;
+   */
+  frontendUrl = "";
+
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -559,6 +564,7 @@ export class Instance extends Message$1<Instance> {
     { no: 22, name: "feature_flags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 23, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 24, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -881,6 +887,11 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
    */
   annotations: { [key: string]: string } = {};
 
+  /**
+   * @generated from field: string frontend_url = 18;
+   */
+  frontendUrl = "";
+
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -898,6 +909,7 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 18, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -1080,6 +1092,11 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
    */
   annotations: { [key: string]: string } = {};
 
+  /**
+   * @generated from field: optional string frontend_url = 19;
+   */
+  frontendUrl?: string;
+
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1097,6 +1114,7 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
     { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 19, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
@@ -4445,6 +4463,104 @@ export class CompleteResponse extends Message$1<CompleteResponse> {
 
   static equals(a: CompleteResponse | PlainMessage<CompleteResponse> | undefined, b: CompleteResponse | PlainMessage<CompleteResponse> | undefined): boolean {
     return proto3.util.equals(CompleteResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.CompleteStreaming
+ *
+ * @generated from message rill.runtime.v1.CompleteStreamingRequest
+ */
+export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * If not provided, creates a new conversation
+   *
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * @generated from field: string prompt = 3;
+   */
+  prompt = "";
+
+  constructor(data?: PartialMessage<CompleteStreamingRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CompleteStreamingRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {
+    return new CompleteStreamingRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompleteStreamingRequest {
+    return new CompleteStreamingRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompleteStreamingRequest {
+    return new CompleteStreamingRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompleteStreamingRequest | PlainMessage<CompleteStreamingRequest> | undefined, b: CompleteStreamingRequest | PlainMessage<CompleteStreamingRequest> | undefined): boolean {
+    return proto3.util.equals(CompleteStreamingRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.CompleteStreaming
+ *
+ * @generated from message rill.runtime.v1.CompleteStreamingResponse
+ */
+export class CompleteStreamingResponse extends Message$1<CompleteStreamingResponse> {
+  /**
+   * @generated from field: string conversation_id = 1;
+   */
+  conversationId = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Message message = 2;
+   */
+  message?: Message;
+
+  constructor(data?: PartialMessage<CompleteStreamingResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CompleteStreamingResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "message", kind: "message", T: Message },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingResponse {
+    return new CompleteStreamingResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompleteStreamingResponse {
+    return new CompleteStreamingResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompleteStreamingResponse {
+    return new CompleteStreamingResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompleteStreamingResponse | PlainMessage<CompleteStreamingResponse> | undefined, b: CompleteStreamingResponse | PlainMessage<CompleteStreamingResponse> | undefined): boolean {
+    return proto3.util.equals(CompleteStreamingResponse, a, b);
   }
 }
 

@@ -16,6 +16,7 @@ import {
   isDomainStringArray,
   isFieldConfig,
   mergedVlConfig,
+  resolveColor,
 } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
@@ -126,15 +127,30 @@ export function createColorEncoding(
       };
     }
 
+    if (colorField.type === "quantitative" && colorField.colorRange) {
+      const colorRange = colorField.colorRange;
+
+      if (colorRange.mode === "scheme") {
+        baseEncoding.scale = {
+          scheme: colorRange.scheme,
+        };
+      } else if (colorRange.mode === "gradient") {
+        baseEncoding.scale = {
+          range: [
+            resolveColor(data.theme, colorRange.start),
+            resolveColor(data.theme, colorRange.end),
+          ],
+          type: "linear",
+        };
+      }
+    }
+
     return baseEncoding;
   }
+
   if (typeof colorField === "string") {
-    if (colorField === "primary") {
-      return { value: data.theme.primary.css("hsl") };
-    } else if (colorField === "secondary") {
-      return { value: data.theme.secondary.css("hsl") };
-    }
-    return { value: colorField };
+    const color = resolveColor(data.theme, colorField);
+    return { value: color };
   }
   return {};
 }
@@ -303,9 +319,9 @@ export function createCartesianMultiValueTooltipChannel(
 
   let multiValueTooltipChannel: TooltipValue[] | undefined;
 
-  multiValueTooltipChannel = data.data?.map((value) => ({
-    field: sanitizeValueForVega(value?.[colorField] as string),
-    type: "quantitative",
+  multiValueTooltipChannel = data.domainValues?.[colorField]?.map((value) => ({
+    field: sanitizeValueForVega(value as string),
+    type: "quantitative" as const,
     formatType: sanitizeFieldName(sanitizedYField),
   }));
 

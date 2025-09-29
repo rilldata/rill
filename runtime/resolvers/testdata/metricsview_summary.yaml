@@ -1,0 +1,246 @@
+connectors:
+  - clickhouse
+project_files:
+  clickhouse_metrics_view.yaml:
+    type: metrics_view
+    model: clickhouse_test_data
+    timeseries: event_time
+    dimensions:
+      - name: country
+        column: country
+      - name: category
+        column: category
+      - name: product
+        column: product
+      - name: channel
+        column: channel
+      - name: is_active
+        column: is_active
+    measures:
+      - name: total_revenue
+        expression: sum(revenue)
+      - name: count_transactions
+        expression: count(*)
+  clickhouse_test_data.yaml:
+    type: model
+    connector: clickhouse
+    output: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as event_time, 'US'::varchar as country, 'Electronics'::varchar as category, 'iPhone'::varchar as product, 100.50::Float64 as revenue, 1::UInt32 as quantity, 1::UInt8 as is_active, 'online'::varchar as channel union all
+      select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as event_time, 'CA'::varchar as country, 'Electronics'::varchar as category, 'MacBook'::varchar as product, 1299.99::Float64 as revenue, 2::UInt32 as quantity, 1::UInt8 as is_active, 'store'::varchar as channel union all
+      select parseDateTimeBestEffort('2024-01-03T00:00:00Z') as event_time, 'US'::varchar as country, 'Clothing'::varchar as category, 'T-Shirt'::varchar as product, 29.99::Float64 as revenue, 3::UInt32 as quantity, 0::UInt8 as is_active, 'online'::varchar as channel union all
+      select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as event_time, 'UK'::varchar as country, 'Electronics'::varchar as category, 'iPad'::varchar as product, 599.00::Float64 as revenue, 1::UInt32 as quantity, 1::UInt8 as is_active, 'online'::varchar as channel union all
+      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as event_time, 'DE'::varchar as country, 'Clothing'::varchar as category, 'Jeans'::varchar as product, 79.99::Float64 as revenue, 2::UInt32 as quantity, 1::UInt8 as is_active, 'store'::varchar as channel union all
+      select parseDateTimeBestEffort('2024-01-06T00:00:00Z') as event_time, 'US'::varchar as country, 'Home'::varchar as category, 'Lamp'::varchar as product, 45.00::Float64 as revenue, 1::UInt32 as quantity, NULL::Nullable(UInt8) as is_active, 'online'::varchar as channel union all
+      select parseDateTimeBestEffort('2024-01-07T00:00:00Z') as event_time, 'CA'::varchar as country, 'Electronics'::varchar as category, NULL::Nullable(varchar) as product, 199.99::Float64 as revenue, 1::UInt32 as quantity, 1::UInt8 as is_active, NULL::Nullable(varchar) as channel union all
+      select parseDateTimeBestEffort('2024-01-08T00:00:00Z') as event_time, NULL::Nullable(varchar) as country, 'Clothing'::varchar as category, 'Hoodie'::varchar as product, 89.99::Float64 as revenue, 1::UInt32 as quantity, 0::UInt8 as is_active, 'online'::varchar as channel
+  duckdb_empty_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-01T00:00:00Z'::TIMESTAMP as event_time, 'test' as value where false
+  duckdb_empty_metrics.yaml:
+    type: metrics_view
+    model: duckdb_empty_data
+    timeseries: event_time
+    measures:
+      - name: count
+        expression: count(*)
+  duckdb_metrics_restricted.yaml:
+    type: metrics_view
+    model: duckdb_test_data
+    timeseries: event_time
+    dimensions:
+      - name: category
+        column: category
+      - name: country
+        column: country
+    measures:
+      - name: total_revenue
+        expression: sum(revenue)
+    security:
+      access: true
+      row_filter: "country = '{{ .user.country }}'"
+      exclude:
+        - if: "'{{ .user.role }}' != 'admin'"
+          names:
+            - country
+  duckdb_metrics_view.yaml:
+    type: metrics_view
+    model: duckdb_test_data
+    timeseries: event_time
+    dimensions:
+      - name: country
+        column: country
+      - name: category
+        column: category
+      - name: product
+        column: product
+      - name: channel
+        column: channel
+      - name: is_active
+        column: is_active
+    measures:
+      - name: total_revenue
+        expression: sum(revenue)
+      - name: count_transactions
+        expression: count(*)
+  duckdb_no_time_data.yaml:
+    type: model
+    connector: duckdb
+    sql: "select 'A' as category, 100 as revenue\nunion all \nselect 'B' as category, 200 as revenue\n"
+  duckdb_no_time_metrics.yaml:
+    type: metrics_view
+    model: duckdb_no_time_data
+    dimensions:
+      - name: category
+        column: category
+    measures:
+      - name: count
+        expression: count(*)
+      - name: total_revenue
+        expression: sum(revenue)
+  duckdb_test_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-01-01T00:00:00Z'::TIMESTAMP as event_time, 'US' as country, 'Electronics' as category, 'iPhone' as product, 100.50 as revenue, 1 as quantity, true as is_active, 'online' as channel union all
+      select '2024-01-02T00:00:00Z'::TIMESTAMP as event_time, 'CA' as country, 'Electronics' as category, 'MacBook' as product, 1299.99 as revenue, 2 as quantity, true as is_active, 'store' as channel union all
+      select '2024-01-03T00:00:00Z'::TIMESTAMP as event_time, 'US' as country, 'Clothing' as category, 'T-Shirt' as product, 29.99 as revenue, 3 as quantity, false as is_active, 'online' as channel union all
+      select '2024-01-04T00:00:00Z'::TIMESTAMP as event_time, 'UK' as country, 'Electronics' as category, 'iPad' as product, 599.00 as revenue, 1 as quantity, true as is_active, 'online' as channel union all
+      select '2024-01-05T00:00:00Z'::TIMESTAMP as event_time, 'DE' as country, 'Clothing' as category, 'Jeans' as product, 79.99 as revenue, 2 as quantity, true as is_active, 'store' as channel union all
+      select '2024-01-06T00:00:00Z'::TIMESTAMP as event_time, 'US' as country, 'Home' as category, 'Lamp' as product, 45.00 as revenue, 1 as quantity, null as is_active, 'online' as channel union all
+      select '2024-01-07T00:00:00Z'::TIMESTAMP as event_time, 'CA' as country, 'Electronics' as category, null as product, 199.99 as revenue, 1 as quantity, true as is_active, null as channel union all
+      select '2024-01-08T00:00:00Z'::TIMESTAMP as event_time, null as country, 'Clothing' as category, 'Hoodie' as product, 89.99 as revenue, 1 as quantity, false as is_active, 'online' as channel
+tests:
+  - name: duckdb_basic_summary
+    resolver: metrics_summary
+    properties:
+      metrics_view: duckdb_metrics_view
+    result:
+      - dimensions:
+          - data_type: CODE_TIMESTAMP
+            max_value: "2024-01-08T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
+            name: event_time
+          - data_type: CODE_STRING
+            example_value: CA
+            has_nulls: true
+            max_value: CA
+            min_value: CA
+            name: country
+          - data_type: CODE_STRING
+            example_value: Electronics
+            max_value: Electronics
+            min_value: Clothing
+            name: category
+          - data_type: CODE_STRING
+            example_value: Hoodie
+            has_nulls: true
+            max_value: Hoodie
+            min_value: Hoodie
+            name: product
+          - data_type: CODE_STRING
+            example_value: online
+            has_nulls: true
+            max_value: online
+            min_value: online
+            name: channel
+          - data_type: CODE_BOOL
+            example_value: true
+            max_value: true
+            min_value: false
+            name: is_active
+        time_range:
+          data_type: CODE_TIMESTAMP
+          max_value: "2024-01-08T00:00:00Z"
+          min_value: "2024-01-01T00:00:00Z"
+          name: event_time
+  - name: clickhouse_basic_summary
+    resolver: metrics_summary
+    properties:
+      metrics_view: clickhouse_metrics_view
+    result:
+      - dimensions:
+          - data_type: CODE_TIMESTAMP
+            max_value: "2024-01-08T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
+            name: event_time
+          - data_type: CODE_STRING
+            example_value: CA
+            max_value: CA
+            min_value: CA
+            name: country
+          - data_type: CODE_STRING
+            example_value: Electronics
+            max_value: Electronics
+            min_value: Clothing
+            name: category
+          - data_type: CODE_STRING
+            example_value: Hoodie
+            max_value: Hoodie
+            min_value: Hoodie
+            name: product
+          - data_type: CODE_STRING
+            example_value: online
+            max_value: online
+            min_value: online
+            name: channel
+          - data_type: CODE_UINT8
+            example_value: 1
+            max_value: 1
+            min_value: 0
+            name: is_active
+        time_range:
+          data_type: CODE_TIMESTAMP
+          max_value: "2024-01-08T00:00:00Z"
+          min_value: "2024-01-01T00:00:00Z"
+          name: event_time
+  - name: duckdb_summary_with_security
+    resolver: metrics_summary
+    properties:
+      metrics_view: duckdb_metrics_restricted
+    user_attributes:
+      country: "US"
+      role: "viewer"
+    result:
+      - dimensions:
+          - data_type: CODE_TIMESTAMP
+            max_value: "2024-01-06T00:00:00Z"
+            min_value: "2024-01-01T00:00:00Z"
+            name: event_time
+          - data_type: CODE_STRING
+            example_value: Clothing
+            max_value: Home
+            min_value: Clothing
+            name: category
+        time_range:
+          data_type: CODE_TIMESTAMP
+          max_value: "2024-01-06T00:00:00Z"
+          min_value: "2024-01-01T00:00:00Z"
+          name: event_time
+  - name: duckdb_empty_summary
+    resolver: metrics_summary
+    properties:
+      metrics_view: duckdb_empty_metrics
+    result:
+      - dimensions:
+          - data_type: CODE_TIMESTAMP
+            name: event_time
+        time_range:
+          data_type: CODE_TIMESTAMP
+          name: event_time
+  - name: duckdb_no_time_dimension
+    resolver: metrics_summary
+    properties:
+      metrics_view: duckdb_no_time_metrics
+    result:
+      - dimensions:
+          - data_type: CODE_STRING
+            example_value: A
+            max_value: B
+            min_value: A
+            name: category
+        time_range:
+          data_type: ""
+          name: ""
