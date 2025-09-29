@@ -68,7 +68,7 @@ func TestRillYAMLFeatures(t *testing.T) {
 	}{
 		{
 			yaml: ` `,
-			want: nil,
+			want: map[string]string{},
 		},
 		{
 			yaml:    `features: 10`,
@@ -97,6 +97,29 @@ features:
 - bar
 `,
 			want: map[string]string{"foo": "true", "bar": "true"},
+		},
+		{
+			yaml: `
+features:
+  templated_embed: '{{ .user.embed }}'
+  templated_user: '{{ eq (.user.domain) "rilldata.com" }}'
+`,
+			want: map[string]string{"templated_embed": "{{ .user.embed }}", "templated_user": "{{ eq (.user.domain) \"rilldata.com\" }}"},
+		},
+		{
+			yaml: `
+features:
+  invalid: '{{'
+`,
+			wantErr: true,
+		},
+		{
+			yaml: `
+features:
+  snake_case: true
+  camelCase: false
+`,
+			want: map[string]string{"snake_case": "true", "camel_case": "false"},
 		},
 	}
 

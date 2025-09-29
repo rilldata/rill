@@ -201,7 +201,7 @@ var DefaultFeatureFlags = map[string]string{
 	"hide_public_url": "{{.user.embed}}",
 	// TODO: more info
 	"export_header": "false",
-	// Controls visibility of alert creation functionality 
+	// Controls visibility of alert creation functionality
 	"alerts": "true",
 	// Controls visibility of report creation functionality
 	"reports": "true",
