@@ -215,7 +215,7 @@ func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *run
 }
 
 func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	panic("not implemented")
+	return nil, errors.New("security rule inference not implemented")
 }
 
 // buildUnpartitioned builds a result consisting of one row per file.

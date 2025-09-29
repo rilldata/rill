@@ -744,7 +744,7 @@ func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Contex
 		mvName := ""
 		refs := resolver.Refs()
 		for _, ref := range refs {
-			// allow access to the referenced resource
+			// need access to the referenced resources
 			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 			if ref.Kind == ResourceKindMetricsView {
 				mvName = ref.Name

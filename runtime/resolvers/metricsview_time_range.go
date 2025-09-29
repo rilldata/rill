@@ -147,7 +147,7 @@ func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.W
 }
 
 func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	panic("not implemented")
+	return nil, errors.New("security rule inference not implemented")
 }
 
 func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {

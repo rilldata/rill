@@ -71,10 +71,13 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	var tokens map[string]string
 	var ownerEmail string
 	if webOpenMode == WebOpenModeRecipient {
-		// in this mode, tokens are used only for unsubscribe links, so no access to resources or owner attributes
+		// This is the default mode for existing reports, this also implies that reports will break for users who don't have access to the project.
+		// But we agree this is acceptable and report owner needs to change to creator mode if they want to share with users who don't have access.
+		// In this mode, tokens are used only for unsubscribe links, so no access to resources or owner attributes
 		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, "", "", nil, recipients, nil)
 	} else {
-		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
+		// not setting whereFilterJSON and accessibleFields as its only needed for creator mode which is not the default mode for existing reports, so no backwards compatibility maintained
+		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, "", nil, recipients, req.Resources)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)

@@ -130,5 +130,5 @@ func (r *resourceStatusResolver) ResolveExport(ctx context.Context, w io.Writer,
 }
 
 func (r *resourceStatusResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	panic("not implemented")
+	return nil, errors.New("security rule inference not implemented")
 }

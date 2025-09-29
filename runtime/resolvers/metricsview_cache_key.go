@@ -144,5 +144,5 @@ func (r *metricsViewCacheKeyResolver) ResolveExport(ctx context.Context, w io.Wr
 }
 
 func (r *metricsViewCacheKeyResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	panic("not implemented")
+	return nil, errors.New("security rule inference not implemented")
 }

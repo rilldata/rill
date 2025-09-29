@@ -137,5 +137,5 @@ func (r *annotationsResolver) ResolveExport(ctx context.Context, w io.Writer, op
 }
 
 func (r *annotationsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	panic("not implemented")
+	return nil, errors.New("security rule inference not implemented")
 }
