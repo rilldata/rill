@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"context"
@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
-func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
+func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) error {
 	if e.metricsView.TimeDimension == "" && (qry.TimeRange == nil || qry.TimeRange.TimeDimension == "") {
 		return nil
 	}
@@ -38,7 +39,7 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 
 	// If time range is specified in the spine, resolve it.
 	if qry.Spine != nil && qry.Spine.TimeRange != nil {
-		var computedTimeDims []*Dimension
+		var computedTimeDims []*metricsview.Dimension
 		for _, d := range qry.Dimensions {
 			if d.Compute != nil && d.Compute.TimeFloor != nil {
 				computedTimeDims = append(computedTimeDims, &d)
@@ -59,7 +60,7 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 }
 
 // resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
+func (e *Executor) resolveTimeRange(ctx context.Context, tr *metricsview.TimeRange, tz *time.Location, executionTime *time.Time) error {
 	if tr == nil || tr.IsZero() {
 		return nil
 	}
@@ -67,7 +68,7 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	if tr.Expression == "" {
 		return e.resolveISOTimeRange(ctx, tr, tz, executionTime)
 	}
-	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
+	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != metricsview.TimeGrainUnspecified {
 		return errors.New("other fields are not supported when expression is provided")
 	}
 
@@ -104,13 +105,13 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	tr.Expression = ""
 	tr.IsoDuration = ""
 	tr.IsoOffset = ""
-	tr.RoundToGrain = TimeGrainUnspecified
+	tr.RoundToGrain = metricsview.TimeGrainUnspecified
 
 	return nil
 }
 
 // resolveISOTimeRange resolves the given time range where either only start/end is specified along with ISO duration/offset, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
+func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *metricsview.TimeRange, tz *time.Location, executionTime *time.Time) error {
 	if tr.Start.IsZero() && tr.End.IsZero() {
 		if executionTime == nil {
 			ts, err := e.Timestamps(ctx, tr.TimeDimension)
@@ -174,7 +175,7 @@ func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *t
 		if !tr.RoundToGrain.Valid() {
 			return fmt.Errorf("invalid time grain %q", tr.RoundToGrain)
 		}
-		if tr.RoundToGrain != TimeGrainUnspecified {
+		if tr.RoundToGrain != metricsview.TimeGrainUnspecified {
 			if !tr.Start.IsZero() {
 				tr.Start = timeutil.TruncateTime(tr.Start, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
 			}
@@ -187,7 +188,7 @@ func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *t
 	// Clear all other fields than Start and End
 	tr.IsoDuration = ""
 	tr.IsoOffset = ""
-	tr.RoundToGrain = TimeGrainUnspecified
+	tr.RoundToGrain = metricsview.TimeGrainUnspecified
 
 	return nil
 }
