@@ -7,10 +7,20 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
+
+// ErrForbidden is returned when a query violates the constraints of MetricsViewSecurity.
+var ErrForbidden = errors.New("action not allowed")
+
+// MetricsViewSecurity defines access restrictions to a metrics view.
+// The interface is currently a subset of the *runtime.ResolvedSecurity concrete type.
+type MetricsViewSecurity interface {
+	CanAccessField(field string) bool
+	RowFilter() string
+	QueryFilter() *runtimev1.Expression
+}
 
 // AST is the abstract syntax tree for a metrics SQL query.
 type AST struct {
@@ -21,7 +31,7 @@ type AST struct {
 
 	// Contextual info for building the AST
 	MetricsView *runtimev1.MetricsViewSpec
-	Security    *runtime.ResolvedSecurity
+	Security    MetricsViewSecurity
 	Query       *Query
 	Dialect     drivers.Dialect
 
@@ -150,7 +160,7 @@ const (
 // This is due to NewAST not being able (or intended) to resolve external time anchors such as watermarks.
 //
 // The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
-func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
+func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
 	// Validation
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
@@ -588,7 +598,7 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 
 	if visible {
 		if !a.Security.CanAccessField(name) {
-			return nil, runtime.ErrForbidden
+			return nil, ErrForbidden
 		}
 	}
 
@@ -606,7 +616,7 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 func (a *AST) LookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSpec_Measure, error) {
 	if visible {
 		if !a.Security.CanAccessField(name) {
-			return nil, runtime.ErrForbidden
+			return nil, ErrForbidden
 		}
 	}
 
