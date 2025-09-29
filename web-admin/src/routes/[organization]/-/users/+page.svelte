@@ -200,7 +200,8 @@
       {#if filteredUsers.length > 0}
         <div class="px-2 py-3">
           <span class="font-medium text-sm text-gray-500">
-            {totalUsers} total user{totalUsers === 1 ? "" : "s"}
+            {totalUsers} total user{totalUsers === 1 ? "" : "s"} - showing {filteredUsers.length}
+            user{filteredUsers.length === 1 ? "" : "s"}
           </span>
         </div>
       {/if}
