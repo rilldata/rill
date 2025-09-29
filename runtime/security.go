@@ -554,7 +554,8 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 	if err != nil {
 		return err
 	}
-	if apply == nil || !*apply {
+	if apply != nil && !*apply {
+		// there are conditions but not applicable
 		return nil
 	}
 
@@ -585,7 +586,8 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, r *ru
 	if err != nil {
 		return err
 	}
-	if apply == nil || !*apply {
+	if apply != nil && !*apply {
+		// there are conditions but not applicable
 		return nil
 	}
 

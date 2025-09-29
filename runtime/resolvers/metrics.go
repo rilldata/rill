@@ -160,22 +160,12 @@ func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *
 func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
 
-	for _, ref := range r.Refs() {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					ConditionResources: []*runtimev1.ResourceName{ref},
-					Allow:              true,
-				},
-			},
-		})
-	}
-
 	if r.query.Where != nil {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_RowFilter{
 				RowFilter: &runtimev1.SecurityRuleRowFilter{
-					Expression: metricsview.ExpressionToProto(r.query.Where),
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
+					Expression:         metricsview.ExpressionToProto(r.query.Where),
 				},
 			},
 		})
@@ -200,8 +190,10 @@ func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRul
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Fields: fields,
-					Allow:  true,
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
+					ConditionKinds:     []string{runtime.ResourceKindExplore, runtime.ResourceKindCanvas}, // prevents field name leakage
+					Fields:             fields,
+					Allow:              true,
 				},
 			},
 		})

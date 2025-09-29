@@ -198,17 +198,6 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.Secur
 
 	var rules []*runtimev1.SecurityRule
 
-	for _, ref := range r.Refs() {
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					ConditionResources: []*runtimev1.ResourceName{ref},
-					Allow:              true,
-				},
-			},
-		})
-	}
-
 	if rowFilter != "" {
 		expr := &runtimev1.Expression{}
 		err := protojson.Unmarshal([]byte(rowFilter), expr)
@@ -219,7 +208,8 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.Secur
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_RowFilter{
 				RowFilter: &runtimev1.SecurityRuleRowFilter{
-					Expression: expr,
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.metricsViewName}},
+					Expression:         expr,
 				},
 			},
 		})
@@ -229,8 +219,10 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.Secur
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Fields: fields,
-					Allow:  true,
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.metricsViewName}},
+					ConditionKinds:     []string{runtime.ResourceKindExplore, runtime.ResourceKindCanvas},
+					Fields:             fields,
+					Allow:              true,
 				},
 			},
 		})
