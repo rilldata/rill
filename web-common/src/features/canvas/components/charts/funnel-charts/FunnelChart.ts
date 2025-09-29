@@ -27,11 +27,15 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import type { ChartDataQuery } from "../types";
+import { isMultiFieldConfig } from "../util";
+import { getMultiMeasures } from "./util";
 
 export type FunnelMode = "width" | "order";
-export type FunnelColorMode = "stage" | "measure";
+export type FunnelColorMode = "stage" | "measure" | "name" | "value";
+export type FunnelBreakdownMode = "dimension" | "measures";
 
 type FunnelChartEncoding = {
+  breakdownMode?: FunnelBreakdownMode;
   measure?: FieldConfig;
   stage?: FieldConfig;
   mode?: FunnelMode;
@@ -47,6 +51,17 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
   customSortStageItems: string[] = [];
 
   static chartInputParams: Record<string, ComponentInputParam> = {
+    breakdownMode: {
+      type: "switcher_tab",
+      label: "Breakdown by",
+      meta: {
+        default: "dimension",
+        options: [
+          { label: "Dimension", value: "dimension" },
+          { label: "Measures", value: "measures" },
+        ],
+      },
+    },
     stage: {
       type: "positional",
       label: "Stage",
@@ -85,7 +100,7 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
       },
     },
     color: {
-      type: "select",
+      type: "switcher_tab",
       label: "Color",
       meta: {
         default: "stage",
@@ -102,12 +117,102 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    const inputParams = FunnelChartComponent.chartInputParams;
+    const inputParams = { ...FunnelChartComponent.chartInputParams };
+    const config = get(this.specStore);
+    const isMultiMeasure = config.breakdownMode === "measures";
+
     const sortSelector = inputParams.stage.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
       sortSelector.customSortItems = this.customSortStageItems;
     }
+
+    if (isMultiMeasure) {
+      // In measures mode, hide stage field and update measure field for multi-selection
+      inputParams.stage.showInUI = false;
+      inputParams.measure.meta!.chartFieldInput = {
+        type: "measure",
+        multiFieldSelector: true,
+      };
+
+      // Update color field for measures mode: Name (discrete) and Value (continuous)
+      inputParams.color.meta!.options = [
+        { label: "Name", value: "name" },
+        { label: "Value", value: "value" },
+      ];
+    } else {
+      // In dimension mode, show stage field and single measure selection
+      inputParams.stage.showInUI = true;
+      inputParams.measure.meta!.chartFieldInput = {
+        type: "measure",
+      };
+
+      // Update color field for dimension mode
+      inputParams.color.meta!.options = [
+        { label: "Stage", value: "stage" },
+        { label: "Measure", value: "measure" },
+      ];
+
+      // Exclude the main measure field from multi-field selector
+      if (inputParams.measure.meta?.chartFieldInput && config.measure?.field) {
+        inputParams.measure.meta.chartFieldInput.excludedValues = [
+          config.measure.field,
+        ];
+      }
+    }
+
     return inputParams;
+  }
+
+  updateProperty(
+    key: keyof FunnelChartSpec,
+    value: FunnelChartSpec[keyof FunnelChartSpec],
+  ) {
+    const currentSpec = get(this.specStore);
+
+    if (key === "breakdownMode") {
+      const newBreakdownMode = value as FunnelBreakdownMode;
+      const newSpec = { ...currentSpec, [key]: newBreakdownMode };
+
+      if (newBreakdownMode === "measures") {
+        if (currentSpec.measure?.field) {
+          newSpec.measure = {
+            type: "quantitative",
+            field: currentSpec.measure.field,
+          };
+        }
+        newSpec.stage = undefined;
+        newSpec.color = "name";
+      } else {
+        if (isMultiFieldConfig(currentSpec.measure)) {
+          const firstMeasure = currentSpec.measure.fields?.[0];
+          if (firstMeasure) {
+            newSpec.measure = {
+              type: "quantitative",
+              field: firstMeasure,
+            };
+          }
+        }
+        if (currentSpec.color === "name" || currentSpec.color === "value") {
+          newSpec.color = "stage";
+        }
+
+        const dimensionsStore = this.parent.spec.getDimensionsForMetricView(
+          currentSpec.metrics_view,
+        );
+        const dimensions = get(dimensionsStore);
+        if (dimensions?.length) {
+          newSpec.stage = {
+            field: dimensions[0].name || (dimensions[0].column as string),
+            type: "nominal",
+          };
+        }
+      }
+
+      this.setSpec(newSpec);
+      return;
+    }
+
+    super.updateProperty(key, value);
   }
 
   createChartDataQuery(
@@ -115,19 +220,28 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
     const config = get(this.specStore);
+    const isMultiMeasure = config.breakdownMode === "measures";
 
     let measures: V1MetricsViewAggregationMeasure[] = [];
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
-    if (config.measure?.field) {
-      measures = [{ name: config.measure.field }];
+    if (isMultiMeasure) {
+      const measuresSet = new Set(config.measure?.fields);
+      if (config.measure?.type === "quantitative" && config.measure?.field) {
+        measuresSet.add(config.measure.field);
+      }
+      measures = Array.from(measuresSet).map((name) => ({ name }));
+    } else {
+      if (config.measure?.field) {
+        measures = [{ name: config.measure.field }];
+      }
     }
 
     let stageSort: V1MetricsViewAggregationSort | undefined;
     let limit: number | undefined;
-    const stageDimensionName = config.stage?.field;
+    const stageDimensionName = isMultiMeasure ? undefined : config.stage?.field;
 
-    if (config.stage?.field) {
+    if (!isMultiMeasure && config.stage?.field) {
       limit = config.stage.limit ?? DEFAULT_STAGE_LIMIT;
       dimensions = [{ name: config.stage.field }];
 
@@ -153,6 +267,7 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           !!stageDimensionName &&
+          !isMultiMeasure &&
           !Array.isArray(config.stage?.sort);
 
         const topNWhere = getFilterWithNullHandling(where, config.stage);
@@ -188,34 +303,41 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
           !!timeRange?.start &&
           !!timeRange?.end &&
           !!measures?.length &&
-          !!dimensions?.length &&
-          (!Array.isArray(config.stage?.sort) && stageDimensionName
+          (isMultiMeasure || !!dimensions?.length) &&
+          (!isMultiMeasure &&
+          !Array.isArray(config.stage?.sort) &&
+          stageDimensionName
             ? topNStageData !== undefined
             : true);
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
           where,
-          config.stage,
+          isMultiMeasure ? undefined : config.stage,
         );
 
         let includedStageValues: string[] = [];
 
-        // Apply topN filter for stage dimension
-        if (Array.isArray(config.stage?.sort)) {
-          includedStageValues = config.stage.sort;
-        } else if (topNStageData?.length && stageDimensionName) {
-          includedStageValues = topNStageData.map(
-            (d) => d[stageDimensionName] as string,
-          );
-        }
+        // Apply topN filter for stage dimension (only in dimension mode)
+        if (!isMultiMeasure) {
+          if (Array.isArray(config.stage?.sort)) {
+            includedStageValues = config.stage.sort;
+          } else if (topNStageData?.length && stageDimensionName) {
+            includedStageValues = topNStageData.map(
+              (d) => d[stageDimensionName] as string,
+            );
+          }
 
-        if (stageDimensionName) {
-          this.customSortStageItems = includedStageValues;
-          const filterForTopStageValues = createInExpression(
-            stageDimensionName,
-            includedStageValues,
-          );
-          combinedWhere = mergeFilters(combinedWhere, filterForTopStageValues);
+          if (stageDimensionName) {
+            this.customSortStageItems = includedStageValues;
+            const filterForTopStageValues = createInExpression(
+              stageDimensionName,
+              includedStageValues,
+            );
+            combinedWhere = mergeFilters(
+              combinedWhere,
+              filterForTopStageValues,
+            );
+          }
         }
 
         this.combinedWhere = combinedWhere;
@@ -249,17 +371,26 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
 
   chartTitle(fields: ChartFieldsMap) {
     const config = get(this.specStore);
-    const { measure, stage } = config;
-    const measureLabel = measure?.field
-      ? fields[measure.field]?.displayName || measure.field
-      : "";
-    const stageLabel = stage?.field
-      ? fields[stage.field]?.displayName || stage.field
-      : "";
+    const isMultiMeasure = config.breakdownMode === "measures";
 
-    return stageLabel
-      ? `${measureLabel} funnel by ${stageLabel}`
-      : measureLabel;
+    if (isMultiMeasure) {
+      const measuresLabel = getMultiMeasures(config.measure)
+        .map((m) => fields[m]?.displayName || m)
+        .join(", ");
+      return `${measuresLabel} funnel`;
+    } else {
+      const { measure, stage } = config;
+      const measureLabel = measure?.field
+        ? fields[measure.field]?.displayName || measure.field
+        : "";
+      const stageLabel = stage?.field
+        ? fields[stage.field]?.displayName || stage.field
+        : "";
+
+      return stageLabel
+        ? `${measureLabel} funnel by ${stageLabel}`
+        : measureLabel;
+    }
   }
 
   static newComponentSpec(
@@ -290,6 +421,7 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
       },
       mode: "width",
       color: "stage",
+      breakdownMode: "dimension",
     };
   }
 }

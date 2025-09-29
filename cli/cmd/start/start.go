@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -102,6 +103,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectPath = "."
 			}
 
+			// Always attempt to pull env for any valid Rill project (after projectPath is set)
+			if ch.IsAuthenticated() {
+				if local.IsProjectInit(projectPath) {
+					err := env.PullVars(cmd.Context(), ch, projectPath, "", environment, false)
+					if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
+						ch.PrintfWarn("Warning: failed to pull environment credentials: %v\n", err)
+					}
+				}
+			}
+
 			// Check that projectPath doesn't have an excessive number of files.
 			// Note: Relies on ListGlob enforcing drivers.RepoListLimit.
 			if _, err := os.Stat(projectPath); err == nil {
@@ -165,6 +176,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				Variables:      envVarsMap,
 				LocalURL:       localURL,
 				AllowedOrigins: allowedOrigins,
+				ServeUI:        !noUI,
 			})
 			if err != nil {
 				return err

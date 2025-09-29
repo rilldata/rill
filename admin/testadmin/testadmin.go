@@ -220,6 +220,10 @@ func (m *mockGithub) InstallationToken(ctx context.Context, installationID, repo
 	return "", time.Time{}, nil
 }
 
+func (m *mockGithub) InstallationTokenForOrg(ctx context.Context, org string) (string, time.Time, error) {
+	return "", time.Time{}, nil
+}
+
 func (m *mockGithub) CreateManagedRepo(ctx context.Context, repoPrefix string) (*github.Repository, error) {
 	return nil, fmt.Errorf("not implemented")
 }

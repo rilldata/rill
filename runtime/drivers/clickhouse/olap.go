@@ -55,7 +55,7 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 	// Call fn with connection embedded in context
 	wrappedCtx := c.sessionAwareContext(contextWithConn(ctx, conn))
 	ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn))
-	return fn(wrappedCtx, ensuredCtx, conn.Conn)
+	return fn(wrappedCtx, ensuredCtx)
 }
 
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
@@ -130,6 +130,9 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
 	} else {
 		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+		if c.config.QuerySettings != "" {
+			stmt.Query += ", " + c.config.QuerySettings
+		}
 	}
 
 	// Gather metrics only for actual queries

@@ -37,10 +37,13 @@
   <DropdownMenu.Separator />
 {/if}
 
-{#each ranges.latest as { range, label } (range)}
-  <DropdownMenu.Item on:click={handleClick} data-range={range}>
-    <span class:font-bold={selected === range}>
-      {label}
+{#each ranges.latest as rillTime, i (i)}
+  <DropdownMenu.Item
+    data-range={rillTime.interval.toString()}
+    on:click={handleClick}
+  >
+    <span class:font-bold={selected === rillTime.interval.toString()}>
+      {rillTime.getLabel()}
     </span>
   </DropdownMenu.Item>
 {/each}
@@ -49,10 +52,13 @@
   <DropdownMenu.Separator />
 {/if}
 
-{#each ranges.periodToDate as { range, label } (range)}
-  <DropdownMenu.Item on:click={handleClick} data-range={range}>
-    <span class:font-bold={selected === range}>
-      {label}
+{#each ranges.periodToDate as rillTime, i (i)}
+  <DropdownMenu.Item
+    data-range={rillTime.interval.toString()}
+    on:click={handleClick}
+  >
+    <span class:font-bold={selected === rillTime.interval.toString()}>
+      {rillTime.getLabel()}
     </span>
   </DropdownMenu.Item>
 {/each}
@@ -61,10 +67,13 @@
   <DropdownMenu.Separator />
 {/if}
 
-{#each ranges.previous as { range, label } (range)}
-  <DropdownMenu.Item on:click={handleClick} data-range={range}>
-    <span class:font-bold={selected === range}>
-      {label}
+{#each ranges.previous as rillTime, i (i)}
+  <DropdownMenu.Item
+    data-range={rillTime.interval.toString()}
+    on:click={handleClick}
+  >
+    <span class:font-bold={selected === rillTime.interval.toString()}>
+      {rillTime.getLabel()}
     </span>
   </DropdownMenu.Item>
 {/each}

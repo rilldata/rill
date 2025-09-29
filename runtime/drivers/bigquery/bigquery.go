@@ -182,17 +182,17 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.InputHandle == c {
 		store, ok := opts.OutputHandle.AsObjectStore()
 		if ok && opts.OutputHandle.Driver() == "gcs" {
 			return &selfToGCSExecutor{
 				c:     c,
 				store: store,
-			}, true
+			}, nil
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

@@ -14,7 +14,7 @@ At a high level, configuring credentials and credential management in Rill can b
 ## Setting credentials for Rill Developer
 
 When reading from a data source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
-1. Credentials that have been configured in your local environment via the CLI (for [AWS](/connect/data-source/s3#local-credentials) / [Azure](/connect/data-source/azure#local-credentials) / [Google Cloud](/connect/data-source/gcs#rill-developer-local-credentials))
+1. Credentials that have been configured in your local environment via the CLI (for [AWS](/connect/data-source/s3#rill-developer-local-credentials) / [Azure](/connect/data-source/azure#rill-developer-local-credentials) / [Google Cloud](/connect/data-source/gcs#rill-developer-local-credentials))
 2. Credentials that have been passed in directly through the connection string or DSN (typically for databases - see [Source YAML](/reference/project-files/sources) and [Connector YAML](/reference/project-files/connectors) for more details)
 3. Credentials that have been passed in as a [variable](/connect/templating) when starting Rill Developer via `rill start --env key=value`
 4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file, see [credential naming schema](#credentials-naming-schema) for more information.
@@ -61,7 +61,7 @@ It's never a good idea to commit sensitive information to Git and it goes agains
 
 If you have configured your credentials via the `.env` file this will be deployed with your project. If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
 
-
+ 
 
 ## Pulling Credentials and Variables from a Deployed Project on Rill Cloud
 
@@ -93,6 +93,10 @@ If a credential and/or variable has already been configured in Rill Cloud, Rill 
 
 
 :::
+
+### Cloning an Existing Project from Rill Cloud
+
+If you cloned the project using `rill project clone <project-name>` and are an admin of that project, the credentials will be pulled automatically. Note that there are some limitations with monorepos where credentials may not be pulled correctly. In those cases, credentials are also pulled when running `rill start`, assuming you have already authenticated via the CLI with `rill login`.
 
 
 ### Credentials Naming Schema 

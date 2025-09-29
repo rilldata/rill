@@ -6,12 +6,17 @@ import (
 
 type InformationSchema interface {
 	// ListDatabaseSchemas returns all schemas across databases
-	ListDatabaseSchemas(ctx context.Context) ([]*DatabaseSchemaInfo, error)
+	ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*DatabaseSchemaInfo, string, error)
 	// ListTables returns all tables in a schema.
-	ListTables(ctx context.Context, database, databaseSchema string) ([]*TableInfo, error)
+	ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*TableInfo, string, error)
 	// GetTable returns metadata about a specific table.
 	GetTable(ctx context.Context, database, databaseSchema, table string) (*TableMetadata, error)
 }
+
+const (
+	// DefaultPageSize is the default page size used when pageSize is not defined
+	DefaultPageSize = 100
+)
 
 // SchemaInfo represents a schema in an information schema.
 type DatabaseSchemaInfo struct {

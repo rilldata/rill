@@ -8,13 +8,14 @@
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
+  import CanvasFieldSwitcher from "./CanvasFieldSwitcher.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
+  import MultiFieldInput from "./fields/MultiFieldInput.svelte";
+  import SingleFieldInput from "./fields/SingleFieldInput.svelte";
   import MetricSelectorDropdown from "./MetricSelectorDropdown.svelte";
-  import MultiFieldInput from "./MultiFieldInput.svelte";
-  import SingleFieldInput from "./SingleFieldInput.svelte";
   import SparklineInput from "./SparklineInput.svelte";
   import TableTypeSelector from "./TableTypeSelector.svelte";
   import type { AllKeys, ComponentInputParam } from "./types";
@@ -157,6 +158,18 @@
             size="sm"
             sameWidth
             fontSize={12}
+            onChange={(newValue) => {
+              component.updateProperty(key, newValue);
+            }}
+          />
+
+          <!-- SWITCHER TABS -->
+        {:else if config.type === "switcher_tab"}
+          <CanvasFieldSwitcher
+            {key}
+            label={config.label ?? key}
+            options={config.meta?.options ?? []}
+            value={localParamValues[key] ?? config.meta?.default}
             onChange={(newValue) => {
               component.updateProperty(key, newValue);
             }}

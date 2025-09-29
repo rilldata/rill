@@ -19,6 +19,18 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, readable, type Readable } from "svelte/store";
 
+export type MapQueryRequest = {
+  exploreName: string;
+  queryName?: string;
+  queryArgsJson?: string;
+  executionTime?: string;
+};
+
+export type MapQueryStateOptions = {
+  exploreProtoState?: string;
+  forceOpenPivot?: boolean;
+};
+
 export type MapQueryResponse = {
   isFetching: boolean;
   isLoading: boolean;
@@ -30,22 +42,11 @@ export type MapQueryResponse = {
  * Builds the dashboard url from query name and args.
  * Used to show the relevant dashboard for a report/alert.
  */
-export function mapQueryToDashboard({
-  exploreName,
-  queryName,
-  queryArgsJson,
-  executionTime,
-  annotations,
-  forceOpenPivot = false,
-}: {
-  exploreName: string;
-  queryName: string | undefined;
-  queryArgsJson: string | undefined;
-  executionTime: string | undefined;
-  annotations: Record<string, string>;
-  forceOpenPivot?: boolean;
-}): Readable<MapQueryResponse> {
-  if (!queryName || !queryArgsJson || !executionTime)
+export function mapQueryToDashboard(
+  { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
+  { exploreProtoState, forceOpenPivot = false }: MapQueryStateOptions,
+): Readable<MapQueryResponse> {
+  if (!queryName || !queryArgsJson)
     return readable({
       isFetching: false,
       isLoading: false,
@@ -55,13 +56,6 @@ export function mapQueryToDashboard({
   const queryRequestProperties: QueryRequests = convertRequestKeysToCamelCase(
     JSON.parse(queryArgsJson),
   );
-
-  if (!executionTime)
-    return readable({
-      isFetching: false,
-      isLoading: false,
-      error: new Error("Required parameters are missing."),
-    });
 
   let metricsViewName: string = "";
 
@@ -188,7 +182,7 @@ export function mapQueryToDashboard({
         explore,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
-        annotations,
+        exploreProtoState,
         forceOpenPivot,
       })
         .then((newExploreState) => {

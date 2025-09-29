@@ -94,7 +94,7 @@
 
     <div class="flex flex-col gap-y-3">
       <InputLabel label="Filters" id="filters" capitalize={false} />
-      <FiltersForm {filters} {timeControls} maxWidth={750} side="top" />
+      <FiltersForm {filters} {timeControls} side="top" />
     </div>
 
     <RowsAndColumnsForm

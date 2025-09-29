@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -73,6 +74,7 @@ func (c *Connection) BucketRegion(ctx context.Context, bucket string) (string, e
 }
 
 func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
+	path = c.rewriteToS3Path(path)
 	url, err := globutil.ParseBucketURL(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
@@ -166,4 +168,19 @@ func (c *Connection) newSessionForBucket(ctx context.Context, bucket, endpoint, 
 	}
 
 	return sess, nil
+}
+
+func (c *Connection) rewriteToS3Path(s string) string {
+	switch c.config.Endpoint {
+	case "storage.googleapis.com":
+		if after, ok := strings.CutPrefix(s, "gs://"); ok {
+			return "s3://" + after
+		}
+		if after, ok := strings.CutPrefix(s, "gcs://"); ok {
+			return "s3://" + after
+		}
+		return s
+	default:
+		return s
+	}
 }

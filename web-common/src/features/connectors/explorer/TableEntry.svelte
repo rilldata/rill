@@ -27,6 +27,7 @@
   export let useNewAPI: boolean = false;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
+  export let isOlapConnector: boolean = false;
 
   let contextMenuOpen = false;
 
@@ -111,6 +112,7 @@
         <DropdownMenu.Trigger asChild let:builder>
           <ContextButton
             id="more-actions-{tableId}"
+            testId="more-actions-context-button"
             tooltipText="More actions"
             label="{tableId} actions menu trigger"
             builders={[builder]}
@@ -133,6 +135,7 @@
             {showGenerateMetricsAndDashboard}
             {showGenerateModel}
             {isModelingSupported}
+            {isOlapConnector}
           />
         </DropdownMenu.Content>
       </DropdownMenu.Root>

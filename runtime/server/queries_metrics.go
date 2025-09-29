@@ -461,6 +461,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	for i, tr := range req.Expressions {
 		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{
 			TimeZoneOverride: tz,
+			SmallestGrain:    timeutil.TimeGrainFromAPI(mv.ValidSpec.SmallestTimeGrain),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)

@@ -314,6 +314,8 @@ message ExportRequest {
   // Optional UI URL that the export originates from.
   // Only used if include_header is true.
   string origin_url = 8;
+  // Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
+  google.protobuf.Timestamp execution_time = 9;
 }
 
 message ExportResponse {
@@ -547,7 +549,7 @@ message MetricsViewComparisonRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   // Required
-  MetricsViewAggregationDimension dimension = 3;
+  MetricsViewAggregationDimension dimension = 3 [(validate.rules).message.required = true];
   // Required
   repeated MetricsViewAggregationMeasure measures = 4 [(validate.rules).repeated.min_items = 1];
   // Measures that should be compared

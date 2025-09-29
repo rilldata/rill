@@ -384,10 +384,6 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_STOPPED: "DEPLOYMENT_STATUS_STOPPED",
 } as const;
 
-export interface V1DisconnectProjectFromGithubResponse {
-  [key: string]: unknown;
-}
-
 export interface V1EditAlertResponse {
   [key: string]: unknown;
 }
@@ -737,7 +733,8 @@ export interface V1ListProjectWhitelistedDomainsResponse {
 
 export interface V1ListProjectsForFingerprintResponse {
   projects?: V1Project[];
-  nextPageToken?: string;
+  /** unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to. */
+  unauthorizedProject?: string;
 }
 
 export interface V1ListProjectsForOrganizationAndUserResponse {
@@ -1180,6 +1177,10 @@ export interface V1RevokeCurrentAuthTokenResponse {
 }
 
 export interface V1RevokeMagicAuthTokenResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RevokeRepresentativeAuthTokensResponse {
   [key: string]: unknown;
 }
 
@@ -1693,9 +1694,6 @@ export type AdminServiceGetCloneCredentialsParams = {
 
 export type AdminServiceConnectProjectToGithubBody = {
   remote?: string;
-  branch?: string;
-  subpath?: string;
-  force?: boolean;
 };
 
 export type AdminServiceGetDeploymentCredentialsBodyAttributes = {
@@ -1967,8 +1965,7 @@ export type AdminServiceListProjectsForFingerprintParams = {
   directoryName?: string;
   gitRemote?: string;
   subPath?: string;
-  pageSize?: number;
-  pageToken?: string;
+  rillMgdGitRemote?: string;
 };
 
 export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };

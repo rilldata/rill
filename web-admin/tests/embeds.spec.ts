@@ -19,75 +19,174 @@ async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
 }
 
 test.describe("Embeds", () => {
-  test("embeds should load", async ({ embedPage }) => {
-    const frame = embedPage.frameLocator("iframe");
+  test.describe("embedded explore", () => {
+    test("embeds should load", async ({ embedPage }) => {
+      const frame = embedPage.frameLocator("iframe");
 
-    await expect(
-      frame.getByRole("button", { name: "Advertising Spend Overall $20,603" }),
-    ).toBeVisible();
-  });
-
-  test("state is emitted for embeds", async ({ embedPage }) => {
-    const logMessages: string[] = [];
-    await waitForReadyMessage(embedPage, logMessages);
-    const frame = embedPage.frameLocator("iframe");
-
-    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
-    await embedPage.waitForTimeout(500);
-
-    expect(
-      logMessages.some((msg) =>
-        msg.includes("tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"),
-      ),
-    ).toBeTruthy();
-  });
-
-  test("getState returns from embed", async ({ embedPage }) => {
-    const logMessages: string[] = [];
-    await waitForReadyMessage(embedPage, logMessages);
-    const frame = embedPage.frameLocator("iframe");
-
-    await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
-    await embedPage.waitForTimeout(500);
-
-    await embedPage.evaluate(() => {
-      const iframe = document.querySelector("iframe");
-      iframe?.contentWindow?.postMessage({ id: 1337, method: "getState" }, "*");
+      await expect(
+        frame.getByRole("button", {
+          name: "Advertising Spend Overall $20,603",
+        }),
+      ).toBeVisible();
     });
 
-    await embedPage.waitForTimeout(500);
-    expect(
-      logMessages.some((msg) =>
-        msg.includes(
-          `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
+    test("state is emitted for embeds", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
+      await embedPage.waitForTimeout(500);
+
+      expect(
+        logMessages.some((msg) =>
+          msg.includes("tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"),
         ),
-      ),
-    ).toBeTruthy();
+      ).toBeTruthy();
+    });
+
+    test("getState returns from embed", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
+      await embedPage.waitForTimeout(500);
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 1337, method: "getState" },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      expect(
+        logMessages.some((msg) =>
+          msg.includes(
+            `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
+          ),
+        ),
+      ).toBeTruthy();
+    });
+
+    test("setState changes embedded explore", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1337,
+            method: "setState",
+            params: "tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')",
+          },
+          "*",
+        );
+      });
+
+      await expect(
+        frame.getByRole("row", { name: "Instacart $2.1k" }),
+      ).toBeVisible();
+      expect(
+        logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
+      ).toBeTruthy();
+    });
   });
 
-  test("setState changes embedded explore", async ({ embedPage }) => {
-    const logMessages: string[] = [];
-    await waitForReadyMessage(embedPage, logMessages);
-    const frame = embedPage.frameLocator("iframe");
+  test.describe("embedded canvas", () => {
+    test.use({
+      embeddedResourceName: "bids_canvas",
+      embeddedResourceType: "rill.runtime.v1.Canvas",
+    });
 
-    await embedPage.evaluate(() => {
-      const iframe = document.querySelector("iframe");
-      iframe?.contentWindow?.postMessage(
-        {
-          id: 1337,
-          method: "setState",
-          params: "tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')",
-        },
-        "*",
+    test("embeds should load", async ({ embedPage }) => {
+      const frame = embedPage.frameLocator("iframe");
+
+      await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
+        /Advertising Spend Overall\s+\$3,900\s+\+\$1,858 \+91%\s+vs previous day/m,
       );
     });
 
-    await expect(
-      frame.getByRole("row", { name: "Instacart $2.1k" }),
-    ).toBeVisible();
-    expect(
-      logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
-    ).toBeTruthy();
+    test("state is emitted for embeds", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      await frame
+        .getByRole("row", { name: "Instacart $1.1k" })
+        .scrollIntoViewIfNeeded();
+      await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
+      await embedPage.waitForTimeout(500);
+
+      expect(
+        logMessages.some((msg) =>
+          msg.includes(
+            "tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')",
+          ),
+        ),
+      ).toBeTruthy();
+    });
+
+    test("getState returns from embed", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      await frame
+        .getByRole("row", { name: "Instacart $1.1k" })
+        .scrollIntoViewIfNeeded();
+      await frame.getByRole("row", { name: "Instacart $1.1k" }).click();
+      await embedPage.waitForTimeout(500);
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          { id: 1337, method: "getState" },
+          "*",
+        );
+      });
+
+      await embedPage.waitForTimeout(500);
+
+      expect(
+        logMessages.some((msg) =>
+          msg.includes(
+            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')"}}`,
+          ),
+        ),
+      ).toBeTruthy();
+    });
+
+    test("setState changes embedded explore", async ({ embedPage }) => {
+      const logMessages: string[] = [];
+      await waitForReadyMessage(embedPage, logMessages);
+      const frame = embedPage.frameLocator("iframe");
+
+      await embedPage.evaluate(() => {
+        const iframe = document.querySelector("iframe");
+        iframe?.contentWindow?.postMessage(
+          {
+            id: 1337,
+            method: "setState",
+            params:
+              "tr=P7D&compare_tr=rill-PW&f=advertiser_name+IN+('Instacart')",
+          },
+          "*",
+        );
+      });
+
+      await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
+        /Advertising Spend Overall\s*\$2,066\s*\+\$1,926 \+1k%\s*vs previous week/,
+      );
+      expect(
+        logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
+      ).toBeTruthy();
+    });
   });
 
   test("navigation works as expected", async ({ embedPage }) => {
@@ -96,47 +195,84 @@ test.describe("Embeds", () => {
     const frame = embedPage.frameLocator("iframe");
 
     // Time range is the default
-    await expect(frame.getByText("Last 7 Days")).toBeVisible();
+    await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Select "Last 14 Days" as time range
     // Open the menu
     // (Note we cannot use the `interactWithTimeRangeMenu` helper here since its interface is to check the full page)
     await frame.getByLabel("Select time range").click();
-    await frame.getByRole("menuitem", { name: "Last 14 Days" }).click();
+    await frame.getByRole("menuitem", { name: "Last 14 days" }).click();
     // Wait for menu to close
     await expect(
       frame.getByRole("menu", { name: "Select time range" }),
     ).not.toBeVisible();
 
-    // Go to the ` Programmatic Ads Auction ` dashboard using the breadcrumbs
+    // Go to the `Programmatic Ads Auction` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
-      .getByRole("menuitem", { name: "Programmatic Ads Auction", exact: true })
+      .getByRole("menuitem", {
+        name: "Programmatic Ads Auction",
+        exact: true,
+      })
       .click();
     // Time range is still the default
-    await expect(frame.getByText("Last 7 Days")).toBeVisible();
+    await expect(frame.getByText("Last 7 days")).toBeVisible();
 
-    // Go back to the ` Programmatic Ads Bids ` dashboard using the breadcrumbs
+    // Go to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
+    await frame.getByLabel("Breadcrumb dropdown").click();
+    await frame
+      .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .click();
+    // Time range is still the default
+    await expect(frame.getByText("Last 24 hours")).toBeVisible();
+
+    // Select "Last 7 days" as time range
+    // Open the menu
+    // (Note we cannot use the `interactWithTimeRangeMenu` helper here since its interface is to check the full page)
+    await frame.getByLabel("Select time range").click();
+    await frame.getByRole("menuitem", { name: "Last 7 days" }).click();
+    // Wait for menu to close
+    await expect(
+      frame.getByRole("menu", { name: "Select time range" }),
+    ).not.toBeVisible();
+
+    // Go back to the `Programmatic Ads Bids` dashboard using the breadcrumbs
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
       .getByRole("menuitem", { name: "Programmatic Ads Bids" })
       .click();
     // Old selection has persisted
-    await expect(frame.getByText("Last 14 Days")).toBeVisible();
+    await expect(frame.getByText("Last 14 days")).toBeVisible();
+
+    // Go back to the `Bids Canvas Dashboard` dashboard using the breadcrumbs
+    await frame.getByLabel("Breadcrumb dropdown").click();
+    await frame
+      .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .click();
+
+    // Old selection has persisted
+    await expect(frame.getByText("Last 7 days")).toBeVisible();
 
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
     // Check that the dashboards are listed
     await expect(
-      frame.getByRole("button", { name: "Programmatic Ads Auction" }).first(),
+      frame.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
     ).toBeVisible();
     await expect(
-      frame.getByRole("button", { name: "Programmatic Ads Bids" }),
+      frame.getByRole("link", { name: "Programmatic Ads Bids" }),
     ).toBeVisible();
 
     // Go to `Programmatic Ads Auction` using the links on home
-    await frame.getByRole("button", { name: "Programmatic Ads Bids" }).click();
+    await frame.getByRole("link", { name: "Programmatic Ads Bids" }).click();
     // Old selection has persisted
     await expect(frame.getByText("Last 14 Days")).toBeVisible();
+
+    // Go to `Home` using the breadcrumbs
+    await frame.getByText("Home").click();
+    // Go to `Bids Canvas Dashboard` using the links on home
+    await frame.getByRole("link", { name: "Bids Canvas Dashboard" }).click();
+    // Old selection has persisted
+    await expect(frame.getByText("Last 7 days")).toBeVisible();
   });
 });

@@ -11,6 +11,9 @@ import {
   RillTimeStartEndInterval,
   RillTimeOrdinalInterval,
   RillIsoInterval,
+  RillLegacyIsoInterval,
+  RillLegacyDaxInterval,
+  RillAllTimeInterval,
   RillPointInTime,
   RillPointInTimeWithSnap,
   RillLabelledPointInTime,
@@ -140,20 +143,22 @@ let ParserRules = [
       return d.join("");
     },
   },
-  { name: "rill_time", symbols: ["interval_with_grain"], postprocess: id },
+  { name: "rill_time", symbols: ["new_rill_time"], postprocess: id },
+  { name: "rill_time", symbols: ["old_rill_time"], postprocess: id },
+  { name: "new_rill_time", symbols: ["interval_with_grain"], postprocess: id },
   {
-    name: "rill_time$string$1",
+    name: "new_rill_time$string$1",
     symbols: [{ literal: "t" }, { literal: "z" }],
     postprocess: function joiner(d) {
       return d.join("");
     },
   },
   {
-    name: "rill_time",
+    name: "new_rill_time",
     symbols: [
       "interval_with_grain",
       "_",
-      "rill_time$string$1",
+      "new_rill_time$string$1",
       "_",
       "timezone_modifier",
     ],
@@ -227,6 +232,18 @@ let ParserRules = [
   { name: "interval", symbols: ["start_end_interval"], postprocess: id },
   { name: "interval", symbols: ["ordinal_interval"], postprocess: id },
   { name: "interval", symbols: ["iso_interval"], postprocess: id },
+  {
+    name: "interval$subexpression$1",
+    symbols: [/[iI]/, /[nN]/, /[fF]/],
+    postprocess: function (d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "interval",
+    symbols: ["interval$subexpression$1"],
+    postprocess: () => new RillAllTimeInterval(),
+  },
   {
     name: "shorthand_interval",
     symbols: ["grain_duration"],
@@ -493,7 +510,7 @@ let ParserRules = [
   },
   {
     name: "period_to_grain",
-    symbols: [/[sSmhHdDwWqQMyY]/, "period_to_grain$string$1"],
+    symbols: ["grain", "period_to_grain$string$1"],
     postprocess: ([grain]) => grain,
   },
   { name: "abs_time$ebnf$1", symbols: [/[\d]/] },
@@ -638,6 +655,151 @@ let ParserRules = [
     symbols: ["timezone_modifier$ebnf$1"],
     postprocess: ([args]) => args.join(""),
   },
+  {
+    name: "old_rill_time",
+    symbols: ["iso_time"],
+    postprocess: ([legacyIso]) => new RillTime(legacyIso),
+  },
+  {
+    name: "old_rill_time",
+    symbols: ["dax_time"],
+    postprocess: ([legacyDax]) =>
+      new RillTime(new RillLegacyDaxInterval(legacyDax)),
+  },
+  { name: "iso_time$ebnf$1", symbols: ["iso_date_part"] },
+  {
+    name: "iso_time$ebnf$1",
+    symbols: ["iso_time$ebnf$1", "iso_date_part"],
+    postprocess: function arrpush(d) {
+      return d[0].concat([d[1]]);
+    },
+  },
+  { name: "iso_time$ebnf$2", symbols: ["iso_time_part"] },
+  {
+    name: "iso_time$ebnf$2",
+    symbols: ["iso_time$ebnf$2", "iso_time_part"],
+    postprocess: function arrpush(d) {
+      return d[0].concat([d[1]]);
+    },
+  },
+  {
+    name: "iso_time",
+    symbols: [
+      { literal: "P" },
+      "iso_time$ebnf$1",
+      { literal: "T" },
+      "iso_time$ebnf$2",
+    ],
+    postprocess: ([, dateGrains, , timeGrains]) =>
+      new RillLegacyIsoInterval(dateGrains, timeGrains),
+  },
+  { name: "iso_time$ebnf$3", symbols: ["iso_date_part"] },
+  {
+    name: "iso_time$ebnf$3",
+    symbols: ["iso_time$ebnf$3", "iso_date_part"],
+    postprocess: function arrpush(d) {
+      return d[0].concat([d[1]]);
+    },
+  },
+  {
+    name: "iso_time",
+    symbols: [{ literal: "P" }, "iso_time$ebnf$3"],
+    postprocess: ([, dateGrains]) => new RillLegacyIsoInterval(dateGrains, []),
+  },
+  {
+    name: "iso_time$string$1",
+    symbols: [{ literal: "P" }, { literal: "T" }],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  { name: "iso_time$ebnf$4", symbols: ["iso_time_part"] },
+  {
+    name: "iso_time$ebnf$4",
+    symbols: ["iso_time$ebnf$4", "iso_time_part"],
+    postprocess: function arrpush(d) {
+      return d[0].concat([d[1]]);
+    },
+  },
+  {
+    name: "iso_time",
+    symbols: ["iso_time$string$1", "iso_time$ebnf$4"],
+    postprocess: ([, timeGrains]) => new RillLegacyIsoInterval([], timeGrains),
+  },
+  {
+    name: "iso_date_part",
+    symbols: ["num", "date_grains"],
+    postprocess: ([num, grain]) => ({ num, grain }),
+  },
+  {
+    name: "iso_time_part",
+    symbols: ["num", "time_grains"],
+    postprocess: ([num, grain]) => ({ num, grain }),
+  },
+  {
+    name: "dax_time$string$1",
+    symbols: [
+      { literal: "r" },
+      { literal: "i" },
+      { literal: "l" },
+      { literal: "l" },
+      { literal: "-" },
+    ],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "dax_time",
+    symbols: ["dax_time$string$1", "dax_notations"],
+    postprocess: (args) => args.join(""),
+  },
+  {
+    name: "dax_notations$string$1",
+    symbols: [{ literal: "T" }, { literal: "D" }],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "dax_notations",
+    symbols: ["dax_to_date", "dax_notations$string$1"],
+    postprocess: (args) => args.join(""),
+  },
+  {
+    name: "dax_notations$string$2",
+    symbols: [{ literal: "T" }, { literal: "D" }],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "dax_notations",
+    symbols: ["dax_notations$string$2"],
+    postprocess: id,
+  },
+  {
+    name: "dax_notations",
+    symbols: [{ literal: "P" }, "date_grains", { literal: "C" }],
+    postprocess: (args) => args.join(""),
+  },
+  {
+    name: "dax_notations$string$3",
+    symbols: [{ literal: "P" }, { literal: "P" }],
+    postprocess: function joiner(d) {
+      return d.join("");
+    },
+  },
+  {
+    name: "dax_notations",
+    symbols: ["dax_notations$string$3"],
+    postprocess: id,
+  },
+  {
+    name: "dax_notations",
+    symbols: [{ literal: "P" }, "date_grains"],
+    postprocess: (args) => args.join(""),
+  },
   { name: "prefix", symbols: [/[+\-]/], postprocess: id },
   { name: "num$ebnf$1", symbols: [/[0-9]/] },
   {
@@ -653,6 +815,9 @@ let ParserRules = [
     postprocess: ([args]) => Number(args.join("")),
   },
   { name: "grain", symbols: [/[sSmhHdDwWqQMyY]/], postprocess: id },
+  { name: "date_grains", symbols: [/[DWQMY]/], postprocess: id },
+  { name: "time_grains", symbols: [/[SMH]/], postprocess: id },
+  { name: "dax_to_date", symbols: [/[WQMY]/], postprocess: id },
 ];
 let ParserStart = "rill_time";
 export default { Lexer, ParserRules, ParserStart };

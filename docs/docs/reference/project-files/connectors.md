@@ -32,8 +32,9 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**S3**](#s3) - Amazon S3 storage
 
 ### _Other_
+- [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-- [**OpenAPI**](#openapi) - OpenAPI data
+- [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
 - [**Slack**](#slack) - Slack data
 
@@ -136,15 +137,15 @@ _[string]_ - Refers to the driver type and must be driver `azure` _(required)_
 
 ### `azure_storage_account`
 
-_[string]_ - Azure storage account name 
+_[string]_ - Azure storage account name _(required)_
 
 ### `azure_storage_key`
 
-_[string]_ - Azure storage access key 
+_[string]_ - Azure storage access key _(required)_
 
 ### `azure_storage_bucket`
 
-_[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) _(required)_
+_[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) 
 
 ### `azure_storage_sas_token`
 
@@ -162,12 +163,9 @@ _[boolean]_ - Allow access to host environment configuration
 # Example: Azure connector configuration
 type: connector # Must be `connector` (required)
 driver: azure # Must be `azure` _(required)_
-azure_storage_account: "mystorageaccount" # Azure storage account name  
-azure_storage_key: "credentialjsonstring" # Azure storage access key  
-azure_storage_sas_token: "optionaltoken" # Optional SAS token for authentication  
-azure_storage_connection_string: "optionalconnectionstring" # Optional connection string  
-azure_storage_bucket: "mycontainer" # Azure Blob Storage container name _(required)_  
-allow_host_access: true # Allow host environment access
+azure_storage_account: "mystorageaccount" # Azure storage account name   _(required)_
+azure_storage_key: "credentialstring" # Azure storage access key   _(required)_
+azure_storage_bucket: "azure://..." # Azure Blob Storage container name  
 ```
 
 ## BigQuery
@@ -255,9 +253,13 @@ _[string]_ - Cluster name, required for running distributed queries
 
 _[boolean]_ - Controls whether to log raw SQL queries 
 
-### `settings_override`
+### `query_settings_override`
 
-_[string]_ - override the default settings used in queries. example `readonly = 1, session_timezone = 'UTC'` 
+_[string]_ - override the default settings used in queries. Changing the default settings can lead to incorrect query results and is generally not recommended. If you need to add settings, use `query_settings` 
+
+### `query_settings`
+
+_[string]_ - query settings to be set on dashboard queries. `query_settings_override` takes precedence over these settings and if set these are ignored. Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000` 
 
 ### `embed_port`
 
@@ -359,15 +361,23 @@ ssl: true # Enable SSL for secure connection
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+_[string]_ - Must be "duckdb" _(required)_
+
+### `mode`
+
+_[string]_ - Connection mode 
+
+### `path`
+
+_[string]_ - Path to external DuckDB database 
+
+### `attach`
+
+_[string]_ - Full ATTACH statement to attach a DuckDB database 
 
 ### `pool_size`
 
 _[integer]_ - Number of concurrent connections and queries allowed 
-
-### `allow_host_access`
-
-_[boolean]_ - Whether access to the local environment and file system is allowed 
 
 ### `cpu`
 
@@ -379,27 +389,78 @@ _[integer]_ - Amount of memory in GB available to the database
 
 ### `read_write_ratio`
 
-_[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
+_[number]_ - Ratio of resources allocated to read vs write operations 
+
+### `allow_host_access`
+
+_[boolean]_ - Whether access to local environment and file system is allowed 
 
 ### `init_sql`
 
-_[string]_ - is executed during database initialization. 
+_[string]_ - SQL executed during database initialization 
 
-### `secrets`
+### `conn_init_sql`
 
-_[string]_ - Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model. 
+_[string]_ - SQL executed when a new connection is initialized 
+
+### `boot_queries`
+
+_[string]_ - Deprecated - Use init_sql instead 
 
 ### `log_queries`
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
+### `secrets`
+
+_[string]_ - Comma-separated list of connector names to create temporary secrets for 
+
+### `database_name`
+
+_[string]_ - Name of the attached DuckDB database (auto-detected if not set) 
+
+### `schema_name`
+
+_[string]_ - Default schema used by the DuckDB database 
+
+### `mode`
+
+_[no type]_ - Set the mode for the DuckDB connection. 
+
 ```yaml
 # Example: DuckDB connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
+mode: "readwrite" # Set the mode for the DuckDB connection. 
 allow_host_access: true # Whether access to the local environment and file system is allowed  
 cpu: 4 # Number of CPU cores available to the database  
 memory_limit_gb: 16 # Amount of memory in GB available to the database
+pool_size: 5 # Number of concurrent connections and queries allowed
+read_write_ratio: 0.7 # Ratio of resources allocated to read vs write operations
+init_sql: "INSTALL httpfs; LOAD httpfs;" # SQL executed during database initialization
+log_queries: true # Whether to log raw SQL queries executed through OLAP
+```
+
+## External DuckDB
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+
+### `path`
+
+_[string]_ - Path to the DuckDB database 
+
+### `mode`
+
+_[string]_ - Set the mode for the DuckDB connection. 
+
+```yaml
+# Example: DuckDB as a source connector configuration
+type: connector # Must be `connector` (required)
+driver: duckdb # Must be `duckdb` _(required)_
+path: "/path/to/my-duckdb-database.db" # Name of the DuckDB database  
+mode: "read" # Set the mode for the DuckDB connection. 
 ```
 
 ## GCS
@@ -463,7 +524,7 @@ headers:
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+_[string]_ - Refers to the driver type and must be driver `duckdb`. _(required)_
 
 ### `path`
 
@@ -473,17 +534,25 @@ _[string]_ - Path to your MD database _(required)_
 
 _[string]_ - Define your schema if not main, uses main by default 
 
+### `token`
+
+_[string]_ - MotherDuck token _(required)_
+
 ### `init_sql`
 
-_[string]_ - SQL executed during database initialization. _(required)_
+_[string]_ - SQL executed during database initialization. 
+
+### `mode`
+
+_[string]_ - Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations. 
 
 ```yaml
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
-driver: duckdb # Must be `motherduck` _(required)_
+driver: duckdb # Must be `duckdb` _(required)_
+token: '{{ .env.connector.motherduck.token }}' # Set the MotherDuck token from your .env file _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
-init_sql: "INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token='{{ .env.motherduck_token }}';" # Install and load the MotherDuck extension                                 
 ```
 
 ## MySQL
@@ -494,7 +563,19 @@ _[string]_ - Refers to the driver type and must be driver `mysql` _(required)_
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the mysql connection 
+_[string]_ - **Data Source Name (DSN)** for the MySQL connection, provided in [MySQL URI format](https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri).
+The DSN must follow the standard MySQL URI scheme:
+```text
+mysql://user:password@host:3306/my-db
+```
+Rules for special characters in password:
+- The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+- All other special characters must be percent-encoded (`%XX` format).
+```text
+mysql://user:pa%40ss@localhost:3306/my-db   # password contains '@'
+mysql://user:pa%3Ass@localhost:3306/my-db   # password contains ':'
+```
+ 
 
 ### `host`
 
@@ -516,27 +597,34 @@ _[string]_ - Username for authentication
 
 _[string]_ - Password for authentication 
 
-### `ssl_mode`
+### `ssl-mode`
 
-_[string]_ - SSL mode can be DISABLED, PREFERRED or REQUIRED 
+_[string]_ - ssl mode options: `disabled`, `preferred`, or `required`. 
 
 ```yaml
-# Example: MySQL connector configuration
-type: connector # Must be `connector` (required)
-driver: mysql # Must be `mysql` _(required)_
-host: "localhost" # Hostname of the MySQL server  
-port: 3306 # Port number for the MySQL server  
-database: "mydatabase" # Name of the MySQL database  
-user: "myusername" # Username for authentication  
-password: "mypassword" # Password for authentication  
-ssl_mode: "DISABLED" # SSL mode can be DISABLED, PREFERRED or REQUIRED
+# Example: MySQL connector configured using individual properties
+type: connector
+driver: mysql
+host: localhost
+port: 3306
+database: mydb
+user: user
+password: p@ss
+ssl-mode: preferred
 ```
 
-## OpenAPI
+```yaml
+# Example: MySQL connector configured using dsn
+type: connector
+driver: mysql
+dsn: mysql://user:p%40ss@localhost:3306/mydb?ssl-mode=preferred # '@' in password is encoded as %40
+```
+
+## OpenAI
 
 ### `driver`
 
-_[string]_ - The driver type, must be set to "openapi" 
+_[string]_ - The driver type, must be set to "openai" 
 
 ### `api_key`
 
@@ -559,9 +647,9 @@ _[string]_ - The type of OpenAI API to use
 _[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD 
 
 ```yaml
-# Example: OpenAPI connector configuration
+# Example: OpenAI connector configuration
 type: connector # Must be `connector` (required)
-driver: openapi # Must be `openapi` _(required)_
+driver: openai # Must be `openai` _(required)_
 api_key: "my-api-key" # API key for connecting to OpenAI  
 model: "gpt-4o" # The OpenAI model to use (e.g., 'gpt-4o')  
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')  
@@ -638,7 +726,33 @@ _[string]_ - Refers to the driver type and must be driver `postgres` _(required)
 
 ### `dsn`
 
-_[string]_ - DSN(Data Source Name) for the postgres connection 
+_[string]_ - **Data Source Name (DSN)** for the PostgreSQL connection, provided in
+[PostgreSQL connection string format](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+PostgreSQL supports both **key=value format** and **URI format**.
+
+key=value format example:
+```text
+user=user password=password host=host port=5432 dbname=mydb
+```
+Rules for key=value format for special characters:
+- To write an empty value, or a value containing spaces, `=`, single quotes, or backslashes, surround it with single quotes.
+- Single quotes and backslashes inside a value must be escaped with a backslash (`\'` and `\\`).
+
+URI format example:
+```text
+postgres://user:password@host:5432/mydb
+```
+
+Rules for URI format:
+- The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+- All other special characters must be percent-encoded (`%XX` format).
+
+Examples (URI format with encoded characters):
+```text
+postgres://user:pa%40ss@localhost:5432/my-db   # '@' is encoded as %40
+postgres://user:pa%3Ass@localhost:5432/my-db   # ':' is encoded as %3A
+```
+ 
 
 ### `host`
 
@@ -662,18 +776,32 @@ _[string]_ - Password for authentication
 
 ### `sslmode`
 
-_[string]_ - SSL mode can be disable, allow, prefer or require 
+_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`. 
 
 ```yaml
-# Example: Postgres connector configuration
-type: connector # Must be `connector` (required)
-driver: postgres # Must be `postgres` _(required)_
-host: "localhost" # Hostname of the Postgres server  
-port: 5432 # Port number for the Postgres server  
-dbname: "mydatabase" # Name of the Postgres database  
-user: "myusername" # Username for authentication  
-password: "mypassword" # Password for authentication  
-sslmode: "disable" # SSL mode can be disable, allow, prefer or require
+# Example: Postgres connector configured using individual properties
+type: connector
+driver: postgres
+host: localhost
+port: 5432
+dbname: mydatabase
+user: myusername
+password: mypassword
+sslmode: prefer
+```
+
+```yaml
+# Example: Postgres connector configured using dsn key=value format
+type: connector
+driver: postgres
+dsn: user=myusername password='my pass\'word' host=localhost port=5432 dbname=mydatabase sslmode=prefer # password is "my pass'word": space is quoted, single quote escaped with \'
+```
+
+```yaml
+# Example: Postgres connector configured using dsn URI format
+type: connector
+driver: postgres
+dsn: postgres://myusername:p%40ss@localhost:5432/mydatabase?sslmode=prefer # '@' in password: p@ss is encoded as %40
 ```
 
 ## Redshift
@@ -832,20 +960,94 @@ bot_token: "xoxb-my-bot-token" # Bot token used for authenticating Slack API req
 
 _[string]_ - Refers to the driver type and must be driver `snowflake` _(required)_
 
+### `account`
+
+_[string]_ - Snowflake account identifier. To find your Snowflake account identifier, look at your Snowflake account URL. The account identifier is everything before .snowflakecomputing.com 
+
+### `user`
+
+_[string]_ - Username for the Snowflake connection. 
+
+### `password`
+
+_[string]_ - Password for the Snowflake connection. _(deprecated, use privateKey instead)_ 
+
+### `privateKey`
+
+_[string]_ - Private key for JWT authentication.
+:::tip
+Private key must be generated as a **PKCS#8 (nocrypt) key**, since the Snowflake Go driver
+only supports unencrypted private keys. After generating, it must be **base64 URL encoded**.
+
+Example commands to generate and encode:
+
+```bash
+# Generate a 2048-bit unencrypted PKCS#8 private key
+openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
+
+# Convert URL safe format for Snowflake
+cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
+```
+See: https://docs.snowflake.com/en/user-guide/key-pair-auth
+:::
+ 
+
+### `authenticator`
+
+_[string]_ - Optional authenticator type (e.g., SNOWFLAKE_JWT). 
+
+### `database`
+
+_[string]_ - Name of the Snowflake database. 
+
+### `schema`
+
+_[string]_ - Schema within the database to use. 
+
+### `warehouse`
+
+_[string]_ - Compute warehouse to use for queries. 
+
+### `role`
+
+_[string]_ - Snowflake role to use. 
+
 ### `dsn`
 
-_[string]_ - DSN (Data Source Name) for the Snowflake connection _(required)_
+_[string]_ - DSN (Data Source Name) for the Snowflake connection.
+
+This is intended for **advanced configuration** where you want to specify
+properties that are not explicitly defined above.  
+It can only be used when the other connection fields (account, user, password,
+database, schema, warehouse, role, authenticator, privateKey) are **not used**.
+
+For details on private key generation and encoding, see the `privateKey` property.
+ 
 
 ### `parallel_fetch_limit`
 
-_[integer]_ - Maximum number of concurrent fetches during query execution 
+_[integer]_ - Maximum number of concurrent fetches during query execution. 
 
 ```yaml
-# Example: Snowflake connector configuration
-type: connector # Must be `connector` (required)
-driver: snowflake # Must be `snowflake` _(required)_
-dsn: "tcp://localhost:9000" # DSN for the Snowflake connection  
-parallel_fetch_limit: 100 # Maximum number of concurrent fetches during query execution
+# Example: Snowflake connector basic configuration
+type: connector
+driver: snowflake
+account: my_account_identifier
+user: my_user
+privateKey: '{{ .env.SNOWFLAKE_PRIVATE_KEY }}' # define SNOWFLAKE_PRIVATE_KEY in .env file
+database: my_db
+schema: my_schema
+warehouse: my_wh
+role: my_role
+parallel_fetch_limit: 2
+```
+
+```yaml
+# Example: Snowflake connector advance configuration
+type: connector
+driver: snowflake
+dsn: '{{ .env.SNOWFLAKE_DSN }}' # define SNOWFLAKE_DSN in .env file like SNOWFLAKE_DSN='my_username@my_account/my_db/my_schema?warehouse=my_wh&role=my_role&authenticator=SNOWFLAKE_JWT&privateKey=my_private_key'
+parallel_fetch_limit: 2
 ```
 
 ## SQLite
