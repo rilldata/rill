@@ -148,7 +148,7 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 		return fmt.Errorf("metrics sql: only FROM `metrics_view` is supported")
 	}
 
-	if q.opts.GetMetricsView == nil {
+	if q.opts == nil || q.opts.GetMetricsView == nil {
 		return fmt.Errorf("metrics sql: must provide the GetMetricsView option to the compiler")
 	}
 	mv, err := q.opts.GetMetricsView(ctx, tblName.Name.String())
