@@ -208,7 +208,7 @@ var DefaultFeatureFlags = map[string]string{
 	// Controls visibility of theme switching between light/dark modes
 	"dark_mode": "false",
 	// Controls visibility of project-level chat functionality
-	"chat": "true",
+	"chat": "false",
 	// Controls visibility of dashboard-level chat functionality
-	"dashboard_chat": "true",
+	"dashboard_chat": "false",
 }
