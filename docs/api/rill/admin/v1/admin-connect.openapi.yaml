@@ -8891,6 +8891,19 @@ components:
       type: object
       title: RevokeMagicAuthTokenResponse
       additionalProperties: false
+    rill.admin.v1.RevokeRepresentativeAuthTokensRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          title: email
+          description: Email of the user being represented.
+      title: RevokeRepresentativeAuthTokensRequest
+      additionalProperties: false
+    rill.admin.v1.RevokeRepresentativeAuthTokensResponse:
+      type: object
+      title: RevokeRepresentativeAuthTokensResponse
+      additionalProperties: false
     rill.admin.v1.RevokeServiceAuthTokenRequest:
       type: object
       properties:
