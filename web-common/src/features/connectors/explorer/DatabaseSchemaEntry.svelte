@@ -116,11 +116,14 @@
             {instanceId}
             driver={connector.driver.name}
             connector={connectorName}
-            showGenerateMetricsAndDashboard={connector.driver.implementsOlap ??
+            showGenerateMetricsAndDashboard={(connector.driver.implementsOlap ||
+              connector.driver.implementsWarehouse ||
+              connector.driver.implementsSqlStore) ??
               false}
             showGenerateModel={(connector.driver.implementsWarehouse ||
               connector.driver.implementsSqlStore) ??
               false}
+            isOlapConnector={connector.driver.implementsOlap ?? false}
             {database}
             {databaseSchema}
             table={tableInfo.name}
