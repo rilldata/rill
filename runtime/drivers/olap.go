@@ -197,6 +197,9 @@ const (
 	DialectDruid
 	DialectClickHouse
 	DialectPinot
+
+	// Below dialects are not fully supported dialects.
+	DialectBigQuery
 )
 
 func (d Dialect) String() string {
@@ -211,6 +214,8 @@ func (d Dialect) String() string {
 		return "clickhouse"
 	case DialectPinot:
 		return "pinot"
+	case DialectBigQuery:
+		return "bigquery"
 	default:
 		panic("not implemented")
 	}
