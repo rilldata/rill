@@ -76,7 +76,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		// In this mode, tokens are used only for unsubscribe links, so no access to resources or owner attributes
 		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, "", "", nil, recipients, nil)
 	} else {
-		// not setting whereFilterJSON and accessibleFields as its only needed for creator mode which is not the default mode for existing reports, so no backwards compatibility maintained
+		// not setting whereFilterJSON and accessibleFields as its only needed for creator mode which is not the default mode for existing reports, so no backwards compatibility needed during rollout
 		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, "", nil, recipients, req.Resources)
 	}
 	if err != nil {
