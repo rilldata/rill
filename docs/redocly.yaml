@@ -1,0 +1,15 @@
+# https://redocly.com/docs/cli/configuration
+
+extends:
+  - recommended
+
+rules:
+  no-unused-components: error
+
+theme:
+  # See https://redocly.com/docs/redoc/config/
+  openapi:
+    theme:
+      colors:
+        primary:
+          main: '#3524c7' # Rill blue
