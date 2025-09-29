@@ -438,6 +438,10 @@ _[string]_ - refers to SQL queries to run before the main query, available for D
 
 _[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
 
+### `secrets`
+
+_[string]_ - Comma-separated list of connector names to create temporary secrets for. If this is set then secrets configured on connector is ignored.
+
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
 sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
