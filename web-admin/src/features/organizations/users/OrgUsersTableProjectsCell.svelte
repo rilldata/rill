@@ -7,10 +7,11 @@
   } from "@rilldata/web-admin/client";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
 
   export let organization: string;
   export let userId: string;
-  export let onShareProject: (projectName: string) => void;
+  export let role: string;
 
   let isDropdownOpen = false;
 
@@ -25,6 +26,14 @@
   $: projects = data?.projects ?? [];
   $: accessToAllProjects =
     $allProjectsQuery.data?.projects.length === projects.length;
+
+  $: isGuest = role === OrgUserRoles.Guest;
+  $: showAllProjects = !isGuest && accessToAllProjects;
+
+  function getProjectShareUrl(projectName: string) {
+    // Link the user to the project dashboard list and open the share popover immediately.
+    return `/${organization}/${projectName}/-/dashboards?share=true`;
+  }
 </script>
 
 <Dropdown.Root bind:open={isDropdownOpen}>
@@ -34,7 +43,7 @@
       : 'hover:bg-slate-100'} px-2 py-1"
   >
     <span class="capitalize">
-      {#if accessToAllProjects}
+      {#if showAllProjects}
         All projects
       {:else}
         {projects.length} Project{projects.length > 1 ? "s" : ""}
@@ -53,7 +62,7 @@
       Error
     {:else}
       {#each projects as project (project.id)}
-        <Dropdown.Item on:click={() => onShareProject(project.name)}>
+        <Dropdown.Item href={getProjectShareUrl(project.name)}>
           {project.name}
         </Dropdown.Item>
       {/each}

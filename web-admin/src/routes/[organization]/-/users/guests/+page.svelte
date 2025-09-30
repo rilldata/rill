@@ -15,7 +15,6 @@
     getOrgUserInvites,
     getOrgUserMembers,
   } from "@rilldata/web-admin/features/organizations/users/selectors.ts";
-  import ShareProjectDialog from "@rilldata/web-admin/features/projects/user-management/ShareProjectDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
@@ -31,8 +30,6 @@
   let isAddUserDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let editingUserGroupName = "";
-  let isShareProjectDialogOpen = false;
-  let sharingProject = "";
   let convertGuestUser: V1OrganizationMemberUser | undefined = undefined;
   let convertGuestDialogOpen = false;
 
@@ -149,10 +146,6 @@
             editingUserGroupName = groupName;
             isEditUserGroupDialogOpen = true;
           }}
-          onShareProject={(projectName) => {
-            sharingProject = projectName;
-            isShareProjectDialogOpen = true;
-          }}
           onConvertToMember={(user) => {
             convertGuestUser = user;
             convertGuestDialogOpen = true;
@@ -176,16 +169,6 @@
     groupName={editingUserGroupName}
     organizationUsers={allOrgMemberUsersRows}
     currentUserEmail={$currentUser.data?.user.email}
-  />
-{/if}
-
-{#if sharingProject}
-  <ShareProjectDialog
-    bind:open={isShareProjectDialogOpen}
-    {organization}
-    project={sharingProject}
-    manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
-    manageOrgMembers={organizationPermissions?.manageOrgMembers}
   />
 {/if}
 
