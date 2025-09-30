@@ -50,6 +50,26 @@
     ];
   }
 
+  // Initialize sorting for sortAscFirst column
+  const sortAscFirstColumn = columns.find((col) => col.sortAscFirst);
+  if (sortAscFirstColumn && !sortDescFirstColumn) {
+    const columnId =
+      "id" in sortAscFirstColumn
+        ? sortAscFirstColumn.id
+        : "accessorKey" in sortAscFirstColumn
+          ? sortAscFirstColumn.accessorKey
+          : "accessorFn" in sortAscFirstColumn
+            ? (sortAscFirstColumn.header as string)
+            : Object.keys(sortAscFirstColumn)[0];
+
+    sorting = [
+      {
+        id: columnId as string,
+        desc: false,
+      },
+    ];
+  }
+
   $: safeData = Array.isArray(data) ? data : [];
   $: {
     if (safeData) {
