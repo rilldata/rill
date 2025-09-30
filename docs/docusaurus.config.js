@@ -76,6 +76,15 @@ const config = {
         appId: "4U01DM4NS4",
         apiKey: "c0399915ae21a35c6d34a473d017c15b",
         indexName: "rilldata",
+
+        // Navbar button text (before clicking)
+        translations: {
+          button: {
+            buttonText: 'Search...',
+            buttonAriaLabel: 'Open search',
+          },
+        },
+        placeholder: "Looking for something?",
         debug: false // Set debug to true if you want to inspect the modal        
       },
       metadata: [
@@ -103,7 +112,7 @@ const config = {
         items: [
           {
             type: "doc",
-            docId: "home/home",
+            docId: "get-started/get-started",
             position: "left",
             label: "Docs",
           },
@@ -189,11 +198,7 @@ const config = {
         redirects: [
           {
             from: '/install',
-            to: '/home/install',
-          },
-          {
-            from: '/get-started',
-            to: '/home/get-started',
+            to: '/get-started/install',
           },
           {
             from: '/home/example-repository',
@@ -213,7 +218,11 @@ const config = {
           },
           {
             from: '/develop/security',
-            to: '/manage/security'
+            to: '/build/metrics-view/security'
+          },
+          {
+            from: '/manage/security',
+            to: '/build/metrics-view/security'
           },
           {
             from: '/deploy/credentials/',
@@ -257,11 +266,11 @@ const config = {
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/connect/data-source/duckdb'
+            to: '/connect/olap/motherduck'
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/models/source-refresh'
+            to: '/build/models/data-refresh'
           },
           {
             from: '/reference/templating',
@@ -269,7 +278,7 @@ const config = {
           },
           {
             from: '/example-projects',
-            to: '/home/get-started#example-projects-repository'
+            to: '/#examples'
           },
           {
             from: '/integration/embedding',
@@ -377,6 +386,11 @@ const config = {
             from: '/reference/connectors/https',
             to: '/connect/data-source/https'
           },
+          // ADvand Model Redirects
+          {
+            from: '/reference/project-files/advanced-models',
+            to: '/reference/project-files/models'
+          },
           {
             from: '/deploy/templating',
             to: '/connect/templating'
@@ -411,31 +425,139 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/home/concepts/cloud-vs-developer'
+            to: '/get-started/concepts/cloud-vs-developer'
+          },
+          {
+            from: '/home/concepts/developerVsCloud',
+            to: '/get-started/concepts/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
-            to: '/home/concepts/OLAP'
+            to: '/connect/olap#what-is-olap'
+          },
+          {
+            from: '/home/concepts/OLAP',
+            to: '/connect/olap#what-is-olap'
           },
           {
             from: '/concepts/architecture',
-            to: '/home/concepts/architecture'
+            to: '/get-started/concepts/architecture'
+          },
+          {
+            from: '/home/concepts/architecture',
+            to: '/get-started/concepts/architecture'
           },
           {
             from: '/concepts/operational',
-            to: '/home/concepts/operational'
+            to: '/get-started/concepts/operational'
+          },
+          {
+            from: '/home/concepts/operational',
+            to: '/get-started/concepts/operational'
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/home/concepts/metrics-layer'
+            to: '/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
-            to: '/home/concepts/bi-as-code'
+            to: '/get-started/concepts/bi-as-code'
+          },
+          {
+            from: '/home/concepts/bi-as-code',
+            to: '/get-started/concepts/bi-as-code'
+          },
+          {
+            from: '/build/advanced-models/',
+            to: '/build/models/'
+          },
+          {
+            from: '/build/advanced-models/incremental-models',
+            to: '/build/models/incremental-models'
+          },
+          {
+            from: '/build/advanced-models/partitions',
+            to: '/build/models/partitioned-models'
+          },
+          {
+            from: '/build/advanced-models/staging',
+            to: '/build/models/staging-models'
+          },
+          {
+            from: '/home/concepts/metrics-layer',
+            to: '/build/metrics-view'
           },
           {
             from: '/integrate/custom-apis',
             to: '/build/custom-apis'
+          },
+          {
+            from: '/explore/filters/filters',
+            to: '/explore/filters'
+          },
+          {
+            from: '/explore/filters/time-series',
+            to: '/explore/time-series'
+          },
+          {    
+            from: '/build/metrics-view/advanced-expressions/case-statements',
+            to: '/build/metrics-view/measures/case-statements'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/fixed-metrics',
+            to: '/build/metrics-view/measures/fixed-measures'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/metric-formatting',
+            to: '/build/metrics-view/measures/measures-formatting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/quantiles',
+            to: '/build/metrics-view/measures/quantiles'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/referencing',
+            to: '/build/metrics-view/measures/referencing'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/unnesting',
+            to: '/build/metrics-view/dimensions/unnesting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/windows',
+            to: '/build/metrics-view/measures/windows'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/advanced-expressions',
+            to: '/build/metrics-view/measures'
+          },
+          {
+            from: '/build/metrics-view/customize',
+            to: '/build/metrics-view'
+          },
+          {
+            from: '/deploy/performance',
+            to: '/guides/performance'
+          },
+          {
+            from: '/home/install',
+            to: '/get-started/install'
+          },
+          {
+            from: '/home/get-started',
+            to: '/get-started/quickstart'
+          },
+          {
+            from: '/build/canvas/canvas',
+            to: '/build/dashboards/canvas',
+          },
+          {
+            from: '/build/canvas/customization',
+            to: '/build/dashboards/customization',
+          },
+          {
+            from: '/build/canvas',
+            to: '/build/dashboards/canvas',
           },
           // {
           //   from: '/old-page',

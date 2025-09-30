@@ -6,17 +6,57 @@ sidebar_position: 45
 ---
 
 
-The Rill project file `rill.yaml` is often overlooked but is a powerful tool, as it sets defaults, environment variables, and connector settings. Let's walk through setting up [`mock_users`](/manage/security#in-rill-developer) to test row access policies, default security settings for your metrics views and explore dashboards, refresh schedules, MCP `ai_instructions`, and the default OLAP connector.
+The Rill project file `rill.yaml` is often overlooked but is a powerful tool, as it sets defaults, environment variables, and connector settings. Let's walk through setting up [`mock_users`](/build/metrics-view/security#testing-policies-in-rill-developer) to test row access policies, default security settings for your metrics views and explore dashboards, refresh schedules, MCP `ai_instructions`, and the default OLAP connector.
 
 <img src = '/img/tutorials/admin/project.png' class='rounded-gif' />
 <br />
 
-## Project Refresh Schedule
+For a list of all supported settings, see our [project YAML reference page](/reference/project-files/rill-yaml).
+
+
+## Model Defaults
+
+### Project Refresh Schedule
 Set up your project's model refresh schedule. You can override this in the model's YAML file if needed.
 ```yaml
 models:
     refresh:
         cron: '0 * * * *'
+```
+
+### Default dev and prod environments
+
+Rill comes with default `dev` and `prod` properties defined, corresponding to Rill Developer and Rill Cloud, respectively. You can use these keys to set environment-specific YAML overrides or SQL logic.
+
+For example, the following `rill.yaml` file explicitly sets the default materialization setting for models to `false` in development and `true` in production:
+```yaml
+dev:
+  models:
+    materialize: false
+
+prod:
+  models:
+    materialize: true
+```
+
+### Specifying a custom environment
+
+When using Rill Developer, instead of defaulting to `dev`, you can run your project in production mode using the following command:
+
+```bash
+rill start --environment prod
+```
+
+## Specifying environment specific YAML overrides
+
+If you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/build/models/performance#materialization) only on Rill Cloud (i.e., `prod`) and dashboards use a different default [theme](/build/dashboards/customization#changing-themes--colors) in production compared to locally, you could do this by:
+
+```yaml
+prod:
+  models:
+    materialize: true
+  explores:
+    theme: <name_of_theme>
 ```
 
 ## Default OLAP Connector
@@ -106,24 +146,30 @@ You can create a test mock user to ensure that this dashboard is working as desi
 
 
 ## Metrics Views Defaults
-By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like a metrics_view, you can define the security as shown below. For more information, read our [dashboard access documentation](/manage/security#examples).
+By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like a metrics_view, you can define the security as shown below. For more information, read our [data access documentation](/build/metrics-view/security#examples).
 
-```
+```yaml
 metrics_views:
   security:
-    access:
-    row_filter:
+    access: {boolean expression}
+    row_filter: {SQL expression}
 ```
 
 Other parameters that can be set in the defaults are `first_day_of_week` and `smallest_time_grain`.
 
 :::tip Order of Operations 
 
-Rill YAML settings < Metrics View YAML
+Rill YAML settings < Metrics View YAML < Dashboard YAML
 :::
 
 ## Explore Defaults
-Similar to metrics views, you can set security for an explore dashboard. (Note that only `access` can be set at the dashboard level.)
+Similar to metrics views, you can set [security for an explore dashboard](/build/dashboards/customization#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
+
+```yaml
+explores:
+  security:
+    access: {boolean expression}
+```
 
 You are also able to set the `defaults` parameter in the explore dashboard to define your default time range, as well as the available time_zones and time_ranges in an Explore dashboard.
 ```yaml

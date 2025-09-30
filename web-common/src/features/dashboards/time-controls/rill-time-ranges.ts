@@ -23,6 +23,7 @@ export async function resolveTimeRanges(
 
   timeRanges.forEach((tr, i) => {
     timeRangesToReturn[i] = tr;
+
     if (
       !tr?.name ||
       // already resolved

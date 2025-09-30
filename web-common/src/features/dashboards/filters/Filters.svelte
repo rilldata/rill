@@ -30,7 +30,6 @@
   } from "../stores/dashboard-stores";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import {
-    ALL_TIME_RANGE_ALIAS,
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
   } from "../time-controls/new-time-controls";
@@ -267,15 +266,7 @@
     // If we don't have a valid time range, early return
     if (!allTimeRange?.end) return;
 
-    if (alias === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
-      return;
-    }
-
+    // This should be returned by the API, but it is not yet implemented
     const includesTimeZoneOffset = alias.includes("tz");
 
     if (includesTimeZoneOffset) {
@@ -400,7 +391,18 @@
 <div class="flex flex-col gap-y-2 size-full">
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
-      <Calendar size="16px" />
+      <Tooltip.Root openDelay={0}>
+        <Tooltip.Trigger class="cursor-default">
+          <Calendar size="16px" />
+        </Tooltip.Trigger>
+        <Tooltip.Content side="bottom" sideOffset={10}>
+          <Metadata
+            timeZone={activeTimeZone}
+            timeStart={allTimeRange?.start}
+            timeEnd={allTimeRange?.end}
+          />
+        </Tooltip.Content>
+      </Tooltip.Root>
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
           {allTimeRange}
@@ -447,6 +449,7 @@
           <Tooltip.Trigger>
             <span class="text-gray-600 italic">
               as of <Timestamp
+                id="filter-bar-as-of"
                 italic
                 suppress
                 showDate={false}

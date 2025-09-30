@@ -1,7 +1,7 @@
 ---
 title: "GitHub Analytics Demo"
 sidebar_label: "GitHub Analytics Demo"
-sidebar_position: 5
+sidebar_position: 20
 hide_table_of_contents: false
 tags:
   - Tutorial
@@ -102,7 +102,7 @@ Without going into a full deep dive, this involves joining the commit details an
 
 ```sql
 -- Model SQL
--- Reference documentation: https://docs.rilldata.com/reference/project-files/models
+-- Reference documentation: https://docs.rilldata.com/build/models
 -- @materialize: true
 
 SELECT

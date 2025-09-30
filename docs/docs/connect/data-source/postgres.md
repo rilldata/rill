@@ -21,12 +21,12 @@ Using the same example, this would be an equivalent connection URI:
 postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
-<img src='/img/reference/connectors/postgres/postgresql.png' class='centered' />
+<img src='/img/connect/data-sources/postgres.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 ## Local credentials
 
-When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors#postgresql) for more details.
+When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors/#postgres) for more details.
 
 :::tip Updating the project environmental variable
 

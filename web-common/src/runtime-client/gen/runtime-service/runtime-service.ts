@@ -27,6 +27,8 @@ import type {
 import type {
   RpcStatus,
   RuntimeServiceCompleteBody,
+  RuntimeServiceCompleteStreaming200,
+  RuntimeServiceCompleteStreamingBody,
   RuntimeServiceCreateDirectoryBody,
   RuntimeServiceCreateTriggerBody,
   RuntimeServiceDeleteFileParams,
@@ -1083,6 +1085,94 @@ export const createRuntimeServiceComplete = <
   TContext
 > => {
   const mutationOptions = getRuntimeServiceCompleteMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+ */
+export const runtimeServiceCompleteStreaming = (
+  instanceId: string,
+  runtimeServiceCompleteStreamingBody: RuntimeServiceCompleteStreamingBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<RuntimeServiceCompleteStreaming200>({
+    url: `/v1/instances/${instanceId}/ai/complete/stream`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceCompleteStreamingBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceCompleteStreamingMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceCompleteStreaming"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+    { instanceId: string; data: RuntimeServiceCompleteStreamingBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceCompleteStreaming(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceCompleteStreamingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>
+>;
+export type RuntimeServiceCompleteStreamingMutationBody =
+  RuntimeServiceCompleteStreamingBody;
+export type RuntimeServiceCompleteStreamingMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+ */
+export const createRuntimeServiceCompleteStreaming = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceCompleteStreamingMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

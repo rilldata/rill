@@ -13,8 +13,10 @@ import type {
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import {
   getColorForValues,
+  isDomainStringArray,
   isFieldConfig,
   mergedVlConfig,
+  resolveColor,
 } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
@@ -59,7 +61,7 @@ export function createPositionEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
 ): PositionFieldDef<Field> {
-  if (!field) return {};
+  if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
   return {
     field: sanitizeValueForVega(field.field),
@@ -99,7 +101,7 @@ export function createColorEncoding(
     const baseEncoding: ColorDef<Field> = {
       field: sanitizeValueForVega(colorField.field),
       title: metaData?.displayName || colorField.field,
-      type: colorField.type,
+      type: colorField.type === "value" ? "nominal" : colorField.type,
       ...(metaData &&
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
       ...(colorValues?.length && { sort: colorValues }),
@@ -109,10 +111,10 @@ export function createColorEncoding(
     // but it's not supported by Vega-Lite yet
     // https://github.com/vega/vega-lite/issues/9497
 
-    const colorMapping = getColorForValues(
-      colorValues,
-      colorField.colorMapping,
-    );
+    let colorMapping: { value: string; color: string }[] | undefined;
+    if (isDomainStringArray(colorValues)) {
+      colorMapping = getColorForValues(colorValues, colorField.colorMapping);
+    }
 
     if (colorMapping?.length) {
       const domain = colorMapping.map((mapping) => mapping.value);
@@ -125,15 +127,30 @@ export function createColorEncoding(
       };
     }
 
+    if (colorField.type === "quantitative" && colorField.colorRange) {
+      const colorRange = colorField.colorRange;
+
+      if (colorRange.mode === "scheme") {
+        baseEncoding.scale = {
+          scheme: colorRange.scheme,
+        };
+      } else if (colorRange.mode === "gradient") {
+        baseEncoding.scale = {
+          range: [
+            resolveColor(data.theme, colorRange.start),
+            resolveColor(data.theme, colorRange.end),
+          ],
+          type: "linear",
+        };
+      }
+    }
+
     return baseEncoding;
   }
+
   if (typeof colorField === "string") {
-    if (colorField === "primary") {
-      return { value: data.theme.primary.css("hsl") };
-    } else if (colorField === "secondary") {
-      return { value: data.theme.secondary.css("hsl") };
-    }
-    return { value: colorField };
+    const color = resolveColor(data.theme, colorField);
+    return { value: color };
   }
   return {};
 }
@@ -152,7 +169,7 @@ export function createOpacityEncoding(paramName: string) {
 }
 
 export function createOrderEncoding(field: FieldConfig | undefined) {
-  if (!field) return {};
+  if (!field || field.type === "value") return {};
   return {
     field: sanitizeValueForVega(field.field),
     type: field.type,
@@ -184,6 +201,7 @@ export function createDefaultTooltipEncoding(
     if (!field) continue;
 
     if (typeof field === "object") {
+      if (field.type === "value") continue;
       tooltip.push({
         field: sanitizeValueForVega(field.field),
         title: data.fields[field.field]?.displayName || field.field,
@@ -301,9 +319,9 @@ export function createCartesianMultiValueTooltipChannel(
 
   let multiValueTooltipChannel: TooltipValue[] | undefined;
 
-  multiValueTooltipChannel = data.data?.map((value) => ({
-    field: sanitizeValueForVega(value?.[colorField] as string),
-    type: "quantitative",
+  multiValueTooltipChannel = data.domainValues?.[colorField]?.map((value) => ({
+    field: sanitizeValueForVega(value as string),
+    type: "quantitative" as const,
     formatType: sanitizeFieldName(sanitizedYField),
   }));
 
@@ -311,7 +329,7 @@ export function createCartesianMultiValueTooltipChannel(
     multiValueTooltipChannel.unshift({
       field: xField,
       title: data.fields[xConfig.field]?.displayName || xConfig.field,
-      type: xConfig?.type,
+      type: xConfig?.type === "value" ? "nominal" : xConfig.type,
       ...(xConfig.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
 

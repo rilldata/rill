@@ -7,6 +7,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/storage"
@@ -86,6 +87,34 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, err
 	}
 
+	if conf.SecretJSON == "" && conf.KeyID != "" && conf.Secret != "" {
+		// open s3 connection to be used in case of S3 compatible mode
+		s3Config := s3.ConfigProperties{
+			AccessKeyID:     conf.KeyID,
+			SecretAccessKey: conf.Secret,
+			Endpoint:        "storage.googleapis.com",
+			AllowHostAccess: conf.AllowHostAccess,
+		}
+		config := make(map[string]any)
+		err := mapstructure.WeakDecode(s3Config, &config)
+		if err != nil {
+			return nil, err
+		}
+		handle, err := drivers.Open("s3", instanceID, config, st, ac, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open s3 connection for gcs in s3 compatible mode: %w", err)
+		}
+		s3Conn, ok := handle.(*s3.Connection)
+		if !ok {
+			return nil, fmt.Errorf("internal error: expected s3 connector handle")
+		}
+		conn := &s3CompatibleConn{
+			s3Conn,
+			conf,
+		}
+		return conn, nil
+	}
+
 	conn := &Connection{
 		config:  conf,
 		storage: st,
@@ -130,7 +159,8 @@ func (c *Connection) Ping(ctx context.Context) error {
 	}
 
 	if c.config.KeyID != "" && c.config.Secret != "" {
-		// TODO: handle in case of HMAC key secret
+		// If both secret json and hmac keys are set it only validates the secret json
+		// If only hmac keys are set then it validates them by pinging using s3 connection via s3CompatibleConn
 		return nil
 	}
 
@@ -211,8 +241,8 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

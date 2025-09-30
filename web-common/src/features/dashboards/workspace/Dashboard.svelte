@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
@@ -6,11 +7,9 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { onMount, tick } from "svelte";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
@@ -108,28 +107,6 @@
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
-
-  let initEmbedPublicAPI;
-
-  // Hacky solution to ensure that the embed public API is initialized after the dashboard is fully loaded
-  onMount(async () => {
-    if (isEmbedded) {
-      initEmbedPublicAPI = (
-        await import(
-          "@rilldata/web-admin/features/embeds/init-embed-public-api"
-        )
-      ).default;
-    }
-    await tick();
-  });
-
-  $: if (initEmbedPublicAPI) {
-    try {
-      initEmbedPublicAPI();
-    } catch (error) {
-      console.error("Error running initEmbedPublicAPI:", error);
-    }
-  }
 </script>
 
 <article
@@ -239,11 +216,11 @@
   {/if}
 
   <CellInspector />
-</article>
 
-{#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
-  <RowsViewerAccordion {metricsViewName} {exploreName} />
-{/if}
+  {#if (isRillDeveloper || $cloudDataViewer) && !showTimeDimensionDetail && !mockUserHasNoAccess}
+    <RowsViewerAccordion {metricsViewName} {exploreName} />
+  {/if}
+</article>
 
 <style lang="postcss">
   .left-shift {

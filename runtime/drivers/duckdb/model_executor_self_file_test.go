@@ -87,8 +87,8 @@ func TestExecute(t *testing.T) {
 		},
 	}
 
-	me, ok := duckDB.AsModelExecutor("default", opts)
-	require.True(t, ok)
+	me, err := duckDB.AsModelExecutor("default", opts)
+	require.NoError(t, err)
 
 	t.Run("test_csv_export", func(t *testing.T) {
 		outPath := filepath.Join(tempDir, "out.csv")
