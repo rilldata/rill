@@ -9,6 +9,7 @@
 
   export let instanceId: string;
   export let exploreName: string;
+  export let dynamicHeight: boolean = false;
 
   $: explore = createRuntimeServiceGetExplore(instanceId, {
     name: exploreName,
@@ -45,7 +46,12 @@
           disableMostRecentDashboardState
         >
           <DashboardThemeProvider>
-            <Dashboard {exploreName} {metricsViewName} isEmbedded />
+            <Dashboard
+              {exploreName}
+              {metricsViewName}
+              isEmbedded
+              {dynamicHeight}
+            />
           </DashboardThemeProvider>
         </DashboardStateManager>
       </StateManagersProvider>

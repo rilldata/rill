@@ -8,6 +8,7 @@
 
   export let resource: V1Resource;
   export let navigationEnabled: boolean = true;
+  export let dynamicHeight: boolean = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -29,6 +30,7 @@
     {maxWidth}
     {canvasName}
     filtersEnabled={canvas?.spec?.filtersEnabled}
+    {dynamicHeight}
   >
     {#each rows as row, rowIndex (rowIndex)}
       <StaticCanvasRow

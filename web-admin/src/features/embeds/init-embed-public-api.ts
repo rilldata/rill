@@ -1,5 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import type { DashboardResized } from "@rilldata/web-common/lib/event-bus/events.ts";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
 import { get } from "svelte/store";
 import {
@@ -43,7 +45,18 @@ export default function initEmbedPublicAPI(): () => void {
     });
   });
 
-  return unsubscribe;
+  function onResize(event: DashboardResized) {
+    emitNotification("resized", {
+      width: event.width,
+      height: event.height,
+    });
+  }
+  const resizeUnsub = eventBus.on("dashboard-resized", onResize);
+
+  return () => {
+    unsubscribe();
+    resizeUnsub();
+  };
 }
 
 const EmbedParams = [

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { exploreName } from "@rilldata/web-common/features/dashboards";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { createSizeChangeHandler } from "@rilldata/web-common/lib/create-size-change-handler.ts";
   import { onDestroy, onMount } from "svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
@@ -11,6 +14,7 @@
   export let showGrabCursor = false;
   export let filtersEnabled: boolean | undefined;
   export let canvasName: string;
+  export let dynamicHeight: boolean = false;
   export let onClick: () => void = () => {};
 
   onMount(async () => {
@@ -29,12 +33,22 @@
 
   $: updateThemeVariables($themeSpec);
 
+  const sizeChangeHandler = createSizeChangeHandler(
+    canvasName,
+    ResourceKind.Canvas,
+  );
+
   onDestroy(() => {
     saveSnapshot($page.url.searchParams.toString());
   });
 </script>
 
-<main class="size-full flex flex-col dashboard-theme-boundary overflow-hidden">
+<main
+  class="flex flex-col dashboard-theme-boundary overflow-hidden"
+  class:w-full={dynamicHeight}
+  class:size-full={!dynamicHeight}
+  use:sizeChangeHandler
+>
   {#if filtersEnabled}
     <header
       role="presentation"

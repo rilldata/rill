@@ -3,7 +3,7 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  $: ({ instanceId, canvasName, navigationEnabled } = data);
+  $: ({ instanceId, canvasName, navigationEnabled, dynamicHeight } = data);
 </script>
 
-<CanvasEmbed {instanceId} {canvasName} {navigationEnabled} />
+<CanvasEmbed {instanceId} {canvasName} {navigationEnabled} {dynamicHeight} />

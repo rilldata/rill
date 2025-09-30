@@ -1,4 +1,8 @@
-import type { BannerEvent, NotificationMessage } from "./events";
+import type {
+  BannerEvent,
+  DashboardResized,
+  NotificationMessage,
+} from "./events";
 
 class EventBus {
   private listeners: EventMap = new Map();
@@ -58,6 +62,7 @@ export interface Events {
   "command-click": null;
   click: null;
   "shift-command-click": null;
+  "dashboard-resized": DashboardResized;
 }
 
 type T = keyof Events;

@@ -44,3 +44,10 @@ export interface BannerMessage {
     onClick?: () => void | Promise<void>;
   };
 }
+
+export interface DashboardResized {
+  name: string;
+  type: string;
+  width: number;
+  height: number;
+}

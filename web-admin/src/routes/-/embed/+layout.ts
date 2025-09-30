@@ -26,6 +26,7 @@ export const load = ({ url }) => {
     missingRequireParams,
     navigationEnabled,
     visibleExplores,
+    dynamicHeight,
   } = embedStore;
 
   return {
@@ -35,5 +36,6 @@ export const load = ({ url }) => {
     missingRequireParams,
     navigationEnabled,
     visibleExplores,
+    dynamicHeight,
   };
 };

@@ -9,6 +9,7 @@
   export let instanceId: string;
   export let canvasName: string;
   export let navigationEnabled: boolean = true;
+  export let dynamicHeight: boolean = false;
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas);
 
@@ -36,6 +37,6 @@
   {#if isCanvasErrored}
     <br /> Canvas Error <br />
   {:else if data}
-    <CanvasDashboardEmbed {resource} {navigationEnabled} />
+    <CanvasDashboardEmbed {resource} {navigationEnabled} {dynamicHeight} />
   {/if}
 {/if}
