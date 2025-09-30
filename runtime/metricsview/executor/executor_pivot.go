@@ -1,9 +1,8 @@
-package metricsview
+package executor
 
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -11,13 +10,14 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"go.uber.org/zap"
 )
 
 // rewriteQueryForPivot rewrites a query for pivoting if qry.PivotOn is not empty.
 // It rewrites queries with PivotOn fields to a simpler underlying query,
 // and returns a pivotAST that represents a PIVOT query against the results of the underlying query.
-func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
+func (e *Executor) rewriteQueryForPivot(qry *metricsview.Query) (*pivotAST, bool, error) {
 	// Skip if we're not pivoting
 	if len(qry.PivotOn) == 0 {
 		return nil, false, nil
@@ -90,7 +90,7 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 		ast.using = append(ast.using, m.Name)
 	}
 	for _, f := range qry.Sort {
-		ast.orderBy = append(ast.orderBy, OrderFieldNode(f))
+		ast.orderBy = append(ast.orderBy, metricsview.OrderFieldNode(f))
 	}
 
 	// Remove parameters from the underlying query that are now handled in the pivot AST
@@ -104,7 +104,7 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 }
 
 // executePivotExport executes a PIVOT query prepared using rewriteQueryForPivot, and exports the result to a file in the given format.
-func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivotAST, format drivers.FileFormat, headers []string) (string, error) {
+func (e *Executor) executePivotExport(ctx context.Context, ast *metricsview.AST, pivot *pivotAST, format drivers.FileFormat, headers []string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultPivotExportTimeout)
 	defer cancel()
 
@@ -146,7 +146,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 	}
 	defer release()
 	var path string
-	err = olap.WithConnection(ctx, e.priority, func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
+	err = olap.WithConnection(ctx, e.priority, func(wrappedCtx context.Context, ensuredCtx context.Context) error {
 		// Stage the underlying data in a temporary table
 		alias, err := randomString("t", 8)
 		if err != nil {
@@ -200,7 +200,7 @@ type pivotAST struct {
 	keep    []string
 	on      []string
 	using   []string
-	orderBy []OrderFieldNode
+	orderBy []metricsview.OrderFieldNode
 	limit   *int64
 	offset  *int64
 
@@ -210,7 +210,7 @@ type pivotAST struct {
 
 // SQL generates a query that outputs a pivoted table based on the pivot config and data in the underlying query.
 // The underlyingAlias must be an alias for a table that holds the data produced by underlyingAST.SQL().
-func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string) (string, error) {
+func (a *pivotAST) SQL(underlyingAST *metricsview.AST, underlyingAlias string) (string, error) {
 	if !a.dialect.CanPivot() {
 		return "", fmt.Errorf("pivot queries not supported for dialect %q", a.dialect.String())
 	}
@@ -322,11 +322,11 @@ func randomString(prefix string, n int) (string, error) {
 	return prefix + hex.EncodeToString(b), nil
 }
 
-func findField(n string, fs []FieldNode) (FieldNode, bool) {
+func findField(n string, fs []metricsview.FieldNode) (metricsview.FieldNode, bool) {
 	for _, f := range fs {
 		if f.Name == n {
 			return f, true
 		}
 	}
-	return FieldNode{}, false
+	return metricsview.FieldNode{}, false
 }

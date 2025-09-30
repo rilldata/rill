@@ -3,6 +3,7 @@
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
   import ColorPaletteSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorPaletteSelector.svelte";
+  import ColorRangeSelector from "@rilldata/web-common/features/canvas/inspector/chart/field-config/ColorRangeSelector.svelte";
   import MultiPositionalFieldsInput from "@rilldata/web-common/features/canvas/inspector/fields/MultiPositionalFieldsInput.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
@@ -31,6 +32,7 @@
   $: chartFieldInput = config.meta?.chartFieldInput;
   $: multiMetricSelector = chartFieldInput?.multiFieldSelector;
   $: colorMapConfig = chartFieldInput?.colorMappingSelector;
+  $: colorRangeConfig = chartFieldInput?.colorRangeSelector;
 
   $: isDimension = chartFieldInput?.type === "dimension";
   $: hasMultipleMeasures = fieldConfig.fields && fieldConfig.fields.length;
@@ -161,6 +163,16 @@
             colorMapping={fieldConfig.colorMapping}
             onChange={updateFieldProperty}
             {colorMapConfig}
+          />
+        </div>
+      {/if}
+      {#if isFieldConfig(fieldConfig) && colorRangeConfig?.enable}
+        <div class="pt-2">
+          <ColorRangeSelector
+            colorRange={fieldConfig.colorRange}
+            onChange={updateFieldProperty}
+            {colorRangeConfig}
+            {canvasName}
           />
         </div>
       {/if}
