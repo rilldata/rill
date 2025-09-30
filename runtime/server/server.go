@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -217,11 +218,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add HTTP handler for multipart file upload
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.UploadMultipartFile))))
 
-	// Add HTTP handler for watching files
+	// We need to manually add HTTP handlers for streaming RPCs since Vanguard can't map these to HTTP routes automatically.
 	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchFilesHandler)))
-
-	// Add HTTP handler for watching resources
 	httpMux.Handle("/v1/instances/{instance_id}/resources/-/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchResourcesHandler)))
+	httpMux.Handle("/v1/instances/{instance_id}/ai/complete/stream", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler)))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -291,7 +291,8 @@ func timeoutSelector(fullMethodName string) time.Duration {
 		return time.Minute * 59 // Not 60 to avoid forced timeout on ingress
 	}
 
-	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.QueryService") {
+	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.QueryService") ||
+		strings.HasPrefix(fullMethodName, "/rill.runtime.v1.ConnectorService") {
 		return time.Minute * 5
 	}
 
@@ -305,6 +306,10 @@ func timeoutSelector(fullMethodName string) time.Duration {
 
 	if fullMethodName == runtimev1.RuntimeService_WatchLogs_FullMethodName {
 		return time.Minute * 30
+	}
+
+	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName {
+		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
 	}
 
 	return time.Second * 30
@@ -341,6 +346,9 @@ func mapGRPCError(err error) error {
 		return ErrForbidden
 	}
 	if errors.Is(err, runtime.ErrForbidden) {
+		return ErrForbidden
+	}
+	if errors.Is(err, metricsview.ErrForbidden) {
 		return ErrForbidden
 	}
 	return err

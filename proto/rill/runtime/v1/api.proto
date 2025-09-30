@@ -238,6 +238,14 @@ service RuntimeService {
     };
   }
 
+  // CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+  rpc CompleteStreaming(CompleteStreamingRequest) returns (stream CompleteStreamingResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/complete/stream",
+      body: "*"
+    };
+  }
+
   // ListConversations lists all AI chat conversations for an instance.
   rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
@@ -331,6 +339,7 @@ message Instance {
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
   string ai_instructions = 23;
+  string frontend_url = 24;
 }
  
 message Connector {
@@ -385,6 +394,7 @@ message CreateInstanceRequest {
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
+  string frontend_url = 18;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -412,6 +422,7 @@ message EditInstanceRequest {
   repeated Connector connectors = 9;
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
+  optional string frontend_url = 19;
 }
 
 // Response message for RuntimeService.EditInstance
@@ -546,6 +557,7 @@ message UnpackExampleResponse {}
 message UnpackEmptyRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string display_name = 2;
+  string olap = 4;
   bool force = 3;
 }
 
@@ -933,6 +945,19 @@ message CompleteRequest {
 message CompleteResponse {
   string conversation_id = 1;
   repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.CompleteStreaming
+message CompleteStreamingRequest {
+  string instance_id = 1;
+  string conversation_id = 2; // If not provided, creates a new conversation
+  string prompt = 3;
+}
+
+// Response message for RuntimeService.CompleteStreaming
+message CompleteStreamingResponse {
+  string conversation_id = 1;
+  Message message = 2;
 }
 
 // Request message for RuntimeService.ListConversations

@@ -115,7 +115,7 @@ describe("time-control-store", () => {
       name: TimeRangePreset.CUSTOM,
       start: new Date("2022-03-20T01:00:00.000Z"),
       end: new Date("2022-03-22T01:00:00.000Z"),
-      interval: V1TimeGrain.TIME_GRAIN_MONTH,
+      interval: V1TimeGrain.TIME_GRAIN_HOUR,
     });
     let state = get(timeControlsStore);
     assertStartAndEnd(

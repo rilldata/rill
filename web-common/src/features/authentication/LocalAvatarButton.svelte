@@ -88,7 +88,7 @@
       <DropdownMenu.Separator />
 
       <DropdownMenu.Item
-        href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu"
+        href="https://discord.gg/2ubRfjC7Rh"
         target="_blank"
         rel="noreferrer noopener"
         class="text-gray-800 font-normal"

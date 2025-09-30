@@ -299,6 +299,10 @@
     @apply h-fit w-fit;
   }
 
+  .input-wrapper:has(input:disabled) {
+    @apply bg-gray-50 border-gray-200 cursor-not-allowed;
+  }
+
   input,
   .multiline-input {
     @apply bg-surface p-0;
@@ -306,6 +310,10 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+  }
+
+  input:disabled {
+    @apply bg-gray-50 text-gray-500 cursor-not-allowed;
   }
 
   input {

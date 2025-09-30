@@ -40,11 +40,16 @@
     $alert.data?.resource?.alert?.spec?.queryArgsJson ??
     "";
   $: dashboardStateForAlert = mapQueryToDashboard(
-    exploreName,
-    queryName,
-    queryArgsJson,
-    executionTime,
-    $alert.data?.resource?.alert?.spec?.annotations ?? {},
+    {
+      exploreName,
+      queryName,
+      queryArgsJson,
+      executionTime,
+    },
+    {
+      exploreProtoState:
+        $alert.data?.resource?.alert?.spec?.annotations?.web_open_path,
+    },
   );
 
   $: if ($alert.data?.resource?.alert?.spec && (!queryName || !queryArgsJson)) {

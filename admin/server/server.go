@@ -244,6 +244,8 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Temporary endpoint for testing headers.
 	// NOTE: Commented out since it is unsafe, but keeping the code since it's been helpful for debugging on several occasions.
 	// mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Content-Type", "text/plain")
+	// 	fmt.Fprintf(w, "r.Host: %s\n", r.Host)
 	// 	for k, v := range r.Header {
 	// 		fmt.Fprintf(w, "%s: %v\n", k, v)
 	// 	}

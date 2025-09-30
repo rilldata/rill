@@ -37,6 +37,54 @@ var spec = drivers.Spec{
 			Hint:        "Can be configured here or by setting the 'connector.mysql.dsn' environment variable (using '.env' or '--env')",
 			Secret:      true,
 		},
+		{
+			Key:         "user",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Username",
+			Placeholder: "mysql",
+			Required:    true,
+			Hint:        "MySQL username for authentication",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Password",
+			Placeholder: "your_password",
+			Hint:        "MySQL password for authentication",
+			Secret:      true,
+		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Host",
+			Placeholder: "localhost",
+			Required:    true,
+			Hint:        "MySQL server hostname or IP address",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Port",
+			Placeholder: "3306",
+			Default:     "3306",
+			Hint:        "MySQL server port (default is 3306)",
+		},
+
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Database",
+			Placeholder: "your_database",
+			Required:    true,
+			Hint:        "Name of the MySQL database to connect to",
+		},
+		{
+			Key:         "ssl-mode",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "SSL Mode",
+			Placeholder: "require",
+			Hint:        "Options include disabled, preferred or required",
+		},
 	},
 	ImplementsSQLStore: true,
 }
@@ -50,7 +98,7 @@ type ConfigProperties struct {
 	Database string `mapstructure:"database"`
 	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
-	SSLMode  string `mapstructure:"ssl_mode"`
+	SSLMode  string `mapstructure:"ssl-mode"`
 }
 
 func (c *ConfigProperties) ResolveDSN() (string, error) {
@@ -82,21 +130,34 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 	if c.Database != "" {
 		path = "/" + c.Database
 	}
+	u := &url.URL{
+		Scheme: "mysql",
+		User:   userInfo,
+		Host:   host,
+		Path:   path,
+	}
 
+	dsn := enocodeExtra(u.String())
 	query := url.Values{}
 	if c.SSLMode != "" {
 		query.Set("ssl-mode", c.SSLMode)
+		dsn = fmt.Sprintf("%s?%s", dsn, query.Encode())
 	}
+	return dsn, nil
+}
 
-	u := &url.URL{
-		Scheme:   "mysql",
-		User:     userInfo,
-		Host:     host,
-		Path:     path,
-		RawQuery: query.Encode(),
+// enocodeExtra convert & and = in the string to it's hex code. Required because duckdb does not handle properly.
+func enocodeExtra(s string) string {
+	var buf strings.Builder
+	for i := 0; i < len(s); i++ {
+		b := s[i]
+		if b == '&' || b == '=' {
+			buf.WriteString(fmt.Sprintf("%%%02X", b))
+		} else {
+			buf.WriteByte(b)
+		}
 	}
-
-	return u.String(), nil
+	return buf.String()
 }
 
 func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
@@ -133,15 +194,13 @@ func (c *ConfigProperties) resolveGoFormatDSN() (string, error) {
 		return "", fmt.Errorf("unsupported ssl-mode: %s", sslMode)
 	}
 
-	cfg := mysql.Config{
-		User:      user,
-		Passwd:    pass,
-		Net:       "tcp",
-		Addr:      addr,
-		DBName:    dbName,
-		TLSConfig: tlsConfig,
-	}
-
+	cfg := mysql.NewConfig()
+	cfg.User = user
+	cfg.Passwd = pass
+	cfg.Net = "tcp"
+	cfg.Addr = addr
+	cfg.DBName = dbName
+	cfg.TLSConfig = tlsConfig
 	return cfg.FormatDSN(), nil
 }
 
@@ -248,8 +307,8 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.

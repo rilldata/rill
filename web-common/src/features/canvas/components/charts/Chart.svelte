@@ -8,13 +8,17 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import {
+    createMeasureValueFormatter,
+    humanizeDataType,
+  } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { View } from "vega-typings";
   import type { ChartSpec } from "./";
   import type { BaseChart } from "./BaseChart";
   import { getChartData } from "./selector";
-  import { generateSpec, isChartLineLike } from "./util";
+  import { generateSpec, getColorMappingForChart } from "./util";
   import { validateChartSchema } from "./validate";
 
   export let component: BaseChart<ChartSpec>;
@@ -74,13 +78,26 @@
     {},
   );
 
-  $: expressionFunctions = $measures.reduce((acc, measure) => {
-    const fieldName = sanitizeFieldName(measure.name || "measure");
-    return {
-      ...acc,
-      [fieldName]: { fn: (val) => measureFormatters[fieldName](val) },
-    };
-  }, {});
+  $: colorMapping = getColorMappingForChart(
+    chartSpec,
+    $chartQuery.domainValues,
+  );
+
+  $: expressionFunctions = {
+    humanize: {
+      fn: (val) => humanizeDataType(val, FormatPreset.HUMANIZE, "table"),
+    },
+    ...$measures.reduce(
+      (acc, measure) => {
+        const fieldName = sanitizeFieldName(measure.name || "measure");
+        return {
+          ...acc,
+          [fieldName]: { fn: (val) => measureFormatters[fieldName](val) },
+        };
+      },
+      {} as Record<string, { fn: (val: any) => string }>,
+    ),
+  };
 </script>
 
 <div class="size-full flex flex-col overflow-hidden">
@@ -110,8 +127,10 @@
           bind:viewVL
           canvasDashboard
           data={{ "metrics-view": data }}
+          theme={themePreference === "dark" ? "dark" : "light"}
           {spec}
-          renderer={isChartLineLike(chartType) ? "svg" : "canvas"}
+          {colorMapping}
+          renderer="canvas"
           {expressionFunctions}
           config={getRillTheme(true, themePreference === "dark")}
         />

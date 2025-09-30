@@ -131,7 +131,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
-			Hint:        "Enable SSL for secure connections",
+			Hint:        "Enable SSL for secure connections. For ClickHouse Cloud, SSL is always enabled.",
 			Default:     "true",
 		},
 	},
@@ -167,6 +167,8 @@ type configProperties struct {
 	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
 	// This does not list queries to other databases.
 	DatabaseWhitelist string `mapstructure:"database_whitelist"`
+	// OptimizeTemporaryTablesBeforePartitionReplace determines whether to optimize temporary tables before partition replacement.
+	OptimizeTemporaryTablesBeforePartitionReplace bool `mapstructure:"optimize_temporary_tables_before_partition_replace"`
 	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
@@ -176,6 +178,9 @@ type configProperties struct {
 	// QuerySettingsOverride overrides the default query settings used for OLAP SELECT queries.
 	// Use cases include disabling settings or setting `readonly = 1` when using read-only user.
 	QuerySettingsOverride string `mapstructure:"query_settings_override"`
+	// QuerySettings are set on each read query. QuerySettingsOverride takes precedence over these settings and if set these are ignored./
+	// Each setting must be separated by a comma. Example `max_threads = 8, max_memory_usage = 10000000000`
+	QuerySettings string `mapstructure:"query_settings"`
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort int `mapstructure:"embed_port"`
 	// CanScaleToZero indicates if the underlying Clickhouse service may scale to zero when idle.
@@ -195,39 +200,19 @@ type configProperties struct {
 }
 
 func (c *configProperties) validate() error {
-	var set []string
-	if c.Host != "" {
-		set = append(set, "host")
-	}
-	if c.Port != 0 {
-		set = append(set, "port")
-	}
-	if c.Username != "" {
-		set = append(set, "username")
-	}
-	if c.Password != "" {
-		set = append(set, "password")
-	}
-	if c.Database != "" {
-		set = append(set, "database")
-	}
-	if c.SSL {
-		set = append(set, "ssl")
+	if c.Managed {
+		// In managed mode, clear connection properties but preserve provisioner DSN
+		c.Username = ""
+		c.Password = ""
+		c.Host = ""
+		c.Port = 0
+		c.Database = ""
+		c.SSL = false
+	} else if c.DSN != "" && (c.Host != "" || c.Username != "" || c.Password != "" || c.Database != "" || c.Port != 0 || c.SSL) {
+		// Only validate conflicts when not in managed mode
+		return errors.New("only one of 'dsn' or [host, port, username, password, database, ssl] can be set")
 	}
 
-	if c.DSN != "" {
-		if len(set) > 0 {
-			return fmt.Errorf("only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
-		}
-	}
-	if c.Managed {
-		if c.DSN != "" {
-			set = append(set, "dsn")
-		}
-		if len(set) > 0 {
-			return fmt.Errorf("managed ClickHouse does not support setting [%s] properties", strings.Join(set, ", "))
-		}
-	}
 	return nil
 }
 
@@ -437,7 +422,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 	return nil
 }
 
-// Driver implements drivers.Connection.
+// Driver implements drivers.Handle.
 func (c *Connection) Driver() string {
 	return "clickhouse"
 }
@@ -449,7 +434,7 @@ func (c *Connection) Config() map[string]any {
 	return m
 }
 
-// Close implements drivers.Connection.
+// Close implements drivers.Handle.
 func (c *Connection) Close() error {
 	c.cancel()
 
@@ -473,17 +458,17 @@ func (c *Connection) Close() error {
 	return errors.Join(errReadDB, errWriteDB, errEmbed)
 }
 
-// Registry implements drivers.Connection.
+// Registry implements drivers.Handle.
 func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection.
+// Catalog implements drivers.Handle.
 func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Connection.
+// Repo implements drivers.Handle.
 func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
@@ -498,50 +483,49 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection.
+// OLAP implements drivers.Handle.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
 }
 
-// AsInformationSchema implements drivers.Connection.
+// AsInformationSchema implements drivers.Handle.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
-// Migrate implements drivers.Connection.
+// Migrate implements drivers.Handle.
 func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection.
+// MigrationStatus implements drivers.Handle.
 func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
-// AsObjectStore implements drivers.Connection.
+// AsObjectStore implements drivers.Handle.
 func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.OutputHandle != c {
-		return nil, false
+		return nil, drivers.ErrNotImplemented
 	}
 	if c.config.Mode != modeReadWrite {
-		c.logger.Warn("Model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database.")
-		return nil, false
+		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this ClickHouse database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
 	if opts.InputHandle == c {
-		return &selfToSelfExecutor{c}, true
+		return &selfToSelfExecutor{c}, nil
 	}
 	if opts.InputHandle.Driver() == "s3" || opts.InputHandle.Driver() == "gcs" {
-		return &objectStoreToSelfExecutor{opts.InputHandle, c}, true
+		return &objectStoreToSelfExecutor{opts.InputHandle, c}, nil
 	}
 	if opts.InputHandle.Driver() == "local_file" {
-		return &localFileToSelfExecutor{opts.InputHandle, c}, true
+		return &localFileToSelfExecutor{opts.InputHandle, c}, nil
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
@@ -553,7 +537,7 @@ func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 	return c, true
 }
 
-// AsFileStore implements drivers.Connection.
+// AsFileStore implements drivers.Handle.
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
@@ -563,7 +547,7 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsNotifier implements drivers.Connection.
+// AsNotifier implements drivers.Handle.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }

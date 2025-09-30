@@ -1,9 +1,8 @@
-import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { getDashboardFromAggregationRequest } from "@rilldata/web-common/features/explore-mappers/getDashboardFromAggregationRequest";
-import { getDashboardFromComparisonRequest } from "@rilldata/web-common/features/explore-mappers/getDashboardFromComparisonRequest";
+import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
+import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
+import { getDashboardFromAggregationRequest } from "@rilldata/web-common/features/explore-mappers/get-dashboard-from-aggregation-request.ts";
+import { getDashboardFromComparisonRequest } from "@rilldata/web-common/features/explore-mappers/get-dashboard-from-comparison-request.ts";
 import type {
   QueryRequests,
   TransformerArgs,
@@ -20,7 +19,19 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, readable, type Readable } from "svelte/store";
 
-type MapQueryResponse = {
+export type MapQueryRequest = {
+  exploreName: string;
+  queryName?: string;
+  queryArgsJson?: string;
+  executionTime?: string;
+};
+
+export type MapQueryStateOptions = {
+  exploreProtoState?: string;
+  forceOpenPivot?: boolean;
+};
+
+export type MapQueryResponse = {
   isFetching: boolean;
   isLoading: boolean;
   error: Error | null;
@@ -32,13 +43,10 @@ type MapQueryResponse = {
  * Used to show the relevant dashboard for a report/alert.
  */
 export function mapQueryToDashboard(
-  exploreName: string,
-  queryName: string | undefined,
-  queryArgsJson: string | undefined,
-  executionTime: string | undefined,
-  annotations: Record<string, string>,
+  { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
+  { exploreProtoState, forceOpenPivot = false }: MapQueryStateOptions,
 ): Readable<MapQueryResponse> {
-  if (!queryName || !queryArgsJson || !executionTime)
+  if (!queryName || !queryArgsJson)
     return readable({
       isFetching: false,
       isLoading: false,
@@ -49,29 +57,6 @@ export function mapQueryToDashboard(
     JSON.parse(queryArgsJson),
   );
 
-  return mapObjectToExploreState(
-    exploreName,
-    queryName,
-    queryRequestProperties,
-    executionTime,
-    annotations,
-  );
-}
-
-export function mapObjectToExploreState(
-  exploreName: string,
-  transformerName: string,
-  transformerProperties: TransformerProperties,
-  executionTime: string,
-  annotations: Record<string, string>,
-): Readable<MapQueryResponse> {
-  if (!executionTime)
-    return readable({
-      isFetching: false,
-      isLoading: false,
-      error: new Error("Required parameters are missing."),
-    });
-
   let metricsViewName: string = "";
 
   let getDashboardState: (
@@ -79,17 +64,17 @@ export function mapObjectToExploreState(
   ) => Promise<ExploreState>;
 
   // get metrics view name and the query mapper function based on the query name.
-  switch (transformerName) {
+  switch (queryName) {
     case "MetricsViewAggregation":
       metricsViewName =
-        (transformerProperties as V1MetricsViewAggregationRequest)
+        (queryRequestProperties as V1MetricsViewAggregationRequest)
           .metricsView ?? "";
       getDashboardState = getDashboardFromAggregationRequest;
       break;
 
     case "MetricsViewComparison":
       metricsViewName =
-        (transformerProperties as V1MetricsViewComparisonRequest)
+        (queryRequestProperties as V1MetricsViewComparisonRequest)
           .metricsViewName ?? "";
       getDashboardState = getDashboardFromComparisonRequest;
       break;
@@ -117,12 +102,14 @@ export function mapObjectToExploreState(
 
   return derived(
     [
-      useExploreValidSpec(instanceId, exploreName),
+      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
         get(runtime).instanceId,
         metricsViewName,
         {},
+        undefined,
+        queryClient,
       ),
     ],
     ([validSpecResp, timeRangeSummary], set) => {
@@ -173,30 +160,30 @@ export function mapObjectToExploreState(
 
       const { metricsView, explore } = validSpecResp.data;
 
-      const defaultExplorePreset = getDefaultExplorePreset(
-        validSpecResp.data.explore,
+      const rillDefaultExploreState = getRillDefaultExploreState(
         validSpecResp.data.metricsView,
+        validSpecResp.data.explore,
         timeRangeSummary.data?.timeRangeSummary,
       );
-      const { partialExploreState } = convertPresetToExploreState(
-        validSpecResp.data.metricsView,
+      const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
         validSpecResp.data.explore,
-        defaultExplorePreset,
+        timeRangeSummary.data?.timeRangeSummary,
       );
-      const defaultExploreState = getFullInitExploreState(
-        metricsViewName,
-        partialExploreState,
-      );
+      const defaultExploreState = {
+        ...rillDefaultExploreState,
+        ...exploreStateFromYAMLConfig,
+      };
       getDashboardState({
         queryClient,
         instanceId,
         dashboard: defaultExploreState,
-        req: transformerProperties,
+        req: queryRequestProperties,
         metricsView,
         explore,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
-        annotations,
+        exploreProtoState,
+        forceOpenPivot,
       })
         .then((newExploreState) => {
           set({

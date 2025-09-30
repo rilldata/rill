@@ -116,8 +116,8 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 		if st.LocalCommits > 0 {
 			// reset the local commits and stash the changes
 			cmd := exec.CommandContext(ctx, "git", "-C", path, "reset", "--mixed", fmt.Sprintf("HEAD~%d", st.LocalCommits))
-			if err := cmd.Run(); err != nil {
-				return "", fmt.Errorf("failed to reset local commits: %w", err)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				return "", fmt.Errorf("failed to reset local commits: %s (%w)", string(out), err)
 			}
 			// stash the changes
 			cmd = exec.CommandContext(ctx, "git", "-C", path, "stash", "--include-untracked")
@@ -180,6 +180,25 @@ func InferGitRepoRoot(path string) (string, error) {
 		return "", errors.New(string(execErr.Stderr))
 	}
 	return strings.TrimSpace(string(data)), nil
+}
+
+func isGitIgnored(repoRoot, subpath string) (bool, error) {
+	cmd := exec.Command("git", "-C", repoRoot, "check-ignore", subpath)
+	err := cmd.Run()
+	if err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			// exit code 1 means the file is not ignored
+			if execErr.ExitCode() == 1 {
+				return false, nil
+			}
+			// any other exit code is an error
+			return false, fmt.Errorf("git check-ignore failed: %s", string(execErr.Stderr))
+		}
+		return false, fmt.Errorf("git check-ignore failed: %w", err)
+	}
+	// exit code 0 means the file is ignored
+	return true, nil
 }
 
 // countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.

@@ -5,14 +5,20 @@ import {
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type {
+  ChartDomainValues,
   ChartLegend,
+  ChartSortDirection,
   FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import {
   getColorForValues,
+  isDomainStringArray,
+  isFieldConfig,
   mergedVlConfig,
+  resolveColor,
 } from "@rilldata/web-common/features/canvas/components/charts/util";
+import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Config } from "vega-lite";
@@ -23,7 +29,7 @@ import type {
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
-import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
+import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { ExprRef, SignalRef } from "vega-typings";
 import type { ChartDataResult } from "./types";
 
@@ -55,14 +61,15 @@ export function createPositionEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
 ): PositionFieldDef<Field> {
-  if (!field) return {};
+  if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
   return {
     field: sanitizeValueForVega(field.field),
     title: metaData?.displayName || field.field,
     type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
-    ...(field.sort && field.type !== "temporal" && { sort: field.sort }),
+    ...(field.sort &&
+      field.type !== "temporal" && { sort: data.domainValues?.[field.field] }),
     ...(field.type === "quantitative" && {
       scale: {
         ...(field.zeroBasedOrigin !== true && { zero: false }),
@@ -86,26 +93,28 @@ export function createColorEncoding(
   data: ChartDataResult,
 ): ColorDef<Field> {
   if (!colorField) return {};
-  if (typeof colorField === "object") {
+  if (isFieldConfig(colorField)) {
     const metaData = data.fields[colorField.field];
+
+    const colorValues = data.domainValues?.[colorField.field];
 
     const baseEncoding: ColorDef<Field> = {
       field: sanitizeValueForVega(colorField.field),
       title: metaData?.displayName || colorField.field,
-      type: colorField.type,
+      type: colorField.type === "value" ? "nominal" : colorField.type,
       ...(metaData &&
         "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
+      ...(colorValues?.length && { sort: colorValues }),
     };
 
     // Ideally we would want to use conditional statements to set the color
     // but it's not supported by Vega-Lite yet
     // https://github.com/vega/vega-lite/issues/9497
 
-    const colorValues = data.domainValues?.colorValues;
-    const colorMapping = getColorForValues(
-      colorValues,
-      colorField.colorMapping,
-    );
+    let colorMapping: { value: string; color: string }[] | undefined;
+    if (isDomainStringArray(colorValues)) {
+      colorMapping = getColorForValues(colorValues, colorField.colorMapping);
+    }
 
     if (colorMapping?.length) {
       const domain = colorMapping.map((mapping) => mapping.value);
@@ -118,15 +127,30 @@ export function createColorEncoding(
       };
     }
 
+    if (colorField.type === "quantitative" && colorField.colorRange) {
+      const colorRange = colorField.colorRange;
+
+      if (colorRange.mode === "scheme") {
+        baseEncoding.scale = {
+          scheme: colorRange.scheme,
+        };
+      } else if (colorRange.mode === "gradient") {
+        baseEncoding.scale = {
+          range: [
+            resolveColor(data.theme, colorRange.start),
+            resolveColor(data.theme, colorRange.end),
+          ],
+          type: "linear",
+        };
+      }
+    }
+
     return baseEncoding;
   }
+
   if (typeof colorField === "string") {
-    if (colorField === "primary") {
-      return { value: data.theme.primary.css("hsl") };
-    } else if (colorField === "secondary") {
-      return { value: data.theme.secondary.css("hsl") };
-    }
-    return { value: colorField };
+    const color = resolveColor(data.theme, colorField);
+    return { value: color };
   }
   return {};
 }
@@ -145,7 +169,7 @@ export function createOpacityEncoding(paramName: string) {
 }
 
 export function createOrderEncoding(field: FieldConfig | undefined) {
-  if (!field) return {};
+  if (!field || field.type === "value") return {};
   return {
     field: sanitizeValueForVega(field.field),
     type: field.type,
@@ -177,6 +201,7 @@ export function createDefaultTooltipEncoding(
     if (!field) continue;
 
     if (typeof field === "object") {
+      if (field.type === "value") continue;
       tooltip.push({
         field: sanitizeValueForVega(field.field),
         title: data.fields[field.field]?.displayName || field.field,
@@ -257,5 +282,134 @@ export function createEncoding(
       [config.x, config.y, config.color],
       data,
     ),
+  };
+}
+
+export function buildHoverPointOverlay(): UnitSpec<Field> {
+  return {
+    transform: [{ filter: { param: "hover", empty: false } }],
+    mark: {
+      type: "point",
+      filled: true,
+      opacity: 1,
+      size: 50,
+      clip: true,
+      stroke: "white",
+      strokeWidth: 1,
+    },
+  };
+}
+
+/**
+ * Creates a multiValueTooltipChannel for cartesian charts (area, line, bar, stacked-bar)
+ * Maps data values based on colorField and includes x-field information
+ */
+export function createCartesianMultiValueTooltipChannel(
+  config: { x?: FieldConfig; colorField?: string; yField?: string },
+  data: ChartDataResult,
+): TooltipValue[] | undefined {
+  const { x: xConfig, colorField, yField } = config;
+
+  if (!colorField || !xConfig || !yField) {
+    return undefined;
+  }
+
+  const xField = sanitizeValueForVega(xConfig.field);
+  const sanitizedYField = sanitizeValueForVega(yField);
+
+  let multiValueTooltipChannel: TooltipValue[] | undefined;
+
+  multiValueTooltipChannel = data.domainValues?.[colorField]?.map((value) => ({
+    field: sanitizeValueForVega(value as string),
+    type: "quantitative" as const,
+    formatType: sanitizeFieldName(sanitizedYField),
+  }));
+
+  if (multiValueTooltipChannel) {
+    multiValueTooltipChannel.unshift({
+      field: xField,
+      title: data.fields[xConfig.field]?.displayName || xConfig.field,
+      type: xConfig?.type === "value" ? "nominal" : xConfig.type,
+      ...(xConfig.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
+    });
+
+    multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
+  }
+
+  return multiValueTooltipChannel;
+}
+
+export function buildHoverRuleLayer(args: {
+  xField?: string;
+  defaultTooltip: TooltipValue[];
+  multiValueTooltipChannel?: TooltipValue[];
+  pivot?: { field: string; value: string; groupby: string[] };
+  domainValues?: ChartDomainValues;
+  xSort?: ChartSortDirection;
+  primaryColor: Color;
+  xBand?: number;
+  isBarMark?: boolean;
+}): UnitSpec<Field> {
+  const {
+    xField,
+    defaultTooltip,
+    multiValueTooltipChannel,
+    pivot,
+    domainValues,
+    xSort,
+    primaryColor,
+    xBand,
+    isBarMark = false,
+  } = args;
+
+  return {
+    transform:
+      xField && pivot && multiValueTooltipChannel?.length
+        ? [
+            {
+              pivot: pivot.field,
+              value: pivot.value,
+              groupby: pivot.groupby,
+            },
+          ]
+        : [],
+    mark: {
+      type: isBarMark ? "bar" : "rule",
+      clip: true,
+      opacity: 0.6,
+      ...(!isBarMark && { strokeWidth: 5 }),
+    },
+    encoding: {
+      x: {
+        field: xField,
+        ...(xBand !== undefined ? { bandPosition: xBand } : {}),
+        ...(xSort && xField ? { sort: domainValues?.[xField] } : {}),
+      },
+      color: {
+        condition: [
+          {
+            param: "hover",
+            empty: false,
+            value: isBarMark ? "#eee" : primaryColor.brighten().css(),
+          },
+        ],
+        value: "transparent",
+      },
+      tooltip: multiValueTooltipChannel?.length
+        ? multiValueTooltipChannel
+        : defaultTooltip,
+    },
+    params: [
+      {
+        name: "hover",
+        select: {
+          type: "point",
+          encodings: ["x"],
+          on: "pointerover",
+          clear: "pointerout",
+          ...(!isBarMark && { nearest: true }),
+        },
+      },
+    ],
   };
 }

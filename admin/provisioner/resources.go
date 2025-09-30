@@ -81,6 +81,7 @@ func (r *RuntimeConfig) AsMap() map[string]any {
 type ClickhouseConfig struct {
 	DSN      string `mapstructure:"dsn"`
 	WriteDSN string `mapstructure:"write_dsn,omitempty"`
+	Cluster  string `mapstructure:"cluster,omitempty"`
 }
 
 func NewClickhouseConfig(cfg map[string]any) (*ClickhouseConfig, error) {

@@ -1522,14 +1522,9 @@ export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFi
   subPath = "";
 
   /**
-   * @generated from field: uint32 page_size = 4;
+   * @generated from field: string rill_mgd_git_remote = 6;
    */
-  pageSize = 0;
-
-  /**
-   * @generated from field: string page_token = 5;
-   */
-  pageToken = "";
+  rillMgdGitRemote = "";
 
   constructor(data?: PartialMessage<ListProjectsForFingerprintRequest>) {
     super();
@@ -1542,8 +1537,7 @@ export class ListProjectsForFingerprintRequest extends Message<ListProjectsForFi
     { no: 1, name: "directory_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "sub_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 5, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "rill_mgd_git_remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintRequest {
@@ -1573,9 +1567,11 @@ export class ListProjectsForFingerprintResponse extends Message<ListProjectsForF
   projects: Project[] = [];
 
   /**
-   * @generated from field: string next_page_token = 2;
+   * unauthorized_project is the name of a project that matches the git_remote+sub_path but the caller does not have access to.
+   *
+   * @generated from field: string unauthorized_project = 3;
    */
-  nextPageToken = "";
+  unauthorizedProject = "";
 
   constructor(data?: PartialMessage<ListProjectsForFingerprintResponse>) {
     super();
@@ -1586,7 +1582,7 @@ export class ListProjectsForFingerprintResponse extends Message<ListProjectsForF
   static readonly typeName = "rill.admin.v1.ListProjectsForFingerprintResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
-    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "unauthorized_project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForFingerprintResponse {
@@ -8802,6 +8798,76 @@ export class RevokeUserAuthTokenResponse extends Message<RevokeUserAuthTokenResp
 }
 
 /**
+ * @generated from message rill.admin.v1.RevokeRepresentativeAuthTokensRequest
+ */
+export class RevokeRepresentativeAuthTokensRequest extends Message<RevokeRepresentativeAuthTokensRequest> {
+  /**
+   * Email of the user being represented.
+   *
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<RevokeRepresentativeAuthTokensRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RevokeRepresentativeAuthTokensRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevokeRepresentativeAuthTokensRequest {
+    return new RevokeRepresentativeAuthTokensRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevokeRepresentativeAuthTokensRequest {
+    return new RevokeRepresentativeAuthTokensRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevokeRepresentativeAuthTokensRequest {
+    return new RevokeRepresentativeAuthTokensRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevokeRepresentativeAuthTokensRequest | PlainMessage<RevokeRepresentativeAuthTokensRequest> | undefined, b: RevokeRepresentativeAuthTokensRequest | PlainMessage<RevokeRepresentativeAuthTokensRequest> | undefined): boolean {
+    return proto3.util.equals(RevokeRepresentativeAuthTokensRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RevokeRepresentativeAuthTokensResponse
+ */
+export class RevokeRepresentativeAuthTokensResponse extends Message<RevokeRepresentativeAuthTokensResponse> {
+  constructor(data?: PartialMessage<RevokeRepresentativeAuthTokensResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RevokeRepresentativeAuthTokensResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevokeRepresentativeAuthTokensResponse {
+    return new RevokeRepresentativeAuthTokensResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevokeRepresentativeAuthTokensResponse {
+    return new RevokeRepresentativeAuthTokensResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevokeRepresentativeAuthTokensResponse {
+    return new RevokeRepresentativeAuthTokensResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevokeRepresentativeAuthTokensResponse | PlainMessage<RevokeRepresentativeAuthTokensResponse> | undefined, b: RevokeRepresentativeAuthTokensResponse | PlainMessage<RevokeRepresentativeAuthTokensResponse> | undefined): boolean {
+    return proto3.util.equals(RevokeRepresentativeAuthTokensResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.IssueRepresentativeAuthTokenRequest
  */
 export class IssueRepresentativeAuthTokenRequest extends Message<IssueRepresentativeAuthTokenRequest> {
@@ -10481,21 +10547,6 @@ export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithu
    */
   remote = "";
 
-  /**
-   * @generated from field: string branch = 4;
-   */
-  branch = "";
-
-  /**
-   * @generated from field: string subpath = 5;
-   */
-  subpath = "";
-
-  /**
-   * @generated from field: bool force = 6;
-   */
-  force = false;
-
   constructor(data?: PartialMessage<ConnectProjectToGithubRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -10507,9 +10558,6 @@ export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithu
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "remote", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectProjectToGithubRequest {
@@ -10664,80 +10712,6 @@ export class CreateManagedGitRepoResponse extends Message<CreateManagedGitRepoRe
 
   static equals(a: CreateManagedGitRepoResponse | PlainMessage<CreateManagedGitRepoResponse> | undefined, b: CreateManagedGitRepoResponse | PlainMessage<CreateManagedGitRepoResponse> | undefined): boolean {
     return proto3.util.equals(CreateManagedGitRepoResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.DisconnectProjectFromGithubRequest
- */
-export class DisconnectProjectFromGithubRequest extends Message<DisconnectProjectFromGithubRequest> {
-  /**
-   * @generated from field: string organization = 1;
-   */
-  organization = "";
-
-  /**
-   * @generated from field: string project = 2;
-   */
-  project = "";
-
-  constructor(data?: PartialMessage<DisconnectProjectFromGithubRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.DisconnectProjectFromGithubRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DisconnectProjectFromGithubRequest {
-    return new DisconnectProjectFromGithubRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DisconnectProjectFromGithubRequest {
-    return new DisconnectProjectFromGithubRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DisconnectProjectFromGithubRequest {
-    return new DisconnectProjectFromGithubRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: DisconnectProjectFromGithubRequest | PlainMessage<DisconnectProjectFromGithubRequest> | undefined, b: DisconnectProjectFromGithubRequest | PlainMessage<DisconnectProjectFromGithubRequest> | undefined): boolean {
-    return proto3.util.equals(DisconnectProjectFromGithubRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.DisconnectProjectFromGithubResponse
- */
-export class DisconnectProjectFromGithubResponse extends Message<DisconnectProjectFromGithubResponse> {
-  constructor(data?: PartialMessage<DisconnectProjectFromGithubResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.DisconnectProjectFromGithubResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DisconnectProjectFromGithubResponse {
-    return new DisconnectProjectFromGithubResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DisconnectProjectFromGithubResponse {
-    return new DisconnectProjectFromGithubResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DisconnectProjectFromGithubResponse {
-    return new DisconnectProjectFromGithubResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: DisconnectProjectFromGithubResponse | PlainMessage<DisconnectProjectFromGithubResponse> | undefined, b: DisconnectProjectFromGithubResponse | PlainMessage<DisconnectProjectFromGithubResponse> | undefined): boolean {
-    return proto3.util.equals(DisconnectProjectFromGithubResponse, a, b);
   }
 }
 

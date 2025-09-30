@@ -2,6 +2,7 @@
 title: "OpenRTB Analytics Demo"
 sidebar_label: "OpenRTB Analytics Demo"
 hide_table_of_contents: false
+sidebar_position: 20
 tags:
     - Tutorial
     - Quickstart
@@ -85,7 +86,7 @@ uri: "https://storage.googleapis.com/rilldata-public/auction_data.parquet"
 
 ## Step 4: Data Models
 
-In this case, we are not joining the data models and having two unique explore models and joining the visualization in a [Canvas Dashboard](/build/canvas).
+In this case, we are not joining the data models and having two unique explore models and joining the visualization in a [Canvas Dashboard](/build/dashboards/canvas).
 
 
 ## Step 5: Creating your Metrics View
@@ -180,7 +181,7 @@ dimensions:
 ai_instructions: ...
 ```
 
-**What this metrics file does:**
+**What this metric view does:**
 
 - **Measures** define the key RTB performance indicators:
   - `Total Requests` - Total number of bid requests processed

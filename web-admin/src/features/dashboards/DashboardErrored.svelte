@@ -39,6 +39,8 @@
     </svelte:fragment>
   </ProjectAccessControls>
   <p class="text-gray-500">
-    Need help? Reach out to us on <a href="http://bit.ly/3jg4IsF">Discord</a>
+    Need help? Reach out to us on <a href="https://discord.gg/2ubRfjC7Rh"
+      >Discord</a
+    >
   </p>
 </div>

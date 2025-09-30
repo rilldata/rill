@@ -25,11 +25,17 @@
 
   let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
   $: dashboardStateForReport = mapQueryToDashboard(
-    exploreName,
-    reportResource?.report?.spec?.queryName,
-    reportResource?.report?.spec?.queryArgsJson,
-    executionTime,
-    reportResource?.report?.spec?.annotations ?? {},
+    {
+      exploreName,
+      queryName: reportResource?.report?.spec?.queryName,
+      queryArgsJson: reportResource?.report?.spec?.queryArgsJson,
+      executionTime,
+    },
+    {
+      exploreProtoState:
+        reportResource?.report?.spec?.annotations?.web_open_path,
+      forceOpenPivot: true,
+    },
   );
 
   $: if ($dashboardStateForReport?.data) {
