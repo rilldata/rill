@@ -161,7 +161,7 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 	q.metricsView = mv
 
 	spec := mv.GetMetricsView().State.ValidSpec
-	if mv.GetMetricsView().State.ValidSpec == nil {
+	if spec == nil {
 		return fmt.Errorf("metrics view %q is not valid", mv.Meta.Name.Name)
 	}
 	q.metricsViewSpec = spec
