@@ -11,7 +11,7 @@ plugins:
     opt:
       - format=yaml
       - path=rill/admin/v1/admin-connect.openapi.yaml
-      - features=connectrpc;google.api.http;gnostic;protovalidate
+      - features=connectrpc;google.api.http;protovalidate
       - trim-unused-types
       - with-google-error-detail
       - content-types=json

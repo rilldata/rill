@@ -1,13 +1,5 @@
 openapi: 3.1.0
-info:
-  title: Admin API
-  description: API for managing Rill Cloud organizations, projects, deployments, and users.
-  license:
-    name: Apache License 2.0
-    url: https://github.com/rilldata/rill/blob/main/LICENSE.md
-servers:
-  - url: https://api.rilldata.com
-    description: Production server (uses live data)
+info: {}
 paths:
   /v1/billing/metrics-project-credentials:
     post:
@@ -352,7 +344,6 @@ paths:
   /v1/orgs:
     get:
       tags:
-        - Public
         - AdminService
       summary: ListOrganizations
       description: ListOrganizations lists all the organizations currently managed by the admin
@@ -377,7 +368,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.ListOrganizationsResponse'
     post:
       tags:
-        - Public
         - AdminService
       summary: CreateOrganization
       description: CreateOrganization creates a new organization
@@ -398,7 +388,6 @@ paths:
   /v1/orgs/{org}:
     get:
       tags:
-        - Public
         - AdminService
       summary: GetOrganization
       description: GetOrganization returns information about a specific organization
@@ -424,7 +413,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.GetOrganizationResponse'
     delete:
       tags:
-        - Public
         - AdminService
       summary: DeleteOrganization
       description: DeleteOrganization deletes an organization
@@ -445,7 +433,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.DeleteOrganizationResponse'
     patch:
       tags:
-        - Public
         - AdminService
       summary: UpdateOrganization
       description: UpdateOrganization deletes an organizations
@@ -771,7 +758,6 @@ paths:
   /v1/orgs/{org}/invites:
     get:
       tags:
-        - Public
         - AdminService
       summary: ListOrganizationInvites
       description: ListOrganizationInvites lists all the org invites
@@ -803,7 +789,6 @@ paths:
   /v1/orgs/{org}/members:
     get:
       tags:
-        - Public
         - AdminService
       summary: ListOrganizationMemberUsers
       description: ListOrganizationMemberUsers lists all the org members
@@ -853,7 +838,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.ListOrganizationMemberUsersResponse'
     post:
       tags:
-        - Public
         - AdminService
       summary: AddOrganizationMemberUser
       description: AddOrganizationMemberUser adds a user to the organization
@@ -955,7 +939,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.SetOrganizationMemberUserRoleResponse'
     delete:
       tags:
-        - Public
         - AdminService
       summary: RemoveOrganizationMemberUser
       description: RemoveOrganizationMemberUser removes member from the organization
@@ -1027,7 +1010,6 @@ paths:
   /v1/orgs/{org}/projects:
     get:
       tags:
-        - Public
         - AdminService
       summary: ListProjectsForOrganization
       description: ListProjectsForOrganization lists all the projects currently available for given organizations.
@@ -1058,7 +1040,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.ListProjectsForOrganizationResponse'
     post:
       tags:
-        - Public
         - AdminService
       summary: CreateProject
       description: CreateProject creates a new project
@@ -1174,7 +1155,6 @@ paths:
   /v1/orgs/{org}/projects/{project}:
     get:
       tags:
-        - Public
         - AdminService
       summary: GetProject
       description: GetProject returns information about a specific project
@@ -1216,7 +1196,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.GetProjectResponse'
     delete:
       tags:
-        - Public
         - AdminService
       summary: DeleteProject
       description: DeleteProject deletes an project
@@ -1243,7 +1222,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.DeleteProjectResponse'
     patch:
       tags:
-        - Public
         - AdminService
       summary: UpdateProject
       description: UpdateProject updates a project
@@ -2622,7 +2600,6 @@ paths:
   /v1/orgs/{org}/projects/{project}/variables:
     get:
       tags:
-        - Public
         - AdminService
       summary: GetProjectVariables
       description: GetProjectVariables returns project variables.
@@ -2675,7 +2652,6 @@ paths:
                 $ref: '#/components/schemas/rill.admin.v1.GetProjectVariablesResponse'
     put:
       tags:
-        - Public
         - AdminService
       summary: UpdateProjectVariables
       description: UpdateProjectVariables updates variables for a project.
@@ -10203,6 +10179,4 @@ components:
       additionalProperties: false
 security: []
 tags:
-  - name: Public
-    description: Publicly accessible endpoints
   - name: AdminService
