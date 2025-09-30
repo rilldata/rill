@@ -181,7 +181,6 @@ export async function submitAddSourceForm(
       instanceId,
       newSourceName,
       ResourceKind.Model,
-      connector.name as string,
     );
   } catch (error) {
     // The source file was already created, so we need to delete it
@@ -271,7 +270,6 @@ export async function submitAddConnectorForm(
       instanceId,
       newConnectorName,
       ResourceKind.Connector,
-      connector.name as string,
     );
   } catch (error) {
     // The connector file was already created, so we need to delete it
