@@ -51,10 +51,13 @@ mock_users:
 	switch olap {
 	case "duckdb":
 		connectorYAML = `type: connector
+
 driver: duckdb
+managed: true
 `
 	case "clickhouse":
 		connectorYAML = `type: connector
+
 driver: clickhouse
 managed: true
 `
