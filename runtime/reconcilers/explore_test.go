@@ -102,9 +102,9 @@ defaults:
 								AllFields: true,
 							}}},
 							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-								Condition: "{{ not .user.admin }}",
-								Allow:     false,
-								Fields:    []string{"internal"},
+								ConditionExpression: "{{ not .user.admin }}",
+								Allow:               false,
+								Fields:              []string{"internal"},
 							}}},
 						},
 					},
@@ -378,8 +378,8 @@ security:
 								AllFields: true,
 							}}},
 							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-								Condition: "{{ not .user.admin }}",
-								Fields:    []string{"internal"},
+								ConditionExpression: "{{ not .user.admin }}",
+								Fields:              []string{"internal"},
 							}}},
 						},
 					},
