@@ -2,12 +2,14 @@ syntax = "proto3";
 package rill.admin.v1;
 
 import "google/api/annotations.proto";
+import "google/api/visibility.proto";
 import "google/protobuf/struct.proto";
 
 service TelemetryService {
   // RecordEvents sends a batch of telemetry events.
   // The events must conform to the schema described in rill/runtime/pkg/activity/README.md.
   rpc RecordEvents(RecordEventsRequest) returns (RecordEventsResponse) {
+    option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
       post: "/v1/telemetry/events",
       body: "*"

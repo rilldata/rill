@@ -4,9 +4,10 @@ extends:
   - recommended
 
 decorators:
+  remove-unused-components: on
   filter-in:
     property: tags
-    value: [Public, AdminService]
+    values: ["rill.admin.v1.AdminService"]
 
 theme:
   # See https://redocly.com/docs/redoc/config/

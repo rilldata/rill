@@ -70,11 +70,11 @@ const config = {
         specs: [
           {
             id: 'admin-api',
-            spec: 'api/rill/admin/v1/admin-connect.openapi.yaml',
+            spec: 'api/rill/admin/v1/public.swagger.yaml',
             route: '/api/admin/',
             layout: {
-              title: "Rill API",
-              description: "Rill API documentation",
+              title: "Rill Public API",
+              description: "Public Rill API documentation",
             },
           },
         ],

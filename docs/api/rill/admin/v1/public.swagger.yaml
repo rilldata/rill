@@ -1,0 +1,977 @@
+swagger: "2.0"
+info:
+  title: Rill API
+  description: It is used to manage organizations, projects, deployments, users, and roles.
+  version: v1
+  contact:
+    name: Rill Data
+    url: https://rilldata.com
+  license:
+    name: Apache 2.0
+    url: https://github.com/rilldata/rill/blob/main/LICENSE.md
+host: api.rilldata.com
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /v1/orgs:
+    get:
+      summary: ListOrganizations lists all the organizations currently managed by the admin
+      operationId: AdminService_ListOrganizations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+    post:
+      summary: CreateOrganization creates a new organization
+      operationId: AdminService_CreateOrganization
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateOrganizationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1CreateOrganizationRequest'
+  /v1/orgs/{org}:
+    get:
+      summary: GetOrganization returns information about a specific organization
+      operationId: AdminService_GetOrganization
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
+    delete:
+      summary: DeleteOrganization deletes an organization
+      operationId: AdminService_DeleteOrganization
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteOrganizationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+    patch:
+      summary: UpdateOrganization deletes an organizations
+      operationId: AdminService_UpdateOrganization
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateOrganizationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              description:
+                type: string
+              newName:
+                type: string
+              displayName:
+                type: string
+              logoAssetId:
+                type: string
+              faviconAssetId:
+                type: string
+              thumbnailAssetId:
+                type: string
+              defaultProjectRole:
+                type: string
+              billingEmail:
+                type: string
+  /v1/orgs/{org}/invites:
+    get:
+      summary: ListOrganizationInvites lists all the org invites
+      operationId: AdminService_ListOrganizationInvites
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationInvitesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+  /v1/orgs/{org}/members:
+    get:
+      summary: ListOrganizationMemberUsers lists all the org members
+      operationId: AdminService_ListOrganizationMemberUsers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationMemberUsersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: role
+          description: Optionally filter by role
+          in: query
+          required: false
+          type: string
+        - name: includeCounts
+          description: Optionally include counts
+          in: query
+          required: false
+          type: boolean
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
+    post:
+      summary: AddOrganizationMemberUser adds a user to the organization
+      operationId: AdminService_AddOrganizationMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddOrganizationMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              role:
+                type: string
+              superuserForceAccess:
+                type: boolean
+  /v1/orgs/{org}/members/{email}:
+    delete:
+      summary: RemoveOrganizationMemberUser removes member from the organization
+      operationId: AdminService_RemoveOrganizationMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveOrganizationMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+  /v1/orgs/{org}/projects:
+    get:
+      summary: ListProjectsForOrganization lists all the projects currently available for given organizations.
+      operationId: AdminService_ListProjectsForOrganization
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForOrganizationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+    post:
+      summary: CreateProject creates a new project
+      operationId: AdminService_CreateProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project:
+                type: string
+              description:
+                type: string
+              public:
+                type: boolean
+              directoryName:
+                type: string
+                description: |-
+                  directory_name should be the most recently observed local directory name for the project.
+                  See ListProjectsForFingerprint for more context.
+              provisioner:
+                type: string
+              prodSlots:
+                type: string
+                format: int64
+              subpath:
+                type: string
+              prodBranch:
+                type: string
+              gitRemote:
+                type: string
+                description: |-
+                  git_remote is set for projects whose project files are stored in Git.
+                  It currently only supports Github remotes. It should be a HTTPS remote ending in .git for github.com.
+                  Either git_remote or archive_asset_id should be set.
+              archiveAssetId:
+                type: string
+                description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
+              prodVersion:
+                type: string
+              skipDeploy:
+                type: boolean
+  /v1/orgs/{org}/projects/{project}:
+    get:
+      summary: GetProject returns information about a specific project
+      operationId: AdminService_GetProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: accessTokenTtlSeconds
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
+        - name: issueSuperuserToken
+          in: query
+          required: false
+          type: boolean
+    delete:
+      summary: DeleteProject deletes an project
+      operationId: AdminService_DeleteProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+    patch:
+      summary: UpdateProject updates a project
+      operationId: AdminService_UpdateProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              description:
+                type: string
+              public:
+                type: boolean
+              directoryName:
+                type: string
+              prodBranch:
+                type: string
+              gitRemote:
+                type: string
+              subpath:
+                type: string
+              archiveAssetId:
+                type: string
+              prodSlots:
+                type: string
+                format: int64
+              provisioner:
+                type: string
+              newName:
+                type: string
+              prodTtlSeconds:
+                type: string
+                format: int64
+              prodVersion:
+                type: string
+              superuserForceAccess:
+                type: boolean
+  /v1/orgs/{org}/projects/{project}/variables:
+    get:
+      summary: GetProjectVariables returns project variables.
+      operationId: AdminService_GetProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          description: Org the project belongs to.
+          in: path
+          required: true
+          type: string
+        - name: project
+          description: Project to get variables for.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            Environment to get the variables for.
+            If empty, only variables shared across all environments are returned.
+          in: query
+          required: false
+          type: string
+        - name: forAllEnvironments
+          description: |-
+            If true, return variable values for all environments.
+            Can't be used together with the "environment" option.
+          in: query
+          required: false
+          type: boolean
+    put:
+      summary: UpdateProjectVariables updates variables for a project.
+      operationId: AdminService_UpdateProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          description: Org the project belongs to.
+          in: path
+          required: true
+          type: string
+        - name: project
+          description: Project to update variables for.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
+                description: |-
+                  Environment to set the variables for.
+                  If empty, the variable(s) will be used as defaults for all environments.
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
+                description: |-
+                  New variable values.
+                  It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
+              unsetVariables:
+                type: array
+                items:
+                  type: string
+                description: Variables to delete.
+definitions:
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
+  rpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      details:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/protobufAny'
+  v1AddOrganizationMemberUserResponse:
+    type: object
+    properties:
+      pendingSignup:
+        type: boolean
+  v1CreateOrganizationRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      displayName:
+        type: string
+  v1CreateOrganizationResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+  v1CreateProjectResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
+  v1DeleteOrganizationResponse:
+    type: object
+  v1DeleteProjectResponse:
+    type: object
+    properties:
+      id:
+        type: string
+  v1Deployment:
+    type: object
+    properties:
+      id:
+        type: string
+      projectId:
+        type: string
+      ownerUserId:
+        type: string
+      environment:
+        type: string
+      branch:
+        type: string
+      runtimeHost:
+        type: string
+      runtimeInstanceId:
+        type: string
+      status:
+        $ref: '#/definitions/v1DeploymentStatus'
+      statusMessage:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1DeploymentStatus:
+    type: string
+    enum:
+      - DEPLOYMENT_STATUS_UNSPECIFIED
+      - DEPLOYMENT_STATUS_PENDING
+      - DEPLOYMENT_STATUS_OK
+      - DEPLOYMENT_STATUS_ERROR
+      - DEPLOYMENT_STATUS_STOPPED
+    default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1GetOrganizationResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      permissions:
+        $ref: '#/definitions/v1OrganizationPermissions'
+  v1GetProjectResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
+      prodDeployment:
+        $ref: '#/definitions/v1Deployment'
+      jwt:
+        type: string
+      projectPermissions:
+        $ref: '#/definitions/v1ProjectPermissions'
+  v1GetProjectVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+      variablesMap:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          Deprecated: Populated for backwards compatibility.
+          (Renamed from "variables" to "variables_map").
+  v1ListOrganizationInvitesResponse:
+    type: object
+    properties:
+      invites:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1OrganizationInvite'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of invites in the organization
+      nextPageToken:
+        type: string
+  v1ListOrganizationMemberUsersResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1OrganizationMemberUser'
+      totalCount:
+        type: integer
+        format: int64
+        title: Total number of members in the organization
+      nextPageToken:
+        type: string
+  v1ListOrganizationsResponse:
+    type: object
+    properties:
+      organizations:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Organization'
+      nextPageToken:
+        type: string
+  v1ListProjectsForOrganizationResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
+  v1Organization:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+        title: Globally unique
+      displayName:
+        type: string
+      description:
+        type: string
+      logoUrl:
+        type: string
+      faviconUrl:
+        type: string
+      thumbnailUrl:
+        type: string
+      customDomain:
+        type: string
+      defaultProjectRoleId:
+        type: string
+      quotas:
+        $ref: '#/definitions/v1OrganizationQuotas'
+      billingCustomerId:
+        type: string
+      paymentCustomerId:
+        type: string
+      billingEmail:
+        type: string
+      billingPlanName:
+        type: string
+      billingPlanDisplayName:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1OrganizationInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      roleName:
+        type: string
+      invitedBy:
+        type: string
+  v1OrganizationMemberUser:
+    type: object
+    properties:
+      userId:
+        type: string
+      userEmail:
+        type: string
+      userName:
+        type: string
+      userPhotoUrl:
+        type: string
+      roleName:
+        type: string
+      projectsCount:
+        type: integer
+        format: int64
+      usergroupsCount:
+        type: integer
+        format: int64
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1OrganizationPermissions:
+    type: object
+    properties:
+      admin:
+        type: boolean
+      guest:
+        type: boolean
+      readOrg:
+        type: boolean
+      manageOrg:
+        type: boolean
+      readProjects:
+        type: boolean
+      createProjects:
+        type: boolean
+      manageProjects:
+        type: boolean
+      readOrgMembers:
+        type: boolean
+      manageOrgMembers:
+        type: boolean
+      manageOrgAdmins:
+        type: boolean
+  v1OrganizationQuotas:
+    type: object
+    properties:
+      projects:
+        type: integer
+        format: int32
+      deployments:
+        type: integer
+        format: int32
+      slotsTotal:
+        type: integer
+        format: int32
+      slotsPerDeployment:
+        type: integer
+        format: int32
+      outstandingInvites:
+        type: integer
+        format: int32
+      storageLimitBytesPerDeployment:
+        type: string
+        format: int64
+  v1Project:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+        title: Unique in organization
+      orgId:
+        type: string
+      orgName:
+        type: string
+      description:
+        type: string
+      public:
+        type: boolean
+      createdByUserId:
+        type: string
+      directoryName:
+        type: string
+      provisioner:
+        type: string
+      gitRemote:
+        type: string
+      managedGitId:
+        type: string
+        description: managed_git_id is set if the project is connected to a rill-managed git repo.
+      subpath:
+        type: string
+      prodBranch:
+        type: string
+      archiveAssetId:
+        type: string
+      prodSlots:
+        type: string
+        format: int64
+      prodDeploymentId:
+        type: string
+      devSlots:
+        type: string
+        format: int64
+      frontendUrl:
+        type: string
+        description: 'Note: Does NOT incorporate the parent org''s custom domain.'
+      prodTtlSeconds:
+        type: string
+        format: int64
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+      prodVersion:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1ProjectPermissions:
+    type: object
+    properties:
+      admin:
+        type: boolean
+      readProject:
+        type: boolean
+      manageProject:
+        type: boolean
+      readProd:
+        type: boolean
+      readProdStatus:
+        type: boolean
+      manageProd:
+        type: boolean
+      readDev:
+        type: boolean
+      readDevStatus:
+        type: boolean
+      manageDev:
+        type: boolean
+      readProvisionerResources:
+        type: boolean
+      manageProvisionerResources:
+        type: boolean
+      readProjectMembers:
+        type: boolean
+      manageProjectMembers:
+        type: boolean
+      manageProjectAdmins:
+        type: boolean
+      createMagicAuthTokens:
+        type: boolean
+      manageMagicAuthTokens:
+        type: boolean
+      createReports:
+        type: boolean
+      manageReports:
+        type: boolean
+      createAlerts:
+        type: boolean
+      manageAlerts:
+        type: boolean
+      createBookmarks:
+        type: boolean
+      manageBookmarks:
+        type: boolean
+  v1ProjectVariable:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Internal ID.
+      name:
+        type: string
+        description: Variable name (case insensitive).
+      value:
+        type: string
+        description: Variable value.
+      environment:
+        type: string
+        description: |-
+          Environment the variable is set for.
+          If empty, the variable is shared for all environments.
+      updatedByUserId:
+        type: string
+        description: User ID that most recently updated the variable. May be empty.
+      createdOn:
+        type: string
+        format: date-time
+        description: Timestamp when the variable was created.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Timestamp when the variable was last updated.
+  v1RemoveOrganizationMemberUserResponse:
+    type: object
+  v1UpdateOrganizationResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+  v1UpdateProjectResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
+  v1UpdateProjectVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+        description: Variables that were created or updated by the request.
+externalDocs:
+  description: Rill API Reference
+  url: https://docs.rilldata.com/api/admin
