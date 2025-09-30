@@ -42,7 +42,7 @@
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import FileInput from "@rilldata/web-common/components/forms/FileInput.svelte";
+  import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -472,7 +472,7 @@
                       href={property.docsUrl}
                     />
                   {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                    <FileInput
+                    <CredentialsInput
                       bind:value={$paramsForm[propertyKey]}
                       uploadFile={handleFileUpload}
                       fileType="credential"
@@ -495,7 +495,7 @@
                 {@const propertyKey = property.key ?? ""}
                 <div class="py-1.5 first:pt-0 last:pb-0">
                   {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                    <FileInput
+                    <CredentialsInput
                       bind:value={$dsnForm[propertyKey]}
                       uploadFile={handleFileUpload}
                       fileType="credential"
@@ -531,7 +531,7 @@
             {@const propertyKey = property.key ?? ""}
             <div class="py-1.5 first:pt-0 last:pb-0">
               {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                <FileInput
+                <CredentialsInput
                   bind:value={$dsnForm[propertyKey]}
                   uploadFile={handleFileUpload}
                   fileType="credential"
@@ -591,7 +591,7 @@
                   href={property.docsUrl}
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                <FileInput
+                <CredentialsInput
                   bind:value={$paramsForm[propertyKey]}
                   uploadFile={handleFileUpload}
                   fileType="credential"
