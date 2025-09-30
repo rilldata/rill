@@ -1,6 +1,7 @@
 <script lang="ts">
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import Viz from "@rilldata/web-common/components/icons/Viz.svelte";
+  import InputLabel from "./InputLabel.svelte";
 
   export let value: string | string[] | undefined = undefined;
   export let error: string | Record<string | number, string[]> | undefined =
@@ -8,6 +9,10 @@
   export let multiple: boolean = false;
   export let accept: string | undefined = ".json";
   export let uploadFile: (file: File) => Promise<string>;
+  export let id: string | undefined = undefined;
+  export let label: string | undefined = undefined;
+  export let hint: string | undefined = undefined;
+  export let optional: boolean = false;
 
   let fileInput: HTMLInputElement;
 
@@ -100,6 +105,9 @@
 </script>
 
 <div class="container grid">
+  {#if label && id}
+    <InputLabel {id} {label} {hint} {optional} />
+  {/if}
   <button
     type="button"
     class="upload-button"
