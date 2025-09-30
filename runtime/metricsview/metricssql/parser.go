@@ -1,4 +1,4 @@
-package metricssqlparser
+package metricssql
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 
 	// need to import parser driver as well
 	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
@@ -55,7 +56,7 @@ type query struct {
 
 	// fields available after parsing FROM clause
 	metricsViewSpec *runtimev1.MetricsViewSpec
-	executor        *metricsview.Executor
+	executor        *executor.Executor
 	dims            map[string]any
 	measures        map[string]any
 }
@@ -170,7 +171,7 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 		return fmt.Errorf("metrics sql: failed to resolve security: %w", err)
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, security, q.priority)
+	ex, err := executor.New(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, security, q.priority)
 	if err != nil {
 		return fmt.Errorf("metrics sql: failed to create executor: %w", err)
 	}

@@ -8,8 +8,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/parser"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -139,7 +139,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 				// Handle single string
 				if sql := v.GetStringValue(); sql != "" {
 					claims := auth.GetClaims(ctx).SecurityClaims()
-					compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
+					compiler := metricssql.New(ctrl, req.InstanceId, claims, 0)
 					q, err := compiler.Rewrite(ctx, sql)
 					if err == nil && q.MetricsView != "" {
 						metricsViews[q.MetricsView] = true
@@ -150,7 +150,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 					for _, item := range listValue.Values {
 						if sql := item.GetStringValue(); sql != "" {
 							claims := auth.GetClaims(ctx).SecurityClaims()
-							compiler := metricssqlparser.New(ctrl, req.InstanceId, claims, 0)
+							compiler := metricssql.New(ctrl, req.InstanceId, claims, 0)
 							q, err := compiler.Rewrite(ctx, sql)
 							if err == nil && q.MetricsView != "" {
 								metricsViews[q.MetricsView] = true

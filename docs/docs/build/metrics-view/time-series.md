@@ -65,3 +65,37 @@ smallest_time_grain: day
 The time picker automatically adjusts available time grains based on your selected time range. For example, when viewing "Last 24 hours," only day, and hour grains are available, while "Last 30 days" offers day, week, and month grains. This ensures meaningful time-based analysis appropriate to your data range.
 
 :::
+
+### `watermark`
+
+The `watermark` parameter defines the data freshness threshold for your metrics view. It determines the latest point in time where data is considered "complete" and reliable for analysis.
+
+**Purpose:**
+- Prevents analysis of incomplete or partial data
+- Ensures consistent reporting across different time zones
+- Provides a clear boundary between complete and incomplete data
+
+**Configuration:**
+```yaml
+timeseries: event_time
+watermark: "MAX(__TIME) - INTERVAL 3 DAYS"
+```
+
+**How it works:**
+- `MAX(__TIME)` gets the latest timestamp in your data
+- `INTERVAL 3 DAYS` subtracts 3 days from that timestamp
+- If your latest data is September 5th, complete data extends only to September 2nd
+- Queries for September 3rd-5th data will return empty or incomplete results
+- This prevents misleading metrics from partial data
+
+**Common watermark expressions:**
+- `"MAX(__TIME) - INTERVAL 1 DAY"` - For daily batch processing (most common)
+- `"MAX(__TIME) - INTERVAL 1 HOUR"` - For real-time data with hourly completeness
+- `"MAX(__TIME) - INTERVAL 1 WEEK"` - For weekly aggregated data
+- `"MAX(__TIME)"` - No watermark (use with caution)
+
+:::tip Best practices
+
+Set your watermark based on your data pipeline's processing time. If your ETL takes 2 hours to complete daily data, set watermark to "2 hours" or "1 day" to ensure you only analyze complete datasets.
+
+:::

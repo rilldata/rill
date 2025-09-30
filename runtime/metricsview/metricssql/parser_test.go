@@ -1,4 +1,4 @@
-package metricssqlparser_test
+package metricssql_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +31,7 @@ func TestCompile(t *testing.T) {
 	require.NoError(t, err)
 
 	claims := &runtime.SecurityClaims{}
-	compiler := metricssqlparser.New(ctrl, instanceID, claims, 1)
+	compiler := metricssql.New(ctrl, instanceID, claims, 1)
 	passTests := []struct {
 		inSQL    string
 		outSQL   string
@@ -101,7 +101,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"select pub, dom,measure_0 from ad_bids_metrics  where tld = 'Yahoo' having measure_0 > 10 order by pub desc, dom asc limit 10",
-			"SELECT (t1.\"pub\") AS \"pub\", (t1.\"dom\") AS \"dom\", (t1.\"measure_0\") AS \"measure_0\" FROM (SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)) = ?) GROUP BY 1, 2) t1 WHERE ((t1.\"measure_0\") > ?) ORDER BY \"pub\" DESC NULLS LAST, \"dom\" NULLS LAST LIMIT 10",
+			"SELECT (\"t1\".\"pub\") AS \"pub\", (\"t1\".\"dom\") AS \"dom\", (\"t1\".\"measure_0\") AS \"measure_0\" FROM (SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)) = ?) GROUP BY 1, 2) t1 WHERE ((\"t1\".\"measure_0\") > ?) ORDER BY \"pub\" DESC NULLS LAST, \"dom\" NULLS LAST LIMIT 10",
 			mv,
 			[]any{"Yahoo", 10},
 		},
@@ -143,7 +143,7 @@ func TestCompile(t *testing.T) {
 		},
 		{
 			"select timestamp, bids_1day_rolling_avg from ad_bids_metrics_advanced",
-			"SELECT (t1.\"timestamp\") AS \"timestamp\", (AVG(bids) OVER (ORDER BY t1.\"timestamp\" RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW)) AS \"bids_1day_rolling_avg\" FROM (SELECT (\"timestamp\") AS \"timestamp\", (count(*)) AS \"bids\" FROM \"ad_bids\" GROUP BY 1) t1",
+			"SELECT (\"t1\".\"timestamp\") AS \"timestamp\", (AVG(bids) OVER (ORDER BY \"t1\".\"timestamp\" RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW)) AS \"bids_1day_rolling_avg\" FROM (SELECT (\"timestamp\") AS \"timestamp\", (count(*)) AS \"bids\" FROM \"ad_bids\" GROUP BY 1) t1",
 			advancedMV,
 			nil,
 		},

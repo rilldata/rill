@@ -1,4 +1,7 @@
-import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
+import {
+  sanitizeFieldName,
+  sanitizeValueForVega,
+} from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
 import {
   createColorEncoding,
@@ -62,36 +65,6 @@ export function generateVLHeatmapSpec(
     yEncoding.sort = ySort;
   }
 
-  // Add transform to calculate threshold for text color - using 75th percentile for better contrast
-  if (config.color?.field) {
-    spec.transform = [
-      {
-        joinaggregate: [
-          {
-            op: "q3",
-            field: config.color.field,
-            as: "q3_value",
-          },
-          {
-            op: "max",
-            field: config.color.field,
-            as: "max_value",
-          },
-          {
-            op: "min",
-            field: config.color.field,
-            as: "min_value",
-          },
-        ],
-      },
-      {
-        // Use white text only when value is in the top 25% and significantly above the 75th percentile
-        calculate: `datum['${config.color.field}'] > datum.q3_value && (datum['${config.color.field}'] - datum.min_value) / (datum.max_value - datum.min_value) > 0.7`,
-        as: "use_white_text",
-      },
-    ];
-  }
-
   spec.encoding = {
     x: xEncoding,
     y: yEncoding,
@@ -117,6 +90,9 @@ export function generateVLHeatmapSpec(
         fontSize: 11,
         fontWeight: "normal",
         opacity: 0.9,
+        color: {
+          expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(config.color?.field ?? "")}'] ) ) > 0.45 ? '#111827' : '#e5e7eb'`,
+        },
       },
       encoding: {
         // Use centered positioning for text on continuous scales
@@ -137,13 +113,6 @@ export function generateVLHeatmapSpec(
             config.color?.field && {
               formatType: sanitizeFieldName(config.color.field),
             }),
-        },
-        color: {
-          value: "#111827",
-          condition: {
-            test: "datum.use_white_text",
-            value: "#e5e7eb",
-          },
         },
       },
     });

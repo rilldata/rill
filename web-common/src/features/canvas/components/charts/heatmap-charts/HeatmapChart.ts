@@ -81,6 +81,9 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
         chartFieldInput: {
           type: "measure",
           defaultLegendOrientation: "right",
+          colorRangeSelector: {
+            enable: true,
+          },
         },
       },
     },
@@ -347,6 +350,10 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
       color: {
         type: "quantitative",
         field: randomMeasure,
+        colorRange: {
+          mode: "scheme",
+          scheme: "tealblues",
+        },
       },
     };
   }
