@@ -473,6 +473,10 @@
                     />
                   {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
                     <CredentialsInput
+                      id={propertyKey}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
                       bind:value={$paramsForm[propertyKey]}
                       uploadFile={handleFileUpload}
                       accept=".json"
@@ -494,6 +498,10 @@
                 <div class="py-1.5 first:pt-0 last:pb-0">
                   {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
                     <CredentialsInput
+                      id={propertyKey}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
                       bind:value={$dsnForm[propertyKey]}
                       uploadFile={handleFileUpload}
                       accept=".json"
@@ -528,6 +536,10 @@
             <div class="py-1.5 first:pt-0 last:pb-0">
               {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
                 <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
                   bind:value={$dsnForm[propertyKey]}
                   uploadFile={handleFileUpload}
                   accept=".json"
@@ -586,6 +598,10 @@
                 />
               {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
                 <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
                   bind:value={$paramsForm[propertyKey]}
                   uploadFile={handleFileUpload}
                   accept=".json"
