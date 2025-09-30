@@ -754,8 +754,8 @@ Execute a MINIMUM of 4-6 distinct analytical queries, building each query based 
 
 <analysis_guidelines>
 **Setup Phase (Steps 1-3)**: 
+- Briefly explain your approach before starting
 - Complete each step fully before proceeding
-- Explain your approach briefly before starting
 - If any step fails, investigate and adapt
 
 **Analysis Phase (Step 4)**:
@@ -800,9 +800,7 @@ After each query in Phase 2, think through:
 <output_format>
 Format your analysis as follows:
 `+"```markdown"+`
-[Brief acknowledgment and explanation of approach]
-
-Based on my systematic analysis, here are the key insights:
+Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
@@ -813,7 +811,7 @@ Based on my systematic analysis, here are the key insights:
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-[Offer specific follow-up analysis options]
+[Optional: Offer specific follow-up analysis options]
 `+"```"+`
 </output_format>`, currentTime.Format("Monday, January 2, 2006"), currentTime.Format("2006-01-02"))
 
