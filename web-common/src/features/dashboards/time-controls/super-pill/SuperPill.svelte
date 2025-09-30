@@ -49,7 +49,8 @@
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
-  export let onTimeColumnSelect: (column: string) => void;
+  export let onTimeColumnSelect: ((column: string) => void) | undefined =
+    undefined;
 
   const newPicker = featureFlags.rillTime;
 

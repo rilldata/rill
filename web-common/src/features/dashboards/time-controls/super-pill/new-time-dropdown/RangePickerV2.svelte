@@ -64,7 +64,8 @@
   export let timeColumns: { value: string; label: string }[];
   export let primaryTimeDimension: string | undefined;
   export let selectedTimeDimension: string | undefined;
-  export let onTimeColumnSelect: (column: string) => void;
+  export let onTimeColumnSelect: ((column: string) => void) | undefined =
+    undefined;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
 
@@ -411,7 +412,7 @@
           </div>
         {/if}
 
-        {#if timeColumns.length}
+        {#if timeColumns.length && onTimeColumnSelect}
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1" />
 
@@ -525,9 +526,5 @@
 
   .separator {
     @apply h-px w-full bg-gray-200 my-1;
-  }
-
-  h3 {
-    @apply px-2 py-1.5 text-xs text-gray-500 font-semibold;
   }
 </style>

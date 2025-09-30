@@ -206,6 +206,10 @@ function fromTimeRangesParams(
     partialExploreState.showTimeComparison = false;
   }
 
+  if (preset.timeColumn) {
+    partialExploreState.selectedTimeColumn = preset.timeColumn;
+  }
+
   return { partialExploreState, errors };
 }
 

@@ -157,6 +157,12 @@ function toTimeRangesUrl(
   const timeRangeParam = toTimeRangeParam(timeControlsState.selectedTimeRange);
   searchParams.set(ExploreStateURLParams.TimeRange, timeRangeParam);
 
+  const timeColumn = partialExploreState.selectedTimeColumn;
+
+  if (timeColumn) {
+    searchParams.set(ExploreStateURLParams.TimeColumn, timeColumn);
+  }
+
   maybeSetParam(searchParams, partialExploreState, "selectedTimezone");
 
   if ("selectedComparisonTimeRange" in partialExploreState) {

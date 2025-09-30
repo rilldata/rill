@@ -192,7 +192,7 @@
 
   $: selectedTimeDimension = selectedTimeColumn;
 
-  $: model = metricsViewSpec.model;
+  $: model = metricsViewSpec.model ?? "";
   $: database = metricsViewSpec.database;
   $: connector = metricsViewSpec.connector;
   $: databaseSchema = metricsViewSpec.databaseSchema;
@@ -208,7 +208,7 @@
     },
     {
       query: {
-        enabled: Boolean(metricsViewSpec?.model && metricsViewSpec?.connector),
+        enabled: !!model && !!connector,
       },
     },
   );
@@ -387,7 +387,6 @@
   }
 </script>
 
-{selectedTimeDimension}
 <div class="flex flex-col gap-y-2 size-full">
   {#if hasTimeSeries}
     <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">

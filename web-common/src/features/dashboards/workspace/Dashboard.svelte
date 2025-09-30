@@ -94,8 +94,6 @@
     timeDimension: selectedTimeColumn,
   };
 
-  $: console.log({ selectedTimeColumn });
-
   $: comparisonTimeRange = showTimeComparison
     ? {
         start: comparisonTimeStart,
