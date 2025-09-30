@@ -161,7 +161,8 @@
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 6px;
     padding: 0.5rem 0.75rem;
     border: 1px solid #d1d5db;
     border-radius: 0.125rem;
@@ -173,6 +174,9 @@
 
   .file-input-button:focus {
     outline: none;
+    ring: 2px;
+    ring-color: #3b82f6;
+    border-color: #3b82f6;
   }
 
   .file-input-button.drag-over {
