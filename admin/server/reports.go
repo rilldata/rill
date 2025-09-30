@@ -73,11 +73,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	filterJSON := req.WhereFilterJson
 	accessibleFields := req.AccessibleFields
-	if webOpenMode != WebOpenModeFiltered {
-		// If web open mode is not filtered, we don't need to apply where filter or accessible fields
-		filterJSON = ""
-		accessibleFields = nil
-	}
 	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, filterJSON, accessibleFields, recipients, req.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
