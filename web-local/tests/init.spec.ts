@@ -30,4 +30,28 @@ test.describe("Example project initialization", () => {
       ).toBeVisible();
     });
   });
+
+  // Different behaviors
+  // @source: https://www.notion.so/rilldata/Project-init-olap_connector-Behaviors-278ba33c8f5780a5bda1d44314bc306f
+  test.describe("Default olap_connector behavior", () => {
+    // Empty project
+    test("should set default OLAP connector to duckdb for empty project", async ({
+      page,
+    }) => {
+      await page.getByRole("link", { name: "Empty Project" }).click();
+      await expect(page.getByText("Getting started")).toBeVisible();
+
+      // Navigate to rill.yaml to verify default OLAP connector
+      await page.getByRole("link", { name: "rill.yaml" }).click();
+      const rillYamlEditor = page
+        .getByLabel("codemirror editor")
+        .getByRole("textbox");
+
+      // Verify that the OLAP connector is set to duckdb by default
+      await expect(rillYamlEditor).toContainText("olap_connector: duckdb");
+    });
+
+    // TODO: local file using csv
+    // TODO: clickhouse managed
+  });
 });
