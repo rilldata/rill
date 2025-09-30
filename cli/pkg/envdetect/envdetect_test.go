@@ -57,10 +57,15 @@ func TestGetWSLWarningMessage(t *testing.T) {
 	message := GetWSLWarningMessage()
 
 	// Check that the message contains expected keywords
-	expectedKeywords := []string{"WARNING", "Windows partition", "WSL", "not recommended", "performance issues"}
-	for _, keyword := range expectedKeywords {
+	mustContainAll := []string{"WARNING", "Windows partition", "WSL"}
+	for _, keyword := range mustContainAll {
 		if !strings.Contains(message, keyword) {
 			t.Errorf("Warning message should contain '%s', got: %s", keyword, message)
 		}
+	}
+
+	// Must mention file system conflicts
+	if !strings.Contains(message, "file system conflicts") {
+		t.Errorf("Warning message should mention 'file system conflicts', got: %s", message)
 	}
 }
