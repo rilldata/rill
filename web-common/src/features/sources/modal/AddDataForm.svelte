@@ -479,9 +479,7 @@
                     <CredentialsInput
                       bind:value={$paramsForm[propertyKey]}
                       uploadFile={handleFileUpload}
-                      fileType="credential"
                       accept=".json"
-                      validateJson={true}
                     />
                   {/if}
                 </div>
@@ -502,9 +500,7 @@
                     <CredentialsInput
                       bind:value={$dsnForm[propertyKey]}
                       uploadFile={handleFileUpload}
-                      fileType="credential"
                       accept=".json"
-                      validateJson={true}
                     />
                   {:else}
                     <Input
@@ -538,9 +534,7 @@
                 <CredentialsInput
                   bind:value={$dsnForm[propertyKey]}
                   uploadFile={handleFileUpload}
-                  fileType="credential"
                   accept=".json"
-                  validateJson={true}
                 />
               {:else}
                 <Input
@@ -598,9 +592,7 @@
                 <CredentialsInput
                   bind:value={$paramsForm[propertyKey]}
                   uploadFile={handleFileUpload}
-                  fileType="credential"
                   accept=".json"
-                  validateJson={true}
                 />
               {/if}
             </div>
