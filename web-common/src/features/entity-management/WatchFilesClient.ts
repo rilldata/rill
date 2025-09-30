@@ -1,6 +1,7 @@
 import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceIssueDevJWTQueryKey,
@@ -12,9 +13,15 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 
+const REFETCH_LIST_FILES_THROTTLE_MS = 200;
+
 export class WatchFilesClient {
   public readonly client: WatchRequestClient<V1WatchFilesResponse>;
   private readonly seenFiles = new Set<string>();
+  private refetchListFilesThrottle = new Throttler(
+    REFETCH_LIST_FILES_THROTTLE_MS,
+    REFETCH_LIST_FILES_THROTTLE_MS,
+  );
 
   public constructor() {
     this.client = new WatchRequestClient<V1WatchFilesResponse>();
@@ -72,10 +79,11 @@ export class WatchFilesClient {
       }
     }
     if (isNew || res.event === V1FileEvent.FILE_EVENT_DELETE) {
-      // TODO: should this be throttled?
-      void queryClient.refetchQueries({
-        queryKey: getRuntimeServiceListFilesQueryKey(instanceId),
-      });
+      this.refetchListFilesThrottle.throttle(() =>
+        queryClient.refetchQueries({
+          queryKey: getRuntimeServiceListFilesQueryKey(instanceId),
+        }),
+      );
     }
   }
 }
