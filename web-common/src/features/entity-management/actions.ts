@@ -78,7 +78,7 @@ export async function waitForResourceReconciliation(
 
       // Last attempt and still not idle
       throw new Error(
-        `Resource reconciliation timeout. Current status: ${reconcileStatus || "unknown"}`,
+        `Resource reconciliation timeout after ${(maxAttempts * pollInterval) / 1000} seconds. Large datasets may take longer to process.`,
       );
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
