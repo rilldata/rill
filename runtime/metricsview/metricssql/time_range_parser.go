@@ -24,7 +24,11 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr,
 		timeDim = timeDimNode.Name.Name.O
 	}
 
-	ts, err := q.executor.Timestamps(ctx, timeDim)
+	if q.opts == nil || q.opts.GetTimestamps == nil {
+		return nil, fmt.Errorf("metrics sql: not able to resolve dynamic time expressions in this context")
+	}
+
+	ts, err := q.opts.GetTimestamps(ctx, q.metricsView, timeDim)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +58,11 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr, t
 		timeDim = timeDimNode.Name.Name.O
 	}
 
-	ts, err := q.executor.Timestamps(ctx, timeDim)
+	if q.opts == nil || q.opts.GetTimestamps == nil {
+		return nil, fmt.Errorf("metrics sql: not able to resolve dynamic time expressions in this context")
+	}
+
+	ts, err := q.opts.GetTimestamps(ctx, q.metricsView, timeDim)
 	if err != nil {
 		return nil, err
 	}

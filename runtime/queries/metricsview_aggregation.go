@@ -528,7 +528,7 @@ func (q *MetricsViewAggregation) getDisplayName(ctx context.Context, rt *runtime
 
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
 	if expr != nil && sql != "" {
-		sqlExpr, err := metricssql.ParseSQLFilter(sql)
+		sqlExpr, err := metricssql.ParseFilter(sql)
 		if err != nil {
 			return nil, err
 		}
@@ -546,7 +546,7 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 		return metricsview.NewExpressionFromProto(expr), nil
 	}
 	if sql != "" {
-		return metricssql.ParseSQLFilter(sql)
+		return metricssql.ParseFilter(sql)
 	}
 	return nil, nil
 }
