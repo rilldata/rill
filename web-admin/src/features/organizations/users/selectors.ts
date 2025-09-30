@@ -1,11 +1,12 @@
 import {
   createAdminServiceListOrganizationInvitesInfinite,
-  createAdminServiceListOrganizationMemberUsergroups,
   createAdminServiceListOrganizationMemberUsersInfinite,
-  createAdminServiceListUsergroupsForOrganizationAndUser,
+  getAdminServiceListOrganizationMemberUsergroupsQueryOptions,
+  getAdminServiceListUsergroupsForOrganizationAndUserQueryOptions,
 } from "@rilldata/web-admin/client";
 import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
-import { derived, type Readable } from "svelte/store";
+import { createQueries } from "@tanstack/svelte-query";
+import { type Readable, derived } from "svelte/store";
 
 const PAGE_SIZE = 50;
 
@@ -23,17 +24,23 @@ export function getUserGroupsForUsersInOrg(
   error: unknown;
   data: UserGroupForUsersInOrg[];
 }> {
-  return derived(
-    [
-      createAdminServiceListOrganizationMemberUsergroups(organization, {
-        pageSize: PAGE_SIZE,
-        includeCounts: true,
-      }),
-      createAdminServiceListUsergroupsForOrganizationAndUser(organization, {
-        userId,
-      }),
+  return createQueries({
+    queries: [
+      getAdminServiceListOrganizationMemberUsergroupsQueryOptions(
+        organization,
+        {
+          pageSize: PAGE_SIZE,
+          includeCounts: true,
+        },
+      ),
+      getAdminServiceListUsergroupsForOrganizationAndUserQueryOptions(
+        organization,
+        {
+          userId,
+        },
+      ),
     ],
-    ([allOrgGroupsResp, groupsForUserResp]) => {
+    combine: ([allOrgGroupsResp, groupsForUserResp]) => {
       const isPending =
         allOrgGroupsResp.isPending || groupsForUserResp.isPending;
       const error = allOrgGroupsResp.error ?? groupsForUserResp.error;
@@ -57,12 +64,18 @@ export function getUserGroupsForUsersInOrg(
         data: groups,
       };
     },
-  );
+  });
 }
 
 const INFINITE_PAGE_SIZE = 12;
 
-export function getOrgUserMembers(organization: string, guestOnly: boolean) {
+export function getOrgUserMembers({
+  organization,
+  guestOnly,
+}: {
+  organization: string;
+  guestOnly: boolean;
+}) {
   return createAdminServiceListOrganizationMemberUsersInfinite(
     organization,
     {
@@ -105,8 +118,8 @@ export function getOrgUserInvites(organization: string) {
 export function getUserCounts(organization: string) {
   return derived(
     [
-      getOrgUserMembers(organization, false),
-      getOrgUserMembers(organization, true),
+      getOrgUserMembers({ organization, guestOnly: false }),
+      getOrgUserMembers({ organization, guestOnly: true }),
       getOrgUserInvites(organization),
     ],
     ([allOrgUserMembersResp, guestOrgUserMembersResp, orgUserInvitesResp]) => {

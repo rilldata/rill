@@ -28,10 +28,10 @@
       pageToken,
       includeCounts: true,
     });
-  $: listOrganizationMemberUsersInfinite = getOrgUserMembers(
+  $: listOrganizationMemberUsersInfinite = getOrgUserMembers({
     organization,
-    false,
-  );
+    guestOnly: false,
+  });
 
   const currentUser = createAdminServiceGetCurrentUser();
 

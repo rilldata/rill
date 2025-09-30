@@ -47,7 +47,10 @@
 
   $: organization = $page.params.organization;
 
-  $: orgMemberUsersInfiniteQuery = getOrgUserMembers(organization, true);
+  $: orgMemberUsersInfiniteQuery = getOrgUserMembers({
+    organization,
+    guestOnly: true,
+  });
   $: orgInvitesInfiniteQuery = getOrgUserInvites(organization);
 
   $: allOrgMemberUsersRows =
