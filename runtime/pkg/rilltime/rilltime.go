@@ -178,6 +178,7 @@ type PointInTimeWithSnap struct {
 	Grain   *GrainPointInTime   `parser:"( @@"`
 	Labeled *LabeledPointInTime `parser:"| @@"`
 	ISO     *ISOPointInTime     `parser:"| @@)"`
+	iso8601 *iso8601PointInTime
 
 	Snap *string `parser:"(Snap @Grain"`
 	// A secondary snap after the above snap. This allows specifying a time range bucketed by week but snapped by a higher order grain.
@@ -216,6 +217,19 @@ type ISOPointInTime struct {
 	nano   int
 
 	tg timeutil.TimeGrain
+}
+
+type iso8601PointInTime struct {
+	iso string
+
+	year   int
+	month  int
+	week   int
+	day    int
+	hour   int
+	minute int
+	second int
+	nano   int
 }
 
 type Offset struct {
@@ -329,6 +343,67 @@ func ParseCompatibility(timeRange, offset string) error {
 		}
 	}
 	return nil
+}
+
+func ParseISO(duration, offset string, end time.Time, snap timeutil.TimeGrain, parseOpts ParseOptions) (*Expression, error) {
+	rt, err := parseISO(duration, parseOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	if rt == nil {
+		return nil, fmt.Errorf("invalid ISO duration %q: %w", duration, err)
+	}
+
+	if offset != "" {
+		if offset == "inf" || strings.HasPrefix(offset, "rill-") {
+			return nil, fmt.Errorf("invalid ISO offset %q: cannot have non-iso for offset", duration)
+		}
+
+		oi := &iso8601PointInTime{iso: offset}
+		err = oi.parse()
+		if err != nil {
+			return nil, err
+		}
+
+		rt.AnchorOverrides = append(rt.AnchorOverrides, &PointInTime{
+			Points: []*PointInTimeWithSnap{
+				{iso8601: oi},
+			},
+		})
+	}
+
+	if !end.IsZero() {
+		ei := &ISOPointInTime{ISO: end.UTC().Format(time.RFC3339)}
+		err = ei.parse()
+		if err != nil {
+			return nil, err
+		}
+
+		pt := &PointInTimeWithSnap{ISO: ei}
+		if snap != timeutil.TimeGrainUnspecified {
+			s := reverseGrainMap[snap]
+			pt.Snap = &s
+		}
+
+		rt.AnchorOverrides = append(rt.AnchorOverrides, &PointInTime{
+			Points: []*PointInTimeWithSnap{pt},
+		})
+	} else {
+		pt := &PointInTimeWithSnap{
+			Labeled: &LabeledPointInTime{Watermark: true},
+		}
+		if snap != timeutil.TimeGrainUnspecified {
+			s := reverseGrainMap[snap]
+			pt.Snap = &s
+		}
+
+		rt.AnchorOverrides = append(rt.AnchorOverrides, &PointInTime{
+			Points: []*PointInTimeWithSnap{pt},
+		})
+	}
+
+	return rt, nil
 }
 
 func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.TimeGrain) {
@@ -583,6 +658,8 @@ func (p *PointInTime) truncates() bool {
 func (p *PointInTimeWithSnap) parse() error {
 	if p.ISO != nil {
 		return p.ISO.parse()
+	} else if p.iso8601 != nil {
+		return p.iso8601.parse()
 	}
 	return nil
 }
@@ -595,6 +672,8 @@ func (p *PointInTimeWithSnap) eval(evalOpts EvalOptions, tm time.Time, tz *time.
 		tm = p.Labeled.eval(evalOpts)
 	} else if p.ISO != nil {
 		tm, _, tg = p.ISO.eval(tz)
+	} else if p.iso8601 != nil {
+		tm = p.iso8601.eval(evalOpts, tm)
 	}
 
 	if p.Snap != nil {
@@ -651,7 +730,6 @@ func (l *LabeledPointInTime) eval(evalOpts EvalOptions) time.Time {
 	return time.Time{}
 }
 
-// TODO: reuse code from duration.ParseISO8601
 func (a *ISOPointInTime) parse() error {
 	match := isoTimeRegex.FindStringSubmatch(a.ISO)
 
@@ -710,6 +788,52 @@ func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil
 	absEnd := timeutil.OffsetTime(absStart, a.tg, 1, tz)
 
 	return absStart, absEnd, a.tg
+}
+
+func (s *iso8601PointInTime) parse() error {
+	match := durationPattern.FindStringSubmatch(s.iso)
+	for i, name := range durationPattern.SubexpNames() {
+		part := match[i]
+		if i == 0 || name == "" || part == "" {
+			continue
+		}
+
+		val, err := strconv.Atoi(part)
+		if err != nil {
+			return err
+		}
+		switch name {
+		case "year":
+			s.year = val
+		case "month":
+			s.minute = val
+		case "week":
+			s.week = val
+		case "day":
+			s.day = val
+		case "hour":
+			s.hour = val
+		case "minute":
+			s.minute = val
+		case "second":
+			s.second = val
+		default:
+			return fmt.Errorf("unexpected field %q in duration", name)
+		}
+	}
+
+	return nil
+}
+
+func (s *iso8601PointInTime) eval(evalOpts EvalOptions, tm time.Time) time.Time {
+	// This reflects the old duration package. It does not correct for daylight savings.
+	days := 7*s.week + s.day
+	tm = tm.AddDate(-s.year, -s.month, -days)
+
+	td := time.Duration(s.second)*time.Second + time.Duration(s.minute)*time.Minute + time.Duration(s.hour)*time.Hour
+	tm = tm.Add(-td)
+
+	return tm
 }
 
 func (o *Offset) eval(evalOpts EvalOptions, start, end time.Time, mainInterval *Interval, tz *time.Location) (time.Time, time.Time) {
@@ -813,41 +937,24 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 		return nil, nil
 	}
 
-	rt := &Expression{}
-	d, err := duration.ParseISO8601(from)
+	i := &iso8601PointInTime{iso: from}
+	err := i.parse()
 	if err != nil {
-		return nil, nil
-	}
-	sd, ok := d.(duration.StandardDuration)
-	if !ok {
-		return nil, nil
-	}
-	rt.isoDuration = &sd
-	minGrain := getMinGrain(sd)
-	if minGrain != "" {
-		rt.Grain = &minGrain
+		return nil, err
 	}
 
-	return rt, nil
-}
-
-func getMinGrain(d duration.StandardDuration) string {
-	if d.Second != 0 {
-		return "s"
-	} else if d.Minute != 0 {
-		return "m"
-	} else if d.Hour != 0 {
-		return "h"
-	} else if d.Day != 0 {
-		return "D"
-	} else if d.Week != 0 {
-		return "W"
-	} else if d.Month != 0 {
-		return "M"
-	} else if d.Year != 0 {
-		return "Y"
-	}
-	return ""
+	return &Expression{
+		Interval: &Interval{
+			StartEnd: &StartEndInterval{
+				Start: &PointInTime{
+					Points: []*PointInTimeWithSnap{
+						{iso8601: i},
+					},
+				},
+				End: &PointInTime{},
+			},
+		},
+	}, nil
 }
 
 // truncateWithCorrection truncates time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week
