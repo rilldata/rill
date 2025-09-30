@@ -159,6 +159,7 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 		return err
 	}
 	q.metricsView = mv
+	q.q.MetricsView = mv.Meta.Name.Name
 
 	spec := mv.GetMetricsView().State.ValidSpec
 	if spec == nil {
