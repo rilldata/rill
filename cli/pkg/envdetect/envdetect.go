@@ -28,20 +28,23 @@ func IsOnWindowsPartition() bool {
 	if err != nil {
 		return false
 	}
+	return IsOnWindowsPartitionPath(wd)
+}
 
-	// Check if we're in a Windows partition mounted under /mnt/
-	absPath, err := filepath.Abs(wd)
+// IsOnWindowsPartitionPath returns true if the provided path is on a Windows partition
+// in WSL (typically paths mounted under /mnt/*)
+func IsOnWindowsPartitionPath(path string) bool {
+	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return false
 	}
-
 	return strings.HasPrefix(absPath, "/mnt/")
 }
 
 // IsWSLWindowsPartition checks if the user is running on a Windows partition inside WSL
 // Returns true if both conditions are met
-func IsWSLWindowsPartition() bool {
-	return IsWSL() && IsOnWindowsPartition()
+func IsWSLWindowsPartition(path string) bool {
+	return IsWSL() && IsOnWindowsPartitionPath(path)
 }
 
 // GetWSLWarningMessage returns the warning message for WSL Windows partition usage

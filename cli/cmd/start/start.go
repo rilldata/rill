@@ -104,8 +104,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				projectPath = "."
 			}
 
-			// Check for WSL Windows partition usage
-			if envdetect.IsWSLWindowsPartition() {
+			// Check for WSL Windows partition usage (based on the project path)
+			if envdetect.IsWSLWindowsPartition(projectPath) {
 				ch.PrintfWarn("%s\n", envdetect.GetWSLWarningMessage())
 				confirm, err := cmdutil.ConfirmPrompt(
 					"Do you want to continue anyway?",

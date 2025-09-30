@@ -47,7 +47,7 @@ func TestIsOnWindowsPartition(t *testing.T) {
 
 func TestIsWSLWindowsPartition(t *testing.T) {
 	// Test that the function doesn't panic and returns a boolean
-	result := IsWSLWindowsPartition()
+	result := IsWSLWindowsPartition(".")
 	if result != true && result != false {
 		t.Errorf("IsWSLWindowsPartition() should return a boolean value, got %v", result)
 	}
