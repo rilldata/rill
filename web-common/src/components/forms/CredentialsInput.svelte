@@ -1,6 +1,4 @@
 <script lang="ts">
-  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
-  import Viz from "@rilldata/web-common/components/icons/Viz.svelte";
   import InputLabel from "./InputLabel.svelte";
 
   export let value: string | string[] | undefined = undefined;
@@ -37,6 +35,7 @@
       : [value as string]
     : [];
   $: hasValue = values.length > 0 || Object.values(uploading).some((u) => u);
+  $: selectedFileName = fileNames.length > 0 ? fileNames[0] : null;
 
   function uploadFiles(files: FileList) {
     uploading = {};
@@ -104,54 +103,34 @@
     .filter(Boolean);
 </script>
 
-<div class="container grid">
+<div class="container">
   {#if label && id}
     <InputLabel {id} {label} {hint} {optional} />
   {/if}
-  <button
-    type="button"
-    class="upload-button"
-    on:click={() => fileInput.click()}
-    on:dragenter|preventDefault|stopPropagation={() => (dragOver = true)}
-    on:dragleave|preventDefault|stopPropagation={() => (dragOver = false)}
-    on:dragover|preventDefault|stopPropagation
-    on:drop|preventDefault={handleFileDrop}
-    class:bg-neutral-100={!dragOver}
-    class:bg-primary-100={dragOver}
-  >
-    {#if hasValue}
-      <div class="upload-preview">
-        {#each fileNames as _, i (i)}
-          {@const isUploading = !!uploading[i]}
-          {@const hasError =
-            (!!uploadErrors[i] || !!(errors && errors[i])) && !isUploading}
-          {@const val = values[i]}
-          {#if (val || isUploading) && !hasError}
-            <div class="border border-neutral-400 p-1">
-              {#if isUploading}
-                <LoadingSpinner size="36px" />
-              {:else}
-                <div class="file-info">
-                  <span class="file-name">{fileNames[i]}</span>
-                  <span class="file-size">JSON credentials loaded</span>
-                </div>
-              {/if}
-            </div>
-          {/if}
-        {/each}
-      </div>
-    {:else}
-      <Viz size="28px" class="text-gray-400 pointer-events-none" />
-      <div class="container-flex-col pointer-events-none">
-        <span class="upload-title"> Upload credentials file </span>
-        {#if multiple}
-          <span class="upload-description">
-            Support for a single or bulk upload.
-          </span>
+
+  <div class="file-input-wrapper">
+    <button
+      type="button"
+      class="file-input-button"
+      on:click={() => fileInput.click()}
+      on:dragenter|preventDefault|stopPropagation={() => (dragOver = true)}
+      on:dragleave|preventDefault|stopPropagation={() => (dragOver = false)}
+      on:dragover|preventDefault|stopPropagation
+      on:drop|preventDefault={handleFileDrop}
+      class:drag-over={dragOver}
+    >
+      <span class="choose-file-text">Choose File</span>
+      <span class="file-status-text">
+        {#if Object.values(uploading).some((u) => u)}
+          Uploading...
+        {:else if selectedFileName}
+          {selectedFileName}
+        {:else}
+          No file chosen
         {/if}
-      </div>
-    {/if}
-  </button>
+      </span>
+    </button>
+  </div>
   {#if errorMessages.length > 0}
     <div class="error">
       {#each errorMessages as errorMessage, i (i)}
@@ -174,37 +153,38 @@
     @apply flex flex-col gap-y-2;
   }
 
-  .container-flex-col {
-    @apply flex flex-col;
+  .file-input-wrapper {
+    @apply w-full;
   }
 
-  .upload-button {
-    @apply flex flex-row gap-x-2.5 items-center justify-center py-5 min-h-10 min-w-80;
-    @apply border border-neutral-400;
+  .file-input-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.125rem;
+    background-color: white;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s;
   }
 
-  .upload-title {
-    @apply text-sm font-medium text-left text-gray-500;
+  .file-input-button:focus {
+    outline: none;
   }
 
-  .upload-description {
-    @apply text-xs font-normal text-gray-400;
+  .file-input-button.drag-over {
+    @apply border-blue-500 bg-blue-50;
   }
 
-  .upload-preview {
-    @apply flex flex-wrap w-full gap-x-1 items-center justify-center pointer-events-none px-4;
+  .choose-file-text {
+    @apply font-medium text-gray-900 text-sm;
   }
 
-  .file-info {
-    @apply flex flex-col items-center gap-1 p-2 min-w-32;
-  }
-
-  .file-name {
-    @apply text-sm font-medium text-gray-700 truncate max-w-48;
-  }
-
-  .file-size {
-    @apply text-xs text-gray-500;
+  .file-status-text {
+    @apply text-gray-600 text-sm;
   }
 
   .error {
