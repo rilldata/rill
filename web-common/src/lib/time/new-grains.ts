@@ -183,7 +183,13 @@ export function isGrainWithinMinimum(
 }
 
 export function getGrainOrder(
-  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | null | undefined,
+  grain:
+    | V1TimeGrain
+    | TimeGrainAlias
+    | DateTimeUnit
+    | null
+    | string
+    | undefined,
 ): Order {
   if (!grain) return Infinity;
 
@@ -267,6 +273,42 @@ export function getMaxGrain(
   const order1 = getGrainOrder(grain1);
   const order2 = getGrainOrder(grain2);
   return order1 > order2 ? grain1 : grain2;
+}
+
+function grainGuard(
+  grain: V1TimeGrain | DateTimeUnit | string | undefined,
+): V1TimeGrain {
+  if (!grain) {
+    return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  } else if (grain in V1TimeGrain) {
+    return grain as V1TimeGrain;
+  } else {
+    const mappedGrain = DateTimeUnitToV1TimeGrain[grain];
+    if (mappedGrain) {
+      return mappedGrain as V1TimeGrain;
+    } else {
+      return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+    }
+  }
+}
+
+export function normalizeGrain(
+  timeGrain: V1TimeGrain | DateTimeUnit | string | undefined,
+  smallestTimeGrain: V1TimeGrain | DateTimeUnit | string | undefined,
+): V1TimeGrain {
+  const knownTimeGrain = grainGuard(timeGrain);
+  const knownSmallestTimeGrain = grainGuard(smallestTimeGrain);
+
+  if (knownTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+    return knownSmallestTimeGrain;
+  }
+
+  const order = getGrainOrder(knownTimeGrain);
+  const smallestOrder = getGrainOrder(knownSmallestTimeGrain);
+
+  if (order === undefined || smallestOrder === undefined) return knownTimeGrain;
+  if (order < smallestOrder) return knownSmallestTimeGrain;
+  return knownTimeGrain;
 }
 
 export function getAllowedGrains(

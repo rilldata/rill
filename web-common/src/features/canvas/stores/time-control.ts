@@ -46,6 +46,7 @@ import {
 } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
 import type { SearchParamsStore } from "./canvas-entity";
+import { normalizeGrain } from "@rilldata/web-common/lib/time/new-grains";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -161,11 +162,16 @@ export class TimeControls {
         if (result.error || !result.interval.start || !result.interval.end)
           return;
 
+        const normalizedGrain = normalizeGrain(
+          urlGrain || result.grain,
+          minTimeGrain,
+        );
+
         const selectedTimeRange: DashboardTimeControls = {
           name: finalRange,
           start: result.interval.start?.toJSDate() ?? new Date(),
           end: result.interval.end?.toJSDate() ?? new Date(),
-          interval: urlGrain || result.grain,
+          interval: normalizedGrain,
         };
 
         this.interval.set(result.interval);
