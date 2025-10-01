@@ -889,7 +889,7 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "testruntime.Must define at least one measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "must define at least one measure"})
 
 	// no dimension. valid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
