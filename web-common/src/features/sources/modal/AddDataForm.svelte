@@ -43,6 +43,7 @@
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import LeftFooter from "./LeftFooter.svelte";
+  import RightSidePanel from "./RightSidePanel.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -135,11 +136,15 @@
   let clickhouseDsnForm;
 
   // Helper function to check if connector only has DSN (no tabs)
-  function hasOnlyDsn() {
+  function hasOnlyDsn(): boolean {
     return (
       isConnectorForm &&
-      connector.configProperties?.some((property) => property.key === "dsn") &&
-      !connector.configProperties?.some((property) => property.key !== "dsn")
+      Boolean(
+        connector.configProperties?.some((property) => property.key === "dsn"),
+      ) &&
+      !Boolean(
+        connector.configProperties?.some((property) => property.key !== "dsn"),
+      )
     );
   }
 
@@ -603,45 +608,19 @@
     />
   </div>
 
-  <!-- RIGHT SIDE PANEL -->
-  <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
-  >
-    {#if dsnError || paramsError || clickhouseError}
-      <SubmissionError
-        message={clickhouseError ??
-          (hasOnlyDsn() || connectionTab === "dsn" ? dsnError : paramsError) ??
-          ""}
-        details={clickhouseErrorDetails ??
-          (hasOnlyDsn() || connectionTab === "dsn"
-            ? dsnErrorDetails
-            : paramsErrorDetails) ??
-          ""}
-      />
-    {/if}
-
-    <div>
-      <div class="text-sm leading-none font-medium mb-4">
-        {isSourceForm ? "Model preview" : "Connector preview"}
-      </div>
-      <div class="relative">
-        <button
-          class="absolute top-2 right-2 p-1 rounded"
-          type="button"
-          aria-label="Copy YAML"
-          on:click={copyYamlPreview}
-        >
-          {#if copied}
-            <Check size="16px" />
-          {:else}
-            <CopyIcon size="16px" />
-          {/if}
-        </button>
-        <pre
-          class="bg-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yamlPreview}</pre>
-      </div>
-    </div>
-
-    <NeedHelpText {connector} />
-  </div>
+  <RightSidePanel
+    {connector}
+    {isSourceForm}
+    {dsnError}
+    {paramsError}
+    {clickhouseError}
+    {dsnErrorDetails}
+    {paramsErrorDetails}
+    {clickhouseErrorDetails}
+    hasOnlyDsn={hasOnlyDsn()}
+    {connectionTab}
+    {yamlPreview}
+    {copied}
+    {copyYamlPreview}
+  />
 </div>
