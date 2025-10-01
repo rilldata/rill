@@ -30,7 +30,7 @@
 
   // Clean up chat resources when leaving the chat context entirely
   beforeNavigate(({ to }) => {
-    const isChatRoute = to?.route?.id?.includes("chat");
+    const isChatRoute = to?.route?.id?.includes("ai");
     if (!isChatRoute) {
       cleanupChatInstance(instanceId);
     }

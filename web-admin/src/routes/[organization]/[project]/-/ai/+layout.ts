@@ -23,7 +23,7 @@ export const load = async ({
   }
 
   switch (route.id) {
-    case "/[organization]/[project]/-/chat": {
+    case "/[organization]/[project]/-/ai": {
       // If user explicitly wants a new conversation, clear stored ID and skip redirect logic
       const isExplicitNewConversation = url.searchParams.get("new") === "true";
       if (isExplicitNewConversation) {
@@ -36,7 +36,7 @@ export const load = async ({
       if (lastConversationId) {
         throw redirect(
           307,
-          `/${organization}/${project}/-/chat/${lastConversationId}`,
+          `/${organization}/${project}/-/ai/${lastConversationId}`,
         );
       }
 
@@ -45,10 +45,10 @@ export const load = async ({
       return;
     }
 
-    case "/[organization]/[project]/-/chat/[conversationId]": {
+    case "/[organization]/[project]/-/ai/[conversationId]": {
       // If conversation ID is missing or empty, redirect to base chat
       if (!conversationId?.trim()) {
-        throw redirect(307, `/${organization}/${project}/-/chat`);
+        throw redirect(307, `/${organization}/${project}/-/ai`);
       }
 
       // Store this conversation ID as the last accessed conversation

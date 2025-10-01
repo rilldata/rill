@@ -40,7 +40,7 @@
   <div class="conversation-sidebar-header">
     <Button
       type="secondary"
-      href={`/${organization}/${project}/-/chat?new=true`}
+      href={`/${organization}/${project}/-/ai?new=true`}
       class="new-conversation-btn"
       onClick={handleNewConversationButtonClick}
     >
@@ -64,7 +64,7 @@
     {:else if conversations.length}
       {#each conversations as conversation}
         <a
-          href={`/${organization}/${project}/-/chat/${conversation.id}`}
+          href={`/${organization}/${project}/-/ai/${conversation.id}`}
           class="conversation-item"
           class:active={conversation.id === currentConversationDto?.id}
           data-testid="conversation-item"
