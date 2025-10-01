@@ -34,16 +34,8 @@
 
   const connectProjectToGithub = createAdminServiceConnectProjectToGithub();
   const updateProject = createAdminServiceUpdateProject();
-  $: mutationStatus = derived(
-    [connectProjectToGithub, updateProject],
-    ([$connect, $update]) => {
-      return {
-        error: $connect.error ?? $update.error,
-        isPending: $connect.isPending || $update.isPending,
-      };
-    },
-  );
-  $: ({ error, isPending } = $mutationStatus);
+  $: error = $connectProjectToGithub.error ?? $updateProject.error;
+  $: isPending = $connectProjectToGithub.isPending || $updateProject.isPending;
   $: parsedError = error ? extractGithubConnectError(error as any) : null;
 
   type GithubConnectType = "create" | "pull";

@@ -26,10 +26,10 @@
     `${getRepoNameFromGitRemote(githubRemote)}` +
     (subpath ? `/${subpath}` : "");
 
-  const ConfirmationText = "overwrite";
+  const CONFIRMATION_TEXT = "overwrite";
 
   let confirmInput = "";
-  $: confirmed = confirmInput === ConfirmationText;
+  $: confirmed = confirmInput === CONFIRMATION_TEXT;
 
   function close() {
     onCancel();
@@ -65,7 +65,7 @@
           sure?
         </div>
         <div class="mt-1">
-          Type <b>{ConfirmationText}</b> in the box below to confirm:
+          Type <b>{CONFIRMATION_TEXT}</b> in the box below to confirm:
         </div>
         <Input bind:value={confirmInput} id="confirmation" label="" />
         {#if error}

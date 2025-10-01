@@ -64,21 +64,19 @@ export class GithubAccessManager {
   }
 
   private async refetch() {
-    await queryClient.refetchQueries({
+    await queryClient.resetQueries({
       queryKey: getAdminServiceGetGithubUserStatusQueryKey(),
     });
-    await waitUntil(() => !get(this.userStatus).isFetching);
 
-    if (!get(this.userStatus).data?.hasAccess) {
+    const refetched = await get(this.userStatus).refetch();
+    if (!refetched.data?.hasAccess) {
       this.githubConnectionFailed.set(true);
       return;
     }
     this.githubConnectionFailed.set(false);
 
-    if (!this.reSelectingRepos) {
-      this.reSelectingRepos = false;
-      return;
-    }
+    if (!this.reSelectingRepos) return;
+    this.reSelectingRepos = false;
 
     await queryClient.resetQueries({
       queryKey: getAdminServiceListGithubUserReposQueryKey(),
