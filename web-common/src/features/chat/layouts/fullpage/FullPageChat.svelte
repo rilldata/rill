@@ -123,30 +123,6 @@
     gap: 0.5rem;
   }
 
-  /* Override core ChatMessages background for full-page layout */
-  .chat-fullpage :global(.chat-messages) {
-    background: var(--surface);
-    padding: 2rem 1rem;
-    min-height: 100%;
-  }
-
-  /* Enhance welcome message for full-page layout */
-  .chat-fullpage :global(.chat-empty) {
-    padding: 4rem 2rem;
-  }
-
-  .chat-fullpage :global(.chat-empty-title) {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 0.5rem;
-  }
-
-  .chat-fullpage :global(.chat-empty-subtitle) {
-    font-size: 1rem;
-    color: #6b7280;
-  }
-
   /* Responsive behavior for full-page layout */
   @media (max-width: 768px) {
     .chat-messages-wrapper,
@@ -163,18 +139,6 @@
   @media (max-width: 640px) {
     .chat-fullpage {
       flex-direction: column;
-    }
-
-    .chat-fullpage :global(.chat-empty) {
-      padding: 2rem 1rem;
-    }
-
-    .chat-fullpage :global(.chat-empty-title) {
-      font-size: 1.25rem;
-    }
-
-    .chat-fullpage :global(.chat-empty-subtitle) {
-      font-size: 0.875rem;
     }
   }
 </style>

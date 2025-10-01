@@ -86,45 +86,38 @@
 </script>
 
 <form class="chat-input-form" on:submit|preventDefault={sendMessage}>
-  <div class="chat-input-container">
-    <textarea
-      bind:this={textarea}
-      {value}
-      class="chat-input"
-      {placeholder}
-      rows="1"
-      on:keydown={handleKeydown}
-      on:input={handleInput}
-    />
-    {#if canCancel}
-      <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
-        <span class="stop-icon">
-          <StopCircle size="1.2em" />
-        </span>
-      </IconButton>
-    {:else}
-      <IconButton
-        ariaLabel="Send message"
-        disabled={!canSend}
-        on:click={sendMessage}
-      >
-        <SendIcon
-          size="1.3em"
-          backgroundClass={canSend ? "fill-primary-400" : "fill-gray-300"}
-          arrowClass="stroke-gray-100"
-        />
-      </IconButton>
-    {/if}
-  </div>
+  <textarea
+    bind:this={textarea}
+    {value}
+    class="chat-input"
+    {placeholder}
+    rows="1"
+    on:keydown={handleKeydown}
+    on:input={handleInput}
+  />
+  {#if canCancel}
+    <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+      <span class="stop-icon">
+        <StopCircle size="1.2em" />
+      </span>
+    </IconButton>
+  {:else}
+    <IconButton
+      ariaLabel="Send message"
+      disabled={!canSend}
+      on:click={sendMessage}
+    >
+      <SendIcon
+        size="1.3em"
+        backgroundClass={canSend ? "fill-primary-400" : "fill-gray-300"}
+        arrowClass="stroke-gray-100"
+      />
+    </IconButton>
+  {/if}
 </form>
 
 <style lang="postcss">
   .chat-input-form {
-    padding: 1rem 1rem 0rem 1rem;
-    background: var(--surface);
-  }
-
-  .chat-input-container {
     display: flex;
     align-items: flex-end;
     gap: 0.25rem;
@@ -132,10 +125,11 @@
     border: 1px solid var(--border);
     border-radius: 0.75rem;
     padding: 0.25rem;
+    margin: 0 1rem;
     transition: border-color 0.2s;
   }
 
-  .chat-input-container:focus-within {
+  .chat-input-form:focus-within {
     @apply border-primary-400;
   }
 
