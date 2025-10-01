@@ -28,6 +28,10 @@ import {
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+import {
+  normalizeGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -118,6 +122,15 @@ export function convertURLToExplorePreset(
     searchParams,
     dimensions,
   );
+
+  const normalizedGrain = normalizeGrain(
+    trPreset.timeGrain,
+    metricsView.smallestTimeGrain,
+  );
+
+  if (normalizedGrain)
+    trPreset.timeGrain = V1TimeGrainToDateTimeUnit[normalizedGrain];
+
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 

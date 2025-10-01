@@ -123,6 +123,7 @@ function fromTimeRangesParams(
 
   if (preset.timeGrain) {
     partialExploreState.selectedTimeRange ??= {} as DashboardTimeControls;
+    console.log("time grain", preset.timeGrain, FromURLParamTimeGrainMap);
     partialExploreState.selectedTimeRange.interval =
       FromURLParamTimeGrainMap[preset.timeGrain];
   }
