@@ -42,6 +42,7 @@
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import LeftFooter from "./LeftFooter.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -207,6 +208,44 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  // Computed properties for LeftFooter
+  $: footerDisabled =
+    connector.name === "clickhouse"
+      ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+      : submitting || isSubmitDisabled;
+
+  $: footerLoading =
+    connector.name === "clickhouse" ? clickhouseSubmitting : submitting;
+
+  $: footerLoadingCopy =
+    connector.name === "clickhouse" ? "Connecting..." : "Testing connection...";
+
+  $: footerFormId = connector.name === "clickhouse" ? clickhouseFormId : formId;
+
+  $: footerSubmitButtonText = (() => {
+    if (connector.name === "clickhouse") {
+      if (clickhouseConnectorType === "rill-managed") {
+        if (clickhouseSubmitting) {
+          return "Connecting...";
+        } else {
+          return "Connect";
+        }
+      } else if (clickhouseSubmitting) {
+        return "Testing connection...";
+      } else {
+        return "Test and Connect";
+      }
+    } else if (isConnectorForm) {
+      if (submitting) {
+        return "Testing connection...";
+      } else {
+        return "Test and Connect";
+      }
+    } else {
+      return "Test and Add data";
+    }
+  })();
 
   function getClickHouseYamlPreview(
     values: Record<string, unknown>,
@@ -554,49 +593,14 @@
       {/if}
     </div>
 
-    <!-- LEFT FOOTER -->
-    <div
-      class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
-    >
-      <Button onClick={onBack} type="secondary">Back</Button>
-
-      <Button
-        disabled={connector.name === "clickhouse"
-          ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-          : submitting || isSubmitDisabled}
-        loading={connector.name === "clickhouse"
-          ? clickhouseSubmitting
-          : submitting}
-        loadingCopy={connector.name === "clickhouse"
-          ? "Connecting..."
-          : "Testing connection..."}
-        form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-        submitForm
-        type="primary"
-      >
-        {#if connector.name === "clickhouse"}
-          {#if clickhouseConnectorType === "rill-managed"}
-            {#if clickhouseSubmitting}
-              Connecting...
-            {:else}
-              Connect
-            {/if}
-          {:else if clickhouseSubmitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else if isConnectorForm}
-          {#if submitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else}
-          Test and Add data
-        {/if}
-      </Button>
-    </div>
+    <LeftFooter
+      {onBack}
+      disabled={footerDisabled}
+      loading={footerLoading}
+      loadingCopy={footerLoadingCopy}
+      formId={footerFormId}
+      submitButtonText={footerSubmitButtonText}
+    />
   </div>
 
   <!-- RIGHT SIDE PANEL -->
