@@ -174,7 +174,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	// Handle complex types
 
 	// Handle arrays. They can have the format "type[]" or "type[N]"
-	openBracket := strings.Index(dbt, "[")
+	openBracket := strings.LastIndex(dbt, "[")
 	if openBracket != -1 && strings.HasSuffix(dbt, "]") {
 		at, err := databaseTypeToPB(dbt[:openBracket], true)
 		if err != nil {
