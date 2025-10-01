@@ -36,11 +36,6 @@
       hasPermission: $alerts,
     },
     {
-      route: `/${organization}/${project}/-/ai`,
-      label: "AI",
-      hasPermission: true,
-    },
-    {
       route: `/${organization}/${project}/-/status`,
       label: "Status",
       hasPermission: projectPermissions.manageProject,

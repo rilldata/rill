@@ -47,7 +47,11 @@
     onNewConversationClick={() => {
       chatInputComponent?.focusInput();
     }}
-  />
+  >
+    <svelte:fragment slot="footer">
+      <slot name="sidebar-footer" />
+    </svelte:fragment>
+  </ConversationSidebar>
 
   <!-- Main Chat Area -->
   <div class="chat-main">
