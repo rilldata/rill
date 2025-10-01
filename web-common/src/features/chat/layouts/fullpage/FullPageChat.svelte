@@ -79,7 +79,7 @@
     display: flex;
     height: 100%;
     width: 100%;
-    background: #ffffff;
+    background: var(--surface);
   }
 
   /* Main Chat Area */
@@ -88,13 +88,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--surface);
   }
 
   .chat-content {
     flex: 1;
     overflow: hidden;
-    background: #f9fafb;
+    background: var(--surface);
     display: flex;
     flex-direction: column;
   }
@@ -109,7 +109,7 @@
 
   .chat-input-section {
     flex-shrink: 0;
-    background: #f9fafb;
+    background: var(--surface);
     padding: 1rem;
     display: flex;
     justify-content: center;
@@ -125,7 +125,7 @@
 
   /* Override core ChatMessages background for full-page layout */
   .chat-fullpage :global(.chat-messages) {
-    background: #f9fafb;
+    background: var(--surface);
     padding: 2rem 1rem;
     min-height: 100%;
   }

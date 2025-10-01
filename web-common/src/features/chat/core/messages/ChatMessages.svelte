@@ -99,7 +99,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    background: #fafafa;
+    background: var(--surface);
   }
 
   /* Sidebar layout: messages container scrolls */

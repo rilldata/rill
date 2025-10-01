@@ -120,15 +120,15 @@
 <style lang="postcss">
   .chat-input-form {
     padding: 1rem 1rem 0rem 1rem;
-    background: #fafafa;
+    background: var(--surface);
   }
 
   .chat-input-container {
     display: flex;
     align-items: flex-end;
     gap: 0.25rem;
-    background: #ffffff;
-    border: 1px solid #d1d5db;
+    background: var(--background);
+    border: 1px solid var(--border);
     border-radius: 0.75rem;
     padding: 0.25rem;
     transition: border-color 0.2s;
