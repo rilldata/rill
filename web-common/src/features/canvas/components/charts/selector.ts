@@ -27,7 +27,6 @@ export function getChartData(
     ctx,
     timeAndFilterStore,
   );
-  const { spec } = ctx.canvasEntity;
 
   const themeStore = ctx.canvasEntity.theme;
 
