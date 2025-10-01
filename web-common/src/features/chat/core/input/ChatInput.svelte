@@ -110,7 +110,8 @@
       >
         <SendIcon
           size="1.3em"
-          className={canSend ? "text-primary-400" : "text-gray-400"}
+          backgroundClass={canSend ? "fill-primary-400" : "fill-gray-300"}
+          arrowClass="stroke-gray-100"
         />
       </IconButton>
     {/if}

@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { ArrowUp } from "lucide-svelte";
+
   export let size: string | number = "1em";
-  export let color = "currentColor";
   export let className = "";
+  export let backgroundClass = "fill-gray-200";
+  export let arrowClass = "stroke-gray-500";
 </script>
 
 <svg
@@ -13,7 +16,16 @@
   class={className}
 >
   <!-- Circular background -->
-  <circle cx="12" cy="12" r="10" fill={color} />
-  <!-- Upward arrow - more slender -->
-  <path d="M12 7L9 11H10.75V16H13.25V11H15L12 7Z" fill="white" />
+  <circle cx="12" cy="12" r="10" class={backgroundClass} />
+  <!-- Lucide arrow-up icon -->
+  <g transform="translate(12, 12)">
+    <ArrowUp
+      size={14}
+      absoluteStrokeWidth={true}
+      strokeWidth={2.5}
+      x={-7}
+      y={-7}
+      class={arrowClass}
+    />
+  </g>
 </svg>
