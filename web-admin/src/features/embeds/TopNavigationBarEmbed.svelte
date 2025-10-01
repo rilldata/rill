@@ -16,10 +16,6 @@
   const { twoTieredNavigation } = featureFlags;
 
   $: onProjectPage = !activeResource;
-  $: onMetricsExplorerPage =
-    !!activeResource &&
-    (activeResource.kind === ResourceKind.MetricsView.toString() ||
-      activeResource.kind === ResourceKind.Explore.toString());
 
   // Dashboard breadcrumb
   $: dashboardsQuery = useValidDashboards(instanceId);
