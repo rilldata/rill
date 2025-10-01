@@ -72,12 +72,10 @@
         {#if navigationEnabled}
           <TopNavigationBarEmbed {instanceId} {activeResource} />
         {/if}
-        {#if $dashboardChat}
+        {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore.toString()}
           <div class="grow" />
           <div class="flex gap-x-4 items-center">
-            {#if activeResource && (activeResource.kind === ResourceKind.MetricsView.toString() || activeResource.kind === ResourceKind.Explore.toString())}
-              <LastRefreshedDate dashboard={activeResource?.name} />
-            {/if}
+            <LastRefreshedDate dashboard={activeResource?.name} />
             <ChatToggle />
           </div>
         {/if}
