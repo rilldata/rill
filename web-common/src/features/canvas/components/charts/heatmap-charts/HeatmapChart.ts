@@ -14,12 +14,16 @@ import {
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
 import type {
+  ChartDataQuery,
+  ChartFieldsMap,
+  FieldConfig,
+} from "../../../../components/charts/types";
+import type {
   CanvasEntity,
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 import { getFilterWithNullHandling } from "../query-utils";
-import type { ChartDataQuery, ChartFieldsMap, FieldConfig } from "../types";
 import { vegaSortToAggregationSort } from "../util";
 
 const DEFAULT_NOMINAL_LIMIT = 40;

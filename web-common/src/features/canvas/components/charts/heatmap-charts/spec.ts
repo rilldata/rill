@@ -3,6 +3,7 @@ import {
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
 import type { VisualizationSpec } from "svelte-vega";
+import type { ChartDataResult } from "../../../../components/charts/types";
 import {
   createColorEncoding,
   createConfigWithLegend,
@@ -10,7 +11,6 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { ChartDataResult } from "../types";
 import type { HeatmapChartSpec } from "./HeatmapChart";
 
 function createHeatmapSortEncoding(

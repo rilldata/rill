@@ -2,12 +2,13 @@ import {
   sanitizeFieldName,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
-import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { Transform } from "vega-lite/build/src/transform";
+import type { ChartDataResult } from "../../../../components/charts/types";
 import {
   buildHoverPointOverlay,
   buildHoverRuleLayer,
@@ -16,7 +17,6 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { ChartDataResult } from "../types";
 import type { CartesianChartSpec } from "./CartesianChart";
 
 export function generateVLMultiMetricChartSpec(

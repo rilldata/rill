@@ -1,11 +1,11 @@
 import { getFilterWithNullHandling } from "@rilldata/web-common/features/canvas/components/charts/query-utils";
-import type {
-  ChartFieldsMap,
-  FieldConfig,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+import type {
+  ChartFieldsMap,
+  FieldConfig,
+} from "@rilldata/web-common/features/components/charts/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
@@ -21,12 +21,12 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
+import type { ChartDataQuery } from "../../../../components/charts/types";
 import type {
   CanvasEntity,
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
-import type { ChartDataQuery } from "../types";
 import { isMultiFieldConfig } from "../util";
 import { getMultiMeasures } from "./util";
 

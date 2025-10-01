@@ -1,7 +1,7 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type { CircularChartSpec } from "@rilldata/web-common/features/canvas/components/charts/circular-charts/CircularChart";
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
-import type { ChartType } from "./charts/types";
+import type { ChartType } from "../../components/charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { LeaderboardSpec } from "./leaderboard";

@@ -1,8 +1,4 @@
 import type {
-  ColorMapping,
-  ColorRangeMapping,
-} from "@rilldata/web-common/features/canvas/inspector/types";
-import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
@@ -18,6 +14,7 @@ import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
+import type { ColorScheme } from "vega-typings";
 
 export type ChartType =
   | "bar_chart"
@@ -134,3 +131,16 @@ export interface ChartQueryConfig {
   where?: V1Expression;
   limit?: string;
 }
+
+export type ColorMapping = { value: string; color: string }[];
+
+export type ColorRangeMapping =
+  | {
+      mode: "scheme";
+      scheme: ColorScheme;
+    }
+  | {
+      mode: "gradient";
+      start: string;
+      end: string;
+    };

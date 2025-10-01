@@ -11,6 +11,10 @@ import { isMultiFieldConfig } from "@rilldata/web-common/features/canvas/compone
 import type { BaseCanvasComponentConstructor } from "@rilldata/web-common/features/canvas/components/util";
 import type { ComponentType, SvelteComponent } from "svelte";
 import type { VisualizationSpec } from "svelte-vega";
+import type {
+  ChartDataResult,
+  ChartType,
+} from "../../../components/charts/types.ts";
 import { generateVLAreaChartSpec } from "./cartesian-charts/area/spec";
 import { generateVLBarChartSpec } from "./cartesian-charts/bar-chart/spec";
 import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
@@ -39,9 +43,8 @@ import {
   type HeatmapChartSpec,
 } from "./heatmap-charts/HeatmapChart";
 import { generateVLHeatmapSpec } from "./heatmap-charts/spec";
-import type { ChartDataResult, ChartType } from "./types";
 
-export { default as Chart } from "./Chart.svelte";
+export { default as Chart } from "./CanvasChart.svelte";
 
 export type ChartComponent =
   | typeof CartesianChartComponent

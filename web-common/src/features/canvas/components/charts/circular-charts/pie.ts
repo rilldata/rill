@@ -5,6 +5,7 @@ import type { Field } from "vega-lite/build/src/channeldef";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { ExprRef, SignalRef } from "vega-typings";
+import type { ChartDataResult } from "../../../../components/charts/types";
 import {
   createColorEncoding,
   createConfigWithLegend,
@@ -14,7 +15,6 @@ import {
   createPositionEncoding,
   createSingleLayerBaseSpec,
 } from "../builder";
-import type { ChartDataResult } from "../types";
 import type { CircularChartSpec } from "./CircularChart";
 
 function getInnerRadius(innerRadiusPercentage: number | undefined) {

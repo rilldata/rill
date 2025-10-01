@@ -1,11 +1,11 @@
 <script lang="ts">
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import { type FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/canvas/components/charts/util";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/fields/SingleFieldInput.svelte";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { type FieldConfig } from "@rilldata/web-common/features/components/charts/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ColorPaletteSelector from "./field-config/ColorPaletteSelector.svelte";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";

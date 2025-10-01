@@ -1,5 +1,8 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
-import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
+import type {
+  ChartDataResult,
+  ColorMapping,
+} from "@rilldata/web-common/features/components/charts/types";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import type { VisualizationSpec } from "svelte-vega";
 import type { ColorDef, Field } from "vega-lite/build/src/channeldef";
@@ -12,7 +15,6 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { ChartDataResult } from "../types";
 import type { ComboChartSpec } from "./ComboChart";
 
 function getColorForField(

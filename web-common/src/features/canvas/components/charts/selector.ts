@@ -2,6 +2,7 @@ import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { MetricsViewSelectors } from "@rilldata/web-common/features/canvas/stores/metrics-view-selectors";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import {
   defaultPrimaryColors,
@@ -12,23 +13,40 @@ import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
-import chroma from "chroma-js";
+import chroma, { type Color } from "chroma-js";
 import { derived, type Readable } from "svelte/store";
-import type { ChartDataResult, TimeDimensionDefinition } from "./types";
+import type {
+  ChartDataQuery,
+  ChartDataResult,
+  ChartDomainValues,
+  TimeDimensionDefinition,
+} from "../../../components/charts/types";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";
 
-export function getChartData(
-  ctx: CanvasStore,
-  component: BaseChart<ChartSpec>,
-  config: ChartSpec,
-  timeAndFilterStore: Readable<TimeAndFilterStore>,
-): Readable<ChartDataResult> {
-  const chartDataQuery = component.createChartDataQuery(
-    ctx,
-    timeAndFilterStore,
-  );
+export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
+  config: T;
+  chartDataQuery: ChartDataQuery;
+  metricsView: MetricsViewSelectors;
+  themeStore: Readable<{ primary?: Color; secondary?: Color }>;
+  timeAndFilterStore: Readable<TimeAndFilterStore>;
+  getDomainValues: () => ChartDomainValues;
+}
 
-  const themeStore = ctx.canvasEntity.theme;
+/**
+ * Pure function to create a chart data store without canvas context dependency.
+ * This can be used outside of canvas context by providing all dependencies explicitly.
+ */
+export function getChartData<T extends ChartSpec = ChartSpec>(
+  deps: ChartDataDependencies<T>,
+): Readable<ChartDataResult> {
+  const {
+    config,
+    chartDataQuery,
+    metricsView,
+    themeStore,
+    getDomainValues,
+    timeAndFilterStore,
+  } = deps;
 
   const { measures, dimensions, timeDimensions } = getFieldsByType(config);
 
@@ -38,9 +56,6 @@ export function getChartData(
     ...dimensions.map((field) => ({ field, type: "dimension" })),
     ...timeDimensions.map((field) => ({ field, type: "time" })),
   ];
-
-  // Match each field to its corresponding measure or dimension spec.
-  const metricsView = ctx.canvasEntity.metricsView;
 
   const fieldReadableMap = allFields.map((field) => {
     if (field.type === "measure") {
@@ -86,7 +101,7 @@ export function getChartData(
         );
       }
 
-      const domainValues = component.getChartDomainValues();
+      const domainValues = getDomainValues();
 
       return {
         data: data || [],
@@ -102,6 +117,30 @@ export function getChartData(
       };
     },
   );
+}
+
+/**
+ * Convenience wrapper for using getChartData with canvas context.
+ */
+export function getChartDataForCanvas(
+  ctx: CanvasStore,
+  component: BaseChart<ChartSpec>,
+  config: ChartSpec,
+  timeAndFilterStore: Readable<TimeAndFilterStore>,
+): Readable<ChartDataResult> {
+  const chartDataQuery = component.createChartDataQuery(
+    ctx,
+    timeAndFilterStore,
+  );
+
+  return getChartData({
+    config,
+    chartDataQuery,
+    getDomainValues: () => component.getChartDomainValues(),
+    metricsView: ctx.canvasEntity.metricsView,
+    themeStore: ctx.canvasEntity.theme,
+    timeAndFilterStore,
+  });
 }
 
 export function getTimeDimensionDefinition(

@@ -4,11 +4,11 @@ import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
-import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { MetricsViewSelectors } from "@rilldata/web-common/features/canvas/stores/metrics-view-selectors";
 import { derived, type Readable } from "svelte/store";
 
 export function validateChartSchema(
-  ctx: CanvasStore,
+  metricsView: MetricsViewSelectors,
   chartSpec: ChartSpec,
 ): Readable<{
   isValid: boolean;
@@ -20,7 +20,7 @@ export function validateChartSchema(
   const { measures, dimensions, timeDimensions } = getFieldsByType(chartSpec);
 
   return derived(
-    ctx.canvasEntity.metricsView.getMetricsViewFromName(metrics_view),
+    metricsView.getMetricsViewFromName(metrics_view),
     (metricsViewQuery) => {
       if (metricsViewQuery.isLoading) {
         return {

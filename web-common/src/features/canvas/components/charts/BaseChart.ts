@@ -26,12 +26,6 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable, type Writable } from "svelte/store";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
-import type {
-  ComponentCommonProperties,
-  ComponentFilterProperties,
-} from "../types";
-import Chart from "./Chart.svelte";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -39,7 +33,13 @@ import type {
   ChartType,
   CommonChartProperties,
   FieldConfig,
-} from "./types";
+} from "../../../components/charts/types";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import type {
+  ComponentCommonProperties,
+  ComponentFilterProperties,
+} from "../types";
+import Chart from "./CanvasChart.svelte";
 
 // Base interface for all chart configurations
 export type BaseChartConfig = ComponentFilterProperties &

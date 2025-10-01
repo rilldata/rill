@@ -1,8 +1,6 @@
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
 import type { ComboChartSpec } from "@rilldata/web-common/features/canvas/components/charts/combo-charts/ComboChart";
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
-import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
-import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
@@ -14,14 +12,13 @@ import {
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
-import { CHART_CONFIG, type ChartSpec } from "./";
 import {
   type ChartDataResult,
-  type ChartDomainValues,
   type ChartSortDirection,
   type ChartType,
   type FieldConfig,
-} from "./types";
+} from "../../../components/charts/types";
+import { CHART_CONFIG, type ChartSpec } from "./";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
   return (
@@ -267,56 +264,6 @@ export function getLinkStateForTimeDimensionDetail(
   return {
     canLink: false,
   };
-}
-
-export function isDomainStringArray(
-  values: string[] | number[] | undefined,
-): values is string[] {
-  return values
-    ? Array.isArray(values) &&
-        values.every((value) => typeof value === "string")
-    : false;
-}
-
-export function getColorForValues(
-  colorValues: string[] | undefined,
-  // if provided, use the colors for mentioned values
-  overrideColorMapping: ColorMapping | undefined,
-): ColorMapping | undefined {
-  if (!colorValues || colorValues.length === 0) return undefined;
-
-  const colorMapping = colorValues.map((value, index) => {
-    const overrideColor = overrideColorMapping?.find(
-      (mapping) => mapping.value === value,
-    );
-    return {
-      value,
-      color:
-        overrideColor?.color ||
-        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
-    };
-  });
-
-  return colorMapping;
-}
-
-export function getColorMappingForChart(
-  chartSpec: ChartSpec,
-  domainValues: ChartDomainValues | undefined,
-): ColorMapping | undefined {
-  if (!("color" in chartSpec) || !domainValues) return undefined;
-  const colorField = chartSpec.color;
-
-  let colorMapping: ColorMapping | undefined;
-  if (typeof colorField === "object") {
-    const fieldKey = colorField.field;
-    const colorValues = domainValues[fieldKey];
-    if (isDomainStringArray(colorValues)) {
-      colorMapping = getColorForValues(colorValues, colorField.colorMapping);
-    }
-  }
-
-  return colorMapping;
 }
 
 export function resolveColor(

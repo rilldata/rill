@@ -4,20 +4,22 @@ import {
 } from "@rilldata/web-common/components/vega/util";
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import {
+  isFieldConfig,
+  mergedVlConfig,
+  resolveColor,
+} from "@rilldata/web-common/features/canvas/components/charts/util";
 import type {
   ChartDomainValues,
   ChartLegend,
   ChartSortDirection,
   FieldConfig,
   TooltipValue,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
+} from "@rilldata/web-common/features/components/charts/types";
 import {
   getColorForValues,
   isDomainStringArray,
-  isFieldConfig,
-  mergedVlConfig,
-  resolveColor,
-} from "@rilldata/web-common/features/canvas/components/charts/util";
+} from "@rilldata/web-common/features/components/charts/util";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
@@ -31,7 +33,7 @@ import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { ExprRef, SignalRef } from "vega-typings";
-import type { ChartDataResult } from "./types";
+import type { ChartDataResult } from "../../../components/charts/types";
 
 export function createMultiLayerBaseSpec() {
   const baseSpec: VisualizationSpec = {
