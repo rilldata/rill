@@ -144,7 +144,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 							if err != nil {
 								return nil, err
 							}
-							sec, err := s.runtime.ResolveSecurity(ctrl.InstanceID, auth.GetClaims(ctx).SecurityClaims(), mv)
+							sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, auth.GetClaims(ctx).SecurityClaims(), mv)
 							if err != nil {
 								return nil, err
 							}

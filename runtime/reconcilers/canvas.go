@@ -592,7 +592,7 @@ func (r *rendererRefs) metricsViewRowFilter(mv, filter any) error {
 	}
 	r.mvFilters[metricsView] = append(r.mvFilters[metricsView], fmt.Sprintf("(%s)", f)) // wrap in () to ensure correct precedence when combining multiple filters with OR
 	// Extract fields from dimension_filters SQL expression
-	ex, err := metricssql.ParseSQLFilter(f)
+	ex, err := metricssql.ParseFilter(f)
 	if err != nil {
 		return fmt.Errorf("failed to parse dimension_filters SQL expression %q: %w", f, err)
 	}
