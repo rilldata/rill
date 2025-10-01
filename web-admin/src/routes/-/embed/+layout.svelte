@@ -3,6 +3,10 @@
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
   import { onMount } from "svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { createIframeRPCHandler } from "@rilldata/web-common/lib/rpc";
@@ -18,12 +22,18 @@
     navigationEnabled,
   } = data;
 
+  const { dashboardChat } = featureFlags;
+
   $: activeResource = {
     kind: $page.route.id?.includes("explore")
       ? ResourceKind.Explore
       : ResourceKind.Canvas,
     name: $page.params.name,
   };
+
+  // Show top bar if either navigation is enabled OR dashboardChat feature flag is enabled
+  $: showTopBar = navigationEnabled || $dashboardChat;
+  $: onProjectPage = !activeResource;
 
   onMount(() => {
     createIframeRPCHandler();
@@ -54,10 +64,33 @@
     jwt={accessToken}
     authContext="embed"
   >
-    {#if navigationEnabled}
-      <TopNavigationBarEmbed {instanceId} {activeResource} />
+    {#if showTopBar}
+      <div
+        class="flex items-center w-full pr-4 py-1"
+        class:border-b={!onProjectPage}
+      >
+        {#if navigationEnabled}
+          <TopNavigationBarEmbed {instanceId} {activeResource} />
+        {/if}
+        {#if $dashboardChat}
+          <div class="grow" />
+          <div class="flex gap-x-4 items-center">
+            {#if activeResource && (activeResource.kind === ResourceKind.MetricsView.toString() || activeResource.kind === ResourceKind.Explore.toString())}
+              <LastRefreshedDate dashboard={activeResource?.name} />
+            {/if}
+            <ChatToggle />
+          </div>
+        {/if}
+      </div>
     {/if}
 
-    <slot />
+    <div class="flex h-full overflow-hidden">
+      <div class="flex-1 overflow-hidden">
+        <slot />
+      </div>
+      {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore}
+        <ExploreChat />
+      {/if}
+    </div>
   </RuntimeProvider>
 {/if}

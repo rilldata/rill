@@ -9,7 +9,6 @@
     V1Resource,
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
-  import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
 
   export let instanceId: string;
   export let activeResource: V1ResourceName;
@@ -19,7 +18,8 @@
   $: onProjectPage = !activeResource;
   $: onMetricsExplorerPage =
     !!activeResource &&
-    activeResource.kind === ResourceKind.MetricsView.toString();
+    (activeResource.kind === ResourceKind.MetricsView.toString() ||
+      activeResource.kind === ResourceKind.Explore.toString());
 
   // Dashboard breadcrumb
   $: dashboardsQuery = useValidDashboards(instanceId);
@@ -47,45 +47,36 @@
   );
 </script>
 
-<div class="flex items-center w-full pr-4 py-1" class:border-b={!onProjectPage}>
-  {#if $isErrorStoreEmpty}
-    <nav>
-      <ol class="flex items-center pl-4">
-        {#if !onProjectPage}
-          <div class="flex gap-x-2">
-            <a class="text-gray-500 hover:text-gray-600" href="/-/embed">
-              Home
-            </a>
-            <span class="text-gray-600">/</span>
-          </div>
-        {/if}
+{#if $isErrorStoreEmpty}
+  <nav>
+    <ol class="flex items-center pl-4">
+      {#if !onProjectPage}
+        <div class="flex gap-x-2">
+          <a class="text-gray-500 hover:text-gray-600" href="/-/embed">
+            Home
+          </a>
+          <span class="text-gray-600">/</span>
+        </div>
+      {/if}
 
-        {#if currentResource}
-          {#if $twoTieredNavigation}
-            <TwoTieredBreadcrumbItem
-              options={breadcrumbOptions}
-              current={currentResourceName}
-              isCurrentPage
-            />
-          {:else}
-            <BreadcrumbItem
-              options={breadcrumbOptions}
-              current={currentResourceName}
-              isCurrentPage
-              isEmbedded
-            />
-          {/if}
+      {#if currentResource}
+        {#if $twoTieredNavigation}
+          <TwoTieredBreadcrumbItem
+            options={breadcrumbOptions}
+            current={currentResourceName}
+            isCurrentPage
+          />
+        {:else}
+          <BreadcrumbItem
+            options={breadcrumbOptions}
+            current={currentResourceName}
+            isCurrentPage
+            isEmbedded
+          />
         {/if}
-      </ol>
-    </nav>
-  {:else}
-    <div />
-  {/if}
-
-  {#if onMetricsExplorerPage}
-    <div class="grow" />
-    <div class="flex gap-x-4 items-center">
-      <LastRefreshedDate dashboard={activeResource?.name} />
-    </div>
-  {/if}
-</div>
+      {/if}
+    </ol>
+  </nav>
+{:else}
+  <div />
+{/if}
