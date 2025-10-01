@@ -43,7 +43,7 @@
   $: store = getCanvasStore(canvasName, instanceId);
   $: ({
     canvasEntity: {
-      spec: {
+      metricsView: {
         getMetricsViewFromName,
         getDimensionsForMetricView,
         getMeasuresForMetricView,

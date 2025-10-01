@@ -104,7 +104,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
     const config = get(this.specStore);
     const metricsViewName = config.metrics_view;
     const measuresStore =
-      this.parent.spec.getMeasuresForMetricView(metricsViewName);
+      this.parent.metricsView.getMeasuresForMetricView(metricsViewName);
     const measures = get(measuresStore);
 
     let measureDisplayNames: string[] | undefined;

@@ -1,4 +1,4 @@
-import type { CanvasResolvedSpec } from "@rilldata/web-common/features/canvas/stores/spec";
+import type { MetricsViewSelectors } from "@rilldata/web-common/features/canvas/stores/metrics-view-selectors";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import {
@@ -48,7 +48,7 @@ import type { SearchParamsStore } from "./canvas-entity";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 
 export class Filters {
-  private spec: CanvasResolvedSpec;
+  private metricsView: MetricsViewSelectors;
   // -------------------
   // STORES (writable)
   // -------------------
@@ -85,14 +85,14 @@ export class Filters {
   temporaryFilters = writable<Set<string>>(new Set());
 
   constructor(
-    spec: CanvasResolvedSpec,
+    metricsView: MetricsViewSelectors,
     public searchParamsStore: SearchParamsStore,
     public componentName?: string,
   ) {
     // -----------------------------
     // Initialize writable stores
     // -----------------------------
-    this.spec = spec;
+    this.metricsView = metricsView;
     this.dimensionFilterExcludeMode = writable(new Map<string, boolean>());
 
     this.whereFilter = writable({
@@ -109,7 +109,7 @@ export class Filters {
     // -------------------------------
 
     this.allMeasures = derived(
-      [this.spec.allSimpleMeasures],
+      [this.metricsView.allSimpleMeasures],
       ([$allSimpleMeasures]) =>
         getMapFromArray($allSimpleMeasures, (m) => m.name as string),
     );
@@ -142,7 +142,7 @@ export class Filters {
             measureIdMap.has(tempFilter) &&
             !itemsCopy.some((i) => i.name === tempFilter)
           ) {
-            const dimensions = spec.getDimensionsFromMeasure(tempFilter);
+            const dimensions = metricsView.getDimensionsFromMeasure(tempFilter);
             itemsCopy.push({
               dimensionName: "",
               name: tempFilter,
@@ -160,7 +160,7 @@ export class Filters {
     // DIMENSION SELECTORS
     // -------------------------------
     this.allDimensions = derived(
-      [this.spec.allDimensions],
+      [this.metricsView.allDimensions],
       ([$allDimensions]) =>
         getMapFromArray(
           $allDimensions,
@@ -178,7 +178,7 @@ export class Filters {
         );
         dimensionFilters.forEach((dimensionFilter) => {
           dimensionFilter.metricsViewNames =
-            spec.getMetricsViewNamesForDimension(dimensionFilter.name);
+            metricsView.getMetricsViewNamesForDimension(dimensionFilter.name);
         });
         return dimensionFilters;
       },
@@ -199,7 +199,7 @@ export class Filters {
 
           if (tempFilter && $allDimensions.has(tempFilter) && !hasFilter) {
             const metricsViewNames =
-              spec.getMetricsViewNamesForDimension(tempFilter);
+              metricsView.getMetricsViewNamesForDimension(tempFilter);
             merged.set(tempFilter, {
               mode: DimensionFilterMode.Select,
               name: tempFilter,
@@ -359,7 +359,9 @@ export class Filters {
       if (addedMeasure.has(filter.measure)) return;
       const measure = measureIdMap.get(filter.measure);
       if (!measure) return;
-      const dimensions = this.spec.getDimensionsFromMeasure(filter.measure);
+      const dimensions = this.metricsView.getDimensionsFromMeasure(
+        filter.measure,
+      );
       addedMeasure.add(filter.measure);
       filteredMeasures.push({
         dimensionName: name,

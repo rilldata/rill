@@ -25,7 +25,7 @@
   $: ({
     canvasEntity: {
       selectedComponent,
-      spec: { getTimeDimensionForMetricView },
+      metricsView: { getTimeDimensionForMetricView },
     },
   } = getCanvasStore(canvasName, instanceId));
 
