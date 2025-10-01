@@ -173,28 +173,32 @@ func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRul
 	}
 
 	// Extract accessible fields from the query
-	var fields []string
+	fieldsMap := make(map[string]struct{})
 	// Add dimensions
 	for _, dim := range r.query.Dimensions {
-		fields = append(fields, dim.Name)
+		fieldsMap[getDimensionName(dim)] = struct{}{}
 	}
 	// Add measures
 	for _, meas := range r.query.Measures {
-		fields = append(fields, meas.Name)
+		fieldsMap[getMeasureName(meas)] = struct{}{}
 	}
 	// Add time dimension if present
 	if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
-		fields = append(fields, r.query.TimeRange.TimeDimension)
+		fieldsMap[r.query.TimeRange.TimeDimension] = struct{}{}
 	}
 
+	var fields []string
+	for f := range fieldsMap {
+		fields = append(fields, f)
+	}
 	if len(fields) > 0 {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
 					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
-					ConditionKinds:     []string{runtime.ResourceKindExplore, runtime.ResourceKindCanvas}, // prevents field name leakage
 					Fields:             fields,
 					Allow:              true,
+					Exclusive:          true,
 				},
 			},
 		})
@@ -250,4 +254,42 @@ func fieldsFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []ma
 	}
 
 	return meta
+}
+
+func getDimensionName(dim metricsview.Dimension) string {
+	if dim.Compute == nil {
+		return dim.Name
+	}
+
+	if dim.Compute.TimeFloor != nil {
+		return dim.Compute.TimeFloor.Dimension
+	}
+
+	panic("could not find dimension name")
+}
+
+func getMeasureName(m metricsview.Measure) string {
+	if m.Compute == nil {
+		return m.Name
+	}
+	switch {
+	case m.Compute.Count:
+		return "" // skip
+	case m.Compute.CountDistinct != nil:
+		return m.Compute.CountDistinct.Dimension
+	case m.Compute.ComparisonValue != nil: // although comparison cases can be skipped as base fields would have already been added but adding for switch completeness as it will deduped
+		return m.Compute.ComparisonValue.Measure
+	case m.Compute.ComparisonDelta != nil:
+		return m.Compute.ComparisonDelta.Measure
+	case m.Compute.ComparisonRatio != nil:
+		return m.Compute.ComparisonRatio.Measure
+	case m.Compute.PercentOfTotal != nil:
+		return m.Compute.PercentOfTotal.Measure
+	case m.Compute.URI != nil:
+		return m.Compute.URI.Dimension
+	case m.Compute.ComparisonTime != nil:
+		return m.Compute.ComparisonTime.Dimension
+	default:
+		panic("could not find measure name")
+	}
 }

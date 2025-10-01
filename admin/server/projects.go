@@ -350,9 +350,9 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			rules = append(rules, &runtimev1.SecurityRule{
 				Rule: &runtimev1.SecurityRule_FieldAccess{
 					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Fields:          mdl.Fields,
-						Allow:           true,
-						ExclusiveFields: true,
+						Fields:    mdl.Fields,
+						Allow:     true,
+						Exclusive: true,
 					},
 				},
 			})

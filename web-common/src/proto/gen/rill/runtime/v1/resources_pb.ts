@@ -2186,6 +2186,13 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
   allow = false;
 
   /**
+   * If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
+   *
+   * @generated from field: bool exclusive = 7;
+   */
+  exclusive = false;
+
+  /**
    * @generated from field: repeated string fields = 3;
    */
   fields: string[] = [];
@@ -2194,13 +2201,6 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
    * @generated from field: bool all_fields = 4;
    */
   allFields = false;
-
-  /**
-   * If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
-   *
-   * @generated from field: bool exclusive_fields = 7;
-   */
-  exclusiveFields = false;
 
   constructor(data?: PartialMessage<SecurityRuleFieldAccess>) {
     super();
@@ -2214,9 +2214,9 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
     { no: 5, name: "condition_kinds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "condition_resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "exclusive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "all_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "exclusive_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleFieldAccess {

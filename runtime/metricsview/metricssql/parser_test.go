@@ -38,7 +38,7 @@ func TestCompile(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			sec, err := rt.ResolveSecurity(ctrl.InstanceID, claims, mv)
+			sec, err := rt.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
 			if err != nil {
 				return nil, err
 			}
@@ -48,7 +48,7 @@ func TestCompile(t *testing.T) {
 			return mv, nil
 		},
 		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
-			sec, err := rt.ResolveSecurity(ctrl.InstanceID, claims, mv)
+			sec, err := rt.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}

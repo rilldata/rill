@@ -16,8 +16,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -202,7 +200,7 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.Secur
 		expr := &runtimev1.Expression{}
 		err := protojson.Unmarshal([]byte(rowFilter), expr)
 		if err != nil {
-			panic(status.Errorf(codes.Internal, "failed to parse row filter expression: %v", err))
+			return nil, fmt.Errorf("failed to parse row filter expression: %w", err)
 		}
 
 		rules = append(rules, &runtimev1.SecurityRule{
@@ -220,9 +218,9 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.Secur
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
 					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.metricsViewName}},
-					ConditionKinds:     []string{runtime.ResourceKindExplore, runtime.ResourceKindCanvas},
 					Fields:             fields,
 					Allow:              true,
+					Exclusive:          true,
 				},
 			},
 		})

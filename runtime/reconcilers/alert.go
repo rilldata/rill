@@ -257,6 +257,13 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 		if err != nil {
 			return nil, err
 		}
+		// if there is field access rule, add "explore" and "canvas" to condition kinds just to prevent name leakages from there
+		for _, r := range inferred {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				conditionKinds = append(conditionKinds, runtime.ResourceKindExplore, runtime.ResourceKindCanvas)
+			}
+		}
+
 		rules = append(rules, inferred...)
 
 		refs := resolver.Refs()
@@ -285,6 +292,13 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 		if err != nil {
 			return nil, err
 		}
+		// if there is field access rule, add "explore" and "canvas" to condition kinds just to prevent field name leakages from there
+		for _, r := range inferred {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				conditionKinds = append(conditionKinds, runtime.ResourceKindExplore, runtime.ResourceKindCanvas)
+			}
+		}
+
 		rules = append(rules, inferred...)
 
 		refs := resolver.Refs()
@@ -312,7 +326,7 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 				}
 			}
 		}
-		// still not found, use mv name as explore name // TODO does this harm anything? as some alerts may not have any explore like those based on sql resolvers
+		// still not found, use mv name as explore name
 		if explore == "" {
 			explore = mvName
 		}

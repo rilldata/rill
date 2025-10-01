@@ -2201,10 +2201,10 @@ It is ANDed together with the condition_kinds and condition_resources. */
 It is ORed together with the condition_kinds. */
   conditionResources?: V1ResourceName[];
   allow?: boolean;
+  /** If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
   fields?: string[];
   allFields?: boolean;
-  /** If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true). */
-  exclusiveFields?: boolean;
 }
 
 export interface V1SecurityRuleRowFilter {

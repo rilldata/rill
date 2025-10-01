@@ -353,10 +353,10 @@ message SecurityRuleFieldAccess {
   // It is ORed together with the condition_kinds.
   repeated ResourceName condition_resources = 6;
   bool allow = 2;
+  // If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
+  bool exclusive = 7;
   repeated string fields = 3;
   bool all_fields = 4;
-  // If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
-  bool exclusive_fields = 7;
 }
 
 message SecurityRuleRowFilter {

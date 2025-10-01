@@ -18,9 +18,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
-
-	// need to import parser driver as well
-	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
 )
 
 var ErrForbidden = errors.New("action not allowed")
@@ -568,7 +565,7 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 		for _, f := range availableFields {
 			set(f, rule.Allow)
 		}
-	case rule.ExclusiveFields:
+	case rule.Exclusive:
 		seen := make(map[string]struct{}, len(rule.Fields))
 		// set specified fields to the rule's allow value
 		for _, f := range rule.Fields {
@@ -634,10 +631,6 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, r *ru
 // This involves looking up the referenced resource, determining its dependencies, and adding the necessary access rules for those dependencies.
 // For example, a transitive access rule on a report will add access rules for the underlying metrics view, explore, and any fields or rows that are accessible in the report.
 func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instanceID string, claims *SecurityClaims) ([]*runtimev1.SecurityRule, error) {
-	c, err := p.rt.Controller(ctx, instanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get controller: %w", err)
-	}
 	var rules []*runtimev1.SecurityRule
 	for _, rule := range claims.AdditionalRules {
 		if rule.GetTransitiveAccess() == nil {
@@ -657,19 +650,7 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 		if err != nil {
 			return nil, fmt.Errorf("failed to get resource %q of kind %q: %w", resName.Name, resName.Kind, err)
 		}
-		var resolvedRules []*runtimev1.SecurityRule
-		switch res.GetResource().(type) {
-		case *runtimev1.Resource_Report:
-			resolvedRules, err = c.reconciler(ResourceKindReport).ResolveTransitiveAccess(ctx, claims, res)
-		case *runtimev1.Resource_Alert:
-			resolvedRules, err = c.reconciler(ResourceKindAlert).ResolveTransitiveAccess(ctx, claims, res)
-		case *runtimev1.Resource_Explore:
-			resolvedRules, err = c.reconciler(ResourceKindExplore).ResolveTransitiveAccess(ctx, claims, res)
-		case *runtimev1.Resource_Canvas:
-			resolvedRules, err = c.reconciler(ResourceKindCanvas).ResolveTransitiveAccess(ctx, claims, res)
-		default:
-			return nil, fmt.Errorf("transitive access rule for resource kind %q is not supported", res.Meta.Name.Kind)
-		}
+		resolvedRules, err := ctr.reconciler(res.Meta.Name.Kind).ResolveTransitiveAccess(ctx, claims, res)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve transitive access rule: %w", err)
 		}

@@ -6975,15 +6975,15 @@ definitions:
           It is ORed together with the condition_kinds.
       allow:
         type: boolean
+      exclusive:
+        type: boolean
+        description: If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
       fields:
         type: array
         items:
           type: string
       allFields:
         type: boolean
-      exclusiveFields:
-        type: boolean
-        description: If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
   v1SecurityRuleRowFilter:
     type: object
     properties:

@@ -200,6 +200,13 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		if err != nil {
 			return nil, err
 		}
+		// if there is field access rule, add "explore" and "canvas" to condition kinds just to prevent field name leakages from there
+		for _, r := range inferred {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				conditionKinds = append(conditionKinds, runtime.ResourceKindExplore, runtime.ResourceKindCanvas)
+			}
+		}
+
 		rules = append(rules, inferred...)
 
 		mvName := ""
