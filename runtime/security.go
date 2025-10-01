@@ -8,18 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 	"sync"
 
 	"github.com/hashicorp/golang-lru/simplelru"
-	tidbparser "github.com/pingcap/tidb/pkg/parser"
-	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/mysql"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
-	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -555,24 +550,42 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 		return err
 	}
 	if apply != nil && !*apply {
-		// there are conditions but not applicable
+		// Conditions are present but not satisfied.
 		return nil
 	}
 
-	// Set if the field should be allowed or denied
-	if rule.AllFields {
-		for _, f := range availableFields {
-			v, ok := res.fieldAccess[f]
-			if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
-				res.fieldAccess[f] = rule.Allow
-			}
+	// Helper to apply an allow/deny while respecting "deny takes precedence".
+	set := func(f string, allow bool) {
+		if v, ok := res.fieldAccess[f]; ok && !v {
+			// Already denied by an earlier rule; keep it denied.
+			return
 		}
-	} else {
+		res.fieldAccess[f] = allow
+	}
+
+	switch {
+	case rule.AllFields:
+		for _, f := range availableFields {
+			set(f, rule.Allow)
+		}
+	case rule.ExclusiveFields:
+		seen := make(map[string]struct{}, len(rule.Fields))
+		// set specified fields to the rule's allow value
 		for _, f := range rule.Fields {
-			v, ok := res.fieldAccess[f]
-			if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
-				res.fieldAccess[f] = rule.Allow
+			set(f, rule.Allow)
+			seen[f] = struct{}{}
+		}
+		// now set all other available fields to the opposite value, if they were denied earlier, keep them denied
+		for _, f := range availableFields {
+			if _, ok := seen[f]; ok {
+				continue
 			}
+			// field not mentioned in the rule, set to opposite of rule.Allow
+			set(f, !rule.Allow)
+		}
+	default:
+		for _, f := range rule.Fields {
+			set(f, rule.Allow)
 		}
 	}
 
@@ -621,11 +634,11 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, r *ru
 // This involves looking up the referenced resource, determining its dependencies, and adding the necessary access rules for those dependencies.
 // For example, a transitive access rule on a report will add access rules for the underlying metrics view, explore, and any fields or rows that are accessible in the report.
 func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instanceID string, claims *SecurityClaims) ([]*runtimev1.SecurityRule, error) {
+	c, err := p.rt.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get controller: %w", err)
+	}
 	var rules []*runtimev1.SecurityRule
-	// gather all conditions kinds and resources mentioned in the rules so that we can add a single security rule access policy for them at the end.
-	// making sure only a single rule with the exclusive flag is added, otherwise we may get false rejections depending on which rule with the exclusive flag is evaluated first
-	var conditionKinds []string
-	var conditionResources []*runtimev1.ResourceName
 	for _, rule := range claims.AdditionalRules {
 		if rule.GetTransitiveAccess() == nil {
 			rules = append(rules, rule)
@@ -644,51 +657,58 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 		if err != nil {
 			return nil, fmt.Errorf("failed to get resource %q of kind %q: %w", resName.Name, resName.Kind, err)
 		}
+		var resolvedRules []*runtimev1.SecurityRule
 		switch res.GetResource().(type) {
 		case *runtimev1.Resource_Report:
-			resolvedRules, ck, cr, err := p.resolveTransitiveAccessRuleForReport(ctx, instanceID, claims, res)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve transitive access rule for report: %w", err)
-			}
-			rules = append(rules, resolvedRules...)
-			conditionKinds = append(conditionKinds, ck...)
-			conditionResources = append(conditionResources, cr...)
+			resolvedRules, err = c.reconciler(ResourceKindReport).ResolveTransitiveAccess(ctx, claims, res)
 		case *runtimev1.Resource_Alert:
-			resolvedRules, ck, cr, err := p.resolveTransitiveAccessRuleForAlert(ctx, instanceID, claims, res)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve transitive access rule for alert: %w", err)
-			}
-			rules = append(rules, resolvedRules...)
-			conditionKinds = append(conditionKinds, ck...)
-			conditionResources = append(conditionResources, cr...)
+			resolvedRules, err = c.reconciler(ResourceKindAlert).ResolveTransitiveAccess(ctx, claims, res)
 		case *runtimev1.Resource_Explore:
-			ck, cr, err := p.resolveTransitiveAccessRuleForExplore(res)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve transitive access rule for explore: %w", err)
-			}
-			conditionKinds = append(conditionKinds, ck...)
-			conditionResources = append(conditionResources, cr...)
+			resolvedRules, err = c.reconciler(ResourceKindExplore).ResolveTransitiveAccess(ctx, claims, res)
 		case *runtimev1.Resource_Canvas:
-			resolvedRules, ck, cr, err := p.resolveTransitiveAccessRuleForCanvas(ctx, instanceID, res)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve transitive access rule for canvas: %w", err)
-			}
-			rules = append(rules, resolvedRules...)
-			conditionKinds = append(conditionKinds, ck...)
-			conditionResources = append(conditionResources, cr...)
+			resolvedRules, err = c.reconciler(ResourceKindCanvas).ResolveTransitiveAccess(ctx, claims, res)
 		default:
 			return nil, fmt.Errorf("transitive access rule for resource kind %q is not supported", res.Meta.Name.Kind)
 		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve transitive access rule: %w", err)
+		}
+		rules = append(rules, resolvedRules...)
 	}
+	// gather all conditions kinds and resources mentioned in the rules so that we can add a single security rule access policy for them at the end.
+	// making sure only a single rule with the exclusive flag is added, otherwise we may get false rejections depending on which rule with the exclusive flag is evaluated first
+	var mergedRules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
+	var conditionExpression string
+	// merge all access rules in one rule with exclusive flag set
+	for _, rule := range rules {
+		if access := rule.GetAccess(); access != nil && access.Exclusive {
+			if access.ConditionExpression != "" {
+				if conditionExpression != "" {
+					conditionExpression = fmt.Sprintf("(%s) OR (%s)", conditionExpression, access.ConditionExpression)
+				} else {
+					conditionExpression = access.ConditionExpression
+				}
+			}
+			conditionKinds = append(conditionKinds, access.ConditionKinds...)
+			conditionResources = append(conditionResources, access.ConditionResources...)
+		} else {
+			mergedRules = append(mergedRules, rule)
+		}
+	}
+	rules = mergedRules
+
 	// add a security rule access policy for the resources mentioned in the conditions with exclusive flag set so that access is denied to everything else.
 	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
-					ConditionKinds:     conditionKinds,
-					ConditionResources: conditionResources,
-					Allow:              true,
-					Exclusive:          true,
+					ConditionExpression: conditionExpression,
+					ConditionKinds:      conditionKinds,
+					ConditionResources:  conditionResources,
+					Allow:               true,
+					Exclusive:           true,
 				},
 			},
 		})
@@ -697,355 +717,34 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 	return rules, nil
 }
 
-// resolveTransitiveAccessRuleForReport resolves transitive access rules for a report resource.
-// This determines all the resources needed to access the report like the underlying metrics view, explore, etc. and adds the corresponding security rules to the list of rules to be applied.
-// Also use the underlying query to determine the fields that are accessible in the report and where clause that needs to be applied.
-// Restricts access to these fields and rows by adding corresponding field access and row filter rules to the resolved security rules.
-func (p *securityEngine) resolveTransitiveAccessRuleForReport(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
-	var rules []*runtimev1.SecurityRule
-	var conditionKinds []string
-	var conditionRes []*runtimev1.ResourceName
-
-	report := res.GetReport()
-	if report == nil {
-		return nil, nil, nil, fmt.Errorf("resource is not a report")
-	}
-
-	spec := report.GetSpec()
-	if spec == nil {
-		return nil, nil, nil, fmt.Errorf("report spec is nil")
-	}
-	conditionRes = append(conditionRes, res.Meta.Name)
-	conditionKinds = append(conditionKinds, ResourceKindTheme)
-
-	if spec.QueryName != "" {
-		initializer, ok := ResolverInitializers["legacy_metrics"]
-		if !ok {
-			return nil, nil, nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
-		}
-		resolver, err := initializer(ctx, &ResolverOptions{
-			Runtime:    p.rt,
-			InstanceID: instanceID,
-			Properties: map[string]any{
-				"query_name":      spec.QueryName,
-				"query_args_json": spec.QueryArgsJson,
-			},
-			Claims:    claims,
-			ForExport: false,
-		})
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		defer resolver.Close()
-		inferred, err := resolver.InferRequiredSecurityRules()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		rules = append(rules, inferred...)
-
-		mvName := ""
-		refs := resolver.Refs()
-		for _, ref := range refs {
-			// need access to the referenced resources
-			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
-			if ref.Kind == ResourceKindMetricsView {
-				mvName = ref.Name
-			}
-		}
-
-		// figure out explore or canvas for the report
-		var explore, canvas string
-		if e, ok := spec.Annotations["explore"]; ok {
-			explore = e
-		}
-		if c, ok := spec.Annotations["canvas"]; ok {
-			canvas = c
-		}
-
-		if explore == "" { // backwards compatibility, try to find explore
-			if path, ok := spec.Annotations["web_open_path"]; ok {
-				// parse path, extract explore name, it will be like /explore/{explore}
-				if strings.HasPrefix(path, "/explore/") {
-					explore = path[9:]
-					if explore[len(explore)-1] == '/' {
-						explore = explore[:len(explore)-1]
-					}
-				}
-			}
-			// still not found, use mv name as explore name
-			if explore == "" {
-				explore = mvName
-			}
-		}
-
-		if explore != "" {
-			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ResourceKindExplore, Name: explore})
-		}
-		if canvas != "" {
-			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: canvas})
-		}
-	}
-
-	return rules, conditionKinds, conditionRes, nil
-}
-
-func (p *securityEngine) resolveTransitiveAccessRuleForAlert(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
-	var rules []*runtimev1.SecurityRule
-	var conditionKinds []string
-	var conditionResources []*runtimev1.ResourceName
-
-	alert := res.GetAlert()
-	if alert == nil {
-		return nil, nil, nil, fmt.Errorf("resource is not an alert")
-	}
-
-	spec := alert.GetSpec()
-	if spec == nil {
-		return nil, nil, nil, fmt.Errorf("alert spec is nil")
-	}
-
-	// explicitly allow access to the alert itself
-	conditionResources = append(conditionResources, res.Meta.Name)
-	conditionKinds = append(conditionKinds, ResourceKindTheme)
-
-	var mvName string
-	if spec.QueryName != "" {
-		initializer, ok := ResolverInitializers["legacy_metrics"]
-		if !ok {
-			return nil, nil, nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
-		}
-		resolver, err := initializer(ctx, &ResolverOptions{
-			Runtime:    p.rt,
-			InstanceID: instanceID,
-			Properties: map[string]any{
-				"query_name":      spec.QueryName,
-				"query_args_json": spec.QueryArgsJson,
-			},
-			Claims:    claims,
-			ForExport: false,
-		})
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		defer resolver.Close()
-		inferred, err := resolver.InferRequiredSecurityRules()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		rules = append(rules, inferred...)
-
-		refs := resolver.Refs()
-		for _, ref := range refs {
-			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
-		}
-	}
-
-	if spec.Resolver != "" {
-		initializer, ok := ResolverInitializers[spec.Resolver]
-		if !ok {
-			return nil, nil, nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
-		}
-		resolver, err := initializer(ctx, &ResolverOptions{
-			Runtime:    p.rt,
-			InstanceID: instanceID,
-			Properties: spec.ResolverProperties.AsMap(),
-			Claims:     claims,
-			ForExport:  false,
-		})
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		defer resolver.Close()
-		inferred, err := resolver.InferRequiredSecurityRules()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		rules = append(rules, inferred...)
-
-		refs := resolver.Refs()
-		for _, ref := range refs {
-			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
-		}
-	}
-
-	// figure out explore or canvas for the alert
-	var explore, canvas string
-	if e, ok := spec.Annotations["explore"]; ok {
-		explore = e
-	}
-	if c, ok := spec.Annotations["canvas"]; ok {
-		canvas = c
-	}
-
-	if explore == "" { // backwards compatibility, try to find explore
-		if path, ok := spec.Annotations["web_open_path"]; ok {
-			// parse path, extract explore name, it will be like /explore/{explore}
-			if strings.HasPrefix(path, "/explore/") {
-				explore = path[9:]
-				if explore[len(explore)-1] == '/' {
-					explore = explore[:len(explore)-1]
-				}
-			}
-		}
-		// still not found, use mv name as explore name // TODO does this harm anything? as some alerts may not have any explore like those based on sql resolvers
-		if explore == "" {
-			explore = mvName
-		}
-	}
-
-	if explore != "" {
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindExplore, Name: explore})
-	}
-	if canvas != "" {
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: canvas})
-	}
-
-	return rules, conditionKinds, conditionResources, nil
-}
-
-func (p *securityEngine) resolveTransitiveAccessRuleForExplore(res *runtimev1.Resource) ([]string, []*runtimev1.ResourceName, error) {
-	var conditionKinds []string
-	var conditionResources []*runtimev1.ResourceName
-
-	explore := res.GetExplore()
-	if explore == nil {
-		return nil, nil, fmt.Errorf("resource is not an explore")
-	}
-
-	spec := explore.GetState().GetValidSpec()
-	if spec == nil {
-		return nil, nil, fmt.Errorf("explore valid spec is nil")
-	}
-
-	if spec.MetricsView == "" {
-		return nil, nil, fmt.Errorf("explore does not reference a metrics view")
-	}
-
-	conditionResources = append(conditionResources, res.Meta.Name)
-	conditionKinds = append(conditionKinds, ResourceKindTheme)
-
-	// give access to the underlying metrics view
-	if spec.MetricsView != "" {
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: spec.MetricsView})
-	}
-
-	return conditionKinds, conditionResources, nil
-}
-
-func (p *securityEngine) resolveTransitiveAccessRuleForCanvas(ctx context.Context, instanceID string, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, []string, []*runtimev1.ResourceName, error) {
-	var rules []*runtimev1.SecurityRule
-	var conditionKinds []string
-	var conditionResources []*runtimev1.ResourceName
-	refs := &rendererRefs{
-		metricsViews: make(map[string]bool),
-		mvFields:     make(map[string]map[string]bool),
-		mvFilters:    make(map[string][]string),
-	}
-
-	canvas := res.GetCanvas()
-	if canvas == nil {
-		return nil, nil, nil, fmt.Errorf("resource is not a canvas")
-	}
-
-	spec := canvas.GetState().GetValidSpec()
-	if spec == nil {
-		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
-	}
-	if spec == nil {
-		return nil, nil, nil, fmt.Errorf("canvas spec is nil")
-	}
-
-	// explicitly allow access to the canvas itself
-	conditionResources = append(conditionResources, res.Meta.Name)
-	conditionKinds = append(conditionKinds, ResourceKindTheme)
-
-	// Get controller to fetch components
-	ctr, err := p.rt.Controller(ctx, instanceID)
+// computeCacheKey computes a cache key for a resolved security policy.
+func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (string, error) {
+	hash := md5.New()
+	_, err := hash.Write([]byte(instanceID))
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get controller: %w", err)
+		return "", err
 	}
-
-	// Collect all component names referenced by the canvas
-	componentNames := make(map[string]bool)
-	for _, row := range spec.Rows {
-		for _, item := range row.Items {
-			componentNames[item.Component] = true
-		}
+	_, err = hash.Write([]byte(environment))
+	if err != nil {
+		return "", err
 	}
-
-	// Process each component
-	for componentName := range componentNames {
-		componentRef := &runtimev1.ResourceName{
-			Kind: ResourceKindComponent,
-			Name: componentName,
-		}
-		// Allow access to the component itself
-		conditionResources = append(conditionResources, componentRef)
-
-		// Get component resource
-		componentRes, err := ctr.Get(ctx, componentRef, false)
-		if err != nil {
-			// If component is not found, skip it but still allow access to the component name
-			continue
-		}
-
-		// Get component spec to extract renderer properties
-		componentSpec := componentRes.GetComponent().State.ValidSpec
-		if componentSpec == nil {
-			componentSpec = componentRes.GetComponent().Spec
-		}
-
-		if componentSpec.RendererProperties == nil {
-			continue
-		}
-
-		rendererProps := componentSpec.RendererProperties.AsMap()
-		err = populateRendererRefs(refs, componentSpec.Renderer, rendererProps)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to parse renderer properties for component %q: %w", componentName, err)
-		}
+	_, err = hash.Write([]byte(r.Meta.Name.Name))
+	if err != nil {
+		return "", err
 	}
-
-	// Now build security rules based on the collected references
-	// First, allow access to all referenced metrics views
-	// Then, for each metrics view, add field access and row filter rules as needed
-	for mv := range refs.metricsViews {
-		// allow access to the referenced metrics view
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ResourceKindMetricsView, Name: mv})
-
-		mvf, ok := refs.mvFields[mv]
-		if ok && len(mvf) > 0 {
-			fields := make([]string, 0, len(mvf))
-			for f := range mvf {
-				fields = append(fields, f)
-			}
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_FieldAccess{
-					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						ConditionResources: []*runtimev1.ResourceName{{Kind: ResourceKindMetricsView, Name: mv}},
-						Fields:             fields,
-						Allow:              true,
-					},
-				},
-			})
-		}
-
-		mvr, ok := refs.mvFilters[mv]
-		if ok && len(mvr) > 0 {
-			// Combine multiple row filters with OR
-			rowFilter := strings.Join(mvr, " OR ")
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_RowFilter{
-					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						ConditionResources: []*runtimev1.ResourceName{{Kind: ResourceKindMetricsView, Name: mv}},
-						Sql:                rowFilter,
-					},
-				},
-			})
-		}
+	_, err = hash.Write([]byte(r.Meta.StateUpdatedOn.AsTime().String()))
+	if err != nil {
+		return "", err
 	}
-
-	return rules, conditionKinds, conditionResources, nil
+	claimsJSON, err := json.Marshal(claims)
+	if err != nil {
+		return "", err
+	}
+	_, err = hash.Write(claimsJSON)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 func evaluateConditions(r *runtimev1.Resource, expression string, kinds []string, resources []*runtimev1.ResourceName, td parser.TemplateData) (*bool, error) {
@@ -1088,300 +787,4 @@ func evaluateConditions(r *runtimev1.Resource, expression string, kinds []string
 	}
 
 	return &conditionsMatch, nil
-}
-
-// computeCacheKey computes a cache key for a resolved security policy.
-func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (string, error) {
-	hash := md5.New()
-	_, err := hash.Write([]byte(instanceID))
-	if err != nil {
-		return "", err
-	}
-	_, err = hash.Write([]byte(environment))
-	if err != nil {
-		return "", err
-	}
-	_, err = hash.Write([]byte(r.Meta.Name.Name))
-	if err != nil {
-		return "", err
-	}
-	_, err = hash.Write([]byte(r.Meta.StateUpdatedOn.AsTime().String()))
-	if err != nil {
-		return "", err
-	}
-	claimsJSON, err := json.Marshal(claims)
-	if err != nil {
-		return "", err
-	}
-	_, err = hash.Write(claimsJSON)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hash.Sum(nil)), nil
-}
-
-// populateRendererRefs extracts all metricsview and its field names and filters from renderer properties based on the renderer type
-// Depending on the component, fields will be named differently - Also there can be computed time dimension like <time_dim>_rill_TIME_GRAIN_<GRAIN>
-//
-//		"leaderboard" - "dimensions" and "measures"
-//		"kpi_grid" - "dimensions" and "measures"
-//		"table" - "columns" (can have computed time dim)
-//		"pivot" - "row_dimensions", "col_dimensions" and "measures" (row/col can have computed time dim)
-//		"heatmap" - "color"."field", "x"."field" and "y"."field"
-//	 	"multi_metric_chart" - "measures" and "x"."field"
-//		"funnel_chart" - "stage"."field", "measure"."field"
-//		"donut_chart" - "color"."field", "measure"."field"
-//		"bar_chart" - "color"."field", "x"."field" and "y"."field"
-//		"line_chart" - "color"."field", "x"."field" and "y"."field"
-//		"area_chart" - "color"."field", "x"."field" and "y"."field"
-//		"stacked_bar" - "color"."field", "x"."field" and "y"."field"
-//		"stacked_bar_normalized" - "color"."field", "x"."field" and "y"."field"
-func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[string]any) error {
-	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
-	if !ok {
-		return nil
-	}
-	res.metricsView(mv)
-	filter, ok := pathutil.GetPath(rendererProps, "dimension_filters")
-	if ok {
-		res.metricsViewRowFilter(mv, filter)
-	}
-	switch renderer {
-	case "leaderboard":
-		dims, ok := pathutil.GetPath(rendererProps, "dimensions")
-		if ok {
-			res.metricsViewFields(mv, dims)
-		}
-		meas, ok := pathutil.GetPath(rendererProps, "measures")
-		if ok {
-			res.metricsViewFields(mv, meas)
-		}
-	case "kpi_grid":
-		dims, ok := pathutil.GetPath(rendererProps, "dimensions")
-		if ok {
-			res.metricsViewFields(mv, dims)
-		}
-		meas, ok := pathutil.GetPath(rendererProps, "measures")
-		if ok {
-			res.metricsViewFields(mv, meas)
-		}
-	case "table":
-		cols, ok := pathutil.GetPath(rendererProps, "columns")
-		if ok {
-			res.metricsViewFields(mv, cols)
-		}
-	case "pivot":
-		rowDims, ok := pathutil.GetPath(rendererProps, "row_dimensions")
-		if ok {
-			res.metricsViewFields(mv, rowDims)
-		}
-		colDims, ok := pathutil.GetPath(rendererProps, "col_dimensions")
-		if ok {
-			res.metricsViewFields(mv, colDims)
-		}
-		meas, ok := pathutil.GetPath(rendererProps, "measures")
-		if ok {
-			res.metricsViewFields(mv, meas)
-		}
-	case "heatmap":
-		colorField, ok := pathutil.GetPath(rendererProps, "color.field")
-		if ok {
-			res.metricsViewField(mv, colorField)
-		}
-		xField, ok := pathutil.GetPath(rendererProps, "x.field")
-		if ok {
-			res.metricsViewField(mv, xField)
-		}
-		yField, ok := pathutil.GetPath(rendererProps, "y.field")
-		if ok {
-			res.metricsViewField(mv, yField)
-		}
-	case "multi_metric_chart":
-		meas, ok := pathutil.GetPath(rendererProps, "measures")
-		if ok {
-			res.metricsViewFields(mv, meas)
-		}
-		xField, ok := pathutil.GetPath(rendererProps, "x.field")
-		if ok {
-			res.metricsViewField(mv, xField)
-		}
-	case "funnel_chart":
-		stageField, ok := pathutil.GetPath(rendererProps, "stage.field")
-		if ok {
-			res.metricsViewField(mv, stageField)
-		}
-		measureField, ok := pathutil.GetPath(rendererProps, "measure.field")
-		if ok {
-			res.metricsViewField(mv, measureField)
-		}
-	case "donut_chart":
-		colorField, ok := pathutil.GetPath(rendererProps, "color.field")
-		if ok {
-			res.metricsViewField(mv, colorField)
-		}
-		measureField, ok := pathutil.GetPath(rendererProps, "measure.field")
-		if ok {
-			res.metricsViewField(mv, measureField)
-		}
-	case "bar_chart", "line_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
-		colorField, ok := pathutil.GetPath(rendererProps, "color.field")
-		if ok {
-			res.metricsViewField(mv, colorField)
-		}
-		xField, ok := pathutil.GetPath(rendererProps, "x.field")
-		if ok {
-			res.metricsViewField(mv, xField)
-		}
-		yField, ok := pathutil.GetPath(rendererProps, "y.field")
-		if ok {
-			res.metricsViewField(mv, yField)
-		}
-	default:
-		return fmt.Errorf("unknown renderer type %q", renderer)
-	}
-	return nil
-}
-
-// extractDimension return the dimension or extracts the base time dimension from computed time field if present
-// example - from "<time_dim>_rill_TIME_GRAIN_<GRAIN>" extracts "<time_dim>"
-func extractDimension(field string) string {
-	if strings.Contains(field, "_rill_TIME_GRAIN_") {
-		parts := strings.Split(field, "_rill_TIME_GRAIN_")
-		if len(parts) > 0 {
-			return parts[0]
-		}
-	}
-	return field
-}
-
-// extractFieldsFromSQLFilter parses a SQL filter and extracts field names directly during parsing
-// This is a simplified version of metricssqlparser.ParseSQLFilter that only collects field names to avoid circular dependency issues
-func extractFieldsFromSQLFilter(sqlFilter string) []string {
-	if sqlFilter == "" {
-		return nil
-	}
-
-	p := tidbparser.New()
-	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
-	sql := "SELECT * FROM tbl WHERE " + sqlFilter
-	stmtNodes, _, err := p.ParseSQL(sql)
-	if err != nil {
-		return nil
-	}
-
-	if len(stmtNodes) != 1 {
-		return nil
-	}
-
-	stmt, ok := stmtNodes[0].(*ast.SelectStmt)
-	if !ok {
-		return nil
-	}
-
-	fields := make(map[string]bool)
-	extractFieldsFromNode(stmt.Where, fields)
-
-	var result []string
-	for field := range fields {
-		if field != "" {
-			result = append(result, field)
-		}
-	}
-
-	return result
-}
-
-// extractFieldsFromNode recursively extracts field names from AST nodes
-func extractFieldsFromNode(node ast.Node, fields map[string]bool) {
-	if node == nil {
-		return
-	}
-
-	switch n := node.(type) {
-	case *ast.ColumnNameExpr:
-		if n.Name != nil && n.Name.Schema.String() == "" && n.Name.Table.String() == "" {
-			fields[n.Name.Name.O] = true
-		}
-	case *ast.BinaryOperationExpr:
-		extractFieldsFromNode(n.L, fields)
-		extractFieldsFromNode(n.R, fields)
-	case *ast.IsNullExpr:
-		extractFieldsFromNode(n.Expr, fields)
-	case *ast.IsTruthExpr:
-		extractFieldsFromNode(n.Expr, fields)
-	case *ast.ParenthesesExpr:
-		extractFieldsFromNode(n.Expr, fields)
-	case *ast.PatternInExpr:
-		extractFieldsFromNode(n.Expr, fields)
-		for _, expr := range n.List {
-			extractFieldsFromNode(expr, fields)
-		}
-	case *ast.PatternLikeOrIlikeExpr:
-		extractFieldsFromNode(n.Expr, fields)
-		extractFieldsFromNode(n.Pattern, fields)
-	case *ast.BetweenExpr:
-		extractFieldsFromNode(n.Expr, fields)
-		extractFieldsFromNode(n.Left, fields)
-		extractFieldsFromNode(n.Right, fields)
-	case *ast.FuncCallExpr:
-		for _, arg := range n.Args {
-			extractFieldsFromNode(arg, fields)
-		}
-	}
-}
-
-type rendererRefs struct {
-	metricsViews map[string]bool
-	mvFields     map[string]map[string]bool
-	mvFilters    map[string][]string
-}
-
-func (r *rendererRefs) metricsView(mv any) {
-	if mv, ok := mv.(string); ok {
-		r.metricsViews[mv] = true
-	}
-}
-
-func (r *rendererRefs) metricsViewFields(mv, fields any) {
-	metricsView, ok1 := mv.(string)
-	fs, ok2 := fields.([]interface{})
-	if ok1 && ok2 {
-		if r.mvFields[metricsView] == nil {
-			r.mvFields[metricsView] = make(map[string]bool)
-		}
-		for _, f := range fs {
-			fstr, ok := f.(string)
-			if !ok {
-				panic("field is not a string")
-			}
-			r.mvFields[metricsView][extractDimension(fstr)] = true
-		}
-	}
-}
-
-func (r *rendererRefs) metricsViewField(mv, field any) {
-	metricsView, ok1 := mv.(string)
-	f, ok2 := field.(string)
-	if ok1 && ok2 && f != "" {
-		if r.mvFields[metricsView] == nil {
-			r.mvFields[metricsView] = make(map[string]bool)
-		}
-		r.mvFields[metricsView][extractDimension(f)] = true
-	}
-}
-
-func (r *rendererRefs) metricsViewRowFilter(mv, filter any) {
-	metricsView, ok1 := mv.(string)
-	f, ok2 := filter.(string)
-	if ok1 && ok2 && f != "" {
-		r.mvFilters[metricsView] = append(r.mvFilters[metricsView], fmt.Sprintf("(%s)", f)) // wrap in () to ensure correct precedence when combining multiple filters with OR
-	}
-	// Extract fields from dimension_filters SQL expression
-	dimFilterFields := extractFieldsFromSQLFilter(f)
-	if r.mvFields[metricsView] == nil {
-		r.mvFields[metricsView] = make(map[string]bool)
-	}
-	for _, f := range dimFilterFields {
-		r.mvFields[metricsView][extractDimension(f)] = true
-	}
 }

@@ -355,6 +355,8 @@ message SecurityRuleFieldAccess {
   bool allow = 2;
   repeated string fields = 3;
   bool all_fields = 4;
+  // If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
+  bool exclusive_fields = 7;
 }
 
 message SecurityRuleRowFilter {

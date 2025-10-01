@@ -2195,6 +2195,13 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
    */
   allFields = false;
 
+  /**
+   * If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
+   *
+   * @generated from field: bool exclusive_fields = 7;
+   */
+  exclusiveFields = false;
+
   constructor(data?: PartialMessage<SecurityRuleFieldAccess>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2209,6 +2216,7 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
     { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "all_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "exclusive_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleFieldAccess {

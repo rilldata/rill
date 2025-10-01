@@ -256,6 +256,10 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	return runtime.ReconcileResult{Err: err, Retrigger: time.Now()}
 }
 
+func (r *ProjectParserReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return nil, fmt.Errorf("transitive access not implemented for project parser")
+}
+
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
 func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *parserpkg.Parser, diff *parserpkg.Diff, changedPaths []string) error {
 	// Update parse errors

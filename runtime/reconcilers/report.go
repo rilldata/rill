@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -157,6 +158,107 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{Err: executeErr, Retrigger: rep.State.NextRunOn.AsTime()}
 	}
 	return runtime.ReconcileResult{Err: executeErr}
+}
+
+func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionRes []*runtimev1.ResourceName
+
+	report := res.GetReport()
+	if report == nil {
+		return nil, fmt.Errorf("resource is not a report")
+	}
+
+	spec := report.GetSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("report spec is nil")
+	}
+	conditionRes = append(conditionRes, res.Meta.Name)
+	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
+
+	if spec.QueryName != "" {
+		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
+		if !ok {
+			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
+		}
+		resolver, err := initializer(ctx, &runtime.ResolverOptions{
+			Runtime:    r.C.Runtime,
+			InstanceID: r.C.InstanceID,
+			Properties: map[string]any{
+				"query_name":      spec.QueryName,
+				"query_args_json": spec.QueryArgsJson,
+			},
+			Claims:    claims,
+			ForExport: false,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer resolver.Close()
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, inferred...)
+
+		mvName := ""
+		refs := resolver.Refs()
+		for _, ref := range refs {
+			// need access to the referenced resources
+			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
+			if ref.Kind == runtime.ResourceKindMetricsView {
+				mvName = ref.Name
+			}
+		}
+
+		// figure out explore or canvas for the report
+		var explore, canvas string
+		if e, ok := spec.Annotations["explore"]; ok {
+			explore = e
+		}
+		if c, ok := spec.Annotations["canvas"]; ok {
+			canvas = c
+		}
+
+		if explore == "" { // backwards compatibility, try to find explore
+			if path, ok := spec.Annotations["web_open_path"]; ok {
+				// parse path, extract explore name, it will be like /explore/{explore}
+				if strings.HasPrefix(path, "/explore/") {
+					explore = path[9:]
+					if explore[len(explore)-1] == '/' {
+						explore = explore[:len(explore)-1]
+					}
+				}
+			}
+			// still not found, use mv name as explore name
+			if explore == "" {
+				explore = mvName
+			}
+		}
+
+		if explore != "" {
+			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore})
+		}
+		if canvas != "" {
+			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas})
+		}
+	}
+
+	if len(conditionKinds) > 0 || len(conditionRes) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionKinds:     conditionKinds,
+					ConditionResources: conditionRes,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
 }
 
 // updateNextRunOn evaluates the report's schedule relative to the current time, and updates the NextRunOn state accordingly.

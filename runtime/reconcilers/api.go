@@ -63,3 +63,7 @@ func (r *APIReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName
 
 	return runtime.ReconcileResult{}
 }
+
+func (r *APIReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return nil, fmt.Errorf("transitive access not implemented for APIs")
+}

@@ -3949,6 +3949,8 @@ func (m *SecurityRuleFieldAccess) validate(all bool) error {
 
 	// no validation rules for AllFields
 
+	// no validation rules for ExclusiveFields
+
 	if len(errors) > 0 {
 		return SecurityRuleFieldAccessMultiError(errors)
 	}

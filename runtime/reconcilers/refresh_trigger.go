@@ -183,6 +183,10 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 	return runtime.ReconcileResult{}
 }
 
+func (r *RefreshTriggerReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return nil, fmt.Errorf("transitive access not implemented for refresh triggers")
+}
+
 // UpdateTriggerTrue sets the Trigger spec property of the resource to true.
 // NOTE: If you edit this logic, also update the checks in newResourceIfModified in project_parser.go accordingly (they need to incorporate triggers in their modified checks).
 func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *runtimev1.Resource, full bool) error {

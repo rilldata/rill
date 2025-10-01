@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -211,6 +212,133 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: executeErr, Retrigger: a.State.NextRunOn.AsTime()}
 	}
 	return runtime.ReconcileResult{Err: executeErr}
+}
+
+func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	var conditionKinds []string
+	var conditionResources []*runtimev1.ResourceName
+
+	alert := res.GetAlert()
+	if alert == nil {
+		return nil, fmt.Errorf("resource is not an alert")
+	}
+
+	spec := alert.GetSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("alert spec is nil")
+	}
+
+	// explicitly allow access to the alert itself
+	conditionResources = append(conditionResources, res.Meta.Name)
+	conditionKinds = append(conditionKinds, runtime.ResourceKindTheme)
+
+	var mvName string
+	if spec.QueryName != "" {
+		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
+		if !ok {
+			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
+		}
+		resolver, err := initializer(ctx, &runtime.ResolverOptions{
+			Runtime:    r.C.Runtime,
+			InstanceID: r.C.InstanceID,
+			Properties: map[string]any{
+				"query_name":      spec.QueryName,
+				"query_args_json": spec.QueryArgsJson,
+			},
+			Claims:    claims,
+			ForExport: false,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer resolver.Close()
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, inferred...)
+
+		refs := resolver.Refs()
+		for _, ref := range refs {
+			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
+		}
+	}
+
+	if spec.Resolver != "" {
+		initializer, ok := runtime.ResolverInitializers[spec.Resolver]
+		if !ok {
+			return nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
+		}
+		resolver, err := initializer(ctx, &runtime.ResolverOptions{
+			Runtime:    r.C.Runtime,
+			InstanceID: r.C.InstanceID,
+			Properties: spec.ResolverProperties.AsMap(),
+			Claims:     claims,
+			ForExport:  false,
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer resolver.Close()
+		inferred, err := resolver.InferRequiredSecurityRules()
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, inferred...)
+
+		refs := resolver.Refs()
+		for _, ref := range refs {
+			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
+		}
+	}
+
+	// figure out explore or canvas for the alert
+	var explore, canvas string
+	if e, ok := spec.Annotations["explore"]; ok {
+		explore = e
+	}
+	if c, ok := spec.Annotations["canvas"]; ok {
+		canvas = c
+	}
+
+	if explore == "" { // backwards compatibility, try to find explore
+		if path, ok := spec.Annotations["web_open_path"]; ok {
+			// parse path, extract explore name, it will be like /explore/{explore}
+			if strings.HasPrefix(path, "/explore/") {
+				explore = path[9:]
+				if explore[len(explore)-1] == '/' {
+					explore = explore[:len(explore)-1]
+				}
+			}
+		}
+		// still not found, use mv name as explore name // TODO does this harm anything? as some alerts may not have any explore like those based on sql resolvers
+		if explore == "" {
+			explore = mvName
+		}
+	}
+
+	if explore != "" {
+		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore})
+	}
+	if canvas != "" {
+		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas})
+	}
+
+	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					ConditionKinds:     conditionKinds,
+					ConditionResources: conditionResources,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
 }
 
 // executionSpecHash computes a hash of the alert properties that impact execution.

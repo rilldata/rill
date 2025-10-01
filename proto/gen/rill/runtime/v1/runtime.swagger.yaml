@@ -6981,6 +6981,9 @@ definitions:
           type: string
       allFields:
         type: boolean
+      exclusiveFields:
+        type: boolean
+        description: If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
   v1SecurityRuleRowFilter:
     type: object
     properties:

@@ -107,6 +107,10 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	return runtime.ReconcileResult{}
 }
 
+func (r *ConnectorReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return nil, fmt.Errorf("transitive access not implemented for connectors")
+}
+
 func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runtimev1.ConnectorSpec) (string, error) {
 	instance, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
