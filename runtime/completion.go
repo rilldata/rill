@@ -196,7 +196,8 @@ func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, c
 // processAppContext processes the app context and generates contextual system messages
 func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appContext *runtimev1.AppContext, toolService ToolService) ([]*runtimev1.Message, error) {
 	if appContext == nil {
-		return nil, nil
+		// If no app context, use project chat context
+		return r.processProjectChatContext(ctx, instanceID)
 	}
 
 	switch appContext.ContextType {
@@ -205,7 +206,8 @@ func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appC
 	case runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD:
 		return r.processExploreDashboardContext(ctx, instanceID, appContext.ContextMetadata, toolService)
 	default:
-		return nil, nil // Unknown context type, no system message will be added
+		// Unknown context type, use project chat context
+		return r.processProjectChatContext(ctx, instanceID)
 	}
 }
 
@@ -720,8 +722,11 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 // buildProjectChatSystemPrompt constructs the system prompt for the project chat context
 func buildProjectChatSystemPrompt(aiInstructions string) string {
 	// TODO: call 'list_metrics_views' and seed the result in the system prompt
-	basePrompt := `<role>
+	currentTime := time.Now()
+	basePrompt := fmt.Sprintf(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights. You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+
+Today's date is %s (%s).
 </role>
 
 <communication_style>
@@ -749,8 +754,8 @@ Execute a MINIMUM of 4-6 distinct analytical queries, building each query based 
 
 <analysis_guidelines>
 **Setup Phase (Steps 1-3)**: 
+- Briefly explain your approach before starting
 - Complete each step fully before proceeding
-- Explain your approach briefly before starting
 - If any step fails, investigate and adapt
 
 **Analysis Phase (Step 4)**:
@@ -772,6 +777,17 @@ Execute a MINIMUM of 4-6 distinct analytical queries, building each query based 
 - Use only the exact numbers returned by the tools in your analysis
 </analysis_guidelines>
 
+<guardrails>
+- If the user asks an unrelated question (e.g., general knowledge, politics, entertainment, trivia):
+  1. Politely decline to answer the unrelated question
+  2. Briefly explain that you specialize only in business data analysis
+  3. Redirect the conversation back to datasets, metrics, or insights
+  4. Do **NOT** attempt to answer the unrelated question
+
+Example response style:  
+*"I focus specifically on analyzing your business data and uncovering insights — so I won’t be the right source for general knowledge questions. Let’s pivot back to your project: would you like me to explore the available datasets so we can start surfacing insights?"*
+</guardrails>
+
 <thinking>
 After each query in Phase 2, think through:
 - What patterns or anomalies did this reveal?
@@ -783,10 +799,8 @@ After each query in Phase 2, think through:
 
 <output_format>
 Format your analysis as follows:
-` + "```markdown" + `
-[Brief acknowledgment and explanation of approach]
-
-Based on my systematic analysis, here are the key insights:
+`+"```markdown"+`
+Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
@@ -797,9 +811,9 @@ Based on my systematic analysis, here are the key insights:
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-[Offer specific follow-up analysis options]
-` + "```" + `
-</output_format>`
+[Optional: Offer specific follow-up analysis options]
+`+"```"+`
+</output_format>`, currentTime.Format("Monday, January 2, 2006"), currentTime.Format("2006-01-02"))
 
 	if aiInstructions != "" {
 		return basePrompt + "\n\n## Additional Instructions (provided by the Rill project developer)\n" + aiInstructions

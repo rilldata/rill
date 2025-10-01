@@ -687,7 +687,7 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func originalHost(r *http.Request) string {
-	if xfHost := r.Header.Get("X-Forwarded-Host"); xfHost != "" {
+	if xfHost := r.Header.Get("Rill-Custom-Domain"); xfHost != "" {
 		return xfHost
 	}
 	return r.Host

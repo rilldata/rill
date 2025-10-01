@@ -1,22 +1,23 @@
-package metricsview
+package executor
 
 import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 // rewriteDruidGroups rewrites the AST to always have GROUP BY in every SELECT node for Druid queries.
 // This is needed to tap into code paths that ensure correct ordering of derived measures.
-func (e *Executor) rewriteDruidGroups(ast *AST) error {
-	if ast.dialect != drivers.DialectDruid {
+func (e *Executor) rewriteDruidGroups(ast *metricsview.AST) error {
+	if ast.Dialect != drivers.DialectDruid {
 		return nil
 	}
 
 	return e.rewriteDruidGroupsWalk(ast.Root)
 }
 
-func (e *Executor) rewriteDruidGroupsWalk(n *SelectNode) error {
+func (e *Executor) rewriteDruidGroupsWalk(n *metricsview.SelectNode) error {
 	var hasJoins bool
 
 	// Recurse

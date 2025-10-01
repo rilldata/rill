@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"context"
@@ -6,10 +6,11 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 // rewriteTwoPhaseComparisons rewrites the query to query base time range first and then use the results to query the comparison time range.
-func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, ast *AST, ogLimit *int64) (bool, error) {
+func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsview.Query, ast *metricsview.AST, ogLimit *int64) (bool, error) {
 	if qry.Limit == nil || (*qry.Limit > e.instanceCfg.MetricsApproxComparisonTwoPhaseLimit) {
 		return false, nil
 	}
@@ -24,7 +25,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 	tr := qry.TimeRange
 	sortCompare := false
 
-	var bm []Measure
+	var bm []metricsview.Measure
 	for _, qm := range qry.Measures {
 		if qm.Compute == nil || (qm.Compute.ComparisonValue == nil && qm.Compute.ComparisonDelta == nil && qm.Compute.ComparisonRatio == nil && qm.Compute.PercentOfTotal == nil && qm.Compute.ComparisonTime == nil) {
 			bm = append(bm, qm)
@@ -44,13 +45,13 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 	}
 
 	// Build a query for the base time range
-	baseQry := &Query{
+	baseQry := &metricsview.Query{
 		MetricsView:         qry.MetricsView,
 		Dimensions:          qry.Dimensions,
 		Measures:            bm,
 		PivotOn:             qry.PivotOn,
 		Spine:               qry.Spine,
-		Sort:                []Sort{sortField},
+		Sort:                []metricsview.Sort{sortField},
 		TimeRange:           tr,
 		ComparisonTimeRange: nil,
 		Where:               qry.Where,
@@ -94,16 +95,16 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		}
 	}
 
-	base := &SelectNode{
+	base := &metricsview.SelectNode{
 		Alias:     n.FromSelect.Alias,
 		DimFields: n.FromSelect.DimFields,
-		RawSelect: &ExprNode{
+		RawSelect: &metricsview.ExprNode{
 			Expr: sel,
 			Args: args,
 		},
 	}
 
-	var comp *SelectNode
+	var comp *metricsview.SelectNode
 	if !sortCompare {
 		// sorting by base value - set the inline results as base node and add base results to comparison node where clause
 		n.FromSelect = base
@@ -117,7 +118,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 	}
 
 	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the comparison query's WHERE clause.
-	var inExpr *Expression
+	var inExpr *metricsview.Expression
 
 	// if any dim value is nil add condition with eq operator with nil value
 	var vals []any
@@ -129,25 +130,25 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 			vals = append(vals, v)
 		}
 	}
-	inExpr = &Expression{
-		Condition: &Condition{
-			Operator: OperatorIn,
-			Expressions: []*Expression{
+	inExpr = &metricsview.Expression{
+		Condition: &metricsview.Condition{
+			Operator: metricsview.OperatorIn,
+			Expressions: []*metricsview.Expression{
 				{Name: qry.Dimensions[0].Name},
 				{Value: vals},
 			},
 		},
 	}
 	if foundNil {
-		inExpr = &Expression{
-			Condition: &Condition{
-				Operator: OperatorOr,
-				Expressions: []*Expression{
+		inExpr = &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorOr,
+				Expressions: []*metricsview.Expression{
 					inExpr,
 					{
-						Condition: &Condition{
-							Operator: OperatorEq,
-							Expressions: []*Expression{
+						Condition: &metricsview.Condition{
+							Operator: metricsview.OperatorEq,
+							Expressions: []*metricsview.Expression{
 								{Name: qry.Dimensions[0].Name},
 								{Value: nil},
 							},
@@ -158,11 +159,11 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		}
 	}
 
-	expr, args, err := ast.sqlForExpression(inExpr, comp, true, true)
+	expr, args, err := ast.SQLForExpression(inExpr, comp, true, true)
 	if err != nil {
 		return false, fmt.Errorf("failed to compile 'having': %w", err)
 	}
-	res := &ExprNode{
+	res := &metricsview.ExprNode{
 		Expr: expr,
 		Args: args,
 	}
@@ -170,7 +171,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 	if comp.Where == nil {
 		comp.Where = res
 	} else {
-		comp.Where = comp.Where.and(res.Expr, res.Args)
+		comp.Where = comp.Where.And(res.Expr, res.Args)
 	}
 
 	return true, nil

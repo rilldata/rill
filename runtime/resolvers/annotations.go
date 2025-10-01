@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
 
@@ -21,7 +22,7 @@ type annotationsResolver struct {
 	instanceID string
 	query      *metricsview.AnnotationsQuery
 	mv         *runtimev1.MetricsViewSpec
-	executor   *metricsview.Executor
+	executor   *executor.Executor
 	runtime    *runtime.Runtime
 	claims     *runtime.SecurityClaims
 }
@@ -52,7 +53,7 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		return nil, err
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, qry.Priority)
+	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, qry.Priority)
 	if err != nil {
 		return nil, err
 	}

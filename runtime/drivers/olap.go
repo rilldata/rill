@@ -283,7 +283,7 @@ func (d Dialect) GetRegexMatchFunction() string {
 	}
 }
 
-// EscapeTable returns an esacped fully qualified table name
+// EscapeTable returns an escaped table name with database, schema and table.
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	if d == DialectDuckDB {
 		return d.EscapeIdentifier(table)
@@ -299,6 +299,14 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	}
 	sb.WriteString(d.EscapeIdentifier(table))
 	return sb.String()
+}
+
+// EscapeMember returns an escaped member name with table alias and column name.
+func (d Dialect) EscapeMember(tbl, name string) string {
+	if tbl == "" {
+		return d.EscapeIdentifier(name)
+	}
+	return fmt.Sprintf("%s.%s", d.EscapeIdentifier(tbl), d.EscapeIdentifier(name))
 }
 
 func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
@@ -392,6 +400,11 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
 	// In that case `column` will not be present.
 	return d.EscapeIdentifier(dimension.Name), nil
+}
+
+// AnyValueExpression applies the ANY_VALUE aggregation function (or equivalent) to the given expression.
+func (d Dialect) AnyValueExpression(expr string) string {
+	return fmt.Sprintf("ANY_VALUE(%s)", expr)
 }
 
 func (d Dialect) GetTimeDimensionParameter() string {

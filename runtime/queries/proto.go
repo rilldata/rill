@@ -398,7 +398,7 @@ func rowFilterJSON(where *runtimev1.Expression, whereSQL string, filter *runtime
 	}
 	var whereSQLExp *runtimev1.Expression
 	if whereSQL != "" {
-		mvExp, err := metricssql.ParseSQLFilter(whereSQL)
+		mvExp, err := metricssql.ParseFilter(whereSQL)
 		if err != nil {
 			return "", fmt.Errorf("invalid where SQL: %w", err)
 		}
