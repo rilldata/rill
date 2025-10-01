@@ -23,6 +23,16 @@ export class VegaLiteTooltipHandler {
     this.valueFormatter = valueFormatter;
   }
 
+  /**
+   * There is an element that does not have a position.
+   * So it can add to the height, especially when dynamic height is set.
+   */
+  public static resetElement() {
+    const el = document.getElementById(TOOLTIP_ID);
+    if (!el) return;
+    el.setAttribute("style", `top:0;left:0;`);
+  }
+
   removeTooltip = () => {
     const existingEl = document.getElementById(TOOLTIP_ID);
     if (existingEl) {

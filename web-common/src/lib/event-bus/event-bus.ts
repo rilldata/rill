@@ -1,6 +1,6 @@
 import type {
   BannerEvent,
-  DashboardResized,
+  PageContentResized,
   NotificationMessage,
 } from "./events";
 
@@ -62,7 +62,7 @@ export interface Events {
   "command-click": null;
   click: null;
   "shift-command-click": null;
-  "dashboard-resized": DashboardResized;
+  "page-content-resized": PageContentResized;
 }
 
 type T = keyof Events;

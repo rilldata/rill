@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
+  import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { onMount } from "svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
@@ -27,6 +28,7 @@
 
   onMount(() => {
     createIframeRPCHandler();
+    VegaLiteTooltipHandler.resetElement();
 
     return initEmbedPublicAPI();
   });

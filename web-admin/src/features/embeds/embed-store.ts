@@ -1,3 +1,5 @@
+import { dynamicHeight } from "@rilldata/web-admin/components/layout/layout-settings";
+
 /**
  * Stores embed params in-memory so that the components that manipulate url need not be aware of these.
  * It can also increase the url size unnessarily, especially the `access_token`.
@@ -12,7 +14,6 @@ export class EmbedStore {
    */
   public readonly missingRequireParams: string[] = [];
   public readonly navigationEnabled: boolean;
-  public readonly dynamicHeight: boolean;
 
   /**
    * Clean session storage for dashboards that are navigated to for the 1st time.
@@ -47,6 +48,6 @@ export class EmbedStore {
       this.missingRequireParams.push("access_token");
     }
 
-    this.dynamicHeight = url.searchParams.get("dynamic_height") === "true";
+    dynamicHeight.set(url.searchParams.get("dynamic_height") === "true");
   }
 }

@@ -45,9 +45,7 @@ export interface BannerMessage {
   };
 }
 
-export interface DashboardResized {
-  name: string;
-  type: string;
+export interface PageContentResized {
   width: number;
   height: number;
 }

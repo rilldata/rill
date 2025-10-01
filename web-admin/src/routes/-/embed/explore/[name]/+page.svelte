@@ -3,7 +3,7 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  $: ({ instanceId, exploreName, dynamicHeight } = data);
+  $: ({ instanceId, exploreName } = data);
 </script>
 
-<ExploreEmbed {instanceId} {exploreName} {dynamicHeight} />
+<ExploreEmbed {instanceId} {exploreName} />

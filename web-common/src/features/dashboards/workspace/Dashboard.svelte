@@ -1,14 +1,13 @@
 <script lang="ts">
+  import { dynamicHeight } from "@rilldata/web-admin/components/layout/layout-settings.ts";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { createSizeChangeHandler } from "@rilldata/web-common/lib/create-size-change-handler.ts";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DashboardState_ActivePage } from "../../../proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -26,7 +25,6 @@
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
-  export let dynamicHeight: boolean = false;
 
   const DEFAULT_TIMESERIES_WIDTH = 580;
   const MIN_TIMESERIES_WIDTH = 440;
@@ -106,19 +104,13 @@
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
-
-  const sizeChangeHandler = createSizeChangeHandler(
-    exploreName,
-    ResourceKind.Explore,
-  );
 </script>
 
 <article
   class="flex flex-col overflow-y-hidden dashboard-theme-boundary"
   bind:clientWidth={exploreContainerWidth}
-  class:w-full={dynamicHeight}
-  class:size-full={!dynamicHeight}
-  use:sizeChangeHandler
+  class:w-full={$dynamicHeight}
+  class:size-full={!$dynamicHeight}
 >
   <div
     id="header"
@@ -150,10 +142,12 @@
     <PivotDisplay />
   {:else}
     <div
-      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide bg-surface"
+      class="flex gap-x-1 gap-y-2 overflow-hidden pl-4 slide bg-surface"
       class:flex-col={showTimeDimensionDetail}
       class:flex-row={!showTimeDimensionDetail}
       class:left-shift={extraLeftPadding}
+      class:w-full={$dynamicHeight}
+      class:size-full={!$dynamicHeight}
     >
       <div
         class="pt-2 flex-none"
