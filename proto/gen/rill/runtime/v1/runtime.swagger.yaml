@@ -3781,18 +3781,12 @@ definitions:
         title: Connector driver metadata
       config:
         type: object
-        additionalProperties:
-          type: string
         title: Combined config properties for the connector
       presetConfig:
         type: object
-        additionalProperties:
-          type: string
         title: Config properties preset by the runtime or when the instance was created
       projectConfig:
         type: object
-        additionalProperties:
-          type: string
         title: Config properties set in project YAML files
       envConfig:
         type: object
@@ -4429,16 +4423,9 @@ definitions:
       name:
         type: string
         title: Name of the connector
-      config:
+      properties:
         type: object
-        additionalProperties:
-          type: string
         title: Config for the connector
-      templatedProperties:
-        type: array
-        items:
-          type: string
-        title: Properties in config that use templating
       provision:
         type: boolean
         title: Provision settings if its a managed connector
@@ -4502,12 +4489,6 @@ definitions:
         type: string
       properties:
         type: object
-        additionalProperties:
-          type: string
-      templatedProperties:
-        type: array
-        items:
-          type: string
       provision:
         type: boolean
       provisionArgs:

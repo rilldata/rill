@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestRuntime_EditInstance(t *testing.T) {
@@ -39,19 +40,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"connector.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -63,19 +64,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"connector.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -90,19 +91,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo1",
-						Config: map[string]string{"dsn": repodsn},
+						Type:       "file",
+						Name:       "repo1",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "olap1",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "olap1",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog1",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog1",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -114,19 +115,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo1",
-						Config: map[string]string{"dsn": repodsn},
+						Type:       "file",
+						Name:       "repo1",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "olap1",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "olap1",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog1",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog1",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -141,19 +142,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:?access_mode=read_write"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:?access_mode=read_write"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -165,19 +166,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:?access_mode=read_write"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:?access_mode=read_write"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -192,19 +193,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": newRepodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": newRepodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -216,19 +217,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": newRepodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": newRepodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -243,19 +244,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": newRepodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": newRepodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 				Annotations: map[string]string{
@@ -270,19 +271,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": newRepodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": newRepodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
-						Type:   "sqlite",
-						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "sqlite",
+						Name:       "catalog",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 				Annotations: map[string]string{
@@ -305,14 +306,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoConnector: "repo",
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			}
@@ -383,14 +384,14 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 				RepoConnector: "repo",
 				Connectors: []*runtimev1.Connector{
 					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Type:       "file",
+						Name:       "repo",
+						Properties: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
-						Type:   "duckdb",
-						Name:   "duckdb",
-						Config: map[string]string{},
+						Type:       "duckdb",
+						Name:       "duckdb",
+						Properties: must(structpb.NewStruct(map[string]any{})),
 					},
 				},
 			}
@@ -448,14 +449,14 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 		RepoConnector: "repo",
 		Connectors: []*runtimev1.Connector{
 			{
-				Type:   "file",
-				Name:   "repo",
-				Config: map[string]string{"dsn": t.TempDir()},
+				Type:       "file",
+				Name:       "repo",
+				Properties: must(structpb.NewStruct(map[string]any{"dsn": t.TempDir()})),
 			},
 			{
-				Type:   "duckdb",
-				Name:   "duckdb",
-				Config: map[string]string{},
+				Type:       "duckdb",
+				Name:       "duckdb",
+				Properties: must(structpb.NewStruct(map[string]any{})),
 			},
 		},
 	}
@@ -499,7 +500,7 @@ func newTestRuntime(t *testing.T) *Runtime {
 			Name: "metastore",
 			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 			// "cache=shared" is needed to prevent threading problems.
-			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+			Properties: must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
 		},
 	}
 
@@ -527,5 +528,12 @@ func connectorsEqual(a, b *runtimev1.Connector) bool {
 	if (a != nil) != (b != nil) {
 		return false
 	}
-	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Config, b.Config)
+	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Properties.AsMap(), b.Properties.AsMap())
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

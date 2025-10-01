@@ -292,11 +292,11 @@ export interface V1AnalyzeVariablesResponse {
   variables?: V1AnalyzedVariable[];
 }
 
-export type V1AnalyzedConnectorConfig = { [key: string]: string };
+export type V1AnalyzedConnectorConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorPresetConfig = { [key: string]: string };
+export type V1AnalyzedConnectorPresetConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
+export type V1AnalyzedConnectorProjectConfig = { [key: string]: unknown };
 
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
@@ -670,7 +670,7 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
-export type V1ConnectorConfig = { [key: string]: string };
+export type V1ConnectorProperties = { [key: string]: unknown };
 
 export type V1ConnectorProvisionArgs = { [key: string]: unknown };
 
@@ -678,8 +678,7 @@ export interface V1Connector {
   /** Type of the connector. One of the infra driver supported. */
   type?: string;
   name?: string;
-  config?: V1ConnectorConfig;
-  templatedProperties?: string[];
+  properties?: V1ConnectorProperties;
   provision?: boolean;
   provisionArgs?: V1ConnectorProvisionArgs;
 }
@@ -707,14 +706,13 @@ export interface V1ConnectorDriver {
   implementsWarehouse?: boolean;
 }
 
-export type V1ConnectorSpecProperties = { [key: string]: string };
+export type V1ConnectorSpecProperties = { [key: string]: unknown };
 
 export type V1ConnectorSpecProvisionArgs = { [key: string]: unknown };
 
 export interface V1ConnectorSpec {
   driver?: string;
   properties?: V1ConnectorSpecProperties;
-  templatedProperties?: string[];
   provision?: boolean;
   provisionArgs?: V1ConnectorSpecProvisionArgs;
 }
