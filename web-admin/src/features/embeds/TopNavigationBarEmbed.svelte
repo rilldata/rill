@@ -4,6 +4,9 @@
   import TwoTieredBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/TwoTieredBreadcrumbItem.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import type {
     V1Resource,
     V1ResourceName,
@@ -11,10 +14,17 @@
 
   export let instanceId: string;
   export let activeResource: V1ResourceName;
+  export let navigationEnabled: boolean = true;
 
-  const { twoTieredNavigation } = featureFlags;
+  const { twoTieredNavigation, dashboardChat } = featureFlags;
 
   $: onProjectPage = !activeResource;
+
+  $: shouldRender =
+    navigationEnabled ||
+    (dashboardChat &&
+      (activeResource?.kind === ResourceKind.Explore.toString() ||
+        activeResource?.kind === ResourceKind.MetricsView.toString()));
 
   // Dashboard breadcrumb
   $: dashboardsQuery = useValidDashboards(instanceId);
@@ -42,36 +52,49 @@
   );
 </script>
 
-{#if $isErrorStoreEmpty}
-  <nav>
-    <ol class="flex items-center pl-4">
-      {#if !onProjectPage}
-        <div class="flex gap-x-2">
-          <a class="text-gray-500 hover:text-gray-600" href="/-/embed">
-            Home
-          </a>
-          <span class="text-gray-600">/</span>
-        </div>
-      {/if}
+{#if $isErrorStoreEmpty && shouldRender}
+  <div class="flex items-center w-full">
+    {#if navigationEnabled}
+      <nav class="flex-1">
+        <ol class="flex items-center pl-4">
+          {#if !onProjectPage}
+            <div class="flex gap-x-2">
+              <a class="text-gray-500 hover:text-gray-600" href="/-/embed">
+                Home
+              </a>
+              <span class="text-gray-600">/</span>
+            </div>
+          {/if}
 
-      {#if currentResource}
-        {#if $twoTieredNavigation}
-          <TwoTieredBreadcrumbItem
-            options={breadcrumbOptions}
-            current={currentResourceName}
-            isCurrentPage
-          />
-        {:else}
-          <BreadcrumbItem
-            options={breadcrumbOptions}
-            current={currentResourceName}
-            isCurrentPage
-            isEmbedded
-          />
-        {/if}
-      {/if}
-    </ol>
-  </nav>
+          {#if currentResource}
+            {#if $twoTieredNavigation}
+              <TwoTieredBreadcrumbItem
+                options={breadcrumbOptions}
+                current={currentResourceName}
+                isCurrentPage
+              />
+            {:else}
+              <BreadcrumbItem
+                options={breadcrumbOptions}
+                current={currentResourceName}
+                isCurrentPage
+                isEmbedded
+              />
+            {/if}
+          {/if}
+        </ol>
+      </nav>
+    {:else}
+      <div class="flex-1" />
+    {/if}
+
+    {#if dashboardChat && (activeResource?.kind === ResourceKind.Explore.toString() || activeResource?.kind === ResourceKind.MetricsView.toString())}
+      <div class="flex gap-x-4 items-center">
+        <LastRefreshedDate dashboard={activeResource?.name} />
+        <ChatToggle />
+      </div>
+    {/if}
+  </div>
 {:else}
   <div />
 {/if}

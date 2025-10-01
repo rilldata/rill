@@ -5,8 +5,6 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
-  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
-  import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
   import { onMount } from "svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { createIframeRPCHandler } from "@rilldata/web-common/lib/rpc";
@@ -31,8 +29,11 @@
     name: $page.params.name,
   };
 
-  // Show top bar if either navigation is enabled OR dashboardChat feature flag is enabled
-  $: showTopBar = navigationEnabled || $dashboardChat;
+  $: showTopBar =
+    navigationEnabled ||
+    ($dashboardChat &&
+      (activeResource?.kind === ResourceKind.Explore.toString() ||
+        activeResource?.kind === ResourceKind.MetricsView.toString()));
   $: onProjectPage = !activeResource;
 
   onMount(() => {
@@ -66,19 +67,14 @@
   >
     {#if showTopBar}
       <div
-        class="flex items-center w-full pr-4 py-1"
+        class="flex items-center w-full pr-4 py-1 min-h-[2.5rem]"
         class:border-b={!onProjectPage}
       >
-        {#if navigationEnabled}
-          <TopNavigationBarEmbed {instanceId} {activeResource} />
-        {/if}
-        {#if $dashboardChat && activeResource?.kind === ResourceKind.Explore.toString()}
-          <div class="grow" />
-          <div class="flex gap-x-4 items-center">
-            <LastRefreshedDate dashboard={activeResource?.name} />
-            <ChatToggle />
-          </div>
-        {/if}
+        <TopNavigationBarEmbed
+          {instanceId}
+          {activeResource}
+          {navigationEnabled}
+        />
       </div>
     {/if}
 
