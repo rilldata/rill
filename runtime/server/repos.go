@@ -50,6 +50,7 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 		entries = append(entries, &runtimev1.DirEntry{
 			Path:  file.Path,
 			IsDir: file.IsDir,
+			Size:  file.Size,
 		})
 	}
 
@@ -147,6 +148,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
 				Path:  f.Path,
 				IsDir: f.IsDir,
+				Size:  f.Size,
 			})
 			if err != nil {
 				return err
@@ -160,6 +162,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 				Event: event.Type,
 				Path:  event.Path,
 				IsDir: event.Dir,
+				Size:  event.Size,
 			})
 			if err != nil {
 				s.logger.Info("failed to send watch event", zap.Error(err))

@@ -2866,6 +2866,8 @@ func (m *DirEntry) validate(all bool) error {
 
 	// no validation rules for IsDir
 
+	// no validation rules for Size
+
 	if len(errors) > 0 {
 		return DirEntryMultiError(errors)
 	}
@@ -3087,6 +3089,8 @@ func (m *WatchFilesResponse) validate(all bool) error {
 	// no validation rules for Path
 
 	// no validation rules for IsDir
+
+	// no validation rules for Size
 
 	if len(errors) > 0 {
 		return WatchFilesResponseMultiError(errors)
