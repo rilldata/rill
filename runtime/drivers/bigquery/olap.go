@@ -106,34 +106,7 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 
 // All implements drivers.OLAPInformationSchema.
 func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
-	schemas, token, err := c.ListDatabaseSchemas(ctx, pageSize, pageToken)
-	if err != nil {
-		return nil, "", err
-	}
-	tables := make([]*drivers.OlapTable, 0)
-	for _, schema := range schemas {
-		ts, token, err := c.ListTables(ctx, schema.Database, schema.DatabaseSchema, 1000, "")
-		if err != nil {
-			return nil, "", err
-		}
-		if token != "" {
-			// we don't support pagination across multiple schemas
-			return nil, "", fmt.Errorf("schema has more than 1000 tables can not list all")
-		}
-		for _, t := range ts {
-			table := &drivers.OlapTable{
-				Database:          schema.Database,
-				DatabaseSchema:    schema.DatabaseSchema,
-				Name:              t.Name,
-				View:              t.View,
-				Schema:            nil,
-				UnsupportedCols:   nil,
-				PhysicalSizeBytes: 0,
-			}
-			tables = append(tables, table)
-		}
-	}
-	return tables, token, nil
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
 }
 
 // LoadPhysicalSize implements drivers.OLAPInformationSchema.

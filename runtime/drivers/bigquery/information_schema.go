@@ -132,9 +132,9 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		CASE true WHEN t.table_type = 'VIEW' ELSE false END AS is_view,
 		c.column_name,
 		c.data_type
-	FROM `+"`%s.%s.INFORMATION_SCHEMA.COLUMNS`"+` AS c
-	JOIN `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+` AS t
-	ON c.table_name = t.table_name
+	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+` AS t
+	JOIN `+"`%s.%s.INFORMATION_SCHEMA.COLUMNS`"+` AS c
+	ON t.table_name = c.table_name
 	WHERE c.table_name = @table
 	ORDER BY c.ordinal_position
 	`, database, databaseSchema, database, databaseSchema)
