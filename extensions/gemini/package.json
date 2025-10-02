@@ -1,0 +1,24 @@
+{
+  "name": "rill-extension",
+  "version": "1.0.0",
+  "description": "Rill Data Gemini Extension",
+  "dependencies": {
+    "mcp-remote": "^0.1.18"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rilldata/rill"
+  },
+  "author": {
+    "name": "Rill Data",
+    "email": "support@rilldata.com"
+  },
+  "scripts": {
+    "link": "gemini extensions link .",
+    "unlink": "gemini extensions uninstall rill-extension"
+  }
+}

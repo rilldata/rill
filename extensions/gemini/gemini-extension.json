@@ -1,0 +1,20 @@
+{
+  "name": "rill-extension",
+  "version": "1.0.0",
+  "mcpServers": {
+    "rill": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://localhost:8080/v1/organizations/nullstring/projects/dev-project/runtime/mcp",
+        "--header",
+        "Authorization:${AUTH_HEADER}"
+      ],
+      "env": {
+        "AUTH_HEADER": "Bearer rill_usr_5jN9q3f58HAKvCobcTE9KoImYcyYfI8Pt6mPwhQSCMbcdM6uiCKQBV"
+      }
+    }
+  },
+  "contextFileName": "GEMINI.md",
+  "excludeTools": []
+}
