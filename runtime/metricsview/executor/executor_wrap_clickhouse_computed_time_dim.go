@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 // wrapClickhouseComputedTimeDim wraps any select node in the AST having a computed time dimension in an outer select so that inner select has different alias than the time column name and outer select, selects this column using the original time alias.
@@ -13,17 +14,17 @@ import (
 // This does not work correctly in ClickHouse and it just does not subtract the interval from the time dimension and return "TIME_DIM" as it is.
 // Another example, if there is an expression like date_trunc('day', "TIME_DIM") AS "TIME_DIM", and if "TIME_DIM" is used in where clause then it will use the underlying "TIME_DIM" column not the truncated one.
 // Relevant issue - https://github.com/ClickHouse/ClickHouse/issues/9715
-func (e *Executor) wrapClickhouseComputedTimeDim(ast *AST) error {
+func (e *Executor) wrapClickhouseComputedTimeDim(ast *metricsview.AST) error {
 	if e.olap.Dialect() != drivers.DialectClickHouse {
 		return nil
 	}
 
 	computedTimeDims := make(map[string]string)
-	for _, qd := range ast.query.Dimensions {
+	for _, qd := range ast.Query.Dimensions {
 		if qd.Compute == nil || qd.Compute.TimeFloor == nil || qd.Compute.TimeFloor.Dimension == "" {
 			continue
 		}
-		dim, err := ast.lookupDimension(qd.Compute.TimeFloor.Dimension, false)
+		dim, err := ast.LookupDimension(qd.Compute.TimeFloor.Dimension, false)
 		if err != nil { // this should never happen
 			return fmt.Errorf("failed to lookup time dimension %q: %w", qd.Compute.TimeFloor.Dimension, err)
 		}
@@ -46,7 +47,7 @@ func (e *Executor) wrapClickhouseComputedTimeDim(ast *AST) error {
 	return nil
 }
 
-func (e *Executor) wrapClickhouseComputedTimeDimWalk(a *AST, n *SelectNode, computedTimeDims map[string]string) {
+func (e *Executor) wrapClickhouseComputedTimeDimWalk(a *metricsview.AST, n *metricsview.SelectNode, computedTimeDims map[string]string) {
 	leaf := true
 	if n.FromSelect != nil {
 		e.wrapClickhouseComputedTimeDimWalk(a, n.FromSelect, computedTimeDims)
@@ -79,9 +80,9 @@ func (e *Executor) wrapClickhouseComputedTimeDimWalk(a *AST, n *SelectNode, comp
 	}
 
 	if wrapNeeded {
-		a.wrapSelect(n, a.generateIdentifier())
+		a.WrapSelect(n, a.GenerateIdentifier())
 		// first change alias in the inner query
-		dims := make([]FieldNode, 0, len(n.FromSelect.DimFields))
+		dims := make([]metricsview.FieldNode, 0, len(n.FromSelect.DimFields))
 		for i, f := range n.FromSelect.DimFields {
 			dims = append(dims, f)
 			if uniqName, ok := computedTimeDims[f.Name]; ok {
@@ -91,7 +92,7 @@ func (e *Executor) wrapClickhouseComputedTimeDimWalk(a *AST, n *SelectNode, comp
 		n.FromSelect.DimFields = dims
 
 		// check if there are order bys in the inner query and use new alias
-		orderBys := make([]OrderFieldNode, 0, len(n.FromSelect.OrderBy))
+		orderBys := make([]metricsview.OrderFieldNode, 0, len(n.FromSelect.OrderBy))
 		for i, order := range n.FromSelect.OrderBy {
 			orderBys = append(orderBys, order)
 			if uniqName, ok := computedTimeDims[order.Name]; ok {
@@ -102,11 +103,11 @@ func (e *Executor) wrapClickhouseComputedTimeDimWalk(a *AST, n *SelectNode, comp
 		n.FromSelect.OrderBy = orderBys
 
 		// last change the expressions in the outer query to use the uniqName but keep the return alias same as the actual query dimension name so change the expression and keep f.Name as is
-		dims = make([]FieldNode, 0, len(n.DimFields))
+		dims = make([]metricsview.FieldNode, 0, len(n.DimFields))
 		for i, f := range n.DimFields {
 			dims = append(dims, f)
 			if uniqName, ok := computedTimeDims[f.Name]; ok {
-				dims[i].Expr = a.sqlForMember(n.FromSelect.Alias, uniqName)
+				dims[i].Expr = a.Dialect.EscapeMember(n.FromSelect.Alias, uniqName)
 			}
 		}
 		n.DimFields = dims

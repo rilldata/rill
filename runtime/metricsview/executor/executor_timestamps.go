@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -14,7 +15,7 @@ const (
 	defaultExecutionTimeout = time.Minute * 3
 )
 
-func (e *Executor) resolveDuckDB(ctx context.Context, timeExpr string) (TimestampsResult, error) {
+func (e *Executor) resolveDuckDB(ctx context.Context, timeExpr string) (metricsview.TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
@@ -42,7 +43,7 @@ func (e *Executor) resolveDuckDB(ctx context.Context, timeExpr string) (Timestam
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return TimestampsResult{}, err
+		return metricsview.TimestampsResult{}, err
 	}
 	defer rows.Close()
 
@@ -50,9 +51,9 @@ func (e *Executor) resolveDuckDB(ctx context.Context, timeExpr string) (Timestam
 		var minTime, maxTime, watermark *time.Time
 		err = rows.Scan(&minTime, &maxTime, &watermark)
 		if err != nil {
-			return TimestampsResult{}, err
+			return metricsview.TimestampsResult{}, err
 		}
-		return TimestampsResult{
+		return metricsview.TimestampsResult{
 			Min:       safeTime(minTime),
 			Max:       safeTime(maxTime),
 			Watermark: safeTime(watermark),
@@ -61,13 +62,13 @@ func (e *Executor) resolveDuckDB(ctx context.Context, timeExpr string) (Timestam
 
 	err = rows.Err()
 	if err != nil {
-		return TimestampsResult{}, err
+		return metricsview.TimestampsResult{}, err
 	}
 
-	return TimestampsResult{}, errors.New("no rows returned")
+	return metricsview.TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (TimestampsResult, error) {
+func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (metricsview.TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
@@ -95,7 +96,7 @@ func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (Time
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return TimestampsResult{}, err
+		return metricsview.TimestampsResult{}, err
 	}
 	defer rows.Close()
 
@@ -104,14 +105,14 @@ func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (Time
 		var count int
 		err = rows.Scan(&minTime, &maxTime, &watermark, &count)
 		if err != nil {
-			return TimestampsResult{}, err
+			return metricsview.TimestampsResult{}, err
 		}
 		if count == 0 {
 			// if datetime column is not nullable then ch returns 0 value instead of NULL when there are no rows
 			// The 0 value thus returned does not return true for IsZero() check
-			return TimestampsResult{}, nil
+			return metricsview.TimestampsResult{}, nil
 		}
-		return TimestampsResult{
+		return metricsview.TimestampsResult{
 			Min:       safeTime(minTime),
 			Max:       safeTime(maxTime),
 			Watermark: safeTime(watermark),
@@ -120,13 +121,13 @@ func (e *Executor) resolveClickHouse(ctx context.Context, timeExpr string) (Time
 
 	err = rows.Err()
 	if err != nil {
-		return TimestampsResult{}, err
+		return metricsview.TimestampsResult{}, err
 	}
 
-	return TimestampsResult{}, errors.New("no rows returned")
+	return metricsview.TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolvePinot(ctx context.Context, timeExpr string) (TimestampsResult, error) {
+func (e *Executor) resolvePinot(ctx context.Context, timeExpr string) (metricsview.TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
@@ -154,7 +155,7 @@ func (e *Executor) resolvePinot(ctx context.Context, timeExpr string) (Timestamp
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return TimestampsResult{}, err
+		return metricsview.TimestampsResult{}, err
 	}
 	defer rows.Close()
 
@@ -166,15 +167,15 @@ func (e *Executor) resolvePinot(ctx context.Context, timeExpr string) (Timestamp
 			var minTime, maxTime, watermark int64
 			innerErr := rows.Scan(&minTime, &maxTime, &watermark)
 			if innerErr != nil {
-				return TimestampsResult{}, err
+				return metricsview.TimestampsResult{}, err
 			}
-			return TimestampsResult{
+			return metricsview.TimestampsResult{
 				Min:       time.UnixMilli(minTime),
 				Max:       time.UnixMilli(maxTime),
 				Watermark: time.UnixMilli(watermark),
 			}, nil
 		}
-		return TimestampsResult{
+		return metricsview.TimestampsResult{
 			Min:       safeTime(minTime),
 			Max:       safeTime(maxTime),
 			Watermark: safeTime(watermark),
@@ -183,20 +184,20 @@ func (e *Executor) resolvePinot(ctx context.Context, timeExpr string) (Timestamp
 
 	err = rows.Err()
 	if err != nil {
-		return TimestampsResult{}, err
+		return metricsview.TimestampsResult{}, err
 	}
 
-	return TimestampsResult{}, errors.New("no rows returned")
+	return metricsview.TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (TimestampsResult, error) {
+func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (metricsview.TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
-	var ts TimestampsResult
+	var ts metricsview.TimestampsResult
 	group, ctx := errgroup.WithContext(ctx)
 
 	// don't populate the cache, but use it if it's there as druid timeboundary query will create a cache entry for each segment
@@ -233,7 +234,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (Timestamp
 			if err != nil {
 				return err
 			}
-			return errors.New("no rows returned for min time")
+			// don't return error if there are no rows as druid does not return any rows when where clause does not match
 		}
 
 		return nil
@@ -269,7 +270,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (Timestamp
 			if err != nil {
 				return err
 			}
-			return errors.New("no rows returned for max time")
+			// don't return error if there are no rows as druid does not return any rows when where clause does not match
 		}
 		return nil
 	})
@@ -305,7 +306,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (Timestamp
 				if err != nil {
 					return err
 				}
-				return errors.New("no rows returned for max time")
+				// don't return error if there are no rows as druid does not return any rows when where clause does not match
 			}
 			return nil
 		})
@@ -313,7 +314,7 @@ func (e *Executor) resolveDruid(ctx context.Context, timeExpr string) (Timestamp
 
 	err := group.Wait()
 	if err != nil {
-		return TimestampsResult{}, err
+		return metricsview.TimestampsResult{}, err
 	}
 
 	// If there's no custom watermark expression, the watermark defaults to the max time.

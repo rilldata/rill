@@ -1,9 +1,11 @@
-package metricsview
+package executor
+
+import "github.com/rilldata/rill/runtime/metricsview"
 
 // rewriteLimitsIntoSubqueries rewrites the AST pushing limits and sorts into subqueries where possible.
 // It only pushes into sub-queries that make up the "spine" of the query result, i.e. where it does not impact correctness.
 // This may help optimize joins in some cases.
-func (e *Executor) rewriteLimitsIntoSubqueries(ast *AST) error {
+func (e *Executor) rewriteLimitsIntoSubqueries(ast *metricsview.AST) error {
 	// There must be a limit and order
 	if len(ast.Root.OrderBy) == 0 || ast.Root.Limit == nil {
 		return nil
@@ -12,7 +14,7 @@ func (e *Executor) rewriteLimitsIntoSubqueries(ast *AST) error {
 	return e.rewriteLimitsIntoSubqueriesWalk(ast, ast.Root)
 }
 
-func (e *Executor) rewriteLimitsIntoSubqueriesWalk(ast *AST, n *SelectNode) error {
+func (e *Executor) rewriteLimitsIntoSubqueriesWalk(ast *metricsview.AST, n *metricsview.SelectNode) error {
 	// Skip if doesn't have subqueries
 	if n.FromSelect == nil {
 		return nil
@@ -21,14 +23,14 @@ func (e *Executor) rewriteLimitsIntoSubqueriesWalk(ast *AST, n *SelectNode) erro
 	// We can only push order and limits down to a node that makes up the "spine" of the query.
 	// E.g. if the other subqueries are left-joined to FromSelect, we can only push order and limits down to FromSelect.
 	// This code identifies the "spine" node.
-	var spineNode *SelectNode
+	var spineNode *metricsview.SelectNode
 	if n.SpineSelect != nil {
 		spineNode = n.SpineSelect
 	} else if n.JoinComparisonSelect != nil {
 		switch n.JoinComparisonType {
-		case JoinTypeLeft:
+		case metricsview.JoinTypeLeft:
 			spineNode = n.FromSelect
-		case JoinTypeRight:
+		case metricsview.JoinTypeRight:
 			spineNode = n.JoinComparisonSelect
 		default:
 			// Can't push order and limits down to either for other join types
@@ -50,7 +52,7 @@ func (e *Executor) rewriteLimitsIntoSubqueriesWalk(ast *AST, n *SelectNode) erro
 	return nil
 }
 
-func rewriteLimitInSubquery(parent, child *SelectNode, order []OrderFieldNode, limit, offset *int64) {
+func rewriteLimitInSubquery(parent, child *metricsview.SelectNode, order []metricsview.OrderFieldNode, limit, offset *int64) {
 	// Skip if the node already has order or limit
 	if len(child.OrderBy) > 0 || child.Limit != nil || child.Offset != nil {
 		return
@@ -58,7 +60,7 @@ func rewriteLimitInSubquery(parent, child *SelectNode, order []OrderFieldNode, l
 
 	// Skip if any of the order fields are not present in the node
 	for _, f := range order {
-		if !hasName(child, f.Name) {
+		if !child.HasName(f.Name) {
 			return
 		}
 	}

@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -345,6 +346,9 @@ func mapGRPCError(err error) error {
 		return ErrForbidden
 	}
 	if errors.Is(err, runtime.ErrForbidden) {
+		return ErrForbidden
+	}
+	if errors.Is(err, metricsview.ErrForbidden) {
 		return ErrForbidden
 	}
 	return err
