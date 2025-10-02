@@ -42,6 +42,7 @@
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -377,6 +378,24 @@
       }
     }
   }
+
+  // Handle file upload for credential files
+  async function handleFileUpload(file: File): Promise<string> {
+    try {
+      const content = await file.text();
+
+      // Parse and re-stringify JSON to sanitize whitespace
+      const parsedJson = JSON.parse(content);
+      const sanitizedJson = JSON.stringify(parsedJson);
+
+      return sanitizedJson;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(`Invalid JSON file: ${error.message}`);
+      }
+      throw new Error(`Failed to read file: ${error.message}`);
+    }
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -456,6 +475,16 @@
                       hint={property.hint}
                       href={property.docsUrl}
                     />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                    <CredentialsInput
+                      id={propertyKey}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                      bind:value={$paramsForm[propertyKey]}
+                      uploadFile={handleFileUpload}
+                      accept=".json"
+                    />
                   {/if}
                 </div>
               {/each}
@@ -471,16 +500,28 @@
               {#each filteredDsnProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 <div class="py-1.5 first:pt-0 last:pb-0">
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={$dsnErrors[propertyKey]}
-                    bind:value={$dsnForm[propertyKey]}
-                    alwaysShowError
-                  />
+                  {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                    <CredentialsInput
+                      id={propertyKey}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                      bind:value={$dsnForm[propertyKey]}
+                      uploadFile={handleFileUpload}
+                      accept=".json"
+                    />
+                  {:else}
+                    <Input
+                      id={propertyKey}
+                      label={property.displayName}
+                      placeholder={property.placeholder}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={$dsnErrors[propertyKey]}
+                      bind:value={$dsnForm[propertyKey]}
+                      alwaysShowError
+                    />
+                  {/if}
                 </div>
               {/each}
             </form>
@@ -497,16 +538,28 @@
           {#each filteredDsnProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             <div class="py-1.5 first:pt-0 last:pb-0">
-              <Input
-                id={propertyKey}
-                label={property.displayName}
-                placeholder={property.placeholder}
-                secret={property.secret}
-                hint={property.hint}
-                errors={$dsnErrors[propertyKey]}
-                bind:value={$dsnForm[propertyKey]}
-                alwaysShowError
-              />
+              {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                  bind:value={$dsnForm[propertyKey]}
+                  uploadFile={handleFileUpload}
+                  accept=".json"
+                />
+              {:else}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={$dsnErrors[propertyKey]}
+                  bind:value={$dsnForm[propertyKey]}
+                  alwaysShowError
+                />
+              {/if}
             </div>
           {/each}
         </form>
@@ -546,6 +599,16 @@
                   description={property.description}
                   hint={property.hint}
                   href={property.docsUrl}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                  bind:value={$paramsForm[propertyKey]}
+                  uploadFile={handleFileUpload}
+                  accept=".json"
                 />
               {/if}
             </div>
