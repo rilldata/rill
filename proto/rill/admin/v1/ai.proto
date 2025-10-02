@@ -2,7 +2,6 @@ syntax = "proto3";
 package rill.admin.v1;
 
 import "google/api/annotations.proto";
-import "google/api/visibility.proto";
 import "rill/ai/v1/ai.proto";
 
 service AIService {

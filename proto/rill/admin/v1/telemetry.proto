@@ -2,7 +2,6 @@ syntax = "proto3";
 package rill.admin.v1;
 
 import "google/api/annotations.proto";
-import "google/api/visibility.proto";
 import "google/protobuf/struct.proto";
 
 service TelemetryService {
