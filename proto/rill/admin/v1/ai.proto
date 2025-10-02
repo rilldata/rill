@@ -8,7 +8,7 @@ import "rill/ai/v1/ai.proto";
 service AIService {
   // Complete sends the messages of a chat to the AI and asks it to generate a new message.
   rpc Complete(CompleteRequest) returns (CompleteResponse) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    
     option (google.api.http) = {
       post: "/v1/ai/complete",
       body: "*"
