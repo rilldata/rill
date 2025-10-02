@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { uploadFile } from "./utils/sourceHelpers";
 import { test } from "./setup/base";
 
-async function expectRillYAMLToContain(page: Page, text: string) {
+async function expectRillYAMLToContainOlapConnector(page: Page, text: string) {
   const rillYamlEditor = page
     .getByLabel("codemirror editor")
     .getByRole("textbox");
@@ -17,7 +17,7 @@ test.describe("Default olap_connector behavior", () => {
     await expect(page.getByText("Getting started")).toBeVisible();
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
-    await expectRillYAMLToContain(page, "duckdb");
+    await expectRillYAMLToContainOlapConnector(page, "duckdb");
   });
 
   test("Should set default olap_connector to duckdb for local file upload", async ({
@@ -31,7 +31,7 @@ test.describe("Default olap_connector behavior", () => {
     await page.getByText("View this source").click();
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
-    await expectRillYAMLToContain(page, "duckdb");
+    await expectRillYAMLToContainOlapConnector(page, "duckdb");
   });
 
   test("Should set default olap_connector to clickhouse for Rill-managed ClickHouse", async ({
@@ -55,6 +55,6 @@ test.describe("Default olap_connector behavior", () => {
     await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
-    await expectRillYAMLToContain(page, "clickhouse");
+    await expectRillYAMLToContainOlapConnector(page, "clickhouse");
   });
 });
