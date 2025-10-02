@@ -1042,13 +1042,9 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		ModelID: model.State.PartitionsModelId,
 	}
 
-	if model.Spec.TriggerPartitions {
-		// When partitions are explicitly triggered, process both explicitly triggered partitions AND any pending partitions in the same run
-		partitionFilter.WhereExplicitlyTriggered = true
-		partitionFilter.WherePending = true
-	} else {
-		partitionFilter.WherePending = true
-	}
+	// When partitions are explicitly triggered, process both explicitly triggered partitions AND any pending partitions in the same run
+	partitionFilter.WherePending = true
+	partitionFilter.WhereExplicitlyTriggered = model.Spec.TriggerPartitions
 
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
 	// This enables the first partition to create the initial result (such as a table) that the other partitions incrementally build upon.
