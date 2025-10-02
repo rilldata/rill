@@ -165,6 +165,9 @@ func fieldsFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []ma
 	}
 
 	dimDetails := make(map[string]*runtimev1.MetricsViewSpec_Dimension, len(spec.Dimensions))
+	for _, d := range spec.TimeDimensions {
+		dimDetails[d.Name] = d
+	}
 	for _, d := range spec.Dimensions {
 		dimDetails[d.Name] = d
 	}

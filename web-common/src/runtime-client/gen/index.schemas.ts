@@ -1517,6 +1517,8 @@ export interface V1MetricsViewSpec {
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
+  /** List of dimensions of type timestamp/date. It will be populated in `state.valid_spec`. */
+  timeDimensions?: MetricsViewSpecDimension[];
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
   parentDimensions?: V1FieldSelector;

@@ -175,6 +175,20 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		timeDim = qry.TimeRange.TimeDimension
 	}
 
+	// make sure timeDim is in valid metrics view time dimensions // TODO should we even check this? if not it will fail at certain point downstream so not a big deal
+	if timeDim != "" {
+		found := false
+		for _, d := range mv.TimeDimensions {
+			if strings.EqualFold(d.Name, timeDim) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("time dimension %q not found in metrics view time dimensions", timeDim)
+		}
+	}
+
 	// Init
 	ast := &AST{
 		MetricsView: mv,
@@ -585,7 +599,7 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 	// not checking access if its primary time dimension
 	if name == a.MetricsView.TimeDimension {
 		// check if its defined in the dimensions list otherwise return a default dimension spec
-		for _, dim := range a.MetricsView.Dimensions {
+		for _, dim := range a.MetricsView.TimeDimensions {
 			if dim.Name == name {
 				return dim, nil
 			}
@@ -599,6 +613,12 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 	if visible {
 		if !a.Security.CanAccessField(name) {
 			return nil, ErrForbidden
+		}
+	}
+
+	for _, dim := range a.MetricsView.TimeDimensions {
+		if dim.Name == name {
+			return dim, nil
 		}
 	}
 
@@ -1268,6 +1288,12 @@ func (a *AST) checkNameForComputedField(name string) error {
 
 	if name == a.MetricsView.TimeDimension {
 		return errors.New("name for computed field collides with the time dimension name")
+	}
+
+	for _, d := range a.MetricsView.TimeDimensions {
+		if d.Name == name {
+			return errors.New("name for computed field collides with an existing time dimension name")
+		}
 	}
 
 	for _, d := range a.MetricsView.Dimensions {

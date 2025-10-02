@@ -172,7 +172,10 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 		q.measures[measure.Name] = nil
 	}
 
-	q.dims = make(map[string]any, len(spec.Dimensions))
+	q.dims = make(map[string]any, len(spec.TimeDimensions)+len(spec.Dimensions))
+	for _, td := range spec.TimeDimensions {
+		q.dims[td.Name] = nil
+	}
 	for _, dim := range spec.Dimensions {
 		q.dims[dim.Name] = nil
 	}

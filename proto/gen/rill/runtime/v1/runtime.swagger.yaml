@@ -5832,6 +5832,12 @@ definitions:
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+      timeDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimension'
+        description: List of dimensions of type timestamp/date. It will be populated in `state.valid_spec`.
       dimensions:
         type: array
         items:

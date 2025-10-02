@@ -3193,6 +3193,40 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for WatermarkExpression
 
+	for idx, item := range m.GetTimeDimensions() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpecValidationError{
+						field:  fmt.Sprintf("TimeDimensions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpecValidationError{
+						field:  fmt.Sprintf("TimeDimensions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpecValidationError{
+					field:  fmt.Sprintf("TimeDimensions[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	for idx, item := range m.GetDimensions() {
 		_, _ = idx, item
 
