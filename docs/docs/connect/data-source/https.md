@@ -12,17 +12,29 @@ Import data from remote sources accessible via HTTP or HTTPS URLs into your Rill
 The HTTPS connector allows you to import data from publicly accessible files hosted on web servers, CDNs, or cloud storage services. This is perfect for working with datasets that are regularly updated or shared publicly.
 
 
+## Connect to HTTPS
+
+If your endpoint requires authentication, you can create a https connector that can test your API key before getting started on importing data. 
+
+```yaml
+type: connector 
+driver: https 
+path: "https://api.endpoint.com/v1" 
+
+headers:
+    Authorization: "Bearer {{ .env.connector.https.token }}"
+```
+
 ## Adding an HTTPS Source
 
 ### Option 1: Using the Rill UI
 
-1. In the left navigation pane, click the **"+"** button next to **Sources**
+1. In the left navigation pane, click the **"Add"** button and select data
 2. Select **"HTTPS"** from the connector options
 3. Enter your file's URL (e.g., `https://example.com/data.csv`)
-4. Click **"Add Source"**
+4. Click **"Add Data"**
 
-<img src='/img/connect/data-sources/https.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
+
 
 
 ### Option 2: Using Code
@@ -32,6 +44,7 @@ Create a YAML configuration file in your project's `sources` directory:
 ```yaml
 type: model
 connector: https
+
 path: https://example.com/data.csv
 ```
 

@@ -12,11 +12,24 @@ sidebar_position: 0
 [Amazon Athena](https://docs.aws.amazon.com/athena/) is an interactive query service that makes it easy to analyze data directly in Amazon S3 using standard SQL. It is serverless, so there is no infrastructure to manage, and you pay only for the queries you run, making it cost-effective for a wide range of data analysis tasks. Athena is designed for quick, ad-hoc querying of large datasets, enabling businesses to easily integrate it into their analytics and business intelligence tools for immediate insights from their data stored in S3. Rill supports natively connecting to and reading from Athena as a source by leveraging the [AWS SDK for Go](https://aws.github.io/aws-sdk-go-v2/docs/).
 
 
-<img src='/img/connect/data-sources/athena.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
+## Connect to Athena
+
+In Rill Developer, Connect to Athena via Add Data. This will automatically create the `athena.yaml` file in your connectors/ folder and populate the `.env` file with `connector.athena.aws_access_key_id` and `connector.athena.aws_secret_access_key.`
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
+
+driver: athena
+aws_access_key_id: "{{ .env.connector.athena.aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.connector.athena.aws_secret_access_key }}"
+output_location: "s3://bucket/path/folder"
+region: "us-east-1"
+```
 
 
-## Local credentials
+### Inferred Credentials
 
 When using Rill Developer on your local machine (i.e., `rill start`), Rill can either use the credentials configured in your local environment using the AWS CLI or use the explicitly set credentials in a [connector](/reference/project-files/connectors#athena) file.
 
@@ -45,7 +58,7 @@ You have now configured AWS access from your local environment. Rill will detect
 
 :::tip Did you know?
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
+If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 

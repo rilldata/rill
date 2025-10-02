@@ -10,12 +10,10 @@ sidebar_position: 15
 ## Overview
 [Google Cloud Storage (GCS)](https://cloud.google.com/storage/docs/introduction) is a scalable, fully managed, and highly reliable object storage service offered by Google Cloud, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common data storage formats such as CSV and Parquet. Rill supports natively connecting to GCS using the provided [Google Cloud Storage URI](https://cloud.google.com/bigquery/docs/cloud-storage-transfer-overview#google-cloud-storage-uri) of your bucket to retrieve and read files.
 
-<img src='/img/connect/data-sources/gcs.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
 
-## Rill Developer (Local credentials)
+## Connect to GCS
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill will use either the credentials configured in your local environment using the Google Cloud CLI (`gcloud`) or an [explicitly defined connector YAML](/reference/project-files/connectors#gcs). 
+When using Rill Developer on your local machine (i.e., `rill start`), Rill will use either the credentials configured in your local environment using the Google Cloud CLI (`gcloud`) or an [explicitly defined connector YAML](/reference/project-files/connectors#gcs) via the Add Data UI. 
 
 ### Inferred Credentials 
 
@@ -56,14 +54,19 @@ gcloud iam service-accounts keys create ~/key.json \
 You'll need to contact your internal cloud admin to create your Service Account JSONs for you.
 :::
 
-To configure Rill to use these credentials, create a `.env` file in your project directory (if one doesn't already exist) and add your `google_application_credentials` environment variable as a single-line string:
+Then, create a connector via the Add Data UI and Rill will automatically create the `gcs.yaml` file in your connectors/ folder and populate the `.env` file with `connector.gcs.google_application_credentials`.
 
-```bash
-google_application_credentials='{"type": "service_account", "project_id": "your-project", ...}'
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+
+type: connector
+
+driver: gcs
+
+google_application_credentials:  '{{.env.connector.gcs.google_application_credentials}}'
+bucket: "gs://bucket"
 ```
-
-Once configured, Rill will automatically use these credentials for all Google Cloud Platform connections, including [BigQuery](/connect/data-source/bigquery).
-
 
 :::tip Cloud Credentials Management
 If your project has already been deployed to Rill Cloud with configured credentials, you can use `rill env pull` to [retrieve and sync these cloud credentials](/connect/credentials/#rill-env-pull) to your local `.env` file. Note that this operation will overwrite any existing local credentials for this source.
@@ -81,25 +84,21 @@ gcloud storage hmac create \
   --service-account=SERVICE_ACCOUNT_EMAIL
 ```
 
+
+
 To use these credentials, configure the `key_id` and `secret` parameters in your [GCS connector](/reference/project-files/connectors#gcs).
-
-:::warning Security Best Practice
-
-Never commit sensitive credentials directly to your connector YAML files or version control. Instead, use environment variables to reference these values securely.
-
 ```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+type: connector
+
+driver: gcs
+
 key_id: '{{.env.connector.gcs.key_id}}'
 secret: '{{.env.connector.gcs.secret}}'
+bucket: "*"
 ```
 
-Configure these values in your `.env` file:
-
-```env
-connector.gcs.key_id=GOOG1E...
-connector.gcs.secret=wRu6iE...
-```
-
-:::
 
 ## Rill Cloud Deployment
 
