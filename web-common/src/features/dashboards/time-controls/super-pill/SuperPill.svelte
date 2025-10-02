@@ -78,6 +78,7 @@
       {rangeBuckets}
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
+      {allowCustomTimeRange}
       timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}
@@ -85,7 +86,6 @@
       {showFullRange}
       {onSelectTimeZone}
       {onSelectRange}
-      {onTimeGrainSelect}
     />
   {:else if interval.isValid && activeTimeGrain}
     <Elements.RangePicker

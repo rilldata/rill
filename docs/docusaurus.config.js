@@ -266,7 +266,7 @@ const config = {
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/connect/data-source/duckdb'
+            to: '/connect/olap/motherduck'
           },
           {
             from: '/deploy/source-refresh',
@@ -492,6 +492,14 @@ const config = {
             to: '/build/custom-apis'
           },
           {
+            from: '/explore/filters/filters',
+            to: '/explore/filters'
+          },
+          {
+            from: '/explore/filters/time-series',
+            to: '/explore/time-series'
+          },
+          {    
             from: '/build/metrics-view/advanced-expressions/case-statements',
             to: '/build/metrics-view/measures/case-statements'
           },
@@ -538,6 +546,18 @@ const config = {
           {
             from: '/home/get-started',
             to: '/get-started/quickstart'
+          },
+          {
+            from: '/build/canvas/canvas',
+            to: '/build/dashboards/canvas',
+          },
+          {
+            from: '/build/canvas/customization',
+            to: '/build/dashboards/customization',
+          },
+          {
+            from: '/build/canvas',
+            to: '/build/dashboards/canvas',
           },
           // {
           //   from: '/old-page',

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/iancoleman/strcase"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -114,9 +115,23 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			return nil, err
 		}
 
-		i.FeatureFlags, err = mapFromJSON[bool](featureFlags)
+		// We used to store feature flags as map[string]bool
+		// So we need to first try to parse it as such
+		featureFlagBools, err := mapFromJSON[bool](featureFlags)
 		if err != nil {
-			return nil, err
+			// If the parse failed, parse as map[string]string
+			i.FeatureFlags, err = mapFromJSON[string](featureFlags)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			// If the parse succeeded, convert to map[string]string by converting to "true"/"false"
+			i.FeatureFlags = map[string]string{}
+			for f, v := range featureFlagBools {
+				// Old map[string]bool stored feature flags as camelCase. So convert it to snake_case here.
+				sf := strcase.ToSnake(f)
+				i.FeatureFlags[sf] = fmt.Sprintf("%v", v)
+			}
 		}
 
 		i.Annotations, err = mapFromJSON[string](annotations)
