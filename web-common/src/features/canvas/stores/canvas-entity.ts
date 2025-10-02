@@ -32,6 +32,7 @@ import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
+import { MetricsViewSelectors } from "../../metrics-views/metrics-view-selectors";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
@@ -42,7 +43,6 @@ import {
 } from "../components/util";
 import { Filters } from "./filters";
 import { Grid } from "./grid";
-import { MetricsViewSelectors } from "./metrics-view-selectors";
 import { TimeControls } from "./time-control";
 
 // Store for managing URL search parameters

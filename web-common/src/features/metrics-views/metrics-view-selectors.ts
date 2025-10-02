@@ -10,7 +10,7 @@ import { derived, get, type Readable } from "svelte/store";
 import {
   ResourceKind,
   useFilteredResources,
-} from "../../entity-management/resource-selectors";
+} from "../entity-management/resource-selectors";
 
 type MetricsViewsData = Readable<Record<string, V1MetricsView | undefined>>;
 
