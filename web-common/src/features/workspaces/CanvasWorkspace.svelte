@@ -133,11 +133,11 @@
     </WorkspaceEditorContainer>
 
     <svelte:fragment slot="inspector">
-      <!-- <VisualCanvasEditing
+      <VisualCanvasEditing
         {canvasName}
         {fileArtifact}
         autoSave={selectedView === "viz" || $autoSave}
-      /> -->
+      />
     </svelte:fragment>
   </WorkspaceContainer>
 {/key}
