@@ -2,7 +2,7 @@ import {
   getCanvasChartComponent,
   type ChartSpec,
 } from "@rilldata/web-common/features/canvas/components/charts";
-import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,

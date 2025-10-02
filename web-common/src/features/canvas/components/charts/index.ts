@@ -7,23 +7,23 @@ import type { ChartType } from "@rilldata/web-common/features/components/charts/
 import {
   CartesianChartComponent,
   type CartesianChartSpec,
-} from "./cartesian-charts/CartesianChart";
+} from "./variants/CartesianChart";
 import {
   CircularChartComponent,
   type CircularChartSpec,
-} from "./circular-charts/CircularChart";
+} from "./variants/CircularChart";
 import {
   ComboChartComponent,
   type ComboChartSpec,
-} from "./combo-charts/ComboChart";
+} from "./variants/ComboChart";
 import {
   FunnelChartComponent,
   type FunnelChartSpec,
-} from "./funnel-charts/FunnelChart";
+} from "./variants/FunnelChart";
 import {
   HeatmapChartComponent,
   type HeatmapChartSpec,
-} from "./heatmap-charts/HeatmapChart";
+} from "./variants/HeatmapChart";
 
 export { default as Chart } from "./CanvasChart.svelte";
 
