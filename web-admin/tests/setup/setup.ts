@@ -206,7 +206,7 @@ setup.describe("global setup", () => {
     await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
 
     // Expect to land on the chat page
-    await adminPage.waitForURL("**/-/chat");
+    await adminPage.waitForURL("**/-/ai");
     await expect(
       adminPage.getByText("How can I help you today?"),
     ).toBeVisible();

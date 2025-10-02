@@ -9,7 +9,7 @@ export const load = async ({ params: { organization, project }, parent }) => {
   // NOTE: in the future, we'll use user-level `ai` permissions to determine access to the chat page.
   const chatEnabled = get(featureFlags.chat);
   if (chatEnabled) {
-    throw redirect(307, `/${organization}/${project}/-/chat`);
+    throw redirect(307, `/${organization}/${project}/-/ai`);
   }
 
   throw redirect(307, `/${organization}/${project}/-/dashboards`);

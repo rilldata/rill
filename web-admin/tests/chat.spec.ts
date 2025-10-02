@@ -4,7 +4,7 @@ import { test } from "./setup/base";
 test.describe("Chat", () => {
   test("should send message and receive response", async ({ adminPage }) => {
     // Navigate to the chat page
-    await adminPage.goto("/e2e/openrtb/-/chat");
+    await adminPage.goto("/e2e/openrtb/-/ai");
     await expect(
       adminPage.getByText("How can I help you today?"),
     ).toBeVisible();
