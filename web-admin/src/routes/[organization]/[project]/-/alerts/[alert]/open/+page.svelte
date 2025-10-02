@@ -48,7 +48,7 @@
     },
     {
       exploreProtoState:
-        $alert.data?.resource?.alert?.spec?.annotations?.web_open_path,
+        $alert.data?.resource?.alert?.spec?.annotations?.web_open_state,
     },
   );
 
