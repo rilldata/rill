@@ -21,9 +21,9 @@ import { BaseChart, type BaseChartConfig } from "../BaseChart";
 const DEFAULT_NOMINAL_LIMIT = 40;
 const DEFAULT_SORT = "-color";
 
-export type HeatmapChartSpec = BaseChartConfig & HeatmapChartSpecBase;
+export type HeatmapCanvasChartSpec = BaseChartConfig & HeatmapChartSpecBase;
 
-export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
+export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
   private provider: HeatmapChartProvider;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
@@ -118,7 +118,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapChartSpec> {
   static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
-  ): HeatmapChartSpec {
+  ): HeatmapCanvasChartSpec {
     // Select two dimensions and one measure if available
     const measures = metricsViewSpec?.measures || [];
     const dimensions = metricsViewSpec?.dimensions || [];

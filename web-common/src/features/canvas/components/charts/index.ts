@@ -6,23 +6,23 @@ import {
 import type { ChartType } from "@rilldata/web-common/features/components/charts/types";
 import {
   CartesianChartComponent,
-  type CartesianChartSpec,
+  type CartesianCanvasChartSpec,
 } from "./variants/CartesianChart";
 import {
   CircularChartComponent,
-  type CircularChartSpec,
+  type CircularCanvasChartSpec,
 } from "./variants/CircularChart";
 import {
   ComboChartComponent,
-  type ComboChartSpec,
+  type ComboCanvasChartSpec,
 } from "./variants/ComboChart";
 import {
   FunnelChartComponent,
-  type FunnelChartSpec,
+  type FunnelCanvasChartSpec,
 } from "./variants/FunnelChart";
 import {
   HeatmapChartComponent,
-  type HeatmapChartSpec,
+  type HeatmapCanvasChartSpec,
 } from "./variants/HeatmapChart";
 
 export { default as Chart } from "./CanvasChart.svelte";
@@ -35,11 +35,11 @@ export type ChartComponent =
   | typeof ComboChartComponent;
 
 export type CanvasChartSpec =
-  | CartesianChartSpec
-  | CircularChartSpec
-  | FunnelChartSpec
-  | HeatmapChartSpec
-  | ComboChartSpec;
+  | CartesianCanvasChartSpec
+  | CircularCanvasChartSpec
+  | FunnelCanvasChartSpec
+  | HeatmapCanvasChartSpec
+  | ComboCanvasChartSpec;
 
 export function getCanvasChartComponent(
   type: ChartType,

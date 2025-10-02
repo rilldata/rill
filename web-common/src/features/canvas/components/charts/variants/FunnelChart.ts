@@ -23,9 +23,9 @@ import { BaseChart, type BaseChartConfig } from "../BaseChart";
 const DEFAULT_STAGE_LIMIT = 15;
 const DEFAULT_SORT = "-y";
 
-export type FunnelChartSpec = BaseChartConfig & FunnelChartSpecBase;
+export type FunnelCanvasChartSpec = BaseChartConfig & FunnelChartSpecBase;
 
-export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
+export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
   private provider: FunnelChartProvider;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
@@ -152,8 +152,8 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
   }
 
   updateProperty(
-    key: keyof FunnelChartSpec,
-    value: FunnelChartSpec[keyof FunnelChartSpec],
+    key: keyof FunnelCanvasChartSpec,
+    value: FunnelCanvasChartSpec[keyof FunnelCanvasChartSpec],
   ) {
     const currentSpec = get(this.specStore);
 
@@ -218,7 +218,7 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
   static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
-  ): FunnelChartSpec {
+  ): FunnelCanvasChartSpec {
     // Randomly select a measure and dimension if available
     const measures = metricsViewSpec?.measures || [];
     const dimensions = metricsViewSpec?.dimensions || [];

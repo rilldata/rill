@@ -21,12 +21,12 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
-export type ComboChartSpec = BaseChartConfig & ComboChartSpecBase;
+export type ComboCanvasChartSpec = BaseChartConfig & ComboChartSpecBase;
 
 const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SORT = "-y";
 
-export class ComboChartComponent extends BaseChart<ComboChartSpec> {
+export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
   private provider: ComboChartProvider;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
@@ -105,8 +105,8 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
   }
 
   updateProperty(
-    key: keyof ComboChartSpec,
-    value: ComboChartSpec[keyof ComboChartSpec],
+    key: keyof ComboCanvasChartSpec,
+    value: ComboCanvasChartSpec[keyof ComboCanvasChartSpec],
   ) {
     const currentSpec = get(this.specStore);
 
@@ -182,7 +182,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
   static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
-  ): ComboChartSpec {
+  ): ComboCanvasChartSpec {
     // Randomly select measures and dimension if available
     const measures = metricsViewSpec?.measures || [];
     const timeDimension = metricsViewSpec?.timeDimension;

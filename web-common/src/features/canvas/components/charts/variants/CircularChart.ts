@@ -21,9 +21,9 @@ import { BaseChart, type BaseChartConfig } from "../BaseChart";
 const DEFAULT_COLOR_LIMIT = 20;
 const DEFAULT_SORT = "-measure";
 
-export type CircularChartSpec = BaseChartConfig & CircularChartSpecBase;
+export type CircularCanvasChartSpec = BaseChartConfig & CircularChartSpecBase;
 
-export class CircularChartComponent extends BaseChart<CircularChartSpec> {
+export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
   private provider: CircularChartProvider;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
@@ -104,7 +104,7 @@ export class CircularChartComponent extends BaseChart<CircularChartSpec> {
   static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
-  ): CircularChartSpec {
+  ): CircularCanvasChartSpec {
     // Randomly select a measure and dimension if available
     const measures = metricsViewSpec?.measures || [];
     const dimensions = metricsViewSpec?.dimensions || [];

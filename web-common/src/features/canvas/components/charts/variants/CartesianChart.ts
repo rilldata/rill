@@ -22,13 +22,13 @@ import type {
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
-export type CartesianChartSpec = BaseChartConfig & CartesianChartSpecBase;
+export type CartesianCanvasChartSpec = BaseChartConfig & CartesianChartSpecBase;
 
 const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SPLIT_LIMIT = 10;
 const DEFAULT_SORT = "-y";
 
-export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
+export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec> {
   private provider: CartesianChartProvider;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
@@ -149,8 +149,8 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   }
 
   updateProperty(
-    key: keyof CartesianChartSpec,
-    value: CartesianChartSpec[keyof CartesianChartSpec],
+    key: keyof CartesianCanvasChartSpec,
+    value: CartesianCanvasChartSpec[keyof CartesianCanvasChartSpec],
   ) {
     const currentSpec = get(this.specStore);
 
@@ -198,7 +198,7 @@ export class CartesianChartComponent extends BaseChart<CartesianChartSpec> {
   static newComponentSpec(
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
-  ): CartesianChartSpec {
+  ): CartesianCanvasChartSpec {
     // Randomly select a measure and dimension if available
     const measures = metricsViewSpec?.measures || [];
     const timeDimension = metricsViewSpec?.timeDimension;
