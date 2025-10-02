@@ -107,11 +107,7 @@
       disabled={!canSend}
       on:click={sendMessage}
     >
-      <SendIcon
-        size="1.3em"
-        backgroundClass={canSend ? "fill-primary-400" : "fill-gray-300"}
-        arrowClass="stroke-gray-100"
-      />
+      <SendIcon size="1.3em" disabled={!canSend} />
     </IconButton>
   {/if}
 </form>
