@@ -1,45 +1,33 @@
-import { getFilterWithNullHandling } from "@rilldata/web-common/features/canvas/components/charts/query-utils";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewSpec,
-  type V1Resource,
+  ComboChartProvider,
+  type ComboChartSpec as ComboChartSpecBase,
+} from "@rilldata/web-common/features/components/charts/combo/ComboChartProvider";
+import type {
+  ChartFieldsMap,
+  FieldConfig,
+} from "@rilldata/web-common/features/components/charts/types";
+import type {
+  V1MetricsViewSpec,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
-import { derived, get, type Readable } from "svelte/store";
-import {
-  type ChartDataQuery,
-  type ChartFieldsMap,
-  type FieldConfig,
-} from "../../../../components/charts/types";
+import { get, type Readable } from "svelte/store";
+import type { ChartDataQuery } from "../../../../components/charts/types";
 import type {
   CanvasEntity,
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
-import { vegaSortToAggregationSort } from "../util";
 
-export type MarkType = "bar" | "line";
-
-export type ComboChartSpec = BaseChartConfig & {
-  x?: FieldConfig;
-  y1?: FieldConfig;
-  y2?: FieldConfig;
-  color?: FieldConfig;
-};
+export type ComboChartSpec = BaseChartConfig & ComboChartSpecBase;
 
 const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SORT = "-y";
 
 export class ComboChartComponent extends BaseChart<ComboChartSpec> {
-  customSortXItems: string[] = [];
+  private provider: ComboChartProvider;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
     x: {
@@ -104,6 +92,16 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
+
+    this.provider = new ComboChartProvider(this.specStore, {
+      nominalLimit: DEFAULT_NOMINAL_LIMIT,
+      sort: DEFAULT_SORT,
+    });
+
+    // Subscribe to provider's combinedWhere
+    this.provider.combinedWhere.subscribe((where) => {
+      this.componentFilters = where;
+    });
   }
 
   updateProperty(
@@ -145,17 +143,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
     const measuresStore =
       this.parent.metricsView.getMeasuresForMetricView(metricsViewName);
     const measures = get(measuresStore);
-
-    let measureDisplayNames: string[] | undefined;
-    if (config.y1?.field && config.y2?.field) {
-      measureDisplayNames = [config.y1.field, config.y2.field].map(
-        (fieldName) => {
-          const measure = measures.find((m) => m.name === fieldName);
-          return measure?.displayName || fieldName;
-        },
-      );
-      return measureDisplayNames;
-    }
+    return this.provider.getMeasureLabels(measures);
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
@@ -163,8 +151,8 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
     const config = get(this.specStore);
 
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
-    if (sortSelector) {
-      sortSelector.customSortItems = this.customSortXItems;
+    if (sortSelector && this.provider) {
+      sortSelector.customSortItems = this.provider.customSortXItems;
     }
 
     const colorMappingSelector =
@@ -188,150 +176,7 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
-    const config = get(this.specStore);
-
-    const measures: V1MetricsViewAggregationMeasure[] = [];
-    let dimensions: V1MetricsViewAggregationDimension[] = [];
-
-    // Add both y1 and y2 measures
-    if (config.y1?.type === "quantitative" && config.y1?.field) {
-      measures.push({ name: config.y1.field });
-    }
-    if (config.y2?.type === "quantitative" && config.y2?.field) {
-      measures.push({ name: config.y2.field });
-    }
-
-    const dimensionName = config.x?.field;
-
-    const xAxisQueryOptionsStore = derived(
-      [ctx.runtime, timeAndFilterStore],
-      ([runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
-        const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
-          !!dimensionName &&
-          config?.x?.type === "nominal" &&
-          !Array.isArray(config.x?.sort) &&
-          !!config.y1?.field;
-
-        const xWhere = getFilterWithNullHandling(where, config.x);
-
-        let limit = DEFAULT_NOMINAL_LIMIT.toString();
-        if (config.x?.limit) {
-          limit = config.x.limit.toString();
-        }
-
-        const xAxisMeasures = config.y1?.field
-          ? [{ name: config.y1.field }]
-          : [];
-
-        const xAxisSort = vegaSortToAggregationSort("x", config, DEFAULT_SORT);
-
-        return getQueryServiceMetricsViewAggregationQueryOptions(
-          runtime.instanceId,
-          config.metrics_view,
-          {
-            measures: xAxisMeasures,
-            dimensions: [{ name: dimensionName }],
-            sort: xAxisSort ? [xAxisSort] : undefined,
-            where: xWhere,
-            timeRange,
-            limit,
-          },
-          {
-            query: {
-              enabled,
-            },
-          },
-        );
-      },
-    );
-
-    const xAxisQuery = createQuery(xAxisQueryOptionsStore);
-
-    const queryOptionsStore = derived(
-      [ctx.runtime, timeAndFilterStore, xAxisQuery],
-      ([runtime, $timeAndFilterStore, $xAxisQuery]) => {
-        const { timeRange, where, timeGrain } = $timeAndFilterStore;
-        const xTopNData = $xAxisQuery?.data?.data;
-
-        const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
-          !!measures?.length &&
-          (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
-            ? xTopNData !== undefined
-            : !!dimensionName);
-
-        let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
-          where,
-          config.x,
-        );
-
-        let includedXValues: string[] = [];
-
-        // Handle X axis values
-        if (dimensionName) {
-          if (Array.isArray(config.x?.sort)) {
-            includedXValues = config.x.sort;
-          } else if (xTopNData?.length && config.x?.type === "nominal") {
-            includedXValues = xTopNData.map((d) => d[dimensionName] as string);
-          }
-
-          if (includedXValues.length > 0) {
-            this.customSortXItems = includedXValues;
-            const filterForTopXValues = createInExpression(
-              dimensionName,
-              includedXValues,
-            );
-            combinedWhere = mergeFilters(combinedWhere, filterForTopXValues);
-          }
-        }
-
-        if (dimensionName) {
-          dimensions = [{ name: dimensionName }];
-        }
-
-        this.combinedWhere = combinedWhere;
-
-        // Update dimensions with timeGrain if temporal
-        if (config.x?.type === "temporal" && timeGrain) {
-          dimensions = dimensions.map((d) =>
-            d.name === dimensionName ? { ...d, timeGrain } : d,
-          );
-        }
-
-        return getQueryServiceMetricsViewAggregationQueryOptions(
-          runtime.instanceId,
-          config.metrics_view,
-          {
-            measures,
-            dimensions,
-            where: combinedWhere,
-            timeRange,
-            fillMissing: config.x?.type === "temporal",
-            sort:
-              config.x?.type === "temporal"
-                ? [{ name: config.x?.field, desc: false }]
-                : undefined,
-            limit:
-              config.x?.type === "temporal"
-                ? "5000"
-                : config.x?.limit?.toString(),
-          },
-          {
-            query: {
-              enabled,
-              placeholderData: keepPreviousData,
-            },
-          },
-        );
-      },
-    );
-
-    const query = createQuery(queryOptionsStore);
-    return query;
+    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
   }
 
   static newComponentSpec(
@@ -393,32 +238,15 @@ export class ComboChartComponent extends BaseChart<ComboChartSpec> {
   }
 
   chartTitle(fields: ChartFieldsMap) {
-    const config = get(this.specStore);
-    const { x, y1, y2 } = config;
-    const xLabel = x?.field ? fields[x.field]?.displayName || x.field : "";
-    const y1Label = y1?.field ? fields[y1.field]?.displayName || y1.field : "";
-    const y2Label = y2?.field ? fields[y2.field]?.displayName || y2.field : "";
-
-    const preposition = xLabel === "Time" ? "over" : "per";
-
-    const measuresLabel = y2Label ? `${y1Label} & ${y2Label}` : y1Label;
-
-    return `${measuresLabel} ${preposition} ${xLabel}`;
+    return this.provider.chartTitle(fields);
   }
 
   getChartDomainValues() {
     const config = get(this.specStore);
-    const result: Record<string, string[] | undefined> = {};
-
-    if (config.x?.field) {
-      result[config.x.field] =
-        this.customSortXItems.length > 0
-          ? [...this.customSortXItems]
-          : undefined;
-    }
-    if (config.color?.field) {
-      result[config.color?.field] = this.getMeasureLabels();
-    }
-    return result;
+    const metricsViewName = config.metrics_view;
+    const measuresStore =
+      this.parent.metricsView.getMeasuresForMetricView(metricsViewName);
+    const measures = get(measuresStore);
+    return this.provider.getChartDomainValues(measures);
   }
 }

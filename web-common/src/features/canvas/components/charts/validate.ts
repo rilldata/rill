@@ -1,10 +1,10 @@
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
-import { getFieldsByType } from "@rilldata/web-common/features/canvas/components/charts/util";
 import {
   validateDimensions,
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
-import type { MetricsViewSelectors } from "@rilldata/web-common/features/canvas/stores/metrics-view-selectors";
+import { getFieldsByType } from "@rilldata/web-common/features/components/charts/util";
+import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
 import { derived, type Readable } from "svelte/store";
 
 export function validateChartSchema(

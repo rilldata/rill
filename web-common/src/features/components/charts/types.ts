@@ -1,4 +1,16 @@
 import type {
+  CartesianChartProvider,
+  CartesianChartSpec,
+  CircularChartProvider,
+  CircularChartSpec,
+  ComboChartProvider,
+  ComboChartSpec,
+  FunnelChartProvider,
+  FunnelChartSpec,
+  HeatmapChartProvider,
+  HeatmapChartSpec,
+} from "@rilldata/web-common/features/components/charts";
+import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
@@ -15,6 +27,20 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";
 import type { TimeUnit } from "vega-lite/build/src/timeunit";
 import type { ColorScheme } from "vega-typings";
+
+export type ChartProvider =
+  | CartesianChartProvider
+  | CircularChartProvider
+  | ComboChartProvider
+  | FunnelChartProvider
+  | HeatmapChartProvider;
+
+export type ChartSpec =
+  | CartesianChartSpec
+  | CircularChartSpec
+  | FunnelChartSpec
+  | HeatmapChartSpec
+  | ComboChartSpec;
 
 export type ChartType =
   | "bar_chart"

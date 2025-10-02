@@ -1,4 +1,3 @@
-import type { MetricsViewSelectors } from "@rilldata/web-common/features/canvas/stores/metrics-view-selectors";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
 import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import {
@@ -28,6 +27,8 @@ import {
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
+import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   MetricsViewSpecDimension,
   V1Expression,
@@ -45,7 +46,6 @@ import {
 } from "svelte/store";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import type { SearchParamsStore } from "./canvas-entity";
-import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 
 export class Filters {
   private metricsView: MetricsViewSelectors;

@@ -4,11 +4,6 @@ import {
 } from "@rilldata/web-common/components/vega/util";
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
-import {
-  isFieldConfig,
-  mergedVlConfig,
-  resolveColor,
-} from "@rilldata/web-common/features/canvas/components/charts/util";
 import type {
   ChartDomainValues,
   ChartLegend,
@@ -19,6 +14,9 @@ import type {
 import {
   getColorForValues,
   isDomainStringArray,
+  isFieldConfig,
+  mergedVlConfig,
+  resolveColor,
 } from "@rilldata/web-common/features/components/charts/util";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";

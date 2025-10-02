@@ -1,7 +1,7 @@
 <script lang="ts">
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import Chart from "@rilldata/web-common/features/components/charts/Chart.svelte";
+  import { Chart } from "@rilldata/web-common/features/components/charts";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -53,7 +53,7 @@
     timeAndFilterStore,
   );
 
-  $: ({ isFetching, data, error } = $chartData);
+  $: ({ isFetching, error } = $chartData);
 
   $: filters = {
     time_filters,

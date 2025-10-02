@@ -1,5 +1,5 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import { CHART_CONFIG } from "@rilldata/web-common/features/canvas/components/charts";
+import { CANVAS_CHART_CONFIG } from "@rilldata/web-common/features/canvas/components/charts";
 import {
   CanvasChartTypeToTDDChartType,
   getLinkStateForTimeDimensionDetail,
@@ -52,7 +52,7 @@ export abstract class BaseChart<
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
   resetParams = [];
-  combinedWhere: V1Expression | undefined;
+  componentFilters: V1Expression | undefined;
   type: ChartType;
   chartType: Writable<ChartType>;
   component = Chart;
@@ -115,7 +115,7 @@ export abstract class BaseChart<
   getExploreTransformerProperties(): Partial<ExploreState> {
     const spec = get(this.specStore);
     const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      this.combinedWhere,
+      this.componentFilters,
     );
 
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
@@ -156,7 +156,7 @@ export abstract class BaseChart<
     const parsedDocument = get(parseDocumentStore);
     const { updateEditorContent } = this.parent.fileArtifact;
 
-    const newSpecForKey = CHART_CONFIG[key].component.newComponentSpec(
+    const newSpecForKey = CANVAS_CHART_CONFIG[key].component.newComponentSpec(
       currentSpec.metrics_view,
       metricsViewSpec,
     );
@@ -215,9 +215,9 @@ export abstract class BaseChart<
     } = spec;
 
     const sourceChartParams =
-      CHART_CONFIG[sourceType].component.chartInputParams || {};
+      CANVAS_CHART_CONFIG[sourceType].component.chartInputParams || {};
     const targetChartParams =
-      CHART_CONFIG[targetType].component.chartInputParams || {};
+      CANVAS_CHART_CONFIG[targetType].component.chartInputParams || {};
 
     // Check for common keys and type match first
     const commonProps = Object.keys(sourceChartParams).filter((key) => {

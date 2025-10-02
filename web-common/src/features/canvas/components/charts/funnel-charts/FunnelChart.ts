@@ -1,54 +1,32 @@
-import { getFilterWithNullHandling } from "@rilldata/web-common/features/canvas/components/charts/query-utils";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
-import type {
-  ChartFieldsMap,
-  FieldConfig,
-} from "@rilldata/web-common/features/components/charts/types";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  FunnelChartProvider,
+  type FunnelBreakdownMode,
+  type FunnelChartSpec as FunnelChartSpecBase,
+} from "@rilldata/web-common/features/components/charts/funnel/FunnelChartProvider";
+import type { ChartFieldsMap } from "@rilldata/web-common/features/components/charts/types";
+import { isMultiFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import {
-  getQueryServiceMetricsViewAggregationQueryOptions,
-  type V1Expression,
-  type V1MetricsViewAggregationDimension,
-  type V1MetricsViewAggregationMeasure,
-  type V1MetricsViewAggregationSort,
-} from "@rilldata/web-common/runtime-client";
-import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
-import { derived, get, type Readable } from "svelte/store";
+import { get, type Readable } from "svelte/store";
 import type { ChartDataQuery } from "../../../../components/charts/types";
 import type {
   CanvasEntity,
   ComponentPath,
 } from "../../../stores/canvas-entity";
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
-import { isMultiFieldConfig } from "../util";
-import { getMultiMeasures } from "./util";
-
-export type FunnelMode = "width" | "order";
-export type FunnelColorMode = "stage" | "measure" | "name" | "value";
-export type FunnelBreakdownMode = "dimension" | "measures";
-
-type FunnelChartEncoding = {
-  breakdownMode?: FunnelBreakdownMode;
-  measure?: FieldConfig;
-  stage?: FieldConfig;
-  mode?: FunnelMode;
-  color?: FunnelColorMode;
-};
 
 const DEFAULT_STAGE_LIMIT = 15;
 const DEFAULT_SORT = "-y";
 
-export type FunnelChartSpec = BaseChartConfig & FunnelChartEncoding;
+export type FunnelChartSpec = BaseChartConfig & FunnelChartSpecBase;
 
 export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
-  customSortStageItems: string[] = [];
+  private provider: FunnelChartProvider;
 
   static chartInputParams: Record<string, ComponentInputParam> = {
     breakdownMode: {
@@ -114,6 +92,16 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
+
+    this.provider = new FunnelChartProvider(this.specStore, {
+      stageLimit: DEFAULT_STAGE_LIMIT,
+      sort: DEFAULT_SORT,
+    });
+
+    // Subscribe to provider's combinedWhere
+    this.provider.combinedWhere.subscribe((where) => {
+      this.componentFilters = where;
+    });
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
@@ -122,8 +110,8 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
     const isMultiMeasure = config.breakdownMode === "measures";
 
     const sortSelector = inputParams.stage.meta?.chartFieldInput?.sortSelector;
-    if (sortSelector) {
-      sortSelector.customSortItems = this.customSortStageItems;
+    if (sortSelector && this.provider) {
+      sortSelector.customSortItems = this.provider.customSortStageItems;
     }
 
     if (isMultiMeasure) {
@@ -220,178 +208,11 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
     ctx: CanvasStore,
     timeAndFilterStore: Readable<TimeAndFilterStore>,
   ): ChartDataQuery {
-    const config = get(this.specStore);
-    const isMultiMeasure = config.breakdownMode === "measures";
-
-    let measures: V1MetricsViewAggregationMeasure[] = [];
-    let dimensions: V1MetricsViewAggregationDimension[] = [];
-
-    if (isMultiMeasure) {
-      const measuresSet = new Set(config.measure?.fields);
-      if (config.measure?.type === "quantitative" && config.measure?.field) {
-        measuresSet.add(config.measure.field);
-      }
-      measures = Array.from(measuresSet).map((name) => ({ name }));
-    } else {
-      if (config.measure?.field) {
-        measures = [{ name: config.measure.field }];
-      }
-    }
-
-    let stageSort: V1MetricsViewAggregationSort | undefined;
-    let limit: number | undefined;
-    const stageDimensionName = isMultiMeasure ? undefined : config.stage?.field;
-
-    if (!isMultiMeasure && config.stage?.field) {
-      limit = config.stage.limit ?? DEFAULT_STAGE_LIMIT;
-      dimensions = [{ name: config.stage.field }];
-
-      let sort = config.stage.sort;
-      if (!sort || Array.isArray(sort)) {
-        sort = DEFAULT_SORT;
-      }
-
-      if (typeof sort === "string" && config.measure?.field) {
-        stageSort = {
-          name: config.measure.field,
-          desc: sort !== "y",
-        };
-      }
-    }
-
-    // Create topN query for stage dimension
-    const topNStageQueryOptionsStore = derived(
-      [ctx.runtime, timeAndFilterStore],
-      ([runtime, $timeAndFilterStore]) => {
-        const { timeRange, where } = $timeAndFilterStore;
-        const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
-          !!stageDimensionName &&
-          !isMultiMeasure &&
-          !Array.isArray(config.stage?.sort);
-
-        const topNWhere = getFilterWithNullHandling(where, config.stage);
-
-        return getQueryServiceMetricsViewAggregationQueryOptions(
-          runtime.instanceId,
-          config.metrics_view,
-          {
-            measures,
-            dimensions: [{ name: stageDimensionName }],
-            sort: stageSort ? [stageSort] : undefined,
-            where: topNWhere,
-            timeRange,
-            limit: limit?.toString(),
-          },
-          {
-            query: {
-              enabled,
-            },
-          },
-        );
-      },
-    );
-
-    const topNStageQuery = createQuery(topNStageQueryOptionsStore);
-
-    const queryOptionsStore = derived(
-      [ctx.runtime, timeAndFilterStore, topNStageQuery],
-      ([runtime, $timeAndFilterStore, $topNStageQuery]) => {
-        const { timeRange, where } = $timeAndFilterStore;
-        const topNStageData = $topNStageQuery?.data?.data;
-        const enabled =
-          !!timeRange?.start &&
-          !!timeRange?.end &&
-          !!measures?.length &&
-          (isMultiMeasure || !!dimensions?.length) &&
-          (!isMultiMeasure &&
-          !Array.isArray(config.stage?.sort) &&
-          stageDimensionName
-            ? topNStageData !== undefined
-            : true);
-
-        let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
-          where,
-          isMultiMeasure ? undefined : config.stage,
-        );
-
-        let includedStageValues: string[] = [];
-
-        // Apply topN filter for stage dimension (only in dimension mode)
-        if (!isMultiMeasure) {
-          if (Array.isArray(config.stage?.sort)) {
-            includedStageValues = config.stage.sort;
-          } else if (topNStageData?.length && stageDimensionName) {
-            includedStageValues = topNStageData.map(
-              (d) => d[stageDimensionName] as string,
-            );
-          }
-
-          if (stageDimensionName) {
-            this.customSortStageItems = includedStageValues;
-            const filterForTopStageValues = createInExpression(
-              stageDimensionName,
-              includedStageValues,
-            );
-            combinedWhere = mergeFilters(
-              combinedWhere,
-              filterForTopStageValues,
-            );
-          }
-        }
-
-        this.combinedWhere = combinedWhere;
-
-        const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
-          runtime.instanceId,
-          config.metrics_view,
-          {
-            measures,
-            dimensions,
-            where: combinedWhere,
-            sort: stageSort ? [stageSort] : undefined,
-            timeRange,
-            limit: limit?.toString(),
-          },
-          {
-            query: {
-              enabled,
-              placeholderData: keepPreviousData,
-            },
-          },
-        );
-
-        return queryOptions;
-      },
-    );
-
-    const query = createQuery(queryOptionsStore);
-    return query;
+    return this.provider.createChartDataQuery(ctx.runtime, timeAndFilterStore);
   }
 
   chartTitle(fields: ChartFieldsMap) {
-    const config = get(this.specStore);
-    const isMultiMeasure = config.breakdownMode === "measures";
-
-    if (isMultiMeasure) {
-      const measuresLabel = getMultiMeasures(config.measure)
-        .map((m) => fields[m]?.displayName || m)
-        .join(", ");
-      return `${measuresLabel} funnel`;
-    } else {
-      const { measure, stage } = config;
-      const measureLabel = measure?.field
-        ? fields[measure.field]?.displayName || measure.field
-        : "";
-      const stageLabel = stage?.field
-        ? fields[stage.field]?.displayName || stage.field
-        : "";
-
-      return stageLabel
-        ? `${measureLabel} funnel by ${stageLabel}`
-        : measureLabel;
-    }
+    return this.provider.chartTitle(fields);
   }
 
   static newComponentSpec(

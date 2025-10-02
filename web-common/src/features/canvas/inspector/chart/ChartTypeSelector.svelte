@@ -4,11 +4,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
-    CHART_CONFIG,
-    VISIBLE_CHART_TYPES,
+    CANVAS_CHART_CONFIG,
     type ChartSpec,
   } from "@rilldata/web-common/features/canvas/components/charts";
   import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
+  import { VISIBLE_CHART_TYPES } from "@rilldata/web-common/features/components/charts/config";
   import type { ChartType } from "@rilldata/web-common/features/components/charts/types";
 
   export let component: BaseChart<ChartSpec>;
@@ -40,14 +40,17 @@
           square
           small
           type="ghost"
-          label={CHART_CONFIG[chart].title}
+          label={CANVAS_CHART_CONFIG[chart].title}
           selected={type === chart}
           onClick={() => selectChartType(chart)}
         >
-          <svelte:component this={CHART_CONFIG[chart].icon} size="20px" />
+          <svelte:component
+            this={CANVAS_CHART_CONFIG[chart].icon}
+            size="20px"
+          />
         </Button>
         <TooltipContent slot="tooltip-content">
-          {CHART_CONFIG[chart].title}
+          {CANVAS_CHART_CONFIG[chart].title}
         </TooltipContent>
       </Tooltip>
     {/each}
