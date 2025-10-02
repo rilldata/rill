@@ -3,14 +3,14 @@ import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec";
 import type { Transform } from "vega-lite/build/src/transform";
-import type { ChartDataResult } from "../../../../components/charts/types";
 import {
   createConfig,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { FunnelChartSpec } from "./FunnelChart";
+import type { ChartDataResult } from "../types";
+import type { FunnelChartSpec } from "./FunnelChartProvider";
 import {
   createFunnelSortEncoding,
   getFormatType,

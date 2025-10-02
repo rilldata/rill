@@ -7,25 +7,22 @@ import MultiChart from "@rilldata/web-common/components/icons/MultiChart.svelte"
 import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
-import { generateVLAreaChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/area/spec";
-import { generateVLBarChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/bar-chart/spec";
-import type { CartesianChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
-import { generateVLLineChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/line-chart/spec";
-import { generateVLMultiMetricChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/multi-metric-chart.ts";
-import { generateVLStackedBarChartSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/stacked-bar/default";
-import { generateVLStackedBarNormalizedSpec } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/stacked-bar/normalized";
-import { generateVLPieChartSpec } from "@rilldata/web-common/features/canvas/components/charts/circular-charts/pie";
-import { generateVLComboChartSpec } from "@rilldata/web-common/features/canvas/components/charts/combo-charts/spec";
-import { generateVLFunnelChartSpec } from "@rilldata/web-common/features/canvas/components/charts/funnel-charts/spec";
-import { generateVLHeatmapSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/spec";
-import {
-  type ChartDataResult,
-  type ChartType,
-} from "@rilldata/web-common/features/components/charts";
-import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types";
-import { isMultiFieldConfig } from "@rilldata/web-common/features/components/charts/util.ts";
 import type { ComponentType, SvelteComponent } from "svelte";
 import type { VisualizationSpec } from "svelte-vega";
+import { type ChartDataResult, type ChartType } from ".";
+import { generateVLAreaChartSpec } from "./cartesian/area/spec";
+import { generateVLBarChartSpec } from "./cartesian/bar-chart/spec";
+import type { CartesianChartSpec } from "./cartesian/CartesianChartProvider";
+import { generateVLLineChartSpec } from "./cartesian/line-chart/spec";
+import { generateVLMultiMetricChartSpec } from "./cartesian/multi-metric-chart";
+import { generateVLStackedBarChartSpec } from "./cartesian/stacked-bar/default";
+import { generateVLStackedBarNormalizedSpec } from "./cartesian/stacked-bar/normalized";
+import { generateVLPieChartSpec } from "./circular/pie";
+import { generateVLComboChartSpec } from "./combo/spec";
+import { generateVLFunnelChartSpec } from "./funnel/spec";
+import { generateVLHeatmapSpec } from "./heatmap/spec";
+import type { ChartSpec } from "./types";
+import { isMultiFieldConfig } from "./util.ts";
 
 export interface ChartMetadataConfig {
   title: string;

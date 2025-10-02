@@ -1,10 +1,5 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
-import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
-import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
-import type { LayerSpec } from "vega-lite/build/src/spec/layer";
-import type { UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { ChartDataResult } from "../../../../../components/charts/types";
+import type { ChartDataResult } from "@rilldata/web-common/features/components/charts";
 import {
   buildHoverRuleLayer,
   createCartesianMultiValueTooltipChannel,
@@ -13,8 +8,13 @@ import {
   createEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
-} from "../../builder";
-import type { CartesianChartSpec } from "../CartesianChart";
+} from "@rilldata/web-common/features/components/charts/builder";
+import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
+import type { VisualizationSpec } from "svelte-vega";
+import type { Field } from "vega-lite/build/src/channeldef";
+import type { LayerSpec } from "vega-lite/build/src/spec/layer";
+import type { UnitSpec } from "vega-lite/build/src/spec/unit";
+import type { CartesianChartSpec } from "../CartesianChartProvider";
 
 export function generateVLStackedBarNormalizedSpec(
   config: CartesianChartSpec,

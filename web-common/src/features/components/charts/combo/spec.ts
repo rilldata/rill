@@ -15,7 +15,7 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { ComboChartSpec } from "./ComboChart";
+import type { ComboChartSpec } from "./ComboChartProvider";
 
 function getColorForField(
   encoding: "y1" | "y2",

@@ -5,17 +5,17 @@ import {
   CartesianChartProvider,
   type CartesianChartSpec as CartesianChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
+import {
+  type ChartDataQuery,
+  type ChartFieldsMap,
+  type FieldConfig,
+} from "@rilldata/web-common/features/components/charts/types";
 import { isMultiFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { get, type Readable } from "svelte/store";
-import {
-  type ChartDataQuery,
-  type ChartFieldsMap,
-  type FieldConfig,
-} from "../../../../components/charts/types";
 import type {
   CanvasEntity,
   ComponentPath,

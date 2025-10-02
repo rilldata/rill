@@ -8,7 +8,6 @@ import type { Field } from "vega-lite/build/src/channeldef";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { Transform } from "vega-lite/build/src/transform";
-import type { ChartDataResult } from "../../../../components/charts/types";
 import {
   buildHoverPointOverlay,
   buildHoverRuleLayer,
@@ -17,7 +16,8 @@ import {
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "../builder";
-import type { CartesianChartSpec } from "./CartesianChart";
+import type { ChartDataResult } from "../types";
+import type { CartesianChartSpec } from "./CartesianChartProvider";
 
 export function generateVLMultiMetricChartSpec(
   config: CartesianChartSpec,

@@ -4,8 +4,10 @@ import {
   type ChartMetadataConfig,
 } from "@rilldata/web-common/features/components/charts/config";
 import type { ChartType } from "@rilldata/web-common/features/components/charts/types";
-import type { CartesianChartSpec } from "./cartesian-charts/CartesianChart";
-import { CartesianChartComponent } from "./cartesian-charts/CartesianChart";
+import {
+  CartesianChartComponent,
+  type CartesianChartSpec,
+} from "./cartesian-charts/CartesianChart";
 import {
   CircularChartComponent,
   type CircularChartSpec,
@@ -39,7 +41,7 @@ export type ChartSpec =
   | HeatmapChartSpec
   | ComboChartSpec;
 
-export function getChartComponent(
+export function getCanvasChartComponent(
   type: ChartType,
 ): BaseCanvasComponentConstructor<ChartSpec> {
   switch (type) {
@@ -73,7 +75,7 @@ export const CANVAS_CHART_CONFIG: Record<ChartType, CanvasChartConfig> =
       type,
       {
         ...config,
-        component: getChartComponent(type as ChartType),
+        component: getCanvasChartComponent(type as ChartType),
       },
     ]),
   ) as Record<ChartType, CanvasChartConfig>;
