@@ -103,7 +103,9 @@
           </DashboardStateManager>
         </StateManagersProvider>
       </div>
-      <ExploreChat />
+      <StateManagersProvider {metricsViewName} {exploreName}>
+        <ExploreChat />
+      </StateManagersProvider>
     </div>
   {/key}
 {/if}

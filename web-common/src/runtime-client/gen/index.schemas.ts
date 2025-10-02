@@ -2508,9 +2508,14 @@ export type RuntimeServiceCompleteBody = {
   appContext?: V1AppContext;
 };
 
+export type RuntimeServiceCompleteStreamingBodyDashboardContext = {
+  [key: string]: unknown;
+};
+
 export type RuntimeServiceCompleteStreamingBody = {
   conversationId?: string;
   prompt?: string;
+  dashboardContext?: RuntimeServiceCompleteStreamingBodyDashboardContext;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

@@ -17,6 +17,7 @@ import {
   getOptimisticMessageId,
   NEW_CONVERSATION_ID,
 } from "./chat-utils";
+import type { StateManagers } from "../../dashboards/state-managers/state-managers";
 
 /**
  * Individual conversation state management.
@@ -40,6 +41,8 @@ export class Conversation {
     private readonly options?: {
       onStreamStart?: () => void;
       onConversationCreated?: (conversationId: string) => void;
+      dashboardContext?: any;
+      contextOptions?: any;
     },
   ) {}
 
@@ -198,6 +201,7 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
+      dashboardContext: this.buildDashboardContext(),
     };
 
     // Notify that streaming is about to start (for concurrent stream management)
@@ -478,5 +482,57 @@ export class Conversation {
 
     // Generic error with retry guidance
     return "Failed to send message. Please try again or refresh the page.";
+  }
+
+  /**
+   * Build dashboard context for MCP tool calls
+   */
+  private buildDashboardContext(): any {
+    if (!this.options?.dashboardContext || !this.options?.contextOptions) {
+      return null;
+    }
+
+    const stateManagers = this.options.dashboardContext as StateManagers;
+    const contextOptions = get(this.options.contextOptions);
+    
+    if (!contextOptions.includeFilters && !contextOptions.includeTimeRange) {
+      return null;
+    }
+
+    try {
+      const dashboardState = get(stateManagers.dashboardStore);
+      const metricsViewName = get(stateManagers.metricsViewName);
+      const exploreName = get(stateManagers.exploreName);
+
+      const context: any = {
+        metrics_view: metricsViewName,
+        explore_name: exploreName,
+        current_state: {},
+        auto_gather_context: false, // We're providing context, so disable auto-gathering
+      };
+
+      // Include filters if enabled
+      if (contextOptions.includeFilters) {
+        if (dashboardState.whereFilter) {
+          context.current_state.filters = dashboardState.whereFilter;
+        }
+        if (dashboardState.visibleMeasures?.length > 0) {
+          context.current_state.visible_measures = dashboardState.visibleMeasures;
+        }
+        if (dashboardState.visibleDimensions?.length > 0) {
+          context.current_state.visible_dimensions = dashboardState.visibleDimensions;
+        }
+      }
+
+      // Include time range if enabled
+      if (contextOptions.includeTimeRange && dashboardState.selectedTimeRange) {
+        context.current_state.time_range = dashboardState.selectedTimeRange;
+      }
+
+      return context;
+    } catch (error) {
+      console.warn("Failed to build dashboard context:", error);
+      return null;
+    }
   }
 }

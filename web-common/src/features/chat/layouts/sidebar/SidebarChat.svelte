@@ -12,15 +12,37 @@
     sidebarActions,
     sidebarWidth,
   } from "./sidebar-store";
+  import type { StateManagers } from "../../../dashboards/state-managers/state-managers";
+  import { writable } from "svelte/store";
+
+  export let stateManagers: StateManagers | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
+
+  // Context options state (default to true)
+  let includeFilters = true;
+  let includeTimeRange = true;
+
+  // Create a reactive store for context options that the chat can subscribe to
+  const contextOptionsStore = writable({ includeFilters, includeTimeRange });
+  $: contextOptionsStore.set({ includeFilters, includeTimeRange });
 
   // Initialize chat with browser storage for conversation management
   $: chat = getChatInstance(instanceId, {
     conversationState: "browserStorage",
+    dashboardContext: stateManagers,
+    contextOptions: contextOptionsStore,
   });
 
   let chatInputComponent: ChatInput;
+
+  function handleContextOptionsChange(options: {
+    includeFilters: boolean;
+    includeTimeRange: boolean;
+  }) {
+    includeFilters = options.includeFilters;
+    includeTimeRange = options.includeTimeRange;
+  }
 
   function onMessageSend() {
     chatInputComponent?.focusInput();
@@ -55,8 +77,12 @@
     <div class="chatbot-header-container">
       <ChatHeader
         {chat}
+        {stateManagers}
+        {includeFilters}
+        {includeTimeRange}
         {onNewConversation}
         onClose={sidebarActions.closeChat}
+        onContextOptionsChange={handleContextOptionsChange}
       />
     </div>
     <ChatMessages {chat} layout="sidebar" />

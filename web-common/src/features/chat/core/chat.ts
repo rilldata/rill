@@ -27,6 +27,14 @@ export interface ChatOptions {
    * - "browserStorage": Use session storage (for sidebar chat)
    */
   conversationState: ConversationStateType;
+  /**
+   * Dashboard context for context-aware queries
+   */
+  dashboardContext?: any;
+  /**
+   * Context options store for controlling what context to include
+   */
+  contextOptions?: any;
 }
 
 /**
@@ -51,7 +59,7 @@ export class Chat {
 
   constructor(
     private instanceId: string,
-    options: ChatOptions,
+    private options: ChatOptions,
   ) {
     this.newConversation = new Conversation(
       this.instanceId,
@@ -61,6 +69,8 @@ export class Chat {
         onConversationCreated: (conversationId: string) => {
           this.handleConversationCreated(conversationId);
         },
+        dashboardContext: options.dashboardContext,
+        contextOptions: options.contextOptions,
       },
     );
 
@@ -117,6 +127,8 @@ export class Chat {
           $conversationId,
           {
             onStreamStart: () => this.enforceMaxConcurrentStreams(),
+            dashboardContext: this.options.dashboardContext,
+            contextOptions: this.options.contextOptions,
           },
         );
         this.conversations.set($conversationId, conversation);
@@ -217,6 +229,8 @@ export class Chat {
         onConversationCreated: (conversationId: string) => {
           this.handleConversationCreated(conversationId);
         },
+        dashboardContext: this.options.dashboardContext,
+        contextOptions: this.options.contextOptions,
       },
     );
   }

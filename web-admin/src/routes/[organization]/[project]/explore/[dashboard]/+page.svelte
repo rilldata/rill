@@ -14,6 +14,7 @@
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
+  import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1GetExploreResponse } from "@rilldata/web-common/runtime-client";
@@ -144,17 +145,24 @@
     <DashboardErrored organization={orgName} project={projectName} />
   {:else if metricsViewName}
     {#key exploreName}
-      <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardStateManager
-          {exploreName}
-          storageNamespacePrefix={`${orgName}__${projectName}__`}
-          bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
-        >
-          <DashboardThemeProvider>
-            <Dashboard {metricsViewName} {exploreName} />
-          </DashboardThemeProvider>
-        </DashboardStateManager>
-      </StateManagersProvider>
+      <div class="flex h-full overflow-hidden">
+        <div class="flex-1 overflow-hidden">
+          <StateManagersProvider {metricsViewName} {exploreName}>
+            <DashboardStateManager
+              {exploreName}
+              storageNamespacePrefix={`${orgName}__${projectName}__`}
+              bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
+            >
+              <DashboardThemeProvider>
+                <Dashboard {metricsViewName} {exploreName} />
+              </DashboardThemeProvider>
+            </DashboardStateManager>
+          </StateManagersProvider>
+        </div>
+        <StateManagersProvider {metricsViewName} {exploreName}>
+          <ExploreChat />
+        </StateManagersProvider>
+      </div>
     {/key}
   {/if}
 {/if}

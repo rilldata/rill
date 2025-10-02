@@ -952,6 +952,7 @@ message CompleteStreamingRequest {
   string instance_id = 1;
   string conversation_id = 2; // If not provided, creates a new conversation
   string prompt = 3;
+  google.protobuf.Struct dashboard_context = 4; // Optional dashboard context for context-aware queries
 }
 
 // Response message for RuntimeService.CompleteStreaming

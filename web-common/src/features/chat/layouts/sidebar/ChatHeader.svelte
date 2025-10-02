@@ -5,10 +5,19 @@
   import { type V1Conversation } from "../../../../runtime-client";
   import type { Chat } from "../../core/chat";
   import ChatConversationDropdown from "./ChatConversationDropdown.svelte";
+  import ChatContextOptions from "./ChatContextOptions.svelte";
+  import type { StateManagers } from "../../../dashboards/state-managers/state-managers";
 
   export let chat: Chat;
   export let onNewConversation: () => void;
   export let onClose: () => void;
+  export let stateManagers: StateManagers | undefined = undefined;
+  export let includeFilters: boolean = true;
+  export let includeTimeRange: boolean = true;
+  export let onContextOptionsChange: (options: {
+    includeFilters: boolean;
+    includeTimeRange: boolean;
+  }) => void = () => {};
 
   $: currentConversationStore = chat.getCurrentConversation();
   $: getConversationQuery = $currentConversationStore?.getConversationQuery();
@@ -30,6 +39,13 @@
 <div class="chatbot-header">
   <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
   <div class="chatbot-header-actions">
+    <ChatContextOptions
+      {stateManagers}
+      {includeFilters}
+      {includeTimeRange}
+      onOptionsChange={onContextOptionsChange}
+    />
+
     <IconButton
       ariaLabel="New conversation"
       bgGray

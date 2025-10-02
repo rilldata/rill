@@ -651,6 +651,9 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              dashboardContext:
+                type: object
+                title: Optional dashboard context for context-aware queries
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService

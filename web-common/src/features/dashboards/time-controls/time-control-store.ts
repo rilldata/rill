@@ -277,10 +277,13 @@ export function calculateTimeRangePartial(
 
   let parsed: RillTime | undefined;
 
-  try {
-    parsed = parseRillTime(currentSelectedTimeRange.name || "");
-  } catch (e) {
-    console.error("Error parsing rill time", e);
+  // Skip parsing for CUSTOM time ranges since they don't use RillTime expressions
+  if (currentSelectedTimeRange.name !== TimeRangePreset.CUSTOM) {
+    try {
+      parsed = parseRillTime(currentSelectedTimeRange.name || "");
+    } catch (e) {
+      console.error("Error parsing rill time", e);
+    }
   }
 
   const rillTimeGrain = parsed?.asOfLabel?.snap

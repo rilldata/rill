@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ListConversations returns a list of conversations for an instance.
@@ -105,18 +106,24 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 
 // serverToolService implements runtime.ToolService using the server's MCP functionality
 type serverToolService struct {
-	server     *Server
-	instanceID string
+	server           *Server
+	instanceID       string
+	dashboardContext *structpb.Struct
 }
 
 // ListTools implements runtime.ToolService
 func (s *serverToolService) ListTools(ctx context.Context) ([]*aiv1.Tool, error) {
+	if s.dashboardContext != nil {
+		// Dashboard context: only expose context-aware tool
+		return s.server.mcpListContextAwareTools(ctx, s.instanceID)
+	}
+	// Generic context: expose all discovery tools
 	return s.server.mcpListTools(ctx, s.instanceID)
 }
 
 // ExecuteTool implements runtime.ToolService
 func (s *serverToolService) ExecuteTool(ctx context.Context, toolName string, toolArgs map[string]any) (any, error) {
-	return s.server.mcpExecuteTool(ctx, s.instanceID, toolName, toolArgs)
+	return s.server.mcpExecuteTool(ctx, s.instanceID, toolName, toolArgs, s.dashboardContext)
 }
 
 // Complete runs a conversational AI completion with tool calling support.
@@ -139,7 +146,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	}
 
 	// Create tool service for this server
-	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
+	toolService := &serverToolService{server: s, instanceID: req.InstanceId, dashboardContext: nil}
 
 	// Delegate to runtime business logic
 	result, err := s.runtime.CompleteWithTools(ctx, &runtime.CompleteWithToolsOptions{
@@ -174,7 +181,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	}
 
 	// Create tool service for this server
-	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
+	toolService := &serverToolService{server: s, instanceID: req.InstanceId, dashboardContext: req.DashboardContext}
 
 	// Delegate to runtime business logic
 	_, err := s.runtime.CompleteWithTools(stream.Context(), &runtime.CompleteWithToolsOptions{

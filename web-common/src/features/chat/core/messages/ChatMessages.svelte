@@ -1,10 +1,12 @@
 <script lang="ts">
   import { afterUpdate } from "svelte";
+  import { page } from "$app/stores";
   import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { Chat } from "../chat";
   import ChatMessage from "./ChatMessage.svelte";
+  import { detectAppContext } from "../chat-utils";
 
   export let chat: Chat;
   export let layout: "sidebar" | "fullpage";
@@ -27,6 +29,11 @@
 
   // Data
   $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
+
+  // Detect if we're in a dashboard context
+  $: appContext = detectAppContext($page);
+  $: isInDashboard =
+    appContext?.contextType === "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD";
 
   // Auto-scroll to bottom when messages change or loading state changes
   afterUpdate(() => {
@@ -82,7 +89,7 @@
     </div>
   {:else}
     {#each messages as msg (msg.id)}
-      <ChatMessage message={msg} />
+      <ChatMessage message={msg} {isInDashboard} />
     {/each}
   {/if}
   {#if isStreaming}

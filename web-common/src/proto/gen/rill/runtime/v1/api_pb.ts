@@ -4477,6 +4477,13 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   prompt = "";
 
+  /**
+   * Optional dashboard context for context-aware queries
+   *
+   * @generated from field: google.protobuf.Struct dashboard_context = 4;
+   */
+  dashboardContext?: Struct;
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4488,6 +4495,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "dashboard_context", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

@@ -10698,6 +10698,35 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
+	if all {
+		switch v := interface{}(m.GetDashboardContext()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "DashboardContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "DashboardContext",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDashboardContext()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteStreamingRequestValidationError{
+				field:  "DashboardContext",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return CompleteStreamingRequestMultiError(errors)
 	}

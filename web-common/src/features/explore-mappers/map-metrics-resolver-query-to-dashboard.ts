@@ -37,6 +37,17 @@ export function mapMetricsResolverQueryToDashboard(
   exploreSpec: V1ExploreSpec,
   query: MetricsResolverQuery,
 ) {
+  // Validate inputs
+  if (!metricsViewSpec) {
+    throw new Error("metricsViewSpec is required");
+  }
+  if (!exploreSpec) {
+    throw new Error("exploreSpec is required");
+  }
+  if (!query) {
+    throw new Error("query is required");
+  }
+
   // Build partial ExploreState directly from Query
   const partialExploreState: Partial<ExploreState> = {};
 
@@ -82,7 +93,12 @@ export function mapMetricsResolverQueryToDashboard(
   // Convert where filter
   partialExploreState.whereFilter = mapResolverExpressionToV1Expression(
     query.where,
-  );
+  ) || {
+    cond: {
+      op: V1Operation.OPERATION_AND,
+      exprs: [],
+    },
+  };
 
   // Convert sort
   if (query.sort) {
@@ -136,6 +152,7 @@ function mapResolverTimeRangeToDashboardControls(
       name: TimeRangePreset.CUSTOM,
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
+      interval: undefined, // Let the time control store determine the appropriate interval
     };
   } else if (timeRange.expression) {
     return {
