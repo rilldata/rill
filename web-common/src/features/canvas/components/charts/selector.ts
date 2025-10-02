@@ -1,8 +1,8 @@
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { getChartData } from "@rilldata/web-common/features/components/charts/data-provider";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { type Readable } from "svelte/store";
 import type { ChartDataResult } from "../../../components/charts/types";
 

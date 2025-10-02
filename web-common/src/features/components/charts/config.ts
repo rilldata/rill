@@ -8,25 +8,41 @@ import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelt
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
 import type { ComponentType, SvelteComponent } from "svelte";
+import type { Readable } from "svelte/store";
 import type { VisualizationSpec } from "svelte-vega";
-import { type ChartDataResult, type ChartType } from ".";
 import { generateVLAreaChartSpec } from "./cartesian/area/spec";
 import { generateVLBarChartSpec } from "./cartesian/bar-chart/spec";
-import type { CartesianChartSpec } from "./cartesian/CartesianChartProvider";
+import {
+  CartesianChartProvider,
+  type CartesianChartSpec,
+} from "./cartesian/CartesianChartProvider";
 import { generateVLLineChartSpec } from "./cartesian/line-chart/spec";
 import { generateVLMultiMetricChartSpec } from "./cartesian/multi-metric-chart";
 import { generateVLStackedBarChartSpec } from "./cartesian/stacked-bar/default";
 import { generateVLStackedBarNormalizedSpec } from "./cartesian/stacked-bar/normalized";
+import { CircularChartProvider } from "./circular/CircularChartProvider";
 import { generateVLPieChartSpec } from "./circular/pie";
+import { ComboChartProvider } from "./combo/ComboChartProvider";
 import { generateVLComboChartSpec } from "./combo/spec";
+import { FunnelChartProvider } from "./funnel/FunnelChartProvider";
 import { generateVLFunnelChartSpec } from "./funnel/spec";
+import { HeatmapChartProvider } from "./heatmap/HeatmapChartProvider";
 import { generateVLHeatmapSpec } from "./heatmap/spec";
-import type { ChartSpec } from "./types";
+import type {
+  ChartDataResult,
+  ChartProvider,
+  ChartSpec,
+  ChartType,
+} from "./types";
 import { isMultiFieldConfig } from "./util.ts";
 
 export interface ChartMetadataConfig {
   title: string;
   icon: ComponentType<SvelteComponent>;
+  provider: new (
+    spec: Readable<ChartSpec>,
+    defaultOptions?: Record<string, unknown>,
+  ) => ChartProvider;
   generateSpec: (config: ChartSpec, data: ChartDataResult) => VisualizationSpec;
   hideFromSelector?: boolean;
 }
@@ -35,6 +51,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
   bar_chart: {
     title: "Bar",
     icon: BarChart,
+    provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
       const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
@@ -46,6 +63,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
   line_chart: {
     title: "Line",
     icon: LineChart,
+    provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
       const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
@@ -57,6 +75,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
   area_chart: {
     title: "Stacked Area",
     icon: StackedArea,
+    provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
       const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
@@ -68,6 +87,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
   stacked_bar: {
     title: "Stacked Bar",
     icon: StackedBar,
+    provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
       const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
@@ -79,6 +99,7 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
   stacked_bar_normalized: {
     title: "Stacked Bar Normalized",
     icon: StackedBarFull,
+    provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
       const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
@@ -94,27 +115,32 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
   donut_chart: {
     title: "Donut",
     icon: Donut,
+    provider: CircularChartProvider,
     generateSpec: generateVLPieChartSpec,
   },
   pie_chart: {
     title: "Pie",
     icon: Donut,
+    provider: CircularChartProvider,
     generateSpec: generateVLPieChartSpec,
     hideFromSelector: true,
   },
   funnel_chart: {
     title: "Funnel",
     icon: Funnel,
+    provider: FunnelChartProvider,
     generateSpec: generateVLFunnelChartSpec,
   },
   heatmap: {
     title: "Heatmap",
     icon: Heatmap,
+    provider: HeatmapChartProvider,
     generateSpec: generateVLHeatmapSpec,
   },
   combo_chart: {
     title: "Combo",
     icon: MultiChart,
+    provider: ComboChartProvider,
     generateSpec: generateVLComboChartSpec,
   },
 };

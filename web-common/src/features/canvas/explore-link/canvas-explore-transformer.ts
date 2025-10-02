@@ -1,7 +1,6 @@
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { ComponentWithMetricsView } from "@rilldata/web-common/features/canvas/components/types";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type {
@@ -10,6 +9,7 @@ import type {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export interface CanvasLinkContext {

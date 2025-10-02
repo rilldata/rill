@@ -1,4 +1,3 @@
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -9,6 +8,8 @@ import type {
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import {
   getQueryServiceMetricsViewAggregationQueryOptions,
   type V1MetricsViewAggregationDimension,
@@ -25,7 +26,6 @@ import {
   type Writable,
 } from "svelte/store";
 import { getFilterWithNullHandling } from "../query-util";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export type CircularChartSpec = {
   metrics_view: string;

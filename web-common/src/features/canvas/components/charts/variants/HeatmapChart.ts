@@ -1,11 +1,11 @@
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import {
   HeatmapChartProvider,
   type HeatmapChartSpec as HeatmapChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/heatmap/HeatmapChartProvider";
 import type { ChartFieldsMap } from "@rilldata/web-common/features/components/charts/types";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   V1MetricsViewSpec,
   V1Resource,

@@ -1,4 +1,3 @@
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -12,6 +11,7 @@ import {
 } from "@rilldata/web-common/features/components/charts/util";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   getQueryServiceMetricsViewAggregationQueryOptions,
   type MetricsViewSpecMeasure,

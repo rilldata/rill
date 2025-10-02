@@ -1,28 +1,27 @@
 <script lang="ts">
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
-  import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { Color } from "chroma-js";
-  import type { Readable, Writable } from "svelte/store";
-  import { derived } from "svelte/store";
+  import type { Readable } from "svelte/store";
+  import { readable } from "svelte/store";
   import Chart from "./Chart.svelte";
+  import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
-  import type { ChartProvider, ChartType } from "./types";
+  import type { ChartProvider, ChartSpec, ChartType } from "./types";
 
-  // Required props
   export let chartType: ChartType;
-  export let chartProvider: ChartProvider;
-  export let runtime: Writable<Runtime>;
+  export let spec: Readable<ChartSpec>;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
-
-  // Optional props
   export let theme: "light" | "dark" = "light";
   export let themeStore: Readable<{ primary?: Color; secondary?: Color }> =
-    derived([], () => ({}));
+    readable({});
 
-  // Get the chart spec from the provider
-  // All providers have a spec property that's a Readable
-  $: spec = (chartProvider as any).spec;
+  let chartProvider: ChartProvider;
+  $: {
+    const chartConfig = CHART_CONFIG[chartType];
+    chartProvider = new chartConfig.provider(spec, {});
+  }
 
   // Create metrics view selectors from runtime
   $: metricsViewSelectors = new MetricsViewSelectors($runtime.instanceId);
@@ -38,18 +37,15 @@
     timeAndFilterStore,
   );
 
-  // Create dependencies for getChartData
-  $: deps = {
+  // Create the chart data store
+  $: chartData = getChartData({
     config: $spec,
     chartDataQuery,
     metricsView: metricsViewSelectors,
     themeStore,
     timeAndFilterStore,
     getDomainValues: () => chartProvider.getChartDomainValues($measures),
-  };
-
-  // Create the chart data store
-  $: chartData = getChartData(deps);
+  });
 </script>
 
 {#if $spec}
