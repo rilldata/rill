@@ -24,6 +24,7 @@
   export let component: BaseChart<ChartSpec>;
 
   $: themePreference = $themeControl;
+  $: isDarkMode = themePreference === "dark";
 
   $: ({ instanceId } = $runtime);
 
@@ -54,7 +55,13 @@
 
   $: schema = $schemaStore;
 
-  $: chartQuery = getChartData(store, component, chartSpec, timeAndFilterStore);
+  $: chartQuery = getChartData(
+    store,
+    component,
+    chartSpec,
+    timeAndFilterStore,
+    isDarkMode,
+  );
 
   $: ({ isFetching, data, error } = $chartQuery);
   $: hasNoData = !isFetching && data.length === 0;
@@ -127,12 +134,12 @@
           bind:viewVL
           canvasDashboard
           data={{ "metrics-view": data }}
-          theme={themePreference === "dark" ? "dark" : "light"}
+          theme={isDarkMode ? "dark" : "light"}
           {spec}
           {colorMapping}
           renderer="canvas"
           {expressionFunctions}
-          config={getRillTheme(true, themePreference === "dark")}
+          config={getRillTheme(true, isDarkMode)}
         />
       {/if}
     {/if}

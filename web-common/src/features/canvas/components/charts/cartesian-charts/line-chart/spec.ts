@@ -54,6 +54,7 @@ export function generateVLLineChartSpec(
       multiValueTooltipChannel,
       xSort: config.x?.sort,
       primaryColor: data.theme.primary,
+      isDarkMode: data.isDarkMode,
       pivot:
         xField && yField && colorField && multiValueTooltipChannel?.length
           ? { field: colorField, value: yField, groupby: [xField] }

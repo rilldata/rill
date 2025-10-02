@@ -149,6 +149,7 @@ export function generateVLMultiMetricChartSpec(
     multiValueTooltipChannel,
     primaryColor: data.theme.primary,
     xBand: xBand,
+    isDarkMode: data.isDarkMode,
     pivot:
       xField && measures.length && multiValueTooltipChannel?.length
         ? { field: measureField, value: valueField, groupby: [xField] }
