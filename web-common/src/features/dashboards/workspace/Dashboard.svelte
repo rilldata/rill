@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dynamicHeight } from "@rilldata/web-admin/components/layout/layout-settings.ts";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";

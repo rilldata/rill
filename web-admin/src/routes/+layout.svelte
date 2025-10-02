@@ -3,7 +3,7 @@
   import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
-  import { dynamicHeight } from "@rilldata/web-admin/components/layout/layout-settings.ts";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,

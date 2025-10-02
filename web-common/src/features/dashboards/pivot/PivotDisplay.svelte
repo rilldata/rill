@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { dynamicHeight } from "@rilldata/web-admin/components/layout/layout-settings.ts";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";

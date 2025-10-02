@@ -4,6 +4,7 @@
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { onMount } from "svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { createIframeRPCHandler } from "@rilldata/web-common/lib/rpc";
@@ -28,7 +29,7 @@
 
   onMount(() => {
     createIframeRPCHandler();
-    VegaLiteTooltipHandler.resetElement();
+    void waitUntil(() => VegaLiteTooltipHandler.resetElement(), 5000, 100);
 
     return initEmbedPublicAPI();
   });

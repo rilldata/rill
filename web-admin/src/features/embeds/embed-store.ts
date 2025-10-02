@@ -1,4 +1,4 @@
-import { dynamicHeight } from "@rilldata/web-admin/components/layout/layout-settings";
+import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
 
 /**
  * Stores embed params in-memory so that the components that manipulate url need not be aware of these.
