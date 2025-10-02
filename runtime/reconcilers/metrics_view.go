@@ -173,5 +173,5 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 }
 
 func (r *MetricsViewReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAdnRefsAllowRuleAccess(res)}}, nil
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }

@@ -257,7 +257,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 }
 
 func (r *ProjectParserReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAdnRefsAllowRuleAccess(res)}}, nil
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.

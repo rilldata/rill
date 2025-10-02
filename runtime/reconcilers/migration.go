@@ -100,7 +100,7 @@ func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 }
 
 func (r *MigrationReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAdnRefsAllowRuleAccess(res)}}, nil
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 
 func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtimev1.Resource, version uint32) error {

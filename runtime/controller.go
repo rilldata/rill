@@ -83,13 +83,10 @@ func RegisterReconcilerInitializer(resourceKind string, initializer ReconcilerIn
 	ReconcilerInitializers[resourceKind] = initializer
 }
 
-func SelfAdnRefsAllowRuleAccess(res *runtimev1.Resource) *runtimev1.SecurityRule_Access {
-	var conditionRes []*runtimev1.ResourceName
-	conditionRes = append(conditionRes, res.Meta.Name)
-	conditionRes = append(conditionRes, res.Meta.Refs...)
+func SelfAllowRuleAccess(res *runtimev1.Resource) *runtimev1.SecurityRule_Access {
 	return &runtimev1.SecurityRule_Access{
 		Access: &runtimev1.SecurityRuleAccess{
-			ConditionResources: conditionRes,
+			ConditionResources: []*runtimev1.ResourceName{res.Meta.Name},
 			Allow:              true,
 			Exclusive:          true,
 		},

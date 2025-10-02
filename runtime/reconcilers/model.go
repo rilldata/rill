@@ -418,7 +418,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAdnRefsAllowRuleAccess(res)}}, nil
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 
 // executionSpecHash computes a hash of those model properties that impact execution.

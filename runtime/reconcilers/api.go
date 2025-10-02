@@ -65,5 +65,5 @@ func (r *APIReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName
 }
 
 func (r *APIReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAdnRefsAllowRuleAccess(res)}}, nil
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
