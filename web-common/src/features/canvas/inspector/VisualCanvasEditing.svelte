@@ -15,7 +15,7 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { selectedComponent, components },
+    canvasEntity: { _rows, selectedComponent, components },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
@@ -60,10 +60,13 @@
   }
 </script>
 
-<Inspector minWidth={320} filePath={path}>
-  {#if component}
-    <ComponentsEditor {component} />
-  {:else}
-    <PageEditor {canvasName} {fileArtifact} {updateProperties} />
-  {/if}
-</Inspector>
+<!-- A refactor should eventually allow us to remove this key block -->
+{#key $_rows}
+  <Inspector minWidth={320} filePath={path}>
+    {#if component}
+      <ComponentsEditor {component} />
+    {:else}
+      <PageEditor {canvasName} {fileArtifact} {updateProperties} />
+    {/if}
+  </Inspector>
+{/key}

@@ -54,7 +54,6 @@ export type SearchParamsStore = {
 };
 
 export class CanvasEntity {
-  name: string;
   components = new Map<string, BaseCanvasComponent>();
 
   _rows: Grid = new Grid(this);
@@ -80,8 +79,10 @@ export class CanvasEntity {
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
+  urlStore = writable<URLSearchParams>(new URLSearchParams());
+
   constructor(
-    name: string,
+    public name: string,
     private instanceId: string,
   ) {
     this.specStore = useCanvas(
@@ -95,58 +96,58 @@ export class CanvasEntity {
       queryClient,
     );
 
-    this.name = name;
+    const searchParamsCallback = (
+      key: string,
+      value: string | undefined,
+      checkIfSet = false,
+    ) => {
+      const url = get(page).url;
 
-    const searchParamsStore: SearchParamsStore = (() => {
-      return {
-        subscribe: derived(page, ({ url: { searchParams } }) => searchParams)
-          .subscribe,
-        set: (key: string, value: string | undefined, checkIfSet = false) => {
-          const url = get(page).url;
+      if (checkIfSet && url.searchParams.has(key)) return false;
 
-          if (checkIfSet && url.searchParams.has(key)) return false;
+      if (value === undefined || value === null || value === "") {
+        url.searchParams.delete(key);
+      } else {
+        url.searchParams.set(key, value);
+      }
+      goto(url.toString(), { replaceState: true }).catch(console.error);
+      return true;
+    };
 
-          if (value === undefined || value === null || value === "") {
-            url.searchParams.delete(key);
-          } else {
-            url.searchParams.set(key, value);
-          }
-          goto(url.toString(), { replaceState: true }).catch(console.error);
-          return true;
-        },
-        clearAll: () => {
-          const url = get(page).url;
-          url.searchParams.forEach((_, key) => {
-            url.searchParams.delete(key);
-          });
+    const searchParamsStore = {
+      subscribe: this.urlStore.subscribe,
+      set: searchParamsCallback,
+      clearAll: () => {
+        const url = get(page).url;
+        url.searchParams.forEach((_, key) => {
+          url.searchParams.delete(key);
+        });
 
-          goto(url.toString(), { replaceState: true }).catch(console.error);
-        },
-      };
-    })();
+        goto(url.toString(), { replaceState: true }).catch(console.error);
+      },
+    };
 
     this.spec = new CanvasResolvedSpec(this.specStore);
+
     this.timeControls = new TimeControls(
       this.specStore,
-      searchParamsStore,
+      searchParamsCallback,
       undefined,
       this.name,
     );
+
     this.filters = new Filters(this.spec, searchParamsStore);
 
-    searchParamsStore.subscribe((searchParams) => {
-      const themeFromUrl = searchParams.get("theme");
-      if (themeFromUrl) {
-        this.processTheme(themeFromUrl, undefined).catch(console.error);
-      }
-    });
-
     this.unsubscriber = this.specStore.subscribe((spec) => {
-      const filePath = spec.data?.filePath;
-      const theme = spec.data?.canvas?.theme;
-      const embeddedTheme = spec.data?.canvas?.embeddedTheme;
+      const canvasResponse = spec.data;
+      if (!canvasResponse) return;
+
+      const { filePath, canvas: { theme, embeddedTheme } = {} } =
+        canvasResponse;
 
       this.processTheme(theme, embeddedTheme).catch(console.error);
+
+      this.timeControls.onSpecChange(canvasResponse);
 
       if (!filePath) {
         return;
@@ -177,6 +178,16 @@ export class CanvasEntity {
       }
     });
   }
+
+  onSearchParamsChange = (searchParams: URLSearchParams) => {
+    const themeFromUrl = searchParams.get("theme");
+    if (themeFromUrl) {
+      this.processTheme(themeFromUrl, undefined).catch(console.error);
+    }
+
+    this.timeControls.onUrlChange(searchParams);
+    this.urlStore.set(searchParams);
+  };
 
   // Not currently being used
   unsubscribe = () => {

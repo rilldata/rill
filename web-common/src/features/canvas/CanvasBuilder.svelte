@@ -33,26 +33,13 @@
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { page } from "$app/stores";
 
   const activelyEditing = writable(false);
 
   export let fileArtifact: FileArtifact;
   export let canvasName: string;
   export let openSidebar: () => void;
-
-  $: ({
-    canvasEntity: {
-      setSelectedComponent,
-      selectedComponent,
-      components,
-      processRows,
-      specStore,
-      unsubscribe,
-      _rows,
-    },
-  } = getCanvasStore(canvasName, instanceId));
-
-  $: layoutRows = $_rows;
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
@@ -66,6 +53,28 @@
   let pendingComponentDelete: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
+
+  $: ({
+    url: { searchParams },
+  } = $page);
+
+  $: ({
+    canvasEntity: {
+      setSelectedComponent,
+      selectedComponent,
+      components,
+      processRows,
+      specStore,
+      unsubscribe,
+      _rows,
+      onSearchParamsChange,
+    },
+  } = getCanvasStore(canvasName, instanceId));
+
+  $: onSearchParamsChange(searchParams);
+
+  $: layoutRows = $_rows;
+
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
 
   $: metricsViewQuery = useDefaultMetrics(instanceId, metricsViews?.[0]?.[0]);

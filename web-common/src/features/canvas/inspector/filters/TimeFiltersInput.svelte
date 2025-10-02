@@ -4,7 +4,7 @@
   import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { DateTime, Interval } from "luxon";
+  import { Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { TimeControls } from "../../stores/time-control";
 
@@ -23,36 +23,62 @@
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({
-    allTimeRange,
-    timeRangeStateStore,
-    comparisonRangeStateStore,
-    selectedTimezone,
+    minMaxTimeStamps,
+    _comparisonInterval,
+    _comparisonRange,
+    _interval,
+    _range,
+    _grain,
+    _showTimeComparison,
+    _zone,
     minTimeGrain,
     set,
-    searchParamsStore,
     clearAll,
   } = localTimeControls);
 
-  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+  $: minMax = $minMaxTimeStamps;
 
-  $: localFiltersEnabled = Boolean($searchParamsStore.size);
+  $: interval = $_interval;
 
-  $: selectedComparisonTimeRange =
-    $comparisonRangeStateStore?.selectedComparisonTimeRange;
+  $: comparisonInterval = $_comparisonInterval;
+  $: comparisonRange = $_comparisonRange;
+  $: showTimeComparison = $_showTimeComparison;
 
-  $: selectedRangeAlias = selectedTimeRange?.name;
-  $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
+  $: selectedRangeAlias = $_range;
+  $: activeTimeGrain = $_grain;
 
-  $: activeTimeZone = $selectedTimezone;
+  $: localFiltersEnabled = Boolean(selectedRangeAlias);
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+  $: ({ defaultPreset: { timeRange: defaultTimeRange } = {}, timeRanges = [] } =
+    $canvasSpec ?? {});
+
+  $: activeTimeZone = $_zone;
+
+  $: timeStart = interval?.start.toISO();
+  $: timeEnd = interval?.end.toISO();
+
+  $: allTimeRange = {
+    start: minMax ? minMax.min.toJSDate() : new Date(0),
+    end: minMax ? minMax.max.toJSDate() : new Date(),
+  };
+
+  $: selectedComparisonTimeRange = comparisonInterval
+    ? {
+        name: comparisonRange,
+        start: comparisonInterval.start.toJSDate(),
+        end: comparisonInterval.end.toJSDate(),
+        interval: activeTimeGrain,
+      }
+    : undefined;
+
+  $: selectedTimeRange = interval
+    ? {
+        name: selectedRangeAlias,
+        start: interval?.start.toJSDate(),
+        end: interval?.end.toJSDate(),
+        interval: activeTimeGrain,
+      }
+    : undefined;
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -90,7 +116,7 @@
     <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
       <SuperPill
         context="filters-input"
-        allTimeRange={$allTimeRange}
+        {allTimeRange}
         {selectedRangeAlias}
         showPivot={!showGrain}
         minTimeGrain={$minTimeGrain}
@@ -98,7 +124,7 @@
         availableTimeZones={[]}
         {timeRanges}
         complete={false}
-        {interval}
+        interval={interval || Interval.invalid("No interval")}
         {timeStart}
         {timeEnd}
         {activeTimeGrain}
@@ -119,13 +145,12 @@
 
       {#if showComparison}
         <CanvasComparisonPill
-          allTimeRange={$allTimeRange}
+          {allTimeRange}
           {selectedTimeRange}
           showFullRange={false}
           {selectedComparisonTimeRange}
-          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-            false}
-          activeTimeZone={$selectedTimezone}
+          {showTimeComparison}
+          {activeTimeZone}
           onDisplayTimeComparison={set.comparison}
           onSetSelectedComparisonRange={(range) => {
             if (range.name === "CUSTOM_COMPARISON_RANGE") {

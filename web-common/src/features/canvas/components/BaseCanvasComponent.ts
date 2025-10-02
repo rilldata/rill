@@ -22,10 +22,6 @@ import {
   createAndExpression,
 } from "../../dashboards/stores/filter-utils";
 import type {
-  ComparisonTimeRangeState,
-  TimeRangeState,
-} from "../../dashboards/time-controls/time-control-store";
-import type {
   CanvasEntity,
   ComponentPath,
   SearchParamsStore,
@@ -159,10 +155,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
 
     this.localTimeControls = new TimeControls(
       this.parent.specStore,
-      yamlTimeFilterStore,
+      yamlTimeFilterStore.set,
       this.id,
       this.parent.name,
     );
+
+    yamlTimeFilterStore.subscribe((searchParams) => {
+      this.localTimeControls.onUrlChange(searchParams);
+    });
 
     this.localFilters = new Filters(
       this.parent.spec,
@@ -182,28 +182,36 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   get timeAndFilterStore() {
     return derived(
       [
-        this.parent.timeControls.timeRangeStateStore,
-        this.localTimeControls.timeRangeStateStore,
-        this.parent.timeControls.comparisonRangeStateStore,
-        this.localTimeControls.comparisonRangeStateStore,
-        this.parent.timeControls.selectedTimezone,
+        this.parent.timeControls._grain,
+        this.localTimeControls._grain,
+        this.parent.timeControls._zone,
         this.parent.filters.whereFilter,
         this.parent.filters.dimensionThresholdFilters,
         this.parent.specStore,
         this.parent.timeControls.hasTimeSeries,
         this.specStore,
+        this.parent.timeControls._interval,
+        this.localTimeControls._interval,
+        this.parent.timeControls._comparisonInterval,
+        this.localTimeControls._comparisonInterval,
+        this.localTimeControls._showTimeComparison,
+        this.parent.timeControls._showTimeComparison,
       ],
       ([
-        globalTimeRangeState,
-        localTimeRangeState,
-        globalComparisonRangeState,
-        localComparisonRangeState,
+        globalTimeGrain,
+        localTimeGrain,
         timeZone,
         whereFilter,
         dtf,
         canvasData,
         hasTimeSeries,
         componentSpec,
+        globalInterval,
+        localInterval,
+        globalComparisonInterval,
+        localComparisonInterval,
+        localShowTimeComparison,
+        globalShowTimeComparison,
       ]) => {
         const metricsViewName = componentSpec["metrics_view"];
         const metricsView = canvasData.data?.metricsViews?.[metricsViewName];
@@ -211,49 +219,37 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         const measures = metricsView?.state?.validSpec?.measures ?? [];
 
         let timeRange: V1TimeRange = {
-          start: globalTimeRangeState?.timeStart,
-          end: globalTimeRangeState?.timeEnd,
+          start: globalInterval?.start?.toISO(),
+          end: globalInterval?.end?.toISO(),
           timeZone,
         };
 
-        let timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
-
-        const localShowTimeComparison =
-          !!localComparisonRangeState?.showTimeComparison;
-        const globalShowTimeComparison =
-          !!globalComparisonRangeState?.showTimeComparison;
+        let timeGrain = globalTimeGrain;
 
         let showTimeComparison = globalShowTimeComparison;
 
         let comparisonTimeRange: V1TimeRange | undefined = {
-          start: globalComparisonRangeState?.comparisonTimeStart,
-          end: globalComparisonRangeState?.comparisonTimeEnd,
+          start: globalComparisonInterval?.start.toISO(),
+          end: globalComparisonInterval?.end.toISO(),
           timeZone,
         };
 
-        let timeRangeState: TimeRangeState | undefined = globalTimeRangeState;
-        let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
-          globalComparisonRangeState;
-
         if (componentSpec?.["time_filters"]) {
           timeRange = {
-            start: localTimeRangeState?.timeStart,
-            end: localTimeRangeState?.timeEnd,
+            start: localInterval?.start.toISO(),
+            end: localInterval?.end.toISO(),
             timeZone,
           };
 
           comparisonTimeRange = {
-            start: localComparisonRangeState?.comparisonTimeStart,
-            end: localComparisonRangeState?.comparisonTimeEnd,
+            start: localComparisonInterval?.start.toISO(),
+            end: localComparisonInterval?.end.toISO(),
             timeZone,
           };
 
           showTimeComparison = localShowTimeComparison;
 
-          timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
-
-          timeRangeState = localTimeRangeState;
-          comparisonTimeRangeState = localComparisonRangeState;
+          timeGrain = localTimeGrain;
         }
 
         // Dimension Filters
@@ -276,8 +272,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           comparisonTimeRange,
           where,
           timeGrain,
-          timeRangeState,
-          comparisonTimeRangeState,
           hasTimeSeries,
         };
       },

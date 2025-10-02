@@ -433,7 +433,7 @@ export class RillLegacyIsoInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    return undefined;
+    return GrainAliasToV1TimeGrain[this.dateGrains[0]?.grain];
   }
 
   public toString() {
