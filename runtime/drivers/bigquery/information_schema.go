@@ -129,7 +129,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := fmt.Sprintf(`
 	SELECT 
-		CASE true WHEN t.table_type = 'VIEW' ELSE false END AS is_view,
+		CASE t.table_type WHEN 'VIEW' THEN true else false END AS is_view,
 		c.column_name,
 		c.data_type
 	FROM `+"`%s.%s.INFORMATION_SCHEMA.TABLES`"+` AS t

@@ -4,6 +4,7 @@ import (
 	"context"
 	sqldriver "database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -73,7 +74,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 	err = it.Next(&firstRow)
 	if err != nil {
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			return nil, drivers.ErrNoRows
 		}
 		return nil, err
@@ -115,7 +116,7 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 }
 
 // Lookup implements drivers.OLAPInformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db string, schema string, name string) (*drivers.OlapTable, error) {
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	meta, err := c.GetTable(ctx, db, schema, name)
 	if err != nil {
 		return nil, err
@@ -214,7 +215,7 @@ func (r *rows) Next() bool {
 
 	err := r.ri.Next(&r.lastRow)
 	if err != nil {
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			return false
 		}
 		r.lastErr = err
