@@ -59,7 +59,7 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   darkMode = new FeatureFlag("user", false);
-  chat = new FeatureFlag("user", false);
+  chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
 
   constructor() {
