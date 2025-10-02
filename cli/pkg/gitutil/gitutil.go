@@ -279,12 +279,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return fmt.Errorf("failed to parse remote URL: %w", err)
 	}
 	u.User = url.UserPassword(config.Username, config.Password)
-
-	err = runGitPushUsingURL(ctx, projectPath, u.String(), config.DefaultBranch)
-	if err != nil {
-		return fmt.Errorf("failed to push to remote: %w", err)
-	}
-	return nil
+	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch, true)
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
@@ -419,18 +414,4 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 		return "", "", ErrNotAGitRepository
 	}
 	return repoRoot, subPath, nil
-}
-
-func runGitPushUsingURL(ctx context.Context, path, remoteURL, branchName string) error {
-	cmd := exec.CommandContext(ctx, "git", "-C", path, "push", "--force", remoteURL, branchName)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		var execErr *exec.ExitError
-		if errors.As(err, &execErr) {
-			return fmt.Errorf("git push failed: %s(%s)", string(out), string(execErr.Stderr))
-		}
-		return fmt.Errorf("git push failed: %s(%w)", string(out), err)
-	}
-	fmt.Printf("git push output: %s\n", string(out))
-	return nil
 }
