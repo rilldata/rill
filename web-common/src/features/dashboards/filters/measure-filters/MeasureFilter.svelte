@@ -14,7 +14,10 @@
   export let name: string;
   export let label: string | undefined = undefined;
   export let filter: MeasureFilterEntry | undefined = undefined;
+  export let locked = false;
+  export let removable = true;
   export let onRemove: () => void;
+  export let removeOnOutsideClick = true;
   export let onApply: (params: {
     dimension: string;
     oldDimension: string;
@@ -29,7 +32,7 @@
 <Popover.Root
   bind:open
   onOpenChange={(open) => {
-    if (!open && !filter) {
+    if (!open && !filter && removeOnOutsideClick) {
       onRemove();
     }
   }}
@@ -49,8 +52,9 @@
         builders={[builder]}
         {label}
         theme
+        {locked}
         on:remove={onRemove}
-        removable
+        {removable}
         removeTooltipText="Remove {label}"
       >
         <MeasureFilterBody

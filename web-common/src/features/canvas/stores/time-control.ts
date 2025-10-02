@@ -45,7 +45,6 @@ import {
   normalizeWeekday,
 } from "../../dashboards/time-controls/new-time-controls";
 import { type CanvasResponse } from "../selector";
-import type { SearchParamsStore } from "./canvas-entity";
 
 type AllTimeRange = TimeRange & { isFetching: boolean };
 
@@ -74,10 +73,15 @@ export class TimeControls {
   timeRangeStateStore: Writable<TimeRangeState | undefined> =
     writable(undefined);
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
+  searchParamsStore = writable<URLSearchParams>(new URLSearchParams());
 
   constructor(
     private specStore: CanvasSpecResponseStore,
-    public searchParamsStore: SearchParamsStore,
+    public searchParamsCallback: (
+      key: string,
+      value: string | undefined,
+      checkIfSet?: boolean,
+    ) => boolean,
     public componentName?: string,
     public canvasName?: string,
   ) {
@@ -279,6 +283,10 @@ export class TimeControls {
     }
   }
 
+  onUrlChange = (searchParams: URLSearchParams) => {
+    this.searchParamsStore.set(searchParams);
+  };
+
   combinedTimeRangeSummaryStore = (
     runtime: Writable<Runtime>,
     specStore: CanvasSpecResponseStore,
@@ -380,14 +388,14 @@ export class TimeControls {
 
   set = {
     zone: (timeZone: string, checkIfSet = false) => {
-      return this.searchParamsStore.set(
+      return this.searchParamsCallback(
         ExploreStateURLParams.TimeZone,
         timeZone,
         checkIfSet,
       );
     },
     range: (range: string, checkIfSet = false) => {
-      return this.searchParamsStore.set(
+      return this.searchParamsCallback(
         ExploreStateURLParams.TimeRange,
         range,
         checkIfSet,
@@ -396,7 +404,7 @@ export class TimeControls {
     grain: (timeGrain: V1TimeGrain, checkIfSet = false) => {
       const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
       if (mappedTimeGrain) {
-        return this.searchParamsStore.set(
+        return this.searchParamsCallback(
           ExploreStateURLParams.TimeGrain,
           mappedTimeGrain,
           checkIfSet,
@@ -414,20 +422,20 @@ export class TimeControls {
 
           if (!selectedComparisonTimeRange) return;
 
-          return this.searchParamsStore.set(
+          return this.searchParamsCallback(
             ExploreStateURLParams.ComparisonTimeRange,
             toTimeRangeParam(selectedComparisonTimeRange),
             checkIfSet,
           );
         } else if (typeof range === "string") {
-          return this.searchParamsStore.set(
+          return this.searchParamsCallback(
             ExploreStateURLParams.ComparisonTimeRange,
             range,
             checkIfSet,
           );
         }
       } else {
-        return this.searchParamsStore.set(
+        return this.searchParamsCallback(
           ExploreStateURLParams.ComparisonTimeRange,
           undefined,
           checkIfSet,
@@ -437,13 +445,13 @@ export class TimeControls {
   };
 
   clearAll = () => {
-    this.searchParamsStore.set(ExploreStateURLParams.TimeRange, undefined);
-    this.searchParamsStore.set(ExploreStateURLParams.TimeGrain, undefined);
-    this.searchParamsStore.set(
+    this.searchParamsCallback(ExploreStateURLParams.TimeRange, undefined);
+    this.searchParamsCallback(ExploreStateURLParams.TimeGrain, undefined);
+    this.searchParamsCallback(
       ExploreStateURLParams.ComparisonTimeRange,
       undefined,
     );
-    this.searchParamsStore.set(ExploreStateURLParams.TimeZone, undefined);
+    this.searchParamsCallback(ExploreStateURLParams.TimeZone, undefined);
   };
 
   setSelectedComparisonRange = (comparisonTimeRange: DashboardTimeControls) => {

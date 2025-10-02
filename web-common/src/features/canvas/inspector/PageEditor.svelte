@@ -2,7 +2,6 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import ZoneDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
@@ -25,9 +24,13 @@
     DEFAULT_TIMEZONES,
   } from "@rilldata/web-common/lib/time/config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { YAMLMap, YAMLSeq } from "yaml";
+  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
   import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { InfoIcon } from "lucide-svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -38,6 +41,7 @@
 
   $: ({
     canvasEntity: {
+      convertStateToDefault,
       spec: { canvasSpec },
       filters: { setFilters },
     },
@@ -45,14 +49,16 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: parsedDocument = getParsedDocument(fileArtifact);
+  $: ({ editorContent } = fileArtifact);
 
-  $: rawTitle = $parsedDocument.get("title");
-  $: rawDisplayName = $parsedDocument.get("display_name");
-  $: rawTheme = $parsedDocument.get("theme");
-  $: rawTimeRanges = $parsedDocument.get("time_ranges");
-  $: rawTimeZones = $parsedDocument.get("time_zones");
-  $: rawMaxWidth = $parsedDocument.get("max_width");
+  $: parsedDocument = parseDocument($editorContent ?? "");
+
+  $: rawTitle = parsedDocument.get("title");
+  $: rawDisplayName = parsedDocument.get("display_name");
+  $: rawTheme = parsedDocument.get("theme");
+  $: rawTimeRanges = parsedDocument.get("time_ranges");
+  $: rawTimeZones = parsedDocument.get("time_zones");
+  $: rawMaxWidth = parsedDocument.get("max_width");
 
   $: timeZones = new Set(
     rawTimeZones instanceof YAMLSeq
@@ -210,6 +216,22 @@
         >
           <ZoneDisplay iana={item} />
         </MultiSelectInput>
+
+        <Button
+          class="group"
+          type="subtle"
+          large
+          onClick={convertStateToDefault}
+        >
+          Save filter state as default
+          <Tooltip distance={16} location="top">
+            <InfoIcon size="14px" strokeWidth={2} />
+            <TooltipContent slot="tooltip-content">
+              By default, the canvas will load with the currently applied time,
+              measure and dimension filters
+            </TooltipContent>
+          </Tooltip>
+        </Button>
       </div>
     {/if}
   </div>

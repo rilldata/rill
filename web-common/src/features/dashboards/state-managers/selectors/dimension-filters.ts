@@ -134,8 +134,8 @@ export type DimensionFilterItem = {
   label: string;
   mode: DimensionFilterMode;
   selectedValues: string[];
-  inputText?: string;
   isInclude: boolean;
+  inputText?: string;
   metricsViewNames?: string[];
 };
 export function getDimensionFilterItems(

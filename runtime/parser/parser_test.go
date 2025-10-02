@@ -1647,6 +1647,7 @@ theme:
 				Theme:                "t1",
 				FiltersEnabled:       true,
 				AllowCustomTimeRange: true,
+				AllowFilterAdd:       true,
 			},
 		},
 		{
@@ -1665,6 +1666,7 @@ theme:
 				},
 				FiltersEnabled:       true,
 				AllowCustomTimeRange: true,
+				AllowFilterAdd:       true,
 			},
 		},
 	}
@@ -1805,6 +1807,7 @@ rows:
 					},
 				},
 				AllowCustomTimeRange: true,
+				AllowFilterAdd:       true,
 				FiltersEnabled:       false,
 				DefaultPreset: &runtimev1.CanvasPreset{
 					TimeRange:      asPtr("P4W"),
@@ -2080,7 +2083,8 @@ func TestConnector(t *testing.T) {
 		`connectors/clickhouse.yaml`: `
 type: connector
 driver: clickhouse
-`})
+`,
+	})
 	r := &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
@@ -2097,7 +2101,8 @@ driver: clickhouse
 type: connector
 driver: clickhouse
 managed: true
-`})
+`,
+	})
 	r = &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
@@ -2117,7 +2122,8 @@ driver: clickhouse
 managed:
   hello: world
 time_zone: America/Los_Angeles
-`})
+`,
+	})
 	r = &Resource{
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
@@ -2137,7 +2143,8 @@ time_zone: America/Los_Angeles
 type: connector
 driver: clickhouse
 managed: 10
-`})
+`,
+	})
 	p, err = Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{
