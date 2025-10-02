@@ -662,7 +662,7 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 	var conditionKinds []string
 	var conditionResources []*runtimev1.ResourceName
 	var conditionExpression string
-	// merge all access rules in one rule with exclusive flag set
+	// merge all access rules with an exclusive flag set in single rule
 	for _, rule := range rules {
 		if access := rule.GetAccess(); access != nil && access.Exclusive {
 			if access.ConditionExpression != "" {

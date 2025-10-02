@@ -184,7 +184,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 }
 
 func (r *RefreshTriggerReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	return nil, fmt.Errorf("transitive access not implemented for refresh triggers")
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAdnRefsAllowRuleAccess(res)}}, nil
 }
 
 // UpdateTriggerTrue sets the Trigger spec property of the resource to true.

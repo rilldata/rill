@@ -106,7 +106,7 @@ func (r *ComponentReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 }
 
 func (r *ComponentReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
-	return nil, fmt.Errorf("transitive access not implemented for components")
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAdnRefsAllowRuleAccess(res)}}, nil
 }
 
 // checkMetricsViews returns true if all the metrics views referenced by the component have a valid spec.

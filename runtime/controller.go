@@ -83,6 +83,19 @@ func RegisterReconcilerInitializer(resourceKind string, initializer ReconcilerIn
 	ReconcilerInitializers[resourceKind] = initializer
 }
 
+func SelfAdnRefsAllowRuleAccess(res *runtimev1.Resource) *runtimev1.SecurityRule_Access {
+	var conditionRes []*runtimev1.ResourceName
+	conditionRes = append(conditionRes, res.Meta.Name)
+	conditionRes = append(conditionRes, res.Meta.Refs...)
+	return &runtimev1.SecurityRule_Access{
+		Access: &runtimev1.SecurityRuleAccess{
+			ConditionResources: conditionRes,
+			Allow:              true,
+			Exclusive:          true,
+		},
+	}
+}
+
 // Controller manages the catalog for a single instance and runs reconcilers to migrate the catalog (and related resources in external databases) into the desired state.
 // For information about how the controller schedules reconcilers, see `runtime/reconcilers/README.md`.
 type Controller struct {
