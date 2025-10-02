@@ -10,6 +10,7 @@ import {
 } from "@rilldata/web-common/lib/rpc";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
+const RESIZE_THROTTLE_TIMEOUT = 200;
 
 export default function initEmbedPublicAPI(): () => void {
   registerRPCMethod("getState", () => {
@@ -45,10 +46,19 @@ export default function initEmbedPublicAPI(): () => void {
     });
   });
 
+  const resizeThrottler = new Throttler(
+    RESIZE_THROTTLE_TIMEOUT,
+    RESIZE_THROTTLE_TIMEOUT,
+  );
   function onResize(event: PageContentResized) {
-    emitNotification("resized", {
-      width: event.width,
-      height: event.height,
+    console.log("onResize", event);
+    // Throttle the resize event.
+    // This avoids too many events being fired when size changes quickly, especially when page is loading.
+    resizeThrottler.throttle(() => {
+      emitNotification("resized", {
+        width: event.width,
+        height: event.height,
+      });
     });
   }
   const resizeUnsub = eventBus.on("page-content-resized", onResize);
