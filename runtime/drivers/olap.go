@@ -183,9 +183,10 @@ type OlapTable struct {
 	IsDefaultDatabaseSchema bool
 	Name                    string
 	View                    bool
-	Schema                  *runtimev1.StructType
-	UnsupportedCols         map[string]string
-	PhysicalSizeBytes       int64
+	// Schema is the table schema. It is only set when only single table is looked up. It is not set when listing all tables.
+	Schema            *runtimev1.StructType
+	UnsupportedCols   map[string]string
+	PhysicalSizeBytes int64
 }
 
 // Dialect enumerates OLAP query languages.

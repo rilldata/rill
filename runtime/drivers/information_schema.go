@@ -31,5 +31,6 @@ type TableInfo struct {
 }
 
 type TableMetadata struct {
+	View   bool // TODO: populate for other drivers
 	Schema map[string]string
 }
