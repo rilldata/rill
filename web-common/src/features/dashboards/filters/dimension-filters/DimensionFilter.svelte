@@ -277,8 +277,6 @@
 
   function handleToggleExcludeMode() {
     curExcludeMode = !curExcludeMode;
-    const shouldToggleImmediately = mode === curMode;
-    if (shouldToggleImmediately) onToggleFilterMode();
   }
 
   function onToggleSelectAll() {

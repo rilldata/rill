@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/envdetect"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -101,6 +102,22 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Default to the current directory if no path is provided
 			if projectPath == "" {
 				projectPath = "."
+			}
+
+			// Check for WSL Windows partition usage (based on the project path)
+			if envdetect.IsWSLWindowsPartition(projectPath) {
+				ch.PrintfWarn("%s\n", envdetect.GetWSLWarningMessage())
+				confirm, err := cmdutil.ConfirmPrompt(
+					"Do you want to continue anyway?",
+					"", false, // Default to "No"
+				)
+				if err != nil {
+					return err
+				}
+				if !confirm {
+					ch.PrintfWarn("Aborted\n")
+					return nil
+				}
 			}
 
 			// Always attempt to pull env for any valid Rill project (after projectPath is set)

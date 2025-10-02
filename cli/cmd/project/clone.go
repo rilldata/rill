@@ -1,7 +1,9 @@
 package project
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/rilldata/rill/cli/cmd/env"
@@ -103,6 +105,9 @@ func isDirAbsentOrEmpty(path string) (bool, error) {
 	// Read the directory entries
 	entries, err := f.Readdirnames(1)
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return len(entries) == 0, nil
+		}
 		return false, err
 	}
 
