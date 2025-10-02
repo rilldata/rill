@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -183,9 +182,6 @@ func (r *rows) MapScan(dest map[string]any) error {
 	if dest == nil {
 		return fmt.Errorf("nil destination map in MapScan")
 	}
-	if !r.canScanRow {
-		return fmt.Errorf("must call Next before MapScan")
-	}
 	row, err := r.nextRow()
 	if err != nil {
 		return err
@@ -196,7 +192,6 @@ func (r *rows) MapScan(dest map[string]any) error {
 			return err
 		}
 	}
-	r.canScanRow = false
 	return nil
 }
 
@@ -245,11 +240,11 @@ func (r *rows) Scan(dest ...any) error {
 }
 
 func (r *rows) nextRow() ([]bigquery.Value, error) {
-	if !r.canScanRow {
-		return nil, fmt.Errorf("must call Next before Scan")
-	}
 	if r.lastErr != nil {
 		return nil, r.lastErr
+	}
+	if !r.canScanRow {
+		return nil, fmt.Errorf("must call Next before Scan")
 	}
 
 	var row []bigquery.Value
@@ -295,11 +290,11 @@ func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	case bigquery.TimestampFieldType:
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case bigquery.DateTimeFieldType:
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_STRING
 	case bigquery.TimeFieldType:
-		t.Code = runtimev1.Type_CODE_TIME
+		t.Code = runtimev1.Type_CODE_STRING
 	case bigquery.DateFieldType:
-		t.Code = runtimev1.Type_CODE_DATE
+		t.Code = runtimev1.Type_CODE_STRING
 	case bigquery.BooleanFieldType:
 		t.Code = runtimev1.Type_CODE_BOOL
 	case bigquery.IntegerFieldType:
@@ -330,7 +325,7 @@ func convertValue(field *bigquery.FieldSchema, value bigquery.Value) (sqldriver.
 	// valid driver.Value types.
 	out, err := json.Marshal(val)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling %s field to JSON: %w", columnType(field), err)
+		return nil, fmt.Errorf("error marshalling %s field of type %s to JSON: %w", field.Name, field.Type, err)
 	}
 	return string(out), nil
 }
@@ -508,47 +503,4 @@ func (e *unexpectedTypeError) Error() string {
 		"received unexpected type: %T for BigQuery field: %s (expected: %s)",
 		e.Actual, e.FieldType, e.Expected,
 	)
-}
-
-// Returns the data type for a column/field, as specified in the BigQuery docs:
-// https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
-func columnType(field *bigquery.FieldSchema) string {
-	if field.Repeated {
-		return columnRepeatedType(field)
-	}
-	return columnUnitType(field)
-}
-
-func columnUnitType(field *bigquery.FieldSchema) string {
-	switch field.Type {
-	case bigquery.BooleanFieldType:
-		return "BOOL"
-	case bigquery.IntegerFieldType:
-		return "INT64"
-	case bigquery.FloatFieldType:
-		return "FLOAT64"
-	case bigquery.RangeFieldType:
-		return columnRangeType(field)
-	case bigquery.RecordFieldType:
-		return columnRecordType(field)
-	default:
-		return string(field.Type)
-	}
-}
-
-func columnRepeatedType(field *bigquery.FieldSchema) string {
-	t := columnUnitType(field)
-	return fmt.Sprintf("ARRAY<%s>", t)
-}
-
-func columnRecordType(field *bigquery.FieldSchema) string {
-	rts := make([]string, len(field.Schema))
-	for i, rf := range field.Schema {
-		rts[i] = columnType(rf)
-	}
-	return fmt.Sprintf("STRUCT<%s>", strings.Join(rts, ","))
-}
-
-func columnRangeType(field *bigquery.FieldSchema) string {
-	return fmt.Sprintf("RANGE<%s>", field.RangeElementType.Type)
 }

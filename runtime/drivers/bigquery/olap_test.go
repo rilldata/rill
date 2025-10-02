@@ -129,11 +129,13 @@ func TestOLAP(t *testing.T) {
 			rows, err := olap.Query(t.Context(), &drivers.Statement{Query: test.query, Args: test.args})
 			require.NoError(t, err)
 			defer rows.Close()
-			require.True(t, rows.Next())
-			res := make(map[string]any)
-			err = rows.MapScan(res)
-			require.NoError(t, err)
-			require.Equal(t, test.result, res)
+			for rows.Next() {
+				res := make(map[string]any)
+				err = rows.MapScan(res)
+				require.NoError(t, err)
+				require.Equal(t, test.result, res)
+			}
+			require.NoError(t, rows.Err())
 		})
 	}
 }
