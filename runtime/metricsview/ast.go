@@ -845,6 +845,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		dimSelect := &SelectNode{
 			Alias:     alias,
 			DimFields: newDims,
+			Unnests:   a.unnests,
 			FromTable: a.underlyingTable,
 			Where:     a.underlyingWhere,
 			Group:     true,
