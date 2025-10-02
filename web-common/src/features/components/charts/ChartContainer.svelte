@@ -23,21 +23,17 @@
     chartProvider = new chartConfig.provider(spec, {});
   }
 
-  // Create metrics view selectors from runtime
   $: metricsViewSelectors = new MetricsViewSelectors($runtime.instanceId);
 
-  // Get measures from the metrics view specified in the chart spec
   $: measures = metricsViewSelectors.getMeasuresForMetricView(
     $spec.metrics_view,
   );
 
-  // Create the chart data query using the provider
   $: chartDataQuery = chartProvider.createChartDataQuery(
     runtime,
     timeAndFilterStore,
   );
 
-  // Create the chart data store
   $: chartData = getChartData({
     config: $spec,
     chartDataQuery,
