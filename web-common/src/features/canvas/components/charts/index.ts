@@ -34,7 +34,7 @@ export type ChartComponent =
   | typeof HeatmapChartComponent
   | typeof ComboChartComponent;
 
-export type ChartSpec =
+export type CanvasChartSpec =
   | CartesianChartSpec
   | CircularChartSpec
   | FunnelChartSpec
@@ -43,7 +43,7 @@ export type ChartSpec =
 
 export function getCanvasChartComponent(
   type: ChartType,
-): BaseCanvasComponentConstructor<ChartSpec> {
+): BaseCanvasComponentConstructor<CanvasChartSpec> {
   switch (type) {
     case "bar_chart":
     case "line_chart":
@@ -66,7 +66,7 @@ export function getCanvasChartComponent(
 }
 
 export type CanvasChartConfig = ChartMetadataConfig & {
-  component: BaseCanvasComponentConstructor<ChartSpec>;
+  component: BaseCanvasComponentConstructor<CanvasChartSpec>;
 };
 
 export const CANVAS_CHART_CONFIG: Record<ChartType, CanvasChartConfig> =

@@ -2,7 +2,7 @@
   import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
   import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
-  import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+  import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
   import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -18,7 +18,7 @@
   import { generateSpec, getColorMappingForChart } from "./util";
 
   export let chartType: ChartType;
-  export let chartSpec: ChartSpec;
+  export let chartSpec: CanvasChartSpec;
   export let chartData: Readable<ChartDataResult>;
   export let measures: MetricsViewSpecMeasure[];
   export let theme: "light" | "dark" = "light";

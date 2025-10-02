@@ -1,5 +1,4 @@
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
 import {
@@ -17,6 +16,7 @@ import type {
   ChartDataQuery,
   ChartDataResult,
   ChartDomainValues,
+  ChartSpec,
   TimeDimensionDefinition,
 } from "./types";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";

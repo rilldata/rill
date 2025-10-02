@@ -1,5 +1,5 @@
 import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { ComponentWithMetricsView } from "@rilldata/web-common/features/canvas/components/types";
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
@@ -72,7 +72,7 @@ export function useTransformCanvasToExploreState(
 }
 
 export function getPivotStateFromChartSpec(
-  spec: ChartSpec,
+  spec: CanvasChartSpec,
   timeGrain: V1TimeGrain | undefined,
 ): PivotState {
   const columns: PivotChipData[] = [];

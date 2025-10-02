@@ -35,12 +35,16 @@ export type ChartProvider =
   | FunnelChartProvider
   | HeatmapChartProvider;
 
-export type ChartSpec =
+export type ChartSpecBase =
   | CartesianChartSpec
   | CircularChartSpec
   | FunnelChartSpec
   | HeatmapChartSpec
   | ComboChartSpec;
+
+export type ChartSpec = ChartSpecBase & {
+  vl_config?: string;
+};
 
 export type ChartType =
   | "bar_chart"

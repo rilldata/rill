@@ -1,4 +1,4 @@
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { getChartData } from "@rilldata/web-common/features/components/charts/data-provider";
@@ -11,8 +11,8 @@ import type { ChartDataResult } from "../../../components/charts/types";
  */
 export function getChartDataForCanvas(
   ctx: CanvasStore,
-  component: BaseChart<ChartSpec>,
-  config: ChartSpec,
+  component: BaseChart<CanvasChartSpec>,
+  config: CanvasChartSpec,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
 ): Readable<ChartDataResult> {
   const chartDataQuery = component.createChartDataQuery(

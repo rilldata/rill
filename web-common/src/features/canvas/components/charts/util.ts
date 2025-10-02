@@ -1,7 +1,7 @@
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { type ChartType } from "../../../components/charts/types";
-import { type ChartSpec } from "./";
+import { type CanvasChartSpec } from "./";
 
 const allowedTimeDimensionDetailTypes = [
   "line_chart",
@@ -20,7 +20,7 @@ export const CanvasChartTypeToTDDChartType = {
 };
 
 export function getLinkStateForTimeDimensionDetail(
-  spec: ChartSpec,
+  spec: CanvasChartSpec,
   type: ChartType,
 ): {
   canLink: boolean;

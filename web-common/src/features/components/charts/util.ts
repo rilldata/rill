@@ -1,4 +1,3 @@
-import { type ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
@@ -13,6 +12,7 @@ import type { Config } from "vega-lite";
 import type {
   ChartDataResult,
   ChartDomainValues,
+  ChartSpec,
   ChartType,
   ColorMapping,
   FieldConfig,

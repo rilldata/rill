@@ -5,13 +5,13 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     CANVAS_CHART_CONFIG,
-    type ChartSpec,
+    type CanvasChartSpec,
   } from "@rilldata/web-common/features/canvas/components/charts";
   import type { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
   import { VISIBLE_CHART_TYPES } from "@rilldata/web-common/features/components/charts/config";
   import type { ChartType } from "@rilldata/web-common/features/components/charts/types";
 
-  export let component: BaseChart<ChartSpec>;
+  export let component: BaseChart<CanvasChartSpec>;
 
   $: ({
     parent: {

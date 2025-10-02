@@ -7,12 +7,12 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { ChartSpec } from ".";
+  import type { CanvasChartSpec } from ".";
   import type { BaseChart } from "./BaseChart";
   import { getChartDataForCanvas } from "./selector";
   import { validateChartSchema } from "./validate";
 
-  export let component: BaseChart<ChartSpec>;
+  export let component: BaseChart<CanvasChartSpec>;
 
   $: themePreference = $themeControl;
 

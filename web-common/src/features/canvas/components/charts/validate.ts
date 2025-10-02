@@ -1,4 +1,4 @@
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+import type { CanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import {
   validateDimensions,
   validateMeasures,
@@ -9,7 +9,7 @@ import { derived, type Readable } from "svelte/store";
 
 export function validateChartSchema(
   metricsView: MetricsViewSelectors,
-  chartSpec: ChartSpec,
+  chartSpec: CanvasChartSpec,
 ): Readable<{
   isValid: boolean;
   error?: string;

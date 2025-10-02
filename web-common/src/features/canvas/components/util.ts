@@ -1,6 +1,6 @@
 import {
   getCanvasChartComponent,
-  type ChartSpec,
+  type CanvasChartSpec,
 } from "@rilldata/web-common/features/canvas/components/charts";
 import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
@@ -116,7 +116,7 @@ const baseComponentMap = {
 
 const chartComponentMap = Object.fromEntries(
   CHART_TYPES.map((type) => [type, getCanvasChartComponent(type)]),
-) as Record<ChartType, BaseCanvasComponentConstructor<ChartSpec>>;
+) as Record<ChartType, BaseCanvasComponentConstructor<CanvasChartSpec>>;
 
 export const COMPONENT_CLASS_MAP = {
   ...baseComponentMap,

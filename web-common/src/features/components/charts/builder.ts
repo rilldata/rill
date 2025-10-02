@@ -2,13 +2,13 @@ import {
   sanitizeFieldName,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
-import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { CartesianChartSpec } from "@rilldata/web-common/features/components/charts";
 import type {
   ChartDataResult,
   ChartDomainValues,
   ChartLegend,
   ChartSortDirection,
+  ChartSpec,
   FieldConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/components/charts/types";
