@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -34,6 +35,9 @@ type ToolService interface {
 	ExecuteTool(ctx context.Context, toolName string, toolArgs map[string]any) (any, error)
 }
 
+// CompleteMessageCallback is called when a new message is added
+type CompleteMessageCallback func(conversationID string, msg *runtimev1.Message) error
+
 // CompleteWithToolsOptions represents the input for AI completion
 type CompleteWithToolsOptions struct {
 	OwnerID        string
@@ -42,6 +46,7 @@ type CompleteWithToolsOptions struct {
 	AppContext     *runtimev1.AppContext // Used to seed new conversations with context
 	Messages       []*runtimev1.Message
 	ToolService    ToolService
+	OnMessage      CompleteMessageCallback
 }
 
 // CompleteWithToolsResult represents the output of AI completion
@@ -77,13 +82,13 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithTools
 		}
 	}()
 
-	// 1. Determine conversation ID (create if needed)
+	// Determine conversation ID (create if needed)
 	conversationID, err := r.ensureConversation(ctx, opts.InstanceID, opts.OwnerID, opts.ConversationID, opts.AppContext, opts.Messages)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. If this is a new conversation, process app context and save system messages first
+	// If this is a new conversation, process app context and save system messages first
 	var addedMessageIDs []string
 	if opts.ConversationID == "" {
 		// This was a new conversation, so process app context and save system messages
@@ -103,7 +108,7 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithTools
 		}
 	}
 
-	// 3. Save user messages to database
+	// Save user messages to database
 	var userMessageIDs []string
 	userMessageIDs, err = r.saveUserMessages(ctx, opts.InstanceID, conversationID, opts.Messages)
 	if err != nil {
@@ -111,21 +116,41 @@ func (r *Runtime) CompleteWithTools(ctx context.Context, opts *CompleteWithTools
 	}
 	addedMessageIDs = append(addedMessageIDs, userMessageIDs...)
 
-	// 4. Load complete conversation context from database (includes any saved system messages)
+	// Emit preliminary user messages from the request.
+	// NOTE: The messages are split up such that each block is emitted separately. This conforms with the new contract that CompleteStreaming only returns one block per message.
+	// NOTE: Since the messages may be split up, it generates new non-persistent IDs for the streamed messages.
+	if opts.OnMessage != nil {
+		for _, msg := range opts.Messages {
+			for _, block := range msg.Content {
+				err := opts.OnMessage(conversationID, &runtimev1.Message{
+					Id:        uuid.NewString(),
+					Role:      msg.Role,
+					Content:   []*aiv1.ContentBlock{block},
+					CreatedOn: timestamppb.Now(),
+					UpdatedOn: timestamppb.Now(),
+				})
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	// Load complete conversation context from database (includes any saved system messages)
 	var allMessages []*runtimev1.Message
 	allMessages, err = r.loadConversationContext(ctx, opts.InstanceID, conversationID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 5. Execute AI completion with database-backed context
+	// Execute AI completion with database-backed context
 	var contentBlocks []*aiv1.ContentBlock
-	contentBlocks, err = r.executeAICompletion(ctx, opts.InstanceID, allMessages, opts.ToolService)
+	contentBlocks, err = r.executeAICompletion(ctx, opts.InstanceID, conversationID, allMessages, opts.ToolService, opts.OnMessage)
 	if err != nil {
 		return nil, err
 	}
 
-	// 6. Save assistant message and build response
+	// Save assistant message and build response
 	result, err = r.buildCompletionResult(ctx, opts.InstanceID, conversationID, contentBlocks, addedMessageIDs)
 	if err != nil {
 		return nil, err
@@ -171,7 +196,8 @@ func (r *Runtime) ensureConversation(ctx context.Context, instanceID, ownerID, c
 // processAppContext processes the app context and generates contextual system messages
 func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appContext *runtimev1.AppContext, toolService ToolService) ([]*runtimev1.Message, error) {
 	if appContext == nil {
-		return nil, nil
+		// If no app context, use project chat context
+		return r.processProjectChatContext(ctx, instanceID)
 	}
 
 	switch appContext.ContextType {
@@ -180,7 +206,8 @@ func (r *Runtime) processAppContext(ctx context.Context, instanceID string, appC
 	case runtimev1.AppContextType_APP_CONTEXT_TYPE_EXPLORE_DASHBOARD:
 		return r.processExploreDashboardContext(ctx, instanceID, appContext.ContextMetadata, toolService)
 	default:
-		return nil, nil // Unknown context type, no system message will be added
+		// Unknown context type, use project chat context
+		return r.processProjectChatContext(ctx, instanceID)
 	}
 }
 
@@ -244,7 +271,7 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 	}
 
 	// Get time range information for the metrics view
-	timeRangeSummary, err := toolService.ExecuteTool(ctx, "query_metrics_view_time_range", map[string]any{
+	timeRangeSummary, err := toolService.ExecuteTool(ctx, "query_metrics_view_summary", map[string]any{
 		"metrics_view": metricsViewName,
 	})
 	if err != nil {
@@ -313,7 +340,7 @@ func (r *Runtime) loadConversationContext(ctx context.Context, instanceID, conve
 }
 
 // executeAICompletion runs the AI completion loop with tool calling support
-func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, allMessages []*runtimev1.Message, toolService ToolService) ([]*aiv1.ContentBlock, error) {
+func (r *Runtime) executeAICompletion(ctx context.Context, instanceID, conversationID string, allMessages []*runtimev1.Message, toolService ToolService, onMessage CompleteMessageCallback) ([]*aiv1.ContentBlock, error) {
 	// Get instance-specific logger
 	logger, err := r.InstanceLogger(ctx, instanceID)
 	if err != nil {
@@ -380,6 +407,20 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 			// Add all content blocks from the response
 			contentBlocks = append(contentBlocks, block)
 
+			// Emit preliminary message for streaming
+			if onMessage != nil {
+				err := onMessage(conversationID, &runtimev1.Message{
+					Id:        uuid.NewString(),
+					Role:      "assistant",
+					Content:   []*aiv1.ContentBlock{block},
+					CreatedOn: timestamppb.Now(),
+					UpdatedOn: timestamppb.Now(),
+				})
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			// Check for tool calls
 			if toolCall := block.GetToolCall(); toolCall != nil {
 				toolCalls = append(toolCalls, toolCall)
@@ -435,11 +476,26 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 			}
 
 			// Add tool result as content block
-			contentBlocks = append(contentBlocks, &aiv1.ContentBlock{
+			block := &aiv1.ContentBlock{
 				BlockType: &aiv1.ContentBlock_ToolResult{
 					ToolResult: toolResult,
 				},
-			})
+			}
+			contentBlocks = append(contentBlocks, block)
+
+			// Emit preliminary message for streaming
+			if onMessage != nil {
+				err := onMessage(conversationID, &runtimev1.Message{
+					Id:        uuid.NewString(),
+					Role:      "assistant",
+					Content:   []*aiv1.ContentBlock{block},
+					CreatedOn: timestamppb.Now(),
+					UpdatedOn: timestamppb.Now(),
+				})
+				if err != nil {
+					return nil, err
+				}
+			}
 		}
 
 		// Add tool results to conversation context
@@ -501,6 +557,22 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID string, al
 
 	// Add the final response content blocks
 	contentBlocks = append(contentBlocks, res.Content...)
+
+	// Emit preliminary message for streaming
+	if onMessage != nil {
+		for _, block := range res.Content {
+			err := onMessage(conversationID, &runtimev1.Message{
+				Id:        uuid.NewString(),
+				Role:      "assistant",
+				Content:   []*aiv1.ContentBlock{block},
+				CreatedOn: timestamppb.Now(),
+				UpdatedOn: timestamppb.Now(),
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	return contentBlocks, nil
 }
@@ -650,8 +722,11 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 // buildProjectChatSystemPrompt constructs the system prompt for the project chat context
 func buildProjectChatSystemPrompt(aiInstructions string) string {
 	// TODO: call 'list_metrics_views' and seed the result in the system prompt
-	basePrompt := `<role>
+	currentTime := time.Now()
+	basePrompt := fmt.Sprintf(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights. You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+
+Today's date is %s (%s).
 </role>
 
 <communication_style>
@@ -679,8 +754,8 @@ Execute a MINIMUM of 4-6 distinct analytical queries, building each query based 
 
 <analysis_guidelines>
 **Setup Phase (Steps 1-3)**: 
+- Briefly explain your approach before starting
 - Complete each step fully before proceeding
-- Explain your approach briefly before starting
 - If any step fails, investigate and adapt
 
 **Analysis Phase (Step 4)**:
@@ -702,6 +777,17 @@ Execute a MINIMUM of 4-6 distinct analytical queries, building each query based 
 - Use only the exact numbers returned by the tools in your analysis
 </analysis_guidelines>
 
+<guardrails>
+- If the user asks an unrelated question (e.g., general knowledge, politics, entertainment, trivia):
+  1. Politely decline to answer the unrelated question
+  2. Briefly explain that you specialize only in business data analysis
+  3. Redirect the conversation back to datasets, metrics, or insights
+  4. Do **NOT** attempt to answer the unrelated question
+
+Example response style:  
+*"I focus specifically on analyzing your business data and uncovering insights — so I won’t be the right source for general knowledge questions. Let’s pivot back to your project: would you like me to explore the available datasets so we can start surfacing insights?"*
+</guardrails>
+
 <thinking>
 After each query in Phase 2, think through:
 - What patterns or anomalies did this reveal?
@@ -713,10 +799,8 @@ After each query in Phase 2, think through:
 
 <output_format>
 Format your analysis as follows:
-` + "```markdown" + `
-[Brief acknowledgment and explanation of approach]
-
-Based on my systematic analysis, here are the key insights:
+`+"```markdown"+`
+Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
@@ -727,9 +811,9 @@ Based on my systematic analysis, here are the key insights:
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-[Offer specific follow-up analysis options]
-` + "```" + `
-</output_format>`
+[Optional: Offer specific follow-up analysis options]
+`+"```"+`
+</output_format>`, currentTime.Format("Monday, January 2, 2006"), currentTime.Format("2006-01-02"))
 
 	if aiInstructions != "" {
 		return basePrompt + "\n\n## Additional Instructions (provided by the Rill project developer)\n" + aiInstructions

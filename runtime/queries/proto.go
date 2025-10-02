@@ -8,14 +8,14 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ProtoToQuery builds a runtime query from a proto query and security attributes.
 // NOTE: Pending refactors, this implementation is replicated from handlers in runtime/server.
-func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims) (runtime.Query, error) {
+func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims, executionTime *time.Time) (runtime.Query, error) {
 	switch r := q.Query.(type) {
 	case *runtimev1.Query_MetricsViewAggregationRequest:
 		req := r.MetricsViewAggregationRequest
@@ -41,6 +41,7 @@ func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims) (runtime.Q
 			Offset:              req.Offset,
 			PivotOn:             req.PivotOn,
 			SecurityClaims:      claims,
+			ExecutionTime:       executionTime,
 		}, nil
 	case *runtimev1.Query_MetricsViewComparisonRequest:
 		req := r.MetricsViewComparisonRequest
@@ -59,6 +60,7 @@ func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims) (runtime.Q
 			Filter:              req.Filter,
 			Exact:               req.Exact,
 			SecurityClaims:      claims,
+			ExecutionTime:       executionTime,
 		}, nil
 	default:
 		return nil, fmt.Errorf("query type %T not supported for alerts", r)
@@ -304,7 +306,7 @@ func rowFilterJSON(where *runtimev1.Expression, whereSQL string, filter *runtime
 	}
 	var whereSQLExp *runtimev1.Expression
 	if whereSQL != "" {
-		mvExp, err := metricssqlparser.ParseSQLFilter(whereSQL)
+		mvExp, err := metricssql.ParseFilter(whereSQL)
 		if err != nil {
 			return "", fmt.Errorf("invalid where SQL: %w", err)
 		}
@@ -343,11 +345,8 @@ func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRang
 	if tr == nil {
 		tr = &runtimev1.TimeRange{}
 	}
-
 	if tr.Expression != "" {
-		// Do not override the `end` when we are using expression.
-		// Instead, add `as of <time>`
-		tr.Expression = fmt.Sprintf("%s as of %s", tr.Expression, t.UTC().Format(time.RFC3339Nano))
+		// Do not add `end` for rill time expressions. Execution time will be passed through to executor.Query.
 		return tr
 	}
 

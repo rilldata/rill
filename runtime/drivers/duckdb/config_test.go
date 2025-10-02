@@ -51,3 +51,44 @@ func Test_specialCharInPath(t *testing.T) {
 	require.NoError(t, res.Close())
 	require.NoError(t, conn.Close())
 }
+
+func TestModeConfigValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		expectError bool
+	}{
+		{
+			name:        "valid read mode",
+			config:      map[string]any{"mode": modeReadOnly},
+			expectError: false,
+		},
+		{
+			name:        "valid readwrite mode",
+			config:      map[string]any{"mode": modeReadWrite},
+			expectError: false,
+		},
+		{
+			name:        "empty mode is valid",
+			config:      map[string]any{},
+			expectError: false,
+		},
+		{
+			name:        "invalid mode should fail",
+			config:      map[string]any{"mode": "invalid"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := newConfig(tt.config)
+			if tt.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "invalid mode")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

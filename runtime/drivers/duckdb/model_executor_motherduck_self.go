@@ -17,15 +17,9 @@ type mdToSelfInputProps struct {
 }
 
 type mdConfigProps struct {
+	Path            string `mapstructure:"path"`
 	Token           string `mapstructure:"token"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-}
-
-func (p *mdToSelfInputProps) resolveDSN() string {
-	if p.DSN != "" {
-		return p.DSN
-	}
-	return p.DB
 }
 
 func (p *mdToSelfInputProps) Validate() error {
@@ -66,6 +60,16 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 		return nil, err
 	}
 
+	// get dsn
+	var dsn string
+	if inputProps.DSN != "" {
+		dsn = inputProps.DSN
+	} else if inputProps.DB != "" {
+		dsn = inputProps.DB
+	} else if mdConfig.Path != "" {
+		dsn = mdConfig.Path
+	}
+
 	// get token
 	var token string
 	if inputProps.Token != "" {
@@ -82,7 +86,7 @@ func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecu
 	clone := *opts
 	m := &ModelInputProperties{
 		SQL:         inputProps.SQL,
-		InitQueries: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(token), safeSQLString(inputProps.resolveDSN())),
+		InitQueries: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token=%s; ATTACH %s;", safeSQLString(token), safeSQLString(dsn)),
 	}
 	var props map[string]any
 	err = mapstructure.Decode(m, &props)

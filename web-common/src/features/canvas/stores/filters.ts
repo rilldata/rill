@@ -185,8 +185,13 @@ export class Filters {
     );
 
     this.allDimensionFilterItems = derived(
-      [this.temporaryFilters, this.dimensionFilterItems, this.allDimensions],
-      ([tempFilters, dimensionFilters, $allDimensions]) => {
+      [
+        this.temporaryFilters,
+        this.dimensionFilterItems,
+        this.allDimensions,
+        this.dimensionFilterExcludeMode,
+      ],
+      ([tempFilters, dimensionFilters, $allDimensions, $excludeMode]) => {
         const merged = structuredClone(dimensionFilters);
 
         tempFilters.forEach((tempFilter) => {
@@ -200,7 +205,7 @@ export class Filters {
               name: tempFilter,
               label: getDimensionDisplayName($allDimensions.get(tempFilter)),
               selectedValues: [],
-              isInclude: true,
+              isInclude: !$excludeMode.get(tempFilter),
               metricsViewNames,
             });
           }
@@ -461,6 +466,7 @@ export class Filters {
 
     const excludeMode = get(this.dimensionFilterExcludeMode);
     const isExclude = !!excludeMode.get(dimensionName);
+
     const wf = get(this.whereFilter);
 
     // Use the derived selector:
@@ -565,6 +571,7 @@ export class Filters {
   toggleDimensionFilterMode = (dimensionName: string) => {
     const excludeMode = get(this.dimensionFilterExcludeMode);
     const newExclude = !excludeMode.get(dimensionName);
+
     excludeMode.set(dimensionName, newExclude);
     this.dimensionFilterExcludeMode.set(excludeMode);
 

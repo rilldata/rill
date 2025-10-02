@@ -141,10 +141,11 @@
         id="truncation-selector-trigger"
       >
         <button
+          type="button"
           {...getAttrs([builder, builder2])}
           use:builderActions={{ builders: [builder, builder2] }}
           class="flex gap-x-1 items-center flex-none truncate"
-          aria-label="Select time range"
+          aria-label="Select reference time and grain"
           data-state={open ? "open" : "closed"}
         >
           <p>

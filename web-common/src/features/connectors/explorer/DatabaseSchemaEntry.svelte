@@ -23,8 +23,20 @@
 
   // Use appropriate selector based on API version
   $: tablesQuery = useNewAPI
-    ? useTablesForSchema(instanceId, connectorName, database, databaseSchema)
-    : useTablesLegacy(instanceId, connectorName, database, databaseSchema);
+    ? useTablesForSchema(
+        instanceId,
+        connectorName,
+        database,
+        databaseSchema,
+        expanded,
+      )
+    : useTablesLegacy(
+        instanceId,
+        connectorName,
+        database,
+        databaseSchema,
+        expanded,
+      );
 
   $: ({ data, error, isLoading } = $tablesQuery);
 
@@ -104,11 +116,14 @@
             {instanceId}
             driver={connector.driver.name}
             connector={connectorName}
-            showGenerateMetricsAndDashboard={connector.driver.implementsOlap ??
+            showGenerateMetricsAndDashboard={(connector.driver.implementsOlap ||
+              connector.driver.implementsWarehouse ||
+              connector.driver.implementsSqlStore) ??
               false}
             showGenerateModel={(connector.driver.implementsWarehouse ||
               connector.driver.implementsSqlStore) ??
               false}
+            isOlapConnector={connector.driver.implementsOlap ?? false}
             {database}
             {databaseSchema}
             table={tableInfo.name}

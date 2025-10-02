@@ -16,10 +16,6 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectPinot
 }
 
-func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
-}
-
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("pinot: WithConnection not supported")
 }
