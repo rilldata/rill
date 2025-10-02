@@ -33,6 +33,7 @@ export default function initEmbedPublicAPI(): () => void {
   );
   // Keep this at the end so that RPC methods are already available and "ready" has been fired.
   const unsubscribe = page.subscribe(({ url }) => {
+    console.log("Embed: page store changed", { url });
     // Throttle the state change event.
     // This avoids too many events being fired when state is changed quickly.
     // This also avoids early events being fired just before dashboard is ready but is routed to.

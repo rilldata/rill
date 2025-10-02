@@ -117,13 +117,33 @@ function getPeriodToDateTestCases(): TestCase[] {
 
 function getLegacyISOTestCases(): TestCase[] {
   return [
-    [`P2M3D`, "Last 2 months and 3 days", false, undefined, undefined],
-    [`PT2H3M`, "Last 2 hours and 3 minutes", false, undefined, undefined],
+    [
+      `P2M3D`,
+      "Last 2 months and 3 days",
+      false,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      undefined,
+    ],
+    [`P2Y`, "Last 2 years", false, V1TimeGrain.TIME_GRAIN_YEAR, undefined],
+    [
+      `P2YT3M`,
+      "Last 2 years and 3 minutes",
+      false,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+      undefined,
+    ],
+    [
+      `PT2H3M`,
+      "Last 2 hours and 3 minutes",
+      false,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+      undefined,
+    ],
     [
       `P2M3DT2H3M`,
       "Last 2 months, 3 days, 2 hours and 3 minutes",
       false,
-      undefined,
+      V1TimeGrain.TIME_GRAIN_MINUTE,
       undefined,
     ],
   ];

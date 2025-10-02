@@ -9,6 +9,7 @@ import {
   createQueryServiceMetricsViewTimeRange,
   V1ExploreComparisonMode,
   V1TimeGrain,
+  type V1ExploreTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import {
   runtime,
@@ -71,13 +72,14 @@ export class TimeControls {
   hasTimeSeries = writable(false);
   minTimeGrain = maybeWritable<V1TimeGrain>();
 
-  timeRangeOptions = writable<string[]>([]);
+  timeRangeOptions = writable<V1ExploreTimeRange[]>([]);
   latestMetricsView = maybeWritable<string>();
 
   firstPass = true;
 
   private parsedRange: Readable<RillTime | undefined>;
   private parsedRangePrecision: Readable<V1TimeGrain | undefined>;
+  private isWidget = false;
 
   constructor(
     private specStore: CanvasSpecResponseStore,
@@ -89,6 +91,8 @@ export class TimeControls {
     public componentName?: string,
     public canvasName?: string,
   ) {
+    this.isWidget = !!componentName;
+
     this.minMaxTimeStamps = this.deriveMinMaxTimestamps(
       runtime,
       this.specStore,
@@ -111,9 +115,11 @@ export class TimeControls {
       ]) => {
         if (urlRange) return urlRange;
 
+        if (this.isWidget) return;
+
         if (defaultRange) return defaultRange;
 
-        if (timeRangeOptions.length > 0) return timeRangeOptions[0];
+        if (timeRangeOptions.length > 0) return timeRangeOptions[0].range;
 
         if (!minMaxTimeStamps) return undefined;
 
@@ -253,7 +259,7 @@ export class TimeControls {
       this.processUrl(searchParams);
 
     // Component without local time range
-    if (this.componentName && !range) return;
+    if (this.isWidget && !range) return;
 
     if (range) this._urlRange.set(range);
     if (grain) this._urlGrain.set(grain);
@@ -339,9 +345,7 @@ export class TimeControls {
   checkAndSetTimeRangeOptions(response: CanvasResponse) {
     const timeRangeOptions = response.canvas?.timeRanges ?? [];
 
-    const ranges = timeRangeOptions.map(({ range }) => range).filter(Boolean);
-
-    this.timeRangeOptions.set(ranges as string[]);
+    this.timeRangeOptions.set(timeRangeOptions);
   }
 
   deriveMinMaxTimestamps = (

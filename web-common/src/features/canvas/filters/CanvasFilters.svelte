@@ -60,6 +60,8 @@
         _showTimeComparison,
         _zone,
         minTimeGrain,
+        _defaultRange,
+        timeRangeOptions,
         set,
         _isIntervalAllowed,
       },
@@ -96,9 +98,9 @@
 
   $: selectedRangeAlias = $_range;
   $: activeTimeGrain = $_grain;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
+  $: defaultTimeRange = $_defaultRange;
   $: availableTimeZones = $canvasSpec?.timeZones ?? [];
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
+  $: timeRanges = $timeRangeOptions;
 
   $: interval = $_interval;
 

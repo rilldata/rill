@@ -18,7 +18,7 @@
 
   $: ({
     canvasEntity: {
-      spec: { canvasSpec },
+      timeControls: { _defaultRange, timeRangeOptions },
     },
   } = getCanvasStore(canvasName, instanceId));
 
@@ -49,8 +49,8 @@
 
   $: localFiltersEnabled = Boolean(selectedRangeAlias);
 
-  $: ({ defaultPreset: { timeRange: defaultTimeRange } = {}, timeRanges = [] } =
-    $canvasSpec ?? {});
+  $: defaultTimeRange = $_defaultRange;
+  $: timeRanges = $timeRangeOptions;
 
   $: activeTimeZone = $_zone;
 
