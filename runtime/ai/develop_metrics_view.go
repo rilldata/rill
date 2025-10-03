@@ -14,7 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -273,7 +273,7 @@ func (t *DevelopMetricsView) generateMetricsViewYAMLWithAI(ctx context.Context, 
 		})
 	}
 
-	e, err := metricsview.NewExecutor(ctx, t.Runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(ctx, t.Runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
 	if err != nil {
 		return nil, err
 	}

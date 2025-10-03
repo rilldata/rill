@@ -50,7 +50,7 @@ func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) 
 		return nil, err
 	}
 
-	r, access, err := t.Runtime.ApplySecurityPolicy(session.InstanceID(), session.Claims(), r)
+	r, access, err := t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
 	if err != nil {
 		return nil, err
 	}

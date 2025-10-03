@@ -229,7 +229,7 @@ func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, explor
 		return nil, nil, err
 	}
 
-	explore, access, err := t.Runtime.ApplySecurityPolicy(session.InstanceID(), session.Claims(), r)
+	explore, access, err := t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -247,7 +247,7 @@ func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, explor
 		return nil, nil, err
 	}
 
-	metricsView, access, err = t.Runtime.ApplySecurityPolicy(session.InstanceID(), session.Claims(), metricsView)
+	metricsView, access, err = t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), metricsView)
 	if err != nil {
 		return nil, nil, err
 	}

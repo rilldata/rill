@@ -63,7 +63,7 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 	i := 0
 	for i < len(rs) {
 		r := rs[i]
-		r, access, err := t.Runtime.ApplySecurityPolicy(session.InstanceID(), session.Claims(), r)
+		r, access, err := t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
 		if err != nil {
 			return nil, err
 		}
