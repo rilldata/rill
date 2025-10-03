@@ -9,6 +9,7 @@ const darkCodeTheme = themes.dracula;
 const llmsTxtPlugin = require('./plugins/llms-txt-plugin');
 
 const def = require("redocusaurus");
+const path = require('path');
 def;
 
 /** @type {import('@docusaurus/types').Config} */
@@ -62,6 +63,24 @@ const config = {
         },
       }),
     ],
+    // [
+    //   'redocusaurus',
+    //   {
+    //     config: path.join(__dirname, 'redocly.yaml'),
+    //     specs: [
+    //       {
+    //         id: 'admin-api',
+    //         spec: 'api/rill/admin/v1/public.swagger.yaml',
+    //         route: '/api/admin/',
+    //         layout: {
+    //           title: "Rill Public API",
+    //           description: "Public Rill API documentation",
+    //         },
+    //       },
+    //     ],
+    //     theme: {},
+    //   },
+    // ]
   ],
 
   themeConfig:
@@ -123,6 +142,12 @@ const config = {
             position: "left",
             label: "Reference",
           },
+
+          // {
+          //   to: "/api/admin/",
+          //   position: "left",
+          //   label: "API",
+          // },
 
           {
             type: "docSidebar",
@@ -576,6 +601,7 @@ const config = {
   stylesheets: [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
   ],
+
 };
 
 module.exports = config;

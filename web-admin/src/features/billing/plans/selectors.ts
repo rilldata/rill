@@ -66,7 +66,7 @@ export function getOrganizationUsageMetrics(
   return derived(
     [
       createAdminServiceGetBillingProjectCredentials({
-        organization,
+        org: organization,
       }),
     ],
     ([credsResp], set) => {

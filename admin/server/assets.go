@@ -31,12 +31,12 @@ var maxAssetSizeForType = map[string]int64{
 
 func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetRequest) (*adminv1.CreateAssetResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.OrganizationName),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.type", req.Type),
 	)
 
 	// Find the parent org
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
