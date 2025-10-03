@@ -165,7 +165,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     );
 
     this.localFilters = new Filters(
-      this.parent.spec,
+      this.parent.metricsView,
       yamlDimensionFilterStore,
       this.id,
     );

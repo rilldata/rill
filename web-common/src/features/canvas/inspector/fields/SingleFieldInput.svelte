@@ -24,7 +24,7 @@
   $: ({ instanceId } = $runtime);
 
   $: ctx = getCanvasStore(canvasName, instanceId);
-  $: ({ getTimeDimensionForMetricView } = ctx.canvasEntity.spec);
+  $: ({ getTimeDimensionForMetricView } = ctx.canvasEntity.metricsView);
 
   $: timeDimension = getTimeDimensionForMetricView(metricName);
 

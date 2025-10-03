@@ -15,7 +15,7 @@
 
   $: ({
     parent: {
-      spec: { getMetricsViewFromName },
+      metricsView: { getMetricsViewFromName },
     },
     chartType,
     specStore,

@@ -20,7 +20,7 @@ export function validateChartSchema(
   const { measures, dimensions, timeDimensions } = getFieldsByType(chartSpec);
 
   return derived(
-    ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
+    ctx.canvasEntity.metricsView.getMetricsViewFromName(metrics_view),
     (metricsViewQuery) => {
       if (metricsViewQuery.isLoading) {
         return {

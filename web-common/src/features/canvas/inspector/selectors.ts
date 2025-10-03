@@ -26,9 +26,9 @@ export function useMetricFieldData(
   searchValue = "",
   excludedValues: string[] | undefined = undefined,
 ) {
-  const { spec, timeControls } = ctx.canvasEntity;
+  const { metricsView, timeControls } = ctx.canvasEntity;
 
-  const metricsViewQuery = spec.getMetricsViewFromName(metricViewName);
+  const metricsViewQuery = metricsView.getMetricsViewFromName(metricViewName);
 
   return derived(
     [metricsViewQuery, timeControls.minTimeGrain],

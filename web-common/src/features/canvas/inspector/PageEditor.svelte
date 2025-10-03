@@ -24,10 +24,10 @@
     DEFAULT_TIME_RANGES,
     DEFAULT_TIMEZONES,
   } from "@rilldata/web-common/lib/time/config";
+  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { YAMLMap, YAMLSeq } from "yaml";
   import { DEFAULT_DASHBOARD_WIDTH } from "../layout-util";
-  import { allTimeZones } from "@rilldata/web-common/lib/time/timezone";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -38,7 +38,7 @@
 
   $: ({
     canvasEntity: {
-      spec: { canvasSpec },
+      spec,
       filters: { setFilters },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -91,13 +91,13 @@
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
-  $: showFilterBar = $canvasSpec?.filtersEnabled ?? true;
+  $: showFilterBar = $spec?.filtersEnabled ?? true;
   $: theme = !rawTheme
     ? undefined
     : typeof rawTheme === "string"
       ? rawTheme
       : rawTheme instanceof YAMLMap
-        ? $canvasSpec?.embeddedTheme
+        ? $spec?.embeddedTheme
         : undefined;
 
   async function toggleFilterBar() {

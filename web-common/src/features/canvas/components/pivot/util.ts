@@ -17,15 +17,15 @@ import {
   type PivotTimeConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type {
   V1Expression,
   V1MetricsViewSpec,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { type Readable, type Writable, derived, writable } from "svelte/store";
-import type { PivotSpec, TableSpec } from "./";
 import type { CanvasEntity } from "../../stores/canvas-entity";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { PivotSpec, TableSpec } from "./";
 
 type CacheEntry = {
   store: ReturnType<typeof createPivotDataStore>;
@@ -270,7 +270,7 @@ export const usePivotForCanvas = (
   const pivotDashboardContext: PivotDashboardContext = {
     metricsViewName: metricsViewStore,
     queryClient: queryClient,
-    enabled: !!canvas.spec.canvasSpec,
+    enabled: !!canvas.spec,
   };
 
   const pivotDataStore = createPivotDataStore(

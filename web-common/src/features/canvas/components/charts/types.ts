@@ -118,15 +118,6 @@ export interface CommonChartProperties {
   vl_config?: string;
 }
 
-// TODO: Remove this once we have a better way to handle chart config
-export interface ChartConfig extends CommonChartProperties {
-  x?: FieldConfig;
-  y?: FieldConfig;
-  color?: FieldConfig | string;
-  tooltip?: FieldConfig;
-  vl_config?: string;
-}
-
 /** Temporary solution for the lack of vega lite type exports */
 export interface TooltipValue {
   title?: string;
