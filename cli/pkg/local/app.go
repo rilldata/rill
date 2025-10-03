@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Default instance config on local.
@@ -119,12 +120,17 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		logger.Info("Dropping old stage.db file and rebuilding project")
 	}
 
+	metastoreProp, err := structpb.NewStruct(map[string]any{"dsn": "file:rill?mode=memory&cache=shared"})
+	if err != nil {
+		return nil, err
+	}
+
 	// Create a local runtime with an in-memory metastore
 	systemConnectors := []*runtimev1.Connector{
 		{
-			Type:   "sqlite",
-			Name:   "metastore",
-			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Type:       "sqlite",
+			Name:       "metastore",
+			Properties: metastoreProp,
 		},
 	}
 
@@ -194,41 +200,58 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
+	olapProp, err := structpb.NewStruct(map[string]any{
+		"pool_size":   "4", // Default pool size for DuckDB
+		"log_queries": strconv.FormatBool(opts.Debug),
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	// Add default OLAP connector
 	olapConnector := &runtimev1.Connector{
-		Type: "duckdb",
-		Name: "duckdb",
-		Config: map[string]string{
-			"pool_size":   "4", // Default pool size for DuckDB
-			"log_queries": strconv.FormatBool(opts.Debug),
-		},
+		Type:       "duckdb",
+		Name:       "duckdb",
+		Properties: olapProp,
 	}
 	connectors = append(connectors, olapConnector)
 
+	repoProp, err := structpb.NewStruct(map[string]any{"dsn": projectPath})
+	if err != nil {
+		return nil, err
+	}
 	// The repo connector is the local project directory
 	repoConnector := &runtimev1.Connector{
-		Type:   "file",
-		Name:   "repo",
-		Config: map[string]string{"dsn": projectPath},
+		Type:       "file",
+		Name:       "repo",
+		Properties: repoProp,
 	}
 	connectors = append(connectors, repoConnector)
 
+	catalogProp, err := structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))})
+	if err != nil {
+		return nil, err
+	}
 	// The catalog connector is a SQLite database in the project directory's tmp folder
 	catalogConnector := &runtimev1.Connector{
-		Type:   "sqlite",
-		Name:   "catalog",
-		Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))},
+		Type:       "sqlite",
+		Name:       "catalog",
+		Properties: catalogProp,
 	}
 	connectors = append(connectors, catalogConnector)
 
+	aiProp, err := structpb.NewStruct(map[string]any{
+		"admin_url":    opts.Ch.AdminURL(),
+		"access_token": opts.Ch.AdminToken(),
+	})
+	if err != nil {
+		return nil, err
+	}
 	// Use the admin service for AI
 	aiConnector := &runtimev1.Connector{
-		Name: "admin",
-		Type: "admin",
-		Config: map[string]string{
-			"admin_url":    opts.Ch.AdminURL(),
-			"access_token": opts.Ch.AdminToken(),
-		},
+		Name:       "admin",
+		Type:       "admin",
+		Properties: aiProp,
 	}
 	connectors = append(connectors, aiConnector)
 

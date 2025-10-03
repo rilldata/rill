@@ -348,9 +348,7 @@ message Connector {
   // Name of the connector
   string name = 2;
   // Config for the connector
-  map<string, string> config = 3;
-  // Properties in config that use templating
-  repeated string templated_properties = 5;
+  google.protobuf.Struct properties = 3;
   // Provision settings if its a managed connector
   bool provision = 6;
   google.protobuf.Struct provision_args = 7;
@@ -849,11 +847,11 @@ message AnalyzedConnector {
   // Connector driver metadata
   ConnectorDriver driver = 2;
   // Combined config properties for the connector
-  map<string, string> config = 3;
+  google.protobuf.Struct config = 3;
   // Config properties preset by the runtime or when the instance was created
-  map<string, string> preset_config = 4;
+  google.protobuf.Struct preset_config = 4;
   // Config properties set in project YAML files
-  map<string, string> project_config = 5;
+  google.protobuf.Struct project_config = 5;
   // Config properties set as dynamic variables
   map<string, string> env_config = 6;
   // Provision indicates if its a managed connector

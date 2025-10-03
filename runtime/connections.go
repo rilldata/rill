@@ -3,7 +3,6 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"maps"
 	"strconv"
 	"strings"
 
@@ -19,10 +18,8 @@ var ErrAINotConfigured = fmt.Errorf("an AI service is not configured for this in
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
-			cfg := make(map[string]any, len(c.Config)+1)
-			for k, v := range c.Config {
-				cfg[strings.ToLower(k)] = v
-			}
+			raw := c.Properties.AsMap()
+			cfg := lowerKeys(raw)
 			cfg["allow_host_access"] = r.opts.AllowHostAccess
 			return r.getConnection(ctx, cachedConnectionConfig{
 				instanceID: "",
@@ -193,7 +190,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	for _, c := range inst.Connectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Preset = maps.Clone(c.Config) // Cloning because Preset may be mutated later, but the inst object is shared.
+			res.Preset = c.Properties.AsMap()
 			if c.Provision {
 				res.Provision = c.Provision
 				res.ProvisionArgs = c.ProvisionArgs.AsMap()
@@ -209,7 +206,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		}
 
 		res.Driver = c.Type
-		res.Project, err = ResolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), c)
+		res.Project, err = resolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), c)
 		if err != nil {
 			return nil, err
 		}
@@ -290,31 +287,23 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	return res, nil
 }
 
-// ResolveConnectorProperties resolves templating in the provided connector's properties.
+// resolveConnectorProperties resolves templating in the provided connector's properties.
 // It always returns a clone of the properties, even if no templating is found, so the output is safe for further mutations.
-func ResolveConnectorProperties(environment string, vars map[string]string, c *runtimev1.Connector) (map[string]string, error) {
-	res := maps.Clone(c.Config)
+func resolveConnectorProperties(environment string, vars map[string]string, c *runtimev1.Connector) (map[string]any, error) {
+	res := c.Properties.AsMap()
 	if res == nil {
-		res = make(map[string]string)
+		res = make(map[string]any)
+	}
+	td := parser.TemplateData{
+		Environment: environment,
+		Variables:   vars,
 	}
 
-	// Resolve templating in properties that use it
-	for _, k := range c.TemplatedProperties {
-		v, ok := res[k]
-		if !ok {
-			continue
-		}
-		v, err := parser.ResolveTemplate(v, parser.TemplateData{
-			Environment: environment,
-			Variables:   vars,
-		}, true)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve templated property %q: %w", k, err)
-		}
-		res[k] = v
+	val, err := parser.ResolveTemplateRecursively(res, td, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve template: %w", err)
 	}
-
-	return res, nil
+	return val.(map[string]any), nil
 }
 
 // ConnectorConfig holds and resolves connector configuration.
@@ -324,8 +313,8 @@ func ResolveConnectorProperties(environment string, vars map[string]string, c *r
 // 3. Env: defined in the instance's variables (in the format "connector.name.var").
 type ConnectorConfig struct {
 	Driver  string
-	Preset  map[string]string
-	Project map[string]string
+	Preset  map[string]any
+	Project map[string]any
 	Env     map[string]string
 	// Provision will cause it to request the admin service to provision the connector.
 	Provision bool
@@ -340,37 +329,14 @@ func (c *ConnectorConfig) Resolve() map[string]any {
 	if n == 0 {
 		return nil
 	}
-
 	cfg := make(map[string]any, n)
-	for k, v := range c.Project {
-		cfg[strings.ToLower(k)] = v
+	for k, v := range lowerKeys(c.Project) {
+		cfg[k] = v
 	}
 	for k, v := range c.Env {
 		cfg[strings.ToLower(k)] = v
 	}
-	for k, v := range c.Preset {
-		cfg[strings.ToLower(k)] = v
-	}
-	return cfg
-}
-
-// ResolveString is similar to Resolve, but it returns a map of strings.
-func (c *ConnectorConfig) ResolveStrings() map[string]string {
-	n := len(c.Preset) + len(c.Project) + len(c.Env)
-	if n == 0 {
-		return nil
-	}
-
-	cfg := make(map[string]string, n)
-	for k, v := range c.Project {
-		cfg[strings.ToLower(k)] = v
-	}
-	for k, v := range c.Env {
-		cfg[strings.ToLower(k)] = v
-	}
-	for k, v := range c.Preset {
-		cfg[strings.ToLower(k)] = v
-	}
+	cfg = deepMerge(cfg, lowerKeys(c.Preset))
 	return cfg
 }
 
@@ -381,7 +347,51 @@ func (c *ConnectorConfig) setPreset(k, v string, force bool) {
 		return
 	}
 	if c.Preset == nil {
-		c.Preset = make(map[string]string)
+		c.Preset = make(map[string]any)
 	}
 	c.Preset[k] = v
+}
+
+func deepMerge(dst, src map[string]any) map[string]any {
+	for k, v := range src {
+		if vMap, ok := v.(map[string]any); ok {
+			if dstMap, ok := dst[k].(map[string]any); ok {
+				dst[k] = deepMerge(dstMap, vMap)
+				continue
+			}
+		}
+		dst[k] = v
+	}
+	return dst
+}
+
+func lowerKeys(m map[string]any) map[string]any {
+	res := make(map[string]any, len(m))
+	for k, v := range m {
+		lk := strings.ToLower(k)
+		switch val := v.(type) {
+		case map[string]any:
+			res[lk] = lowerKeys(val)
+		case []any:
+			res[lk] = lowerKeysInSlice(val)
+		default:
+			res[lk] = val
+		}
+	}
+	return res
+}
+
+func lowerKeysInSlice(s []any) []any {
+	res := make([]any, len(s))
+	for i, v := range s {
+		switch val := v.(type) {
+		case map[string]any:
+			res[i] = lowerKeys(val)
+		case []any:
+			res[i] = lowerKeysInSlice(val)
+		default:
+			res[i] = val
+		}
+	}
+	return res
 }

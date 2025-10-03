@@ -20,6 +20,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type CreateDeploymentOptions struct {
@@ -189,27 +190,37 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		return err
 	}
 
+	adminProp, err := structpb.NewStruct(map[string]any{
+		"admin_url":    s.opts.ExternalURL,
+		"access_token": dat.Token().String(),
+		"project_id":   depl.ProjectID,
+	})
+	if err != nil {
+		return err
+	}
+
+	duckdbProp, err := structpb.NewStruct(map[string]any{
+		"cpu":                 strconv.Itoa(cfg.CPU),
+		"memory_limit_gb":     strconv.Itoa(cfg.MemoryGB),
+		"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
+	})
+	if err != nil {
+		return err
+	}
+
 	// Prepare connectors
 	connectors := []*runtimev1.Connector{
 		// The admin connector
 		{
-			Name: "admin",
-			Type: "admin",
-			Config: map[string]string{
-				"admin_url":    s.opts.ExternalURL,
-				"access_token": dat.Token().String(),
-				"project_id":   depl.ProjectID,
-			},
+			Name:       "admin",
+			Type:       "admin",
+			Properties: adminProp,
 		},
 		// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
 		{
-			Name: "duckdb",
-			Type: "duckdb",
-			Config: map[string]string{
-				"cpu":                 strconv.Itoa(cfg.CPU),
-				"memory_limit_gb":     strconv.Itoa(cfg.MemoryGB),
-				"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
-			},
+			Name:       "duckdb",
+			Type:       "duckdb",
+			Properties: duckdbProp,
 		},
 	}
 
