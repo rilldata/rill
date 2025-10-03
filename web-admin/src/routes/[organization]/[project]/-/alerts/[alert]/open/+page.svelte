@@ -39,13 +39,18 @@
       | undefined) ??
     $alert.data?.resource?.alert?.spec?.queryArgsJson ??
     "";
-  $: dashboardStateForAlert = mapQueryToDashboard({
-    exploreName,
-    queryName,
-    queryArgsJson,
-    executionTime,
-    annotations: $alert.data?.resource?.alert?.spec?.annotations ?? {},
-  });
+  $: dashboardStateForAlert = mapQueryToDashboard(
+    {
+      exploreName,
+      queryName,
+      queryArgsJson,
+      executionTime,
+    },
+    {
+      exploreProtoState:
+        $alert.data?.resource?.alert?.spec?.annotations?.web_open_state,
+    },
+  );
 
   $: if ($alert.data?.resource?.alert?.spec && (!queryName || !queryArgsJson)) {
     goto(`/${organization}/${project}/-/alerts/${alertId}`);

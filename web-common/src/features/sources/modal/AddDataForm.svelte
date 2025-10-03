@@ -65,8 +65,17 @@
           (property) => property.key !== "dsn",
         )) ?? [];
 
-  // FIXME: APP-209
-  const filteredParamsProperties = properties;
+  // Filter properties based on connector type
+  const filteredParamsProperties = (() => {
+    // FIXME: https://linear.app/rilldata/issue/APP-408/support-ducklake-in-the-ui
+    if (connector.name === "duckdb") {
+      return properties.filter(
+        (property) => property.key !== "attach" && property.key !== "mode",
+      );
+    }
+    // For other connectors, filter out noPrompt properties
+    return properties.filter((property) => !property.noPrompt);
+  })();
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
   const initialFormValues = getInitialFormValuesFromProperties(properties);
   const {
@@ -376,7 +385,11 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow {connector.name === 'clickhouse'
+      class="flex flex-col flex-grow {[
+        'clickhouse',
+        'snowflake',
+        'salesforce',
+      ].includes(connector.name ?? '')
         ? 'max-h-[38.5rem] min-h-[38.5rem]'
         : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
     >
@@ -604,7 +617,9 @@
     {/if}
 
     <div>
-      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
+      <div class="text-sm leading-none font-medium mb-4">
+        {isSourceForm ? "Model preview" : "Connector preview"}
+      </div>
       <div class="relative">
         <button
           class="absolute top-2 right-2 p-1 rounded"

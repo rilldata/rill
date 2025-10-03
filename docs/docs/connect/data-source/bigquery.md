@@ -11,20 +11,44 @@ sidebar_position: 10
 
 [Google BigQuery](https://cloud.google.com/bigquery/docs) is a fully managed, serverless data warehouse that enables scalable and cost-effective analysis of large datasets using SQL-like queries. It supports a highly scalable and flexible architecture, allowing users to analyze large amounts of data in real time, making it suitable for BI/ML applications. Rill supports natively connecting to and reading from BigQuery as a source by leveraging the [BigQuery SDK](https://cloud.google.com/bigquery/docs/reference/libraries).
 
-<img src='/img/reference/connectors/bigquery/bigquery.png' class='centered' />
+<img src='/img/connect/data-sources/bigquery.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 <br />
 
 ## Local credentials
 
 When using Rill Developer on your local machine (i.e., `rill start`), Rill will use either the credentials configured in your local environment using the Google Cloud CLI (`gcloud`) or an [explicitly defined connector YAML](/reference/project-files/connectors#bigquery). 
 
-Follow these steps to configure you local environemnt credentials:
+### Inferred Credentials
+Follow these steps to configure you local environment credentials:
 
 1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated.
 
 2. If it does not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
 
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
+
+### Service Account JSON 
+
+`GOOGLE_APPLICATION_CREDENTIALS` is an environment variable that tells Google Cloud SDK and applications which service account key file to use for authentication. It should point to the full path of your JSON key file. We recommend using this credential approach for Rill, as it makes deployment to Rill Cloud easier. For more information on JSON keys, see the [Google Cloud documentation](https://cloud.google.com/iam/docs/keys-create-delete?hl=en#gcloud).
+
+Assuming you've followed steps 1 and 2 above, you'll need to create your Service Account JSON with the following command.
+
+```bash
+gcloud iam service-accounts keys create ~/key.json \
+  --iam-account=my-service-account@PROJECT_ID.iam.gserviceaccount.com
+```
+
+:::note Permission denied?
+You'll need to contact your internal cloud admin to create your Service Account JSON credentials for you.
+:::
+
+To configure Rill to use these credentials, create a `.env` file in your project directory (if one doesn't already exist) and add your `google_application_credentials` environment variable as a single-line string:
+
+```bash
+google_application_credentials='{"type": "service_account", "project_id": "your-project", ...}'
+```
+
+Once configured, Rill will automatically use these credentials for all Google Cloud Platform connections, including [GCS](/connect/data-source/gcs).
 
 :::tip Did you know?
 

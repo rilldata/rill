@@ -44,9 +44,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if group != "" {
 				_, err = client.AddUsergroupMemberUser(cmd.Context(), &adminv1.AddUsergroupMemberUserRequest{
-					Organization: ch.Org,
-					Usergroup:    group,
-					Email:        email,
+					Org:       ch.Org,
+					Usergroup: group,
+					Email:     email,
 				})
 				if err != nil {
 					if !strings.Contains(err.Error(), "user is not a member of the org") {
@@ -65,9 +65,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 						role = "viewer"
 					}
 					res, err := client.AddOrganizationMemberUser(cmd.Context(), &adminv1.AddOrganizationMemberUserRequest{
-						Organization: ch.Org,
-						Email:        email,
-						Role:         role,
+						Org:   ch.Org,
+						Email: email,
+						Role:  role,
 					})
 					if err != nil {
 						return err
@@ -81,9 +81,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 					// User is added or invite to the org, now add the user again to the group
 					_, err = client.AddUsergroupMemberUser(cmd.Context(), &adminv1.AddUsergroupMemberUserRequest{
-						Organization: ch.Org,
-						Usergroup:    group,
-						Email:        email,
+						Org:       ch.Org,
+						Usergroup: group,
+						Email:     email,
 					})
 					if err != nil {
 						return err
@@ -96,10 +96,10 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("User %q added to the user group %q\n", email, group)
 			} else if projectName != "" {
 				res, err := client.AddProjectMemberUser(cmd.Context(), &adminv1.AddProjectMemberUserRequest{
-					Organization: ch.Org,
-					Project:      projectName,
-					Email:        email,
-					Role:         role,
+					Org:     ch.Org,
+					Project: projectName,
+					Email:   email,
+					Role:    role,
 				})
 				if err != nil {
 					return err
@@ -112,9 +112,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			} else {
 				res, err := client.AddOrganizationMemberUser(cmd.Context(), &adminv1.AddOrganizationMemberUserRequest{
-					Organization: ch.Org,
-					Email:        email,
-					Role:         role,
+					Org:   ch.Org,
+					Email: email,
+					Role:  role,
 				})
 				if err != nil {
 					return err

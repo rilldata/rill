@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -230,9 +231,14 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 func (s *Server) mcpQueryMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	description := `
 Perform an arbitrary aggregation on a metrics view.
-Tip: Use the 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets.
-Important note: The 'time_range' parameter is inclusive of the start time and exclusive of the end time.
-Note: 'time_dimension' is an optional parameter under "time_range" that can be used to specify the time dimension to use for the time range. If not provided, the default time column of the metrics view will be used.
+
+Parameter notes:
+• The 'time_range' parameter is inclusive of the start time and exclusive of the end time
+• 'time_dimension' is optional under 'time_range' to specify which time column to use (defaults to the metrics view's default time column)
+
+Best practices:
+• Use 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets
+• For comparison queries: ensure 'time_range' and 'comparison_time_range' are non-overlapping and similar in duration (~20% tolerance) to ensure valid period-over-period comparisons
 
 Example: Get the total revenue by country and product category for 2024:
     {
@@ -356,15 +362,76 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		}
 		defer res.Close()
 
+		// Get the raw response data
 		data, err := res.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
 
-		return mcp.NewToolResultText(string(data)), nil
+		// Generate an open URL for the query
+		openURL, err := s.generateOpenURL(ctx, instanceID, metricsProps)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate open URL: %w", err)
+		}
+
+		// Add the open URL to the response
+		response, err := s.addOpenURLToResponse(data, openURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add open URL to response: %w", err)
+		}
+
+		return mcp.NewToolResultText(string(response)), nil
 	}
 
 	return tool, handler
+}
+
+// generateOpenURL generates an open URL for the given query parameters
+func (s *Server) generateOpenURL(ctx context.Context, instanceID string, metricsProps map[string]any) (string, error) {
+	// Get instance to access the configured frontend URL
+	instance, err := s.runtime.Instance(ctx, instanceID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get instance: %w", err)
+	}
+
+	// If there's no frontend URL (e.g. perhaps in test cases or during rollout), return an empty string
+	if instance.FrontendURL == "" {
+		return "", nil
+	}
+
+	// Build the complete URL for the query
+	jsonBytes, err := json.Marshal(metricsProps)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal MCP query to JSON: %w", err)
+	}
+
+	values := make(url.Values)
+	values.Set("query", string(jsonBytes))
+
+	return fmt.Sprintf("%s/-/open-query?%s", instance.FrontendURL, values.Encode()), nil
+}
+
+// addOpenURLToResponse adds the open URL to the response data
+func (s *Server) addOpenURLToResponse(data []byte, openURL string) ([]byte, error) {
+	// Parse the JSON response to understand its structure
+	var response any
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response JSON: %w", err)
+	}
+
+	// Create a wrapper object with the response data and open URL
+	wrappedResponse := map[string]any{
+		"response": response,
+		"open_url": openURL,
+	}
+
+	// Marshal back to JSON
+	modifiedData, err := json.Marshal(wrappedResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal modified response: %w", err)
+	}
+
+	return modifiedData, nil
 }
 
 // mcpHTTPContextFunc is an MCP server middleware that adds the current instance ID to the context.
