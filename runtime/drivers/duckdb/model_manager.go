@@ -18,7 +18,7 @@ type ModelInputProperties struct {
 	PostExec    string `mapstructure:"post_exec"`
 	// Secrets is a comma-separated list of connector names to create temporary secrets for before executing models.
 	// If this is set then connector specific secrets are ignored.
-	Secrets string `mapstructure:"secrets"`
+	Secrets *string `mapstructure:"secrets"`
 	// Database is set if sql is to be run against an external database
 	Database string `mapstructure:"db"`
 }

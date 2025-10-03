@@ -400,23 +400,28 @@ func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool
 // secretConnectors returns the list of connectors to create secrets for.
 // A user can explicitly specify a comma-separated list of connector names specific to a model in model configuration.
 // A user can also specify the list in the duckdb driver configuration which will be used for all models using duckdb driver. This is only used if the model specific configuration is not set.
-// If neither is specified then we auto detect connectors of type s3, azure, gcs from the list of all connectors in the project.
 // The boolean return value is true if the returned list was auto-detected.
-func secretConnectors(modelSecrets, duckdbSecrets string, allConnectors []*runtimev1.Connector) ([]string, bool) {
+func secretConnectors(modelSecrets *string, duckdbSecrets string, allConnectors []*runtimev1.Connector) ([]string, bool) {
 	var configuredSecret string
-	if modelSecrets != "" && modelSecrets != "*" { // * means all applicable connectors
-		configuredSecret = modelSecrets
-	} else if duckdbSecrets != "" && duckdbSecrets != "*" {
+	if modelSecrets != nil {
+		fmt.Printf("Using model specific secret configuration: %q\n", *modelSecrets)
+		configuredSecret = *modelSecrets
+	} else {
+		// fallback to driver level configuration
 		configuredSecret = duckdbSecrets
 	}
-	if configuredSecret != "" {
+	if configuredSecret == "" {
+		// no secrets to be created
+		return nil, false
+	}
+	if configuredSecret != "*" {
 		res := strings.Split(configuredSecret, ",")
 		for i, s := range res {
 			res[i] = strings.TrimSpace(s)
 		}
 		return res, false
 	}
-	// default to all applicable connectors
+	// all applicable connectors
 	var res []string
 	for _, c := range allConnectors {
 		if c.Type == "s3" || c.Type == "azure" || c.Type == "gcs" {
