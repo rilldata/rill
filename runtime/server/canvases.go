@@ -45,7 +45,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	}
 
 	// Check if the user has access to the canvas
-	res, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
+	res, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply security policy: %w", err)
 	}
@@ -144,7 +144,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 							if err != nil {
 								return nil, err
 							}
-							sec, err := s.runtime.ResolveSecurity(ctrl.InstanceID, auth.GetClaims(ctx).SecurityClaims(), mv)
+							sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, auth.GetClaims(ctx).SecurityClaims(), mv)
 							if err != nil {
 								return nil, err
 							}
@@ -196,7 +196,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 
 	// Apply security policies to the metrics views.
 	for name, mv := range referencedMetricsViews {
-		mv, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), mv)
+		mv, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), mv)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply security policy: %w", err)
 		}
