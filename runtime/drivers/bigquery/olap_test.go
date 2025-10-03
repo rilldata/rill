@@ -1,17 +1,13 @@
-package bigquery
+package bigquery_test
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	goruntime "runtime"
 	"testing"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -21,23 +17,7 @@ func TestOLAP(t *testing.T) {
 		t.Skip("skipping test in short mode")
 	}
 
-	// Load .env file at the repo root (if any)
-	_, currentFile, _, _ := goruntime.Caller(0)
-	fmt.Println(currentFile)
-	envPath := filepath.Join(currentFile, "..", "..", "..", "..", ".env")
-	_, err := os.Stat(envPath)
-	if err == nil {
-		require.NoError(t, godotenv.Load(envPath))
-	}
-
-	gac := os.Getenv("RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
-	require.NotEmpty(t, gac, "Bigquery RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
-
-	h, err := driver{}.Open("default", map[string]any{"google_application_credentials": gac}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	olap, ok := h.AsOLAP("default")
-	require.True(t, ok)
-
+	_, olap := acquireTestBigQuery(t)
 	tests := []struct {
 		query  string
 		args   []any
@@ -138,4 +118,16 @@ func TestOLAP(t *testing.T) {
 			require.NoError(t, rows.Err())
 		})
 	}
+}
+
+func acquireTestBigQuery(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
+	cfg := testruntime.AcquireConnector(t, "bigquery")
+	conn, err := drivers.Open("bigquery", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	olap, ok := conn.AsOLAP("default")
+	require.True(t, ok)
+
+	return conn, olap
 }

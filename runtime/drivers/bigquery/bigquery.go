@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/api/option"
 )
 
@@ -68,9 +69,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config:  conf,
-		storage: st,
-		logger:  logger,
+		config:   conf,
+		storage:  st,
+		logger:   logger,
+		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
 }
@@ -92,13 +94,17 @@ type Connection struct {
 	config  *configProperties
 	storage *storage.Client
 	logger  *zap.Logger
+
+	client    *bigquery.Client // lazily populated using acquireClient
+	clientErr error
+	clientMu  *semaphore.Weighted
 }
 
 var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	client, err := c.createClient(ctx, "")
+	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -128,6 +134,9 @@ func (c *Connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
+	if c.client != nil {
+		return c.client.Close()
+	}
 	return nil
 }
 
@@ -212,6 +221,30 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+// acquireClient initializes and caches a BigQuery client
+func (c *Connection) acquireClient(ctx context.Context) (*bigquery.Client, error) {
+	err := c.clientMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	defer c.clientMu.Release(1)
+
+	if c.client != nil || c.clientErr != nil {
+		return c.client, c.clientErr
+	}
+	client, err := c.createClient(ctx, "")
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			// don't cache context errors
+			return nil, err
+		}
+		c.clientErr = err
+		return nil, err
+	}
+	c.client = client
+	return c.client, nil
 }
 
 // createClient initializes a BigQuery client using the provided context and project ID.

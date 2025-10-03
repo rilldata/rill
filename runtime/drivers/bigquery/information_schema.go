@@ -12,7 +12,7 @@ import (
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	client, err := c.createClient(ctx, "")
+	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
@@ -84,7 +84,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, bigquery.QueryParameter{Name: "limit", Value: limit + 1})
 	}
 
-	client, err := c.createClient(ctx, database)
+	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
@@ -139,7 +139,7 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	ORDER BY c.ordinal_position
 	`, database, databaseSchema, database, databaseSchema)
 
-	client, err := c.createClient(ctx, database)
+	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}

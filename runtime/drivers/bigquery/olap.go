@@ -41,15 +41,10 @@ func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // Query implements drivers.OLAPStore.
 func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, resErr error) {
-	client, err := c.createClient(ctx, "") // project id detected from configs
+	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if resErr != nil {
-			_ = client.Close()
-		}
-	}()
 
 	q := client.Query(stmt.Query)
 	q.Parameters = make([]bigquery.QueryParameter, len(stmt.Args))
@@ -67,6 +62,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
+	// BigQuery schema is only available after fetching the first row
 	var firstRow []bigquery.Value
 	for i := 0; i < len(it.Schema); i++ {
 		firstRow = append(firstRow, new(bigquery.Value))
@@ -88,9 +84,6 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		Rows:   row,
 		Schema: schema,
 	}
-	res.SetCleanupFunc(func() error {
-		return client.Close()
-	})
 	return res, nil
 }
 
