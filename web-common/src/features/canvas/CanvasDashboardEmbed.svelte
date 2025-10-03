@@ -5,7 +5,7 @@
   import { getCanvasStore } from "./state-managers/state-managers";
   import StaticCanvasRow from "./StaticCanvasRow.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-
+  import { page } from "$app/stores";
   export let resource: V1Resource;
   export let navigationEnabled: boolean = true;
 
@@ -18,8 +18,14 @@
   $: maxWidth = canvas?.spec?.maxWidth || DEFAULT_DASHBOARD_WIDTH;
 
   $: ({
-    canvasEntity: { components, _rows },
+    canvasEntity: { components, _rows, onSearchParamsChange },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: ({
+    url: { searchParams },
+  } = $page);
+
+  $: onSearchParamsChange(searchParams);
 
   $: rows = $_rows;
 </script>

@@ -168,10 +168,7 @@
 
     const { interval, grain } = await deriveInterval(
       name,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate($allTimeRange.start),
-        DateTime.fromJSDate($allTimeRange.end),
-      ),
+
       metricsViewName,
       $selectedTimezone,
     );

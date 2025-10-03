@@ -188,7 +188,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         iso,
-        get(this._maxRange),
+
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -204,7 +204,7 @@ class MetricsTimeControls {
     if (rightAnchor) {
       const interval = await deriveInterval(
         name,
-        get(this._maxRange),
+
         this._metricsViewName,
         get(this._zone).name,
       );
@@ -331,7 +331,6 @@ import { getDefaultRangeBuckets } from "@rilldata/web-common/lib/time/defaults";
 
 export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
-  allTimeRange: Interval,
   metricsViewName: string,
   activeTimeZone: string,
 ): Promise<{
@@ -341,7 +340,7 @@ export async function deriveInterval(
 }> {
   if (name === CUSTOM_TIME_RANGE_ALIAS) {
     return {
-      interval: allTimeRange,
+      interval: Interval.invalid("Custom range requires start and end"),
       grain: undefined,
       error: "Cannot derive interval for custom range",
     };
@@ -593,8 +592,6 @@ export function bucketYamlRanges(
       } else {
         skeleton.custom.push(parsed);
       }
-
-      console.log(parsed);
     } catch (e) {
       console.error("Error parsing RillTime", e);
     }
