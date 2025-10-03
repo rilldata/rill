@@ -23,10 +23,7 @@ type selfToSelfExecutor struct {
 	c *connection
 }
 
-var (
-	_                 drivers.ModelExecutor = &selfToSelfExecutor{}
-	createSecretRegex                       = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\b`)
-)
+var _ drivers.ModelExecutor = &selfToSelfExecutor{}
 
 func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 	if desired > 1 {
@@ -100,7 +97,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	// Only add secrets if the user has not already added a CREATE SECRET statement in PreExec.
 	// This is to avoid adding two secrets which could conflict.
 	if !createSecretRegex.MatchString(inputProps.PreExec) {
-		secretConnectors, autoDetected := secretConnectors(inputProps.Secrets, e.c.config.secretConnectors(), opts.Env.Connectors)
+		secretConnectors, autoDetected := secretConnectors(inputProps.Secrets, e.c.config.Secrets, opts.Env.Connectors)
 		for _, connector := range secretConnectors {
 			secretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
 			if err != nil {
@@ -400,17 +397,26 @@ func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool
 	return ast.Format()
 }
 
-func secretConnectors(modelSecrets string, duckdbSecrets []string, allConnectors []*runtimev1.Connector) ([]string, bool) {
-	if modelSecrets != "" {
-		res := strings.Split(modelSecrets, ",")
+// secretConnectors returns the list of connectors to create secrets for.
+// A user can explicitly specify a comma-separated list of connector names specific to a model in model conifguration.
+// A user can also specify the list in the duckdb driver configuration which will be used for all models using duckdb driver. This is only used if the model specific configuration is not set.
+// If neither is specified then we auto detect connectors of type s3, azure, gcs from the list of all connectors in the project.
+// The boolean return value is true if the returned list was auto-detected.
+func secretConnectors(modelSecrets, duckdbSecrets string, allConnectors []*runtimev1.Connector) ([]string, bool) {
+	var configuredSecret string
+	if modelSecrets != "" && modelSecrets != "*" { // * means all applicable connectors
+		configuredSecret = modelSecrets
+	} else if duckdbSecrets != "" && duckdbSecrets != "*" {
+		configuredSecret = duckdbSecrets
+	}
+	if configuredSecret != "" {
+		res := strings.Split(configuredSecret, ",")
 		for i, s := range res {
 			res[i] = strings.TrimSpace(s)
 		}
 		return res, false
 	}
-	if len(duckdbSecrets) != 0 {
-		return duckdbSecrets, false
-	}
+	// default to all applicable connectors
 	var res []string
 	for _, c := range allConnectors {
 		if c.Type == "s3" || c.Type == "azure" || c.Type == "gcs" {
@@ -419,3 +425,5 @@ func secretConnectors(modelSecrets string, duckdbSecrets []string, allConnectors
 	}
 	return res, true
 }
+
+var createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\b`)

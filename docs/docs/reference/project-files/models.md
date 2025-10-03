@@ -71,6 +71,10 @@ _[string]_ - Refers to a SQL query that is run after the main query, available f
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
+### `secrets`
+
+_[string]_ - Comma-separated list of connector names to create temporary duckdb secrets for, available for DuckDB-based models. (optional). 
+
 ### `retry`
 
 _[object]_ - Refers to the retry configuration for the model. (optional) 
@@ -437,10 +441,6 @@ _[string]_ - refers to SQL queries to run before the main query, available for D
 ### `post_exec`
 
 _[string]_ - refers to a SQL query that is run after the main query, available for DuckDB-based models. _(optional)_. Ensure `post_exec` queries are idempotent. Use `IF EXISTS` statements when applicable. 
-
-### `secrets`
-
-_[string]_ - Comma-separated list of connector names to create temporary secrets for. If this is set then secrets configured on connector is ignored.
 
 ```yaml
 pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);

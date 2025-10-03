@@ -1171,6 +1171,9 @@ definitions:
             description: Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
             examples: 
               - post_exec: DETACH DATABASE IF EXISTS postgres_db
+          secrets:
+            type: string
+            description: Comma-separated list of connector names to create temporary duckdb secrets for, available for DuckDB-based models. (optional).
           retry:
             type: object
             description: Refers to the retry configuration for the model. (optional)
