@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/mitchellh/mapstructure"
@@ -309,7 +310,7 @@ func (c *Connection) GetAnonymousS3Client(region string) *s3.Client {
 }
 
 func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
-	provider, err := c.newCredentials(ctx)
+	provider, err := c.newCredentialsProvider(ctx)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to get AWS credentials: %w", err)
 	}
@@ -328,8 +329,8 @@ func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
 	return cfg, nil
 }
 
-// newCredentials returns credentials for connecting to AWS.
-func (c *Connection) newCredentials(ctx context.Context) (aws.CredentialsProvider, error) {
+// newCredentialsProvider returns credentials for connecting to AWS.
+func (c *Connection) newCredentialsProvider(ctx context.Context) (aws.CredentialsProvider, error) {
 	// If a role ARN is provided, assume the role and return the credentials provider.
 	if c.config.RoleARN != "" {
 		provider, err := c.assumeRole(ctx)
@@ -362,12 +363,11 @@ func (c *Connection) newCredentials(ctx context.Context) (aws.CredentialsProvide
 	if _, err := provider.Retrieve(ctx); err != nil {
 		return aws.AnonymousCredentials{}, nil
 	}
-
-	// Fallback to anonymous
 	return provider, nil
 }
 
 // assumeRole returns a credentials provider that assumes the role specified by the ARN using AWS SDK v2.
+// It uses stscreds.NewAssumeRoleProvider so credentials are automatically refreshed before expiration.
 func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, error) {
 	// Add session name if specified
 	sessionName := c.config.RoleSessionName
@@ -375,54 +375,45 @@ func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, e
 		sessionName = "rill-session"
 	}
 
+	// Options for loading base AWS config
 	loadOpts := []func(*config.LoadOptions) error{}
 
-	// Add region if specified
+	// Add region if specified, otherwise default to us-east-1
 	if c.config.Region != "" {
 		loadOpts = append(loadOpts, config.WithRegion(c.config.Region))
 	} else {
 		loadOpts = append(loadOpts, config.WithRegion("us-east-1"))
 	}
 
-	// Add credentials if provided
+	// Add static credentials if explicitly provided (AccessKeyID, SecretAccessKey, SessionToken)
 	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
-		loadOpts = append(loadOpts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-			c.config.AccessKeyID,
-			c.config.SecretAccessKey,
-			c.config.SessionToken,
-		)))
+		loadOpts = append(loadOpts,
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+				c.config.AccessKeyID,
+				c.config.SecretAccessKey,
+				c.config.SessionToken,
+			)),
+		)
 	}
 
-	// Create config with explicit configuration
+	// Create AWS config with explicit configuration
 	cfg, err := config.LoadDefaultConfig(ctx, loadOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS config:  %w", err)
+		return nil, fmt.Errorf("failed to create AWS config: %w", err)
 	}
 
-	// Create STS client with explicit session
+	// Create STS client with explicit configuration
 	stsClient := sts.NewFromConfig(cfg)
 
-	// Create assume role input with explicit parameters
-	assumeRoleInput := &sts.AssumeRoleInput{
-		RoleArn:         &c.config.RoleARN,
-		RoleSessionName: &sessionName,
-	}
+	// Create an assume role provider that automatically refreshes credentials before expiration
+	assumeRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, c.config.RoleARN, func(o *stscreds.AssumeRoleOptions) {
+		o.RoleSessionName = sessionName
+		// Add external ID if provided to mitigate confused deputy problem
+		if c.config.ExternalID != "" {
+			o.ExternalID = &c.config.ExternalID
+		}
+	})
 
-	// Add external ID if provided to mitigate confused deputy problem
-	if c.config.ExternalID != "" {
-		assumeRoleInput.ExternalId = &c.config.ExternalID
-	}
-
-	// Assume the role
-	result, err := stsClient.AssumeRole(ctx, assumeRoleInput)
-	if err != nil {
-		return nil, fmt.Errorf("failed to assume role: %w", err)
-	}
-
-	// Return static credentials from the assumed role
-	return aws.NewCredentialsCache(credentials.StaticCredentialsProvider{Value: aws.Credentials{
-		AccessKeyID:     *result.Credentials.AccessKeyId,
-		SecretAccessKey: *result.Credentials.SecretAccessKey,
-		SessionToken:    *result.Credentials.SessionToken,
-	}}), nil
+	// Wrap in a credentials cache so multiple calls share refreshed credentials
+	return aws.NewCredentialsCache(assumeRoleProvider), nil
 }

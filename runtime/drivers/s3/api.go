@@ -77,7 +77,7 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 }
 
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
-	prov, err := c.newCredentials(ctx)
+	prov, err := c.newCredentialsProvider(ctx)
 	if err != nil {
 		return "", false, err
 	}
