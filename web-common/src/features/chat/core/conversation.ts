@@ -1,4 +1,4 @@
-import { ConversationContext } from "@rilldata/web-common/features/chat/core/context.ts";
+import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryKey,

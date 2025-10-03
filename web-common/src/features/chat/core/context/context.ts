@@ -6,18 +6,24 @@ import { get, type Writable, writable } from "svelte/store";
 
 const ContextTypeData: Record<ConversationContextType, { label: string }> = {
   [ConversationContextType.MetricsView]: {
-    label: "Metrics View",
+    label: `Skip "list_metrics_views" tool call and use this metrics view instead:`,
   },
   [ConversationContextType.TimeRange]: {
-    label: "Time Range",
+    label: `Skip "query_metrics_view_summary" tool call and use this time range instead:`,
   },
   [ConversationContextType.Measures]: {
     label: "Measures",
   },
 };
 
+const contextRegex = /\s*<context>([\s\S]*?)<\/context>/m;
+
 export class ConversationContext {
   public context: Writable<ConversationContextEntry[]> = writable([]);
+
+  public static cleanContext(prompt: string) {
+    return prompt.replace(contextRegex, "");
+  }
 
   public set(type: ConversationContextType, value: string) {
     this.context.update((c) => {
@@ -53,9 +59,9 @@ export class ConversationContext {
     if (c.length === 0) return "";
 
     const contextPart = get(this.context)
-      .map((e) => `${ContextTypeData[e.type].label}: ${e.value}`)
+      .map((e) => `${ContextTypeData[e.type].label}: "${e.value}"`)
       .join("\n");
 
-    return `\n\n${contextPart}`;
+    return `\n\n<context>\n${contextPart}\n</context>`;
   }
 }

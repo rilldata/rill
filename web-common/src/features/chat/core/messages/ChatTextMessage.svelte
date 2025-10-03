@@ -1,9 +1,12 @@
 <script lang="ts">
+  import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
 
   export let message: V1Message;
   export let content: string;
+
+  $: cleanedContent = ConversationContext.cleanContext(content);
 
   $: role = message.role;
 </script>
@@ -13,7 +16,7 @@
     {#if role === "assistant"}
       <Markdown {content} />
     {:else}
-      {content}
+      {cleanedContent}
     {/if}
   </div>
 </div>
