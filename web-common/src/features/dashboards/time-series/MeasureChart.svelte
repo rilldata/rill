@@ -20,6 +20,7 @@
     ScaleStore,
     SimpleConfigurationStore,
   } from "@rilldata/web-common/components/data-graphic/state/types";
+  import { anomalyExplanation } from "@rilldata/web-common/features/chat/core/presets/anomaly-explanation.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
@@ -54,6 +55,7 @@
   } from "./utils";
 
   export let measure: MetricsViewSpecMeasure;
+  export let metricsViewName: string;
   export let exploreName: string;
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
@@ -242,9 +244,19 @@
     );
   }
 
-  function onMouseClick() {
+  function onMouseClick(e: PointerEvent) {
     // skip if still scrubbing
     if (preventScrubReset) return;
+
+    if ((e.ctrlKey || e.metaKey) && hoveredTime && measure.name) {
+      anomalyExplanation(
+        metricsViewName,
+        hoveredTime.toISOString(),
+        measure.name,
+      );
+      return;
+    }
+
     // skip if no scrub range selected
     if (!hasSubrangeSelected) return;
 
@@ -268,7 +280,7 @@
     left={0}
     let:config
     let:yScale
-    on:click={() => onMouseClick()}
+    on:click={onMouseClick}
     on:scrub-end={() => scrub?.endScrub()}
     on:scrub-move={(e) => scrub?.moveScrub(e)}
     on:scrub-start={(e) => scrub?.startScrub(e)}

@@ -1,3 +1,4 @@
+import { ConversationContext } from "@rilldata/web-common/features/chat/core/context.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryKey,
@@ -29,6 +30,7 @@ export class Conversation {
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
+  public readonly context = new ConversationContext();
 
   // Private state
   private sseClient: SSEFetchClient<V1CompleteStreamingResponse> | null = null;
@@ -96,8 +98,9 @@ export class Conversation {
       return;
     }
 
-    const prompt = get(this.draftMessage).trim();
+    let prompt = get(this.draftMessage).trim();
     if (!prompt) throw new Error("Cannot send empty message");
+    prompt += this.context.toString();
 
     // Optimistic updates
     this.draftMessage.set("");
@@ -146,6 +149,8 @@ export class Conversation {
   public cleanup(): void {
     // Cancel any active streaming first
     this.cancelStream();
+
+    this.context.clear();
 
     // Full resource cleanup
     if (this.sseClient) {

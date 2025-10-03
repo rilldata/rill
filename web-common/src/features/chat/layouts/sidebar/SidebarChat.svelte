@@ -1,5 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { get } from "svelte/store";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { cleanupChatInstance, getChatInstance } from "../../core/chat";
@@ -29,6 +31,13 @@
   function onNewConversation() {
     chatInputComponent?.focusInput();
   }
+
+  eventBus.on("chat-intent", (intent) => {
+    chat.enterNewConversationMode();
+    get(chat.getCurrentConversation()).context.override(intent.context);
+    get(chat.getCurrentConversation()).draftMessage.set(intent.prompt);
+    chatInputComponent?.focusInput();
+  });
 
   // Clean up chat resources when switching projects
   beforeNavigate(({ from, to }) => {
