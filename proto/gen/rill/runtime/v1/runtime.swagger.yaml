@@ -7189,6 +7189,8 @@ definitions:
         type: string
       secondaryColorRaw:
         type: string
+      css:
+        type: string
   v1ThemeState:
     type: object
   v1TimeGrain:

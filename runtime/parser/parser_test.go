@@ -2502,6 +2502,113 @@ func normalizeJSON(t *testing.T, s string) string {
 	return string(b)
 }
 
+func TestThemeValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		yaml        string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid legacy colors",
+			yaml: `
+type: theme
+colors:
+  primary: "#ff0000"
+  secondary: "#00ff00"
+`,
+			expectError: false,
+		},
+		{
+			name: "valid CSS",
+			yaml: `
+type: theme
+css: |
+  .my-class {
+    color: red;
+    background: blue;
+  }
+`,
+			expectError: false,
+		},
+		{
+			name: "mixing legacy and CSS should fail",
+			yaml: `
+type: theme
+colors:
+  primary: "#ff0000"
+css: |
+  .my-class { color: red; }
+`,
+			expectError: true,
+			errorMsg:    "cannot use both legacy color properties (primary, secondary) and the new CSS property simultaneously",
+		},
+		{
+			name: "invalid CSS syntax - unbalanced braces",
+			yaml: `
+type: theme
+css: |
+  .my-class {
+    color: red;
+`,
+			expectError: true,
+			errorMsg:    "unbalanced braces",
+		},
+		{
+			name: "invalid CSS syntax - no valid rules",
+			yaml: `
+type: theme
+css: "just some text"
+`,
+			expectError: true,
+			errorMsg:    "CSS must contain at least one valid rule",
+		},
+		{
+			name: "empty CSS should fail",
+			yaml: `
+type: theme
+css: ""
+`,
+			expectError: true,
+			errorMsg:    "CSS cannot be empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			repo := makeRepo(t, map[string]string{
+				"rill.yaml":        "", // Minimal rill.yaml to avoid "not found" error
+				"themes/test.yaml": tt.yaml,
+			})
+
+			p, err := Parse(ctx, repo, "", "", "duckdb")
+			require.NoError(t, err)
+
+			if tt.expectError {
+				// Filter out the theme validation error from other errors
+				var themeErrors []*runtimev1.ParseError
+				for _, err := range p.Errors {
+					if err.FilePath == "/themes/test.yaml" {
+						themeErrors = append(themeErrors, err)
+					}
+				}
+				require.Len(t, themeErrors, 1)
+				require.Contains(t, themeErrors[0].Message, tt.errorMsg)
+			} else {
+				// Filter out the theme validation error from other errors
+				var themeErrors []*runtimev1.ParseError
+				for _, err := range p.Errors {
+					if err.FilePath == "/themes/test.yaml" {
+						themeErrors = append(themeErrors, err)
+					}
+				}
+				require.Len(t, themeErrors, 0)
+			}
+		})
+	}
+}
+
 func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)

@@ -4230,6 +4230,11 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   secondaryColorRaw = "";
 
+  /**
+   * @generated from field: string css = 5;
+   */
+  css = "";
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4242,6 +4247,7 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
     { no: 3, name: "primary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "css", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
