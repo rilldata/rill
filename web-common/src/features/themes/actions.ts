@@ -415,14 +415,6 @@ function applySecondaryColorVariables(
     if (palettes) {
       applyPaletteToVariables(root, "theme-secondary", palettes, allowNewPalette);
       applyPaletteToVariables(root, "secondary", palettes, allowNewPalette);
-      
-      console.log('Applied secondary color palette:', {
-        lightColor,
-        darkColor,
-        light: palettes.light.length,
-        dark: palettes.dark.length,
-        allowNewPalette
-      });
     }
   } catch (error) {
     console.error('Failed to generate palette from secondary colors:', { lightColor, darkColor }, error);
