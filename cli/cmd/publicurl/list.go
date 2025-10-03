@@ -34,10 +34,10 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.ListMagicAuthTokens(cmd.Context(), &adminv1.ListMagicAuthTokensRequest{
-				Organization: ch.Org,
-				Project:      project,
-				PageSize:     pageSize,
-				PageToken:    pageToken,
+				Org:       ch.Org,
+				Project:   project,
+				PageSize:  pageSize,
+				PageToken: pageToken,
 			})
 			if err != nil {
 				return err

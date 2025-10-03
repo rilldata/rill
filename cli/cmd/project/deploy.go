@@ -377,14 +377,14 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 
 	// Create a new project
 	req := &adminv1.CreateProjectRequest{
-		OrganizationName: ch.Org,
-		Name:             opts.Name,
-		Description:      opts.Description,
-		Provisioner:      opts.Provisioner,
-		ProdVersion:      opts.ProdVersion,
-		ProdSlots:        int64(opts.Slots),
-		Public:           opts.Public,
-		DirectoryName:    filepath.Base(localProjectPath),
+		Org:           ch.Org,
+		Project:       opts.Name,
+		Description:   opts.Description,
+		Provisioner:   opts.Provisioner,
+		ProdVersion:   opts.ProdVersion,
+		ProdSlots:     int64(opts.Slots),
+		Public:        opts.Public,
+		DirectoryName: filepath.Base(localProjectPath),
 	}
 
 	ch.Printer.Println("Starting upload.")
@@ -424,9 +424,9 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
 		} else if len(vars) > 0 {
 			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -480,9 +480,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             proj.Name,
-				ArchiveAssetId:   &assetID,
+				Org:            ch.Org,
+				Project:        proj.Name,
+				ArchiveAssetId: &assetID,
 			}
 		} else {
 			// need to migrate to rill managed git
@@ -491,9 +491,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 				return err
 			}
 			updateProjReq = &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             opts.Name,
-				GitRemote:        &gitRepo.Remote,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				GitRemote: &gitRepo.Remote,
 			}
 		}
 		// Update the project
@@ -515,9 +515,9 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
 		} else if len(vars) > 0 {
 			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      proj.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   proj.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -613,7 +613,7 @@ func orgExists(ctx context.Context, ch *cmdutil.Helper, name string) (bool, erro
 		return false, err
 	}
 
-	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
+	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Org: name})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {
@@ -642,7 +642,7 @@ func getProject(ctx context.Context, ch *cmdutil.Helper, org, project string) (*
 		return nil, err
 	}
 
-	p, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: org, Name: project})
+	p, err := c.GetProject(ctx, &adminv1.GetProjectRequest{Org: org, Project: project})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {

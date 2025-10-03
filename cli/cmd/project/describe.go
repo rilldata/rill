@@ -40,8 +40,8 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 			name := args[len(args)-1]
 
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             project,
+				Org:     ch.Org,
+				Project: project,
 			})
 			if err != nil {
 				return err
