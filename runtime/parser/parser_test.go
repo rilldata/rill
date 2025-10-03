@@ -63,12 +63,12 @@ mock_users:
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string
-		want    map[string]bool
+		want    map[string]string
 		wantErr bool
 	}{
 		{
 			yaml: ` `,
-			want: nil,
+			want: map[string]string{},
 		},
 		{
 			yaml:    `features: 10`,
@@ -76,11 +76,11 @@ func TestRillYAMLFeatures(t *testing.T) {
 		},
 		{
 			yaml: `features: []`,
-			want: map[string]bool{},
+			want: map[string]string{},
 		},
 		{
 			yaml: `features: {}`,
-			want: map[string]bool{},
+			want: map[string]string{},
 		},
 		{
 			yaml: `
@@ -88,7 +88,7 @@ features:
   foo: true
   bar: false
 `,
-			want: map[string]bool{"foo": true, "bar": false},
+			want: map[string]string{"foo": "true", "bar": "false"},
 		},
 		{
 			yaml: `
@@ -96,7 +96,30 @@ features:
 - foo
 - bar
 `,
-			want: map[string]bool{"foo": true, "bar": true},
+			want: map[string]string{"foo": "true", "bar": "true"},
+		},
+		{
+			yaml: `
+features:
+  templated_embed: '{{ .user.embed }}'
+  templated_user: '{{ eq (.user.domain) "rilldata.com" }}'
+`,
+			want: map[string]string{"templated_embed": "{{ .user.embed }}", "templated_user": "{{ eq (.user.domain) \"rilldata.com\" }}"},
+		},
+		{
+			yaml: `
+features:
+  invalid: '{{'
+`,
+			wantErr: true,
+		},
+		{
+			yaml: `
+features:
+  snake_case: true
+  camelCase: false
+`,
+			want: map[string]string{"snake_case": "true", "camel_case": "false"},
 		},
 	}
 
