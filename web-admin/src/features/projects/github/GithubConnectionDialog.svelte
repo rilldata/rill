@@ -4,12 +4,9 @@
   import { GithubAccessManager } from "@rilldata/web-admin/features/projects/github/GithubAccessManager.ts";
   import { getGithubUserOrgs } from "@rilldata/web-admin/features/projects/github/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
-  import * as Collapsible from "@rilldata/web-common/components/collapsible";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
-  import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -28,24 +25,19 @@
   $: ({ error, isPending } = $connectProjectToGithub);
   $: parsedError = error ? extractGithubConnectError(error as any) : null;
 
-  let advancedOpened = false;
-
   const githubUserOrgs = getGithubUserOrgs();
 
   const initialValues: {
     org: string;
     name: string;
-    branch: string;
   } = {
     org: "",
     name: project, // Initialize repo name with project name
-    branch: "main",
   };
   const schema = yup(
     object({
       org: string().required("Org is required"),
       name: string().required("Repo name is required"),
-      branch: string().required("Branch is required"),
     }),
   );
 
@@ -63,11 +55,9 @@
 
         await $connectProjectToGithub.mutateAsync({
           project: project,
-          organization: organization,
+          org: organization,
           data: {
             remote,
-            branch: values.branch,
-            create: true,
           },
         });
       },
@@ -75,17 +65,12 @@
   );
 
   $: disableSubmit = isPending || $githubConnectionFailed;
-
-  function resetDialog() {
-    reset();
-    advancedOpened = false;
-  }
 </script>
 
 <Dialog.Root
   bind:open
   onOpenChange={(o) => {
-    if (!o) resetDialog();
+    if (!o) reset();
   }}
 >
   <Dialog.Trigger asChild let:builder>
@@ -139,28 +124,6 @@
         capitalizeLabel={false}
       />
 
-      <Collapsible.Root bind:open={advancedOpened}>
-        <Collapsible.Trigger asChild let:builder>
-          <Button builders={[builder]} type="text">
-            {#if advancedOpened}
-              <CaretDownFilledIcon size="12px" />
-            {:else}
-              <CaretRightFilledIcon size="12px" />
-            {/if}
-            <span class="text-sm">Advanced options</span>
-          </Button>
-        </Collapsible.Trigger>
-        <Collapsible.Content class="flex flex-col gap-y-2">
-          <Input
-            bind:value={$form.branch}
-            errors={$errors?.branch}
-            id="branch"
-            label="Branch"
-            capitalizeLabel={false}
-          />
-        </Collapsible.Content>
-      </Collapsible.Root>
-
       {#if parsedError?.message}
         <div class="text-red-500 text-sm py-px">
           {parsedError.message}
@@ -184,7 +147,7 @@
       <Button
         onClick={() => {
           open = false;
-          resetDialog();
+          reset();
         }}
         type="secondary"
       >

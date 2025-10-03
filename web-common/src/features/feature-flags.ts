@@ -46,18 +46,20 @@ class FeatureFlags {
     !!import.meta.env.VITE_PLAYWRIGHT_TEST,
   );
 
+  // These are fallback defaults in case of issues in parsing rill.yaml.
+  // Full defaults are in defaultFeatureFlags in runtime/drivers/registry.go
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
   exports = new FeatureFlag("user", true);
   cloudDataViewer = new FeatureFlag("user", false);
   dimensionSearch = new FeatureFlag("user", false);
   twoTieredNavigation = new FeatureFlag("user", false);
-  rillTime = new FeatureFlag("user", false);
+  rillTime = new FeatureFlag("user", true);
   hidePublicUrl = new FeatureFlag("user", false);
   exportHeader = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   darkMode = new FeatureFlag("user", false);
-  chat = new FeatureFlag("user", false);
+  chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
 
   constructor() {

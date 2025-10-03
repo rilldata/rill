@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -217,11 +218,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add HTTP handler for multipart file upload
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/files/upload/-/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.UploadMultipartFile))))
 
-	// Add HTTP handler for watching files
+	// We need to manually add HTTP handlers for streaming RPCs since Vanguard can't map these to HTTP routes automatically.
 	httpMux.Handle("/v1/instances/{instance_id}/files/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchFilesHandler)))
-
-	// Add HTTP handler for watching resources
 	httpMux.Handle("/v1/instances/{instance_id}/resources/-/watch", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.WatchResourcesHandler)))
+	httpMux.Handle("/v1/instances/{instance_id}/ai/complete/stream", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.CompleteStreamingHandler)))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -346,6 +346,9 @@ func mapGRPCError(err error) error {
 		return ErrForbidden
 	}
 	if errors.Is(err, runtime.ErrForbidden) {
+		return ErrForbidden
+	}
+	if errors.Is(err, metricsview.ErrForbidden) {
 		return ErrForbidden
 	}
 	return err

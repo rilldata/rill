@@ -50,7 +50,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			ch.PrintfSuccess("Set default env to %q (%q)\n", toEnv, adminenv.AdminURL(toEnv))
 
-			return auth.SelectOrgFlow(cmd.Context(), ch, true, "")
+			return auth.SelectOrgFlow(cmd.Context(), ch, ch.Interactive, "")
 		},
 	}
 

@@ -51,7 +51,7 @@ func UploadThumbnailCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				empty := ""
 				_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-					Name:             ch.Org,
+					Org:              ch.Org,
 					ThumbnailAssetId: &empty,
 				})
 				if err != nil {
@@ -94,7 +94,7 @@ func UploadThumbnailCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Generate the asset upload URL
 			asset, err := client.CreateAsset(cmd.Context(), &adminv1.CreateAssetRequest{
-				OrganizationName:   ch.Org,
+				Org:                ch.Org,
 				Type:               "image",
 				Name:               "thumbnail",
 				Extension:          ext,
@@ -125,7 +125,7 @@ func UploadThumbnailCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Update the favicon
 			_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-				Name:             ch.Org,
+				Org:              ch.Org,
 				ThumbnailAssetId: &asset.AssetId,
 			})
 			if err != nil {

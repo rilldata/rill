@@ -1,38 +1,64 @@
 ---
-title: DuckDB as a Source
-description: Connect to data in DuckDB locally 
-sidebar_label: DuckDB 
+title: External DuckDB 
+description: Connect to external DuckDB databases and ingest data into Rill
+sidebar_label: External DuckDB 
 sidebar_position: 11
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
+While not recommended for production use, Rill allows you to `attach` external DuckDB databases to ingest data from them as a data source. This approach has several caveats and limitations during deployment and is primarily intended for local testing scenarios.
 
-[DuckDB](https://duckdb.org/docs/) is a fast, lightweight database designed for data analysis. It runs directly within your application, making it perfect for analytical workloads.
+:::warning Local Development Only
 
-Rill includes a [built-in DuckDB database](/connect/olap/duckdb) that stores all your ingested data, by default. If you already have data in your own DuckDB file and want to visualize your data in Rill, you can import your existing tables into Rill's database.
+There are several limitations with deployment to Rill Cloud, so we do not recommend this method for production environments. Key limitations include:
+
+- Moving your DuckDB file into the `data/` folder within your project directory
+- A size limitation of 100MB when deploying to Rill Cloud
+
+[Contact us](/contact) if you have questions or encounter issues with these limitations.
+
+:::
+
+## Attaching an External DuckDB
+
+In the default `connectors/duckdb.yaml` file, you can add `init_sql` or `attach` statements to attach an external database to Rill's embedded DuckDB. The `attach` statement runs before `init_sql`, allowing you to attach your database and execute subsequent initialization SQL queries. For more details on the YAML configuration, see the [DuckDB reference page](/reference/project-files/connectors#duckdb).
+
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
+
+driver: duckdb
+managed: true
+
+ATTACH: |
+  '/path/to/your/duckdb.db' AS external_duckdb;
+  use external_duckdb;
+
+database_name: external_duckdb
+schema: main
+
+init_sql: |
+  INSTALL httpfs;
+  LOAD httpfs;
+```
+
+## Using DuckDB Extensions
+
+DuckDB supports a wide variety of extensions that can enhance its functionality. To use extensions with Rill's embedded DuckDB, configure them in your connector's `init_sql` parameter.
 
 
-## Connecting to External DuckDB
+### Popular Extensions
 
-In order to import your data into Rill, Rill will first need to be able to access the underlying DuckDB database. Once access has been established, the data will be read from your external database into the built-in DuckDB database in Rill.
+For a complete list of available extensions, see the [DuckDB Extensions documentation](https://duckdb.org/docs/extensions/overview).
 
-If creating a new DuckDB source from the UI, you should provide the appropriate path to the DuckDB database file under **DB** and use the appropriate [DuckDB select statement](https://duckdb.org/docs/sql/statements/select.html) to read the table under **SQL**:
 
-<img src='/img/reference/olap-engines/duckdb/duckdb.png' class='centered' />
+## Importing Data to Your External DuckDB
+
+After establishing a connection, you can import data through the connector UI. This process will write the data into your attached DuckDB database.
+
+<img src='/img/connect/data-sources/create-model.png' class='rounded-gif' />
 <br />
 
-
-
-## Cloud Deployment
-
-When deploying to Rill Cloud, only the contents of the Rill data directory will be pushed. In other words, if your DuckDB file exists outside of your project folder, it will not upload to Rill Cloud. To ensure a smooth transition, move the DuckDB file into the data/ folder.
-
-
-
-:::tip Live Connector (MotherDuck)
-
-If you already have data in your MotherDuck instance and are thinking of using Rill as an application layer to visualize your data, we recommend using a live connector with MotherDuck.
-
-Please review our [MotherDuck live connector docs](/connect/olap/motherduck) for more information. 
-:::

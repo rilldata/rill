@@ -314,6 +314,8 @@ message ExportRequest {
   // Optional UI URL that the export originates from.
   // Only used if include_header is true.
   string origin_url = 8;
+  // Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
+  google.protobuf.Timestamp execution_time = 9;
 }
 
 message ExportResponse {

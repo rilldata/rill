@@ -246,6 +246,11 @@ service RuntimeService {
     };
   }
 
+  // ListConversations lists all AI chat conversations for an instance.
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
+  }
+
   // GetConversation returns a specific AI chat conversation.
   rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
@@ -334,6 +339,7 @@ message Instance {
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
   string ai_instructions = 23;
+  string frontend_url = 24;
 }
  
 message Connector {
@@ -388,6 +394,7 @@ message CreateInstanceRequest {
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
+  string frontend_url = 18;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -415,6 +422,7 @@ message EditInstanceRequest {
   repeated Connector connectors = 9;
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
+  optional string frontend_url = 19;
 }
 
 // Response message for RuntimeService.EditInstance

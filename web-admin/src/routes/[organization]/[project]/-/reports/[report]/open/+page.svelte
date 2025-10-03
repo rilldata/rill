@@ -24,14 +24,19 @@
   } = data);
 
   let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
-  $: dashboardStateForReport = mapQueryToDashboard({
-    exploreName,
-    queryName: reportResource?.report?.spec?.queryName,
-    queryArgsJson: reportResource?.report?.spec?.queryArgsJson,
-    executionTime,
-    annotations: reportResource?.report?.spec?.annotations ?? {},
-    forceOpenPivot: true,
-  });
+  $: dashboardStateForReport = mapQueryToDashboard(
+    {
+      exploreName,
+      queryName: reportResource?.report?.spec?.queryName,
+      queryArgsJson: reportResource?.report?.spec?.queryArgsJson,
+      executionTime,
+    },
+    {
+      exploreProtoState:
+        reportResource?.report?.spec?.annotations?.web_open_state,
+      forceOpenPivot: true,
+    },
+  );
 
   $: if ($dashboardStateForReport?.data) {
     void gotoExplorePage(

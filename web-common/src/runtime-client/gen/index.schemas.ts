@@ -765,6 +765,7 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
+  frontendUrl?: string;
 }
 
 export interface V1CreateInstanceResponse {
@@ -1129,6 +1130,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
+  frontendUrl?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1168,6 +1170,10 @@ export interface V1IssueDevJWTResponse {
 
 export interface V1ListConnectorDriversResponse {
   connectors?: V1ConnectorDriver[];
+}
+
+export interface V1ListConversationsResponse {
+  conversations?: V1Conversation[];
 }
 
 export interface V1ListDatabaseSchemasResponse {
@@ -2167,24 +2173,55 @@ export interface V1SecurityRule {
   access?: V1SecurityRuleAccess;
   fieldAccess?: V1SecurityRuleFieldAccess;
   rowFilter?: V1SecurityRuleRowFilter;
+  transitiveAccess?: V1SecurityRuleTransitiveAccess;
 }
 
 export interface V1SecurityRuleAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
+  /** Whether to allow or deny access to the resources covered by the conditions. */
   allow?: boolean;
+  /** If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
 }
 
 export interface V1SecurityRuleFieldAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   allow?: boolean;
+  /** If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
   fields?: string[];
   allFields?: boolean;
 }
 
 export interface V1SecurityRuleRowFilter {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   sql?: string;
   expression?: V1Expression;
+}
+
+export interface V1SecurityRuleTransitiveAccess {
+  resource?: V1ResourceName;
 }
 
 export interface V1Source {
@@ -2492,6 +2529,7 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
+  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
@@ -2715,6 +2753,8 @@ export type QueryServiceExportBody = {
   /** Optional UI URL that the export originates from.
 Only used if include_header is true. */
   originUrl?: string;
+  /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {

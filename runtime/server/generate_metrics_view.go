@@ -14,7 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -320,7 +320,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		})
 	}
 
-	e, err := metricsview.NewExecutor(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
 	if err != nil {
 		return nil, err
 	}

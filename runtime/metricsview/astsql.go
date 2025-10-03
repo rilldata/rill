@@ -30,7 +30,7 @@ func (a *AST) SQL() (string, []any, error) {
 	}
 
 	var err error
-	if a.query.UseDisplayNames {
+	if a.Query.UseDisplayNames {
 		err = b.writeSelectWithDisplayNames(a.Root)
 	} else {
 		err = b.writeSelect(a.Root)
@@ -60,9 +60,9 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 		if i > 0 {
 			b.out.WriteString(", ")
 		}
-		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
 		b.out.WriteString(" AS ")
-		b.out.WriteString(b.ast.dialect.EscapeIdentifier(displayName))
+		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(displayName))
 	}
 
 	for i, f := range n.MeasureFields {
@@ -74,9 +74,9 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 		if i > 0 || len(n.DimFields) > 0 {
 			b.out.WriteString(", ")
 		}
-		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
 		b.out.WriteString(" AS ")
-		b.out.WriteString(b.ast.dialect.EscapeIdentifier(displayName))
+		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(displayName))
 	}
 
 	b.out.WriteString(" FROM (")
@@ -111,7 +111,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteByte('(')
 		b.out.WriteString(f.Expr)
 		b.out.WriteString(") AS ")
-		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
 	}
 
 	for i, f := range n.MeasureFields {
@@ -130,7 +130,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(f.TreatNullAs)
 		}
 		b.out.WriteString(") AS ")
-		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(b.ast.Dialect.EscapeIdentifier(f.Name))
 	}
 
 	if n.FromTable == nil && n.FromSelect == nil {
@@ -143,7 +143,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		// Add unnest joins. We only and always apply these against FromTable (ensuring they are already unnested when referenced in outer SELECTs).
 		for _, u := range n.Unnests {
-			b.out.WriteString(b.ast.dialect.UnnestSQLSuffix(u))
+			b.out.WriteString(b.ast.Dialect.UnnestSQLSuffix(u))
 		}
 	} else if n.FromSelect != nil {
 		if !n.FromSelect.IsCTE {
@@ -229,7 +229,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			if i > 0 {
 				b.out.WriteString(", ")
 			}
-			b.out.WriteString(b.ast.dialect.OrderByExpression(f.Name, f.Desc))
+			b.out.WriteString(b.ast.Dialect.OrderByExpression(f.Name, f.Desc))
 		}
 	}
 
@@ -275,10 +275,10 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		if i > 0 {
 			b.out.WriteString(" AND ")
 		}
-		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
-		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
+		lhs := b.ast.Dialect.EscapeMember(baseSelect.Alias, f.Name)
+		rhs := b.ast.Dialect.EscapeMember(joinSelect.Alias, f.Name)
 		b.out.WriteByte('(')
-		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
+		b.out.WriteString(b.ast.Dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')
 	}
 	return nil

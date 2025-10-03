@@ -96,6 +96,7 @@ type InstanceOptions struct {
 	StageChanges      bool
 	DisableHostAccess bool
 	TestConnectors    []string
+	FrontendURL       string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -166,7 +167,8 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		Variables: vars,
+		Variables:   vars,
+		FrontendURL: opts.FrontendURL,
 	}
 
 	if opts.Files == nil {
