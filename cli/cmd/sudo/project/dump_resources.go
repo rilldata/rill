@@ -117,8 +117,8 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 
 func resourcesForProject(ctx context.Context, c *client.Client, org, project, filter string) ([]*runtimev1.Resource, error) {
 	proj, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName:     org,
-		Name:                 project,
+		Org:                  org,
+		Project:              project,
 		SuperuserForceAccess: true,
 		IssueSuperuserToken:  true,
 	})

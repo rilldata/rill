@@ -40,6 +40,9 @@ type config struct {
 	Secrets string `mapstructure:"secrets"`
 	// Mode specifies the mode in which to open the database.
 	Mode string `mapstructure:"mode"`
+	// CanScaleToZero indicates if the underlying duckdb service may scale to zero when idle.
+	// When set to true, we try to avoid too frequent non-user queries to the database (such as alert checks and fetching metrics).
+	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
 
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
 	Path string `mapstructure:"path"`
@@ -90,6 +93,11 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
 
+	// set can_scale_to_zero for motherduck by default
+	if _, ok := cfgMap["can_scale_to_zero"]; !ok && cfg.isMotherduck() {
+		cfg.CanScaleToZero = true
+	}
+
 	return cfg, nil
 }
 
@@ -114,4 +122,9 @@ func (c *config) secretConnectors() []string {
 		res[i] = strings.TrimSpace(s)
 	}
 	return res
+}
+
+// isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
+func (c *config) isMotherduck() bool {
+	return strings.HasPrefix(c.Path, "md:") || strings.HasPrefix(c.Attach, "'md:")
 }

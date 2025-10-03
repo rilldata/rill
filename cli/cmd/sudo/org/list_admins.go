@@ -23,7 +23,7 @@ func ListAdminsCmd(ch *cmdutil.Helper) *cobra.Command {
 			pageToken := ""
 			for {
 				resp, err := client.ListOrganizationMemberUsers(cmd.Context(), &adminv1.ListOrganizationMemberUsersRequest{
-					Organization:         args[0],
+					Org:                  args[0],
 					PageSize:             pageSize,
 					PageToken:            pageToken,
 					SuperuserForceAccess: true,

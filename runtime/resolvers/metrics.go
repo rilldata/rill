@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -24,7 +25,7 @@ type metricsResolver struct {
 	runtime    *runtime.Runtime
 	instanceID string
 	mv         *runtimev1.MetricsViewSpec
-	executor   *metricsview.Executor
+	executor   *executor.Executor
 	query      *metricsview.Query
 	args       *metricsResolverArgs
 	claims     *runtime.SecurityClaims
@@ -75,7 +76,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, runtime.ErrForbidden
 	}
 
-	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority)
+	executor, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority)
 	if err != nil {
 		return nil, err
 	}

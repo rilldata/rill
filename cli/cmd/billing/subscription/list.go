@@ -20,7 +20,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			resp, err := client.GetBillingSubscription(cmd.Context(), &adminv1.GetBillingSubscriptionRequest{
-				Organization:         ch.Org,
+				Org:                  ch.Org,
 				SuperuserForceAccess: force,
 			})
 			if err != nil {

@@ -8,7 +8,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -306,7 +306,7 @@ func rowFilterJSON(where *runtimev1.Expression, whereSQL string, filter *runtime
 	}
 	var whereSQLExp *runtimev1.Expression
 	if whereSQL != "" {
-		mvExp, err := metricssqlparser.ParseSQLFilter(whereSQL)
+		mvExp, err := metricssql.ParseFilter(whereSQL)
 		if err != nil {
 			return "", fmt.Errorf("invalid where SQL: %w", err)
 		}

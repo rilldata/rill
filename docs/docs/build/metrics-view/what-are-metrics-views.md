@@ -68,6 +68,7 @@ When you add a metrics definition using the UI, a code definition will automatic
 
 ### Creating a Metrics View with AI
 
+
 In order to streamline the process and get to a dashboard as quickly as possible, we've added the "Create Metrics with AI" and "Create Dashboard with AI" options! This will pass your schema to OpenAI to suggest measures and dimensions to get started with Rill.
 
 <img src='/img/build/metrics-view/create-with-ai.png' class='rounded-gif' />
@@ -83,7 +84,8 @@ You can now create dashboards directly for the connector panel. This will create
 
 :::
 
- You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#openapi). If you want to disable AI from your environment, please set the following in the `rill.yaml`:
+You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#openai). If you want to disable AI from your environment, please set the following in the `rill.yaml`:
+
 
 ```yaml
 features:

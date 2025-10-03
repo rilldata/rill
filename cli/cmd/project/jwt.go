@@ -39,8 +39,8 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
+				Org:     ch.Org,
+				Project: name,
 			})
 			if err != nil {
 				return err
