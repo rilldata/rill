@@ -26,9 +26,9 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if projectName != "" {
 				_, err = client.RemoveProjectMemberUsergroup(cmd.Context(), &adminv1.RemoveProjectMemberUsergroupRequest{
-					Organization: ch.Org,
-					Project:      projectName,
-					Usergroup:    groupName,
+					Org:       ch.Org,
+					Project:   projectName,
+					Usergroup: groupName,
 				})
 				if err != nil {
 					return err
@@ -36,8 +36,8 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("Removed role of user group %q in the project %q\n", groupName, projectName)
 			} else {
 				_, err = client.RemoveOrganizationMemberUsergroup(cmd.Context(), &adminv1.RemoveOrganizationMemberUsergroupRequest{
-					Organization: ch.Org,
-					Usergroup:    groupName,
+					Org:       ch.Org,
+					Usergroup: groupName,
 				})
 				if err != nil {
 					return err

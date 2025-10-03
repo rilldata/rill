@@ -26,12 +26,12 @@ const magicAuthTokenFilterMaxSize = 1024
 
 func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagicAuthTokenRequest) (*adminv1.IssueMagicAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.display_name", req.DisplayName),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	tokenStr := token.Token().String()
 	return &adminv1.IssueMagicAuthTokenResponse{
 		Token: tokenStr,
-		Url:   s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+		Url:   s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(req.Org, req.Project, tokenStr),
 	}, nil
 }
 
@@ -160,7 +160,7 @@ func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetC
 
 func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagicAuthTokensRequest) (*adminv1.ListMagicAuthTokensResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
+		attribute.String("args.organization", req.Org),
 		attribute.String("args.project", req.Project),
 	)
 
@@ -170,7 +170,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
 	if err != nil {
 		return nil, err
 	}

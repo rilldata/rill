@@ -1,4 +1,4 @@
-package metricsview
+package executor
 
 import (
 	"context"
@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
@@ -37,18 +37,11 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	timestamps map[string]TimestampsResult
+	timestamps map[string]metricsview.TimestampsResult
 }
 
-type TimestampsResult struct {
-	Min       time.Time
-	Max       time.Time
-	Watermark time.Time
-	Now       time.Time
-}
-
-// NewExecutor creates a new Executor for the provided metrics view.
-func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
+// New creates a new Executor for the provided metrics view.
+func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -69,7 +62,7 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 		olap:        olap,
 		olapRelease: release,
 		instanceCfg: instanceCfg,
-		timestamps:  make(map[string]TimestampsResult),
+		timestamps:  make(map[string]metricsview.TimestampsResult),
 	}, nil
 }
 
@@ -132,13 +125,13 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 }
 
 // ValidateQuery validates the provided query against the executor's metrics view.
-func (e *Executor) ValidateQuery(qry *Query) error {
+func (e *Executor) ValidateQuery(qry *metricsview.Query) error {
 	// TODO: Implement it
 	panic("not implemented")
 }
 
 // Timestamps queries min, max and watermark for the metrics view.
-func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsResult, error) {
+func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.TimestampsResult, error) {
 	if timeDim == "" {
 		timeDim = e.metricsView.TimeDimension
 	}
@@ -149,13 +142,13 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsRe
 
 	timeExpr, err := e.timeColumnOrExpr(timeDim)
 	if err != nil {
-		return TimestampsResult{}, fmt.Errorf("failed to resolve time column or expression: %w", err)
+		return metricsview.TimestampsResult{}, fmt.Errorf("failed to resolve time column or expression: %w", err)
 	}
 	if timeExpr == "" {
-		return TimestampsResult{}, fmt.Errorf("no time dimension found in metrics view '%s'", timeDim)
+		return metricsview.TimestampsResult{}, fmt.Errorf("no time dimension found in metrics view '%s'", timeDim)
 	}
 
-	var res TimestampsResult
+	var res metricsview.TimestampsResult
 	switch e.olap.Dialect() {
 	case drivers.DialectDuckDB:
 		res, err = e.resolveDuckDB(ctx, timeExpr)
@@ -166,10 +159,10 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsRe
 	case drivers.DialectDruid:
 		res, err = e.resolveDruid(ctx, timeExpr)
 	default:
-		return TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
+		return metricsview.TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
 	if err != nil {
-		return TimestampsResult{}, err
+		return metricsview.TimestampsResult{}, err
 	}
 
 	res.Now = time.Now()
@@ -179,7 +172,7 @@ func (e *Executor) Timestamps(ctx context.Context, timeDim string) (TimestampsRe
 }
 
 // BindQuery allows to set min, max and watermark from a cache.
-func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
+func (e *Executor) BindQuery(ctx context.Context, qry *metricsview.Query, timestamps metricsview.TimestampsResult) error {
 	err := qry.Validate()
 	if err != nil {
 		return err
@@ -200,15 +193,15 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	// Build a query that selects all dimensions and measures
-	qry := &Query{}
+	qry := &metricsview.Query{}
 
 	if e.metricsView.TimeDimension != "" {
-		qry.Dimensions = append(qry.Dimensions, Dimension{
+		qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{
 			Name: e.metricsView.TimeDimension,
-			Compute: &DimensionCompute{
-				TimeFloor: &DimensionComputeTimeFloor{
+			Compute: &metricsview.DimensionCompute{
+				TimeFloor: &metricsview.DimensionComputeTimeFloor{
 					Dimension: e.metricsView.TimeDimension,
-					Grain:     TimeGrainDay,
+					Grain:     metricsview.TimeGrainDay,
 				},
 			},
 		})
@@ -220,24 +213,24 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 				// Skip the time dimension if it is already added
 				continue
 			}
-			qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
+			qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: d.Name})
 		}
 	}
 
 	for _, m := range e.metricsView.Measures {
 		if e.security.CanAccessField(m.Name) {
-			qry.Measures = append(qry.Measures, Measure{Name: m.Name})
+			qry.Measures = append(qry.Measures, metricsview.Measure{Name: m.Name})
 		}
 	}
 
 	// Setting both base and comparison time ranges in case there are time_comparison measures.
 	if e.metricsView.TimeDimension != "" {
 		now := time.Now()
-		qry.TimeRange = &TimeRange{
+		qry.TimeRange = &metricsview.TimeRange{
 			Start: now.Add(-time.Second),
 			End:   now,
 		}
-		qry.ComparisonTimeRange = &TimeRange{
+		qry.ComparisonTimeRange = &metricsview.TimeRange{
 			Start: now.Add(-2 * time.Second),
 			End:   now.Add(-time.Second),
 		}
@@ -248,7 +241,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	qry.Limit = &zero
 
 	// Execute the query to get the schema
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +260,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 }
 
 // Query executes the provided query against the metrics view.
-func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Time) (*drivers.Result, error) {
+func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) (*drivers.Result, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
@@ -302,7 +295,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +394,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 
 // Export executes and exports the provided query against the metrics view.
 // It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
-func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat, headers []string) (string, error) {
+func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, executionTime *time.Time, format drivers.FileFormat, headers []string) (string, error) {
 	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
 	}
@@ -428,7 +421,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return "", err
 	}
@@ -463,23 +456,8 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 	}, headers)
 }
 
-type SearchQuery struct {
-	MetricsView string      `mapstructure:"metrics_view"`
-	Dimensions  []string    `mapstructure:"dimensions"`
-	Search      string      `mapstructure:"search"`
-	Where       *Expression `mapstructure:"where"`
-	Having      *Expression `mapstructure:"having"`
-	TimeRange   *TimeRange  `mapstructure:"time_range"`
-	Limit       *int64      `mapstructure:"limit"`
-}
-
-type SearchResult struct {
-	Dimension string
-	Value     any
-}
-
-// SearchQuery executes the provided query against the metrics view.
-func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
+// Search executes the provided query against the metrics view.
+func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, executionTime *time.Time) ([]metricsview.SearchResult, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
@@ -506,9 +484,9 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 		if i > 0 {
 			finalSQL.WriteString(" UNION ALL ")
 		}
-		q := &Query{
+		q := &metricsview.Query{
 			MetricsView:         qry.MetricsView,
-			Dimensions:          []Dimension{{Name: d}},
+			Dimensions:          []metricsview.Dimension{{Name: d}},
 			Measures:            nil,
 			PivotOn:             nil,
 			Spine:               nil,
@@ -534,7 +512,7 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			return nil, err
 		}
 
-		ast, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+		ast, err := metricsview.NewAST(e.metricsView, e.security, q, e.olap.Dialect())
 		if err != nil {
 			return nil, err
 		}
@@ -564,9 +542,9 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	if rowsCap > 0 {
 		res.SetCap(rowsCap)
 	}
-	searchResult := make([]SearchResult, 0)
+	searchResult := make([]metricsview.SearchResult, 0)
 	for res.Next() {
-		var row SearchResult
+		var row metricsview.SearchResult
 		if err := res.Scan(&row.Dimension, &row.Value); err != nil {
 			return nil, err
 		}
@@ -579,35 +557,8 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 	return searchResult, nil
 }
 
-type AnnotationsQuery struct {
-	MetricsView string     `mapstructure:"metrics_view"`
-	Measures    []string   `mapstructure:"measures"`
-	TimeRange   *TimeRange `mapstructure:"time_range"`
-	Limit       *int64     `mapstructure:"limit"`
-	Offset      *int64     `mapstructure:"offset"`
-	TimeZone    string     `mapstructure:"time_zone"`
-	TimeGrain   TimeGrain  `mapstructure:"time_grain"`
-	Priority    int        `mapstructure:"priority"`
-}
-
-func (q *AnnotationsQuery) AsMap() (map[string]any, error) {
-	queryMap := make(map[string]any)
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:     &queryMap,
-		DecodeHook: timeDecodeFunc,
-	})
-	if err != nil {
-		return nil, err
-	}
-	err = decoder.Decode(q)
-	if err != nil {
-		return nil, err
-	}
-	return queryMap, nil
-}
-
 // BindAnnotationsQuery allows setting min, max and watermark from a cache for an AnnotationsQuery
-func (e *Executor) BindAnnotationsQuery(ctx context.Context, qry *AnnotationsQuery, timestamps TimestampsResult) error {
+func (e *Executor) BindAnnotationsQuery(ctx context.Context, qry *metricsview.AnnotationsQuery, timestamps metricsview.TimestampsResult) error {
 	if qry.TimeRange != nil && qry.TimeRange.TimeDimension != "" {
 		e.timestamps[qry.TimeRange.TimeDimension] = timestamps
 	} else if e.metricsView.TimeDimension != "" {
@@ -627,7 +578,7 @@ func (e *Executor) BindAnnotationsQuery(ctx context.Context, qry *AnnotationsQue
 	return nil
 }
 
-func (e *Executor) Annotations(ctx context.Context, qry *AnnotationsQuery) ([]map[string]any, error) {
+func (e *Executor) Annotations(ctx context.Context, qry *metricsview.AnnotationsQuery) ([]map[string]any, error) {
 	reqMeasures := qry.Measures
 	if len(reqMeasures) == 0 {
 		for _, mes := range e.metricsView.Measures {
@@ -663,15 +614,15 @@ func (e *Executor) Annotations(ctx context.Context, qry *AnnotationsQuery) ([]ma
 	return rows, nil
 }
 
-func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
+func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.SearchQuery, executionTime *time.Time) ([]metricsview.SearchResult, error) {
 	if qry.TimeRange == nil {
 		return nil, errDruidNativeSearchUnimplemented
 	}
-	dimensions := make([]Dimension, len(qry.Dimensions))
+	dimensions := make([]metricsview.Dimension, len(qry.Dimensions))
 	for i, d := range qry.Dimensions {
-		dimensions[i] = Dimension{Name: d}
+		dimensions[i] = metricsview.Dimension{Name: d}
 	}
-	q := &Query{
+	q := &metricsview.Query{
 		MetricsView:         qry.MetricsView,
 		Dimensions:          dimensions,
 		Measures:            nil,
@@ -693,7 +644,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		return nil, err
 	}
 
-	a, err := NewAST(e.metricsView, e.security, q, e.olap.Dialect())
+	a, err := metricsview.NewAST(e.metricsView, e.security, q, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -762,7 +713,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 	dims := make([]string, 0)
 	virtualCols := make([]druid.NativeVirtualColumns, 0)
 	for _, f := range a.Root.DimFields {
-		dim, err := a.lookupDimension(f.Name, true)
+		dim, err := a.LookupDimension(f.Name, true)
 		if err != nil {
 			return nil, err
 		}
@@ -778,7 +729,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 			dims = append(dims, f.Name)
 		}
 	}
-	req := druid.NewNativeSearchQueryRequest(e.metricsView.Table, qry.Search, dims, virtualCols, limit, a.query.TimeRange.Start, a.query.TimeRange.End, query)
+	req := druid.NewNativeSearchQueryRequest(e.metricsView.Table, qry.Search, dims, virtualCols, limit, a.Query.TimeRange.Start, a.Query.TimeRange.End, query)
 
 	// Execute the native query
 	client, err := druid.NewNativeClient(e.olap)
@@ -791,10 +742,10 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 	}
 
 	// Convert the response to a SearchResult
-	result := make([]SearchResult, 0)
+	result := make([]metricsview.SearchResult, 0)
 	for _, re := range res {
 		for _, r := range re.Result {
-			result = append(result, SearchResult{
+			result = append(result, metricsview.SearchResult{
 				Dimension: strings.TrimSuffix(r.Dimension, "_virtual_native"),
 				Value:     r.Value,
 			})
@@ -818,7 +769,7 @@ func (e *Executor) timeColumnOrExpr(timeDim string) (string, error) {
 	return e.olap.Dialect().EscapeIdentifier(timeDim), nil // fallback to the time dimension if not found in dimensions
 }
 
-func (e *Executor) executeAnnotationsQuery(ctx context.Context, qry *AnnotationsQuery, annotation *runtimev1.MetricsViewSpec_Annotation, forMeasures []string) ([]map[string]any, error) {
+func (e *Executor) executeAnnotationsQuery(ctx context.Context, qry *metricsview.AnnotationsQuery, annotation *runtimev1.MetricsViewSpec_Annotation, forMeasures []string) ([]map[string]any, error) {
 	// Acquire olap connection for the annotation's table's connector
 	olap, release, err := e.rt.OLAP(ctx, e.instanceID, annotation.Connector)
 	if err != nil {
@@ -876,7 +827,7 @@ END) as __rill_time_grain`)
 		args = append(args, start, end)
 	}
 
-	if annotation.HasDuration && qry.TimeGrain != TimeGrainUnspecified {
+	if annotation.HasDuration && qry.TimeGrain != metricsview.TimeGrainUnspecified {
 		b.WriteString(" AND (__rill_time_grain == 0 OR __rill_time_grain <= ?)")
 		args = append(args, int(qry.TimeGrain.ToTimeutil()))
 	}
@@ -925,26 +876,26 @@ END) as __rill_time_grain`)
 	return rows, nil
 }
 
-func whereExprForSearch(where *Expression, dimension, search string) *Expression {
+func whereExprForSearch(where *metricsview.Expression, dimension, search string) *metricsview.Expression {
 	if where == nil {
-		return &Expression{
-			Condition: &Condition{
-				Operator: OperatorIlike,
-				Expressions: []*Expression{
+		return &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorIlike,
+				Expressions: []*metricsview.Expression{
 					{Name: dimension},
 					{Value: fmt.Sprintf("%%%s%%", search)},
 				},
 			},
 		}
 	}
-	return &Expression{
-		Condition: &Condition{
-			Operator: OperatorAnd,
-			Expressions: []*Expression{
+	return &metricsview.Expression{
+		Condition: &metricsview.Condition{
+			Operator: metricsview.OperatorAnd,
+			Expressions: []*metricsview.Expression{
 				{
-					Condition: &Condition{
-						Operator: OperatorIlike,
-						Expressions: []*Expression{
+					Condition: &metricsview.Condition{
+						Operator: metricsview.OperatorIlike,
+						Expressions: []*metricsview.Expression{
 							{Name: dimension},
 							{Value: fmt.Sprintf("%%%s%%", search)},
 						},

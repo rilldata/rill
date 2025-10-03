@@ -8,7 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 )
 
 type MetricsViewSchema struct {
@@ -57,7 +57,7 @@ func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority)
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority)
 	if err != nil {
 		return err
 	}

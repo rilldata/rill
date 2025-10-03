@@ -38,10 +38,10 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if project != "" {
 				_, err = client.CreateProjectWhitelistedDomain(cmd.Context(), &adminv1.CreateProjectWhitelistedDomainRequest{
-					Organization: ch.Org,
-					Project:      project,
-					Domain:       domain,
-					Role:         role,
+					Org:     ch.Org,
+					Project: project,
+					Domain:  domain,
+					Role:    role,
 				})
 				if err != nil {
 					return err
@@ -49,9 +49,9 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("Whitelisted %q for project %q of organization %q (to remove it, use `rill user whitelist remove`).\n", domain, project, ch.Org)
 			} else {
 				_, err = client.CreateWhitelistedDomain(cmd.Context(), &adminv1.CreateWhitelistedDomainRequest{
-					Organization: ch.Org,
-					Domain:       domain,
-					Role:         role,
+					Org:    ch.Org,
+					Domain: domain,
+					Role:   role,
 				})
 				if err != nil {
 					return err

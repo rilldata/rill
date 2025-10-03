@@ -1,10 +1,11 @@
-package metricsview
+package executor
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 // rewriteQueryDruidExactify applies an approach to get more accurate measure values for TopN queries in Druid (which are approximate).
@@ -13,7 +14,7 @@ import (
 // The approach works by executing an inner query that returns the dimension values that we expect in the final result,
 // and then adding those dimension values as a filter in the outer query. The specific filter in the second query leads to more accurate measure values being returned.
 // For more details on this approach, see: https://druid.apache.org/docs/latest/querying/topnquery/#aliasing.
-func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) error {
+func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsview.Query) error {
 	// Check if it's enabled.
 	if !e.instanceCfg.MetricsExactifyDruidTopN {
 		return nil
@@ -30,7 +31,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Construct a new query that will just return the dimension values that we expect in the final result.
-	inner := &Query{
+	inner := &metricsview.Query{
 		MetricsView:         qry.MetricsView,
 		Dimensions:          qry.Dimensions,
 		Measures:            nil,
@@ -59,7 +60,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Build an AST for the inner query.
-	ast, err := NewAST(e.metricsView, e.security, inner, e.olap.Dialect())
+	ast, err := metricsview.NewAST(e.metricsView, e.security, inner, e.olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("druid exactify: failed to build inner query AST: %w", err)
 	}
@@ -106,16 +107,16 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
-	var inExpr *Expression
+	var inExpr *metricsview.Expression
 	if len(vals) == 0 {
-		inExpr = &Expression{
+		inExpr = &metricsview.Expression{
 			Value: false,
 		}
 	} else {
-		inExpr = &Expression{
-			Condition: &Condition{
-				Operator: OperatorIn,
-				Expressions: []*Expression{
+		inExpr = &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorIn,
+				Expressions: []*metricsview.Expression{
 					{Name: qry.Dimensions[0].Name},
 					{Value: vals},
 				},
@@ -126,10 +127,10 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	if qry.Where == nil {
 		qry.Where = inExpr
 	} else {
-		qry.Where = &Expression{
-			Condition: &Condition{
-				Operator: OperatorAnd,
-				Expressions: []*Expression{
+		qry.Where = &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorAnd,
+				Expressions: []*metricsview.Expression{
 					qry.Where,
 					inExpr,
 				},

@@ -1,14 +1,14 @@
-package metricssqlparser_test
+package metricssql_test
 
 import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/metricsview"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseSQLFilter(t *testing.T) {
+func TestParseFilter(t *testing.T) {
 	tests := []struct {
 		name    string
 		sql     string
@@ -211,7 +211,7 @@ func TestParseSQLFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := metricssqlparser.ParseSQLFilter(tt.sql)
+			got, err := metricssql.ParseFilter(tt.sql)
 			if tt.wantErr {
 				require.Equal(t, err, tt.wantErr)
 			} else {
