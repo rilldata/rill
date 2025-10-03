@@ -67,7 +67,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	security, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +156,37 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+
+	if r.query.Where != nil {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
+					Expression:         metricsview.ExpressionToProto(r.query.Where),
+				},
+			},
+		})
+	}
+
+	fields := metricsview.AnalyzeQueryFields(r.query)
+	if len(fields) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
+					Fields:             fields,
+					Allow:              true,
+					Exclusive:          true,
+				},
+			},
+		})
+	}
+
+	return rules, nil
 }
 
 // fieldsFromQuery returns metadata for only those dimensions and measures present in the query, preserving query order.

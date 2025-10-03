@@ -2117,6 +2117,7 @@ type SecurityRule struct {
 	//	*SecurityRule_Access
 	//	*SecurityRule_FieldAccess
 	//	*SecurityRule_RowFilter
+	//	*SecurityRule_TransitiveAccess
 	Rule isSecurityRule_Rule `protobuf_oneof:"rule"`
 }
 
@@ -2180,6 +2181,13 @@ func (x *SecurityRule) GetRowFilter() *SecurityRuleRowFilter {
 	return nil
 }
 
+func (x *SecurityRule) GetTransitiveAccess() *SecurityRuleTransitiveAccess {
+	if x, ok := x.GetRule().(*SecurityRule_TransitiveAccess); ok {
+		return x.TransitiveAccess
+	}
+	return nil
+}
+
 type isSecurityRule_Rule interface {
 	isSecurityRule_Rule()
 }
@@ -2196,19 +2204,35 @@ type SecurityRule_RowFilter struct {
 	RowFilter *SecurityRuleRowFilter `protobuf:"bytes,3,opt,name=row_filter,json=rowFilter,proto3,oneof"`
 }
 
+type SecurityRule_TransitiveAccess struct {
+	TransitiveAccess *SecurityRuleTransitiveAccess `protobuf:"bytes,4,opt,name=transitive_access,json=transitiveAccess,proto3,oneof"`
+}
+
 func (*SecurityRule_Access) isSecurityRule_Rule() {}
 
 func (*SecurityRule_FieldAccess) isSecurityRule_Rule() {}
 
 func (*SecurityRule_RowFilter) isSecurityRule_Rule() {}
 
+func (*SecurityRule_TransitiveAccess) isSecurityRule_Rule() {}
+
 type SecurityRuleAccess struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Condition string `protobuf:"bytes,1,opt,name=condition,proto3" json:"condition,omitempty"`
-	Allow     bool   `protobuf:"varint,2,opt,name=allow,proto3" json:"allow,omitempty"`
+	// The condition under which this rule applies.
+	// It is ANDed together with the condition_kinds and condition_resources.
+	ConditionExpression string `protobuf:"bytes,1,opt,name=condition_expression,json=conditionExpression,proto3" json:"condition_expression,omitempty"`
+	// The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+	ConditionKinds []string `protobuf:"bytes,3,rep,name=condition_kinds,json=conditionKinds,proto3" json:"condition_kinds,omitempty"`
+	// The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+	// It is ORed together with the condition_kinds.
+	ConditionResources []*ResourceName `protobuf:"bytes,4,rep,name=condition_resources,json=conditionResources,proto3" json:"condition_resources,omitempty"`
+	// Whether to allow or deny access to the resources covered by the conditions.
+	Allow bool `protobuf:"varint,2,opt,name=allow,proto3" json:"allow,omitempty"`
+	// If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true).
+	Exclusive bool `protobuf:"varint,5,opt,name=exclusive,proto3" json:"exclusive,omitempty"`
 }
 
 func (x *SecurityRuleAccess) Reset() {
@@ -2243,11 +2267,25 @@ func (*SecurityRuleAccess) Descriptor() ([]byte, []int) {
 	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *SecurityRuleAccess) GetCondition() string {
+func (x *SecurityRuleAccess) GetConditionExpression() string {
 	if x != nil {
-		return x.Condition
+		return x.ConditionExpression
 	}
 	return ""
+}
+
+func (x *SecurityRuleAccess) GetConditionKinds() []string {
+	if x != nil {
+		return x.ConditionKinds
+	}
+	return nil
+}
+
+func (x *SecurityRuleAccess) GetConditionResources() []*ResourceName {
+	if x != nil {
+		return x.ConditionResources
+	}
+	return nil
 }
 
 func (x *SecurityRuleAccess) GetAllow() bool {
@@ -2257,13 +2295,29 @@ func (x *SecurityRuleAccess) GetAllow() bool {
 	return false
 }
 
+func (x *SecurityRuleAccess) GetExclusive() bool {
+	if x != nil {
+		return x.Exclusive
+	}
+	return false
+}
+
 type SecurityRuleFieldAccess struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Condition string   `protobuf:"bytes,1,opt,name=condition,proto3" json:"condition,omitempty"`
-	Allow     bool     `protobuf:"varint,2,opt,name=allow,proto3" json:"allow,omitempty"`
+	// The condition under which this rule applies.
+	// It is ANDed together with the condition_kinds and condition_resources.
+	ConditionExpression string `protobuf:"bytes,1,opt,name=condition_expression,json=conditionExpression,proto3" json:"condition_expression,omitempty"`
+	// The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+	ConditionKinds []string `protobuf:"bytes,5,rep,name=condition_kinds,json=conditionKinds,proto3" json:"condition_kinds,omitempty"`
+	// The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+	// It is ORed together with the condition_kinds.
+	ConditionResources []*ResourceName `protobuf:"bytes,6,rep,name=condition_resources,json=conditionResources,proto3" json:"condition_resources,omitempty"`
+	Allow              bool            `protobuf:"varint,2,opt,name=allow,proto3" json:"allow,omitempty"`
+	// If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
+	Exclusive bool     `protobuf:"varint,7,opt,name=exclusive,proto3" json:"exclusive,omitempty"`
 	Fields    []string `protobuf:"bytes,3,rep,name=fields,proto3" json:"fields,omitempty"`
 	AllFields bool     `protobuf:"varint,4,opt,name=all_fields,json=allFields,proto3" json:"all_fields,omitempty"`
 }
@@ -2300,16 +2354,37 @@ func (*SecurityRuleFieldAccess) Descriptor() ([]byte, []int) {
 	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *SecurityRuleFieldAccess) GetCondition() string {
+func (x *SecurityRuleFieldAccess) GetConditionExpression() string {
 	if x != nil {
-		return x.Condition
+		return x.ConditionExpression
 	}
 	return ""
+}
+
+func (x *SecurityRuleFieldAccess) GetConditionKinds() []string {
+	if x != nil {
+		return x.ConditionKinds
+	}
+	return nil
+}
+
+func (x *SecurityRuleFieldAccess) GetConditionResources() []*ResourceName {
+	if x != nil {
+		return x.ConditionResources
+	}
+	return nil
 }
 
 func (x *SecurityRuleFieldAccess) GetAllow() bool {
 	if x != nil {
 		return x.Allow
+	}
+	return false
+}
+
+func (x *SecurityRuleFieldAccess) GetExclusive() bool {
+	if x != nil {
+		return x.Exclusive
 	}
 	return false
 }
@@ -2333,9 +2408,16 @@ type SecurityRuleRowFilter struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Condition  string      `protobuf:"bytes,1,opt,name=condition,proto3" json:"condition,omitempty"`
-	Sql        string      `protobuf:"bytes,2,opt,name=sql,proto3" json:"sql,omitempty"`               // Raw SQL expression to apply to the underlying table
-	Expression *Expression `protobuf:"bytes,3,opt,name=expression,proto3" json:"expression,omitempty"` // Regular query expression referencing dimension names
+	// The condition under which this rule applies.
+	// It is ANDed together with the condition_kinds and condition_resources.
+	ConditionExpression string `protobuf:"bytes,1,opt,name=condition_expression,json=conditionExpression,proto3" json:"condition_expression,omitempty"`
+	// The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+	ConditionKinds []string `protobuf:"bytes,4,rep,name=condition_kinds,json=conditionKinds,proto3" json:"condition_kinds,omitempty"`
+	// The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+	// It is ORed together with the condition_kinds.
+	ConditionResources []*ResourceName `protobuf:"bytes,5,rep,name=condition_resources,json=conditionResources,proto3" json:"condition_resources,omitempty"`
+	Sql                string          `protobuf:"bytes,2,opt,name=sql,proto3" json:"sql,omitempty"`               // Raw SQL expression to apply to the underlying table
+	Expression         *Expression     `protobuf:"bytes,3,opt,name=expression,proto3" json:"expression,omitempty"` // Regular query expression referencing dimension names
 }
 
 func (x *SecurityRuleRowFilter) Reset() {
@@ -2370,11 +2452,25 @@ func (*SecurityRuleRowFilter) Descriptor() ([]byte, []int) {
 	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *SecurityRuleRowFilter) GetCondition() string {
+func (x *SecurityRuleRowFilter) GetConditionExpression() string {
 	if x != nil {
-		return x.Condition
+		return x.ConditionExpression
 	}
 	return ""
+}
+
+func (x *SecurityRuleRowFilter) GetConditionKinds() []string {
+	if x != nil {
+		return x.ConditionKinds
+	}
+	return nil
+}
+
+func (x *SecurityRuleRowFilter) GetConditionResources() []*ResourceName {
+	if x != nil {
+		return x.ConditionResources
+	}
+	return nil
 }
 
 func (x *SecurityRuleRowFilter) GetSql() string {
@@ -2387,6 +2483,53 @@ func (x *SecurityRuleRowFilter) GetSql() string {
 func (x *SecurityRuleRowFilter) GetExpression() *Expression {
 	if x != nil {
 		return x.Expression
+	}
+	return nil
+}
+
+type SecurityRuleTransitiveAccess struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Resource *ResourceName `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"` // this rules resolves to rules that provides access to whatever is needed to access this resource.
+}
+
+func (x *SecurityRuleTransitiveAccess) Reset() {
+	*x = SecurityRuleTransitiveAccess{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[19]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SecurityRuleTransitiveAccess) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecurityRuleTransitiveAccess) ProtoMessage() {}
+
+func (x *SecurityRuleTransitiveAccess) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[19]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecurityRuleTransitiveAccess.ProtoReflect.Descriptor instead.
+func (*SecurityRuleTransitiveAccess) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *SecurityRuleTransitiveAccess) GetResource() *ResourceName {
+	if x != nil {
+		return x.Resource
 	}
 	return nil
 }
@@ -2409,7 +2552,7 @@ type MetricsViewState struct {
 func (x *MetricsViewState) Reset() {
 	*x = MetricsViewState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[19]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2422,7 +2565,7 @@ func (x *MetricsViewState) String() string {
 func (*MetricsViewState) ProtoMessage() {}
 
 func (x *MetricsViewState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[19]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2435,7 +2578,7 @@ func (x *MetricsViewState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricsViewState.ProtoReflect.Descriptor instead.
 func (*MetricsViewState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{19}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *MetricsViewState) GetValidSpec() *MetricsViewSpec {
@@ -2471,7 +2614,7 @@ type Explore struct {
 func (x *Explore) Reset() {
 	*x = Explore{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[20]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2484,7 +2627,7 @@ func (x *Explore) String() string {
 func (*Explore) ProtoMessage() {}
 
 func (x *Explore) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[20]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2497,7 +2640,7 @@ func (x *Explore) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Explore.ProtoReflect.Descriptor instead.
 func (*Explore) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{20}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Explore) GetSpec() *ExploreSpec {
@@ -2563,7 +2706,7 @@ type ExploreSpec struct {
 func (x *ExploreSpec) Reset() {
 	*x = ExploreSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[21]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2576,7 +2719,7 @@ func (x *ExploreSpec) String() string {
 func (*ExploreSpec) ProtoMessage() {}
 
 func (x *ExploreSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[21]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2589,7 +2732,7 @@ func (x *ExploreSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExploreSpec.ProtoReflect.Descriptor instead.
 func (*ExploreSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{21}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ExploreSpec) GetDisplayName() string {
@@ -2734,7 +2877,7 @@ type ExploreState struct {
 func (x *ExploreState) Reset() {
 	*x = ExploreState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[22]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2747,7 +2890,7 @@ func (x *ExploreState) String() string {
 func (*ExploreState) ProtoMessage() {}
 
 func (x *ExploreState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[22]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2760,7 +2903,7 @@ func (x *ExploreState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExploreState.ProtoReflect.Descriptor instead.
 func (*ExploreState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{22}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ExploreState) GetValidSpec() *ExploreSpec {
@@ -2791,7 +2934,7 @@ type ExploreTimeRange struct {
 func (x *ExploreTimeRange) Reset() {
 	*x = ExploreTimeRange{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[23]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2804,7 +2947,7 @@ func (x *ExploreTimeRange) String() string {
 func (*ExploreTimeRange) ProtoMessage() {}
 
 func (x *ExploreTimeRange) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[23]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2817,7 +2960,7 @@ func (x *ExploreTimeRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExploreTimeRange.ProtoReflect.Descriptor instead.
 func (*ExploreTimeRange) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{23}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ExploreTimeRange) GetRange() string {
@@ -2849,7 +2992,7 @@ type ExploreComparisonTimeRange struct {
 func (x *ExploreComparisonTimeRange) Reset() {
 	*x = ExploreComparisonTimeRange{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[24]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2862,7 +3005,7 @@ func (x *ExploreComparisonTimeRange) String() string {
 func (*ExploreComparisonTimeRange) ProtoMessage() {}
 
 func (x *ExploreComparisonTimeRange) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[24]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2875,7 +3018,7 @@ func (x *ExploreComparisonTimeRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExploreComparisonTimeRange.ProtoReflect.Descriptor instead.
 func (*ExploreComparisonTimeRange) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{24}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ExploreComparisonTimeRange) GetOffset() string {
@@ -2942,7 +3085,7 @@ type ExplorePreset struct {
 func (x *ExplorePreset) Reset() {
 	*x = ExplorePreset{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[25]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2955,7 +3098,7 @@ func (x *ExplorePreset) String() string {
 func (*ExplorePreset) ProtoMessage() {}
 
 func (x *ExplorePreset) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[25]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2968,7 +3111,7 @@ func (x *ExplorePreset) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExplorePreset.ProtoReflect.Descriptor instead.
 func (*ExplorePreset) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{25}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ExplorePreset) GetDimensions() []string {
@@ -3195,7 +3338,7 @@ type FieldSelector struct {
 func (x *FieldSelector) Reset() {
 	*x = FieldSelector{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[26]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3208,7 +3351,7 @@ func (x *FieldSelector) String() string {
 func (*FieldSelector) ProtoMessage() {}
 
 func (x *FieldSelector) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[26]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3221,7 +3364,7 @@ func (x *FieldSelector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FieldSelector.ProtoReflect.Descriptor instead.
 func (*FieldSelector) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{26}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *FieldSelector) GetInvert() bool {
@@ -3309,7 +3452,7 @@ type StringListValue struct {
 func (x *StringListValue) Reset() {
 	*x = StringListValue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[27]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3322,7 +3465,7 @@ func (x *StringListValue) String() string {
 func (*StringListValue) ProtoMessage() {}
 
 func (x *StringListValue) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[27]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3335,7 +3478,7 @@ func (x *StringListValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StringListValue.ProtoReflect.Descriptor instead.
 func (*StringListValue) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{27}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *StringListValue) GetValues() []string {
@@ -3357,7 +3500,7 @@ type Migration struct {
 func (x *Migration) Reset() {
 	*x = Migration{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[28]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3370,7 +3513,7 @@ func (x *Migration) String() string {
 func (*Migration) ProtoMessage() {}
 
 func (x *Migration) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[28]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3383,7 +3526,7 @@ func (x *Migration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Migration.ProtoReflect.Descriptor instead.
 func (*Migration) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{28}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *Migration) GetSpec() *MigrationSpec {
@@ -3413,7 +3556,7 @@ type MigrationSpec struct {
 func (x *MigrationSpec) Reset() {
 	*x = MigrationSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[29]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3426,7 +3569,7 @@ func (x *MigrationSpec) String() string {
 func (*MigrationSpec) ProtoMessage() {}
 
 func (x *MigrationSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[29]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3439,7 +3582,7 @@ func (x *MigrationSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MigrationSpec.ProtoReflect.Descriptor instead.
 func (*MigrationSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{29}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *MigrationSpec) GetConnector() string {
@@ -3474,7 +3617,7 @@ type MigrationState struct {
 func (x *MigrationState) Reset() {
 	*x = MigrationState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[30]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3487,7 +3630,7 @@ func (x *MigrationState) String() string {
 func (*MigrationState) ProtoMessage() {}
 
 func (x *MigrationState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[30]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3500,7 +3643,7 @@ func (x *MigrationState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MigrationState.ProtoReflect.Descriptor instead.
 func (*MigrationState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{30}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *MigrationState) GetVersion() uint32 {
@@ -3522,7 +3665,7 @@ type Report struct {
 func (x *Report) Reset() {
 	*x = Report{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[31]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3535,7 +3678,7 @@ func (x *Report) String() string {
 func (*Report) ProtoMessage() {}
 
 func (x *Report) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[31]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3548,7 +3691,7 @@ func (x *Report) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Report.ProtoReflect.Descriptor instead.
 func (*Report) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{31}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *Report) GetSpec() *ReportSpec {
@@ -3590,7 +3733,7 @@ type ReportSpec struct {
 func (x *ReportSpec) Reset() {
 	*x = ReportSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[32]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3603,7 +3746,7 @@ func (x *ReportSpec) String() string {
 func (*ReportSpec) ProtoMessage() {}
 
 func (x *ReportSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[32]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3616,7 +3759,7 @@ func (x *ReportSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportSpec.ProtoReflect.Descriptor instead.
 func (*ReportSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{32}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ReportSpec) GetDisplayName() string {
@@ -3738,7 +3881,7 @@ type ReportState struct {
 func (x *ReportState) Reset() {
 	*x = ReportState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[33]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3751,7 +3894,7 @@ func (x *ReportState) String() string {
 func (*ReportState) ProtoMessage() {}
 
 func (x *ReportState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[33]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3764,7 +3907,7 @@ func (x *ReportState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportState.ProtoReflect.Descriptor instead.
 func (*ReportState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{33}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ReportState) GetNextRunOn() *timestamppb.Timestamp {
@@ -3810,7 +3953,7 @@ type ReportExecution struct {
 func (x *ReportExecution) Reset() {
 	*x = ReportExecution{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[34]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3823,7 +3966,7 @@ func (x *ReportExecution) String() string {
 func (*ReportExecution) ProtoMessage() {}
 
 func (x *ReportExecution) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[34]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3836,7 +3979,7 @@ func (x *ReportExecution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportExecution.ProtoReflect.Descriptor instead.
 func (*ReportExecution) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{34}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ReportExecution) GetAdhoc() bool {
@@ -3886,7 +4029,7 @@ type Alert struct {
 func (x *Alert) Reset() {
 	*x = Alert{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[35]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3899,7 +4042,7 @@ func (x *Alert) String() string {
 func (*Alert) ProtoMessage() {}
 
 func (x *Alert) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[35]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3912,7 +4055,7 @@ func (x *Alert) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Alert.ProtoReflect.Descriptor instead.
 func (*Alert) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{35}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *Alert) GetSpec() *AlertSpec {
@@ -3965,7 +4108,7 @@ type AlertSpec struct {
 func (x *AlertSpec) Reset() {
 	*x = AlertSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[36]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3978,7 +4121,7 @@ func (x *AlertSpec) String() string {
 func (*AlertSpec) ProtoMessage() {}
 
 func (x *AlertSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[36]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3991,7 +4134,7 @@ func (x *AlertSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AlertSpec.ProtoReflect.Descriptor instead.
 func (*AlertSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{36}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *AlertSpec) GetDisplayName() string {
@@ -4189,7 +4332,7 @@ type Notifier struct {
 func (x *Notifier) Reset() {
 	*x = Notifier{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[37]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4202,7 +4345,7 @@ func (x *Notifier) String() string {
 func (*Notifier) ProtoMessage() {}
 
 func (x *Notifier) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[37]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4215,7 +4358,7 @@ func (x *Notifier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Notifier.ProtoReflect.Descriptor instead.
 func (*Notifier) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{37}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *Notifier) GetConnector() string {
@@ -4248,7 +4391,7 @@ type AlertState struct {
 func (x *AlertState) Reset() {
 	*x = AlertState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[38]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4261,7 +4404,7 @@ func (x *AlertState) String() string {
 func (*AlertState) ProtoMessage() {}
 
 func (x *AlertState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[38]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4274,7 +4417,7 @@ func (x *AlertState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AlertState.ProtoReflect.Descriptor instead.
 func (*AlertState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{38}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *AlertState) GetSpecHash() string {
@@ -4337,7 +4480,7 @@ type AlertExecution struct {
 func (x *AlertExecution) Reset() {
 	*x = AlertExecution{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[39]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4350,7 +4493,7 @@ func (x *AlertExecution) String() string {
 func (*AlertExecution) ProtoMessage() {}
 
 func (x *AlertExecution) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[39]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4363,7 +4506,7 @@ func (x *AlertExecution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AlertExecution.ProtoReflect.Descriptor instead.
 func (*AlertExecution) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{39}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *AlertExecution) GetAdhoc() bool {
@@ -4428,7 +4571,7 @@ type AssertionResult struct {
 func (x *AssertionResult) Reset() {
 	*x = AssertionResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[40]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4441,7 +4584,7 @@ func (x *AssertionResult) String() string {
 func (*AssertionResult) ProtoMessage() {}
 
 func (x *AssertionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[40]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4454,7 +4597,7 @@ func (x *AssertionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssertionResult.ProtoReflect.Descriptor instead.
 func (*AssertionResult) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{40}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *AssertionResult) GetStatus() AssertionStatus {
@@ -4490,7 +4633,7 @@ type RefreshTrigger struct {
 func (x *RefreshTrigger) Reset() {
 	*x = RefreshTrigger{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[41]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4503,7 +4646,7 @@ func (x *RefreshTrigger) String() string {
 func (*RefreshTrigger) ProtoMessage() {}
 
 func (x *RefreshTrigger) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[41]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4516,7 +4659,7 @@ func (x *RefreshTrigger) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTrigger.ProtoReflect.Descriptor instead.
 func (*RefreshTrigger) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{41}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *RefreshTrigger) GetSpec() *RefreshTriggerSpec {
@@ -4548,7 +4691,7 @@ type RefreshTriggerSpec struct {
 func (x *RefreshTriggerSpec) Reset() {
 	*x = RefreshTriggerSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[42]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4561,7 +4704,7 @@ func (x *RefreshTriggerSpec) String() string {
 func (*RefreshTriggerSpec) ProtoMessage() {}
 
 func (x *RefreshTriggerSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[42]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4574,7 +4717,7 @@ func (x *RefreshTriggerSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTriggerSpec.ProtoReflect.Descriptor instead.
 func (*RefreshTriggerSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{42}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *RefreshTriggerSpec) GetResources() []*ResourceName {
@@ -4600,7 +4743,7 @@ type RefreshTriggerState struct {
 func (x *RefreshTriggerState) Reset() {
 	*x = RefreshTriggerState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[43]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4613,7 +4756,7 @@ func (x *RefreshTriggerState) String() string {
 func (*RefreshTriggerState) ProtoMessage() {}
 
 func (x *RefreshTriggerState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[43]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4626,7 +4769,7 @@ func (x *RefreshTriggerState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTriggerState.ProtoReflect.Descriptor instead.
 func (*RefreshTriggerState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{43}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{44}
 }
 
 type RefreshModelTrigger struct {
@@ -4648,7 +4791,7 @@ type RefreshModelTrigger struct {
 func (x *RefreshModelTrigger) Reset() {
 	*x = RefreshModelTrigger{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[44]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4661,7 +4804,7 @@ func (x *RefreshModelTrigger) String() string {
 func (*RefreshModelTrigger) ProtoMessage() {}
 
 func (x *RefreshModelTrigger) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[44]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4674,7 +4817,7 @@ func (x *RefreshModelTrigger) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshModelTrigger.ProtoReflect.Descriptor instead.
 func (*RefreshModelTrigger) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{44}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *RefreshModelTrigger) GetModel() string {
@@ -4717,7 +4860,7 @@ type Theme struct {
 func (x *Theme) Reset() {
 	*x = Theme{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[45]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4730,7 +4873,7 @@ func (x *Theme) String() string {
 func (*Theme) ProtoMessage() {}
 
 func (x *Theme) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[45]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4743,7 +4886,7 @@ func (x *Theme) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Theme.ProtoReflect.Descriptor instead.
 func (*Theme) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{45}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *Theme) GetSpec() *ThemeSpec {
@@ -4774,7 +4917,7 @@ type ThemeSpec struct {
 func (x *ThemeSpec) Reset() {
 	*x = ThemeSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[46]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[47]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4787,7 +4930,7 @@ func (x *ThemeSpec) String() string {
 func (*ThemeSpec) ProtoMessage() {}
 
 func (x *ThemeSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[46]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[47]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4800,7 +4943,7 @@ func (x *ThemeSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ThemeSpec.ProtoReflect.Descriptor instead.
 func (*ThemeSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{46}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *ThemeSpec) GetPrimaryColor() *Color {
@@ -4840,7 +4983,7 @@ type ThemeState struct {
 func (x *ThemeState) Reset() {
 	*x = ThemeState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[47]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4853,7 +4996,7 @@ func (x *ThemeState) String() string {
 func (*ThemeState) ProtoMessage() {}
 
 func (x *ThemeState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[47]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4866,7 +5009,7 @@ func (x *ThemeState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ThemeState.ProtoReflect.Descriptor instead.
 func (*ThemeState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{47}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{48}
 }
 
 type Component struct {
@@ -4881,7 +5024,7 @@ type Component struct {
 func (x *Component) Reset() {
 	*x = Component{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4894,7 +5037,7 @@ func (x *Component) String() string {
 func (*Component) ProtoMessage() {}
 
 func (x *Component) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[48]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4907,7 +5050,7 @@ func (x *Component) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Component.ProtoReflect.Descriptor instead.
 func (*Component) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{48}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *Component) GetSpec() *ComponentSpec {
@@ -4941,7 +5084,7 @@ type ComponentSpec struct {
 func (x *ComponentSpec) Reset() {
 	*x = ComponentSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4954,7 +5097,7 @@ func (x *ComponentSpec) String() string {
 func (*ComponentSpec) ProtoMessage() {}
 
 func (x *ComponentSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[49]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4967,7 +5110,7 @@ func (x *ComponentSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComponentSpec.ProtoReflect.Descriptor instead.
 func (*ComponentSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{49}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *ComponentSpec) GetDisplayName() string {
@@ -5034,7 +5177,7 @@ type ComponentState struct {
 func (x *ComponentState) Reset() {
 	*x = ComponentState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5047,7 +5190,7 @@ func (x *ComponentState) String() string {
 func (*ComponentState) ProtoMessage() {}
 
 func (x *ComponentState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[50]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5060,7 +5203,7 @@ func (x *ComponentState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComponentState.ProtoReflect.Descriptor instead.
 func (*ComponentState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{50}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *ComponentState) GetValidSpec() *ComponentSpec {
@@ -5090,7 +5233,7 @@ type ComponentVariable struct {
 func (x *ComponentVariable) Reset() {
 	*x = ComponentVariable{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5103,7 +5246,7 @@ func (x *ComponentVariable) String() string {
 func (*ComponentVariable) ProtoMessage() {}
 
 func (x *ComponentVariable) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[51]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5116,7 +5259,7 @@ func (x *ComponentVariable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComponentVariable.ProtoReflect.Descriptor instead.
 func (*ComponentVariable) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{51}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *ComponentVariable) GetName() string {
@@ -5152,7 +5295,7 @@ type Canvas struct {
 func (x *Canvas) Reset() {
 	*x = Canvas{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5165,7 +5308,7 @@ func (x *Canvas) String() string {
 func (*Canvas) ProtoMessage() {}
 
 func (x *Canvas) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[52]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5178,7 +5321,7 @@ func (x *Canvas) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Canvas.ProtoReflect.Descriptor instead.
 func (*Canvas) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{52}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *Canvas) GetSpec() *CanvasSpec {
@@ -5239,7 +5382,7 @@ type CanvasSpec struct {
 func (x *CanvasSpec) Reset() {
 	*x = CanvasSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5252,7 +5395,7 @@ func (x *CanvasSpec) String() string {
 func (*CanvasSpec) ProtoMessage() {}
 
 func (x *CanvasSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[53]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5265,7 +5408,7 @@ func (x *CanvasSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanvasSpec.ProtoReflect.Descriptor instead.
 func (*CanvasSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{53}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *CanvasSpec) GetDisplayName() string {
@@ -5388,7 +5531,7 @@ type CanvasState struct {
 func (x *CanvasState) Reset() {
 	*x = CanvasState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5401,7 +5544,7 @@ func (x *CanvasState) String() string {
 func (*CanvasState) ProtoMessage() {}
 
 func (x *CanvasState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[54]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5414,7 +5557,7 @@ func (x *CanvasState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanvasState.ProtoReflect.Descriptor instead.
 func (*CanvasState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{54}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *CanvasState) GetValidSpec() *CanvasSpec {
@@ -5447,7 +5590,7 @@ type CanvasRow struct {
 func (x *CanvasRow) Reset() {
 	*x = CanvasRow{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[56]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5460,7 +5603,7 @@ func (x *CanvasRow) String() string {
 func (*CanvasRow) ProtoMessage() {}
 
 func (x *CanvasRow) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[55]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[56]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5473,7 +5616,7 @@ func (x *CanvasRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanvasRow.ProtoReflect.Descriptor instead.
 func (*CanvasRow) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{55}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *CanvasRow) GetHeight() uint32 {
@@ -5515,7 +5658,7 @@ type CanvasItem struct {
 func (x *CanvasItem) Reset() {
 	*x = CanvasItem{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[56]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[57]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5528,7 +5671,7 @@ func (x *CanvasItem) String() string {
 func (*CanvasItem) ProtoMessage() {}
 
 func (x *CanvasItem) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[56]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[57]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5541,7 +5684,7 @@ func (x *CanvasItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanvasItem.ProtoReflect.Descriptor instead.
 func (*CanvasItem) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{56}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *CanvasItem) GetComponent() string {
@@ -5591,7 +5734,7 @@ type CanvasPreset struct {
 func (x *CanvasPreset) Reset() {
 	*x = CanvasPreset{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[57]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[58]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5604,7 +5747,7 @@ func (x *CanvasPreset) String() string {
 func (*CanvasPreset) ProtoMessage() {}
 
 func (x *CanvasPreset) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[57]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[58]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5617,7 +5760,7 @@ func (x *CanvasPreset) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CanvasPreset.ProtoReflect.Descriptor instead.
 func (*CanvasPreset) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{57}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *CanvasPreset) GetTimeRange() string {
@@ -5654,7 +5797,7 @@ type API struct {
 func (x *API) Reset() {
 	*x = API{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[58]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[59]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5667,7 +5810,7 @@ func (x *API) String() string {
 func (*API) ProtoMessage() {}
 
 func (x *API) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[58]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[59]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5680,7 +5823,7 @@ func (x *API) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use API.ProtoReflect.Descriptor instead.
 func (*API) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{58}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *API) GetSpec() *APISpec {
@@ -5716,7 +5859,7 @@ type APISpec struct {
 func (x *APISpec) Reset() {
 	*x = APISpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[59]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[60]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5729,7 +5872,7 @@ func (x *APISpec) String() string {
 func (*APISpec) ProtoMessage() {}
 
 func (x *APISpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[59]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[60]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5742,7 +5885,7 @@ func (x *APISpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APISpec.ProtoReflect.Descriptor instead.
 func (*APISpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{59}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *APISpec) GetResolver() string {
@@ -5817,7 +5960,7 @@ type APIState struct {
 func (x *APIState) Reset() {
 	*x = APIState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[60]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[61]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5830,7 +5973,7 @@ func (x *APIState) String() string {
 func (*APIState) ProtoMessage() {}
 
 func (x *APIState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[60]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[61]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5843,7 +5986,7 @@ func (x *APIState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APIState.ProtoReflect.Descriptor instead.
 func (*APIState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{60}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{61}
 }
 
 type Schedule struct {
@@ -5861,7 +6004,7 @@ type Schedule struct {
 func (x *Schedule) Reset() {
 	*x = Schedule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[61]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[62]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5874,7 +6017,7 @@ func (x *Schedule) String() string {
 func (*Schedule) ProtoMessage() {}
 
 func (x *Schedule) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[61]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[62]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5887,7 +6030,7 @@ func (x *Schedule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Schedule.ProtoReflect.Descriptor instead.
 func (*Schedule) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{61}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *Schedule) GetRefUpdate() bool {
@@ -5939,7 +6082,7 @@ type ParseError struct {
 func (x *ParseError) Reset() {
 	*x = ParseError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[62]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[63]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5952,7 +6095,7 @@ func (x *ParseError) String() string {
 func (*ParseError) ProtoMessage() {}
 
 func (x *ParseError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[62]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[63]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5965,7 +6108,7 @@ func (x *ParseError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ParseError.ProtoReflect.Descriptor instead.
 func (*ParseError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{62}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *ParseError) GetMessage() string {
@@ -6008,7 +6151,7 @@ type ValidationError struct {
 func (x *ValidationError) Reset() {
 	*x = ValidationError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[63]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[64]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6021,7 +6164,7 @@ func (x *ValidationError) String() string {
 func (*ValidationError) ProtoMessage() {}
 
 func (x *ValidationError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[63]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[64]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6034,7 +6177,7 @@ func (x *ValidationError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidationError.ProtoReflect.Descriptor instead.
 func (*ValidationError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{63}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *ValidationError) GetMessage() string {
@@ -6063,7 +6206,7 @@ type DependencyError struct {
 func (x *DependencyError) Reset() {
 	*x = DependencyError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[64]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[65]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6076,7 +6219,7 @@ func (x *DependencyError) String() string {
 func (*DependencyError) ProtoMessage() {}
 
 func (x *DependencyError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[64]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[65]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6089,7 +6232,7 @@ func (x *DependencyError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DependencyError.ProtoReflect.Descriptor instead.
 func (*DependencyError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{64}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *DependencyError) GetMessage() string {
@@ -6117,7 +6260,7 @@ type ExecutionError struct {
 func (x *ExecutionError) Reset() {
 	*x = ExecutionError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[65]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[66]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6130,7 +6273,7 @@ func (x *ExecutionError) String() string {
 func (*ExecutionError) ProtoMessage() {}
 
 func (x *ExecutionError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[65]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[66]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6143,7 +6286,7 @@ func (x *ExecutionError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecutionError.ProtoReflect.Descriptor instead.
 func (*ExecutionError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{65}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *ExecutionError) GetMessage() string {
@@ -6164,7 +6307,7 @@ type CharLocation struct {
 func (x *CharLocation) Reset() {
 	*x = CharLocation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[66]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[67]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6177,7 +6320,7 @@ func (x *CharLocation) String() string {
 func (*CharLocation) ProtoMessage() {}
 
 func (x *CharLocation) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[66]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[67]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6190,7 +6333,7 @@ func (x *CharLocation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CharLocation.ProtoReflect.Descriptor instead.
 func (*CharLocation) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{66}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *CharLocation) GetLine() uint32 {
@@ -6212,7 +6355,7 @@ type ConnectorV2 struct {
 func (x *ConnectorV2) Reset() {
 	*x = ConnectorV2{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[67]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[68]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6225,7 +6368,7 @@ func (x *ConnectorV2) String() string {
 func (*ConnectorV2) ProtoMessage() {}
 
 func (x *ConnectorV2) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[67]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[68]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6238,7 +6381,7 @@ func (x *ConnectorV2) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectorV2.ProtoReflect.Descriptor instead.
 func (*ConnectorV2) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{67}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *ConnectorV2) GetSpec() *ConnectorSpec {
@@ -6270,7 +6413,7 @@ type ConnectorSpec struct {
 func (x *ConnectorSpec) Reset() {
 	*x = ConnectorSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[68]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[69]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6283,7 +6426,7 @@ func (x *ConnectorSpec) String() string {
 func (*ConnectorSpec) ProtoMessage() {}
 
 func (x *ConnectorSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[68]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[69]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6296,7 +6439,7 @@ func (x *ConnectorSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectorSpec.ProtoReflect.Descriptor instead.
 func (*ConnectorSpec) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{68}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *ConnectorSpec) GetDriver() string {
@@ -6345,7 +6488,7 @@ type ConnectorState struct {
 func (x *ConnectorState) Reset() {
 	*x = ConnectorState{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[69]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[70]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6358,7 +6501,7 @@ func (x *ConnectorState) String() string {
 func (*ConnectorState) ProtoMessage() {}
 
 func (x *ConnectorState) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[69]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[70]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6371,7 +6514,7 @@ func (x *ConnectorState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConnectorState.ProtoReflect.Descriptor instead.
 func (*ConnectorState) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{69}
+	return file_rill_runtime_v1_resources_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *ConnectorState) GetSpecHash() string {
@@ -6406,7 +6549,7 @@ type MetricsViewSpec_Dimension struct {
 func (x *MetricsViewSpec_Dimension) Reset() {
 	*x = MetricsViewSpec_Dimension{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[70]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[71]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6419,7 +6562,7 @@ func (x *MetricsViewSpec_Dimension) String() string {
 func (*MetricsViewSpec_Dimension) ProtoMessage() {}
 
 func (x *MetricsViewSpec_Dimension) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[70]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[71]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6533,7 +6676,7 @@ type MetricsViewSpec_DimensionSelector struct {
 func (x *MetricsViewSpec_DimensionSelector) Reset() {
 	*x = MetricsViewSpec_DimensionSelector{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[71]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[72]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6546,7 +6689,7 @@ func (x *MetricsViewSpec_DimensionSelector) String() string {
 func (*MetricsViewSpec_DimensionSelector) ProtoMessage() {}
 
 func (x *MetricsViewSpec_DimensionSelector) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[71]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[72]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6600,7 +6743,7 @@ type MetricsViewSpec_MeasureWindow struct {
 func (x *MetricsViewSpec_MeasureWindow) Reset() {
 	*x = MetricsViewSpec_MeasureWindow{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[72]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[73]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6613,7 +6756,7 @@ func (x *MetricsViewSpec_MeasureWindow) String() string {
 func (*MetricsViewSpec_MeasureWindow) ProtoMessage() {}
 
 func (x *MetricsViewSpec_MeasureWindow) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[72]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[73]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6677,7 +6820,7 @@ type MetricsViewSpec_Measure struct {
 func (x *MetricsViewSpec_Measure) Reset() {
 	*x = MetricsViewSpec_Measure{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[73]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[74]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6690,7 +6833,7 @@ func (x *MetricsViewSpec_Measure) String() string {
 func (*MetricsViewSpec_Measure) ProtoMessage() {}
 
 func (x *MetricsViewSpec_Measure) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[73]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[74]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6844,7 +6987,7 @@ type MetricsViewSpec_Annotation struct {
 func (x *MetricsViewSpec_Annotation) Reset() {
 	*x = MetricsViewSpec_Annotation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_resources_proto_msgTypes[74]
+		mi := &file_rill_runtime_v1_resources_proto_msgTypes[75]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6857,7 +7000,7 @@ func (x *MetricsViewSpec_Annotation) String() string {
 func (*MetricsViewSpec_Annotation) ProtoMessage() {}
 
 func (x *MetricsViewSpec_Annotation) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_resources_proto_msgTypes[74]
+	mi := &file_rill_runtime_v1_resources_proto_msgTypes[75]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7506,7 +7649,7 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x44, 0x10, 0x02, 0x12, 0x20, 0x0a, 0x1c, 0x4d, 0x45, 0x41, 0x53, 0x55, 0x52, 0x45, 0x5f, 0x54,
 	0x59, 0x50, 0x45, 0x5f, 0x54, 0x49, 0x4d, 0x45, 0x5f, 0x43, 0x4f, 0x4d, 0x50, 0x41, 0x52, 0x49,
 	0x53, 0x4f, 0x4e, 0x10, 0x03, 0x42, 0x10, 0x0a, 0x0e, 0x5f, 0x63, 0x61, 0x63, 0x68, 0x65, 0x5f,
-	0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x22, 0xed, 0x01, 0x0a, 0x0c, 0x53, 0x65, 0x63, 0x75,
+	0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x22, 0xcb, 0x02, 0x0a, 0x0c, 0x53, 0x65, 0x63, 0x75,
 	0x72, 0x69, 0x74, 0x79, 0x52, 0x75, 0x6c, 0x65, 0x12, 0x3d, 0x0a, 0x06, 0x61, 0x63, 0x63, 0x65,
 	0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
 	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x63, 0x75, 0x72,
@@ -7520,29 +7663,71 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x6c, 0x74, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x72, 0x69, 0x6c,
 	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x63,
 	0x75, 0x72, 0x69, 0x74, 0x79, 0x52, 0x75, 0x6c, 0x65, 0x52, 0x6f, 0x77, 0x46, 0x69, 0x6c, 0x74,
-	0x65, 0x72, 0x48, 0x00, 0x52, 0x09, 0x72, 0x6f, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x42,
-	0x06, 0x0a, 0x04, 0x72, 0x75, 0x6c, 0x65, 0x22, 0x48, 0x0a, 0x12, 0x53, 0x65, 0x63, 0x75, 0x72,
-	0x69, 0x74, 0x79, 0x52, 0x75, 0x6c, 0x65, 0x41, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x1c, 0x0a,
-	0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x61,
-	0x6c, 0x6c, 0x6f, 0x77, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x61, 0x6c, 0x6c, 0x6f,
-	0x77, 0x22, 0x84, 0x01, 0x0a, 0x17, 0x53, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74, 0x79, 0x52, 0x75,
-	0x6c, 0x65, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x41, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x1c, 0x0a,
-	0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x61,
-	0x6c, 0x6c, 0x6f, 0x77, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x61, 0x6c, 0x6c, 0x6f,
-	0x77, 0x12, 0x16, 0x0a, 0x06, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28,
-	0x09, 0x52, 0x06, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x12, 0x1d, 0x0a, 0x0a, 0x61, 0x6c, 0x6c,
-	0x5f, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x61,
-	0x6c, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x22, 0x84, 0x01, 0x0a, 0x15, 0x53, 0x65, 0x63,
-	0x75, 0x72, 0x69, 0x74, 0x79, 0x52, 0x75, 0x6c, 0x65, 0x52, 0x6f, 0x77, 0x46, 0x69, 0x6c, 0x74,
-	0x65, 0x72, 0x12, 0x1c, 0x0a, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e,
-	0x12, 0x10, 0x0a, 0x03, 0x73, 0x71, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x73,
-	0x71, 0x6c, 0x12, 0x3b, 0x0a, 0x0a, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
-	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73,
-	0x69, 0x6f, 0x6e, 0x52, 0x0a, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x22,
+	0x65, 0x72, 0x48, 0x00, 0x52, 0x09, 0x72, 0x6f, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12,
+	0x5c, 0x0a, 0x11, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x76, 0x65, 0x5f, 0x61, 0x63,
+	0x63, 0x65, 0x73, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2d, 0x2e, 0x72, 0x69, 0x6c,
+	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x63,
+	0x75, 0x72, 0x69, 0x74, 0x79, 0x52, 0x75, 0x6c, 0x65, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x69, 0x74,
+	0x69, 0x76, 0x65, 0x41, 0x63, 0x63, 0x65, 0x73, 0x73, 0x48, 0x00, 0x52, 0x10, 0x74, 0x72, 0x61,
+	0x6e, 0x73, 0x69, 0x74, 0x69, 0x76, 0x65, 0x41, 0x63, 0x63, 0x65, 0x73, 0x73, 0x42, 0x06, 0x0a,
+	0x04, 0x72, 0x75, 0x6c, 0x65, 0x22, 0xf4, 0x01, 0x0a, 0x12, 0x53, 0x65, 0x63, 0x75, 0x72, 0x69,
+	0x74, 0x79, 0x52, 0x75, 0x6c, 0x65, 0x41, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x31, 0x0a, 0x14,
+	0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73,
+	0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x13, 0x63, 0x6f, 0x6e, 0x64,
+	0x69, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x12,
+	0x27, 0x0a, 0x0f, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6b, 0x69, 0x6e,
+	0x64, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0e, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74,
+	0x69, 0x6f, 0x6e, 0x4b, 0x69, 0x6e, 0x64, 0x73, 0x12, 0x4e, 0x0a, 0x13, 0x63, 0x6f, 0x6e, 0x64,
+	0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x18,
+	0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65,
+	0x4e, 0x61, 0x6d, 0x65, 0x52, 0x12, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x52,
+	0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x61, 0x6c, 0x6c, 0x6f,
+	0x77, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x12, 0x1c,
+	0x0a, 0x09, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x09, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x22, 0xb0, 0x02, 0x0a,
+	0x17, 0x53, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74, 0x79, 0x52, 0x75, 0x6c, 0x65, 0x46, 0x69, 0x65,
+	0x6c, 0x64, 0x41, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x31, 0x0a, 0x14, 0x63, 0x6f, 0x6e, 0x64,
+	0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x13, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x27, 0x0a, 0x0f, 0x63,
+	0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6b, 0x69, 0x6e, 0x64, 0x73, 0x18, 0x05,
+	0x20, 0x03, 0x28, 0x09, 0x52, 0x0e, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x4b,
+	0x69, 0x6e, 0x64, 0x73, 0x12, 0x4e, 0x0a, 0x13, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x5f, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65,
+	0x52, 0x12, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x6f, 0x75,
+	0x72, 0x63, 0x65, 0x73, 0x12, 0x14, 0x0a, 0x05, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x05, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x12, 0x1c, 0x0a, 0x09, 0x65, 0x78,
+	0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x65,
+	0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x66, 0x69, 0x65, 0x6c,
+	0x64, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x06, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x73,
+	0x12, 0x1d, 0x0a, 0x0a, 0x61, 0x6c, 0x6c, 0x5f, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x61, 0x6c, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x73, 0x22,
+	0x92, 0x02, 0x0a, 0x15, 0x53, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74, 0x79, 0x52, 0x75, 0x6c, 0x65,
+	0x52, 0x6f, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x31, 0x0a, 0x14, 0x63, 0x6f, 0x6e,
+	0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x13, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69,
+	0x6f, 0x6e, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x27, 0x0a, 0x0f,
+	0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6b, 0x69, 0x6e, 0x64, 0x73, 0x18,
+	0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0e, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e,
+	0x4b, 0x69, 0x6e, 0x64, 0x73, 0x12, 0x4e, 0x0a, 0x13, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69,
+	0x6f, 0x6e, 0x5f, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x18, 0x05, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4e, 0x61, 0x6d,
+	0x65, 0x52, 0x12, 0x63, 0x6f, 0x6e, 0x64, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x6f,
+	0x75, 0x72, 0x63, 0x65, 0x73, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x71, 0x6c, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x03, 0x73, 0x71, 0x6c, 0x12, 0x3b, 0x0a, 0x0a, 0x65, 0x78, 0x70, 0x72, 0x65,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x72, 0x69,
+	0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x78,
+	0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x0a, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73,
+	0x73, 0x69, 0x6f, 0x6e, 0x22, 0x59, 0x0a, 0x1c, 0x53, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74, 0x79,
+	0x52, 0x75, 0x6c, 0x65, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x69, 0x74, 0x69, 0x76, 0x65, 0x41, 0x63,
+	0x63, 0x65, 0x73, 0x73, 0x12, 0x39, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
+	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63,
+	0x65, 0x4e, 0x61, 0x6d, 0x65, 0x52, 0x08, 0x72, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x22,
 	0xb9, 0x01, 0x0a, 0x10, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x53,
 	0x74, 0x61, 0x74, 0x65, 0x12, 0x3f, 0x0a, 0x0a, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x5f, 0x73, 0x70,
 	0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
@@ -8421,7 +8606,7 @@ func file_rill_runtime_v1_resources_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_runtime_v1_resources_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
-var file_rill_runtime_v1_resources_proto_msgTypes = make([]protoimpl.MessageInfo, 78)
+var file_rill_runtime_v1_resources_proto_msgTypes = make([]protoimpl.MessageInfo, 79)
 var file_rill_runtime_v1_resources_proto_goTypes = []any{
 	(ReconcileStatus)(0),                      // 0: rill.runtime.v1.ReconcileStatus
 	(ModelChangeMode)(0),                      // 1: rill.runtime.v1.ModelChangeMode
@@ -8449,74 +8634,75 @@ var file_rill_runtime_v1_resources_proto_goTypes = []any{
 	(*SecurityRuleAccess)(nil),                // 23: rill.runtime.v1.SecurityRuleAccess
 	(*SecurityRuleFieldAccess)(nil),           // 24: rill.runtime.v1.SecurityRuleFieldAccess
 	(*SecurityRuleRowFilter)(nil),             // 25: rill.runtime.v1.SecurityRuleRowFilter
-	(*MetricsViewState)(nil),                  // 26: rill.runtime.v1.MetricsViewState
-	(*Explore)(nil),                           // 27: rill.runtime.v1.Explore
-	(*ExploreSpec)(nil),                       // 28: rill.runtime.v1.ExploreSpec
-	(*ExploreState)(nil),                      // 29: rill.runtime.v1.ExploreState
-	(*ExploreTimeRange)(nil),                  // 30: rill.runtime.v1.ExploreTimeRange
-	(*ExploreComparisonTimeRange)(nil),        // 31: rill.runtime.v1.ExploreComparisonTimeRange
-	(*ExplorePreset)(nil),                     // 32: rill.runtime.v1.ExplorePreset
-	(*FieldSelector)(nil),                     // 33: rill.runtime.v1.FieldSelector
-	(*StringListValue)(nil),                   // 34: rill.runtime.v1.StringListValue
-	(*Migration)(nil),                         // 35: rill.runtime.v1.Migration
-	(*MigrationSpec)(nil),                     // 36: rill.runtime.v1.MigrationSpec
-	(*MigrationState)(nil),                    // 37: rill.runtime.v1.MigrationState
-	(*Report)(nil),                            // 38: rill.runtime.v1.Report
-	(*ReportSpec)(nil),                        // 39: rill.runtime.v1.ReportSpec
-	(*ReportState)(nil),                       // 40: rill.runtime.v1.ReportState
-	(*ReportExecution)(nil),                   // 41: rill.runtime.v1.ReportExecution
-	(*Alert)(nil),                             // 42: rill.runtime.v1.Alert
-	(*AlertSpec)(nil),                         // 43: rill.runtime.v1.AlertSpec
-	(*Notifier)(nil),                          // 44: rill.runtime.v1.Notifier
-	(*AlertState)(nil),                        // 45: rill.runtime.v1.AlertState
-	(*AlertExecution)(nil),                    // 46: rill.runtime.v1.AlertExecution
-	(*AssertionResult)(nil),                   // 47: rill.runtime.v1.AssertionResult
-	(*RefreshTrigger)(nil),                    // 48: rill.runtime.v1.RefreshTrigger
-	(*RefreshTriggerSpec)(nil),                // 49: rill.runtime.v1.RefreshTriggerSpec
-	(*RefreshTriggerState)(nil),               // 50: rill.runtime.v1.RefreshTriggerState
-	(*RefreshModelTrigger)(nil),               // 51: rill.runtime.v1.RefreshModelTrigger
-	(*Theme)(nil),                             // 52: rill.runtime.v1.Theme
-	(*ThemeSpec)(nil),                         // 53: rill.runtime.v1.ThemeSpec
-	(*ThemeState)(nil),                        // 54: rill.runtime.v1.ThemeState
-	(*Component)(nil),                         // 55: rill.runtime.v1.Component
-	(*ComponentSpec)(nil),                     // 56: rill.runtime.v1.ComponentSpec
-	(*ComponentState)(nil),                    // 57: rill.runtime.v1.ComponentState
-	(*ComponentVariable)(nil),                 // 58: rill.runtime.v1.ComponentVariable
-	(*Canvas)(nil),                            // 59: rill.runtime.v1.Canvas
-	(*CanvasSpec)(nil),                        // 60: rill.runtime.v1.CanvasSpec
-	(*CanvasState)(nil),                       // 61: rill.runtime.v1.CanvasState
-	(*CanvasRow)(nil),                         // 62: rill.runtime.v1.CanvasRow
-	(*CanvasItem)(nil),                        // 63: rill.runtime.v1.CanvasItem
-	(*CanvasPreset)(nil),                      // 64: rill.runtime.v1.CanvasPreset
-	(*API)(nil),                               // 65: rill.runtime.v1.API
-	(*APISpec)(nil),                           // 66: rill.runtime.v1.APISpec
-	(*APIState)(nil),                          // 67: rill.runtime.v1.APIState
-	(*Schedule)(nil),                          // 68: rill.runtime.v1.Schedule
-	(*ParseError)(nil),                        // 69: rill.runtime.v1.ParseError
-	(*ValidationError)(nil),                   // 70: rill.runtime.v1.ValidationError
-	(*DependencyError)(nil),                   // 71: rill.runtime.v1.DependencyError
-	(*ExecutionError)(nil),                    // 72: rill.runtime.v1.ExecutionError
-	(*CharLocation)(nil),                      // 73: rill.runtime.v1.CharLocation
-	(*ConnectorV2)(nil),                       // 74: rill.runtime.v1.ConnectorV2
-	(*ConnectorSpec)(nil),                     // 75: rill.runtime.v1.ConnectorSpec
-	(*ConnectorState)(nil),                    // 76: rill.runtime.v1.ConnectorState
-	(*MetricsViewSpec_Dimension)(nil),         // 77: rill.runtime.v1.MetricsViewSpec.Dimension
-	(*MetricsViewSpec_DimensionSelector)(nil), // 78: rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	(*MetricsViewSpec_MeasureWindow)(nil),     // 79: rill.runtime.v1.MetricsViewSpec.MeasureWindow
-	(*MetricsViewSpec_Measure)(nil),           // 80: rill.runtime.v1.MetricsViewSpec.Measure
-	(*MetricsViewSpec_Annotation)(nil),        // 81: rill.runtime.v1.MetricsViewSpec.Annotation
-	nil,                                       // 82: rill.runtime.v1.ReportSpec.AnnotationsEntry
-	nil,                                       // 83: rill.runtime.v1.AlertSpec.AnnotationsEntry
-	nil,                                       // 84: rill.runtime.v1.ConnectorSpec.PropertiesEntry
-	(*timestamppb.Timestamp)(nil),             // 85: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),                   // 86: google.protobuf.Struct
-	(*StructType)(nil),                        // 87: rill.runtime.v1.StructType
-	(TimeGrain)(0),                            // 88: rill.runtime.v1.TimeGrain
-	(*Expression)(nil),                        // 89: rill.runtime.v1.Expression
-	(ExportFormat)(0),                         // 90: rill.runtime.v1.ExportFormat
-	(*Color)(nil),                             // 91: rill.runtime.v1.Color
-	(*structpb.Value)(nil),                    // 92: google.protobuf.Value
-	(*Type)(nil),                              // 93: rill.runtime.v1.Type
+	(*SecurityRuleTransitiveAccess)(nil),      // 26: rill.runtime.v1.SecurityRuleTransitiveAccess
+	(*MetricsViewState)(nil),                  // 27: rill.runtime.v1.MetricsViewState
+	(*Explore)(nil),                           // 28: rill.runtime.v1.Explore
+	(*ExploreSpec)(nil),                       // 29: rill.runtime.v1.ExploreSpec
+	(*ExploreState)(nil),                      // 30: rill.runtime.v1.ExploreState
+	(*ExploreTimeRange)(nil),                  // 31: rill.runtime.v1.ExploreTimeRange
+	(*ExploreComparisonTimeRange)(nil),        // 32: rill.runtime.v1.ExploreComparisonTimeRange
+	(*ExplorePreset)(nil),                     // 33: rill.runtime.v1.ExplorePreset
+	(*FieldSelector)(nil),                     // 34: rill.runtime.v1.FieldSelector
+	(*StringListValue)(nil),                   // 35: rill.runtime.v1.StringListValue
+	(*Migration)(nil),                         // 36: rill.runtime.v1.Migration
+	(*MigrationSpec)(nil),                     // 37: rill.runtime.v1.MigrationSpec
+	(*MigrationState)(nil),                    // 38: rill.runtime.v1.MigrationState
+	(*Report)(nil),                            // 39: rill.runtime.v1.Report
+	(*ReportSpec)(nil),                        // 40: rill.runtime.v1.ReportSpec
+	(*ReportState)(nil),                       // 41: rill.runtime.v1.ReportState
+	(*ReportExecution)(nil),                   // 42: rill.runtime.v1.ReportExecution
+	(*Alert)(nil),                             // 43: rill.runtime.v1.Alert
+	(*AlertSpec)(nil),                         // 44: rill.runtime.v1.AlertSpec
+	(*Notifier)(nil),                          // 45: rill.runtime.v1.Notifier
+	(*AlertState)(nil),                        // 46: rill.runtime.v1.AlertState
+	(*AlertExecution)(nil),                    // 47: rill.runtime.v1.AlertExecution
+	(*AssertionResult)(nil),                   // 48: rill.runtime.v1.AssertionResult
+	(*RefreshTrigger)(nil),                    // 49: rill.runtime.v1.RefreshTrigger
+	(*RefreshTriggerSpec)(nil),                // 50: rill.runtime.v1.RefreshTriggerSpec
+	(*RefreshTriggerState)(nil),               // 51: rill.runtime.v1.RefreshTriggerState
+	(*RefreshModelTrigger)(nil),               // 52: rill.runtime.v1.RefreshModelTrigger
+	(*Theme)(nil),                             // 53: rill.runtime.v1.Theme
+	(*ThemeSpec)(nil),                         // 54: rill.runtime.v1.ThemeSpec
+	(*ThemeState)(nil),                        // 55: rill.runtime.v1.ThemeState
+	(*Component)(nil),                         // 56: rill.runtime.v1.Component
+	(*ComponentSpec)(nil),                     // 57: rill.runtime.v1.ComponentSpec
+	(*ComponentState)(nil),                    // 58: rill.runtime.v1.ComponentState
+	(*ComponentVariable)(nil),                 // 59: rill.runtime.v1.ComponentVariable
+	(*Canvas)(nil),                            // 60: rill.runtime.v1.Canvas
+	(*CanvasSpec)(nil),                        // 61: rill.runtime.v1.CanvasSpec
+	(*CanvasState)(nil),                       // 62: rill.runtime.v1.CanvasState
+	(*CanvasRow)(nil),                         // 63: rill.runtime.v1.CanvasRow
+	(*CanvasItem)(nil),                        // 64: rill.runtime.v1.CanvasItem
+	(*CanvasPreset)(nil),                      // 65: rill.runtime.v1.CanvasPreset
+	(*API)(nil),                               // 66: rill.runtime.v1.API
+	(*APISpec)(nil),                           // 67: rill.runtime.v1.APISpec
+	(*APIState)(nil),                          // 68: rill.runtime.v1.APIState
+	(*Schedule)(nil),                          // 69: rill.runtime.v1.Schedule
+	(*ParseError)(nil),                        // 70: rill.runtime.v1.ParseError
+	(*ValidationError)(nil),                   // 71: rill.runtime.v1.ValidationError
+	(*DependencyError)(nil),                   // 72: rill.runtime.v1.DependencyError
+	(*ExecutionError)(nil),                    // 73: rill.runtime.v1.ExecutionError
+	(*CharLocation)(nil),                      // 74: rill.runtime.v1.CharLocation
+	(*ConnectorV2)(nil),                       // 75: rill.runtime.v1.ConnectorV2
+	(*ConnectorSpec)(nil),                     // 76: rill.runtime.v1.ConnectorSpec
+	(*ConnectorState)(nil),                    // 77: rill.runtime.v1.ConnectorState
+	(*MetricsViewSpec_Dimension)(nil),         // 78: rill.runtime.v1.MetricsViewSpec.Dimension
+	(*MetricsViewSpec_DimensionSelector)(nil), // 79: rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	(*MetricsViewSpec_MeasureWindow)(nil),     // 80: rill.runtime.v1.MetricsViewSpec.MeasureWindow
+	(*MetricsViewSpec_Measure)(nil),           // 81: rill.runtime.v1.MetricsViewSpec.Measure
+	(*MetricsViewSpec_Annotation)(nil),        // 82: rill.runtime.v1.MetricsViewSpec.Annotation
+	nil,                                       // 83: rill.runtime.v1.ReportSpec.AnnotationsEntry
+	nil,                                       // 84: rill.runtime.v1.AlertSpec.AnnotationsEntry
+	nil,                                       // 85: rill.runtime.v1.ConnectorSpec.PropertiesEntry
+	(*timestamppb.Timestamp)(nil),             // 86: google.protobuf.Timestamp
+	(*structpb.Struct)(nil),                   // 87: google.protobuf.Struct
+	(*StructType)(nil),                        // 88: rill.runtime.v1.StructType
+	(TimeGrain)(0),                            // 89: rill.runtime.v1.TimeGrain
+	(*Expression)(nil),                        // 90: rill.runtime.v1.Expression
+	(ExportFormat)(0),                         // 91: rill.runtime.v1.ExportFormat
+	(*Color)(nil),                             // 92: rill.runtime.v1.Color
+	(*structpb.Value)(nil),                    // 93: google.protobuf.Value
+	(*Type)(nil),                              // 94: rill.runtime.v1.Type
 }
 var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	8,   // 0: rill.runtime.v1.Resource.meta:type_name -> rill.runtime.v1.ResourceMeta
@@ -8524,168 +8710,173 @@ var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	13,  // 2: rill.runtime.v1.Resource.source:type_name -> rill.runtime.v1.Source
 	16,  // 3: rill.runtime.v1.Resource.model:type_name -> rill.runtime.v1.Model
 	20,  // 4: rill.runtime.v1.Resource.metrics_view:type_name -> rill.runtime.v1.MetricsView
-	27,  // 5: rill.runtime.v1.Resource.explore:type_name -> rill.runtime.v1.Explore
-	35,  // 6: rill.runtime.v1.Resource.migration:type_name -> rill.runtime.v1.Migration
-	38,  // 7: rill.runtime.v1.Resource.report:type_name -> rill.runtime.v1.Report
-	42,  // 8: rill.runtime.v1.Resource.alert:type_name -> rill.runtime.v1.Alert
-	48,  // 9: rill.runtime.v1.Resource.refresh_trigger:type_name -> rill.runtime.v1.RefreshTrigger
-	52,  // 10: rill.runtime.v1.Resource.theme:type_name -> rill.runtime.v1.Theme
-	55,  // 11: rill.runtime.v1.Resource.component:type_name -> rill.runtime.v1.Component
-	59,  // 12: rill.runtime.v1.Resource.canvas:type_name -> rill.runtime.v1.Canvas
-	65,  // 13: rill.runtime.v1.Resource.api:type_name -> rill.runtime.v1.API
-	74,  // 14: rill.runtime.v1.Resource.connector:type_name -> rill.runtime.v1.ConnectorV2
+	28,  // 5: rill.runtime.v1.Resource.explore:type_name -> rill.runtime.v1.Explore
+	36,  // 6: rill.runtime.v1.Resource.migration:type_name -> rill.runtime.v1.Migration
+	39,  // 7: rill.runtime.v1.Resource.report:type_name -> rill.runtime.v1.Report
+	43,  // 8: rill.runtime.v1.Resource.alert:type_name -> rill.runtime.v1.Alert
+	49,  // 9: rill.runtime.v1.Resource.refresh_trigger:type_name -> rill.runtime.v1.RefreshTrigger
+	53,  // 10: rill.runtime.v1.Resource.theme:type_name -> rill.runtime.v1.Theme
+	56,  // 11: rill.runtime.v1.Resource.component:type_name -> rill.runtime.v1.Component
+	60,  // 12: rill.runtime.v1.Resource.canvas:type_name -> rill.runtime.v1.Canvas
+	66,  // 13: rill.runtime.v1.Resource.api:type_name -> rill.runtime.v1.API
+	75,  // 14: rill.runtime.v1.Resource.connector:type_name -> rill.runtime.v1.ConnectorV2
 	9,   // 15: rill.runtime.v1.ResourceMeta.name:type_name -> rill.runtime.v1.ResourceName
 	9,   // 16: rill.runtime.v1.ResourceMeta.refs:type_name -> rill.runtime.v1.ResourceName
 	9,   // 17: rill.runtime.v1.ResourceMeta.owner:type_name -> rill.runtime.v1.ResourceName
-	85,  // 18: rill.runtime.v1.ResourceMeta.created_on:type_name -> google.protobuf.Timestamp
-	85,  // 19: rill.runtime.v1.ResourceMeta.spec_updated_on:type_name -> google.protobuf.Timestamp
-	85,  // 20: rill.runtime.v1.ResourceMeta.state_updated_on:type_name -> google.protobuf.Timestamp
-	85,  // 21: rill.runtime.v1.ResourceMeta.deleted_on:type_name -> google.protobuf.Timestamp
+	86,  // 18: rill.runtime.v1.ResourceMeta.created_on:type_name -> google.protobuf.Timestamp
+	86,  // 19: rill.runtime.v1.ResourceMeta.spec_updated_on:type_name -> google.protobuf.Timestamp
+	86,  // 20: rill.runtime.v1.ResourceMeta.state_updated_on:type_name -> google.protobuf.Timestamp
+	86,  // 21: rill.runtime.v1.ResourceMeta.deleted_on:type_name -> google.protobuf.Timestamp
 	0,   // 22: rill.runtime.v1.ResourceMeta.reconcile_status:type_name -> rill.runtime.v1.ReconcileStatus
-	85,  // 23: rill.runtime.v1.ResourceMeta.reconcile_on:type_name -> google.protobuf.Timestamp
+	86,  // 23: rill.runtime.v1.ResourceMeta.reconcile_on:type_name -> google.protobuf.Timestamp
 	9,   // 24: rill.runtime.v1.ResourceMeta.renamed_from:type_name -> rill.runtime.v1.ResourceName
 	11,  // 25: rill.runtime.v1.ProjectParser.spec:type_name -> rill.runtime.v1.ProjectParserSpec
 	12,  // 26: rill.runtime.v1.ProjectParser.state:type_name -> rill.runtime.v1.ProjectParserState
-	69,  // 27: rill.runtime.v1.ProjectParserState.parse_errors:type_name -> rill.runtime.v1.ParseError
-	85,  // 28: rill.runtime.v1.ProjectParserState.current_commit_on:type_name -> google.protobuf.Timestamp
+	70,  // 27: rill.runtime.v1.ProjectParserState.parse_errors:type_name -> rill.runtime.v1.ParseError
+	86,  // 28: rill.runtime.v1.ProjectParserState.current_commit_on:type_name -> google.protobuf.Timestamp
 	14,  // 29: rill.runtime.v1.Source.spec:type_name -> rill.runtime.v1.SourceSpec
 	15,  // 30: rill.runtime.v1.Source.state:type_name -> rill.runtime.v1.SourceState
-	86,  // 31: rill.runtime.v1.SourceSpec.properties:type_name -> google.protobuf.Struct
-	68,  // 32: rill.runtime.v1.SourceSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	85,  // 33: rill.runtime.v1.SourceState.refreshed_on:type_name -> google.protobuf.Timestamp
+	87,  // 31: rill.runtime.v1.SourceSpec.properties:type_name -> google.protobuf.Struct
+	69,  // 32: rill.runtime.v1.SourceSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
+	86,  // 33: rill.runtime.v1.SourceState.refreshed_on:type_name -> google.protobuf.Timestamp
 	17,  // 34: rill.runtime.v1.Model.spec:type_name -> rill.runtime.v1.ModelSpec
 	18,  // 35: rill.runtime.v1.Model.state:type_name -> rill.runtime.v1.ModelState
-	68,  // 36: rill.runtime.v1.ModelSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	86,  // 37: rill.runtime.v1.ModelSpec.incremental_state_resolver_properties:type_name -> google.protobuf.Struct
-	86,  // 38: rill.runtime.v1.ModelSpec.partitions_resolver_properties:type_name -> google.protobuf.Struct
-	86,  // 39: rill.runtime.v1.ModelSpec.input_properties:type_name -> google.protobuf.Struct
-	86,  // 40: rill.runtime.v1.ModelSpec.stage_properties:type_name -> google.protobuf.Struct
-	86,  // 41: rill.runtime.v1.ModelSpec.output_properties:type_name -> google.protobuf.Struct
+	69,  // 36: rill.runtime.v1.ModelSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
+	87,  // 37: rill.runtime.v1.ModelSpec.incremental_state_resolver_properties:type_name -> google.protobuf.Struct
+	87,  // 38: rill.runtime.v1.ModelSpec.partitions_resolver_properties:type_name -> google.protobuf.Struct
+	87,  // 39: rill.runtime.v1.ModelSpec.input_properties:type_name -> google.protobuf.Struct
+	87,  // 40: rill.runtime.v1.ModelSpec.stage_properties:type_name -> google.protobuf.Struct
+	87,  // 41: rill.runtime.v1.ModelSpec.output_properties:type_name -> google.protobuf.Struct
 	1,   // 42: rill.runtime.v1.ModelSpec.change_mode:type_name -> rill.runtime.v1.ModelChangeMode
 	19,  // 43: rill.runtime.v1.ModelSpec.tests:type_name -> rill.runtime.v1.ModelTest
-	86,  // 44: rill.runtime.v1.ModelState.result_properties:type_name -> google.protobuf.Struct
-	85,  // 45: rill.runtime.v1.ModelState.refreshed_on:type_name -> google.protobuf.Timestamp
-	86,  // 46: rill.runtime.v1.ModelState.incremental_state:type_name -> google.protobuf.Struct
-	87,  // 47: rill.runtime.v1.ModelState.incremental_state_schema:type_name -> rill.runtime.v1.StructType
-	86,  // 48: rill.runtime.v1.ModelTest.resolver_properties:type_name -> google.protobuf.Struct
+	87,  // 44: rill.runtime.v1.ModelState.result_properties:type_name -> google.protobuf.Struct
+	86,  // 45: rill.runtime.v1.ModelState.refreshed_on:type_name -> google.protobuf.Timestamp
+	87,  // 46: rill.runtime.v1.ModelState.incremental_state:type_name -> google.protobuf.Struct
+	88,  // 47: rill.runtime.v1.ModelState.incremental_state_schema:type_name -> rill.runtime.v1.StructType
+	87,  // 48: rill.runtime.v1.ModelTest.resolver_properties:type_name -> google.protobuf.Struct
 	21,  // 49: rill.runtime.v1.MetricsView.spec:type_name -> rill.runtime.v1.MetricsViewSpec
-	26,  // 50: rill.runtime.v1.MetricsView.state:type_name -> rill.runtime.v1.MetricsViewState
-	88,  // 51: rill.runtime.v1.MetricsViewSpec.smallest_time_grain:type_name -> rill.runtime.v1.TimeGrain
-	77,  // 52: rill.runtime.v1.MetricsViewSpec.time_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.Dimension
-	77,  // 53: rill.runtime.v1.MetricsViewSpec.dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.Dimension
-	80,  // 54: rill.runtime.v1.MetricsViewSpec.measures:type_name -> rill.runtime.v1.MetricsViewSpec.Measure
-	33,  // 55: rill.runtime.v1.MetricsViewSpec.parent_dimensions:type_name -> rill.runtime.v1.FieldSelector
-	33,  // 56: rill.runtime.v1.MetricsViewSpec.parent_measures:type_name -> rill.runtime.v1.FieldSelector
-	81,  // 57: rill.runtime.v1.MetricsViewSpec.annotations:type_name -> rill.runtime.v1.MetricsViewSpec.Annotation
+	27,  // 50: rill.runtime.v1.MetricsView.state:type_name -> rill.runtime.v1.MetricsViewState
+	89,  // 51: rill.runtime.v1.MetricsViewSpec.smallest_time_grain:type_name -> rill.runtime.v1.TimeGrain
+	78,  // 52: rill.runtime.v1.MetricsViewSpec.time_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.Dimension
+	78,  // 53: rill.runtime.v1.MetricsViewSpec.dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.Dimension
+	81,  // 54: rill.runtime.v1.MetricsViewSpec.measures:type_name -> rill.runtime.v1.MetricsViewSpec.Measure
+	34,  // 55: rill.runtime.v1.MetricsViewSpec.parent_dimensions:type_name -> rill.runtime.v1.FieldSelector
+	34,  // 56: rill.runtime.v1.MetricsViewSpec.parent_measures:type_name -> rill.runtime.v1.FieldSelector
+	82,  // 57: rill.runtime.v1.MetricsViewSpec.annotations:type_name -> rill.runtime.v1.MetricsViewSpec.Annotation
 	22,  // 58: rill.runtime.v1.MetricsViewSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
 	23,  // 59: rill.runtime.v1.SecurityRule.access:type_name -> rill.runtime.v1.SecurityRuleAccess
 	24,  // 60: rill.runtime.v1.SecurityRule.field_access:type_name -> rill.runtime.v1.SecurityRuleFieldAccess
 	25,  // 61: rill.runtime.v1.SecurityRule.row_filter:type_name -> rill.runtime.v1.SecurityRuleRowFilter
-	89,  // 62: rill.runtime.v1.SecurityRuleRowFilter.expression:type_name -> rill.runtime.v1.Expression
-	21,  // 63: rill.runtime.v1.MetricsViewState.valid_spec:type_name -> rill.runtime.v1.MetricsViewSpec
-	85,  // 64: rill.runtime.v1.MetricsViewState.data_refreshed_on:type_name -> google.protobuf.Timestamp
-	28,  // 65: rill.runtime.v1.Explore.spec:type_name -> rill.runtime.v1.ExploreSpec
-	29,  // 66: rill.runtime.v1.Explore.state:type_name -> rill.runtime.v1.ExploreState
-	33,  // 67: rill.runtime.v1.ExploreSpec.dimensions_selector:type_name -> rill.runtime.v1.FieldSelector
-	33,  // 68: rill.runtime.v1.ExploreSpec.measures_selector:type_name -> rill.runtime.v1.FieldSelector
-	53,  // 69: rill.runtime.v1.ExploreSpec.embedded_theme:type_name -> rill.runtime.v1.ThemeSpec
-	30,  // 70: rill.runtime.v1.ExploreSpec.time_ranges:type_name -> rill.runtime.v1.ExploreTimeRange
-	32,  // 71: rill.runtime.v1.ExploreSpec.default_preset:type_name -> rill.runtime.v1.ExplorePreset
-	22,  // 72: rill.runtime.v1.ExploreSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
-	28,  // 73: rill.runtime.v1.ExploreState.valid_spec:type_name -> rill.runtime.v1.ExploreSpec
-	85,  // 74: rill.runtime.v1.ExploreState.data_refreshed_on:type_name -> google.protobuf.Timestamp
-	31,  // 75: rill.runtime.v1.ExploreTimeRange.comparison_time_ranges:type_name -> rill.runtime.v1.ExploreComparisonTimeRange
-	33,  // 76: rill.runtime.v1.ExplorePreset.dimensions_selector:type_name -> rill.runtime.v1.FieldSelector
-	33,  // 77: rill.runtime.v1.ExplorePreset.measures_selector:type_name -> rill.runtime.v1.FieldSelector
-	89,  // 78: rill.runtime.v1.ExplorePreset.where:type_name -> rill.runtime.v1.Expression
-	2,   // 79: rill.runtime.v1.ExplorePreset.comparison_mode:type_name -> rill.runtime.v1.ExploreComparisonMode
-	3,   // 80: rill.runtime.v1.ExplorePreset.view:type_name -> rill.runtime.v1.ExploreWebView
-	4,   // 81: rill.runtime.v1.ExplorePreset.explore_sort_type:type_name -> rill.runtime.v1.ExploreSortType
-	34,  // 82: rill.runtime.v1.FieldSelector.fields:type_name -> rill.runtime.v1.StringListValue
-	36,  // 83: rill.runtime.v1.Migration.spec:type_name -> rill.runtime.v1.MigrationSpec
-	37,  // 84: rill.runtime.v1.Migration.state:type_name -> rill.runtime.v1.MigrationState
-	39,  // 85: rill.runtime.v1.Report.spec:type_name -> rill.runtime.v1.ReportSpec
-	40,  // 86: rill.runtime.v1.Report.state:type_name -> rill.runtime.v1.ReportState
-	68,  // 87: rill.runtime.v1.ReportSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	90,  // 88: rill.runtime.v1.ReportSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
-	44,  // 89: rill.runtime.v1.ReportSpec.notifiers:type_name -> rill.runtime.v1.Notifier
-	82,  // 90: rill.runtime.v1.ReportSpec.annotations:type_name -> rill.runtime.v1.ReportSpec.AnnotationsEntry
-	85,  // 91: rill.runtime.v1.ReportState.next_run_on:type_name -> google.protobuf.Timestamp
-	41,  // 92: rill.runtime.v1.ReportState.current_execution:type_name -> rill.runtime.v1.ReportExecution
-	41,  // 93: rill.runtime.v1.ReportState.execution_history:type_name -> rill.runtime.v1.ReportExecution
-	85,  // 94: rill.runtime.v1.ReportExecution.report_time:type_name -> google.protobuf.Timestamp
-	85,  // 95: rill.runtime.v1.ReportExecution.started_on:type_name -> google.protobuf.Timestamp
-	85,  // 96: rill.runtime.v1.ReportExecution.finished_on:type_name -> google.protobuf.Timestamp
-	43,  // 97: rill.runtime.v1.Alert.spec:type_name -> rill.runtime.v1.AlertSpec
-	45,  // 98: rill.runtime.v1.Alert.state:type_name -> rill.runtime.v1.AlertState
-	68,  // 99: rill.runtime.v1.AlertSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	86,  // 100: rill.runtime.v1.AlertSpec.resolver_properties:type_name -> google.protobuf.Struct
-	86,  // 101: rill.runtime.v1.AlertSpec.query_for_attributes:type_name -> google.protobuf.Struct
-	44,  // 102: rill.runtime.v1.AlertSpec.notifiers:type_name -> rill.runtime.v1.Notifier
-	83,  // 103: rill.runtime.v1.AlertSpec.annotations:type_name -> rill.runtime.v1.AlertSpec.AnnotationsEntry
-	86,  // 104: rill.runtime.v1.Notifier.properties:type_name -> google.protobuf.Struct
-	85,  // 105: rill.runtime.v1.AlertState.next_run_on:type_name -> google.protobuf.Timestamp
-	46,  // 106: rill.runtime.v1.AlertState.current_execution:type_name -> rill.runtime.v1.AlertExecution
-	46,  // 107: rill.runtime.v1.AlertState.execution_history:type_name -> rill.runtime.v1.AlertExecution
-	47,  // 108: rill.runtime.v1.AlertExecution.result:type_name -> rill.runtime.v1.AssertionResult
-	85,  // 109: rill.runtime.v1.AlertExecution.execution_time:type_name -> google.protobuf.Timestamp
-	85,  // 110: rill.runtime.v1.AlertExecution.started_on:type_name -> google.protobuf.Timestamp
-	85,  // 111: rill.runtime.v1.AlertExecution.finished_on:type_name -> google.protobuf.Timestamp
-	85,  // 112: rill.runtime.v1.AlertExecution.suppressed_since:type_name -> google.protobuf.Timestamp
-	5,   // 113: rill.runtime.v1.AssertionResult.status:type_name -> rill.runtime.v1.AssertionStatus
-	86,  // 114: rill.runtime.v1.AssertionResult.fail_row:type_name -> google.protobuf.Struct
-	49,  // 115: rill.runtime.v1.RefreshTrigger.spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
-	50,  // 116: rill.runtime.v1.RefreshTrigger.state:type_name -> rill.runtime.v1.RefreshTriggerState
-	9,   // 117: rill.runtime.v1.RefreshTriggerSpec.resources:type_name -> rill.runtime.v1.ResourceName
-	51,  // 118: rill.runtime.v1.RefreshTriggerSpec.models:type_name -> rill.runtime.v1.RefreshModelTrigger
-	53,  // 119: rill.runtime.v1.Theme.spec:type_name -> rill.runtime.v1.ThemeSpec
-	54,  // 120: rill.runtime.v1.Theme.state:type_name -> rill.runtime.v1.ThemeState
-	91,  // 121: rill.runtime.v1.ThemeSpec.primary_color:type_name -> rill.runtime.v1.Color
-	91,  // 122: rill.runtime.v1.ThemeSpec.secondary_color:type_name -> rill.runtime.v1.Color
-	56,  // 123: rill.runtime.v1.Component.spec:type_name -> rill.runtime.v1.ComponentSpec
-	57,  // 124: rill.runtime.v1.Component.state:type_name -> rill.runtime.v1.ComponentState
-	86,  // 125: rill.runtime.v1.ComponentSpec.renderer_properties:type_name -> google.protobuf.Struct
-	58,  // 126: rill.runtime.v1.ComponentSpec.input:type_name -> rill.runtime.v1.ComponentVariable
-	58,  // 127: rill.runtime.v1.ComponentSpec.output:type_name -> rill.runtime.v1.ComponentVariable
-	56,  // 128: rill.runtime.v1.ComponentState.valid_spec:type_name -> rill.runtime.v1.ComponentSpec
-	85,  // 129: rill.runtime.v1.ComponentState.data_refreshed_on:type_name -> google.protobuf.Timestamp
-	92,  // 130: rill.runtime.v1.ComponentVariable.default_value:type_name -> google.protobuf.Value
-	60,  // 131: rill.runtime.v1.Canvas.spec:type_name -> rill.runtime.v1.CanvasSpec
-	61,  // 132: rill.runtime.v1.Canvas.state:type_name -> rill.runtime.v1.CanvasState
-	53,  // 133: rill.runtime.v1.CanvasSpec.embedded_theme:type_name -> rill.runtime.v1.ThemeSpec
-	30,  // 134: rill.runtime.v1.CanvasSpec.time_ranges:type_name -> rill.runtime.v1.ExploreTimeRange
-	64,  // 135: rill.runtime.v1.CanvasSpec.default_preset:type_name -> rill.runtime.v1.CanvasPreset
-	58,  // 136: rill.runtime.v1.CanvasSpec.variables:type_name -> rill.runtime.v1.ComponentVariable
-	62,  // 137: rill.runtime.v1.CanvasSpec.rows:type_name -> rill.runtime.v1.CanvasRow
-	22,  // 138: rill.runtime.v1.CanvasSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
-	60,  // 139: rill.runtime.v1.CanvasState.valid_spec:type_name -> rill.runtime.v1.CanvasSpec
-	85,  // 140: rill.runtime.v1.CanvasState.data_refreshed_on:type_name -> google.protobuf.Timestamp
-	63,  // 141: rill.runtime.v1.CanvasRow.items:type_name -> rill.runtime.v1.CanvasItem
-	2,   // 142: rill.runtime.v1.CanvasPreset.comparison_mode:type_name -> rill.runtime.v1.ExploreComparisonMode
-	66,  // 143: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
-	67,  // 144: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
-	86,  // 145: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
-	22,  // 146: rill.runtime.v1.APISpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
-	73,  // 147: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
-	75,  // 148: rill.runtime.v1.ConnectorV2.spec:type_name -> rill.runtime.v1.ConnectorSpec
-	76,  // 149: rill.runtime.v1.ConnectorV2.state:type_name -> rill.runtime.v1.ConnectorState
-	84,  // 150: rill.runtime.v1.ConnectorSpec.properties:type_name -> rill.runtime.v1.ConnectorSpec.PropertiesEntry
-	86,  // 151: rill.runtime.v1.ConnectorSpec.provision_args:type_name -> google.protobuf.Struct
-	93,  // 152: rill.runtime.v1.MetricsViewSpec.Dimension.data_type:type_name -> rill.runtime.v1.Type
-	88,  // 153: rill.runtime.v1.MetricsViewSpec.DimensionSelector.time_grain:type_name -> rill.runtime.v1.TimeGrain
-	78,  // 154: rill.runtime.v1.MetricsViewSpec.MeasureWindow.order_by:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	6,   // 155: rill.runtime.v1.MetricsViewSpec.Measure.type:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureType
-	79,  // 156: rill.runtime.v1.MetricsViewSpec.Measure.window:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureWindow
-	78,  // 157: rill.runtime.v1.MetricsViewSpec.Measure.per_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	78,  // 158: rill.runtime.v1.MetricsViewSpec.Measure.required_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	86,  // 159: rill.runtime.v1.MetricsViewSpec.Measure.format_d3_locale:type_name -> google.protobuf.Struct
-	93,  // 160: rill.runtime.v1.MetricsViewSpec.Measure.data_type:type_name -> rill.runtime.v1.Type
-	33,  // 161: rill.runtime.v1.MetricsViewSpec.Annotation.measures_selector:type_name -> rill.runtime.v1.FieldSelector
-	162, // [162:162] is the sub-list for method output_type
-	162, // [162:162] is the sub-list for method input_type
-	162, // [162:162] is the sub-list for extension type_name
-	162, // [162:162] is the sub-list for extension extendee
-	0,   // [0:162] is the sub-list for field type_name
+	26,  // 62: rill.runtime.v1.SecurityRule.transitive_access:type_name -> rill.runtime.v1.SecurityRuleTransitiveAccess
+	9,   // 63: rill.runtime.v1.SecurityRuleAccess.condition_resources:type_name -> rill.runtime.v1.ResourceName
+	9,   // 64: rill.runtime.v1.SecurityRuleFieldAccess.condition_resources:type_name -> rill.runtime.v1.ResourceName
+	9,   // 65: rill.runtime.v1.SecurityRuleRowFilter.condition_resources:type_name -> rill.runtime.v1.ResourceName
+	90,  // 66: rill.runtime.v1.SecurityRuleRowFilter.expression:type_name -> rill.runtime.v1.Expression
+	9,   // 67: rill.runtime.v1.SecurityRuleTransitiveAccess.resource:type_name -> rill.runtime.v1.ResourceName
+	21,  // 68: rill.runtime.v1.MetricsViewState.valid_spec:type_name -> rill.runtime.v1.MetricsViewSpec
+	86,  // 69: rill.runtime.v1.MetricsViewState.data_refreshed_on:type_name -> google.protobuf.Timestamp
+	29,  // 70: rill.runtime.v1.Explore.spec:type_name -> rill.runtime.v1.ExploreSpec
+	30,  // 71: rill.runtime.v1.Explore.state:type_name -> rill.runtime.v1.ExploreState
+	34,  // 72: rill.runtime.v1.ExploreSpec.dimensions_selector:type_name -> rill.runtime.v1.FieldSelector
+	34,  // 73: rill.runtime.v1.ExploreSpec.measures_selector:type_name -> rill.runtime.v1.FieldSelector
+	54,  // 74: rill.runtime.v1.ExploreSpec.embedded_theme:type_name -> rill.runtime.v1.ThemeSpec
+	31,  // 75: rill.runtime.v1.ExploreSpec.time_ranges:type_name -> rill.runtime.v1.ExploreTimeRange
+	33,  // 76: rill.runtime.v1.ExploreSpec.default_preset:type_name -> rill.runtime.v1.ExplorePreset
+	22,  // 77: rill.runtime.v1.ExploreSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
+	29,  // 78: rill.runtime.v1.ExploreState.valid_spec:type_name -> rill.runtime.v1.ExploreSpec
+	86,  // 79: rill.runtime.v1.ExploreState.data_refreshed_on:type_name -> google.protobuf.Timestamp
+	32,  // 80: rill.runtime.v1.ExploreTimeRange.comparison_time_ranges:type_name -> rill.runtime.v1.ExploreComparisonTimeRange
+	34,  // 81: rill.runtime.v1.ExplorePreset.dimensions_selector:type_name -> rill.runtime.v1.FieldSelector
+	34,  // 82: rill.runtime.v1.ExplorePreset.measures_selector:type_name -> rill.runtime.v1.FieldSelector
+	90,  // 83: rill.runtime.v1.ExplorePreset.where:type_name -> rill.runtime.v1.Expression
+	2,   // 84: rill.runtime.v1.ExplorePreset.comparison_mode:type_name -> rill.runtime.v1.ExploreComparisonMode
+	3,   // 85: rill.runtime.v1.ExplorePreset.view:type_name -> rill.runtime.v1.ExploreWebView
+	4,   // 86: rill.runtime.v1.ExplorePreset.explore_sort_type:type_name -> rill.runtime.v1.ExploreSortType
+	35,  // 87: rill.runtime.v1.FieldSelector.fields:type_name -> rill.runtime.v1.StringListValue
+	37,  // 88: rill.runtime.v1.Migration.spec:type_name -> rill.runtime.v1.MigrationSpec
+	38,  // 89: rill.runtime.v1.Migration.state:type_name -> rill.runtime.v1.MigrationState
+	40,  // 90: rill.runtime.v1.Report.spec:type_name -> rill.runtime.v1.ReportSpec
+	41,  // 91: rill.runtime.v1.Report.state:type_name -> rill.runtime.v1.ReportState
+	69,  // 92: rill.runtime.v1.ReportSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
+	91,  // 93: rill.runtime.v1.ReportSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
+	45,  // 94: rill.runtime.v1.ReportSpec.notifiers:type_name -> rill.runtime.v1.Notifier
+	83,  // 95: rill.runtime.v1.ReportSpec.annotations:type_name -> rill.runtime.v1.ReportSpec.AnnotationsEntry
+	86,  // 96: rill.runtime.v1.ReportState.next_run_on:type_name -> google.protobuf.Timestamp
+	42,  // 97: rill.runtime.v1.ReportState.current_execution:type_name -> rill.runtime.v1.ReportExecution
+	42,  // 98: rill.runtime.v1.ReportState.execution_history:type_name -> rill.runtime.v1.ReportExecution
+	86,  // 99: rill.runtime.v1.ReportExecution.report_time:type_name -> google.protobuf.Timestamp
+	86,  // 100: rill.runtime.v1.ReportExecution.started_on:type_name -> google.protobuf.Timestamp
+	86,  // 101: rill.runtime.v1.ReportExecution.finished_on:type_name -> google.protobuf.Timestamp
+	44,  // 102: rill.runtime.v1.Alert.spec:type_name -> rill.runtime.v1.AlertSpec
+	46,  // 103: rill.runtime.v1.Alert.state:type_name -> rill.runtime.v1.AlertState
+	69,  // 104: rill.runtime.v1.AlertSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
+	87,  // 105: rill.runtime.v1.AlertSpec.resolver_properties:type_name -> google.protobuf.Struct
+	87,  // 106: rill.runtime.v1.AlertSpec.query_for_attributes:type_name -> google.protobuf.Struct
+	45,  // 107: rill.runtime.v1.AlertSpec.notifiers:type_name -> rill.runtime.v1.Notifier
+	84,  // 108: rill.runtime.v1.AlertSpec.annotations:type_name -> rill.runtime.v1.AlertSpec.AnnotationsEntry
+	87,  // 109: rill.runtime.v1.Notifier.properties:type_name -> google.protobuf.Struct
+	86,  // 110: rill.runtime.v1.AlertState.next_run_on:type_name -> google.protobuf.Timestamp
+	47,  // 111: rill.runtime.v1.AlertState.current_execution:type_name -> rill.runtime.v1.AlertExecution
+	47,  // 112: rill.runtime.v1.AlertState.execution_history:type_name -> rill.runtime.v1.AlertExecution
+	48,  // 113: rill.runtime.v1.AlertExecution.result:type_name -> rill.runtime.v1.AssertionResult
+	86,  // 114: rill.runtime.v1.AlertExecution.execution_time:type_name -> google.protobuf.Timestamp
+	86,  // 115: rill.runtime.v1.AlertExecution.started_on:type_name -> google.protobuf.Timestamp
+	86,  // 116: rill.runtime.v1.AlertExecution.finished_on:type_name -> google.protobuf.Timestamp
+	86,  // 117: rill.runtime.v1.AlertExecution.suppressed_since:type_name -> google.protobuf.Timestamp
+	5,   // 118: rill.runtime.v1.AssertionResult.status:type_name -> rill.runtime.v1.AssertionStatus
+	87,  // 119: rill.runtime.v1.AssertionResult.fail_row:type_name -> google.protobuf.Struct
+	50,  // 120: rill.runtime.v1.RefreshTrigger.spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
+	51,  // 121: rill.runtime.v1.RefreshTrigger.state:type_name -> rill.runtime.v1.RefreshTriggerState
+	9,   // 122: rill.runtime.v1.RefreshTriggerSpec.resources:type_name -> rill.runtime.v1.ResourceName
+	52,  // 123: rill.runtime.v1.RefreshTriggerSpec.models:type_name -> rill.runtime.v1.RefreshModelTrigger
+	54,  // 124: rill.runtime.v1.Theme.spec:type_name -> rill.runtime.v1.ThemeSpec
+	55,  // 125: rill.runtime.v1.Theme.state:type_name -> rill.runtime.v1.ThemeState
+	92,  // 126: rill.runtime.v1.ThemeSpec.primary_color:type_name -> rill.runtime.v1.Color
+	92,  // 127: rill.runtime.v1.ThemeSpec.secondary_color:type_name -> rill.runtime.v1.Color
+	57,  // 128: rill.runtime.v1.Component.spec:type_name -> rill.runtime.v1.ComponentSpec
+	58,  // 129: rill.runtime.v1.Component.state:type_name -> rill.runtime.v1.ComponentState
+	87,  // 130: rill.runtime.v1.ComponentSpec.renderer_properties:type_name -> google.protobuf.Struct
+	59,  // 131: rill.runtime.v1.ComponentSpec.input:type_name -> rill.runtime.v1.ComponentVariable
+	59,  // 132: rill.runtime.v1.ComponentSpec.output:type_name -> rill.runtime.v1.ComponentVariable
+	57,  // 133: rill.runtime.v1.ComponentState.valid_spec:type_name -> rill.runtime.v1.ComponentSpec
+	86,  // 134: rill.runtime.v1.ComponentState.data_refreshed_on:type_name -> google.protobuf.Timestamp
+	93,  // 135: rill.runtime.v1.ComponentVariable.default_value:type_name -> google.protobuf.Value
+	61,  // 136: rill.runtime.v1.Canvas.spec:type_name -> rill.runtime.v1.CanvasSpec
+	62,  // 137: rill.runtime.v1.Canvas.state:type_name -> rill.runtime.v1.CanvasState
+	54,  // 138: rill.runtime.v1.CanvasSpec.embedded_theme:type_name -> rill.runtime.v1.ThemeSpec
+	31,  // 139: rill.runtime.v1.CanvasSpec.time_ranges:type_name -> rill.runtime.v1.ExploreTimeRange
+	65,  // 140: rill.runtime.v1.CanvasSpec.default_preset:type_name -> rill.runtime.v1.CanvasPreset
+	59,  // 141: rill.runtime.v1.CanvasSpec.variables:type_name -> rill.runtime.v1.ComponentVariable
+	63,  // 142: rill.runtime.v1.CanvasSpec.rows:type_name -> rill.runtime.v1.CanvasRow
+	22,  // 143: rill.runtime.v1.CanvasSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
+	61,  // 144: rill.runtime.v1.CanvasState.valid_spec:type_name -> rill.runtime.v1.CanvasSpec
+	86,  // 145: rill.runtime.v1.CanvasState.data_refreshed_on:type_name -> google.protobuf.Timestamp
+	64,  // 146: rill.runtime.v1.CanvasRow.items:type_name -> rill.runtime.v1.CanvasItem
+	2,   // 147: rill.runtime.v1.CanvasPreset.comparison_mode:type_name -> rill.runtime.v1.ExploreComparisonMode
+	67,  // 148: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
+	68,  // 149: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
+	87,  // 150: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
+	22,  // 151: rill.runtime.v1.APISpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
+	74,  // 152: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
+	76,  // 153: rill.runtime.v1.ConnectorV2.spec:type_name -> rill.runtime.v1.ConnectorSpec
+	77,  // 154: rill.runtime.v1.ConnectorV2.state:type_name -> rill.runtime.v1.ConnectorState
+	85,  // 155: rill.runtime.v1.ConnectorSpec.properties:type_name -> rill.runtime.v1.ConnectorSpec.PropertiesEntry
+	87,  // 156: rill.runtime.v1.ConnectorSpec.provision_args:type_name -> google.protobuf.Struct
+	94,  // 157: rill.runtime.v1.MetricsViewSpec.Dimension.data_type:type_name -> rill.runtime.v1.Type
+	89,  // 158: rill.runtime.v1.MetricsViewSpec.DimensionSelector.time_grain:type_name -> rill.runtime.v1.TimeGrain
+	79,  // 159: rill.runtime.v1.MetricsViewSpec.MeasureWindow.order_by:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	6,   // 160: rill.runtime.v1.MetricsViewSpec.Measure.type:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureType
+	80,  // 161: rill.runtime.v1.MetricsViewSpec.Measure.window:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureWindow
+	79,  // 162: rill.runtime.v1.MetricsViewSpec.Measure.per_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	79,  // 163: rill.runtime.v1.MetricsViewSpec.Measure.required_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	87,  // 164: rill.runtime.v1.MetricsViewSpec.Measure.format_d3_locale:type_name -> google.protobuf.Struct
+	94,  // 165: rill.runtime.v1.MetricsViewSpec.Measure.data_type:type_name -> rill.runtime.v1.Type
+	34,  // 166: rill.runtime.v1.MetricsViewSpec.Annotation.measures_selector:type_name -> rill.runtime.v1.FieldSelector
+	167, // [167:167] is the sub-list for method output_type
+	167, // [167:167] is the sub-list for method input_type
+	167, // [167:167] is the sub-list for extension type_name
+	167, // [167:167] is the sub-list for extension extendee
+	0,   // [0:167] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_resources_proto_init() }
@@ -8928,7 +9119,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[19].Exporter = func(v any, i int) any {
-			switch v := v.(*MetricsViewState); i {
+			switch v := v.(*SecurityRuleTransitiveAccess); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -8940,7 +9131,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[20].Exporter = func(v any, i int) any {
-			switch v := v.(*Explore); i {
+			switch v := v.(*MetricsViewState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -8952,7 +9143,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[21].Exporter = func(v any, i int) any {
-			switch v := v.(*ExploreSpec); i {
+			switch v := v.(*Explore); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -8964,7 +9155,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[22].Exporter = func(v any, i int) any {
-			switch v := v.(*ExploreState); i {
+			switch v := v.(*ExploreSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -8976,7 +9167,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[23].Exporter = func(v any, i int) any {
-			switch v := v.(*ExploreTimeRange); i {
+			switch v := v.(*ExploreState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -8988,7 +9179,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[24].Exporter = func(v any, i int) any {
-			switch v := v.(*ExploreComparisonTimeRange); i {
+			switch v := v.(*ExploreTimeRange); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9000,7 +9191,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[25].Exporter = func(v any, i int) any {
-			switch v := v.(*ExplorePreset); i {
+			switch v := v.(*ExploreComparisonTimeRange); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9012,7 +9203,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[26].Exporter = func(v any, i int) any {
-			switch v := v.(*FieldSelector); i {
+			switch v := v.(*ExplorePreset); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9024,7 +9215,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[27].Exporter = func(v any, i int) any {
-			switch v := v.(*StringListValue); i {
+			switch v := v.(*FieldSelector); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9036,7 +9227,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[28].Exporter = func(v any, i int) any {
-			switch v := v.(*Migration); i {
+			switch v := v.(*StringListValue); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9048,7 +9239,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[29].Exporter = func(v any, i int) any {
-			switch v := v.(*MigrationSpec); i {
+			switch v := v.(*Migration); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9060,7 +9251,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[30].Exporter = func(v any, i int) any {
-			switch v := v.(*MigrationState); i {
+			switch v := v.(*MigrationSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9072,7 +9263,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[31].Exporter = func(v any, i int) any {
-			switch v := v.(*Report); i {
+			switch v := v.(*MigrationState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9084,7 +9275,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[32].Exporter = func(v any, i int) any {
-			switch v := v.(*ReportSpec); i {
+			switch v := v.(*Report); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9096,7 +9287,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[33].Exporter = func(v any, i int) any {
-			switch v := v.(*ReportState); i {
+			switch v := v.(*ReportSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9108,7 +9299,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[34].Exporter = func(v any, i int) any {
-			switch v := v.(*ReportExecution); i {
+			switch v := v.(*ReportState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9120,7 +9311,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[35].Exporter = func(v any, i int) any {
-			switch v := v.(*Alert); i {
+			switch v := v.(*ReportExecution); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9132,7 +9323,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[36].Exporter = func(v any, i int) any {
-			switch v := v.(*AlertSpec); i {
+			switch v := v.(*Alert); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9144,7 +9335,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[37].Exporter = func(v any, i int) any {
-			switch v := v.(*Notifier); i {
+			switch v := v.(*AlertSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9156,7 +9347,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[38].Exporter = func(v any, i int) any {
-			switch v := v.(*AlertState); i {
+			switch v := v.(*Notifier); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9168,7 +9359,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[39].Exporter = func(v any, i int) any {
-			switch v := v.(*AlertExecution); i {
+			switch v := v.(*AlertState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9180,7 +9371,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[40].Exporter = func(v any, i int) any {
-			switch v := v.(*AssertionResult); i {
+			switch v := v.(*AlertExecution); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9192,7 +9383,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[41].Exporter = func(v any, i int) any {
-			switch v := v.(*RefreshTrigger); i {
+			switch v := v.(*AssertionResult); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9204,7 +9395,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[42].Exporter = func(v any, i int) any {
-			switch v := v.(*RefreshTriggerSpec); i {
+			switch v := v.(*RefreshTrigger); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9216,7 +9407,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[43].Exporter = func(v any, i int) any {
-			switch v := v.(*RefreshTriggerState); i {
+			switch v := v.(*RefreshTriggerSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9228,7 +9419,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[44].Exporter = func(v any, i int) any {
-			switch v := v.(*RefreshModelTrigger); i {
+			switch v := v.(*RefreshTriggerState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9240,7 +9431,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[45].Exporter = func(v any, i int) any {
-			switch v := v.(*Theme); i {
+			switch v := v.(*RefreshModelTrigger); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9252,7 +9443,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[46].Exporter = func(v any, i int) any {
-			switch v := v.(*ThemeSpec); i {
+			switch v := v.(*Theme); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9264,7 +9455,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[47].Exporter = func(v any, i int) any {
-			switch v := v.(*ThemeState); i {
+			switch v := v.(*ThemeSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9276,7 +9467,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[48].Exporter = func(v any, i int) any {
-			switch v := v.(*Component); i {
+			switch v := v.(*ThemeState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9288,7 +9479,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[49].Exporter = func(v any, i int) any {
-			switch v := v.(*ComponentSpec); i {
+			switch v := v.(*Component); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9300,7 +9491,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[50].Exporter = func(v any, i int) any {
-			switch v := v.(*ComponentState); i {
+			switch v := v.(*ComponentSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9312,7 +9503,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[51].Exporter = func(v any, i int) any {
-			switch v := v.(*ComponentVariable); i {
+			switch v := v.(*ComponentState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9324,7 +9515,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[52].Exporter = func(v any, i int) any {
-			switch v := v.(*Canvas); i {
+			switch v := v.(*ComponentVariable); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9336,7 +9527,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[53].Exporter = func(v any, i int) any {
-			switch v := v.(*CanvasSpec); i {
+			switch v := v.(*Canvas); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9348,7 +9539,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[54].Exporter = func(v any, i int) any {
-			switch v := v.(*CanvasState); i {
+			switch v := v.(*CanvasSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9360,7 +9551,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[55].Exporter = func(v any, i int) any {
-			switch v := v.(*CanvasRow); i {
+			switch v := v.(*CanvasState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9372,7 +9563,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[56].Exporter = func(v any, i int) any {
-			switch v := v.(*CanvasItem); i {
+			switch v := v.(*CanvasRow); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9384,7 +9575,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[57].Exporter = func(v any, i int) any {
-			switch v := v.(*CanvasPreset); i {
+			switch v := v.(*CanvasItem); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9396,7 +9587,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[58].Exporter = func(v any, i int) any {
-			switch v := v.(*API); i {
+			switch v := v.(*CanvasPreset); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9408,7 +9599,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[59].Exporter = func(v any, i int) any {
-			switch v := v.(*APISpec); i {
+			switch v := v.(*API); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9420,7 +9611,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[60].Exporter = func(v any, i int) any {
-			switch v := v.(*APIState); i {
+			switch v := v.(*APISpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9432,7 +9623,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[61].Exporter = func(v any, i int) any {
-			switch v := v.(*Schedule); i {
+			switch v := v.(*APIState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9444,7 +9635,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[62].Exporter = func(v any, i int) any {
-			switch v := v.(*ParseError); i {
+			switch v := v.(*Schedule); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9456,7 +9647,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[63].Exporter = func(v any, i int) any {
-			switch v := v.(*ValidationError); i {
+			switch v := v.(*ParseError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9468,7 +9659,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[64].Exporter = func(v any, i int) any {
-			switch v := v.(*DependencyError); i {
+			switch v := v.(*ValidationError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9480,7 +9671,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[65].Exporter = func(v any, i int) any {
-			switch v := v.(*ExecutionError); i {
+			switch v := v.(*DependencyError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9492,7 +9683,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[66].Exporter = func(v any, i int) any {
-			switch v := v.(*CharLocation); i {
+			switch v := v.(*ExecutionError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9504,7 +9695,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[67].Exporter = func(v any, i int) any {
-			switch v := v.(*ConnectorV2); i {
+			switch v := v.(*CharLocation); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9516,7 +9707,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[68].Exporter = func(v any, i int) any {
-			switch v := v.(*ConnectorSpec); i {
+			switch v := v.(*ConnectorV2); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9528,7 +9719,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[69].Exporter = func(v any, i int) any {
-			switch v := v.(*ConnectorState); i {
+			switch v := v.(*ConnectorSpec); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9540,7 +9731,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[70].Exporter = func(v any, i int) any {
-			switch v := v.(*MetricsViewSpec_Dimension); i {
+			switch v := v.(*ConnectorState); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9552,7 +9743,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[71].Exporter = func(v any, i int) any {
-			switch v := v.(*MetricsViewSpec_DimensionSelector); i {
+			switch v := v.(*MetricsViewSpec_Dimension); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9564,7 +9755,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[72].Exporter = func(v any, i int) any {
-			switch v := v.(*MetricsViewSpec_MeasureWindow); i {
+			switch v := v.(*MetricsViewSpec_DimensionSelector); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9576,7 +9767,7 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[73].Exporter = func(v any, i int) any {
-			switch v := v.(*MetricsViewSpec_Measure); i {
+			switch v := v.(*MetricsViewSpec_MeasureWindow); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -9588,6 +9779,18 @@ func file_rill_runtime_v1_resources_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_resources_proto_msgTypes[74].Exporter = func(v any, i int) any {
+			switch v := v.(*MetricsViewSpec_Measure); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_resources_proto_msgTypes[75].Exporter = func(v any, i int) any {
 			switch v := v.(*MetricsViewSpec_Annotation); i {
 			case 0:
 				return &v.state
@@ -9623,30 +9826,31 @@ func file_rill_runtime_v1_resources_proto_init() {
 		(*SecurityRule_Access)(nil),
 		(*SecurityRule_FieldAccess)(nil),
 		(*SecurityRule_RowFilter)(nil),
+		(*SecurityRule_TransitiveAccess)(nil),
 	}
-	file_rill_runtime_v1_resources_proto_msgTypes[25].OneofWrappers = []any{}
-	file_rill_runtime_v1_resources_proto_msgTypes[26].OneofWrappers = []any{
+	file_rill_runtime_v1_resources_proto_msgTypes[26].OneofWrappers = []any{}
+	file_rill_runtime_v1_resources_proto_msgTypes[27].OneofWrappers = []any{
 		(*FieldSelector_All)(nil),
 		(*FieldSelector_Fields)(nil),
 		(*FieldSelector_Regex)(nil),
 		(*FieldSelector_DuckdbExpression)(nil),
 	}
-	file_rill_runtime_v1_resources_proto_msgTypes[36].OneofWrappers = []any{
+	file_rill_runtime_v1_resources_proto_msgTypes[37].OneofWrappers = []any{
 		(*AlertSpec_QueryForUserId)(nil),
 		(*AlertSpec_QueryForUserEmail)(nil),
 		(*AlertSpec_QueryForAttributes)(nil),
 	}
-	file_rill_runtime_v1_resources_proto_msgTypes[46].OneofWrappers = []any{}
-	file_rill_runtime_v1_resources_proto_msgTypes[55].OneofWrappers = []any{}
+	file_rill_runtime_v1_resources_proto_msgTypes[47].OneofWrappers = []any{}
 	file_rill_runtime_v1_resources_proto_msgTypes[56].OneofWrappers = []any{}
 	file_rill_runtime_v1_resources_proto_msgTypes[57].OneofWrappers = []any{}
+	file_rill_runtime_v1_resources_proto_msgTypes[58].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_runtime_v1_resources_proto_rawDesc,
 			NumEnums:      7,
-			NumMessages:   78,
+			NumMessages:   79,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

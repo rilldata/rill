@@ -6,7 +6,7 @@ export const getOrgWithBearerToken = (
   token: string,
 ) => {
   return httpClient<V1GetOrganizationResponse>({
-    url: `/v1/organizations/${organizationName}`,
+    url: `/v1/orgs/${organizationName}`,
     method: "get",
     // We use the bearer token to authenticate the request
     headers: {

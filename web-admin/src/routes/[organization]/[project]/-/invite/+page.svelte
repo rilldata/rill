@@ -45,7 +45,7 @@
     if (allowDomain) {
       try {
         await $addToAllowlist.mutateAsync({
-          organization,
+          org: organization,
           project,
           data: {
             domain: $userDomain.data,

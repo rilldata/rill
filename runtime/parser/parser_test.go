@@ -63,12 +63,12 @@ mock_users:
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string
-		want    map[string]bool
+		want    map[string]string
 		wantErr bool
 	}{
 		{
 			yaml: ` `,
-			want: nil,
+			want: map[string]string{},
 		},
 		{
 			yaml:    `features: 10`,
@@ -76,11 +76,11 @@ func TestRillYAMLFeatures(t *testing.T) {
 		},
 		{
 			yaml: `features: []`,
-			want: map[string]bool{},
+			want: map[string]string{},
 		},
 		{
 			yaml: `features: {}`,
-			want: map[string]bool{},
+			want: map[string]string{},
 		},
 		{
 			yaml: `
@@ -88,7 +88,7 @@ features:
   foo: true
   bar: false
 `,
-			want: map[string]bool{"foo": true, "bar": false},
+			want: map[string]string{"foo": "true", "bar": "false"},
 		},
 		{
 			yaml: `
@@ -96,7 +96,30 @@ features:
 - foo
 - bar
 `,
-			want: map[string]bool{"foo": true, "bar": true},
+			want: map[string]string{"foo": "true", "bar": "true"},
+		},
+		{
+			yaml: `
+features:
+  templated_embed: '{{ .user.embed }}'
+  templated_user: '{{ eq (.user.domain) "rilldata.com" }}'
+`,
+			want: map[string]string{"templated_embed": "{{ .user.embed }}", "templated_user": "{{ eq (.user.domain) \"rilldata.com\" }}"},
+		},
+		{
+			yaml: `
+features:
+  invalid: '{{'
+`,
+			wantErr: true,
+		},
+		{
+			yaml: `
+features:
+  snake_case: true
+  camelCase: false
+`,
+			want: map[string]string{"snake_case": "true", "camel_case": "false"},
 		},
 	}
 
@@ -1001,8 +1024,8 @@ security:
 				FirstDayOfWeek: 7,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 				},
 			},
@@ -1024,8 +1047,8 @@ security:
 				FirstDayOfWeek: 1,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "true",
@@ -1220,31 +1243,31 @@ security:
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "",
-						Allow:     false,
+						ConditionExpression: "",
+						Allow:               false,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "true",
 					}}},
 					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: "'{{ .user.domain }}' = 'example.com'",
-						Allow:     true,
-						AllFields: true,
+						ConditionExpression: "'{{ .user.domain }}' = 'example.com'",
+						Allow:               true,
+						AllFields:           true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: "true",
-						Allow:     true,
-						Fields:    []string{"a"},
+						ConditionExpression: "true",
+						Allow:               true,
+						Fields:              []string{"a"},
 					}}},
 					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: "'{{ .user.domain }}' = 'bad.com'",
-						Allow:     false,
-						AllFields: true,
+						ConditionExpression: "'{{ .user.domain }}' = 'bad.com'",
+						Allow:               false,
+						AllFields:           true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						Condition: "true",
-						Allow:     false,
-						Fields:    []string{"b"},
+						ConditionExpression: "true",
+						Allow:               false,
+						Fields:              []string{"b"},
 					}}},
 				},
 			},
@@ -2219,8 +2242,8 @@ security:
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
 						Sql: "partner_id IN (SELECT partner_id FROM {{ ref \"mappings\" }} WHERE domain = '{{ .user.domain }}')",
