@@ -274,22 +274,12 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, true)
 	}
 
-	pushOpts := &git.PushOptions{
-		RemoteName: config.RemoteName(),
-		RemoteURL:  config.Remote,
-		Force:      true,
-	}
-	if config.Username != "" && config.Password != "" {
-		pushOpts.Auth = &githttp.BasicAuth{
-			Username: config.Username,
-			Password: config.Password,
-		}
-	}
-	err = repo.PushContext(ctx, pushOpts)
+	u, err := url.Parse(config.Remote)
 	if err != nil {
-		return fmt.Errorf("failed to push to remote : %w", err)
+		return fmt.Errorf("failed to parse remote URL: %w", err)
 	}
-	return nil
+	u.User = url.UserPassword(config.Username, config.Password)
+	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch, true)
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
