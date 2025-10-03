@@ -1,4 +1,4 @@
-import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { EmbedOptions } from "svelte-vega";
 import { get } from "svelte/store";

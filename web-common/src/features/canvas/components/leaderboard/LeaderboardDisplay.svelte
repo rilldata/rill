@@ -1,8 +1,8 @@
 <script lang="ts">
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import type { LeaderboardComponent } from "@rilldata/web-common/features/canvas/components/leaderboard";
   import { validateLeaderboardSchema } from "@rilldata/web-common/features/canvas/components/leaderboard/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
@@ -43,7 +43,7 @@
   $: store = getCanvasStore(canvasName, instanceId);
   $: ({
     canvasEntity: {
-      spec: {
+      metricsView: {
         getMetricsViewFromName,
         getDimensionsForMetricView,
         getMeasuresForMetricView,

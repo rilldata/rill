@@ -199,7 +199,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     const currentSpec = get(this.specStore);
 
-    const metricsViewSpecQuery = this.parent.spec.getMetricsViewFromName(
+    const metricsViewSpecQuery = this.parent.metricsView.getMetricsViewFromName(
       currentSpec.metrics_view,
     );
 

@@ -12,11 +12,11 @@
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -48,7 +48,8 @@
         allMeasureFilterItems,
         measureHasFilter,
       },
-      spec: { canvasSpec, allDimensions, allSimpleMeasures },
+      spec,
+      metricsView: { allDimensions, allSimpleMeasures },
       timeControls: {
         allTimeRange,
         timeRangeStateStore,
@@ -69,9 +70,9 @@
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
-  $: availableTimeZones = $canvasSpec?.timeZones ?? [];
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
+  $: defaultTimeRange = $spec?.defaultPreset?.timeRange;
+  $: availableTimeZones = $spec?.timeZones ?? [];
+  $: timeRanges = $spec?.timeRanges ?? [];
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -143,7 +144,7 @@
       {activeTimeGrain}
       {activeTimeZone}
       watermark={undefined}
-      allowCustomTimeRange={$canvasSpec?.allowCustomTimeRange}
+      allowCustomTimeRange={$spec?.allowCustomTimeRange}
       canPanLeft
       canPanRight
       showPan

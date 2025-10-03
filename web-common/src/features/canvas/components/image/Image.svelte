@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentHeader from "../../ComponentHeader.svelte";

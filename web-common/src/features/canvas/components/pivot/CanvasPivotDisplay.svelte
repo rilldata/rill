@@ -9,7 +9,7 @@
 
   $: ({
     parent: {
-      spec: { getMetricsViewFromName },
+      metricsView: { getMetricsViewFromName },
     },
     specStore,
     config,

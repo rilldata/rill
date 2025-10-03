@@ -1,10 +1,10 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
+  import ItemWrapper from "./ItemWrapper.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import { normalizeSizeArray } from "./layout-util";
   import type { CanvasEntity } from "./stores/canvas-entity";
-  import ComponentError from "./components/ComponentError.svelte";
-  import ItemWrapper from "./ItemWrapper.svelte";
-  import CanvasComponent from "./CanvasComponent.svelte";
   import type { Row } from "./stores/row";
 
   export let row: Row;
