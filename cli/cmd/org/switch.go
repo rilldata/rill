@@ -35,7 +35,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			} else {
 				_, err = client.GetOrganization(cmd.Context(), &adminv1.GetOrganizationRequest{
-					Name: args[0],
+					Org: args[0],
 				})
 				if err != nil {
 					return err

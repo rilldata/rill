@@ -47,7 +47,7 @@
   async function handleSetRole(email: string, role: string) {
     try {
       await $setProjectMemberUserRole.mutateAsync({
-        organization: organization,
+        org: organization,
         project: project,
         email: email,
         data: {
@@ -83,7 +83,7 @@
   async function handleRemove(email: string) {
     try {
       await $removeProjectMemberUser.mutateAsync({
-        organization: organization,
+        org: organization,
         project: project,
         email: email,
       });
