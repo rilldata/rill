@@ -308,7 +308,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 		return time.Minute * 30
 	}
 
-	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName {
+	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName || fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
 		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
 	}
 

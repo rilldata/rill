@@ -125,6 +125,8 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for OutputJsonSchema
+
 	if len(errors) > 0 {
 		return CompleteRequestMultiError(errors)
 	}

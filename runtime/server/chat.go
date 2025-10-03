@@ -6,11 +6,13 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/r3labs/sse/v2"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -19,6 +21,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListConversations returns a list of conversations for an instance.
@@ -164,7 +167,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 // CompleteStreaming implements RuntimeService
 func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stream runtimev1.RuntimeService_CompleteStreamingServer) error {
 	// Access check
-	if !auth.GetClaims(stream.Context()).CanInstance(req.InstanceId, auth.UseAI) {
+	claims := auth.GetClaims(stream.Context())
+	if !claims.CanInstance(req.InstanceId, auth.UseAI) {
 		return ErrForbidden
 	}
 
@@ -173,45 +177,62 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return status.Error(codes.InvalidArgument, "prompt cannot be empty")
 	}
 
-	// Create tool service for this server
-	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
-
-	// Delegate to runtime business logic
-	_, err := s.runtime.CompleteWithTools(stream.Context(), &runtime.CompleteWithToolsOptions{
-		OwnerID:        auth.GetClaims(stream.Context()).Subject(),
-		InstanceID:     req.InstanceId,
-		ConversationID: req.ConversationId,
-		Messages: []*runtimev1.Message{{Role: "user", Content: []*aiv1.ContentBlock{{
-			BlockType: &aiv1.ContentBlock_Text{
-				Text: req.Prompt,
-			},
-		}}}},
-		ToolService: toolService,
-		OnMessage: func(conversationID string, msg *runtimev1.Message) error {
-			// Emit one message for each content block.
-			// In a future refactor, we'll try to apply this in the internal interfaces as well.
-			for _, block := range msg.Content {
-				err := stream.Send(&runtimev1.CompleteStreamingResponse{
-					ConversationId: conversationID,
-					Message: &runtimev1.Message{
-						Id:        msg.Id,
-						Role:      msg.Role,
-						Content:   []*aiv1.ContentBlock{block},
-						CreatedOn: msg.CreatedOn,
-						UpdatedOn: msg.UpdatedOn,
-					},
-				})
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	})
+	// Open the AI session
+	runner := ai.NewRunner(s.runtime)
+	session, err := runner.Session(stream.Context(), req.InstanceId, req.ConversationId, claims.Subject(), claims.SecurityClaims())
 	if err != nil {
 		return err
 	}
+	defer session.Close()
 
+	// Context
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+
+	// Make the call
+	callErrCh := make(chan error)
+	go func() {
+		time.Sleep(time.Millisecond * 10) // Allow the subscribe to happen. TODO: Find a non-hacky solution here.
+		var res *ai.RouterAgentResult
+		_, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+			Prompt: req.Prompt,
+		})
+		time.Sleep(time.Millisecond * 50) // Allow the last message to be sent. TODO: Find a non-hacky solution here.
+		cancel()
+		callErrCh <- err
+	}()
+
+	// Subscribe to session messages and stream them to the client
+	subErr := session.Subscribe(ctx, func(msg *ai.Message) {
+		pb, err := msg.ToProto()
+		if err != nil {
+			s.logger.Error("failed to convert AI message to protobuf", zap.Error(err))
+			return
+		}
+		err = stream.Send(&runtimev1.CompleteStreamingResponse{
+			ConversationId: msg.SessionID,
+			Message: &runtimev1.Message{
+				Id:        msg.ID,
+				Role:      pb.Role,
+				Content:   pb.Content,
+				CreatedOn: timestamppb.New(msg.Time),
+				UpdatedOn: timestamppb.New(msg.Time),
+			},
+		})
+		if err != nil {
+			s.logger.Warn("failed to send AI message to stream", zap.Error(err))
+		}
+	})
+
+	// Wait for call to finish
+	cancel()
+	callErr := <-callErrCh
+	if callErr != nil && !errors.Is(callErr, context.Canceled) {
+		return callErr
+	}
+	if subErr != nil && !errors.Is(subErr, context.Canceled) {
+		return subErr
+	}
 	return nil
 }
 
