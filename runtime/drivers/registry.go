@@ -246,4 +246,6 @@ var DefaultFeatureFlags = map[string]string{
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
 	"dashboard_chat": "false",
+	// Controls whether to show/hide deploy related actions.
+	"deploy": "true",
 }
