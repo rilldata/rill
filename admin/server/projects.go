@@ -2061,10 +2061,10 @@ func (s *Server) githubOptsForRemote(ctx context.Context, orgID, branch string, 
 			return nil, nil, nil, "", status.Error(codes.InvalidArgument, "failed to get github repo")
 		}
 
-		if prodBranch != "" && prodBranch != safeStr(ghRepo.DefaultBranch) {
-			return nil, nil, nil, "", fmt.Errorf("branch should be empty or default repo branch for rill managed git repos")
+		if branch == "" {
+			branch = ghRepo.GetDefaultBranch()
 		}
-		return ghRepo.ID, &id, &mgdGitRepo.ID, safeStr(ghRepo.DefaultBranch), nil
+		return ghRepo.ID, &id, &mgdGitRepo.ID, branch, nil
 	}
 	// User managed github projects must be configured by a user so we can ensure that they're allowed to access the repo.
 	if userID == nil {
