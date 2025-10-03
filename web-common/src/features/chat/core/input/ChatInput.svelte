@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ConversationContext from "@rilldata/web-common/features/chat/core/context/ConversationContext.svelte";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
@@ -86,6 +87,9 @@
 </script>
 
 <form class="chat-input-form" on:submit|preventDefault={sendMessage}>
+  {#if currentConversation}
+    <ConversationContext conversation={currentConversation} />
+  {/if}
   <div class="chat-input-container">
     <textarea
       bind:this={textarea}

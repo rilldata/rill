@@ -44,3 +44,8 @@ export interface BannerMessage {
     onClick?: () => void | Promise<void>;
   };
 }
+
+export interface ChatIntent {
+  prompt: string;
+  context: { type: number; value: string }[];
+}
