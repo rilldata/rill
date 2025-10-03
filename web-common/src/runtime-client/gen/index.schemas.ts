@@ -2326,6 +2326,7 @@ export interface V1ThemeSpec {
   secondaryColor?: V1Color;
   primaryColorRaw?: string;
   secondaryColorRaw?: string;
+  css?: string;
 }
 
 export interface V1ThemeState {
