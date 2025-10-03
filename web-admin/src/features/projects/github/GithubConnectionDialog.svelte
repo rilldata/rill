@@ -18,7 +18,6 @@
   import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
   import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import { derived } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -110,16 +109,16 @@
           const remote = `https://github.com/${values.org}/${values.name}.git`;
 
           await $connectProjectToGithub.mutateAsync({
+            org: organization,
             project,
-            organization,
             data: {
               remote,
             },
           });
         } else {
           await $updateProject.mutateAsync({
-            organizationName: organization,
-            name: project,
+            org: organization,
+            project,
             data: {
               gitRemote: values.repo,
               prodBranch: values.branch,
