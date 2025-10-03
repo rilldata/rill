@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { onDestroy, onMount } from "svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
@@ -11,6 +12,7 @@
   export let showGrabCursor = false;
   export let filtersEnabled: boolean | undefined;
   export let canvasName: string;
+  export let embedded: boolean = false;
   export let onClick: () => void = () => {};
 
   onMount(async () => {
@@ -34,7 +36,11 @@
   });
 </script>
 
-<main class="size-full flex flex-col dashboard-theme-boundary overflow-hidden">
+<main
+  class="flex flex-col dashboard-theme-boundary overflow-hidden"
+  class:w-full={$dynamicHeight}
+  class:size-full={!$dynamicHeight}
+>
   {#if filtersEnabled}
     <header
       role="presentation"
@@ -48,8 +54,11 @@
   <div
     role="presentation"
     id="canvas-scroll-container"
-    class="size-full p-2 pb-48 flex flex-col items-center bg-surface select-none overflow-y-auto overflow-x-hidden"
+    class="p-2 flex flex-col items-center bg-surface select-none overflow-y-auto overflow-x-hidden"
     class:!cursor-grabbing={showGrabCursor}
+    class:w-full={$dynamicHeight}
+    class:size-full={!$dynamicHeight}
+    class:pb-48={!embedded}
     on:click|self={onClick}
   >
     <div

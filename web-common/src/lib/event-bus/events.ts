@@ -44,3 +44,8 @@ export interface BannerMessage {
     onClick?: () => void | Promise<void>;
   };
 }
+
+export interface PageContentResized {
+  width: number;
+  height: number;
+}
