@@ -59,7 +59,7 @@ func (e *selfToGCSExecutor) export(ctx context.Context, props map[string]any, ou
 		return "", err
 	}
 
-	client, err := e.c.createClient(ctx, conf.ProjectID)
+	client, err := e.c.acquireClient(ctx)
 	if err != nil {
 		return "", err
 	}
