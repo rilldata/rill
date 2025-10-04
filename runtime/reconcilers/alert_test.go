@@ -592,6 +592,13 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 				TimeDimension: timeDim,
 				Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
 				Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
+				TimeDimensions: []*runtimev1.MetricsViewSpec_Dimension{
+					{
+						Name:     timeDim,
+						Column:   timeDim,
+						DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: false},
+					},
+				},
 			},
 		},
 	}

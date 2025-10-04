@@ -1400,6 +1400,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   watermarkExpression = "";
 
   /**
+   * List of dimensions of type timestamp/date. It will be populated in `state.valid_spec`.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Dimension time_dimensions = 33;
+   */
+  timeDimensions: MetricsViewSpec_Dimension[] = [];
+
+  /**
    * Dimensions in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Dimension dimensions = 6;
@@ -1492,6 +1499,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 33, name: "time_dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
     { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },

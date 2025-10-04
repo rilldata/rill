@@ -297,6 +297,8 @@ message MetricsViewSpec {
   TimeGrain smallest_time_grain = 8;
   // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
   string watermark_expression = 20;
+  // List of dimensions of type timestamp/date. It will be populated in `state.valid_spec`.
+  repeated Dimension time_dimensions = 33;
   // Dimensions in the metrics view
   repeated Dimension dimensions = 6;
   // Measures in the metrics view

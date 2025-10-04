@@ -43,47 +43,20 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 	}
 
 	// Gather the categorical and time dimensions
-	var dimensions, timeDimensions []*runtimev1.MetricsViewSpec_Dimension
+	var timeDimensions, dimensions []*runtimev1.MetricsViewSpec_Dimension
+	for _, dim := range e.metricsView.TimeDimensions {
+		// Skip dimensions that the user cannot access first and not primary time column
+		if !e.security.CanAccessField(dim.Name) && e.metricsView.TimeDimension != dim.Name {
+			continue
+		}
+		timeDimensions = append(timeDimensions, dim)
+	}
 	for _, dim := range e.metricsView.Dimensions {
 		// Skip dimensions that the user cannot access first
 		if !e.security.CanAccessField(dim.Name) {
 			continue
 		}
-
-		// Check if this dimension is a time dimension (has timestamp data type)
-		isTimeDimension := false
-		if dim.DataType != nil {
-			switch dim.DataType.Code {
-			case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
-				isTimeDimension = true
-			}
-		}
-
-		if isTimeDimension {
-			timeDimensions = append(timeDimensions, dim)
-		} else {
-			dimensions = append(dimensions, dim)
-		}
-	}
-
-	// Add the default time dimension if it wasn't in the list (it's not currently guaranteed to be included in the dimensions list).
-	if e.metricsView.TimeDimension != "" {
-		var found bool
-		for _, dim := range timeDimensions {
-			if dim.Name == e.metricsView.TimeDimension {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			// Prepend it so it doesn't get truncated
-			head := []*runtimev1.MetricsViewSpec_Dimension{{
-				Name:     e.metricsView.TimeDimension,
-				DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP},
-			}}
-			timeDimensions = append(head, timeDimensions...)
-		}
+		dimensions = append(dimensions, dim)
 	}
 
 	// Apply the default dimension limits
