@@ -8,7 +8,7 @@
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import AvatarListItem from "@rilldata/web-admin/features/organizations/users/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button/index.js";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import {
@@ -284,22 +284,13 @@
         <div class="flex flex-col gap-2">
           {#each selectedUsers as user (user.userEmail)}
             <div class="flex flex-row justify-between gap-2 items-center">
-              <div class="flex items-center gap-2">
-                <Avatar
-                  avatarSize="h-7 w-7"
-                  alt={user.userName}
-                  src={user.userPhotoUrl}
-                />
-                <div class="flex flex-col text-left">
-                  <span class="text-sm font-medium text-gray-900">
-                    {user.userName}
-                    <span class="text-gray-500 font-normal">
-                      {user.userEmail === currentUserEmail ? "(You)" : ""}
-                    </span>
-                  </span>
-                  <span class="text-xs text-gray-500">{user.userEmail}</span>
-                </div>
-              </div>
+              <AvatarListItem
+                name={user.userName}
+                email={user.userEmail}
+                photoUrl={user.userPhotoUrl}
+                isCurrentUser={user.userEmail === currentUserEmail}
+                role={user.roleName}
+              />
               <Button
                 type="text"
                 danger

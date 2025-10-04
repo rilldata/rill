@@ -4,6 +4,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   export let filterSelection: "all" | "members" | "guests" | "pending" = "all";
+  export let showMembers = true;
 
   let isDropdownOpen = false;
 </script>
@@ -31,26 +32,19 @@
         filterSelection = "all";
       }}
     >
-      <span>All users</span>
+      <span>All</span>
     </DropdownMenu.CheckboxItem>
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={filterSelection === "members"}
-      on:click={() => {
-        filterSelection = "members";
-      }}
-    >
-      <span>Members</span>
-    </DropdownMenu.CheckboxItem>
-    <DropdownMenu.CheckboxItem
-      class="font-normal flex items-center"
-      checked={filterSelection === "guests"}
-      on:click={() => {
-        filterSelection = "guests";
-      }}
-    >
-      <span>Guests</span>
-    </DropdownMenu.CheckboxItem>
+    {#if showMembers}
+      <DropdownMenu.CheckboxItem
+        class="font-normal flex items-center"
+        checked={filterSelection === "members"}
+        on:click={() => {
+          filterSelection = "members";
+        }}
+      >
+        <span>Members</span>
+      </DropdownMenu.CheckboxItem>
+    {/if}
     <DropdownMenu.CheckboxItem
       class="font-normal flex items-center"
       checked={filterSelection === "pending"}

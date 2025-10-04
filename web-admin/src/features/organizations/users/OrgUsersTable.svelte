@@ -5,10 +5,13 @@
     V1ListOrganizationMemberUsersResponse,
     V1OrganizationMemberUser,
     V1OrganizationInvite,
+    V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
   import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
+  import OrgUsersTableGroupsCell from "./OrgUsersTableGroupsCell.svelte";
+  import OrgUsersTableProjectsCell from "./OrgUsersTableProjectsCell.svelte";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import type {
     InfiniteData,
@@ -21,6 +24,7 @@
     invitedBy?: string;
   }
 
+  export let organization: string;
   export let data: OrgUser[];
   export let usersQuery: InfiniteQueryObserverResult<
     InfiniteData<V1ListOrganizationMemberUsersResponse, unknown>,
@@ -31,12 +35,15 @@
     RpcStatus
   >;
   export let currentUserEmail: string;
-  export let currentUserRole: string;
+  export let organizationPermissions: V1OrganizationPermissions;
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
+  export let guestOnly: boolean;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
+  export let onEditUserGroup: (groupName: string) => void;
+  export let onConvertToMember: (user: V1OrganizationMemberUser) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
 
@@ -58,17 +65,49 @@
         widthPercent: 50,
       },
     },
+    ...(guestOnly
+      ? []
+      : [
+          {
+            accessorKey: "roleName",
+            header: "Organization Role",
+            cell: ({ row }) =>
+              flexRender(OrgUsersTableRoleCell, {
+                email: row.original.userEmail,
+                role: row.original.roleName,
+                isCurrentUser: row.original.userEmail === currentUserEmail,
+                organizationPermissions,
+                isBillingContact: row.original.userEmail === billingContact,
+                onAttemptChangeBillingContactUserRole,
+              }),
+            meta: {
+              widthPercent: 40,
+              marginLeft: "8px",
+            },
+          },
+        ]),
     {
-      accessorKey: "roleName",
-      header: "Organization Role",
+      accessorKey: "usergroupsCount",
+      header: "Groups",
       cell: ({ row }) =>
-        flexRender(OrgUsersTableRoleCell, {
-          email: row.original.userEmail,
+        flexRender(OrgUsersTableGroupsCell, {
+          userId: row.original.userId,
+          organization,
+          onEditUserGroup,
+        }),
+      meta: {
+        widthPercent: 40,
+        marginLeft: "8px",
+      },
+    },
+    {
+      accessorKey: "projectsCount",
+      header: "Projects",
+      cell: ({ row }) =>
+        flexRender(OrgUsersTableProjectsCell, {
+          userId: row.original.userId,
           role: row.original.roleName,
-          isCurrentUser: row.original.userEmail === currentUserEmail,
-          currentUserRole,
-          isBillingContact: row.original.userEmail === billingContact,
-          onAttemptChangeBillingContactUserRole,
+          organization,
         }),
       meta: {
         widthPercent: 40,
@@ -84,9 +123,10 @@
           email: row.original.userEmail,
           role: row.original.roleName,
           isCurrentUser: row.original.userEmail === currentUserEmail,
-          currentUserRole,
+          organizationPermissions,
           isBillingContact: row.original.userEmail === billingContact,
           onAttemptRemoveBillingContactUser,
+          onConvertToMember: () => onConvertToMember(row.original),
         }),
       meta: {
         widthPercent: 5,
