@@ -648,7 +648,7 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 				{
 					Name:     e.metricsView.TimeDimension,
 					Column:   e.metricsView.TimeDimension,
-					DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP},
+					DataType: types[e.metricsView.TimeDimension],
 				},
 			}, timeDims...)
 		}
