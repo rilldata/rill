@@ -16,18 +16,16 @@ At a high level, configuring credentials and credential management in Rill can b
 
 
 
-When reading from a data source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
+When reading from a data source (or using a different OLAP engine), Rill will attempt to use credentials in the following order of priority:
 
 :::warning **Highly Recommended: Use .env for credentials**
 
-While Rill **can** infer credentials from your local environment (AWS CLI, Azure CLI, Google Cloud CLI), **we HIGHLY recommend explicitly configuring credentials in your `.env` file** for better security, reliability, and portability. Environment-inferred credentials may vary across different setupsand may not work consistently across different environments, team members or when deploying to Rill Cloud.
+While Rill **can** infer credentials from your local environment (AWS CLI, Azure CLI, Google Cloud CLI), **we HIGHLY recommend explicitly configuring credentials in your `.env` file** for better security, reliability, and portability. Environment-inferred credentials may vary across different setups and may not work consistently across different environments, team members or when deploying to Rill Cloud.
 
 :::
 
-Rill will attempt to use credentials in the following order of priority:
 
-
-1. **Credentials referenced in connection strings or DSN within YAML files** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)  **RECOMMENDED**
+1. **Credentials referenced in connection strings or DSN within YAML files (RECOMMENDED)** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)
 2. Credentials that have been passed in as a [variable](/connect/templating) when starting Rill Developer via `rill start --env key=value`
 3. Credentials that have been configured in your local environment via the CLI (for [AWS](/connect/data-source/s3#rill-developer-local-credentials) / [Azure](/connect/data-source/azure#rill-developer-local-credentials) / [Google Cloud](/connect/data-source/gcs#rill-developer-local-credentials)) - **NOT RECOMMENDED for production use**
 
@@ -42,7 +40,7 @@ If you plan to deploy a project (to Rill Cloud), it is not recommended to pass i
 
 ## Variables
 
-Project variables work exactly the same way as credentials and can be defined when starting rill via `--env key=value`, set in the `.env `file in the project directory, or defined in the rill.yaml.
+Project variables work exactly the same way as credentials and can be defined when starting rill via `--env key=value`, set in the `.env` file in the project directory, or defined in the rill.yaml.
 
 ### What is a `.env` file?
 
@@ -71,7 +69,7 @@ my_custom_variable=some_value
 ```
 When creating any connector in Rill via the UI, these will be **automatically generated** in the `.env` file.
 
-Extra variables can then be usable and referenceable for [templating](/connect/templating) purposes in the local instance of your project. 
+Additional variables can then be usable and referenceable for [templating](/connect/templating) purposes in the local instance of your project. 
 
 ### Credentials Naming Schema 
 
@@ -91,7 +89,7 @@ If you have configured your credentials via the `.env` file this will be deploye
 If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
 
 
-### Cloning an Existing Project from Rill Cloud
+## Cloning an Existing Project from Rill Cloud
 
 If you cloned the project using `rill project clone <project-name>` and are an admin of that project, the credentials will be pulled automatically. Note that there are some limitations with monorepos where credentials may not be pulled correctly. In those cases, credentials are also pulled when running `rill start`, assuming you have already authenticated via the CLI with `rill login`.
 
