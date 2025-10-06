@@ -67,7 +67,9 @@ test.describe("Default olap_connector behavior", () => {
       })
       .click();
 
-    // Wait for navigation to the connector file
+    // Wait for the connector to be created and reconciled
+    // The backend will spin up a new clickhouse instance, download the binary, and start the server
+    // We wait for the connector file to be created and the reconciliation to complete
     await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
