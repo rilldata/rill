@@ -39,7 +39,7 @@ host: "localhost"
 port: 3306 
 database: "mydatabase" 
 user: "myusername" 
-password: '{{.env.connector.mysql.password}}'
+password: "{{ .env.connector.mysql.password }}"
 ssl_mode: "DISABLED" 
 ```
 

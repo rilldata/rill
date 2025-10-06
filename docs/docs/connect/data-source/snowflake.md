@@ -29,7 +29,7 @@ Create a connector with your credentials to start exploring your data via the Da
 type: connector
 driver: snowflake
 
-dsn: '{{ .env.connector.snowflake.dsn }}' 
+dsn: "{{ .env.connector.snowflake.dsn }}" 
 ```
 
 :::tip Using the Add Data Form

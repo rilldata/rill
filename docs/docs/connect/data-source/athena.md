@@ -39,7 +39,7 @@ region: "us-east-1"
 ```
 
 :::tip Using the Add Data Form
-You can also use the Add Data form in Rill Developer, which will automatically create the `redshift.yaml` file and populate the `.env` file with `connector.redshift.aws_access_key_id` and `connector.redshift.aws_secret_access_key`.
+You can also use the Add Data form in Rill Developer, which will automatically create the `athena.yaml` file and populate the `.env` file with `connector.athena.aws_access_key_id` and `connector.athena.aws_secret_access_key`.
 :::
 
 ### Local AWS Credentials (Local Development Only)

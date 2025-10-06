@@ -46,7 +46,7 @@ type: connector
 
 driver: gcs
 
-google_application_credentials:  '{{.env.connector.gcs.google_application_credentials}}'
+google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"
 bucket: "gs://bucket"
 ```
 
@@ -76,8 +76,8 @@ type: connector
 
 driver: gcs
 
-key_id: '{{.env.connector.gcs.key_id}}'
-secret: '{{.env.connector.gcs.secret}}'
+key_id: "{{ .env.connector.gcs.key_id }}"
+secret: "{{ .env.connector.gcs.secret }}"
 bucket: "*"
 ```
 
