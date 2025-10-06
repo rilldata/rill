@@ -113,7 +113,7 @@
   ) {
     try {
       await $updateProjectVariables.mutateAsync({
-        organization,
+        org: organization,
         project,
         data: {
           environment: getCurrentEnvironment(isDevelopment, isProduction),

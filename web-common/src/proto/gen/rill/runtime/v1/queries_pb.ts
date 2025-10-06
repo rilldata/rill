@@ -412,6 +412,13 @@ export class ExportRequest extends Message<ExportRequest> {
    */
   originUrl = "";
 
+  /**
+   * Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
+   *
+   * @generated from field: google.protobuf.Timestamp execution_time = 9;
+   */
+  executionTime?: Timestamp;
+
   constructor(data?: PartialMessage<ExportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -428,6 +435,7 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "origin_dashboard", kind: "message", T: ResourceName },
     { no: 8, name: "origin_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "execution_time", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {

@@ -22,8 +22,8 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			name = args[0]
 
 			_, err = client.DeleteUsergroup(cmd.Context(), &adminv1.DeleteUsergroupRequest{
-				Organization: ch.Org,
-				Usergroup:    name,
+				Org:       ch.Org,
+				Usergroup: name,
 			})
 			if err != nil {
 				return err

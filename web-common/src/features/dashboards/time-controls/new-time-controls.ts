@@ -536,6 +536,10 @@ export function bucketYamlRanges(
 ): RangeBuckets {
   const showDefaults = !yamlRanges.length;
 
+  if (!minTimeGrain) {
+    minTimeGrain = V1TimeGrain.TIME_GRAIN_SECOND;
+  }
+
   if (showDefaults) {
     if (!usingRillTime) return defaultBuckets;
 
@@ -589,8 +593,6 @@ export function bucketYamlRanges(
       } else {
         skeleton.custom.push(parsed);
       }
-
-      console.log(parsed);
     } catch (e) {
       console.error("Error parsing RillTime", e);
     }

@@ -43,7 +43,12 @@ import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  GrainAliasToV1TimeGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains";
+import { parseRillTime } from "../url-state/time-ranges/parser";
+import type { RillTime } from "../url-state/time-ranges/RillTime";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -270,6 +275,18 @@ export function calculateTimeRangePartial(
   );
   if (!selectedTimeRange) return undefined;
 
+  let parsed: RillTime | undefined;
+
+  try {
+    parsed = parseRillTime(currentSelectedTimeRange.name || "");
+  } catch (e) {
+    console.error("Error parsing rill time", e);
+  }
+
+  const rillTimeGrain = parsed?.asOfLabel?.snap
+    ? GrainAliasToV1TimeGrain[parsed.asOfLabel.snap]
+    : parsed?.interval.getGrain();
+
   // Temporary for the new rill-time UX to work.
   // We can select grains that are outside allowed grains in controls behind the "rillTime" flag.
   const skipGrainValidation = get(featureFlags.rillTime);
@@ -277,7 +294,8 @@ export function calculateTimeRangePartial(
     !skipGrainValidation ||
     !currentSelectedTimeRange.interval ||
     currentSelectedTimeRange.interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-      ? getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
+      ? rillTimeGrain ||
+        getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
       : currentSelectedTimeRange.interval;
 
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(

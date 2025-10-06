@@ -53,7 +53,7 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		return nil, status.Errorf(codes.Internal, "failed to get report: %s", err.Error())
 	}
 
-	r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
+	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -101,6 +101,7 @@ func (s *Server) ExportReport(ctx context.Context, req *runtimev1.ExportReportRe
 		IncludeHeader:   rep.Spec.ExportIncludeHeader,
 		OriginDashboard: originDashboard,
 		OriginUrl:       originURL,
+		ExecutionTime:   valOrNullTime(t),
 	}, &runtime.SecurityClaims{UserAttributes: auth.GetClaims(ctx).SecurityClaims().UserAttributes})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
@@ -119,6 +120,12 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse download token: %s", err.Error()), http.StatusBadRequest)
 		return
+	}
+
+	var execTime *time.Time
+	if request.ExecutionTime != nil && request.ExecutionTime.IsValid() {
+		t := request.ExecutionTime.AsTime()
+		execTime = &t
 	}
 
 	var q runtime.Query
@@ -157,6 +164,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Aliases:             r.Aliases,
 			Exact:               r.Exact,
 			Rows:                r.Rows,
+			ExecutionTime:       execTime,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
@@ -241,6 +249,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Where:               r.Where,
 			Having:              r.Having,
 			SecurityClaims:      claims,
+			ExecutionTime:       execTime,
 		}
 	case *runtimev1.Query_TableRowsRequest:
 		r := v.TableRowsRequest

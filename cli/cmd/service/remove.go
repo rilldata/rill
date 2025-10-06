@@ -22,9 +22,9 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 			if projectName != "" {
 				// If projectName is provided, delete the service from the specified project
 				_, err = client.RemoveProjectMemberService(cmd.Context(), &adminv1.RemoveProjectMemberServiceRequest{
-					Name:             args[0],
-					OrganizationName: ch.Org,
-					ProjectName:      projectName,
+					Name:    args[0],
+					Org:     ch.Org,
+					Project: projectName,
 				})
 				if err != nil {
 					return err
@@ -34,8 +34,8 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.RemoveOrganizationMemberService(cmd.Context(), &adminv1.RemoveOrganizationMemberServiceRequest{
-				Name:             args[0],
-				OrganizationName: ch.Org,
+				Name: args[0],
+				Org:  ch.Org,
 			})
 			if err != nil {
 				return err

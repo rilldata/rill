@@ -325,25 +325,56 @@ message SecurityRule {
     SecurityRuleAccess access = 1;
     SecurityRuleFieldAccess field_access = 2;
     SecurityRuleRowFilter row_filter = 3;
+    SecurityRuleTransitiveAccess transitive_access = 4;
   }
 }
-  
+
 message SecurityRuleAccess {
-  string condition = 1;
+  // The condition under which this rule applies.
+  // It is ANDed together with the condition_kinds and condition_resources.
+  string condition_expression = 1;
+  // The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+  repeated string condition_kinds = 3;
+  // The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+  // It is ORed together with the condition_kinds.
+  repeated ResourceName condition_resources = 4;
+  // Whether to allow or deny access to the resources covered by the conditions.
   bool allow = 2;
+  // If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true).
+  bool exclusive = 5;
 }
 
 message SecurityRuleFieldAccess {
-  string condition = 1;
+  // The condition under which this rule applies.
+  // It is ANDed together with the condition_kinds and condition_resources.
+  string condition_expression = 1;
+  // The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+  repeated string condition_kinds = 5;
+  // The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+  // It is ORed together with the condition_kinds.
+  repeated ResourceName condition_resources = 6;
   bool allow = 2;
+  // If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
+  bool exclusive = 7;
   repeated string fields = 3;
   bool all_fields = 4;
 }
 
 message SecurityRuleRowFilter {
-  string condition = 1;
+  // The condition under which this rule applies.
+  // It is ANDed together with the condition_kinds and condition_resources.
+  string condition_expression = 1;
+  // The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+  repeated string condition_kinds = 4;
+  // The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+  // It is ORed together with the condition_kinds.
+  repeated ResourceName condition_resources = 5;
   string sql = 2; // Raw SQL expression to apply to the underlying table
   Expression expression = 3; // Regular query expression referencing dimension names
+}
+
+message SecurityRuleTransitiveAccess {
+  ResourceName resource = 1; // this rules resolves to rules that provides access to whatever is needed to access this resource.
 }
 
 message MetricsViewState {

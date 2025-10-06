@@ -30,7 +30,7 @@
 
   // Clean up chat resources when leaving the chat context entirely
   beforeNavigate(({ to }) => {
-    const isChatRoute = to?.route?.id?.includes("chat");
+    const isChatRoute = to?.route?.id?.includes("ai");
     if (!isChatRoute) {
       cleanupChatInstance(instanceId);
     }
@@ -47,7 +47,11 @@
     onNewConversationClick={() => {
       chatInputComponent?.focusInput();
     }}
-  />
+  >
+    <svelte:fragment slot="footer">
+      <slot name="sidebar-footer" />
+    </svelte:fragment>
+  </ConversationSidebar>
 
   <!-- Main Chat Area -->
   <div class="chat-main">

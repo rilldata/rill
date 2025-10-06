@@ -168,7 +168,7 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 			return "", fmt.Errorf("failed to parse gcs config properties: %w", err)
 		}
 		// If no credentials are provided we assume that the user wants to use the native credentials
-		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "" && gcsConfig.SecretJSON == "") {
+		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "") {
 			return "", errGCSUsesNativeCreds
 		}
 		var sb strings.Builder
