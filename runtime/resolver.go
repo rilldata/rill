@@ -46,6 +46,8 @@ type Resolver interface {
 	ResolveInteractive(ctx context.Context) (ResolverResult, error)
 	// ResolveExport resolve data for export (e.g. downloads or reports).
 	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
+	// InferRequiredSecurityRules attempts to infer the security rules that are required to be able to execute the resolver for the currently configured properties.
+	InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error)
 }
 
 // ResolverResult is the result of a resolver's execution.

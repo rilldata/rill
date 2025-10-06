@@ -17,7 +17,7 @@
   $: tabs = [
     {
       route: `/${organization}/${project}/-/ai`,
-      label: "AI Assistant",
+      label: "AI",
       hasPermission: $chat,
     },
     {

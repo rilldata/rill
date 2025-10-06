@@ -297,6 +297,98 @@ func SecurityFromQuery(qryName, qryArgsJSON string) (string, []string, error) {
 	return rowFilter, accessibleFields, nil
 }
 
+// SecurityFromRuntimeQuery extracts security attributes like row filter, accessible fields like dimensions and measures from a runtime.Query.
+func SecurityFromRuntimeQuery(query runtime.Query) (string, []string, error) {
+	if query == nil {
+		return "", nil, nil
+	}
+
+	var rowFilter string
+	var accessibleFields []string
+	var err error
+
+	switch q := query.(type) {
+	case *MetricsViewAggregation:
+		rowFilter, err = rowFilterJSON(q.Where, q.WhereSQL, q.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		for _, d := range q.Dimensions {
+			accessibleFields = append(accessibleFields, d.Name)
+		}
+		for _, m := range q.Measures {
+			accessibleFields = append(accessibleFields, m.Name)
+		}
+		if q.TimeRange != nil && q.TimeRange.TimeDimension != "" && !slices.Contains(accessibleFields, q.TimeRange.TimeDimension) {
+			accessibleFields = append(accessibleFields, q.TimeRange.TimeDimension)
+		}
+		for _, s := range q.Sort {
+			if !slices.Contains(accessibleFields, s.Name) {
+				accessibleFields = append(accessibleFields, s.Name)
+			}
+		}
+	case *MetricsViewToplist:
+		rowFilter, err = rowFilterJSON(q.Where, q.WhereSQL, q.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		if q.DimensionName != "" {
+			accessibleFields = append(accessibleFields, q.DimensionName)
+		}
+		accessibleFields = append(accessibleFields, q.MeasureNames...)
+		for _, s := range q.Sort {
+			if !slices.Contains(accessibleFields, s.Name) {
+				accessibleFields = append(accessibleFields, s.Name)
+			}
+		}
+	case *MetricsViewRows:
+		rowFilter, err = rowFilterJSON(q.Where, "", q.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		if q.TimeDimension != "" && !slices.Contains(accessibleFields, q.TimeDimension) {
+			accessibleFields = append(accessibleFields, q.TimeDimension)
+		}
+		for _, s := range q.Sort {
+			if !slices.Contains(accessibleFields, s.Name) {
+				accessibleFields = append(accessibleFields, s.Name)
+			}
+		}
+	case *MetricsViewTimeSeries:
+		rowFilter, err = rowFilterJSON(q.Where, q.WhereSQL, q.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		accessibleFields = append(accessibleFields, q.MeasureNames...)
+		if q.TimeDimension != "" && !slices.Contains(accessibleFields, q.TimeDimension) {
+			accessibleFields = append(accessibleFields, q.TimeDimension)
+		}
+	case *MetricsViewComparison:
+		rowFilter, err = rowFilterJSON(q.Where, q.WhereSQL, q.Filter)
+		if err != nil {
+			return "", nil, err
+		}
+		if q.DimensionName != "" {
+			accessibleFields = append(accessibleFields, q.DimensionName)
+		}
+		for _, m := range q.Measures {
+			accessibleFields = append(accessibleFields, m.Name)
+		}
+		if q.TimeRange != nil && q.TimeRange.TimeDimension != "" && !slices.Contains(accessibleFields, q.TimeRange.TimeDimension) {
+			accessibleFields = append(accessibleFields, q.TimeRange.TimeDimension)
+		}
+		for _, s := range q.Sort {
+			if !slices.Contains(accessibleFields, s.Name) {
+				accessibleFields = append(accessibleFields, s.Name)
+			}
+		}
+	default:
+		return "", nil, fmt.Errorf("query type %T not supported for security extraction", query)
+	}
+
+	return rowFilter, accessibleFields, nil
+}
+
 func rowFilterJSON(where *runtimev1.Expression, whereSQL string, filter *runtimev1.MetricsViewFilter) (string, error) {
 	if filter != nil { // Backwards compatibility
 		if where != nil {
