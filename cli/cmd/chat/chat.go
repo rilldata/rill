@@ -66,7 +66,8 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 					break
 				}
 
-				// If we receive a single interrupt, we stop the current loop and continue anew.
+				// If we receive a single ctrl+C, we want to stop the current loop and continue to the next loop.
+				// We only truly quit if we get two ctrl+C in a row. See use of newDoubleInterruptContext above.
 				ctx, cancel := newInterruptContext(ctx)
 				if prevCancel != nil {
 					prevCancel()
@@ -117,15 +118,16 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 						return err
 					}
 
-					// Print the message
+					// Print truncated message
 					text := formatMessage(resp.Message)
 					if text != formatMessage(lastMsg) { // Skip duplicates, usually happens for nested call chains passing back results
-						text = truncateString(text, terminalWidth()-4-len(resp.Message.Role))
+						n := terminalWidth() - 4 - len(resp.Message.Role)
+						text = truncateString(text, n)
 						fmt.Printf("\n◆ %s: %s\n", resp.Message.Role, text)
 					}
 
 					// Update state
-					conversationID = resp.ConversationId
+					conversationID = resp.ConversationId // Won't change after first iteration
 					lastMsg = resp.Message
 				}
 

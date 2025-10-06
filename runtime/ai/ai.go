@@ -107,10 +107,12 @@ type wrappedTool struct {
 // RegisterTool registers a new tool with the Runner.
 func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 	spec := t.Spec()
-	spec, _ = mcp.ToolFor(spec, func(ctx context.Context, ctr *mcp.CallToolRequest, i In) (*mcp.CallToolResult, Out, error) {
-		var nilOut Out
-		return nil, nilOut, fmt.Errorf("unexpected call to placeholder handler")
-	})
+	if spec.InputSchema == nil {
+		spec.InputSchema, _ = schemaFor[In](false)
+	}
+	if spec.OutputSchema == nil {
+		spec.OutputSchema, _ = schemaFor[Out](true)
+	}
 
 	s.Tools[spec.Name] = &wrappedTool{
 		spec:        spec,
@@ -141,6 +143,30 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 			})
 		},
 	}
+}
+
+// schemaFor generates a JSON schema for a given type.
+// If ignoreIfAny is true, it will return a nil schema if T has type any (use for MCP output schema, where no schema means unstructured result).
+// It is loosely derived from similar logic in github.com/modelcontextprotocol/go-sdk.
+func schemaFor[T any](ignoreIfAny bool) (*jsonschema.Schema, error) {
+	if reflect.TypeFor[T]() == reflect.TypeFor[any]() {
+		if ignoreIfAny {
+			return nil, nil
+		}
+		return &jsonschema.Schema{Type: "object"}, nil
+	}
+
+	rt := reflect.TypeFor[T]()
+	if rt.Kind() == reflect.Pointer {
+		rt = rt.Elem()
+	}
+
+	schema, err := jsonschema.ForType(rt, &jsonschema.ForOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return schema, nil
 }
 
 // Role is the role of the actor that created a message.
@@ -731,8 +757,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
 		var inputSchema string
-		if tool.spec.InputSchema.Properties != nil {
-			inputSchemaBytes, err := tool.spec.InputSchema.MarshalJSON()
+		if tool.spec.InputSchema != nil {
+			inputSchemaBytes, err := json.Marshal(tool.spec.InputSchema)
 			if err != nil {
 				return fmt.Errorf("failed to marshal input schema for tool %q: %w", toolName, err)
 			}
