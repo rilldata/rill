@@ -21,7 +21,7 @@ To connect to data via HTTPS, you have two options depending on your data source
 
 Choose the method that matches your data source requirements.
 
-### Method 1: Authenticated Endpoints
+### Authenticated Endpoints
 
 If your endpoint requires authentication, create a `https` connector that can test your API key before importing data:
 
@@ -34,7 +34,7 @@ headers:
     Authorization: "Bearer {{ .env.connector.https.token }}"
 ```
 
-### Method 2: Public URLs
+### Public URLs
 
 For publicly accessible files, you can simply use the `https` connector to add data from your endpoint or publicly available file.
 

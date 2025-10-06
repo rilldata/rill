@@ -22,7 +22,7 @@ To connect to Google BigQuery, you need to provide authentication credentials. Y
 
 Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON. Local Google Cloud CLI credentials only work for local development and will cause deployment failures.
 
-### Method 1: Service Account JSON 
+### Service Account JSON 
 
 We recommend using Service Account JSON for authentication as it makes deployment to Rill Cloud easier. The `GOOGLE_APPLICATION_CREDENTIALS` environment variable tells Google Cloud SDK which service account key file to use for authentication.
 
@@ -58,7 +58,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 :::
 
 
-### Method 2: Local Google Cloud CLI Credentials (Local Development Only)
+### Local Google Cloud CLI Credentials (Local Development Only)
 
 :::warning Not recommended for production
 Local Google Cloud CLI credentials only work for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Use Method 1 above for production deployments.

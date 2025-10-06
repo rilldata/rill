@@ -25,7 +25,7 @@ To connect to Azure Blob Storage, you need to provide authentication credentials
 
 Choose the method that best fits your setup. For production deployments to Rill Cloud, use Storage Account Key, Connection String, or SAS tokens. Azure CLI authentication only works for local development and will cause deployment failures.
 
-### Method 1: Storage Account Key
+### Storage Account Key
 
 To ensure seamless deployment to Rill Cloud, configure your Azure Storage Account Key directly in your project's `.env` file instead of relying solely on Azure CLI authentication (which only works locally).
 
@@ -43,7 +43,7 @@ azure_storage_key: '{{.env.connector.azure.azure_storage_key}}'
 
 This approach ensures your Azure Blob Storage sources authenticate consistently across both local development and cloud deployment. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your storage account keys.
 
-### Method 2: Connection String
+### Connection String
 
 To ensure seamless deployment to Rill Cloud, configure your Azure Blob Storage credentials using a connection string directly in your project's `.env` file instead of relying solely on Azure CLI authentication (which only works locally).
 
@@ -60,7 +60,7 @@ azure_storage_connection_string: '{{.env.connector.azure.azure_storage_connectio
 
 This approach ensures your Azure Blob Storage sources authenticate consistently across both local development and cloud deployment. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your connection string.
 
-### Method 3: Shared Access Signature (SAS) Token
+### Shared Access Signature (SAS) Token
 
 Use Shared Access Signature (SAS) tokens as an alternative authentication method for Azure Blob Storage. SAS tokens provide fine-grained access control with specific permissions and expiration times for secure access to your storage resources.
 
@@ -78,7 +78,7 @@ azure_storage_sas_token: '{{.env.connector.azure.azure_storage_sas_token}}'
 
 This method provides fine-grained access control and enhanced security for your Azure Blob Storage connections. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) to create your Azure SAS token.
 
-### Method 4: Azure CLI Authentication (Local Development Only)
+###  Azure CLI Authentication (Local Development Only)
 
 :::warning Not recommended for production
 Azure CLI authentication only works for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Use one of the methods above for production deployments.
