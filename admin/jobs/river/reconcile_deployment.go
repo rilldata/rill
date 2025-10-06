@@ -44,32 +44,32 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		return err
 	}
 
+	// Resolve slots based on environment
+	var slots int
+	switch depl.Environment {
+	case "prod":
+		slots = proj.ProdSlots
+	case "dev":
+		slots = proj.DevSlots
+	default:
+		// Invalid environment, mark the deployment as errored.
+		_, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, "Invalid environment, must be either 'prod' or 'dev'")
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Resolve variables based on environment
+	vars, err := w.admin.ResolveVariables(ctx, proj.ID, depl.Environment, true)
+	if err != nil {
+		return err
+	}
+
 	var newStatus database.DeploymentStatus
 
 	switch depl.Status {
 	case database.DeploymentStatusPending:
-		// Resolve slots based on environment
-		var slots int
-		switch depl.Environment {
-		case "prod":
-			slots = proj.ProdSlots
-		case "dev":
-			slots = proj.DevSlots
-		default:
-			// Invalid environment, mark the deployment as errored.
-			_, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, "Invalid environment, must be either 'prod' or 'dev'")
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-
-		// Resolve variables based on environment
-		vars, err := w.admin.ResolveVariables(ctx, proj.ID, depl.Environment, true)
-		if err != nil {
-			return err
-		}
-
 		// Initialize the deployment (by provisioning a runtime and creating an instance on it)
 		err = w.admin.StartDeploymentInner(ctx, depl, &admin.StartDeploymentInnerOptions{
 			Annotations: w.admin.NewDeploymentAnnotations(org, proj),
@@ -81,7 +81,6 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		if err != nil {
 			return err
 		}
-
 		newStatus = database.DeploymentStatusOK
 
 	case database.DeploymentStatusStopping:
@@ -90,11 +89,18 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		if err != nil {
 			return err
 		}
-
 		newStatus = database.DeploymentStatusStopped
 
 	case database.DeploymentStatusUpdating:
-		// Not implemented yet, just mark it as OK for now.
+		// Update the deployment by updating its runtime instance and resources.
+		err := w.admin.UpdateDeploymentInner(ctx, depl, &admin.UpdateDeploymentInnerOptions{
+			Annotations: w.admin.NewDeploymentAnnotations(org, proj),
+			Variables:   vars,
+			Version:     proj.ProdVersion,
+		})
+		if err != nil {
+			return err
+		}
 		newStatus = database.DeploymentStatusOK
 
 	case database.DeploymentStatusDeleting:
@@ -122,7 +128,7 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 	reschedule := false
 
 	// If current depl.UpdatedOn != updatedOn when job started, then the deployment changed while we were working and we should reschedule another job.
-	// Otherwise, we can just update the status and finish the job, we do this in a transaction.
+	// Otherwise, we can just update the status and finish the job, we do this in a transaction to prevent other updates to the deployment in between.
 	txCtx, tx, err := w.admin.DB.NewTx(ctx, false)
 	if err != nil {
 		return err

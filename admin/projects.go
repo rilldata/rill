@@ -191,17 +191,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	s.Logger.Info("update project: updating deployments", observability.ZapCtx(ctx))
 
-	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, err
-	}
-	annotations := s.NewDeploymentAnnotations(org, proj)
-
-	err = s.UpdateDeploymentsForProject(ctx, proj, &UpdateDeploymentOptions{
-		Annotations: annotations,
-		Branch:      opts.ProdBranch,
-		Version:     opts.ProdVersion,
-	})
+	err = s.UpdateDeploymentsForProject(ctx, proj)
 	if err != nil {
 		return nil, err
 	}
@@ -247,18 +237,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	// Update deployments
 	s.Logger.Info("update project variables: updating deployments", observability.ZapCtx(ctx))
 
-	org, err := s.DB.FindOrganization(ctx, project.OrganizationID)
-	if err != nil {
-		return err
-	}
-
-	annotations := s.NewDeploymentAnnotations(org, project)
-
-	err = s.UpdateDeploymentsForProject(ctx, project, &UpdateDeploymentOptions{
-		Annotations: annotations,
-		Branch:      project.ProdBranch,
-		Version:     project.ProdVersion,
-	})
+	err = s.UpdateDeploymentsForProject(ctx, project)
 	if err != nil {
 		return err
 	}
@@ -279,11 +258,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 		}
 
 		for _, proj := range projs {
-			err := s.UpdateDeploymentsForProject(ctx, proj, &UpdateDeploymentOptions{
-				Annotations: s.NewDeploymentAnnotations(org, proj),
-				Branch:      proj.ProdBranch,
-				Version:     proj.ProdVersion,
-			})
+			err := s.UpdateDeploymentsForProject(ctx, proj)
 			if err != nil {
 				return err
 			}
