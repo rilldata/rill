@@ -100,7 +100,19 @@ canvases:
 
 ### Dashboard Defaults
 
+Rill supports two types of dashboards: **Explores** (metrics-focused dashboards) and **Canvases** (custom visualization dashboards). You can set default configurations for each type.
+
+#### Explore Defaults
+
 You are also able to set the `defaults` parameter in the explore dashboard to define your default time range, as well as the available `time_zones` and `time_ranges` in an Explore dashboard.
+
+:::note Time Range Format
+Time ranges use [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_8601#Durations). Common examples:
+- `PT24H` = 24 hours
+- `P7D` = 7 days  
+- `P3M` = 3 months
+- `P24M` = 24 months
+:::
 ```yaml
 explores:
     defaults:
@@ -112,6 +124,13 @@ explores:
         - P7D
         - P14D
         - P3M
+
+```
+#### Canvas Defaults
+
+Similarly, you can configure defaults for canvas dashboards:
+
+```yaml
 canvases:
     defaults:
         time_range: P7D
@@ -134,7 +153,7 @@ Rill YAML settings < Explore Dashboard YAML < Bookmarks in Rill Cloud < User Las
 
 ## Environment Configuration
 
-### Differentiating dev and prod environments
+### Differentiating Dev and Prod Environments
 
 Rill comes with default `dev` and `prod` properties defined, corresponding to Rill Developer and Rill Cloud, unless otherwise specified in the `rill start --environment (dev/prod)` command for Rill Developer. You can use these keys to set environment-specific YAML overrides or SQL logic.
 
@@ -221,7 +240,10 @@ mock_users:
 See our embedded example, [here](https://rill-embedding-example.netlify.app/rowaccesspolicy/basic).
 
 ### Custom Attributes
-Embedded dashboards are another type of dashboard that you'll want to test in Rill Developer, mainly because there is no way to pass custom variables in Rill Cloud to ensure that access and data are being presented correctly. To do this, you'll need to add the following to your `mock_users`:
+
+Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code.
+
+To test embedded dashboards locally with custom attributes, add them to `mock_users`:
 ```yaml
 - email: embed@rilldata.com
   name: embed
@@ -261,6 +283,10 @@ You can create a test mock user to ensure that this dashboard is working as desi
 
 ## Feature Flags
 
+:::warning Experimental Features
+Feature flags enable experimental functionality that may be unstable or change before general availability. Use with caution in production environments.
+:::
+
 If you are interested in testing our upcoming features and experimental functionality, you can enable feature flags in your `rill.yaml` file. These flags allow you to access beta features and provide early feedback on new capabilities before they become generally available.
 
 To enable feature flags, add the `features` section to your `rill.yaml`:
@@ -283,7 +309,11 @@ features:
 - `chat`: Enables chat functionality (default: `false`)
 - `dashboardChat`: Enables chat features within dashboards (default: `false`)
 
-For a complete list of available feature flags and their current status, see our [feature flags reference](https://github.com/rilldata/rill/blob/db9a17259716f4b0fc70b01fb5f63d906849268e/web-common/src/features/feature-flags.ts#L36) in the codebase.
+**How to enable**: Add the `features` section to your `rill.yaml`
+
+**Reporting issues**: If you encounter issues with feature flags, please [contact support](/contact) with details about the flag and behavior.
+
+For a complete list of available feature flags and their current status, see our [feature flags reference](https://github.com/rilldata/rill/blob/main/web-common/src/features/feature-flags.ts#L36) in the codebase.
 
 ## Example
 
