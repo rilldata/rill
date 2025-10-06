@@ -4,6 +4,8 @@
   import { matchSorter } from "match-sorter";
   import Button from "../button/Button.svelte";
   import { Search } from "../search";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { builderActions, getAttrs } from "bits-ui";
 
   const voidFn = () => {};
 
@@ -35,8 +37,7 @@
     (sel, { items }, groupIndex) => {
       return (
         sel +
-        items.filter(({ name }) => selectedItems[groupIndex]?.includes(name))
-          .length
+        items.filter(({ id }) => selectedItems[groupIndex]?.includes(id)).length
       );
     },
     0,
@@ -56,7 +57,9 @@
     return selectableGroups.map((group) => {
       return {
         ...group,
-        items: matchSorter(group.items, searchText, { keys: ["label"] }),
+        items: matchSorter(group.items, searchText, {
+          keys: ["labels.0", "id"],
+        }),
       };
     });
   }
@@ -68,11 +71,7 @@
   class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
 >
   <div class="px-3 pt-3 pb-1">
-    <Search
-      bind:value={searchText}
-      label="Search list"
-      showBorderOnFocus={false}
-    />
+    <Search bind:value={searchText} label="Search list" />
   </div>
 
   <div class="flex flex-col flex-1 overflow-y-auto w-full h-fit pb-1">
@@ -83,7 +82,7 @@
             {label ?? name}
           </DropdownMenu.Label>
         {/if}
-        {#each items as { name, label } (name)}
+        {#each items as { id, labels, tooltip } (id)}
           {@const selected = selectedItems[index]?.includes(name)}
 
           <svelte:component
@@ -93,27 +92,61 @@
             {...allowMultiSelect || showSelection
               ? { checked: selected, showXForSelected }
               : {}}
-            class="text-xs cursor-pointer"
+            class="cursor-pointer"
             role="menuitem"
             disabled={requireSelection && singleSelection && selected}
             aria-disabled={requireSelection && singleSelection && selected}
             on:click={() => {
               if (requireSelection && singleSelection && selected) return;
 
-              onSelect(name);
+              onSelect(id);
             }}
           >
-            <span
-              class:ui-copy-disabled={fadeUnselected &&
-                !selected &&
-                allowMultiSelect}
-            >
-              {#if label.length > 240}
-                {label.slice(0, 240)}...
-              {:else}
-                {label}
+            <Tooltip.Root portal="body" openDelay={750}>
+              <Tooltip.Trigger asChild let:builder>
+                <span
+                  use:builderActions={{ builders: [builder] }}
+                  {...getAttrs([builder])}
+                  class="line-clamp-1 truncate w-full"
+                  class:ui-copy-disabled={fadeUnselected &&
+                    !selected &&
+                    allowMultiSelect}
+                >
+                  {#if labels.length > 1}
+                    {id}
+                    <span class="ui-copy-disabled font-normal">
+                      {` (${labels.join(", ")})`}</span
+                    >
+                  {:else}
+                    {@const label = Array.from(labels)[0]}
+                    {#if label.length > 240}
+                      {label.slice(0, 240)}...
+                    {:else}
+                      {label}
+                    {/if}
+                  {/if}
+                </span>
+              </Tooltip.Trigger>
+
+              {#if tooltip}
+                <Tooltip.Content
+                  side="right"
+                  sideOffset={20}
+                  class="bg-neutral-50 border text-neutral-700 text-[13px] pr-4 font-medium shadow-md"
+                >
+                  <h3>Metrics Views</h3>
+
+                  <ul class="">
+                    {#each tooltip?.split(", ") || [] as line, i (i)}
+                      <li class="flex flex-row items-center gap-x-1.5">
+                        <!-- <span class="size-1 rounded-full bg-neutral-600"></span> -->
+                        <a href="/files/metrics/{line}.yaml">{line}</a>
+                      </li>
+                    {/each}
+                  </ul>
+                </Tooltip.Content>
               {/if}
-            </span>
+            </Tooltip.Root>
           </svelte:component>
         {:else}
           <div

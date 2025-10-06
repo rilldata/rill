@@ -57,7 +57,9 @@ export class CanvasResolvedSpec {
     metricViewName: string,
   ) => Readable<string | undefined>;
 
-  allDimensions: Readable<MetricsViewSpecDimension[]>;
+  _allDimensions: Readable<
+    Map<string, MetricsViewSpecDimension & { metricsViewName: string }[]>
+  >;
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
   /** Component Selectors */
@@ -143,21 +145,29 @@ export class CanvasResolvedSpec {
       return [...uniqueByName.values()];
     });
 
-    this.allDimensions = derived(validSpecStore, ($validSpecStore) => {
-      if (!$validSpecStore.data) return [];
-      const dimensions = Object.values(
+    this._allDimensions = derived(validSpecStore, ($validSpecStore) => {
+      const map = new Map<
+        string,
+        MetricsViewSpecDimension & { metricsViewName: string }[]
+      >();
+      if (!$validSpecStore.data) return map;
+      const dimensions = Object.entries(
         $validSpecStore.data.metricsViews || {},
-      ).flatMap(
-        (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
+      ).flatMap(([name, metricsView]) =>
+        (metricsView?.state?.validSpec?.dimensions || []).map((d) => ({
+          ...d,
+          metricsViewName: name,
+        })),
       );
-      const uniqueByName = new Map<string, MetricsViewSpecDimension>();
+
       for (const dimension of dimensions) {
-        uniqueByName.set(
-          (dimension.name || dimension.column) as string,
-          dimension,
-        );
+        const name = dimension.name || dimension.column;
+        if (!name) continue;
+        const existing = map.get(name) || [];
+        map.set(name, [...existing, dimension]);
       }
-      return [...uniqueByName.values()];
+
+      return map;
     });
 
     this.getDimensionsForMetricView = (metricViewName: string) =>

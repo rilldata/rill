@@ -160,10 +160,10 @@ export class Filters {
     // DIMENSION SELECTORS
     // -------------------------------
     this.allDimensions = derived(
-      [this.spec.allDimensions],
+      [this.spec._allDimensions],
       ([$allDimensions]) =>
         getMapFromArray(
-          $allDimensions,
+          Array.from($allDimensions.values()).map((d) => d[0]),
           (dimension) => (dimension.name || dimension.column) as string,
         ),
     );
