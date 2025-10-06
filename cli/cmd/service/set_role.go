@@ -44,10 +44,10 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if projectName != "" {
 				_, err = client.SetProjectMemberServiceRole(cmd.Context(), &adminv1.SetProjectMemberServiceRoleRequest{
-					Name:             name,
-					OrganizationName: ch.Org,
-					ProjectName:      projectName,
-					Role:             role,
+					Name:    name,
+					Org:     ch.Org,
+					Project: projectName,
+					Role:    role,
 				})
 				if err != nil {
 					return err
@@ -55,9 +55,9 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.PrintfSuccess("Updated role of service %q to %q in the project \"%s/%s\"\n", name, role, ch.Org, projectName)
 			} else {
 				_, err = client.SetOrganizationMemberServiceRole(cmd.Context(), &adminv1.SetOrganizationMemberServiceRoleRequest{
-					Name:             name,
-					OrganizationName: ch.Org,
-					Role:             role,
+					Name: name,
+					Org:  ch.Org,
+					Role: role,
 				})
 				if err != nil {
 					return err

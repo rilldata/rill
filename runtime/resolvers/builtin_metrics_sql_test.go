@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/rilldata/rill/runtime"
@@ -84,37 +85,39 @@ measures:
 		},
 	}
 
-	for _, tc := range tt {
-		res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
-			InstanceID:         instanceID,
-			Resolver:           api.Spec.Resolver,
-			ResolverProperties: api.Spec.ResolverProperties.AsMap(),
-			Args:               tc.args,
-			Claims:             &runtime.SecurityClaims{UserAttributes: tc.attrs, SkipChecks: tc.skipChecks},
+	for idx, tc := range tt {
+		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+			res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+				InstanceID:         instanceID,
+				Resolver:           api.Spec.Resolver,
+				ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+				Args:               tc.args,
+				Claims:             &runtime.SecurityClaims{UserAttributes: tc.attrs, SkipChecks: tc.skipChecks},
+			})
+			if tc.wantErr != "" {
+				require.Equal(t, tc.wantErr, err.Error())
+				return
+			}
+			require.NoError(t, err)
+			defer res.Close()
+			require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
+
+			meta := res.Meta()
+			require.NotNil(t, meta)
+
+			schemaFields := map[string]bool{}
+			for _, f := range res.Schema().Fields {
+				schemaFields[f.Name] = true
+			}
+
+			for _, m := range meta["fields"].([]map[string]any) {
+				name, ok := m["name"].(string)
+				require.True(t, ok)
+				_, exists := schemaFields[name]
+				require.True(t, exists, "meta contains field not in schema: %s", name)
+				delete(schemaFields, name)
+			}
+			require.Empty(t, schemaFields, "schema fields missing in meta: %v", schemaFields)
 		})
-		if tc.wantErr != "" {
-			require.Equal(t, tc.wantErr, err.Error())
-			continue
-		}
-		defer res.Close()
-		require.NoError(t, err)
-		require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
-
-		meta := res.Meta()
-		require.NotNil(t, meta)
-
-		schemaFields := map[string]bool{}
-		for _, f := range res.Schema().Fields {
-			schemaFields[f.Name] = true
-		}
-
-		for _, m := range meta["fields"].([]map[string]any) {
-			name, ok := m["name"].(string)
-			require.True(t, ok)
-			_, exists := schemaFields[name]
-			require.True(t, exists, "meta contains field not in schema: %s", name)
-			delete(schemaFields, name)
-		}
-		require.Empty(t, schemaFields, "schema fields missing in meta: %v", schemaFields)
 	}
 }

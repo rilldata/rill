@@ -94,17 +94,17 @@ defaults:
 						},
 						SecurityRules: []*runtimev1.SecurityRule{
 							{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-								Condition: "true",
-								Allow:     true,
+								ConditionExpression: "true",
+								Allow:               true,
 							}}},
 							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
 								Allow:     true,
 								AllFields: true,
 							}}},
 							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-								Condition: "{{ not .user.admin }}",
-								Allow:     false,
-								Fields:    []string{"internal"},
+								ConditionExpression: "{{ not .user.admin }}",
+								Allow:               false,
+								Fields:              []string{"internal"},
 							}}},
 						},
 					},
@@ -348,8 +348,8 @@ security:
 					},
 					SecurityRules: []*runtimev1.SecurityRule{
 						{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-							Condition: "{{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com'",
-							Allow:     true,
+							ConditionExpression: "{{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com'",
+							Allow:               true,
 						}}},
 					},
 				},
@@ -369,8 +369,8 @@ security:
 						SecurityRules: []*runtimev1.SecurityRule{
 							// Derived from metrics_view and explore
 							{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-								Condition: "(true) AND ({{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com')",
-								Allow:     true,
+								ConditionExpression: "(true) AND ({{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com')",
+								Allow:               true,
 							}}},
 							// Inherited from metrics_view
 							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
@@ -378,8 +378,8 @@ security:
 								AllFields: true,
 							}}},
 							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-								Condition: "{{ not .user.admin }}",
-								Fields:    []string{"internal"},
+								ConditionExpression: "{{ not .user.admin }}",
+								Fields:              []string{"internal"},
 							}}},
 						},
 					},

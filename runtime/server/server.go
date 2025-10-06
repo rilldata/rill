@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -311,6 +312,10 @@ func timeoutSelector(fullMethodName string) time.Duration {
 		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
 	}
 
+	if fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
+		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
+	}
+
 	return time.Second * 30
 }
 
@@ -345,6 +350,9 @@ func mapGRPCError(err error) error {
 		return ErrForbidden
 	}
 	if errors.Is(err, runtime.ErrForbidden) {
+		return ErrForbidden
+	}
+	if errors.Is(err, metricsview.ErrForbidden) {
 		return ErrForbidden
 	}
 	return err

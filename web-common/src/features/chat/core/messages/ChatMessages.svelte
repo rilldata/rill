@@ -99,7 +99,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    background: #fafafa;
+    background: var(--surface);
   }
 
   /* Sidebar layout: messages container scrolls */
@@ -110,10 +110,11 @@
 
   /* Fullpage layout: parent scrolls, content centered */
   .chat-messages.fullpage {
-    padding: 0rem 1rem 0rem 1rem;
+    padding: 1rem 1rem;
     max-width: 48rem;
     margin: 0 auto;
     width: 100%;
+    min-height: 100%;
   }
 
   .chat-empty {
@@ -124,7 +125,11 @@
     height: 100%;
     text-align: center;
     color: #6b7280;
-    padding: 2rem;
+  }
+
+  /* Fullpage layout: enhanced empty state */
+  .chat-messages.fullpage .chat-empty {
+    padding: 4rem 2rem;
   }
 
   .chat-empty-title {
@@ -134,9 +139,36 @@
     margin-bottom: 0.25rem;
   }
 
+  .chat-messages.fullpage .chat-empty-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.5rem;
+  }
+
   .chat-empty-subtitle {
     font-size: 0.75rem;
     color: #6b7280;
+  }
+
+  .chat-messages.fullpage .chat-empty-subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+  }
+
+  /* Responsive: adjust fullpage empty state for mobile */
+  @media (max-width: 640px) {
+    .chat-messages.fullpage .chat-empty {
+      padding: 2rem 1rem;
+    }
+
+    .chat-messages.fullpage .chat-empty-title {
+      font-size: 1.25rem;
+    }
+
+    .chat-messages.fullpage .chat-empty-subtitle {
+      font-size: 0.875rem;
+    }
   }
 
   .response-loading {

@@ -240,6 +240,42 @@ func TestDatabaseTypeToPB(t *testing.T) {
 				}}}},
 			}}},
 		},
+		// Array having struct
+		{
+			input: `STRUCT(id BIGINT, name VARCHAR)[]`,
+			output: &runtimev1.Type{
+				Code:     runtimev1.Type_CODE_ARRAY,
+				Nullable: true,
+				ArrayElementType: &runtimev1.Type{
+					Code:     runtimev1.Type_CODE_STRUCT,
+					Nullable: true,
+					StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
+						{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+						{Name: "name", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+					}},
+				},
+			},
+		},
+		// Array of struct having array
+		{
+			input: `STRUCT(id BIGINT, tags VARCHAR[])[]`,
+			output: &runtimev1.Type{
+				Code:     runtimev1.Type_CODE_ARRAY,
+				Nullable: true,
+				ArrayElementType: &runtimev1.Type{
+					Code:     runtimev1.Type_CODE_STRUCT,
+					Nullable: true,
+					StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
+						{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+						{Name: "tags", Type: &runtimev1.Type{
+							Code:             runtimev1.Type_CODE_ARRAY,
+							Nullable:         true,
+							ArrayElementType: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true},
+						}},
+					}},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
