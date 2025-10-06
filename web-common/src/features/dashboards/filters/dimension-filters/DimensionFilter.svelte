@@ -24,7 +24,10 @@
   import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1Expression,
+    V1MetricsView,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
   import {
@@ -33,7 +36,7 @@
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
 
   export let name: string;
-  export let metricsViewNames: string[];
+  export let metricsViews: Record<string, V1MetricsView>;
   export let label: string;
   export let mode: DimensionFilterMode;
   export let selectedValues: string[];
@@ -86,29 +89,24 @@
       (curMode === DimensionFilterMode.InList &&
         searchedBulkValues.length > 0));
 
-  $: searchResultsQuery = useDimensionSearch(
-    instanceId,
-    metricsViewNames,
-    name,
-    {
-      mode: curMode,
-      values:
-        curMode === DimensionFilterMode.Select
-          ? selectedValues
-          : searchedBulkValues,
-      searchText: curSearchText,
-      timeStart,
-      timeEnd,
-      enabled: enableSearchQuery,
-      additionalFilter: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(whereFilter, name),
-          [],
-        ),
-        undefined,
+  $: searchResultsQuery = useDimensionSearch(instanceId, metricsViews, name, {
+    mode: curMode,
+    values:
+      curMode === DimensionFilterMode.Select
+        ? selectedValues
+        : searchedBulkValues,
+    searchText: curSearchText,
+    timeStart,
+    timeEnd,
+    enabled: enableSearchQuery,
+    additionalFilter: sanitiseExpression(
+      mergeDimensionAndMeasureFilters(
+        getFiltersForOtherDimensions(whereFilter, name),
+        [],
       ),
-    },
-  );
+      undefined,
+    ),
+  });
   $: ({
     data: searchResults,
     error: errorFromSearchResults,
@@ -124,7 +122,7 @@
 
   $: allSearchResultsCountQuery = useAllSearchResultsCount(
     instanceId,
-    metricsViewNames,
+    Object.keys(metricsViews),
     name,
     {
       mode: curMode,

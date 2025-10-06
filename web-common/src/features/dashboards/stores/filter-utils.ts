@@ -306,7 +306,15 @@ export function getValuesInExpression(expr?: V1Expression): any[] {
   return expr ? (expr.cond?.exprs?.slice(1).map((e) => e.val) ?? []) : [];
 }
 
-export const matchExpressionByName = (e: V1Expression, name: string) => {
+export const matchExpressionByName = (
+  e: V1Expression,
+  name: string | string[],
+) => {
+  if (Array.isArray(name)) {
+    const match = e.cond?.exprs?.[0].ident;
+    if (!match) return false;
+    return name.includes(match);
+  }
   return e.cond?.exprs?.[0].ident === name;
 };
 

@@ -49,6 +49,7 @@
         measureHasFilter,
       },
       spec: { canvasSpec, _allDimensions, allSimpleMeasures },
+      specStore,
       timeControls: {
         allTimeRange,
         timeRangeStateStore,
@@ -72,6 +73,8 @@
   $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
   $: availableTimeZones = $canvasSpec?.timeZones ?? [];
   $: timeRanges = $canvasSpec?.timeRanges ?? [];
+
+  $: metricsViews = $specStore.data?.metricsViews || {};
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -196,14 +199,10 @@
         </div>
       {:else}
         {#each allDimensionFilters as [name, { isInclude, label, mode, selectedValues, inputText, metricsViewNames }] (name)}
-          {@const dimension = allDimensions.find(
-            (d) => d.name === name || d.column === name,
-          )}
-          {@const dimensionName = dimension?.name || dimension?.column}
           <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName && metricsViewNames?.length}
+            {#if name && metricsViewNames?.length}
               <DimensionFilter
-                {metricsViewNames}
+                {metricsViews}
                 {readOnly}
                 {name}
                 {label}
