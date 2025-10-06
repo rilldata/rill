@@ -596,7 +596,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 					{
 						Name:     timeDim,
 						Column:   timeDim,
-						DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: false},
+						DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true},
 					},
 				},
 			},
