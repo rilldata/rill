@@ -49,9 +49,6 @@ type CatalogStore interface {
 	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool, triggered bool) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
-	FindModelPartitionByKey(ctx context.Context, modelID, partitionKey string) (ModelPartition, error)
-	FindModelPartitionsWithErrors(ctx context.Context, modelID string) ([]ModelPartition, error)
-
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
 	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 
