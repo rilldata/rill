@@ -14,7 +14,7 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let open = false;

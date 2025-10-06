@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import { getUserCounts } from "@rilldata/web-admin/features/organizations/users/selectors.ts";
+  import { getUserCounts } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
 
   export let data;
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getUserGroupsForUsersInOrg } from "@rilldata/web-admin/features/organizations/users/selectors.ts";
+  import { getUserGroupsForUsersInOrg } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";

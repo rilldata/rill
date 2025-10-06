@@ -1,9 +1,13 @@
 <script lang="ts">
-  import { canManageOrgUser } from "@rilldata/web-admin/features/organizations/users/permission-utils.ts";
+  import {
+    canManageOrgUser,
+    invalidateAfterUserDelete,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import {
+    createAdminServiceRemoveOrganizationMemberUser,
     createAdminServiceSetOrganizationMemberUserRole,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
@@ -12,9 +16,9 @@
   import { page } from "$app/stores";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import OrgUpgradeGuestConfirmDialog from "./OrgUpgradeGuestConfirmDialog.svelte";
-  import { ORG_ROLES_DESCRIPTION_MAP } from "../constants";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import OrgUpgradeGuestConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/OrgUpgradeGuestConfirmDialog.svelte";
+  import { ORG_ROLES_DESCRIPTION_MAP } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
 
   export let email: string;
   export let role: string;
@@ -32,12 +36,13 @@
   $: organization = $page.params.organization;
   $: isGuest = role === OrgUserRoles.Guest;
   $: canManageUser =
-    // TODO: backend doesnt restrict removing oneself, revisit this UI check.
     !isCurrentUser && canManageOrgUser(organizationPermissions, role);
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
     createAdminServiceSetOrganizationMemberUserRole();
+  const removeOrganizationMemberUser =
+    createAdminServiceRemoveOrganizationMemberUser();
 
   async function handleSetRole(role: string) {
     if (role !== OrgUserRoles.Admin && isBillingContact) {
@@ -85,10 +90,10 @@
   async function handleUpgrade(email: string, role: string) {
     try {
       await $setOrganizationMemberUserRole.mutateAsync({
-        organization: organization,
-        email: email,
+        organization,
+        email,
         data: {
-          role: role,
+          role,
         },
       });
 
@@ -108,6 +113,27 @@
       console.error("Error upgrading user role", error);
       eventBus.emit("notification", {
         message: "Error upgrading user role",
+        type: "error",
+      });
+    }
+  }
+
+  async function handleRemove() {
+    try {
+      await $removeOrganizationMemberUser.mutateAsync({
+        organization,
+        email,
+      });
+
+      await invalidateAfterUserDelete(queryClient, organization);
+
+      eventBus.emit("notification", {
+        message: "User removed from organization",
+      });
+    } catch (error) {
+      console.error("Error removing user from organization", error);
+      eventBus.emit("notification", {
+        message: "Error removing user from organization",
         type: "error",
       });
     }
@@ -166,6 +192,13 @@
         <span class="text-[11px] text-slate-500"
           >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
         >
+      </DropdownMenu.Item>
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item
+        class="font-normal flex items-center py-2"
+        on:click={handleRemove}
+      >
+        <span class="text-red-600">Remove</span>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>

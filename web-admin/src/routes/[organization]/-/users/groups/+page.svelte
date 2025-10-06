@@ -4,10 +4,10 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
   } from "@rilldata/web-admin/client";
-  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
-  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
-  import OrgGroupsTable from "@rilldata/web-admin/features/organizations/users/OrgGroupsTable.svelte";
-  import { getOrgUserMembers } from "@rilldata/web-admin/features/organizations/users/selectors.ts";
+  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/CreateUserGroupDialog.svelte";
+  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
+  import OrgGroupsTable from "@rilldata/web-admin/features/organizations/user-management/table/groups/OrgGroupsTable.svelte";
+  import { getOrgUserMembers } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";

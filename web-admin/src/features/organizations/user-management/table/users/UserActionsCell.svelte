@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { canManageOrgUser } from "@rilldata/web-admin/features/organizations/users/permission-utils.ts";
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import {
+    canManageOrgUser,
+    invalidateAfterUserDelete,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
+  import IconButton from "web-common/src/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Trash2Icon } from "lucide-svelte";
-  import RemoveUserFromOrgConfirmDialog from "./RemoveUserFromOrgConfirmDialog.svelte";
+  import RemoveUserFromOrgConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemoveUserFromOrgConfirmDialog.svelte";
   import {
     createAdminServiceRemoveOrganizationMemberUser,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
-    getAdminServiceListUsergroupMemberUsersQueryKey,
     type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { page } from "$app/stores";
 
   export let email: string;
@@ -52,39 +52,11 @@
   async function handleRemove(email: string) {
     try {
       await $removeOrganizationMemberUser.mutateAsync({
-        organization: organization,
-        email: email,
+        organization,
+        email,
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          "autogroup:users",
-        ),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          "autogroup:members",
-        ),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          "autogroup:guests",
-        ),
-      });
+      await invalidateAfterUserDelete(queryClient, organization);
 
       eventBus.emit("notification", {
         message: "User removed from organization",

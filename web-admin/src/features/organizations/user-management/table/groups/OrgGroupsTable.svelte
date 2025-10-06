@@ -5,8 +5,8 @@
   } from "@rilldata/web-admin/client";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
-  import OrgGroupsTableActionsCell from "./OrgGroupsTableActionsCell.svelte";
-  import OrgGroupsTableGroupCompositeCell from "./OrgGroupsTableGroupCompositeCell.svelte";
+  import GroupActionsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupActionsCell.svelte";
+  import GroupCompositeCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupCompositeCell.svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
 
   export let data: V1MemberUsergroup[];
@@ -30,7 +30,7 @@
       enableSorting: true,
       sortDescFirst: true,
       cell: ({ row }) =>
-        flexRender(OrgGroupsTableGroupCompositeCell, {
+        flexRender(GroupCompositeCell, {
           name: row.original.groupName?.startsWith("autogroup:")
             ? transformGroupName(row.original.groupName)
             : row.original.groupName,
@@ -59,7 +59,7 @@
       header: "",
       enableSorting: false,
       cell: ({ row }) =>
-        flexRender(OrgGroupsTableActionsCell, {
+        flexRender(GroupActionsCell, {
           groupName: row.original.groupName,
           currentUserEmail: currentUserEmail,
           searchUsersList: searchUsersList,

@@ -11,9 +11,9 @@
     createAdminServiceSetOrganizationMemberUsergroupRole,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { capitalize } from "@rilldata/web-common/components/table/utils";
-  import { ORG_ROLES_DESCRIPTION_MAP } from "../constants";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { capitalize } from "@rilldata/web-common/components/table/utils.ts";
+  import { ORG_ROLES_DESCRIPTION_MAP } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
 
   export let name: string;
   export let role: string | undefined = undefined;
