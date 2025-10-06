@@ -120,6 +120,45 @@ func TestOLAP(t *testing.T) {
 	}
 }
 
+func TestEmptyRows(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	_, olap := acquireTestBigQuery(t)
+	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT int_col, float_col FROM `rilldata.integration_test.all_datatypes` LIMIT 0"})
+	require.NoError(t, err)
+	defer rows.Close()
+
+	sc := rows.Schema
+	require.Len(t, sc.Fields, 2)
+	require.Equal(t, "int_col", sc.Fields[0].Name)
+	require.Equal(t, "float_col", sc.Fields[1].Name)
+	require.False(t, rows.Next())
+	require.Equal(t, drivers.ErrNoRows, rows.Err())
+
+}
+
+func TestExec(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	_, olap := acquireTestBigQuery(t)
+
+	// create table with dry run
+	err := olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE TABLE `rilldata.integration_test.exec_test` (id INT64, name STRING)", DryRun: true})
+	require.NoError(t, err)
+
+	// create table actually
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: "CREATE OR REPLACE TABLE `rilldata.integration_test.exec_test` (id INT64, name STRING)"})
+	require.NoError(t, err)
+
+	// drop table
+	err = olap.Exec(t.Context(), &drivers.Statement{Query: "DROP TABLE `rilldata.integration_test.exec_test`"})
+	require.NoError(t, err)
+}
+
 func acquireTestBigQuery(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "bigquery")
 	conn, err := drivers.Open("bigquery", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())

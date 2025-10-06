@@ -14,6 +14,8 @@ import (
 	"cloud.google.com/go/civil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 )
 
@@ -26,7 +28,40 @@ func (c *Connection) Dialect() drivers.Dialect {
 
 // Exec implements drivers.OLAPStore.
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	return drivers.ErrNotImplemented
+	if c.config.LogQueries {
+		c.logger.Info("bigquery query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+	}
+	client, err := c.acquireClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	q := client.Query(stmt.Query)
+	q.Parameters = make([]bigquery.QueryParameter, len(stmt.Args))
+	for i, arg := range stmt.Args {
+		q.Parameters[i] = bigquery.QueryParameter{
+			Value: arg,
+		}
+	}
+	if stmt.DryRun {
+		q.DryRun = true
+	}
+
+	j, err := q.Run(ctx)
+	if err != nil {
+		return err
+	}
+	if stmt.DryRun {
+		// Dry run is not asynchronous
+		status := j.LastStatus()
+		return status.Err()
+	}
+	js, err := j.Wait(ctx)
+	if err != nil {
+		return err
+	}
+	err = js.Err()
+	return err
 }
 
 // InformationSchema implements drivers.OLAPStore.
@@ -41,6 +76,9 @@ func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // Query implements drivers.OLAPStore.
 func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, resErr error) {
+	if c.config.LogQueries {
+		c.logger.Info("bigquery query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+	}
 	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return nil, err
@@ -53,33 +91,27 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 			Value: arg,
 		}
 	}
-	j, err := q.Run(ctx)
-	if err != nil {
-		return nil, err
-	}
-	it, err := j.Read(ctx)
+	it, err := q.Read(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// BigQuery schema is only available after fetching the first row
+	// We use query.Read which can also use fast path when results are small.
+	// In fast path schema is only available after fetching the first row.
 	var firstRow []bigquery.Value
 	for i := 0; i < len(it.Schema); i++ {
 		firstRow = append(firstRow, new(bigquery.Value))
 	}
-	err = it.Next(&firstRow)
-	if err != nil {
-		if errors.Is(err, iterator.Done) {
-			return nil, drivers.ErrNoRows
-		}
+	rowErr := it.Next(&firstRow)
+	if rowErr != nil && !errors.Is(rowErr, iterator.Done) {
 		return nil, err
 	}
-
+	// schema is returned even if there are no rows
 	schema, err := fromBQSchema(it.Schema)
 	if err != nil {
 		return nil, err
 	}
-	row := newRows(it, firstRow)
+	row := newRows(it, firstRow, errors.Is(rowErr, iterator.Done))
 	res = &drivers.Result{
 		Rows:   row,
 		Schema: schema,
@@ -143,7 +175,12 @@ type rows struct {
 	canScanRow bool
 }
 
-func newRows(ri *bigquery.RowIterator, firstRow []bigquery.Value) *rows {
+func newRows(ri *bigquery.RowIterator, firstRow []bigquery.Value, noRows bool) *rows {
+	if noRows {
+		return &rows{
+			lastErr: drivers.ErrNoRows,
+		}
+	}
 	r := &rows{
 		ri:              ri,
 		firstRow:        firstRow,
