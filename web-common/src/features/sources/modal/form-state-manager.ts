@@ -1,3 +1,4 @@
+import { writable, get } from "svelte/store";
 import type { SuperValidated } from "sveltekit-superforms";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType, ConnectorType } from "./types";
@@ -39,19 +40,19 @@ export interface FormErrors {
 }
 
 export class FormStateManager {
-  private state: FormState;
+  public readonly state = writable<FormState>();
   private _formStates: FormStates;
   private _errors: FormErrors;
 
   constructor(connector: V1ConnectorDriver, formType: AddDataFormType) {
-    this.state = {
+    this.state.set({
       connector,
       formType,
       connectionTab: "parameters",
       clickhouseConnectorType: "self-hosted",
       submitting: false,
       copied: false,
-    };
+    });
 
     this._formStates = {
       params: null,
@@ -68,27 +69,27 @@ export class FormStateManager {
 
   // Getters
   get connector(): V1ConnectorDriver {
-    return this.state.connector;
+    return get(this.state).connector;
   }
 
   get formType(): AddDataFormType {
-    return this.state.formType;
+    return get(this.state).formType;
   }
 
   get connectionTab(): ConnectorType {
-    return this.state.connectionTab;
+    return get(this.state).connectionTab;
   }
 
   get clickhouseConnectorType(): ClickHouseConnectorType {
-    return this.state.clickhouseConnectorType;
+    return get(this.state).clickhouseConnectorType;
   }
 
   get submitting(): boolean {
-    return this.state.submitting;
+    return get(this.state).submitting;
   }
 
   get copied(): boolean {
-    return this.state.copied;
+    return get(this.state).copied;
   }
 
   get formStates(): FormStates {
@@ -101,23 +102,26 @@ export class FormStateManager {
 
   // Setters
   setConnectionTab(tab: ConnectorType): void {
-    this.state.connectionTab = tab;
+    this.state.update((state) => ({ ...state, connectionTab: tab }));
   }
 
   setClickhouseConnectorType(type: ClickHouseConnectorType): void {
-    this.state.clickhouseConnectorType = type;
-    // Reset connectionTab if switching to Rill-managed
-    if (type === "rill-managed") {
-      this.state.connectionTab = "parameters";
-    }
+    this.state.update((state) => {
+      const newState = { ...state, clickhouseConnectorType: type };
+      // Reset connectionTab if switching to Rill-managed
+      if (type === "rill-managed") {
+        newState.connectionTab = "parameters";
+      }
+      return newState;
+    });
   }
 
   setSubmitting(submitting: boolean): void {
-    this.state.submitting = submitting;
+    this.state.update((state) => ({ ...state, submitting }));
   }
 
   setCopied(copied: boolean): void {
-    this.state.copied = copied;
+    this.state.update((state) => ({ ...state, copied }));
   }
 
   // Form state management
@@ -154,23 +158,24 @@ export class FormStateManager {
 
   // Computed properties
   get isSourceForm(): boolean {
-    return this.state.formType === "source";
+    return get(this.state).formType === "source";
   }
 
   get isConnectorForm(): boolean {
-    return this.state.formType === "connector";
+    return get(this.state).formType === "connector";
   }
 
   get hasDsnFormOption(): boolean {
+    const currentState = get(this.state);
     return (
       this.isConnectorForm &&
       Boolean(
-        this.state.connector.configProperties?.some(
+        currentState.connector.configProperties?.some(
           (property) => property.key === "dsn",
         ),
       ) &&
       Boolean(
-        this.state.connector.configProperties?.some(
+        currentState.connector.configProperties?.some(
           (property) => property.key !== "dsn",
         ),
       )
@@ -178,15 +183,16 @@ export class FormStateManager {
   }
 
   get hasOnlyDsn(): boolean {
+    const currentState = get(this.state);
     return (
       this.isConnectorForm &&
       Boolean(
-        this.state.connector.configProperties?.some(
+        currentState.connector.configProperties?.some(
           (property) => property.key === "dsn",
         ),
       ) &&
       !Boolean(
-        this.state.connector.configProperties?.some(
+        currentState.connector.configProperties?.some(
           (property) => property.key !== "dsn",
         ),
       )
@@ -194,14 +200,15 @@ export class FormStateManager {
   }
 
   get isClickhouseConnector(): boolean {
-    return this.state.connector.name === "clickhouse";
+    return get(this.state).connector.name === "clickhouse";
   }
 
   // Get current active form based on connector and tab
   getCurrentFormState(): SuperFormState | null {
+    const currentState = get(this.state);
     if (this.isClickhouseConnector) {
       return this._formStates.clickhouse;
-    } else if (this.hasOnlyDsn || this.state.connectionTab === "dsn") {
+    } else if (this.hasOnlyDsn || currentState.connectionTab === "dsn") {
       return this._formStates.dsn;
     } else {
       return this._formStates.params;
@@ -210,9 +217,10 @@ export class FormStateManager {
 
   // Get current active error based on connector and tab
   getCurrentError(): FormError | null {
+    const currentState = get(this.state);
     if (this.isClickhouseConnector) {
       return this._errors.clickhouse;
-    } else if (this.hasOnlyDsn || this.state.connectionTab === "dsn") {
+    } else if (this.hasOnlyDsn || currentState.connectionTab === "dsn") {
       return this._errors.dsn;
     } else {
       return this._errors.params;
@@ -221,13 +229,14 @@ export class FormStateManager {
 
   // Get current form ID
   getCurrentFormId(): string {
-    const connectorName = this.state.connector.name;
+    const currentState = get(this.state);
+    const connectorName = currentState.connector.name;
 
     if (this.isClickhouseConnector) {
-      return this.state.connectionTab === "parameters"
+      return currentState.connectionTab === "parameters"
         ? `add-clickhouse-data-${connectorName}-form`
         : `add-clickhouse-data-${connectorName}-dsn-form`;
-    } else if (this.hasOnlyDsn || this.state.connectionTab === "dsn") {
+    } else if (this.hasOnlyDsn || currentState.connectionTab === "dsn") {
       return `add-data-${connectorName}-dsn-form`;
     } else {
       return `add-data-${connectorName}-form`;
@@ -236,16 +245,17 @@ export class FormStateManager {
 
   // Get submit button text
   getSubmitButtonText(): string {
+    const currentState = get(this.state);
     if (this.isClickhouseConnector) {
-      if (this.state.clickhouseConnectorType === "rill-managed") {
-        return this.state.submitting ? "Connecting..." : "Connect";
+      if (currentState.clickhouseConnectorType === "rill-managed") {
+        return currentState.submitting ? "Connecting..." : "Connect";
       } else {
-        return this.state.submitting
+        return currentState.submitting
           ? "Testing connection..."
           : "Test and Connect";
       }
     } else if (this.isConnectorForm) {
-      return this.state.submitting
+      return currentState.submitting
         ? "Testing connection..."
         : "Test and Connect";
     } else {

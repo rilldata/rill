@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { createEventDispatcher } from "svelte";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
-  import type { AddDataFormType } from "./types";
+  import type { AddDataFormType, ConnectorType } from "./types";
+  import type { ClickHouseConnectorType } from "./constants";
 
-  // Import our new architecture components
   import { FormStateManager } from "./form-state-manager";
   import { FormErrorManager } from "./form-error-manager";
   import { getConnectorHandler } from "./connector-handlers";
@@ -31,10 +30,24 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
-  // Initialize state management
   const stateManager = new FormStateManager(connector, formType);
   const errorManager = new FormErrorManager();
   const connectorHandler = getConnectorHandler(connector);
+
+  // Get the store from the state manager
+  const stateStore = stateManager.state;
+
+  // Subscribe to the store and destructure the state
+  let state: any;
+  let connectionTab: ConnectorType = "parameters";
+  let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
+  let submitting = false;
+  let copied = false;
+  $: state = $stateStore;
+  $: connectionTab = state.connectionTab;
+  $: clickhouseConnectorType = state.clickhouseConnectorType;
+  $: submitting = state.submitting;
+  $: copied = state.copied;
 
   // Form states
   let forms: {
@@ -50,10 +63,8 @@
   // YAML preview state
   let yamlPreview = "";
 
-  // Initialize forms
-  onMount(() => {
-    initializeForms();
-  });
+  // Initialize forms during component initialization (required by superForm)
+  initializeForms();
 
   function initializeForms() {
     const onSubmit = async (values: Record<string, unknown>) => {
@@ -61,7 +72,7 @@
         await connectorHandler.handleSubmit(connector, formType, values);
         onClose();
       } catch (error) {
-        const formId = getCurrentFormId(connector, stateManager.connectionTab);
+        const formId = getCurrentFormId(connector, connectionTab);
         errorManager.setApiError(
           formId,
           error,
@@ -87,7 +98,7 @@
     if (name === "path") {
       const currentForm = getCurrentForm(
         connector,
-        stateManager.connectionTab,
+        connectionTab,
         forms || { paramsForm: null, dsnForm: null },
       );
       if (!currentForm || currentForm.tainted?.name) return;
@@ -130,16 +141,12 @@
   function generateYamlPreview() {
     if (stateManager.isClickhouseConnector && clickhouseForms) {
       const values =
-        stateManager.connectionTab === "dsn"
+        connectionTab === "dsn"
           ? clickhouseForms.dsnForm.form
           : clickhouseForms.paramsForm.form;
       return connectorHandler.getYamlPreview(connector, formType, values);
     } else if (forms) {
-      const currentForm = getCurrentForm(
-        connector,
-        stateManager.connectionTab,
-        forms,
-      );
+      const currentForm = getCurrentForm(connector, connectionTab, forms);
       if (currentForm) {
         return connectorHandler.getYamlPreview(
           connector,
@@ -164,22 +171,20 @@
   }
 
   // Emit submitting state to parent
-  $: dispatch("submitting", { submitting: stateManager.submitting });
+  $: dispatch("submitting", { submitting });
 
   // Computed properties for footer
   $: footerDisabled =
-    stateManager.submitting ||
+    submitting ||
     isSubmitDisabled(
       connector,
-      stateManager.connectionTab,
+      connectionTab,
       forms || { paramsForm: null, dsnForm: null },
     );
-  $: footerLoading = stateManager.submitting;
+  $: footerLoading = submitting;
   $: footerLoadingCopy = stateManager.getLoadingCopyText();
-  $: footerFormId = getCurrentFormId(connector, stateManager.connectionTab);
+  $: footerFormId = getCurrentFormId(connector, connectionTab);
   $: footerSubmitButtonText = stateManager.getSubmitButtonText();
-
-  // Get current error for right panel
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -200,11 +205,11 @@
         <FormRendererV2
           {connector}
           {formType}
-          bind:connectionTab={stateManager.connectionTab}
+          bind:connectionTab
           {connectorHandler}
           {forms}
           {onStringInputChange}
-          bind:clickhouseConnectorType={stateManager.clickhouseConnectorType}
+          bind:clickhouseConnectorType
           {clickhouseForms}
           {onClickHouseStringInputChange}
         />
@@ -245,9 +250,9 @@
           ?.details || undefined
       : undefined}
     hasOnlyDsn={stateManager.hasOnlyDsn}
-    connectionTab={stateManager.connectionTab}
+    {connectionTab}
     {yamlPreview}
-    copied={stateManager.copied}
+    {copied}
     {copyYamlPreview}
   />
 </div>

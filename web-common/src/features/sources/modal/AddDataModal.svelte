@@ -17,7 +17,7 @@
   import { connectorIconMapping } from "../../connectors/connector-icon-mapping";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../../connectors/selectors";
   import { duplicateSourceName } from "../sources-store";
-  import AddDataForm from "./AddDataForm.svelte";
+  import AddDataFormV2 from "./AddDataFormV2.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
@@ -232,7 +232,7 @@
         {:else if selectedConnector.name === "local_file"}
           <LocalSourceUpload on:close={resetModal} on:back={back} />
         {:else if selectedConnector.name}
-          <AddDataForm
+          <AddDataFormV2
             connector={selectedConnector}
             formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
