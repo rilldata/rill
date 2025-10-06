@@ -492,6 +492,14 @@ const config = {
             to: '/build/custom-apis'
           },
           {
+            from: '/integrate/custom-apis/metrics-sql-api',
+            to: '/build/custom-apis'
+          },
+          {
+            from: '/integrate/custom-apis/sql-api',
+            to: '/build/custom-apis'
+          },
+          {
             from: '/build/metrics-view/advanced-expressions/case-statements',
             to: '/build/metrics-view/measures/case-statements'
           },
