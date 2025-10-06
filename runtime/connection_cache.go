@@ -119,11 +119,13 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 
 			// Give the driver a hint that it's a managed connector.
 			cfg.config = maps.Clone(cfg.config)
+			cfg.config["managed"] = true
 
 			// For DuckDB with managed: true, we don't need admin provisioning.
 			// Skip admin provisioning to avoid errors in cloud environments where the admin service doesn't have a DuckDB provisioner.
 			skipAdminProvisioning := cfg.driver == "duckdb"
 
+			// Provisioning has been requested, but the instance does not have an admin connector.
 			if inst.AdminConnector == "" || skipAdminProvisioning {
 				// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
 				cfg.config["provision"] = true
