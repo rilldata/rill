@@ -28,6 +28,9 @@
   // Data
   $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
 
+  // Parse messages and fill in context
+  $: currentConversation.context.parseMessages(messages);
+
   // Auto-scroll to bottom when messages change or loading state changes
   afterUpdate(() => {
     if (messagesContainer && layout === "sidebar") {

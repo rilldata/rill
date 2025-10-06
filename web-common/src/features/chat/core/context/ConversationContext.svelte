@@ -1,22 +1,21 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { Chip } from "@rilldata/web-common/components/chip";
+  import ConversationContextEntryDisplay from "@rilldata/web-common/features/chat/core/context/ConversationContextEntryDisplay.svelte";
   import { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
 
   export let conversation: Conversation;
 
-  $: contextData = conversation.context.context;
+  $: context = conversation.context;
+  $: contextData = context.data;
 </script>
 
 {#if $contextData?.length}
-  <div class="flex flex-row gap-x-1 items-center pb-2">
-    {#each $contextData as { type, value } (type)}
-      <Chip>
-        <span slot="body">{value}</span>
-      </Chip>
+  <div class="flex flex-wrap gap-x-1 items-center pb-2">
+    {#each $contextData as entry (entry.type)}
+      <ConversationContextEntryDisplay {context} {entry} />
     {/each}
-    <Button compact noStroke onClick={() => conversation.context.clear()}
-      >Clear</Button
-    >
+    <Button compact noStroke onClick={() => conversation.context.clear()}>
+      Clear
+    </Button>
   </div>
 {/if}

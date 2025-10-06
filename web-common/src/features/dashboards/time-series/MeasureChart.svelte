@@ -35,6 +35,7 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
+  import { DateTime } from "luxon";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   import type { Readable } from "svelte/store";
@@ -248,12 +249,21 @@
     // skip if still scrubbing
     if (preventScrubReset) return;
 
-    if ((e.ctrlKey || e.metaKey) && hoveredTime && measure.name) {
-      anomalyExplanation(
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      hoveredTime &&
+      measure.name &&
+      !!TIME_GRAIN[timeGrain]
+    ) {
+      anomalyExplanation({
         metricsViewName,
-        hoveredTime.toISOString(),
-        measure.name,
-      );
+        measure: measure.name,
+        hoveredTime,
+        scrubStart,
+        scrubEnd,
+        timeGrain,
+        zone,
+      });
       return;
     }
 

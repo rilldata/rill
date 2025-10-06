@@ -27,7 +27,6 @@
     const target = e.target as HTMLTextAreaElement;
     const value = target.value;
     draftMessageStore.set(value);
-    autoResize();
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -52,7 +51,6 @@
 
     // Let the parent component manage the input value
     await tick();
-    autoResize();
     textarea?.focus();
   }
 
@@ -82,7 +80,9 @@
 
   // Auto-resize when value changes
   $: if (textarea && value !== undefined) {
-    autoResize();
+    setTimeout(() => {
+      autoResize();
+    }, 5);
   }
 </script>
 
