@@ -106,7 +106,7 @@ var spec = drivers.Spec{
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
 			Hint:        "Paste your JWT private key for token-based authentication. Used with Connected App and Client ID.",
-			Placeholder: "eyJhbGciOiJS...",
+			Placeholder: "your_jwt_key",
 			Secret:      true,
 		},
 		{
