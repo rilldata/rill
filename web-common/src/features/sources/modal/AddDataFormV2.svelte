@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { get as getStore, type Readable } from "svelte/store";
+  import { get as getStore, type Readable, readable } from "svelte/store";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { AddDataFormType, ConnectorType } from "./types";
   import type { ClickHouseConnectorType } from "./constants";
@@ -63,6 +63,8 @@
 
   // YAML preview state
   let yamlPreview = "";
+  const emptyReadable = readable<any>({});
+  let activeFormStore: Readable<any> = emptyReadable;
 
   // Initialize forms during component initialization (required by superForm)
   initializeForms();
@@ -138,36 +140,22 @@
     }
   }
 
-  // Generate YAML preview
-  function generateYamlPreview() {
-    if (stateManager.isClickhouseConnector && clickhouseForms) {
-      const values =
-        connectionTab === "dsn"
-          ? getStore(clickhouseForms.dsnForm.form as unknown as Readable<any>)
-          : getStore(
-              clickhouseForms.paramsForm.form as unknown as Readable<any>,
-            );
-      return connectorHandler.getYamlPreview(
-        connector,
-        formType,
-        values as any,
-      );
-    } else if (forms) {
-      const currentForm = getCurrentForm(connector, connectionTab, forms);
-      if (currentForm) {
-        const values = getStore(currentForm.form as unknown as Readable<any>);
-        return connectorHandler.getYamlPreview(
-          connector,
-          formType,
-          values as any,
-        );
-      }
-    }
-    return "";
-  }
+  // Track active form store and update YAML preview reactively
+  $: activeFormStore =
+    stateManager.isClickhouseConnector && clickhouseForms
+      ? connectionTab === "dsn"
+        ? (clickhouseForms.dsnForm.form as unknown as Readable<any>)
+        : (clickhouseForms.paramsForm.form as unknown as Readable<any>)
+      : forms
+        ? (getCurrentForm(connector, connectionTab, forms)
+            ?.form as unknown as Readable<any>) || emptyReadable
+        : emptyReadable;
 
-  // Update YAML preview when form values change
-  $: yamlPreview = generateYamlPreview();
+  $: yamlPreview = connectorHandler.getYamlPreview(
+    connector,
+    formType,
+    $activeFormStore as any,
+  );
 
   // Copy YAML preview
   function copyYamlPreview() {
