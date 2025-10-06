@@ -7,85 +7,54 @@ export default function NotFoundContent({ className }) {
 
   return (
     <main className={clsx('container margin-vert--xl', className)}>
-      <div className="row">
-        <div className="col col--6 col--offset-3">
-          <Heading as="h1" className="hero__title">
-            <Translate
-              id="theme.NotFound.title"
-              description="The title of the 404 page">
-              Oops!
+      <div className="col col--6 col--offset-3" style={{
+        textAlign: 'center',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      }}>
+        <img src='/img/404.svg' class='centered' style={{
+          maxWidth: '500px',
+          marginBottom: '2rem'
+        }} />
+        <Heading as="h3" className="hero__subtitle" style={{
+          color: '#1a1a1a',
+          fontSize: '1.5rem',
+          fontWeight: '600',
+          marginBottom: '1rem'
+        }}>
+          <Translate
+            id="theme.NotFound.title"
+            description="The title of the 404 page">
+            Oops! Page not found
+          </Translate>
+        </Heading>
+        <p style={{
+          color: '#8b8b92',
+          fontSize: '1.25rem',
+          lineHeight: '1.6',
+          marginBottom: '1.5rem'
+        }}>
+          <Translate
+            id="theme.NotFound.p1"
+            description="The first paragraph of the 404 page">
+            The page you're looking for might have been removed, had its name changed, or is temporarily unavailable.
+          </Translate>
+        </p>
 
-              The page you were looking for has moved.
-            </Translate>
-          </Heading>
-          <br /><br />
-
-          <img src='/img/404.svg' class='centered' />
-          <br />
-          <p>
-            <Translate
-              id="theme.NotFound.p1"
-              description="The first paragraph of the 404 page">
-              Don't worry! It looks like you've wandered off the beaten path.
-              We're here to help you find what you're looking for. Either use the search bar or type Cmd+K to search the docs.
-            </Translate>
-          </p>
-
-          <p>
-            <Translate
-              id="theme.NotFound.p2"
-              description="The 2nd paragraph of the 404 page">
-              You can also explore our documentation using the navigation menu above,
-              or search for what you're looking for.
-            </Translate>
-          </p>
-
-          <p style={{ marginTop: '2rem', fontSize: '0.9rem', opacity: '0.8' }}>
-            <Translate
-              id="theme.NotFound.reportLink"
-              description="Text for reporting broken links">
-              Found a broken link?
-            </Translate>
-            {' '}
-            <a
-              href="https://github.com/rilldata/rill/issues/new"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--ifm-color-primary)', textDecoration: 'underline' }}
-            >
-              <Translate
-                id="theme.NotFound.reportLinkButton"
-                description="Button text for reporting broken links">
-                Report it here
-              </Translate>
-            </a>
-          </p>
-          <div style={{ textAlign: 'center', margin: '2rem 0' }}>
-            <a
-              href="/"
-              style={{
-                display: 'inline-block',
-                padding: '0.4rem 0.8rem',
-                fontSize: '0.9rem',
-                fontWeight: '400',
-                textDecoration: 'none',
-                borderRadius: '3px',
-                transition: 'all 0.2s ease',
-                marginRight: '0.5rem',
-                border: '1px solid var(--ifm-color-primary)',
-                background: 'transparent',
-                color: 'var(--ifm-color-primary)',
-                cursor: 'pointer'
-              }}
-            >
-              <Translate
-                id="theme.NotFound.homeButton"
-                description="The home page button text">
-                Go to Home Page
-              </Translate>
-            </a>
-          </div>
-        </div>
+        <p style={{
+          color: '#8b8b92',
+          marginBottom: '0'
+        }}>
+          Return to the <a href="/" style={{
+            color: '#3524c0',
+            textDecoration: 'none',
+            fontWeight: '500',
+            borderBottom: '2px solid transparent',
+            transition: 'all 0.2s ease',
+            ':hover': {
+              borderBottomColor: '#0070f3'
+            }
+          }}>Docs</a>
+        </p>
       </div>
     </main >
   );
