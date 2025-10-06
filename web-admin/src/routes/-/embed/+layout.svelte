@@ -22,6 +22,10 @@
 
   const { dashboardChat } = featureFlags;
 
+  // Embedded dashboards communicate directly with the project runtime and do not communicate with the admin server.
+  // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
+  featureFlags.set(false, "adminServer");
+
   $: activeResource = {
     kind: $page.route.id?.includes("explore")
       ? ResourceKind.Explore

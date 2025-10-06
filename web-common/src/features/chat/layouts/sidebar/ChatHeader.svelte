@@ -56,7 +56,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
-    background: #fafafa;
+    background: var(--surface);
     font-weight: 500;
     font-size: 0.875rem;
     min-height: 1.5rem;
