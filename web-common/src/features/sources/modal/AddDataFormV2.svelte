@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import { get as getStore, type Readable } from "svelte/store";
   import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { AddDataFormType, ConnectorType } from "./types";
   import type { ClickHouseConnectorType } from "./constants";
@@ -142,16 +143,23 @@
     if (stateManager.isClickhouseConnector && clickhouseForms) {
       const values =
         connectionTab === "dsn"
-          ? clickhouseForms.dsnForm.form
-          : clickhouseForms.paramsForm.form;
-      return connectorHandler.getYamlPreview(connector, formType, values);
+          ? getStore(clickhouseForms.dsnForm.form as unknown as Readable<any>)
+          : getStore(
+              clickhouseForms.paramsForm.form as unknown as Readable<any>,
+            );
+      return connectorHandler.getYamlPreview(
+        connector,
+        formType,
+        values as any,
+      );
     } else if (forms) {
       const currentForm = getCurrentForm(connector, connectionTab, forms);
       if (currentForm) {
+        const values = getStore(currentForm.form as unknown as Readable<any>);
         return connectorHandler.getYamlPreview(
           connector,
           formType,
-          currentForm.form,
+          values as any,
         );
       }
     }
