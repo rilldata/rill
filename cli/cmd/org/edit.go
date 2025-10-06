@@ -32,7 +32,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("must specify an organization name")
 			}
 
-			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
+			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Org: orgName})
 			if err != nil {
 				if st, ok := status.FromError(err); ok {
 					if st.Code() != codes.NotFound {
@@ -45,7 +45,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			org := resp.Organization
 			req := &adminv1.UpdateOrganizationRequest{
-				Name: org.Name,
+				Org: org.Name,
 			}
 
 			var flagSet bool

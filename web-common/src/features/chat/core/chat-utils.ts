@@ -63,8 +63,8 @@ export function detectAppContext(page: Page): V1AppContext | null {
   const routeId = page.route.id;
 
   switch (routeId) {
-    case "/[organization]/[project]/-/chat":
-    case "/[organization]/[project]/-/chat/[conversationId]":
+    case "/[organization]/[project]/-/ai":
+    case "/[organization]/[project]/-/ai/[conversationId]":
       return {
         contextType: V1AppContextType.APP_CONTEXT_TYPE_PROJECT_CHAT,
       };

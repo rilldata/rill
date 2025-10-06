@@ -45,6 +45,29 @@ test.describe("Embeds", () => {
       ).toBeTruthy();
     });
 
+    test("reports is disabled because of embed only feature flag", async ({
+      embedPage,
+    }) => {
+      const frame = embedPage.frameLocator("iframe");
+
+      // Open Adomain dimenions table.
+      await frame
+        .getByLabel("Open dimension details")
+        .filter({ hasText: "Adomain" })
+        .click();
+
+      // Click export button
+      await frame.getByLabel("Export dimension table data").click();
+      // Export as csv is available.
+      await expect(
+        frame.getByRole("menuitem", { name: "Export as CSV" }),
+      ).toBeVisible();
+      // Create schedule report is not.
+      await expect(
+        frame.getByRole("menuitem", { name: "Create scheduled report..." }),
+      ).not.toBeVisible();
+    });
+
     test("getState returns from embed", async ({ embedPage }) => {
       const logMessages: string[] = [];
       await waitForReadyMessage(embedPage, logMessages);

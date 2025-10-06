@@ -74,7 +74,7 @@ export class URLConversationSelector implements ConversationSelector {
     const currentPage = get(page);
     const organization = currentPage.params.organization;
     const project = currentPage.params.project;
-    await goto(`/${organization}/${project}/-/chat/${id}`, {
+    await goto(`/${organization}/${project}/-/ai/${id}`, {
       replaceState: true,
     });
   }
@@ -83,7 +83,7 @@ export class URLConversationSelector implements ConversationSelector {
     const currentPage = get(page);
     const organization = currentPage.params.organization;
     const project = currentPage.params.project;
-    await goto(`/${organization}/${project}/-/chat`, {
+    await goto(`/${organization}/${project}/-/ai`, {
       replaceState: true,
     });
   }
