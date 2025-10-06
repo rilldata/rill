@@ -417,6 +417,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	return runtime.ReconcileResult{Retrigger: refreshOn}
 }
 
+func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}
+
 // executionSpecHash computes a hash of those model properties that impact execution.
 // It also incorporates the spec hashes of the model's refs.
 // If the spec hash changes, it means the model should be reset and fully re-executed.
@@ -1528,31 +1532,33 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 	opts.InputHandle = ic
 	opts.OutputHandle = oc
-
-	executorName := opts.InputConnector
-	e, err := ic.AsModelExecutor(r.C.InstanceID, opts)
-	if err != nil {
-		if !errors.Is(err, drivers.ErrNotImplemented) {
-			// found another error, return it
-			ir()
-			or()
-			return "", nil, nil, err
-		}
-		executorName = opts.OutputConnector
-		e, err = oc.AsModelExecutor(r.C.InstanceID, opts)
-		if err != nil {
-			ir()
-			or()
-			if errors.Is(err, drivers.ErrNotImplemented) {
-				return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
-			}
-			return "", nil, nil, err
-		}
-	}
-
 	release := func() {
 		ir()
 		or()
+	}
+
+	executorName := opts.InputConnector
+	e, inputErr := ic.AsModelExecutor(r.C.InstanceID, opts)
+	if inputErr != nil {
+		// Try the other connector
+		executorName = opts.OutputConnector
+		var outputErr error
+		e, outputErr = oc.AsModelExecutor(r.C.InstanceID, opts)
+		if outputErr != nil {
+			// Both connectors are not model executors.
+			release()
+
+			// If one of them returned a unique error, return it
+			if !errors.Is(inputErr, drivers.ErrNotImplemented) {
+				return "", nil, nil, inputErr
+			}
+			if !errors.Is(outputErr, drivers.ErrNotImplemented) {
+				return "", nil, nil, outputErr
+			}
+
+			// Both returned not implemented errors
+			return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
+		}
 	}
 
 	return executorName, e, release, nil
@@ -1560,7 +1566,12 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 // newModelEnv makes a ModelEnv configured using the current instance.
 func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, error) {
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access instance: %w", err)
+	}
+
+	cfg, err := inst.Config()
 	if err != nil {
 		return nil, fmt.Errorf("failed to access instance config: %w", err)
 	}
@@ -1581,6 +1592,7 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 		RepoRoot:           repoRoot,
 		StageChanges:       cfg.StageChanges,
 		DefaultMaterialize: cfg.ModelDefaultMaterialize,
+		Connectors:         inst.ResolveConnectors(),
 		AcquireConnector:   r.C.AcquireConn,
 	}, nil
 }

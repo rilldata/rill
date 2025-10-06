@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Button from "../../../../components/button/Button.svelte";
+  import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import DelayedContent from "../../../entity-management/DelayedContent.svelte";
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
@@ -39,11 +40,12 @@
   <div class="conversation-sidebar-header">
     <Button
       type="secondary"
-      href={`/${organization}/${project}/-/chat?new=true`}
+      href={`/${organization}/${project}/-/ai?new=true`}
       class="new-conversation-btn"
       onClick={handleNewConversationButtonClick}
     >
-      + New conversation
+      <PlusIcon size="12px" />
+      New conversation
     </Button>
   </div>
 
@@ -62,7 +64,7 @@
     {:else if conversations.length}
       {#each conversations as conversation}
         <a
-          href={`/${organization}/${project}/-/chat/${conversation.id}`}
+          href={`/${organization}/${project}/-/ai/${conversation.id}`}
           class="conversation-item"
           class:active={conversation.id === currentConversationDto?.id}
           data-testid="conversation-item"
@@ -80,6 +82,11 @@
       </div>
     {/if}
   </div>
+
+  <!-- Footer slot for additional actions (e.g., MCP config button) -->
+  <div class="conversation-sidebar-footer">
+    <slot name="footer" />
+  </div>
 </div>
 
 <style lang="postcss">
@@ -90,6 +97,7 @@
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    min-height: 0;
   }
 
   .conversation-sidebar-header {
@@ -106,6 +114,14 @@
     flex: 1;
     overflow-y: auto;
     padding: 0.25rem;
+    min-height: 0;
+  }
+
+  .conversation-sidebar-footer {
+    flex-shrink: 0;
+    padding: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+    margin-top: auto;
   }
 
   .loading-conversations {

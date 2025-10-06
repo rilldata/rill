@@ -40,6 +40,9 @@ type config struct {
 	Secrets string `mapstructure:"secrets"`
 	// Mode specifies the mode in which to open the database.
 	Mode string `mapstructure:"mode"`
+	// CanScaleToZero indicates if the underlying duckdb service may scale to zero when idle.
+	// When set to true, we try to avoid too frequent non-user queries to the database (such as alert checks and fetching metrics).
+	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
 	// Managed indicates whether to use Rill-managed embedded DuckDB (true) or external DuckDB (false).
 	// When true, ignores Path and Attach settings and uses embedded database.
 	Managed bool `mapstructure:"managed"`
@@ -62,6 +65,7 @@ type config struct {
 func newConfig(cfgMap map[string]any) (*config, error) {
 	cfg := &config{
 		ReadWriteRatio: 0.5,
+		Secrets:        "*",
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
@@ -93,6 +97,11 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
 
+	// set can_scale_to_zero for motherduck by default
+	if _, ok := cfgMap["can_scale_to_zero"]; !ok && cfg.isMotherduck() {
+		cfg.CanScaleToZero = true
+	}
+
 	return cfg, nil
 }
 
@@ -108,13 +117,7 @@ func (c *config) writeSettings() map[string]string {
 	return writeSettings
 }
 
-func (c *config) secretConnectors() []string {
-	if c.Secrets == "" {
-		return nil
-	}
-	res := strings.Split(c.Secrets, ",")
-	for i, s := range res {
-		res[i] = strings.TrimSpace(s)
-	}
-	return res
+// isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
+func (c *config) isMotherduck() bool {
+	return strings.HasPrefix(c.Path, "md:") || strings.HasPrefix(c.Attach, "'md:")
 }

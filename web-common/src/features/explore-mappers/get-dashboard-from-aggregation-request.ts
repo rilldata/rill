@@ -56,18 +56,18 @@ export async function getDashboardFromAggregationRequest({
   executionTime,
   metricsView,
   explore,
-  annotations,
+  exploreProtoState,
   forceOpenPivot,
 }: TransformerArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
-  if (annotations["web_open_state"]) {
+  if (exploreProtoState) {
     await mergeDashboardFromUrlState(
       queryClient,
       instanceId,
       dashboard,
       metricsView,
       explore,
-      annotations["web_open_state"],
+      exploreProtoState,
     );
     loadedFromState = true;
   }
@@ -207,13 +207,16 @@ async function mergeDashboardFromUrlState(
   exploreSpec: V1ExploreSpec,
   urlState: string,
 ) {
+  if (!exploreSpec.metricsView) return;
+
   const schemaResp = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewSchemaQueryKey(
       instanceId,
-      exploreSpec.metricsView ?? "",
+      exploreSpec.metricsView,
     ),
+    // This seems like an edge case with linter where the undefined check is not honored. Perhaps because it is a callback.
     queryFn: () =>
-      queryServiceMetricsViewSchema(instanceId, exploreSpec.metricsView ?? ""),
+      queryServiceMetricsViewSchema(instanceId, exploreSpec.metricsView!),
   });
   if (!schemaResp.schema) return;
 

@@ -8,7 +8,7 @@ export function isAdminServerQuery(query: Query): boolean {
   const adminApiEndpoints = [
     "/v1/deployments",
     "/v1/github",
-    "/v1/organizations",
+    "/v1/orgs",
     "/v1/projects",
     "/v1/services",
     "/v1/superuser",

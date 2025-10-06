@@ -335,7 +335,7 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 	}
 
 	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
-		OrganizationName: org,
+		Org: org,
 	})
 	if err != nil {
 		return nil, err
@@ -461,8 +461,8 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 		}
 
 		proj, err := adm.GetProject(ctx, &adminv1.GetProjectRequest{
-			OrganizationName: org,
-			Name:             project,
+			Org:     org,
+			Project: project,
 		})
 		if err != nil {
 			return nil, "", err

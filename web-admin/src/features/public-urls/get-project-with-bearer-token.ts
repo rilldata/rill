@@ -29,7 +29,7 @@ export const adminServiceGetProjectWithBearerToken = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetProjectResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${name}`,
+    url: `/v1/orgs/${organizationName}/projects/${name}`,
     method: "get",
     params,
     signal,
@@ -48,7 +48,7 @@ export const getAdminServiceGetProjectWithBearerTokenQueryKey = (
   token: string,
   params?: AdminServiceGetProjectParams,
 ) => [
-  `/v1/organizations/${organizationName}/projects/${name}`,
+  `/v1/orgs/${organizationName}/projects/${name}`,
   `token/${token}`, // Ensures each token has its own entry in the QueryCache
   ...(params ? [params] : []),
 ];

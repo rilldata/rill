@@ -12,7 +12,7 @@ import {
   type MutationFunction,
 } from "@tanstack/svelte-query";
 import {
-  type AdminServiceUnsubscribeReportBody,
+  type AdminServiceUnsubscribeAlertBodyBody,
   type RpcStatus,
   type V1UnsubscribeReportResponse,
 } from "@rilldata/web-admin/client";
@@ -22,11 +22,11 @@ const adminServiceUnsubscribeReportWithToken = (
   organization: string,
   project: string,
   name: string,
-  adminServiceUnsubscribeReportBody: AdminServiceUnsubscribeReportBody,
+  adminServiceUnsubscribeReportBody: AdminServiceUnsubscribeAlertBodyBody,
   token: string,
 ) => {
   return httpClient<V1UnsubscribeReportResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}/unsubscribe`,
+    url: `/v1/orgs/${organization}/projects/${project}/reports/${name}/unsubscribe`,
     method: "post",
     data: adminServiceUnsubscribeReportBody,
     // We use the bearer token to authenticate the request
@@ -49,7 +49,7 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
       token: string;
     },
     TContext
@@ -63,7 +63,7 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
       token: string;
     }
   > = (props) => {
@@ -85,7 +85,7 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
       token: string;
     },
     TContext

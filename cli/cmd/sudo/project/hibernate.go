@@ -20,7 +20,7 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.HibernateProject(ctx, &adminv1.HibernateProjectRequest{
-				Organization:         args[0],
+				Org:                  args[0],
 				Project:              args[1],
 				SuperuserForceAccess: true,
 			})
