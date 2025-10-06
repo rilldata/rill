@@ -35,7 +35,7 @@
     if (!user?.userEmail) return;
     try {
       await $setOrganizationMemberUserRole.mutateAsync({
-        organization: organization,
+        org: organization,
         email: user.userEmail,
         data: {
           role: role,

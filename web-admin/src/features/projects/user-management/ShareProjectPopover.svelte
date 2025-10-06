@@ -23,7 +23,9 @@
     if ($page.url.searchParams.get("share") === "true") {
       // If we are showing the share popover directly, then unset the param from the url.
       // This prevents the user from saving/sharing a url that would open the share popover.
-      void goto(copyWithAdditionalArguments($page.url, {}, { share: false }));
+      void goto(copyWithAdditionalArguments($page.url, {}, { share: false }), {
+        relaceState: true,
+      });
       open = true;
     }
   });

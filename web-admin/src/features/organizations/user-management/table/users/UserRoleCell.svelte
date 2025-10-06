@@ -121,7 +121,7 @@
   async function handleRemove() {
     try {
       await $removeOrganizationMemberUser.mutateAsync({
-        organization,
+        org: organization,
         email,
       });
 
