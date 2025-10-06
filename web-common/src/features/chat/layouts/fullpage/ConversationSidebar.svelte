@@ -92,8 +92,8 @@
 <style lang="postcss">
   .conversation-sidebar {
     width: 280px;
-    background: #f8f9fa;
-    border-right: 1px solid #e5e7eb;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -102,7 +102,7 @@
 
   .conversation-sidebar-header {
     padding: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border);
   }
 
   /* Custom full-width styling that preserves small height */
@@ -120,7 +120,7 @@
   .conversation-sidebar-footer {
     flex-shrink: 0;
     padding: 0.75rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border);
     margin-top: auto;
   }
 
@@ -149,11 +149,11 @@
   }
 
   .conversation-item:hover {
-    background: #e5e7eb;
+    background: var(--muted);
   }
 
   .conversation-item.active {
-    @apply bg-theme-50 border border-theme-300;
+    @apply bg-gray-100;
   }
 
   .conversation-title {

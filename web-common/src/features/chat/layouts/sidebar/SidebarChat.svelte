@@ -70,8 +70,8 @@
     position: relative;
     width: var(--sidebar-width);
     height: 100%;
-    background: #ffffff;
-    border-left: 1px solid #e5e7eb;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
