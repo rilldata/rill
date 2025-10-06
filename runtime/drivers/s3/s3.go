@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -293,22 +294,6 @@ func (c *Connection) GetSTSClient(cfg aws.Config) *sts.Client {
 	})
 }
 
-func (c *Connection) GetAnonymousS3Client(region string) *s3.Client {
-	if region == "" {
-		region = "us-east-1"
-	}
-	cfg := aws.Config{
-		Region:      region,
-		Credentials: aws.AnonymousCredentials{},
-	}
-	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		if c.config.Endpoint != "" {
-			o.BaseEndpoint = aws.String(c.config.Endpoint)
-			o.UsePathStyle = true
-		}
-	})
-}
-
 func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
 	provider, err := c.newCredentialsProvider(ctx)
 	if err != nil {
@@ -331,39 +316,39 @@ func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
 
 // newCredentialsProvider returns credentials for connecting to AWS.
 func (c *Connection) newCredentialsProvider(ctx context.Context) (aws.CredentialsProvider, error) {
-	// If a role ARN is provided, assume the role and return the credentials provider.
+	// 1. If a role ARN is provided, assume it.
 	if c.config.RoleARN != "" {
-		provider, err := c.assumeRole(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to assume role: %w", err)
-		}
-		return provider, nil
+		return c.assumeRole(ctx)
 	}
 
-	var provider aws.CredentialsProvider
-
+	// 1. Explicit static credentials
 	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
-		provider = credentials.NewStaticCredentialsProvider(
+		return aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
 			c.config.AccessKeyID,
 			c.config.SecretAccessKey,
 			c.config.SessionToken,
-		)
-	} else if c.config.AllowHostAccess {
-		// Allow host-based credentials (env vars, shared config, etc.)
-		cfg, err := config.LoadDefaultConfig(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load default AWS config: %w", err)
-		}
-		provider = cfg.Credentials
-	} else {
-		// Fall back to anonymous creds
-		provider = aws.AnonymousCredentials{}
+		)), nil
 	}
 
-	if _, err := provider.Retrieve(ctx); err != nil {
-		return aws.AnonymousCredentials{}, nil
+	// 3. Allow host-based credentials, but only local (env + shared files)
+	if c.config.AllowHostAccess {
+		os.Setenv("AWS_EC2_METADATA_DISABLED", "true") // Disable remote lookups
+		cfg, err := config.LoadDefaultConfig(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config: %w", err)
+		}
+
+		// Optional: pre-fetch credentials to ensure valid keys exist
+		if creds, err := cfg.Credentials.Retrieve(ctx); err != nil || !creds.HasKeys() {
+			// fallback to anonymous if nothing found
+			return aws.AnonymousCredentials{}, nil
+		}
+
+		return cfg.Credentials, nil
 	}
-	return provider, nil
+
+	// 3. Fallback to anonymous credentials
+	return aws.AnonymousCredentials{}, nil
 }
 
 // assumeRole returns a credentials provider that assumes the role specified by the ARN using AWS SDK v2.
@@ -375,8 +360,9 @@ func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, e
 		sessionName = "rill-session"
 	}
 
-	// Options for loading base AWS config
-	loadOpts := []func(*config.LoadOptions) error{}
+	loadOpts := []func(*config.LoadOptions) error{
+		config.WithSharedConfigFiles([]string{}), // Disable shared config (~/.aws/config, ~/.aws/credentials)
+	}
 
 	// Add region if specified, otherwise default to us-east-1
 	if c.config.Region != "" {
@@ -416,4 +402,20 @@ func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, e
 
 	// Wrap in a credentials cache so multiple calls share refreshed credentials
 	return aws.NewCredentialsCache(assumeRoleProvider), nil
+}
+
+func GetAnonymousS3Client(region, endpoint string) *s3.Client {
+	if region == "" {
+		region = "us-east-1"
+	}
+	cfg := aws.Config{
+		Region:      region,
+		Credentials: aws.AnonymousCredentials{},
+	}
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if endpoint != "" {
+			o.BaseEndpoint = aws.String(endpoint)
+			o.UsePathStyle = true
+		}
+	})
 }

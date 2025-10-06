@@ -64,6 +64,10 @@ func (c *Connection) BucketRegion(ctx context.Context, bucket string) (string, e
 	if err != nil {
 		return "", fmt.Errorf("failed to get bucket location: %w", err)
 	}
+
+	if result.BucketRegion == nil || *result.BucketRegion == "" {
+		return "", fmt.Errorf("bucket region is not returned for bucket %s", bucket)
+	}
 	return *result.BucketRegion, nil
 }
 
@@ -87,7 +91,7 @@ func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bo
 	}
 	var s3client *s3.Client
 	if anonymous {
-		s3client = c.GetAnonymousS3Client(region)
+		s3client = GetAnonymousS3Client(region, c.config.Endpoint)
 	} else {
 		cfg, err := c.GetAWSConfig(ctx)
 		if err != nil {
