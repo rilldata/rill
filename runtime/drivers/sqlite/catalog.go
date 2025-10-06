@@ -311,55 +311,37 @@ func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string,
 	return nil
 }
 
-func (c *catalogStore) UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
-		c.instanceID,
-		modelID,
-		partitionKey,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored, triggered bool) error {
+func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error {
 	var qry strings.Builder
 	var args []any
 
-	qry.WriteString("UPDATE model_partitions SET explicitly_triggered=?, executed_on=NULL WHERE instance_id=? AND model_id=?")
-	args = append(args, triggered, c.instanceID, modelID)
+	qry.WriteString("UPDATE model_partitions SET explicitly_triggered=true, executed_on=NULL WHERE instance_id=? AND model_id=?")
+	args = append(args, c.instanceID, modelID)
 
 	// Add conditions based on parameters
-	if whereErrored && len(wherePartitionKeyIn) > 0 {
-		// Both conditions: errored AND key in list
-		qry.WriteString(" AND error != '' AND key IN (")
-		for i, k := range wherePartitionKeyIn {
-			if i == 0 {
-				qry.WriteString("?")
-			} else {
-				qry.WriteString(",?")
-			}
-			args = append(args, k)
+	if whereErrored || len(wherePartitionKeyIn) > 0 {
+		qry.WriteString(" AND (")
+
+		if whereErrored {
+			qry.WriteString("error != ''")
 		}
-		qry.WriteString(")")
-	} else if whereErrored {
-		// Only errored condition
-		qry.WriteString(" AND error != ''")
-	} else if len(wherePartitionKeyIn) > 0 {
-		// Only key in list condition
-		qry.WriteString(" AND key IN (")
-		for i, k := range wherePartitionKeyIn {
-			if i == 0 {
-				qry.WriteString("?")
-			} else {
-				qry.WriteString(",?")
+
+		if len(wherePartitionKeyIn) > 0 {
+			if whereErrored {
+				qry.WriteString(" OR ")
 			}
-			args = append(args, k)
+			qry.WriteString("key IN (")
+			for i, k := range wherePartitionKeyIn {
+				if i == 0 {
+					qry.WriteString("?")
+				} else {
+					qry.WriteString(",?")
+				}
+				args = append(args, k)
+			}
+			qry.WriteString(")")
 		}
+
 		qry.WriteString(")")
 	}
 

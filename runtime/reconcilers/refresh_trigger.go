@@ -132,10 +132,10 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			// Handle specific partitions vs all errored partitions
 			if len(mt.Partitions) > 0 {
 				// Set the triggered flag on specific partitions
-				err = catalog.UpdateModelPartitionsTriggered(ctx, modelID, mt.Partitions, false, true)
+				err = catalog.UpdateModelPartitionsTriggered(ctx, modelID, mt.Partitions, false)
 			} else if mt.AllErroredPartitions {
 				// Update all errored partitions - this sets both pending and explicitly_triggered
-				err = catalog.UpdateModelPartitionsTriggered(ctx, modelID, nil, true, true)
+				err = catalog.UpdateModelPartitionsTriggered(ctx, modelID, nil, true)
 			}
 
 			if err != nil {

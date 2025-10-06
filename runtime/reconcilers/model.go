@@ -1027,9 +1027,12 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	defer release()
 
 	// First step is to resolve and sync the partitions.
-	err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
-	if err != nil {
-		return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
+	// Skip this if we're doing an explicit partition refresh (TriggerPartitions), as we only want to execute the explicitly triggered partitions
+	if !model.Spec.TriggerPartitions {
+		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
+		if err != nil {
+			return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
+		}
 	}
 
 	// Track execution metadata
@@ -1179,16 +1182,8 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		}
 	}
 
-	// Clear the flag from all processed partitions if this was an explicitly targeted refresh
+	// Log completion if this was an explicitly targeted refresh
 	if explicitlyTargetedRefresh {
-		var partitionKeys []string
-		for _, p := range explicitlyTriggeredPartitions {
-			partitionKeys = append(partitionKeys, p.Key)
-		}
-		err = catalog.UpdateModelPartitionsTriggered(ctx, model.State.PartitionsModelId, partitionKeys, false, false)
-		if err != nil {
-			return "", nil, false, fmt.Errorf("failed to clear triggered flag: %w", err)
-		}
 		r.C.Logger.Info("Completed targeted partition refresh", zap.Int("partitions_processed", len(explicitlyTriggeredPartitions)), observability.ZapCtx(ctx))
 	}
 
@@ -1241,6 +1236,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	partition.ExecutedOn = &now
 	partition.Error = errStr
 	partition.Elapsed = time.Since(start)
+	partition.ExplicitlyTriggered = false
 	logArgs = append(logArgs, zap.Duration("elapsed", partition.Elapsed))
 
 	err = catalog.UpdateModelPartition(ctx, mdl.State.PartitionsModelId, partition)
