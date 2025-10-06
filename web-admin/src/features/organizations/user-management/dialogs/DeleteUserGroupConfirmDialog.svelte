@@ -28,7 +28,7 @@
   async function onDelete(deletedUserGroupName: string) {
     try {
       await $deleteUserGroup.mutateAsync({
-        organization: organization,
+        org: organization,
         usergroup: deletedUserGroupName,
       });
 

@@ -13,7 +13,7 @@ export async function generateEmbed(
 ): Promise<void> {
   try {
     const response: AxiosResponse<{ iframeSrc: string }> = await axios.post(
-      `http://localhost:8080/v1/organizations/${organization}/projects/${project}/iframe`,
+      `http://localhost:8080/v1/orgs/${organization}/projects/${project}/iframe`,
       {
         resource: resourceName,
         type: resourceType,

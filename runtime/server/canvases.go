@@ -45,7 +45,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	}
 
 	// Check if the user has access to the canvas
-	res, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
+	res, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply security policy: %w", err)
 	}
@@ -121,8 +121,8 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	}
 
 	// Extract metrics view names from components
+	var msqlParser *metricssql.Compiler
 	metricsViews := make(map[string]bool)
-
 	for _, cmp := range components {
 		validSpec := cmp.GetComponent().State.ValidSpec
 		if validSpec == nil || validSpec.RendererProperties == nil {
@@ -136,26 +136,43 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 					metricsViews[name] = true
 				}
 			case "metrics_sql":
-				// Handle single string
-				if sql := v.GetStringValue(); sql != "" {
-					claims := auth.GetClaims(ctx).SecurityClaims()
-					compiler := metricssql.New(ctrl, req.InstanceId, claims, 0)
-					q, err := compiler.Rewrite(ctx, sql)
-					if err == nil && q.MetricsView != "" {
-						metricsViews[q.MetricsView] = true
+				// Instantiate a metrics SQL parser
+				if msqlParser == nil {
+					msqlParser = metricssql.New(&metricssql.CompilerOptions{
+						GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+							mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+							if err != nil {
+								return nil, err
+							}
+							sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, auth.GetClaims(ctx).SecurityClaims(), mv)
+							if err != nil {
+								return nil, err
+							}
+							if !sec.CanAccess() {
+								return nil, runtime.ErrForbidden
+							}
+							return mv, nil
+						},
+					})
+				}
+
+				// Create list of queries to analyze
+				var queries []string
+				if s := v.GetStringValue(); s != "" {
+					queries = append(queries, s)
+				} else if vals := v.GetListValue(); vals != nil {
+					for _, val := range vals.Values {
+						if s := val.GetStringValue(); s != "" {
+							queries = append(queries, s)
+						}
 					}
 				}
-				// Handle array of strings
-				if listValue := v.GetListValue(); listValue != nil {
-					for _, item := range listValue.Values {
-						if sql := item.GetStringValue(); sql != "" {
-							claims := auth.GetClaims(ctx).SecurityClaims()
-							compiler := metricssql.New(ctrl, req.InstanceId, claims, 0)
-							q, err := compiler.Rewrite(ctx, sql)
-							if err == nil && q.MetricsView != "" {
-								metricsViews[q.MetricsView] = true
-							}
-						}
+
+				// Analyze each query
+				for _, sql := range queries {
+					q, err := msqlParser.Parse(ctx, sql)
+					if err == nil && q.MetricsView != "" {
+						metricsViews[q.MetricsView] = true
 					}
 				}
 			}
@@ -179,7 +196,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 
 	// Apply security policies to the metrics views.
 	for name, mv := range referencedMetricsViews {
-		mv, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), mv)
+		mv, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), mv)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply security policy: %w", err)
 		}
