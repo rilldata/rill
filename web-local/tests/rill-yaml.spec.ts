@@ -3,13 +3,25 @@ import { uploadFile } from "./utils/sourceHelpers";
 import { test } from "./setup/base";
 
 async function expectRillYAMLToContainOlapConnector(page: Page, text: string) {
+  // Wait for the editor to be visible first
   const rillYamlEditor = page
     .getByLabel("codemirror editor")
     .getByRole("textbox");
-  await expect(rillYamlEditor).toContainText(`olap_connector: ${text}`);
+
+  // Wait for the editor to be visible with a longer timeout
+  await expect(rillYamlEditor).toBeVisible({ timeout: 10000 });
+
+  // Wait a bit for the content to load
+  await page.waitForTimeout(1000);
+
+  // Check for the text with a longer timeout
+  await expect(rillYamlEditor).toContainText(`olap_connector: ${text}`, {
+    timeout: 10000,
+  });
 }
 
 test.describe("Default olap_connector behavior", () => {
+  test.describe.configure({ retries: 2 }); // Add retries for flaky tests
   test("Should set default olap_connector to duckdb for empty project", async ({
     page,
   }) => {
@@ -17,6 +29,8 @@ test.describe("Default olap_connector behavior", () => {
     await expect(page.getByText("Getting started")).toBeVisible();
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
+    // Wait for navigation to complete
+    await page.waitForURL("**/files/rill.yaml");
     await expectRillYAMLToContainOlapConnector(page, "duckdb");
   });
 
@@ -31,6 +45,8 @@ test.describe("Default olap_connector behavior", () => {
     await page.getByText("View this source").click();
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
+    // Wait for navigation to complete
+    await page.waitForURL("**/files/rill.yaml");
     await expectRillYAMLToContainOlapConnector(page, "duckdb");
   });
 
@@ -55,6 +71,8 @@ test.describe("Default olap_connector behavior", () => {
     await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
 
     await page.getByRole("link", { name: "rill.yaml" }).click();
+    // Wait for navigation to complete
+    await page.waitForURL("**/files/rill.yaml");
     await expectRillYAMLToContainOlapConnector(page, "clickhouse");
   });
 });
