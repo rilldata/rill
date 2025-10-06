@@ -15,12 +15,12 @@ Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/bl
 
 ## Overview
 
-[Snowflake](https://docs.snowflake.com/en/user-guide-intro) is a cloud-based data platform designed to facilitate data warehousing, data lakes, data engineering, data science, data application development, and data sharing. It separates compute and storage, enabling users to scale up or down instantly without downtime, providing a cost-effective solution for data management. With its unique architecture and support for multi-cloud environments, including AWS, Azure, and Google Cloud Platform, Snowflake offers seamless data integration, secure data sharing across organizations, and real-time access to data insights, making it a common choice to power many business intelligence applications and use cases. Rill supports natively connecting to and reading from Snowflake as a source using the [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake).
+[Snowflake](https://docs.snowflake.com/en/user-guide-intro) is a cloud-based data platform designed to facilitate data warehousing, data lakes, data engineering, data science, data application development, and data sharing. It separates compute and storage, enabling users to scale up or down instantly without downtime, providing a cost-effective solution for data management. With its unique architecture and support for multi-cloud environments, including AWS, Azure, and Google Cloud Platform, Snowflake offers seamless data integration, secure data sharing across organizations, and real-time access to data insights, making it a common choice to power many business intelligence applications and use cases. You can connect to and read from Snowflake data warehouses using the [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake).
 
 
 ## Connect to Snowflake
 
-In Rill Developer, Connect to Snowflake via Add Data. This will automatically create the `snowflake.yaml` file in your connectors/ folder and populate the `.env` file with `connector.snowflake.*` depending on if you inputted parameters or connection string.
+Create a connector with your credentials to start exploring your data via the Data Explorer. Here's an example connector configuration file you can copy into your `connectors/` folder to get started:
 
 ```yaml
 # Connector YAML
@@ -32,13 +32,13 @@ driver: snowflake
 dsn: '{{ .env.connector.snowflake.dsn }}' 
 ```
 
-:::warning Beware of committing credentials to Git
-
-Outside of local development, it is generally not recommended to specify or save the credentials directly in the `dsn` of your source YAML file, as this information can potentially be committed to Git!
-
+:::tip Using the Add Data Form
+You can also use the Add Data form in Rill Developer, which will automatically create the `snowflake.yaml` file and populate the `.env` file with `connector.snowflake.*` parameters based on the parameters or connection string you provide.
 :::
 
-Rill uses the following syntax when defining a connection string using a private key:
+
+
+Use the following syntax when defining a connection string using a private key:
 
 ```sql
 <username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_url_safe>
@@ -60,14 +60,14 @@ When ingesting data locally, consider setting parameters in your connector file 
 
 For more details, see our [Dev/Prod setup docs](/connect/templating).
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud (i.e., `rill deploy`), Rill requires credentials to be passed via the Snowflake connection string as a source configuration `dsn` field or by passing/updating the credentials used by Rill Cloud directly by running:
+When deploying your project to Rill Cloud, you must provide Snowflake credentials via the connection string as a source configuration `dsn` field. If these credentials exist in your `.env` file, they'll be pushed with your project automatically.
 
-```
+To manually configure your environment variables, run:
+```bash
 rill env configure
 ```
-
 
 :::tip Did you know?
 
@@ -79,7 +79,7 @@ If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTO
 
 ### Using keypair authentication
 
-Rill supports using keypair authentication for enhanced security when connecting to Snowflake,as an alternative to password-based authentication, which Snowflake has deprecated. Per the [Snowflake Go Driver](https://github.com/snowflakedb/gosnowflake) specifications, this requires the following changes to the dsn:
+You can use keypair authentication for enhanced security when connecting to Snowflake as an alternative to password-based authentication, which Snowflake has deprecated. Per the [Snowflake Go Driver](https://github.com/snowflakedb/gosnowflake) specifications, this requires the following changes to the dsn:
 - Remove the password  
 - Add `authenticator=SNOWFLAKE_JWT`  
 - Add `privateKey=<privateKey_url_safe>` 

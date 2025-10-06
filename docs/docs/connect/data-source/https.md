@@ -14,7 +14,16 @@ The HTTPS connector allows you to import data from publicly accessible files hos
 
 ## Connect to HTTPS
 
-If your endpoint requires authentication, you can create a https connector that can test your API key before getting started on importing data. 
+To connect to data via HTTPS, you have two options depending on your data source:
+
+1. **Use authenticated endpoints** (for private APIs or protected resources)
+2. **Use public URLs** (for publicly accessible files)
+
+Choose the method that matches your data source requirements.
+
+### Method 1: Authenticated Endpoints
+
+If your endpoint requires authentication, create a `https` connector that can test your API key before importing data:
 
 ```yaml
 type: connector 
@@ -24,6 +33,10 @@ path: "https://api.endpoint.com/v1"
 headers:
     Authorization: "Bearer {{ .env.connector.https.token }}"
 ```
+
+### Method 2: Public URLs
+
+For publicly accessible files, you can simply use the `https` connector to add data from your endpoint or publicly available file.
 
 ## Adding an HTTPS Source
 
@@ -59,9 +72,9 @@ The HTTPS connector supports various remote data sources:
 
 ### Local Development
 
-When running Rill locally, the connector will attempt to use existing credentials configured on your machine for authenticated requests, else you will need to define the key with `headers: "Authorization: Bearer token"`.
+When running Rill locally, you can use existing credentials configured on your machine for authenticated requests. If you don't have credentials configured, you'll need to define the key with `headers: "Authorization: Bearer token"`.
 
-### Rill Cloud Deployment
+### Deploy to Rill Cloud
 
 When deploying to Rill Cloud, you must explicitly provide service account credentials with appropriate access permissions for protected resources.
 

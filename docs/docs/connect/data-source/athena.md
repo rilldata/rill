@@ -14,7 +14,8 @@ sidebar_position: 0
 
 ## Connect to Athena
 
-In Rill Developer, Connect to Athena via Add Data. This will automatically create the `athena.yaml` file in your connectors/ folder and populate the `.env` file with `connector.athena.aws_access_key_id` and `connector.athena.aws_secret_access_key.`
+Create a connector with your credentials to start exploring your data via the Data Explorer. Here's an example connector configuration file you can copy into your `connectors/` folder to get started:
+
 ```yaml
 # Connector YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
@@ -28,6 +29,9 @@ output_location: "s3://bucket/path/folder"
 region: "us-east-1"
 ```
 
+:::tip Using the Add Data Form
+You can also use the Add Data form in Rill Developer, which will automatically create the `redshift.yaml` file and populate the `.env` file with `connector.redshift.aws_access_key_id` and `connector.redshift.aws_secret_access_key`.
+:::
 
 ### Inferred Credentials
 

@@ -15,21 +15,18 @@ sidebar_position: 10
 
 ## Connect to BigQuery
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill will use either the credentials configured in your local environment using the Google Cloud CLI (`gcloud`) or an [explicitly defined connector YAML](/reference/project-files/connectors#bigquery) via the Add Data UI.
+To connect to Google BigQuery, you need to provide authentication credentials. You have two options:
 
-### Inferred Credentials
-Follow these steps to configure you local environment credentials:
+1. **Use Service Account JSON** (recommended for cloud deployment)
+2. **Use Local Google Cloud CLI credentials** (local development only - not recommended for production)
 
-1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated.
-2. If it does not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
+Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON. Local Google Cloud CLI credentials only work for local development and will cause deployment failures.
 
-You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
+### Method 1: Service Account JSON 
 
-### Service Account JSON 
+We recommend using Service Account JSON for authentication as it makes deployment to Rill Cloud easier. The `GOOGLE_APPLICATION_CREDENTIALS` environment variable tells Google Cloud SDK which service account key file to use for authentication.
 
-`GOOGLE_APPLICATION_CREDENTIALS` is an environment variable that tells Google Cloud SDK and applications which service account key file to use for authentication. It should point to the full path of your JSON key file. We recommend using this credential approach for Rill, as it makes deployment to Rill Cloud easier. For more information on JSON keys, see the [Google Cloud documentation](https://cloud.google.com/iam/docs/keys-create-delete?hl=en#gcloud).
-
-Assuming you've followed steps 1 and 2 above, you'll need to create your Service Account JSON with the following command.
+Create your Service Account JSON with the following command:
 
 ```bash
 gcloud iam service-accounts keys create ~/key.json \
@@ -40,7 +37,7 @@ gcloud iam service-accounts keys create ~/key.json \
 You'll need to contact your internal cloud admin to create your Service Account JSON credentials for you.
 :::
 
-Then, create a connector via the Add Data UI and Rill will automatically create the `bigquery.yaml` file in your connectors/ folder and populate the `.env` file with `connector.bigquery.google_application_credentials`.
+Create a connector with your credentials to start exploring your data via the Data Explorer. Here's an example connector configuration file you can copy into your `connectors/` folder to get started. The UI will also populate your `.env` with `connector.bigquery.google_application_credentials`.
 
 ```yaml
 # Connector YAML
@@ -60,20 +57,36 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 :::
 
-## Separating Dev and Prod Environments
 
-When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+### Method 2: Local Google Cloud CLI Credentials (Local Development Only)
 
-For more details, see our [Dev/Prod setup docs](/connect/templating).
+:::warning Not recommended for production
+Local Google Cloud CLI credentials only work for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Use Method 1 above for production deployments.
+:::
 
-## Cloud deployment
+Follow these steps to configure your local environment credentials:
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project.
+1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated.
+2. If it does not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
+3. **Important**: Run `gcloud auth application-default login` to set up Application Default Credentials (ADC). If you skip this step, the app will error with missing `GOOGLE_APPLICATION_CREDENTIALS`.
+
+:::tip Service Accounts
+If you are using a service account, you will need to run the following command instead:
+```
+gcloud auth activate-service-account --key-file=path_to_json_key_file
+```
+:::
+
+You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
+
+## Deploy to Rill Cloud
+
+When deploying your project to Rill Cloud, you must provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically. If you're using inferred credentials only, your deployment will result in errored dashboards.
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
 
 If you subsequently add sources that require new credentials (or if you enter the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
-```
+```bash
 rill env configure
 ```
 
@@ -82,6 +95,12 @@ rill env configure
 If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 
 :::
+
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
 
 ## Appendix
 
