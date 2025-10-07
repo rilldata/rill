@@ -45,6 +45,11 @@ export interface BannerMessage {
   };
 }
 
+export interface PageContentResized {
+  width: number;
+  height: number;
+}
+
 export interface ChatIntent {
   prompt: string;
   context: { type: number; value: string }[];

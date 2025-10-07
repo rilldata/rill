@@ -1,4 +1,9 @@
-import type { BannerEvent, ChatIntent, NotificationMessage } from "./events";
+import type {
+  BannerEvent,
+  ChatIntent,
+  PageContentResized,
+  NotificationMessage,
+} from "./events";
 
 class EventBus {
   private listeners: EventMap = new Map();
@@ -59,6 +64,7 @@ export interface Events {
   click: null;
   "shift-command-click": null;
   "chat-intent": ChatIntent;
+  "page-content-resized": PageContentResized;
 }
 
 type T = keyof Events;

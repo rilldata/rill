@@ -214,6 +214,10 @@ func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *run
 	return errors.New("not implemented")
 }
 
+func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	return nil, errors.New("security rule inference not implemented")
+}
+
 // buildUnpartitioned builds a result consisting of one row per file.
 // Each row is a map with the keys "uri", "path", and "updated_on".
 func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []map[string]any {
