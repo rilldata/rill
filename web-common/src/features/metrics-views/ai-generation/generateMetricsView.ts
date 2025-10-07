@@ -254,6 +254,47 @@ export async function createDashboardFromTableInMetricsEditor(
 }
 
 /**
+ * Unified function that generates metrics (and optionally explore dashboard) from a table.
+ * Handles both OLAP and non-OLAP connectors with appropriate logic for each case.
+ */
+export async function generateMetricsFromTable(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  table: string,
+  createExplore: boolean,
+  isOlapConnector: boolean,
+  behaviourEventMedium: BehaviourEventMedium = BehaviourEventMedium.Menu,
+  metricsEventSpace: MetricsEventSpace = MetricsEventSpace.LeftPanel,
+) {
+  if (isOlapConnector) {
+    // For OLAP connectors, use direct metrics view generation
+    const createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      createExplore,
+      behaviourEventMedium,
+      metricsEventSpace,
+    );
+    await createMetricsViewFromTable();
+  } else {
+    // For non-OLAP connectors, follow Rill architecture: Model → Metrics → (Optional) Explore
+    await createModelAndMetricsAndExplore(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      createExplore,
+    );
+  }
+}
+
+/**
  * Creates a model from a table, then generates a metrics view and optionally an explore dashboard.
  * This is used for non-OLAP connectors that need to follow the Rill architecture:
  * 1. Create model (ingests from source → OLAP)
