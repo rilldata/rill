@@ -28,13 +28,15 @@ export const BIGQUERY_AUTH_OPTIONS: {
   {
     value: "inferred",
     label: "Use inferred credentials",
-    description: "Automatically use credentials from your environment or service account.",
+    description:
+      "Automatically use credentials from your environment or service account.",
     hint: "Run code below to setup first",
   },
   {
     value: "credentials",
     label: "GCP credentials",
-    description: "Upload a JSON key file for a service account with BigQuery access.",
+    description:
+      "Upload a JSON key file for a service account with BigQuery access.",
   },
 ];
 
