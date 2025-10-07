@@ -20,7 +20,7 @@
 
   $: ctx = getCanvasStore(canvasName, instanceId);
   $: ({
-    spec: { getMeasureForMetricView },
+    metricsView: { getMeasureForMetricView },
   } = ctx.canvasEntity);
 
   $: ({ instanceId } = $runtime);

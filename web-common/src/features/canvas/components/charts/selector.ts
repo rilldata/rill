@@ -27,7 +27,6 @@ export function getChartData(
     ctx,
     timeAndFilterStore,
   );
-  const { spec } = ctx.canvasEntity;
 
   const themeStore = ctx.canvasEntity.theme;
 
@@ -41,11 +40,19 @@ export function getChartData(
   ];
 
   // Match each field to its corresponding measure or dimension spec.
+  const metricsView = ctx.canvasEntity.metricsView;
+
   const fieldReadableMap = allFields.map((field) => {
     if (field.type === "measure") {
-      return spec.getMeasureForMetricView(field.field, config.metrics_view);
+      return metricsView.getMeasureForMetricView(
+        field.field,
+        config.metrics_view,
+      );
     } else if (field.type === "dimension") {
-      return spec.getDimensionForMetricView(field.field, config.metrics_view);
+      return metricsView.getDimensionForMetricView(
+        field.field,
+        config.metrics_view,
+      );
     } else {
       return getTimeDimensionDefinition(field.field, timeAndFilterStore);
     }
