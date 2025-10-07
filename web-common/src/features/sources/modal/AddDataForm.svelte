@@ -696,7 +696,7 @@
                           <a
                             href="https://docs.rilldata.com/connect/data-source/bigquery#inferred-credentials"
                             class="text-blue-600 text-sm hover:underline"
-                            >Learn more</a
+                            target="_blank">Learn more</a
                           >
                         </div>
                       </div>
