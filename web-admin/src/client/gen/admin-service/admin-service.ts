@@ -88,7 +88,7 @@ import type {
   AdminServiceSudoGetResourceParams,
   AdminServiceTriggerReconcileBodyBody,
   AdminServiceTriggerRefreshSourcesBody,
-  AdminServiceUnsubscribeReportBody,
+  AdminServiceUnsubscribeAlertBodyBody,
   AdminServiceUpdateBillingSubscriptionBodyBody,
   AdminServiceUpdateOrganizationBody,
   AdminServiceUpdateProjectBody,
@@ -4662,14 +4662,14 @@ export const adminServiceUnsubscribeAlert = (
   org: string,
   project: string,
   name: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceUnsubscribeAlertBodyBody: AdminServiceUnsubscribeAlertBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1UnsubscribeAlertResponse>({
     url: `/v1/orgs/${org}/projects/${project}/alerts/${name}/unsubscribe`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceUnsubscribeAlertBodyBody,
     signal,
   });
 };
@@ -4685,7 +4685,7 @@ export const getAdminServiceUnsubscribeAlertMutationOptions = <
       org: string;
       project: string;
       name: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
     },
     TContext
   >;
@@ -4696,7 +4696,7 @@ export const getAdminServiceUnsubscribeAlertMutationOptions = <
     org: string;
     project: string;
     name: string;
-    data: AdminServiceTriggerReconcileBodyBody;
+    data: AdminServiceUnsubscribeAlertBodyBody;
   },
   TContext
 > => {
@@ -4715,7 +4715,7 @@ export const getAdminServiceUnsubscribeAlertMutationOptions = <
       org: string;
       project: string;
       name: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
     }
   > = (props) => {
     const { org, project, name, data } = props ?? {};
@@ -4730,7 +4730,7 @@ export type AdminServiceUnsubscribeAlertMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceUnsubscribeAlert>>
 >;
 export type AdminServiceUnsubscribeAlertMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceUnsubscribeAlertBodyBody;
 export type AdminServiceUnsubscribeAlertMutationError = RpcStatus;
 
 /**
@@ -4748,7 +4748,7 @@ export const createAdminServiceUnsubscribeAlert = <
         org: string;
         project: string;
         name: string;
-        data: AdminServiceTriggerReconcileBodyBody;
+        data: AdminServiceUnsubscribeAlertBodyBody;
       },
       TContext
     >;
@@ -4761,7 +4761,7 @@ export const createAdminServiceUnsubscribeAlert = <
     org: string;
     project: string;
     name: string;
-    data: AdminServiceTriggerReconcileBodyBody;
+    data: AdminServiceUnsubscribeAlertBodyBody;
   },
   TContext
 > => {
@@ -6767,14 +6767,14 @@ export const adminServiceUnsubscribeReport = (
   org: string,
   project: string,
   name: string,
-  adminServiceUnsubscribeReportBody: AdminServiceUnsubscribeReportBody,
+  adminServiceUnsubscribeAlertBodyBody: AdminServiceUnsubscribeAlertBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1UnsubscribeReportResponse>({
     url: `/v1/orgs/${org}/projects/${project}/reports/${name}/unsubscribe`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceUnsubscribeReportBody,
+    data: adminServiceUnsubscribeAlertBodyBody,
     signal,
   });
 };
@@ -6790,7 +6790,7 @@ export const getAdminServiceUnsubscribeReportMutationOptions = <
       org: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
     },
     TContext
   >;
@@ -6801,7 +6801,7 @@ export const getAdminServiceUnsubscribeReportMutationOptions = <
     org: string;
     project: string;
     name: string;
-    data: AdminServiceUnsubscribeReportBody;
+    data: AdminServiceUnsubscribeAlertBodyBody;
   },
   TContext
 > => {
@@ -6820,7 +6820,7 @@ export const getAdminServiceUnsubscribeReportMutationOptions = <
       org: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
     }
   > = (props) => {
     const { org, project, name, data } = props ?? {};
@@ -6835,7 +6835,7 @@ export type AdminServiceUnsubscribeReportMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>
 >;
 export type AdminServiceUnsubscribeReportMutationBody =
-  AdminServiceUnsubscribeReportBody;
+  AdminServiceUnsubscribeAlertBodyBody;
 export type AdminServiceUnsubscribeReportMutationError = RpcStatus;
 
 /**
@@ -6853,7 +6853,7 @@ export const createAdminServiceUnsubscribeReport = <
         org: string;
         project: string;
         name: string;
-        data: AdminServiceUnsubscribeReportBody;
+        data: AdminServiceUnsubscribeAlertBodyBody;
       },
       TContext
     >;
@@ -6866,7 +6866,7 @@ export const createAdminServiceUnsubscribeReport = <
     org: string;
     project: string;
     name: string;
-    data: AdminServiceUnsubscribeReportBody;
+    data: AdminServiceUnsubscribeAlertBodyBody;
   },
   TContext
 > => {
