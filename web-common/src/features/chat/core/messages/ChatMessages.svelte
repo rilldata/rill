@@ -1,9 +1,9 @@
 <script lang="ts">
   import { afterUpdate } from "svelte";
-  import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { Chat } from "../chat";
+  import ChatError from "./ChatError.svelte";
   import ChatMessage from "./ChatMessage.svelte";
 
   export let chat: Chat;
@@ -23,7 +23,8 @@
   // Error handling
   $: streamErrorStore = currentConversation.streamError;
   $: conversationQueryError = currentConversation.getConversationQueryError();
-  $: hasError = $conversationQueryError || $streamErrorStore;
+  $: hasConversationLoadError = !!$conversationQueryError;
+  $: hasStreamError = !!$streamErrorStore;
 
   // Data
   $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
@@ -53,27 +54,11 @@
     <div class="chat-loading">
       <DelayedSpinner isLoading={isConversationLoading} size="24px" />
     </div>
-  {:else if hasError}
-    <div class="chat-error">
-      <AlertCircle size="1.2em" />
-      <div class="error-content">
-        <div class="error-message">
-          {#if $conversationQueryError}
-            Unable to load conversation: {$conversationQueryError}
-          {:else if $streamErrorStore}
-            {$streamErrorStore}
-          {/if}
-        </div>
-        {#if $streamErrorStore}
-          <button
-            class="retry-button"
-            on:click={() => currentConversation.sendMessage()}
-          >
-            Try Again
-          </button>
-        {/if}
-      </div>
-    </div>
+  {:else if hasConversationLoadError}
+    <ChatError
+      headline="Unable to load conversation"
+      error={$conversationQueryError}
+    />
   {:else if messages.length === 0}
     <div class="chat-empty">
       <!-- <div class="chat-empty-icon">💬</div> -->
@@ -90,6 +75,11 @@
       <LoadingSpinner size="1.2em" />
       Thinking...
     </div>
+  {:else if hasStreamError}
+    <ChatError
+      headline="Failed to generate response"
+      error={$streamErrorStore}
+    />
   {/if}
 </div>
 
@@ -179,41 +169,5 @@
     gap: 0.5rem;
     padding: 0.5rem;
     font-size: 0.875rem;
-  }
-
-  .chat-error {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 1rem;
-    background: #fef7f7;
-    border-left: 4px solid #f87171;
-    border-radius: 0.5rem;
-    margin: 0.5rem 1rem;
-  }
-
-  .error-content {
-    flex: 1;
-  }
-
-  .error-message {
-    font-size: 0.875rem;
-    color: #991b1b;
-    margin-bottom: 0.5rem;
-  }
-
-  .retry-button {
-    background: #dc2626;
-    color: white;
-    border: none;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .retry-button:hover {
-    background: #b91c1c;
   }
 </style>
