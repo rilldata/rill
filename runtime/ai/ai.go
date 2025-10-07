@@ -17,8 +17,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-var ErrNewCall = fmt.Errorf("replaced by a new call")
-
 // Runner tracks available tools and manages the lifecycle of AI sessions.
 type Runner struct {
 	Runtime *runtime.Runtime
@@ -156,12 +154,12 @@ func schemaFor[T any](ignoreIfAny bool) (*jsonschema.Schema, error) {
 		return &jsonschema.Schema{Type: "object"}, nil
 	}
 
-	rt := reflect.TypeFor[T]()
-	if rt.Kind() == reflect.Pointer {
-		rt = rt.Elem()
+	tt := reflect.TypeFor[T]()
+	if tt.Kind() == reflect.Pointer {
+		tt = tt.Elem()
 	}
 
-	schema, err := jsonschema.ForType(rt, &jsonschema.ForOptions{})
+	schema, err := jsonschema.ForType(tt, &jsonschema.ForOptions{})
 	if err != nil {
 		return nil, err
 	}

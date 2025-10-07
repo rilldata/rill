@@ -21,7 +21,7 @@ var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
 	Prompt  string `json:"prompt"`
-	Agent   string `json:"agent"`
+	Agent   string `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
 	Explore string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
 }
 
@@ -71,17 +71,21 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		return false
 	})
 
-	// Handle if a specific agent was requested.
-	if len(candidates) == 0 {
-		return nil, fmt.Errorf("no agents available")
-	}
-	if args.Agent != "" {
+	// Find agent to invoke
+	switch {
+	// Specific agent requested
+	case args.Agent != "":
 		if !slices.Contains(candidates, args.Agent) {
 			return nil, fmt.Errorf("agent %q not found", args.Agent)
 		}
-	} else if len(candidates) == 1 {
+	// No candidates available
+	case len(candidates) == 0:
+		return nil, fmt.Errorf("no agents available")
+	// Only one candidate available
+	case len(candidates) == 1:
 		args.Agent = candidates[0]
-	} else {
+	// Multiple candidates available; choose an agent using the LLM
+	default:
 		session.AddMessage(&AddMessageOptions{
 			Role:        RoleSystem,
 			Type:        MessageTypePrompt,
