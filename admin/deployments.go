@@ -164,15 +164,21 @@ type StartDeploymentInnerOptions struct {
 	Variables   map[string]string
 }
 
+type RuntimeConfig struct {
+	Host       string
+	Audience   string
+	InstanceID string
+}
+
 // StartDeploymentInner provisions a runtime and initializes an instance on it.
 // The implementation is idempotent, enabling it to be called from a retryable background job.
-func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deployment, opts *StartDeploymentInnerOptions) error {
+func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deployment, opts *StartDeploymentInnerOptions) (*RuntimeConfig, error) {
 	// Validate the desired runtime version.
 	// This is usually "latest", which the provisioner internally may resolve to an actual version.
 	runtimeVersion := opts.Version
 	err := validateRuntimeVersion(runtimeVersion)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Provision the runtime
@@ -185,48 +191,41 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		Annotations:  opts.Annotations.ToMap(),
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	cfg, err := provisioner.NewRuntimeConfig(r.Config)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Update the deployment with the runtime details
+	// Create instance ID
 	instanceID := strings.ReplaceAll(r.ID, "-", "") // Use the provisioned resource ID without dashes as the instance ID
-	depl, err = s.DB.UpdateDeployment(ctx, depl.ID, &database.UpdateDeploymentOptions{
-		Branch:            depl.Branch,
-		RuntimeHost:       cfg.Host,
-		RuntimeInstanceID: instanceID,
-		RuntimeAudience:   cfg.Audience,
-		Status:            database.DeploymentStatusPending,
-		StatusMessage:     "Creating instance...",
-	})
-	if err != nil {
-		return err
-	}
 
 	// Connect to the runtime
 	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer rt.Close()
 
 	// If the instance already exists, we can return now. (This can happen since this operation is idempotent and may be retried.)
 	_, err = rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: instanceID})
 	if err != nil && status.Code(err) != codes.NotFound {
-		return err
+		return nil, err
 	}
 	if err == nil {
 		// Instance already exists. We can return.
-		return nil
+		return &RuntimeConfig{
+			Host:       cfg.Host,
+			Audience:   cfg.Audience,
+			InstanceID: instanceID,
+		}, nil
 	}
 
 	// Create an access token that it can use to authenticate with the admin server.
 	dat, err := s.IssueDeploymentAuthToken(ctx, depl.ID, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Prepare connectors
@@ -256,12 +255,12 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	// Look up project and organization to construct the full frontend URL
 	proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Construct the full frontend URL including custom domain (if any) and org/project path
@@ -281,11 +280,15 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		FrontendUrl:    frontendURL,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Deployment is ready to use
-	return nil
+	return &RuntimeConfig{
+		Host:       cfg.Host,
+		Audience:   cfg.Audience,
+		InstanceID: instanceID,
+	}, nil
 }
 
 // StopDeploymentInner stops a deployment by tearing down its runtime instance and resources.

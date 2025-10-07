@@ -66,12 +66,12 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		return err
 	}
 
-	var newStatus database.DeploymentStatus
+	var deplOpts *database.UpdateDeploymentOptions
 
 	switch depl.Status {
 	case database.DeploymentStatusPending:
 		// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-		err = w.admin.StartDeploymentInner(ctx, depl, &admin.StartDeploymentInnerOptions{
+		rtCfg, err := w.admin.StartDeploymentInner(ctx, depl, &admin.StartDeploymentInnerOptions{
 			Annotations: w.admin.NewDeploymentAnnotations(org, proj),
 			Provisioner: proj.Provisioner,
 			Slots:       slots,
@@ -81,7 +81,14 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		if err != nil {
 			return err
 		}
-		newStatus = database.DeploymentStatusOK
+		deplOpts = &database.UpdateDeploymentOptions{
+			Branch:            depl.Branch,
+			RuntimeHost:       rtCfg.Host,
+			RuntimeInstanceID: rtCfg.InstanceID,
+			RuntimeAudience:   rtCfg.Audience,
+			Status:            database.DeploymentStatusOK,
+			StatusMessage:     "",
+		}
 
 	case database.DeploymentStatusStopping:
 		// Stop the deployment by tearing down its runtime instance and resources.
@@ -89,7 +96,14 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		if err != nil {
 			return err
 		}
-		newStatus = database.DeploymentStatusStopped
+		deplOpts = &database.UpdateDeploymentOptions{
+			Branch:            depl.Branch,
+			RuntimeHost:       depl.RuntimeHost,
+			RuntimeInstanceID: depl.RuntimeInstanceID,
+			RuntimeAudience:   depl.RuntimeAudience,
+			Status:            database.DeploymentStatusStopped,
+			StatusMessage:     "",
+		}
 
 	case database.DeploymentStatusUpdating:
 		// Update the deployment by updating its runtime instance and resources.
@@ -101,7 +115,14 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		if err != nil {
 			return err
 		}
-		newStatus = database.DeploymentStatusOK
+		deplOpts = &database.UpdateDeploymentOptions{
+			Branch:            depl.Branch,
+			RuntimeHost:       depl.RuntimeHost,
+			RuntimeInstanceID: depl.RuntimeInstanceID,
+			RuntimeAudience:   depl.RuntimeAudience,
+			Status:            database.DeploymentStatusOK,
+			StatusMessage:     "",
+		}
 
 	case database.DeploymentStatusDeleting:
 		// Delete the deployment and all its resources.
@@ -141,8 +162,8 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 	}
 
 	if depl.UpdatedOn.Equal(updatedOn) {
-		// Update the deployment status
-		_, err = w.admin.DB.UpdateDeploymentStatus(txCtx, depl.ID, newStatus, "")
+		// Update the deployment
+		_, err = w.admin.DB.UpdateDeployment(txCtx, depl.ID, deplOpts)
 		if err != nil {
 			return err
 		}
