@@ -17,6 +17,27 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "dsn", label: "Enter connection string" },
 ];
 
+export type BigQueryAuthMethod = "inferred" | "credentials";
+
+export const BIGQUERY_AUTH_OPTIONS: {
+  value: BigQueryAuthMethod;
+  label: string;
+  description: string;
+  hint?: string;
+}[] = [
+  {
+    value: "inferred",
+    label: "Use inferred credentials",
+    description: "Automatically use credentials from your environment or service account.",
+    hint: "Run code below to setup first",
+  },
+  {
+    value: "credentials",
+    label: "GCP credentials",
+    description: "Upload a JSON key file for a service account with BigQuery access.",
+  },
+];
+
 // pre-defined order for sources
 export const SOURCES = [
   "athena",

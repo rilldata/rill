@@ -36,13 +36,16 @@
   import { isEmpty, normalizeErrors } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
+    BIGQUERY_AUTH_OPTIONS,
     type ClickHouseConnectorType,
+    type BigQueryAuthMethod,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
+  import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -56,6 +59,7 @@
 
   let copied = false;
   let connectionTab: ConnectorType = "parameters";
+  let bigqueryAuthMethod: BigQueryAuthMethod = "inferred";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -161,7 +165,23 @@
         if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
-          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+
+          // Special handling for BigQuery credentials
+          if (
+            connector.name === "bigquery" &&
+            key === "google_application_credentials"
+          ) {
+            // Only require credentials if credentials method is selected
+            if (
+              bigqueryAuthMethod === "credentials" &&
+              (isEmpty(value) || $paramsErrors[key]?.length)
+            ) {
+              return true;
+            }
+          } else {
+            // Normal validation for other properties
+            if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+          }
         }
       }
       return false;
@@ -333,10 +353,20 @@
     const values = event.form.data;
 
     try {
+      // For BigQuery, modify the form data based on authentication method
+      let processedValues = values;
+      if (connector.name === "bigquery") {
+        processedValues = { ...values };
+        if (bigqueryAuthMethod === "inferred") {
+          // Remove credentials when using inferred method
+          delete processedValues.google_application_credentials;
+        }
+      }
+
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
+        await submitAddSourceForm(queryClient, connector, processedValues);
       } else {
-        await submitAddConnectorForm(queryClient, connector, values);
+        await submitAddConnectorForm(queryClient, connector, processedValues);
       }
       onClose();
     } catch (e) {
@@ -559,6 +589,100 @@
                   bind:value={$dsnForm[propertyKey]}
                   alwaysShowError
                 />
+              {/if}
+            </div>
+          {/each}
+        </form>
+      {:else if connector.name === "bigquery"}
+        <!-- BigQuery with Radio UI for authentication methods -->
+        <form
+          id={paramsFormId}
+          class="pb-5 flex-grow overflow-y-auto"
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
+        >
+          <!-- Authentication method selection -->
+          <div class="py-1.5 first:pt-0 last:pb-0">
+            <div class="text-sm font-medium mb-4">Authentication method</div>
+            <Radio
+              bind:value={bigqueryAuthMethod}
+              options={BIGQUERY_AUTH_OPTIONS}
+              name="bigquery-auth-method"
+            />
+          </div>
+
+          <!-- Show setup instructions for inferred credentials -->
+          {#if bigqueryAuthMethod === "inferred"}
+            <div class="py-1.5">
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div class="text-sm text-gray-600 mb-2">
+                  Run code below to setup first
+                </div>
+                <div class="flex items-center gap-2">
+                  <code
+                    class="bg-gray-100 px-2 py-1 rounded text-sm font-mono flex-1"
+                    >gcloud auth application-default login</code
+                  >
+                  <button
+                    type="button"
+                    class="p-1 rounded hover:bg-gray-200"
+                    on:click={() => {
+                      navigator.clipboard.writeText(
+                        "gcloud auth application-default login",
+                      );
+                    }}
+                  >
+                    <CopyIcon size="16px" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          {/if}
+
+          <!-- Render other properties -->
+          {#each filteredParamsProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                <Checkbox
+                  id={propertyKey}
+                  bind:checked={$paramsForm[propertyKey]}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                <InformationalField
+                  description={property.description}
+                  hint={property.hint}
+                  href={property.docsUrl}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                <!-- Only show credentials input when credentials method is selected -->
+                {#if bigqueryAuthMethod === "credentials"}
+                  <CredentialsInput
+                    id={propertyKey}
+                    label={property.displayName}
+                    hint={property.hint}
+                    optional={!property.required}
+                    bind:value={$paramsForm[propertyKey]}
+                    uploadFile={handleFileUpload}
+                    accept=".json"
+                  />
+                {/if}
               {/if}
             </div>
           {/each}
