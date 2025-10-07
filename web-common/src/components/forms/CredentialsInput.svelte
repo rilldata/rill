@@ -1,5 +1,6 @@
 <script lang="ts">
   import InputLabel from "./InputLabel.svelte";
+  import Trash from "../icons/Trash.svelte";
 
   export let value: string | string[] | undefined = undefined;
   export let error: string | Record<string | number, string[]> | undefined =
@@ -89,6 +90,20 @@
     uploadFiles(event.dataTransfer.files);
   }
 
+  function clearFile() {
+    if (multiple) {
+      value = [];
+      fileNames = [];
+    } else {
+      value = "";
+      fileNames = [];
+    }
+    // Clear the file input
+    if (fileInput) {
+      fileInput.value = "";
+    }
+  }
+
   let dragOver = false;
   $: errorMessages = Object.values({
     ...(errors as Record<string, any>),
@@ -125,6 +140,16 @@
         {/if}
       </span>
     </button>
+    {#if selectedFileName && !hideContent && !Object.values(uploading).some((u) => u)}
+      <button
+        type="button"
+        class="trash-button"
+        on:click|stopPropagation={clearFile}
+        aria-label="Remove file"
+      >
+        <Trash size="16px" />
+      </button>
+    {/if}
   </div>
   {#if errorMessages.length > 0}
     <div class="error">
@@ -149,7 +174,7 @@
   }
 
   .file-input-wrapper {
-    @apply w-full;
+    @apply w-full relative;
   }
 
   .file-input-button {
@@ -184,6 +209,36 @@
 
   .file-status-text {
     @apply text-gray-600 text-sm;
+  }
+
+  .trash-button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #6b7280;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .trash-button:hover {
+    color: #dc2626;
+    background-color: #fef2f2;
+  }
+
+  .trash-button:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #dc2626;
+    ring-opacity: 0.5;
   }
 
   .error {
