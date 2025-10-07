@@ -545,6 +545,9 @@ const (
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusError       DeploymentStatus = 4
 	DeploymentStatusStopped     DeploymentStatus = 5
+	DeploymentStatusUpdating    DeploymentStatus = 6
+	DeploymentStatusStopping    DeploymentStatus = 7
+	DeploymentStatusDeleting    DeploymentStatus = 8
 )
 
 func (d DeploymentStatus) String() string {
@@ -557,6 +560,12 @@ func (d DeploymentStatus) String() string {
 		return "Error"
 	case DeploymentStatusStopped:
 		return "Stopped"
+	case DeploymentStatusUpdating:
+		return "Updating"
+	case DeploymentStatusStopping:
+		return "Stopping"
+	case DeploymentStatusDeleting:
+		return "Deleting"
 	default:
 		return "Unspecified"
 	}
