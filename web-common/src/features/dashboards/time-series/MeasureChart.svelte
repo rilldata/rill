@@ -84,7 +84,7 @@
   export let scrubStart;
   export let scrubEnd;
 
-  const { validSpecStore } = getStateManagers();
+  const { validSpecStore, dashboardStore } = getStateManagers();
 
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
@@ -263,6 +263,7 @@
         scrubEnd,
         timeGrain,
         zone,
+        filters: $dashboardStore.whereFilter,
       });
       return;
     }

@@ -1,5 +1,5 @@
+import { ConversationContextType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
 import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
-import { ConversationContextType } from "@rilldata/web-common/features/chat/core/types.ts";
 import { get } from "svelte/store";
 import { describe, it, expect } from "vitest";
 

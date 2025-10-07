@@ -86,10 +86,10 @@
   }
 </script>
 
+{#if currentConversation}
+  <ConversationContext conversation={currentConversation} />
+{/if}
 <form class="chat-input-form" on:submit|preventDefault={sendMessage}>
-  {#if currentConversation}
-    <ConversationContext conversation={currentConversation} />
-  {/if}
   <textarea
     bind:this={textarea}
     {value}

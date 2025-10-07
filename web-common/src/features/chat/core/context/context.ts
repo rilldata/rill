@@ -1,12 +1,10 @@
 import {
   type ContextRecord,
   ContextTypeData,
-  extractContextEntry,
-} from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
-import {
   type ConversationContextEntry,
   ConversationContextType,
-} from "@rilldata/web-common/features/chat/core/types.ts";
+  extractContextEntry,
+} from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { get, type Writable, writable } from "svelte/store";
 
@@ -49,7 +47,9 @@ export class ConversationContext {
   }
 
   public override(context: ConversationContextEntry[]) {
-    this.data.set(context);
+    this.data.set([]);
+    // Reuse set code to make sure we dedupe and maintain the order of entries.
+    context.forEach((c) => this.set(c.type, c.value));
     this.updateRecord();
   }
 

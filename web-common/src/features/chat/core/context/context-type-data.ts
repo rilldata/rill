@@ -1,16 +1,25 @@
 import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
+import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
 import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
-import {
-  type ConversationContextEntry,
-  ConversationContextType,
-} from "@rilldata/web-common/features/chat/core/types.ts";
 import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Interval } from "luxon";
 import { derived, readable, type Readable } from "svelte/store";
+
+export enum ConversationContextType {
+  MetricsView,
+  TimeRange,
+  Filters,
+  Measures,
+}
+
+export type ConversationContextEntry = {
+  type: ConversationContextType;
+  value: string;
+};
 
 type ContextDataPerType = {
   prompt: string;
@@ -56,6 +65,11 @@ export const ContextTypeData: Record<
         ),
       );
     },
+  },
+  [ConversationContextType.Filters]: {
+    prompt: "Filters",
+    icon: Filter,
+    formatter: (filter) => readable(filter),
   },
   [ConversationContextType.Measures]: {
     prompt: "Measures",

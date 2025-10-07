@@ -10,7 +10,7 @@
 </script>
 
 {#if $contextData?.length}
-  <div class="flex flex-wrap gap-x-1 items-center pb-2">
+  <div class="flex flex-wrap gap-1 items-center mx-4 my-2">
     {#each $contextData as entry (entry.type)}
       <ConversationContextEntryDisplay {context} {entry} />
     {/each}
