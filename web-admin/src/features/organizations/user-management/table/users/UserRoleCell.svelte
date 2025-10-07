@@ -1,4 +1,5 @@
 <script lang="ts">
+  import RemoveUserFromOrgConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemoveUserFromOrgConfirmDialog.svelte";
   import {
     canManageOrgUser,
     invalidateAfterUserDelete,
@@ -31,6 +32,7 @@
 
   let isDropdownOpen = false;
   let isUpgradeConfirmOpen = false;
+  let isRemoveConfirmOpen = false;
   let newRole = "";
 
   $: organization = $page.params.organization;
@@ -196,7 +198,7 @@
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center py-2"
-        on:click={handleRemove}
+        on:click={() => (isRemoveConfirmOpen = true)}
       >
         <span class="text-red-600">Remove</span>
       </DropdownMenu.Item>
@@ -213,4 +215,10 @@
   {email}
   {newRole}
   onUpgrade={handleUpgrade}
+/>
+
+<RemoveUserFromOrgConfirmDialog
+  bind:open={isRemoveConfirmOpen}
+  {email}
+  onRemove={handleRemove}
 />
