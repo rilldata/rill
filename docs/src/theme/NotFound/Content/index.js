@@ -11,9 +11,9 @@ export default function NotFoundContent({ className }) {
         textAlign: 'center',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
       }}>
-        <img src='/img/404.svg' class='centered' style={{
-          maxWidth: '500px',
-          marginBottom: '2rem'
+        <img src='/img/404.svg' style={{
+          width: '300px',
+          marginBottom: '1.5rem'
         }} />
         <Heading as="h3" className="hero__subtitle" style={{
           color: '#1a1a1a',
@@ -28,7 +28,7 @@ export default function NotFoundContent({ className }) {
           </Translate>
         </Heading>
         <p style={{
-          color: '#8b8b92',
+          color: '#71717A',
           fontSize: '1.25rem',
           lineHeight: '1.6',
           marginBottom: '1.5rem'
@@ -41,11 +41,12 @@ export default function NotFoundContent({ className }) {
         </p>
 
         <p style={{
-          color: '#8b8b92',
+          color: '#71717A',
+          fontSize: '1.25rem',
           marginBottom: '0'
         }}>
-          Return to the <a href="/" style={{
-            color: '#3524c0',
+          Return to <a href="/" style={{
+            color: '#4736F5',
             textDecoration: 'none',
             fontWeight: '500',
             borderBottom: '2px solid transparent',
