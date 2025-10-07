@@ -418,6 +418,18 @@
       const parsedJson = JSON.parse(content);
       const sanitizedJson = JSON.stringify(parsedJson);
 
+      // For BigQuery, try to extract project_id from the credentials JSON
+      if (connector.name === "bigquery" && parsedJson.project_id) {
+        // Update the project_id field in the form
+        paramsForm.update(
+          ($form) => {
+            $form.project_id = parsedJson.project_id;
+            return $form;
+          },
+          { taint: false },
+        );
+      }
+
       return sanitizedJson;
     } catch (error) {
       if (error instanceof SyntaxError) {
