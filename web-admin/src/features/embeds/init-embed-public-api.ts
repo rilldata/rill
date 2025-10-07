@@ -51,7 +51,6 @@ export default function initEmbedPublicAPI(): () => void {
     RESIZE_THROTTLE_TIMEOUT,
   );
   function onResize(event: PageContentResized) {
-    console.log("onResize", event);
     // Throttle the resize event.
     // This avoids too many events being fired when size changes quickly, especially when page is loading.
     resizeThrottler.throttle(() => {
