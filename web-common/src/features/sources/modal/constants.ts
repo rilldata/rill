@@ -30,7 +30,6 @@ export const BIGQUERY_AUTH_OPTIONS: {
     label: "Use inferred credentials",
     description:
       "Automatically use credentials from your environment or service account.",
-    hint: "Run code below to setup first",
   },
   {
     value: "credentials",

@@ -625,40 +625,75 @@
           <!-- Authentication method selection -->
           <div class="py-1.5 first:pt-0 last:pb-0">
             <div class="text-sm font-medium mb-4">Authentication method</div>
-            <Radio
-              bind:value={bigqueryAuthMethod}
-              options={BIGQUERY_AUTH_OPTIONS}
-              name="bigquery-auth-method"
-            />
-          </div>
+            <div class="flex flex-col gap-4">
+              {#each BIGQUERY_AUTH_OPTIONS as option (option.value)}
+                <label
+                  class="flex flex-col gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer transition-all hover:border-gray-300 hover:bg-gray-50"
+                >
+                  <div class="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="bigquery-auth-method"
+                      value={option.value}
+                      checked={bigqueryAuthMethod === option.value}
+                      on:change={() => {
+                        bigqueryAuthMethod = option.value;
+                      }}
+                      class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <div class="flex-1">
+                      <div class="text-sm font-medium text-gray-900 mb-1">
+                        {option.label}
+                      </div>
+                      <div class="text-sm text-gray-600 mb-2">
+                        {option.description}
+                      </div>
+                      {#if option.hint}
+                        <div class="text-xs text-gray-500">{option.hint}</div>
+                      {/if}
+                    </div>
+                  </div>
 
-          <!-- Show setup instructions for inferred credentials -->
-          {#if bigqueryAuthMethod === "inferred"}
-            <div class="py-1.5">
-              <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <div class="text-sm text-gray-600 mb-2">
-                  Run code below to setup first
-                </div>
-                <div class="flex items-center gap-2">
-                  <code
-                    class="bg-gray-100 px-2 py-1 rounded text-sm font-mono flex-1"
-                    >gcloud auth application-default login</code
-                  >
-                  <button
-                    type="button"
-                    class="p-1 rounded hover:bg-gray-200"
-                    on:click={() => {
-                      navigator.clipboard.writeText(
-                        "gcloud auth application-default login",
-                      );
-                    }}
-                  >
-                    <CopyIcon size="16px" />
-                  </button>
-                </div>
-              </div>
+                  <!-- Nested content for inferred credentials -->
+                  {#if option.value === "inferred" && bigqueryAuthMethod === "inferred"}
+                    <div class="ml-7">
+                      <div
+                        class="bg-gray-50 border border-gray-200 rounded-lg p-3"
+                      >
+                        <div class="text-sm text-gray-600 mb-2">
+                          Run code below to setup first
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <code
+                            class="bg-gray-100 px-2 py-1 rounded text-sm font-mono flex-1"
+                            >gcloud auth application-default login</code
+                          >
+                          <button
+                            type="button"
+                            class="p-1 rounded hover:bg-gray-200"
+                            on:click={() => {
+                              navigator.clipboard.writeText(
+                                "gcloud auth application-default login",
+                              );
+                            }}
+                          >
+                            <CopyIcon size="16px" />
+                          </button>
+                        </div>
+                        <div class="mt-2">
+                          <a
+                            href="https://docs.rilldata.com/connect/data-source/bigquery#inferred-credentials"
+                            class="text-blue-600 text-sm hover:underline"
+                            >Learn more</a
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  {/if}
+                </label>
+              {/each}
             </div>
-          {/if}
+          </div>
 
           <!-- Render other properties (excluding project_id and credentials) -->
           {#each filteredParamsProperties as property (property.key)}
