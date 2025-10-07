@@ -22,6 +22,7 @@ export function getChartData(
   component: BaseChart<ChartSpec>,
   config: ChartSpec,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
+  isDarkMode: boolean,
 ): Readable<ChartDataResult> {
   const chartDataQuery = component.createChartDataQuery(
     ctx,
@@ -94,6 +95,7 @@ export function getChartData(
         error: chartData?.error,
         fields: fieldSpecMap,
         domainValues,
+        isDarkMode,
         theme: {
           primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
           secondary:

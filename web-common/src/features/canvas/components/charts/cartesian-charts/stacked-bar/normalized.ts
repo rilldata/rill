@@ -106,6 +106,7 @@ export function generateVLStackedBarNormalizedSpec(
       multiValueTooltipChannel,
       xSort: config.x?.sort,
       primaryColor: data.theme.primary,
+      isDarkMode: data.isDarkMode,
       xBand: config.x?.type === "temporal" ? 0.5 : undefined,
       pivot:
         xField && yField && colorField && multiValueTooltipChannel?.length
