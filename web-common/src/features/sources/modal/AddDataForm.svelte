@@ -58,6 +58,7 @@
   const isConnectorForm = formType === "connector";
 
   let copied = false;
+  let gcloudCommandCopied = false;
   let connectionTab: ConnectorType = "parameters";
   let bigqueryAuthMethod: BigQueryAuthMethod = "inferred";
 
@@ -318,6 +319,14 @@
     copied = true;
     setTimeout(() => {
       copied = false;
+    }, 2_000);
+  }
+
+  function copyGcloudCommand() {
+    navigator.clipboard.writeText("gcloud auth application-default login");
+    gcloudCommandCopied = true;
+    setTimeout(() => {
+      gcloudCommandCopied = false;
     }, 2_000);
   }
 
@@ -659,13 +668,13 @@
                       <button
                         type="button"
                         class="p-1 rounded hover:bg-gray-200"
-                        on:click={() => {
-                          navigator.clipboard.writeText(
-                            "gcloud auth application-default login",
-                          );
-                        }}
+                        on:click={copyGcloudCommand}
                       >
-                        <CopyIcon size="16px" />
+                        {#if gcloudCommandCopied}
+                          <Check size="16px" />
+                        {:else}
+                          <CopyIcon size="16px" />
+                        {/if}
                       </button>
                     </div>
                     <div class="mt-2">
