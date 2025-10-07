@@ -58,6 +58,7 @@
         },
       },
     );
+
   $: orgInvitesInfiniteQuery =
     createAdminServiceListOrganizationInvitesInfinite(
       organization,
@@ -84,6 +85,10 @@
     $orgInvitesInfiniteQuery.data?.pages.flatMap(
       (page) => page.invites ?? [],
     ) ?? [];
+
+  $: totalUsers =
+    ($orgMemberUsersInfiniteQuery.data?.pages[0].totalCount ?? 0) +
+    ($orgInvitesInfiniteQuery.data?.pages[0].totalCount ?? 0);
 
   function coerceInvitesToUsers(invites: V1OrganizationInvite[]) {
     return invites.map((invite) => ({
@@ -195,9 +200,8 @@
       {#if filteredUsers.length > 0}
         <div class="px-2 py-3">
           <span class="font-medium text-sm text-gray-500">
-            {filteredUsers.length} total user{filteredUsers.length === 1
-              ? ""
-              : "s"}
+            {totalUsers} total user{totalUsers === 1 ? "" : "s"} - showing {filteredUsers.length}
+            user{filteredUsers.length === 1 ? "" : "s"}
           </span>
         </div>
       {/if}

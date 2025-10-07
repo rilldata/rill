@@ -56,6 +56,10 @@ type Reconciler interface {
 	AssignState(from, to *runtimev1.Resource) error
 	ResetState(r *runtimev1.Resource) error
 	Reconcile(ctx context.Context, n *runtimev1.ResourceName) ReconcileResult
+	// ResolveTransitiveAccess resolves transitive access rules for the resource of this type.
+	// For example, for a report resource, this determines all the resources needed to access the report like the underlying metrics view, explore, etc. and adds the corresponding security rules to the list of rules to be applied.
+	// And use the underlying query to determine the fields that are accessible in the report and where clause that needs to be applied.
+	ResolveTransitiveAccess(ctx context.Context, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error)
 }
 
 // ReconcileResult propagates results from a reconciler invocation
@@ -77,6 +81,16 @@ func RegisterReconcilerInitializer(resourceKind string, initializer ReconcilerIn
 		panic(fmt.Errorf("reconciler already registered for resource type %q", resourceKind))
 	}
 	ReconcilerInitializers[resourceKind] = initializer
+}
+
+func SelfAllowRuleAccess(res *runtimev1.Resource) *runtimev1.SecurityRule_Access {
+	return &runtimev1.SecurityRule_Access{
+		Access: &runtimev1.SecurityRuleAccess{
+			ConditionResources: []*runtimev1.ResourceName{res.Meta.Name},
+			Allow:              true,
+			Exclusive:          true,
+		},
+	}
 }
 
 // Controller manages the catalog for a single instance and runs reconcilers to migrate the catalog (and related resources in external databases) into the desired state.

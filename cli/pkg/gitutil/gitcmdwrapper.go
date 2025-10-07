@@ -155,12 +155,12 @@ func RunGitPush(ctx context.Context, path, remoteName, branchName string, force 
 	} else {
 		cmd = exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
 	}
-	if err := cmd.Run(); err != nil {
+	if out, err := cmd.CombinedOutput(); err != nil {
 		var execErr *exec.ExitError
 		if errors.As(err, &execErr) {
-			return fmt.Errorf("git push failed: %s", string(execErr.Stderr))
+			return fmt.Errorf("git push failed: %s(%s)", string(out), string(execErr.Stderr))
 		}
-		return fmt.Errorf("git push failed: %w", err)
+		return fmt.Errorf("git push failed: %s(%w)", string(out), err)
 	}
 	return nil
 }

@@ -52,8 +52,8 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
+				Org:     ch.Org,
+				Project: name,
 			})
 			if err != nil {
 				return err

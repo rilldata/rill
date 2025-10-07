@@ -32,8 +32,8 @@ func ExtendTrialCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			res, err := client.SudoExtendTrial(ctx, &adminv1.SudoExtendTrialRequest{
-				Organization: org,
-				Days:         days,
+				Org:  org,
+				Days: days,
 			})
 			if err != nil {
 				return err

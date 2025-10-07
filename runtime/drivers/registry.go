@@ -56,7 +56,7 @@ type Instance struct {
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
 	// FeatureFlags contains feature flags configured in rill.yaml
-	FeatureFlags map[string]bool `db:"feature_flags"`
+	FeatureFlags map[string]string `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
 	// Paths to expose over HTTP (defaults to ./public)
@@ -183,4 +183,69 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	}
 
 	return res, nil
+}
+
+func (i *Instance) ResolveConnectors() []*runtimev1.Connector {
+	var res []*runtimev1.Connector
+	res = append(res, i.Connectors...)
+	res = append(res, i.ProjectConnectors...)
+	// implicit connectors
+	vars := i.ResolveVariables(true)
+	for k := range vars {
+		if !strings.HasPrefix(k, "connector.") {
+			continue
+		}
+
+		parts := strings.Split(k, ".")
+		if len(parts) <= 2 {
+			continue
+		}
+
+		// Implicitly defined connectors always have the same name as the driver
+		name := parts[1]
+		found := false
+		for _, c := range res {
+			if c.Name == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			res = append(res, &runtimev1.Connector{
+				Type: name,
+				Name: name,
+			})
+		}
+	}
+	return res
+}
+
+// DefaultFeatureFlags feature flags used in UI to add/remove certain features. In future backend will also honor these flags.
+var DefaultFeatureFlags = map[string]string{
+	// Controls whether the export functionality is visible
+	"exports": "true",
+	// Controls visibility of the source data viewer table in Rill Cloud for metrics views
+	"cloud_data_viewer": "false",
+	// Controls visibility of the global dimension search feature
+	"dimension_search": "false",
+	// TODO: more info
+	"two_tiered_navigation": "false",
+	// Controls visibility of the RillTime syntax range picker
+	"rill_time": "true",
+	// Controls visibility of the public URL sharing option in dashboards
+	"hide_public_url": "{{.user.embed}}",
+	// TODO: more info
+	"export_header": "false",
+	// Controls visibility of alert creation functionality
+	"alerts": "true",
+	// Controls visibility of report creation functionality
+	"reports": "true",
+	// Controls visibility of theme switching between light/dark modes
+	"dark_mode": "false",
+	// Controls visibility of project-level chat functionality
+	"chat": "true",
+	// Controls visibility of dashboard-level chat functionality
+	"dashboard_chat": "false",
+	// Controls whether to show/hide deploy related actions.
+	"deploy": "true",
 }
