@@ -11,6 +11,7 @@
   export let label: string | undefined = undefined;
   export let hint: string | undefined = undefined;
   export let optional: boolean = false;
+  export let hideContent: boolean = false;
 
   let fileInput: HTMLInputElement;
 
@@ -28,11 +29,7 @@
 
   // maintain a list of filenames to show in error messages.
   // since the final uploaded url set in `value` is usually not the same this is needed.
-  let fileNames: string[] = value
-    ? multiple
-      ? (value as string[])
-      : [value as string]
-    : [];
+  let fileNames: string[] = [];
   $: selectedFileName = fileNames.length > 0 ? fileNames[0] : null;
 
   function uploadFiles(files: FileList) {
@@ -121,7 +118,7 @@
       <span class="file-status-text">
         {#if Object.values(uploading).some((u) => u)}
           Uploading...
-        {:else if selectedFileName}
+        {:else if selectedFileName && !hideContent}
           {selectedFileName}
         {:else}
           No file chosen

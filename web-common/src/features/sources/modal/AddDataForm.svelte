@@ -226,19 +226,6 @@
     }
   })();
 
-  // Clear credentials when switching to inferred method
-  $: (() => {
-    if (connector.name === "bigquery" && bigqueryAuthMethod === "inferred") {
-      paramsForm.update(
-        ($form) => {
-          $form.google_application_credentials = "";
-          return $form;
-        },
-        { taint: false },
-      );
-    }
-  })();
-
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
@@ -731,7 +718,7 @@
             {/if}
           {/each}
 
-          <!-- Render credentials input when credentials method is selected -->
+          <!-- Render credentials input -->
           {#each filteredParamsProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             {#if propertyKey === "google_application_credentials"}
@@ -745,6 +732,18 @@
                     bind:value={$paramsForm[propertyKey]}
                     uploadFile={handleFileUpload}
                     accept=".json"
+                  />
+                {:else}
+                  <!-- Show hidden credentials input to maintain form state -->
+                  <CredentialsInput
+                    id={propertyKey}
+                    label={property.displayName}
+                    hint={property.hint}
+                    optional={!property.required}
+                    bind:value={$paramsForm[propertyKey]}
+                    uploadFile={handleFileUpload}
+                    accept=".json"
+                    hideContent={true}
                   />
                 {/if}
               </div>
