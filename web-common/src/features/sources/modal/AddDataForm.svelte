@@ -601,6 +601,27 @@
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
+          <!-- Render Project ID first -->
+          {#each filteredParamsProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            {#if propertyKey === "project_id"}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              </div>
+            {/if}
+          {/each}
+
           <!-- Authentication method selection -->
           <div class="py-1.5 first:pt-0 last:pb-0">
             <div class="text-sm font-medium mb-4">Authentication method</div>
@@ -639,39 +660,48 @@
             </div>
           {/if}
 
-          <!-- Render other properties -->
+          <!-- Render other properties (excluding project_id and credentials) -->
           {#each filteredParamsProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <Checkbox
-                  id={propertyKey}
-                  bind:checked={$paramsForm[propertyKey]}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                <InformationalField
-                  description={property.description}
-                  hint={property.hint}
-                  href={property.docsUrl}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                <!-- Only show credentials input when credentials method is selected -->
+            {#if propertyKey !== "project_id" && propertyKey !== "google_application_credentials"}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={normalizeErrors($paramsErrors[propertyKey])}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <Checkbox
+                    id={propertyKey}
+                    bind:checked={$paramsForm[propertyKey]}
+                    label={property.displayName}
+                    hint={property.hint}
+                    optional={!property.required}
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                  <InformationalField
+                    description={property.description}
+                    hint={property.hint}
+                    href={property.docsUrl}
+                  />
+                {/if}
+              </div>
+            {/if}
+          {/each}
+
+          <!-- Render credentials input when credentials method is selected -->
+          {#each filteredParamsProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            {#if propertyKey === "google_application_credentials"}
+              <div class="py-1.5 first:pt-0 last:pb-0">
                 {#if bigqueryAuthMethod === "credentials"}
                   <CredentialsInput
                     id={propertyKey}
@@ -683,8 +713,8 @@
                     accept=".json"
                   />
                 {/if}
-              {/if}
-            </div>
+              </div>
+            {/if}
           {/each}
         </form>
       {:else}
