@@ -159,7 +159,7 @@
   <NavigationMenuItem on:click={handleGenerateMetricsAndExplore}>
     <ExploreIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
-      Generate metrics
+      Generate dashboard
       {#if $ai}
         with AI
         <WandIcon class="w-3 h-3" />
