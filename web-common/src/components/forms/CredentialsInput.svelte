@@ -34,7 +34,6 @@
       ? (value as string[])
       : [value as string]
     : [];
-  $: hasValue = values.length > 0 || Object.values(uploading).some((u) => u);
   $: selectedFileName = fileNames.length > 0 ? fileNames[0] : null;
 
   function uploadFiles(files: FileList) {
