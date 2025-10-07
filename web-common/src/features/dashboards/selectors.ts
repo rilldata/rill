@@ -162,7 +162,7 @@ export function hasValidMetricsViewTimeRange(
 
 export function getFiltersForOtherDimensions(
   whereFilter: V1Expression,
-  dimName: string,
+  dimName: string | string[],
 ) {
   const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
     matchExpressionByName(e, dimName),

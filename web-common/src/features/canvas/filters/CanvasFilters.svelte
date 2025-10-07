@@ -48,7 +48,8 @@
         allMeasureFilterItems,
         measureHasFilter,
       },
-      spec: { canvasSpec, allDimensions, allSimpleMeasures },
+      spec: { canvasSpec, _allDimensions, allSimpleMeasures },
+      specStore,
       timeControls: {
         allTimeRange,
         timeRangeStateStore,
@@ -73,12 +74,16 @@
   $: availableTimeZones = $canvasSpec?.timeZones ?? [];
   $: timeRanges = $canvasSpec?.timeRanges ?? [];
 
+  $: metricsViews = $specStore.data?.metricsViews || {};
+
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : Interval.invalid("Unable to parse time range");
+
+  $: allDimensions = $_allDimensions;
 
   $: allDimensionFilters = $allDimensionFilterItems;
 
@@ -194,14 +199,10 @@
         </div>
       {:else}
         {#each allDimensionFilters as [name, { isInclude, label, mode, selectedValues, inputText, metricsViewNames }] (name)}
-          {@const dimension = $allDimensions.find(
-            (d) => d.name === name || d.column === name,
-          )}
-          {@const dimensionName = dimension?.name || dimension?.column}
           <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName && metricsViewNames?.length}
+            {#if name && metricsViewNames?.length}
               <DimensionFilter
-                {metricsViewNames}
+                {metricsViews}
                 {readOnly}
                 {name}
                 {label}
@@ -231,7 +232,7 @@
         {#each allMeasureFilters as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
           <div animate:flip={{ duration: 200 }}>
             <MeasureFilter
-              allDimensions={dimensionsForMeasure || $allDimensions}
+              allDimensions={dimensionsForMeasure || allDimensions}
               {name}
               {label}
               {dimensionName}
@@ -246,7 +247,7 @@
 
       {#if !readOnly}
         <FilterButton
-          allDimensions={$allDimensions}
+          {allDimensions}
           filteredSimpleMeasures={$allSimpleMeasures}
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}

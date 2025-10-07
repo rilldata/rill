@@ -121,6 +121,8 @@
     ready: timeControlsReady,
   } = $timeControlsStore);
 
+  $: ({ whereFilter } = $dashboardStore);
+
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
 
@@ -160,7 +162,7 @@
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
-  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
@@ -324,7 +326,7 @@
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
-        $dashboardStore?.selectedComparisonTimeRange,
+        selectedComparisonTimeRange,
       );
     }
   }
@@ -430,7 +432,7 @@
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
       {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
+        <AdvancedFilter advancedFilter={whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
@@ -448,7 +450,7 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName}
               <DimensionFilter
-                whereFilter={$dashboardStore.whereFilter}
+                {whereFilter}
                 metricsViewNames={[metricsViewName]}
                 {readOnly}
                 {name}

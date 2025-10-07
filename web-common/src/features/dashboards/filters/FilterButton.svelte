@@ -12,7 +12,9 @@
   } from "@rilldata/web-common/runtime-client";
   import { getMeasureDisplayName } from "./getDisplayName";
 
-  export let allDimensions: MetricsViewSpecDimension[];
+  export let allDimensions:
+    | Map<string, (MetricsViewSpecDimension & { metricsViewName: string })[]>
+    | MetricsViewSpecDimension[];
   export let filteredSimpleMeasures: MetricsViewSpecMeasure[];
   export let dimensionHasFilter: (dimensionName: string) => boolean;
   export let measureHasFilter: (measureName: string) => boolean;
@@ -22,26 +24,50 @@
 
   let open = false;
 
-  $: selectableGroups = [
-    <SearchableFilterSelectableGroup>{
+  function makeDimensionGroup(
+    dimensions:
+      | Map<string, (MetricsViewSpecDimension & { metricsViewName: string })[]>
+      | MetricsViewSpecDimension[],
+  ): SearchableFilterSelectableGroup {
+    if (Array.isArray(dimensions)) {
+      return {
+        name: "DIMENSIONS",
+        items:
+          dimensions
+            ?.map((d) => ({
+              id: (d.name || d.column) as string,
+              labels: [getDimensionDisplayName(d)],
+            }))
+            .filter((d) => !dimensionHasFilter(d.id)) ?? [],
+      };
+    }
+
+    return {
       name: "DIMENSIONS",
       items:
-        allDimensions
-          ?.map((d) => ({
-            name: (d.name || d.column) as string,
-            label: getDimensionDisplayName(d),
+        Array.from(dimensions.entries())
+          .map(([name, dims]) => ({
+            id: name,
+            labels: Array.from(
+              new Set(dims.map((d) => getDimensionDisplayName(d)) || []),
+            ),
+            tooltip: dims.map((d) => d.metricsViewName).join(", "),
           }))
-          .filter((d) => !dimensionHasFilter(d.name)) ?? [],
-    },
+          .filter((d) => !dimensionHasFilter(d.id)) ?? [],
+    };
+  }
+
+  $: selectableGroups = [
+    makeDimensionGroup(allDimensions),
     <SearchableFilterSelectableGroup>{
       name: "MEASURES",
       items:
         filteredSimpleMeasures
           ?.map((m) => ({
-            name: m.name as string,
-            label: getMeasureDisplayName(m),
+            id: m.name as string,
+            labels: Array.from(new Set([getMeasureDisplayName(m)])),
           }))
-          .filter((m) => !measureHasFilter(m.name)) ?? [],
+          .filter((m) => !measureHasFilter(m.id)) ?? [],
     },
   ];
 </script>

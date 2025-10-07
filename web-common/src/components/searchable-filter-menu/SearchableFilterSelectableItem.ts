@@ -5,6 +5,7 @@ export interface SearchableFilterSelectableGroup {
 }
 
 export interface SearchableFilterSelectableItem {
-  name: string;
-  label: string;
+  id: string;
+  labels: Array<string>;
+  tooltip?: string;
 }

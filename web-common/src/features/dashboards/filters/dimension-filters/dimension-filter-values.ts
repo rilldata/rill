@@ -10,7 +10,10 @@ import {
   createQueryServiceMetricsViewAggregation,
   V1BuiltinMeasure,
 } from "@rilldata/web-common/runtime-client";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Expression,
+  V1MetricsView,
+} from "@rilldata/web-common/runtime-client";
 
 type DimensionSearchArgs = {
   mode: DimensionFilterMode;
@@ -32,7 +35,7 @@ type DimensionSearchArgs = {
  */
 export function useDimensionSearch(
   instanceId: string,
-  metricsViewNames: string[],
+  metricsViews: Record<string, V1MetricsView | undefined>,
   dimensionName: string,
   {
     mode,
@@ -52,24 +55,33 @@ export function useDimensionSearch(
   });
 
   // Main query: Get top 250 results (above the fold)
-  const mainQueries = metricsViewNames.map((mvName) =>
-    createQueryServiceMetricsViewAggregation(
-      instanceId,
-      mvName,
-      {
-        dimensions: [{ name: dimensionName }],
-        timeRange: { start: timeStart, end: timeEnd },
-        limit: "250",
-        offset: "0",
-        sort: [{ name: dimensionName }],
-        where,
-      },
-      {
-        query: { enabled },
-      },
-      queryClient,
-    ),
-  );
+
+  const mainQueries = Object.entries(metricsViews)
+    .map(([mvName, metricsView]) => {
+      const withoutInvalidMeasuresAndDimensions =
+        filterOutInvalidMeasuresAndDimensions(where, metricsView);
+      const metricsViewHasDimension =
+        metricsView?.state?.validSpec?.dimensions?.some(
+          (d) => d.name === dimensionName || d.column === dimensionName,
+        );
+      return createQueryServiceMetricsViewAggregation(
+        instanceId,
+        mvName,
+        {
+          dimensions: [{ name: dimensionName }],
+          timeRange: { start: timeStart, end: timeEnd },
+          limit: "250",
+          offset: "0",
+          sort: [{ name: dimensionName }],
+          where: withoutInvalidMeasuresAndDimensions,
+        },
+        {
+          query: { enabled: metricsViewHasDimension && enabled },
+        },
+        queryClient,
+      );
+    })
+    .filter(Boolean);
 
   return getCompoundQuery(mainQueries, (responses) => {
     // Get main results (above the fold)
@@ -178,8 +190,8 @@ export function useAllSearchResultsCount(
 function getFilterForSearchArgs(
   dimensionName: string,
   { mode, searchText, values, additionalFilter }: DimensionSearchArgs,
-) {
-  let filter;
+): V1Expression {
+  let filter: V1Expression;
   if (mode === DimensionFilterMode.InList) {
     filter = createInExpression(dimensionName, values);
   } else {
@@ -193,4 +205,31 @@ function getFilterForSearchArgs(
     return createAndExpression([filter, additionalFilter]);
   }
   return filter;
+}
+
+function filterOutInvalidMeasuresAndDimensions(
+  where: V1Expression,
+  metricsView: V1MetricsView,
+): V1Expression {
+  console.log({ where });
+  const validNames = new Set([
+    ...(metricsView.state?.validSpec?.dimensions || []).map(
+      (d) => d.name || d.column,
+    ),
+    ...(metricsView.state?.validSpec?.measures || []).map((m) => m.name),
+  ]);
+
+  console.log({ validNames }, metricsView.state?.validSpec?.displayName);
+
+  const exprs = where.cond?.exprs?.filter((e) => {
+    const name = e.cond?.exprs?.[0]?.ident;
+    return name && validNames.has(name);
+  });
+
+  console.log({ exprs });
+  if (!exprs || exprs.length === 0) {
+    return createAndExpression([]);
+  }
+
+  return createAndExpression(exprs);
 }
