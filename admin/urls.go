@@ -342,9 +342,6 @@ func (u *URLs) ReportOpen(org, project, report, token string, executionTime time
 
 // ReportExport returns the URL for exporting a report in the frontend.
 func (u *URLs) ReportExport(org, project, report, token string) string {
-	if token == "" {
-		return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export")
-	}
 	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "export"), map[string]string{"token": token})
 }
 
