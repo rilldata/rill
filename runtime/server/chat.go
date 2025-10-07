@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/r3labs/sse/v2"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -189,49 +188,47 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
 
-	// Make the call
-	callErrCh := make(chan error)
+	// Open subscription for session messages and stream them to the client in the background
+	subCh := session.Subscribe()
+	defer session.Unsubscribe(subCh)
 	go func() {
-		time.Sleep(time.Millisecond * 10) // Allow the subscribe to happen. TODO: Find a non-hacky solution here.
-		var res *ai.RouterAgentResult
-		_, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-			Prompt: req.Prompt,
-		})
-		time.Sleep(time.Millisecond * 50) // Allow the last message to be sent. TODO: Find a non-hacky solution here.
-		cancel()
-		callErrCh <- err
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-subCh:
+				if !ok {
+					return
+				}
+				pb, err := msg.ToProto()
+				if err != nil {
+					s.logger.Error("failed to convert AI message to protobuf", zap.Error(err))
+					continue
+				}
+				err = stream.Send(&runtimev1.CompleteStreamingResponse{
+					ConversationId: msg.SessionID,
+					Message: &runtimev1.Message{
+						Id:        msg.ID,
+						Role:      pb.Role,
+						Content:   pb.Content,
+						CreatedOn: timestamppb.New(msg.Time),
+						UpdatedOn: timestamppb.New(msg.Time),
+					},
+				})
+				if err != nil {
+					s.logger.Warn("failed to send AI message to stream", zap.Error(err))
+				}
+			}
+		}
 	}()
 
-	// Subscribe to session messages and stream them to the client
-	subErr := session.Subscribe(ctx, func(msg *ai.Message) {
-		pb, err := msg.ToProto()
-		if err != nil {
-			s.logger.Error("failed to convert AI message to protobuf", zap.Error(err))
-			return
-		}
-		err = stream.Send(&runtimev1.CompleteStreamingResponse{
-			ConversationId: msg.SessionID,
-			Message: &runtimev1.Message{
-				Id:        msg.ID,
-				Role:      pb.Role,
-				Content:   pb.Content,
-				CreatedOn: timestamppb.New(msg.Time),
-				UpdatedOn: timestamppb.New(msg.Time),
-			},
-		})
-		if err != nil {
-			s.logger.Warn("failed to send AI message to stream", zap.Error(err))
-		}
+	// Make the call
+	var res *ai.RouterAgentResult
+	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+		Prompt: req.Prompt,
 	})
-
-	// Wait for call to finish
-	cancel()
-	callErr := <-callErrCh
-	if callErr != nil && !errors.Is(callErr, context.Canceled) {
-		return callErr
-	}
-	if subErr != nil && !errors.Is(subErr, context.Canceled) {
-		return subErr
+	if err != nil && !errors.Is(err, context.Canceled) {
+		return err
 	}
 	return nil
 }

@@ -77,9 +77,7 @@ func (r *Runner) Session(ctx context.Context, instanceID, sessionID, userID stri
 		llmRelease:          release,
 		projectInstructions: instance.AIInstructions,
 
-		closeCh:          make(chan struct{}),
-		subscribers:      make(map[int]func(*Message)),
-		nextSubscriberID: 1,
+		subscribers: make(map[chan *Message]struct{}),
 	}
 
 	return &Session{
@@ -318,16 +316,13 @@ type BaseSession struct {
 	llmRelease          func()
 	projectInstructions string
 
-	closeCh          chan struct{}
-	mu               sync.RWMutex
-	messages         []*Message
-	subscribers      map[int]func(*Message)
-	nextSubscriberID int
+	mu          sync.RWMutex
+	messages    []*Message
+	subscribers map[chan *Message]struct{}
 }
 
 func (s *BaseSession) Close() error {
 	// TODO: Flush messages and title to DB
-	close(s.closeCh)
 	s.llmRelease()
 	return nil
 }
@@ -353,22 +348,19 @@ func (s *BaseSession) UpdateTitle(ctx context.Context, title string) string {
 	return s.title
 }
 
-func (s *BaseSession) Subscribe(ctx context.Context, callback func(*Message)) error {
+func (s *BaseSession) Subscribe() chan *Message {
+	ch := make(chan *Message)
 	s.mu.Lock()
-	id := s.nextSubscriberID
-	s.nextSubscriberID++
-	s.subscribers[id] = callback
+	s.subscribers[ch] = struct{}{}
 	s.mu.Unlock()
+	return ch
+}
 
-	select {
-	case <-ctx.Done():
-	case <-s.closeCh:
-	}
-
+func (s *BaseSession) Unsubscribe(ch chan *Message) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.subscribers, id)
-	return nil
+	delete(s.subscribers, ch)
+	close(ch)
 }
 
 func (s *BaseSession) WithParent(messageID string) *Session {
@@ -531,8 +523,8 @@ func (s *Session) AddMessage(opts *AddMessageOptions) *Message {
 	defer s.mu.Unlock()
 
 	s.messages = append(s.messages, msg)
-	for _, sub := range s.subscribers {
-		sub(msg)
+	for sub := range s.subscribers {
+		sub <- msg
 	}
 
 	return msg
@@ -761,6 +753,12 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				return fmt.Errorf("failed to marshal input schema for tool %q: %w", toolName, err)
 			}
 			inputSchema = string(inputSchemaBytes)
+
+			// OpenAI currently does not accept object schemas without explicit properties.
+			// So for now, we skip such schemas.
+			if s, ok := tool.spec.InputSchema.(*jsonschema.Schema); ok && s.Properties == nil {
+				inputSchema = ""
+			}
 		}
 		tools = append(tools, &aiv1.Tool{
 			Name:        tool.spec.Name,

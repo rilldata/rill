@@ -17,6 +17,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -100,7 +102,7 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 					if errors.Is(err, ctx.Err()) {
 						continue
 					}
-					return err
+					return fmt.Errorf("completion failed: %w", err)
 				}
 
 				// Handle streaming messages
@@ -110,12 +112,18 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 					resp, err := stream.Recv()
 					if err != nil {
 						if errors.Is(err, io.EOF) {
+							lastMsg = nil
 							break
 						}
 						if errors.Is(err, ctx.Err()) {
+							lastMsg = nil
 							break
 						}
-						return err
+						if s, ok := status.FromError(err); ok && s.Code() == codes.Canceled {
+							lastMsg = nil
+							break
+						}
+						return fmt.Errorf("completion stream failed: %w", err)
 					}
 
 					// Print truncated message
