@@ -101,7 +101,7 @@
   }
 
   // Create both metrics view and explore dashboard
-  async function handleGenerateMetricsAndExplore() {
+  async function handleGenerateMetricsAndExploreExternalTable() {
     if (isOlapConnector) {
       // For OLAP connectors, create both in parallel
       await Promise.all([
@@ -156,7 +156,18 @@
 {/if}
 
 {#if showGenerateMetricsAndDashboard && !isOlapConnector}
-  <NavigationMenuItem on:click={handleGenerateMetricsAndExplore}>
+  <!-- We should add another entry that only generates a Model and Metrics View file. No Explore file. It should be named "Generate metrics". -->
+  <NavigationMenuItem on:click={createMetricsViewFromTable}>
+    <MetricsViewIcon slot="icon" />
+    <div class="flex gap-x-2 items-center">
+      Generate metrics
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
+    </div>
+  </NavigationMenuItem>
+  <NavigationMenuItem on:click={handleGenerateMetricsAndExploreExternalTable}>
     <ExploreIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
       Generate dashboard
