@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/r3labs/sse/v2"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -220,6 +221,13 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
+
+	// Add timeout matching the completionTimeout from runtime/completion.go
+	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
+	defer cancel()
+
+	// Replace request context with the timed context
+	req = req.WithContext(ctx)
 
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", instanceID),

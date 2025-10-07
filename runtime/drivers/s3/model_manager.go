@@ -124,7 +124,7 @@ func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketNam
 			}
 		}
 
-		if *out.IsTruncated && out.NextContinuationToken != nil {
+		if out.IsTruncated != nil && *out.IsTruncated && out.NextContinuationToken != nil {
 			continuationToken = out.NextContinuationToken
 		} else {
 			break
