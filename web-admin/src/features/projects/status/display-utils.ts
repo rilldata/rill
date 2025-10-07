@@ -42,6 +42,39 @@ export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
       textClass: "text-purple-600",
       wrapperClass: "bg-purple-50 border-purple-300",
     },
+    [V1DeploymentStatus.DEPLOYMENT_STATUS_UPDATING]: {
+      icon: Spinner,
+      iconProps: {
+        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
+        className: "text-purple-600 hover:text-purple-500",
+        status: EntityStatus.Running,
+      },
+      text: "Updating",
+      textClass: "text-purple-600",
+      wrapperClass: "bg-purple-50 border-purple-300",
+    },
+    [V1DeploymentStatus.DEPLOYMENT_STATUS_STOPPING]: {
+      icon: Spinner,
+      iconProps: {
+        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
+        className: "text-purple-600 hover:text-purple-500",
+        status: EntityStatus.Running,
+      },
+      text: "Stopping",
+      textClass: "text-purple-600",
+      wrapperClass: "bg-purple-50 border-purple-300",
+    },
+    [V1DeploymentStatus.DEPLOYMENT_STATUS_DELETING]: {
+      icon: Spinner,
+      iconProps: {
+        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
+        className: "text-purple-600 hover:text-purple-500",
+        status: EntityStatus.Running,
+      },
+      text: "Deleting",
+      textClass: "text-purple-600",
+      wrapperClass: "bg-purple-50 border-purple-300",
+    },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR]: {
       icon: CancelCircle,
       iconProps: { className: "text-red-600 hover:text-red-500" },
