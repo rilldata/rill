@@ -14,7 +14,7 @@ export function useDeployingDashboards(
   deploying: boolean,
   deployingDashboard: string | null,
 ): CreateQueryResult<{
-  redirectToDashboardUrl: string | null;
+  redirectToDashboardPath: string | null;
   dashboardsReconciling: boolean;
   dashboardsErrored: boolean;
 }> {
@@ -23,7 +23,7 @@ export function useDeployingDashboards(
       select: (data) => {
         if (!deploying) {
           return {
-            redirectToDashboardUrl: null,
+            redirectToDashboardPath: null,
             dashboardsReconciling: false,
             dashboardsErrored: false,
           };
@@ -38,7 +38,7 @@ export function useDeployingDashboards(
 
         if (!hasValidDashboard || !dashboard?.meta?.name?.name) {
           return {
-            redirectToDashboardUrl: null,
+            redirectToDashboardPath: null,
             dashboardsReconciling: getDashboardsReconciling(
               dashboards,
               deployingDashboard,
@@ -54,10 +54,10 @@ export function useDeployingDashboards(
           dashboard.meta?.name?.kind === ResourceKind.Explore
             ? "explore"
             : "canvas";
-        const redirectToDashboardUrl = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
+        const redirectToDashboardPath = `/${orgName}/${projName}/${resourceRoute}/${dashboard.meta.name.name}`;
 
         return {
-          redirectToDashboardUrl,
+          redirectToDashboardPath,
           dashboardsReconciling: false,
           dashboardsErrored: false,
         };

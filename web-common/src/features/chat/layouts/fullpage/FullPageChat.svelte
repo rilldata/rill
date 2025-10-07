@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { Chat } from "../../core/chat";
+  import { cleanupChatInstance, getChatInstance } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
@@ -9,7 +10,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: chat = new Chat(instanceId, {
+  $: chat = getChatInstance(instanceId, {
     conversationState: "url",
   });
 
@@ -26,6 +27,14 @@
   function onMessageSend() {
     chatInputComponent?.focusInput();
   }
+
+  // Clean up chat resources when leaving the chat context entirely
+  beforeNavigate(({ to }) => {
+    const isChatRoute = to?.route?.id?.includes("ai");
+    if (!isChatRoute) {
+      cleanupChatInstance(instanceId);
+    }
+  });
 </script>
 
 <div class="chat-fullpage">
@@ -38,7 +47,11 @@
     onNewConversationClick={() => {
       chatInputComponent?.focusInput();
     }}
-  />
+  >
+    <svelte:fragment slot="footer">
+      <slot name="sidebar-footer" />
+    </svelte:fragment>
+  </ConversationSidebar>
 
   <!-- Main Chat Area -->
   <div class="chat-main">
@@ -66,7 +79,7 @@
     display: flex;
     height: 100%;
     width: 100%;
-    background: #ffffff;
+    background: var(--surface);
   }
 
   /* Main Chat Area */
@@ -75,13 +88,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--surface);
   }
 
   .chat-content {
     flex: 1;
     overflow: hidden;
-    background: #f9fafb;
+    background: var(--surface);
     display: flex;
     flex-direction: column;
   }
@@ -96,7 +109,7 @@
 
   .chat-input-section {
     flex-shrink: 0;
-    background: #f9fafb;
+    background: var(--surface);
     padding: 1rem;
     display: flex;
     justify-content: center;
@@ -108,30 +121,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-  }
-
-  /* Override core ChatMessages background for full-page layout */
-  .chat-fullpage :global(.chat-messages) {
-    background: #f9fafb;
-    padding: 2rem 1rem;
-    min-height: 100%;
-  }
-
-  /* Enhance welcome message for full-page layout */
-  .chat-fullpage :global(.chat-empty) {
-    padding: 4rem 2rem;
-  }
-
-  .chat-fullpage :global(.chat-empty-title) {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 0.5rem;
-  }
-
-  .chat-fullpage :global(.chat-empty-subtitle) {
-    font-size: 1rem;
-    color: #6b7280;
   }
 
   /* Responsive behavior for full-page layout */
@@ -150,18 +139,6 @@
   @media (max-width: 640px) {
     .chat-fullpage {
       flex-direction: column;
-    }
-
-    .chat-fullpage :global(.chat-empty) {
-      padding: 2rem 1rem;
-    }
-
-    .chat-fullpage :global(.chat-empty-title) {
-      font-size: 1.25rem;
-    }
-
-    .chat-fullpage :global(.chat-empty-subtitle) {
-      font-size: 0.875rem;
     }
   }
 </style>

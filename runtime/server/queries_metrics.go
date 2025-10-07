@@ -461,6 +461,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	for i, tr := range req.Expressions {
 		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{
 			TimeZoneOverride: tz,
+			SmallestGrain:    timeutil.TimeGrainFromAPI(mv.ValidSpec.SmallestTimeGrain),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
@@ -610,7 +611,7 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).SecurityClaims(), res)
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, auth.GetClaims(ctx).SecurityClaims(), res)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -627,7 +628,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, claims, res)
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, claims, res)
 	if err != nil {
 		return nil, nil, err
 	}

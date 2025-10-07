@@ -4,6 +4,7 @@
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
+  import CanvasPreviewCTAs from "@rilldata/web-common/features/canvas/CanvasPreviewCTAs.svelte";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import {
     useValidCanvases,
@@ -20,7 +21,7 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
-  const { darkMode } = featureFlags;
+  const { darkMode, deploy } = featureFlags;
 
   export let mode: string;
 
@@ -34,6 +35,7 @@
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
+  $: showDeployCTA = $deploy && !onDeployPage;
 
   $: exploresQuery = useValidExplores(instanceId);
   $: canvasQuery = useValidCanvases(instanceId);
@@ -116,9 +118,11 @@
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
         <ExplorePreviewCTAs exploreName={dashboardName} />
+      {:else if route.id?.includes("canvas")}
+        <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {/if}
-    {#if !onDeployPage}
+    {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
     <LocalAvatarButton darkMode={$darkMode} />

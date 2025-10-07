@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { Chat } from "../../core/chat";
+  import { cleanupChatInstance, getChatInstance } from "../../core/chat";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
@@ -15,7 +16,7 @@
   $: ({ instanceId } = $runtime);
 
   // Initialize chat with browser storage for conversation management
-  $: chat = new Chat(instanceId, {
+  $: chat = getChatInstance(instanceId, {
     conversationState: "browserStorage",
   });
 
@@ -28,6 +29,16 @@
   function onNewConversation() {
     chatInputComponent?.focusInput();
   }
+
+  // Clean up chat resources when switching projects
+  beforeNavigate(({ from, to }) => {
+    const currentProject = from?.params?.project;
+    const targetProject = to?.params?.project;
+
+    if (currentProject !== targetProject) {
+      cleanupChatInstance(instanceId);
+    }
+  });
 </script>
 
 <div class="chat-sidebar" style="--sidebar-width: {$sidebarWidth}px;">
@@ -59,8 +70,8 @@
     position: relative;
     width: var(--sidebar-width);
     height: 100%;
-    background: #ffffff;
-    border-left: 1px solid #e5e7eb;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;

@@ -3,11 +3,16 @@ import type {
   ChartSortDirectionOptions,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+import type { ColorScheme } from "vega-typings";
 
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea" | "select";
 type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
-type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
+type CustomInputTypes =
+  | "rill_time"
+  | "sparkline"
+  | "comparison_options"
+  | "switcher_tab";
 type PositionalInputTypes = "alignment";
 
 export type InputType =
@@ -36,7 +41,14 @@ export type ChartFieldInput = {
   originSelector?: boolean;
   sortSelector?: SortSelectorConfig;
   limitSelector?: { defaultLimit: number };
-  colorMappingSelector?: { enable: boolean; values?: string[] };
+  colorMappingSelector?: {
+    enable: boolean;
+    values?: string[];
+    isContinuous?: boolean;
+  };
+  colorRangeSelector?: {
+    enable: boolean;
+  };
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
@@ -71,6 +83,17 @@ export interface ComponentInputParam {
 }
 
 export type ColorMapping = { value: string; color: string }[];
+
+export type ColorRangeMapping =
+  | {
+      mode: "scheme";
+      scheme: ColorScheme;
+    }
+  | {
+      mode: "gradient";
+      start: string;
+      end: string;
+    };
 
 export interface FilterInputParam {
   type: FilterInputTypes;

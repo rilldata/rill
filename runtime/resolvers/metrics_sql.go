@@ -5,9 +5,11 @@ import (
 	"errors"
 
 	"github.com/mitchellh/mapstructure"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -72,8 +74,37 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.Claims, sqlArgs.Priority)
-	query, err := compiler.Rewrite(ctx, props.SQL)
+	// Create a metrics SQL parser
+	compiler := metricssql.New(&metricssql.CompilerOptions{
+		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+			mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+			if err != nil {
+				return nil, err
+			}
+			sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
+			if err != nil {
+				return nil, err
+			}
+			if !sec.CanAccess() {
+				return nil, runtime.ErrForbidden
+			}
+			return mv, nil
+		},
+		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
+			sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+			e, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv.GetMetricsView().State.ValidSpec, false, sec, sqlArgs.Priority)
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+			return e.Timestamps(ctx, timeDim)
+		},
+	})
+
+	// Parse the metrics SQL query
+	query, err := compiler.Parse(ctx, props.SQL)
 	if err != nil {
 		return nil, err
 	}

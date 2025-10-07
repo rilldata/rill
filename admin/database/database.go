@@ -156,6 +156,7 @@ type DB interface {
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
+	DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 	DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error
 
@@ -192,10 +193,10 @@ type DB interface {
 	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
 
-	FindReportTokens(ctx context.Context, reportName string) ([]*ReportToken, error)
-	FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*ReportTokenWithSecret, error)
-	FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*ReportToken, error)
-	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
+	FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*NotificationToken, error)
+	FindNotificationTokensWithSecret(ctx context.Context, resourceKind, resourceName string) ([]*NotificationTokenWithSecret, error)
+	FindNotificationTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*NotificationToken, error)
+	InsertNotificationToken(ctx context.Context, opts *InsertNotificationTokenOptions) (*NotificationToken, error)
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -809,23 +810,26 @@ type InsertMagicAuthTokenOptions struct {
 	Internal        bool
 }
 
-type ReportToken struct {
+type NotificationToken struct {
 	ID               string
-	ReportName       string `db:"report_name"`
+	ResourceKind     string `db:"resource_kind"`
+	ResourceName     string `db:"resource_name"`
 	RecipientEmail   string `db:"recipient_email"`
 	MagicAuthTokenID string `db:"magic_auth_token_id"`
 }
 
-type ReportTokenWithSecret struct {
+type NotificationTokenWithSecret struct {
 	ID                   string
-	ReportName           string `db:"report_name"`
+	ResourceKind         string `db:"resource_kind"`
+	ResourceName         string `db:"resource_name"`
 	RecipientEmail       string `db:"recipient_email"`
 	MagicAuthTokenID     string `db:"magic_auth_token_id"`
 	MagicAuthTokenSecret []byte `db:"magic_auth_token_secret"`
 }
 
-type InsertReportTokenOptions struct {
-	ReportName       string
+type InsertNotificationTokenOptions struct {
+	ResourceKind     string
+	ResourceName     string
 	RecipientEmail   string
 	MagicAuthTokenID string
 }
