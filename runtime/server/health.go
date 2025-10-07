@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -15,7 +16,7 @@ import (
 
 // Health implements RuntimeService
 func (s *Server) Health(ctx context.Context, req *runtimev1.HealthRequest) (*runtimev1.HealthResponse, error) {
-	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+	if !auth.GetClaims(ctx, "").Can(runtime.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
@@ -58,7 +59,7 @@ func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHeal
 	)
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
 		return nil, ErrForbidden
 	}
 
