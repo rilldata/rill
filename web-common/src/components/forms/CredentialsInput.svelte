@@ -14,7 +14,6 @@
 
   let fileInput: HTMLInputElement;
 
-  $: values = value ? (multiple ? (value as string[]) : [value as string]) : [];
   $: errors = error ? (multiple ? error : { 0: error }) : [];
   $: uploading = {};
   $: uploadErrors = {};
