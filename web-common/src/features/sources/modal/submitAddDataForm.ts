@@ -300,11 +300,7 @@ export async function submitAddConnectorForm(
   }
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
-    await setOlapConnectorInRillYAML(
-      queryClient,
-      instanceId,
-      connector.name as string,
-    );
+    await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);
   }
 
   // Go to the new connector file
