@@ -1,5 +1,6 @@
 <script lang="ts">
   import AlertCircle from "../../../../components/icons/AlertCircle.svelte";
+  import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
 
   export let headline: string;
   export let error: string | null | undefined = undefined;
@@ -17,19 +18,9 @@
       <summary
         class="flex cursor-pointer items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 hover:underline"
       >
-        <svg
-          class="h-3 w-3 transition-transform group-open:rotate-90"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
+        <div class="transition-transform group-open:rotate-90">
+          <ChevronRight size="12px" />
+        </div>
         <span>Show details</span>
       </summary>
       <div
