@@ -28,11 +28,14 @@ func (c *Connection) Dialect() drivers.Dialect {
 
 // Exec implements drivers.OLAPStore.
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	it, err := c.Query(ctx, stmt)
+	res, err := c.Query(ctx, stmt)
 	if err != nil {
 		return err
 	}
-	return it.Close()
+	if res != nil {
+		return res.Close()
+	}
+	return nil
 }
 
 // InformationSchema implements drivers.OLAPStore.
