@@ -28,40 +28,11 @@ func (c *Connection) Dialect() drivers.Dialect {
 
 // Exec implements drivers.OLAPStore.
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	if c.config.LogQueries {
-		c.logger.Info("bigquery query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
-	}
-	client, err := c.acquireClient(ctx)
+	it, err := c.Query(ctx, stmt)
 	if err != nil {
 		return err
 	}
-
-	q := client.Query(stmt.Query)
-	q.Parameters = make([]bigquery.QueryParameter, len(stmt.Args))
-	for i, arg := range stmt.Args {
-		q.Parameters[i] = bigquery.QueryParameter{
-			Value: arg,
-		}
-	}
-	if stmt.DryRun {
-		q.DryRun = true
-	}
-
-	j, err := q.Run(ctx)
-	if err != nil {
-		return err
-	}
-	if stmt.DryRun {
-		// Dry run is not asynchronous
-		status := j.LastStatus()
-		return status.Err()
-	}
-	js, err := j.Wait(ctx)
-	if err != nil {
-		return err
-	}
-	err = js.Err()
-	return err
+	return it.Close()
 }
 
 // InformationSchema implements drivers.OLAPStore.
@@ -71,7 +42,7 @@ func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 
 // MayBeScaledToZero implements drivers.OLAPStore.
 func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
-	return false
+	return true
 }
 
 // Query implements drivers.OLAPStore.
@@ -90,6 +61,17 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		q.Parameters[i] = bigquery.QueryParameter{
 			Value: arg,
 		}
+	}
+	if stmt.DryRun {
+		q.DryRun = true
+		// Can not use q.Read for dry run so must trigger the job and check status
+		j, err := q.Run(ctx)
+		if err != nil {
+			return nil, err
+		}
+		// Dry run is not asynchronous so no need to call Wait
+		status := j.LastStatus()
+		return nil, status.Err()
 	}
 	it, err := q.Read(ctx)
 	if err != nil {
@@ -178,7 +160,7 @@ type rows struct {
 func newRows(ri *bigquery.RowIterator, firstRow []bigquery.Value, noRows bool) *rows {
 	if noRows {
 		return &rows{
-			lastErr: drivers.ErrNoRows,
+			lastErr: iterator.Done,
 		}
 	}
 	r := &rows{
@@ -204,6 +186,9 @@ func (r *rows) Close() error {
 
 // Err implements drivers.Rows.
 func (r *rows) Err() error {
+	if errors.Is(r.lastErr, iterator.Done) {
+		return nil
+	}
 	return r.lastErr
 }
 

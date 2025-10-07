@@ -135,7 +135,7 @@ func TestEmptyRows(t *testing.T) {
 	require.Equal(t, "int_col", sc.Fields[0].Name)
 	require.Equal(t, "float_col", sc.Fields[1].Name)
 	require.False(t, rows.Next())
-	require.Equal(t, drivers.ErrNoRows, rows.Err())
+	require.Nil(t, rows.Err())
 
 }
 
