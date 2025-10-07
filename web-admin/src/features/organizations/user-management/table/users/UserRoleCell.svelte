@@ -198,7 +198,10 @@
       <DropdownMenu.Separator />
       <DropdownMenu.Item
         class="font-normal flex items-center py-2"
-        on:click={() => (isRemoveConfirmOpen = true)}
+        on:click={() => {
+          if (isGuest) void handleRemove();
+          else isRemoveConfirmOpen = true;
+        }}
       >
         <span class="text-red-600">Remove</span>
       </DropdownMenu.Item>

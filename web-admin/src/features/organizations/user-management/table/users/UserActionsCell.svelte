@@ -31,6 +31,7 @@
   let isRemoveConfirmOpen = false;
 
   $: organization = $page.params.organization;
+  $: isGuest = role === OrgUserRoles.Guest;
   $: canManageUser =
     // TODO: backend doesnt restrict removing oneself, revisit this UI check.
     !isCurrentUser && canManageOrgUser(organizationPermissions, role);
@@ -43,6 +44,8 @@
     if (isBillingContact) {
       // If the user is a billing contact we cannot remove without update contact to a different user 1st.
       onAttemptRemoveBillingContactUser();
+    } else if (isGuest) {
+      void handleRemove(email);
     } else {
       // Else show the confirmation for remove
       isRemoveConfirmOpen = true;
