@@ -16,7 +16,7 @@
   import { featureFlags } from "../../feature-flags";
   import {
     useCreateMetricsViewFromTableUIAction,
-    createModelAndMetricsViewAndExplore as createModelAndMetricsViewAndExploreFromTable,
+    createModelAndMetricsAndExplore as createModelAndMetricsViewAndExploreFromTable,
   } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     createSqlModelFromTable,
@@ -100,8 +100,21 @@
     }
   }
 
-  // Create both metrics view and explore dashboard
-  async function handleGenerateMetricsAndExploreExternalTable() {
+  async function handleGenerateModelMetricsExternalTable() {
+    // For non-OLAP connectors, follow Rill architecture:
+    // 1. Create model (ingests from source → OLAP)
+    // 2. Create metrics view (on top of model)
+    await createModelAndMetricsViewAndExploreFromTable(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      false, // Don't create explore dashboard
+    );
+  }
+
+  async function handleGenerateModelMetricsExploreExternalTable() {
     if (isOlapConnector) {
       // For OLAP connectors, create both in parallel
       await Promise.all([
@@ -119,6 +132,7 @@
         database,
         databaseSchema,
         table,
+        true, // Create explore dashboard
       );
     }
   }
@@ -156,8 +170,7 @@
 {/if}
 
 {#if showGenerateMetricsAndDashboard && !isOlapConnector}
-  <!-- We should add another entry that only generates a Model and Metrics View file. No Explore file. It should be named "Generate metrics". -->
-  <NavigationMenuItem on:click={createMetricsViewFromTable}>
+  <NavigationMenuItem on:click={handleGenerateModelMetricsExternalTable}>
     <MetricsViewIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
       Generate metrics
@@ -167,7 +180,7 @@
       {/if}
     </div>
   </NavigationMenuItem>
-  <NavigationMenuItem on:click={handleGenerateMetricsAndExploreExternalTable}>
+  <NavigationMenuItem on:click={handleGenerateModelMetricsExploreExternalTable}>
     <ExploreIcon slot="icon" />
     <div class="flex gap-x-2 items-center">
       Generate dashboard
