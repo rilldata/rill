@@ -14,6 +14,7 @@ export function getChartDataForCanvas(
   component: BaseChart<CanvasChartSpec>,
   config: CanvasChartSpec,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
+  isDarkMode: boolean,
 ): Readable<ChartDataResult> {
   const chartDataQuery = component.createChartDataQuery(
     ctx,
@@ -27,5 +28,6 @@ export function getChartDataForCanvas(
     metricsView: ctx.canvasEntity.metricsView,
     themeStore: ctx.canvasEntity.theme,
     timeAndFilterStore,
+    isDarkMode,
   });
 }

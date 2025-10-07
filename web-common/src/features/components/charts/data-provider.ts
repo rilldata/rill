@@ -27,6 +27,7 @@ export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   metricsView: MetricsViewSelectors;
   themeStore: Readable<{ primary?: Color; secondary?: Color }>;
   timeAndFilterStore: Readable<TimeAndFilterStore>;
+  isDarkMode: boolean;
   getDomainValues: () => ChartDomainValues;
 }
 
@@ -44,6 +45,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
     themeStore,
     getDomainValues,
     timeAndFilterStore,
+    isDarkMode,
   } = deps;
 
   const { measures, dimensions, timeDimensions } = getFieldsByType(config);
@@ -107,6 +109,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         error: chartData?.error,
         fields: fieldSpecMap,
         domainValues,
+        isDarkMode,
         theme: {
           primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
           secondary:

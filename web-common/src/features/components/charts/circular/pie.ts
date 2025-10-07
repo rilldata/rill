@@ -105,6 +105,7 @@ export function generateVLPieChartSpec(
       mark: {
         type: "text",
         align: "center",
+        color: data.isDarkMode ? "#eeeeee" : "#353535",
         baseline: "middle",
         fontWeight: "normal",
         fontSize: getTotalFontSize(config.innerRadius),
