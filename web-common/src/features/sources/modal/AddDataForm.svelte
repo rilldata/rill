@@ -226,6 +226,19 @@
     }
   })();
 
+  // Clear credentials when switching to inferred method
+  $: (() => {
+    if (connector.name === "bigquery" && bigqueryAuthMethod === "inferred") {
+      paramsForm.update(
+        ($form) => {
+          $form.google_application_credentials = "";
+          return $form;
+        },
+        { taint: false },
+      );
+    }
+  })();
+
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 

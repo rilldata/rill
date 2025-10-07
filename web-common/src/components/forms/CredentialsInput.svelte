@@ -117,7 +117,7 @@
       on:drop|preventDefault={handleFileDrop}
       class:drag-over={dragOver}
     >
-      <span class="choose-file-text">Choose File</span>
+      <span class="choose-file-text">Choose file</span>
       <span class="file-status-text">
         {#if Object.values(uploading).some((u) => u)}
           Uploading...
