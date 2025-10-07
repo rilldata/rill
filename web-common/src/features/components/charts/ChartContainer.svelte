@@ -1,11 +1,11 @@
 <script lang="ts">
+  import Chart from "@rilldata/web-common/features/components/charts/Chart.svelte";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { Color } from "chroma-js";
   import type { Readable } from "svelte/store";
   import { readable } from "svelte/store";
-  import Chart from "./Chart.svelte";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
   import type { ChartProvider, ChartSpec, ChartType } from "./types";
