@@ -55,7 +55,7 @@ const EmbedParams = [
   "kind",
   "navigation",
 ];
-function removeEmbedParams(searchParams: URLSearchParams) {
+export function removeEmbedParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);
   EmbedParams.forEach((param) => cleanedParams.delete(param));
   const search = cleanedParams.toString();
