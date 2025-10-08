@@ -750,6 +750,15 @@ Follow these steps in order:
    - **Act**: Execute the query and evaluate results in <thinking> tags
 
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results. Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
+
+**Phase 3: Visualization (Optional)**
+5. **Visualize**: When appropriate, use "create_chart" to create interactive visualizations:
+   - Use bar charts for category comparisons
+   - Use line charts for trends over time
+   - Use area charts for cumulative trends
+   - Use stacked charts for multi-series comparisons
+   - Charts help users quickly understand patterns and trends
+   - IMPORTANT: Always include a "time_range" in the chart spec matching the data you queried
 </process>
 
 <analysis_guidelines>
@@ -844,8 +853,11 @@ func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, me
 	prompt.WriteString("You can use \"query_metrics_view\" to run queries and get aggregated results from this metrics view. ")
 	prompt.WriteString("The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. ")
 	prompt.WriteString("Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.\n\n")
+	prompt.WriteString("You can also use \"create_chart\" to generate interactive visualizations when appropriate. ")
+	prompt.WriteString("Charts are helpful for showing trends, comparisons, and patterns in the data. ")
+	prompt.WriteString("Choose the appropriate chart type based on the data and insight you want to communicate. ")
 
-	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" tool must include \"metrics_view\": %q in the payload.**\n\n", metricsViewName))
+	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" and \"create_chart\" tools must include \"metrics_view\": %q in the spec/payload.**\n\n", metricsViewName))
 
 	// 5. CUSTOMIZE: Provide user-specific instructions
 	if aiInstructions != "" {

@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { isChartToolResult } from "@rilldata/web-common/features/chat/core/utils/component-utils";
   import type { V1Message } from "../../../../runtime-client";
+  import ChatChartBlock from "./ChatChartBlock.svelte";
   import ChatTextMessage from "./ChatTextMessage.svelte";
   import ChatToolCallBlock from "./ChatToolCallBlock.svelte";
 
@@ -16,6 +18,19 @@
   // Currently we have split responsibility: Conversation handles streaming correlation,
   // but UI handles initial fetch correlation. This creates inconsistent architecture.
   // All correlation should happen in the business layer, with UI just displaying pre-correlated data.
+
+  // Helper to parse chart data from tool result
+  function parseChartData(toolResult: any) {
+    try {
+      const parsed = JSON.parse(toolResult.content);
+      return {
+        chartType: parsed.chart_type,
+        chartSpec: parsed.spec,
+      };
+    } catch {
+      return null;
+    }
+  }
 
   // Group tool calls with their results within this message
   function groupToolCallsWithResults(content: any[]) {
@@ -36,12 +51,43 @@
       } else if (block.toolCall) {
         // Streaming merges tool results into toolCall blocks.
         // For initial fetch (GetConversation), calls/results are separate, so we attach via fallback.
-        groups.push({
-          type: "tool",
-          toolCall: block.toolCall,
-          toolResult: block.toolResult || toolResults.get(block.toolCall.id),
-          index,
-        });
+        const toolResult =
+          block.toolResult || toolResults.get(block.toolCall.id);
+
+        // Check if this is a chart tool result
+        if (
+          toolResult &&
+          !toolResult.isError &&
+          block.toolCall.name === "create_chart" &&
+          isChartToolResult(toolResult)
+        ) {
+          const chartData = parseChartData(toolResult);
+          if (chartData) {
+            groups.push({
+              type: "chart",
+              chartType: chartData.chartType,
+              chartSpec: chartData.chartSpec,
+              toolCall: block.toolCall,
+              toolResult,
+              index,
+            });
+          } else {
+            // Fallback to regular tool block if parsing fails
+            groups.push({
+              type: "tool",
+              toolCall: block.toolCall,
+              toolResult,
+              index,
+            });
+          }
+        } else {
+          groups.push({
+            type: "tool",
+            toolCall: block.toolCall,
+            toolResult,
+            index,
+          });
+        }
       }
       // Skip standalone toolResult blocks as they should be merged with toolCalls
     });
@@ -59,6 +105,9 @@
     {#if group.type === "text"}
       <!-- Text block -->
       <ChatTextMessage {message} content={group.content} />
+    {:else if group.type === "chart"}
+      <!-- Chart block -->
+      <ChatChartBlock chartType={group.chartType} chartSpec={group.chartSpec} />
     {:else if group.type === "tool"}
       <!-- Tool Call + Result block -->
       <ChatToolCallBlock

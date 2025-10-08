@@ -33,6 +33,7 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 2. **Get metrics view spec:** Use "get_metrics_view" to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
 3. **Query the summary:** Use "query_metrics_view_summary" to obtain the available time range for a metrics view and sample values with their data types for each dimension. This provides a richer context for understanding the data.
 4. **Query the metrics:** Use "query_metrics_view" to run queries to get aggregated results.
+5. **Create a chart:** Use "create_chart" to create a chart from the query results.
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 `
@@ -64,6 +65,7 @@ func (s *Server) newMCPServer() *server.MCPServer {
 	mcpServer.AddTool(s.mcpGetMetricsView())
 	mcpServer.AddTool(s.mcpQueryMetricsView())
 	mcpServer.AddTool(s.mcpQueryMetricsViewSummary())
+	mcpServer.AddTool(s.mcpCreateChart())
 
 	return mcpServer
 }
@@ -432,6 +434,457 @@ func (s *Server) addOpenURLToResponse(data []byte, openURL string) ([]byte, erro
 	}
 
 	return modifiedData, nil
+}
+
+func (s *Server) mcpCreateChart() (mcp.Tool, server.ToolHandlerFunc) {
+	description := `# Chart Visualization Tool
+
+Create visualization charts based on metrics views. This tool generates chart specifications that will be rendered in the chat interface.
+
+## Required Parameters
+
+All chart specifications must include:
+- ` + "`chart_type`" + `: The type of visualization to create
+- ` + "`spec`" + `: The chart specification object containing:
+  - ` + "`metrics_view`" + `: The name of the metrics view to query
+  - ` + "`time_range`" + `: **Required** - Time range for the data query
+    - ` + "`start`" + `: ISO 8601 timestamp (inclusive)
+    - ` + "`end`" + `: ISO 8601 timestamp (exclusive)
+    - Example: ` + "`\"start\": \"2024-01-01T00:00:00Z\", \"end\": \"2024-12-31T23:59:59Z\"`" + `
+
+## Supported Chart Types
+
+### 1. Bar Chart (` + "`bar_chart`" + `)
+**Use for:** Comparing values across different categories
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "bar_chart",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": "primary",
+    "x": {
+      "field": "advertiser_name",
+      "limit": 20,
+      "showNull": true,
+      "type": "nominal",
+      "sort": "-y"
+    },
+    "y": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+### 2. Line Chart (` + "`line_chart`" + `)
+**Use for:** Showing trends over time
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "line_chart",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": {
+      "field": "device_os",
+      "limit": 3,
+      "type": "nominal"
+    },
+    "x": {
+      "field": "__time",
+      "limit": 20,
+      "sort": "-y",
+      "type": "temporal"
+    },
+    "y": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+### 3. Area Chart (` + "`area_chart`" + `)
+**Use for:** Showing magnitude of change over time with filled areas
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "area_chart",
+  "spec": {
+    "metrics_view": "auction_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": {
+      "field": "app_or_site",
+      "type": "nominal"
+    },
+    "x": {
+      "field": "__time",
+      "limit": 20,
+      "showNull": true,
+      "type": "temporal"
+    },
+    "y": {
+      "field": "requests",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+### 4. Stacked Bar Chart (` + "`stacked_bar`" + `)
+**Use for:** Showing multiple data series stacked on top of each other
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "stacked_bar",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": {
+      "field": "rill_measures",
+      "legendOrientation": "top",
+      "type": "value"
+    },
+    "x": {
+      "field": "__time",
+      "limit": 20,
+      "type": "temporal"
+    },
+    "y": {
+      "field": "clicks",
+      "fields": [
+        "video_starts",
+        "video_completes",
+        "ctr",
+        "clicks",
+        "ecpm",
+        "impressions"
+      ],
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+### 5. Normalized Stacked Bar Chart (` + "`stacked_bar_normalized`" + `)
+**Use for:** Showing proportions instead of absolute values (100% stacked)
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "stacked_bar_normalized",
+  "spec": {
+    "metrics_view": "rill_commits_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": {
+      "field": "username",
+      "limit": 3,
+      "type": "nominal"
+    },
+    "x": {
+      "field": "date",
+      "limit": 20,
+      "type": "temporal"
+    },
+    "y": {
+      "field": "number_of_commits",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+### 6. Donut Chart (` + "`donut_chart`" + `)
+**Use for:** Displaying data as segments of a circle with a hollow center
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "donut_chart",
+  "spec": {
+    "metrics_view": "rill_commits_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": {
+      "field": "username",
+      "limit": 20,
+      "type": "nominal"
+    },
+    "innerRadius": 50,
+    "measure": {
+      "field": "number_of_commits",
+      "type": "quantitative"
+    }
+  }
+}
+` + "```" + `
+
+### 7. Funnel Chart (` + "`funnel_chart`" + `)
+**Use for:** Showing flow through a process with decreasing/increasing values at each stage
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "funnel_chart",
+  "spec": {
+    "metrics_view": "Funnel_Dataset_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": "stage",
+    "measure": {
+      "field": "total_users_measure",
+      "type": "quantitative"
+    },
+    "mode": "width",
+    "stage": {
+      "field": "stage",
+      "limit": 15,
+      "type": "nominal"
+    }
+  }
+}
+` + "```" + `
+
+### 8. Heat Map (` + "`heatmap`" + `)
+**Use for:** Visualizing data density using color intensity across two dimensions
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "heatmap",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": {
+      "field": "total_bids",
+      "type": "quantitative"
+    },
+    "x": {
+      "field": "day",
+      "limit": 10,
+      "type": "nominal",
+      "sort": [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    "y": {
+      "field": "hour",
+      "limit": 24,
+      "type": "nominal",
+      "sort": "-color"
+    }
+  }
+}
+` + "```" + `
+
+### 9. Combo Chart (` + "`combo_chart`" + `)
+**Use for:** Combining different chart types (like bars and lines) in a single visualization
+
+Example Specification
+` + "```json" + `
+{
+  "chart_type": "combo_chart",
+  "spec": {
+    "metrics_view": "auction_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": {
+      "field": "measures",
+      "legendOrientation": "top",
+      "type": "value"
+    },
+    "x": {
+      "field": "__time",
+      "limit": 20,
+      "type": "temporal"
+    },
+    "y1": {
+      "field": "1d_qps",
+      "mark": "bar",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    },
+    "y2": {
+      "field": "requests",
+      "mark": "line",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+## Field Type Definitions
+
+### Data Types
+- **nominal**: Categorical data (e.g., categories, names, labels)
+- **temporal**: Time-based data (dates, timestamps)
+- **quantitative**: Numerical data (counts, amounts, measurements)
+- **value**: Special type for multiple measures (used in color field)
+
+### Common Field Properties
+- **field**: The field name from the metrics view
+- **type**: Data type (nominal, temporal, quantitative, value)
+- **limit**: Maximum number of values to display
+- **showNull**: Include null values in the visualization (true/false)
+- **sort**: Sorting order
+  - ` + "`\"x\"`" + ` or ` + "`\"-x\"`" + `: Sort by x-axis values (ascending/descending)
+  - ` + "`\"y\"`" + ` or ` + "`\"-y\"`" + `: Sort by y-axis values (ascending/descending)
+	- ` + "`\"color\"`" + ` or ` + "`\"-color\"`" + `: Sort by color field values (ascending/descending) (Useful for heatmaps)
+
+  - Array of values for custom sort order (e.g., weekday names)
+- **zeroBasedOrigin**: Start y-axis from zero (true/false)
+
+### Special Fields
+- **__time**: Built-in time dimension field
+- **rill_measures**: Special field for multiple measures in stacked charts
+
+## Color Configuration
+- Can be a string (e.g., ` + "`\"primary\"`" + `, ` + "`\"stage\"`" + `) for single color
+- Can be an object for field-based coloring:
+  ` + "```json" + `
+  {
+    "field": "dimension_name",
+    "type": "nominal|temporal|value",
+    "limit": 10,
+    "legendOrientation": "top|bottom|left|right"
+  }
+  ` + "```" + `
+
+## Usage Guidelines
+
+1. **Time-based visualizations**: Use ` + "`line_chart`" + ` or ` + "`area_chart`" + ` with temporal x-axis
+2. **Categorical comparisons**: Use ` + "`bar_chart`" + ` with nominal x-axis
+3. **Part-to-whole relationships**: Use ` + "`donut_chart`" + ` or ` + "`stacked_bar_normalized`" + `
+4. **Process flows**: Use ` + "`funnel_chart`" + ` for conversion or stage-based data
+5. **Two-dimensional patterns**: Use ` + "`heatmap`" + ` for correlations or patterns across two dimensions
+6. **Multiple metrics**: Use ` + "`combo_chart`" + ` to compare different scales or ` + "`stacked_bar`" + ` for cumulative values
+
+## Important Notes
+
+- The ` + "`time_range`" + ` parameter is **required** for all charts
+- Time range ` + "`start`" + ` is inclusive, ` + "`end`" + ` is exclusive
+- You do not always have to include color for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
+- Ensure the metrics_view name matches exactly with available views
+- Field names must match the exact field names in the metrics view
+- When using ` + "`__time`" + ` field, set type to ` + "`\"temporal\"`" + `
+- For multiple measures, use the ` + "`fields`" + ` array in the y-axis configuration`
+
+	tool := mcp.NewTool("create_chart",
+		mcp.WithDescription(description),
+		mcp.WithString("chart_type",
+			mcp.Required(),
+			mcp.Description("Type of chart: bar_chart, line_chart, area_chart, stacked_bar, stacked_bar_normalized, donut_chart, funnel_chart, heatmap, combo_chart"),
+		),
+		mcp.WithObject("spec",
+			mcp.Required(),
+			mcp.Description("Chart specification object containing metrics_view, x, y, color, and other chart properties"),
+		),
+	)
+
+	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		instanceID := mcpInstanceIDFromContext(ctx)
+
+		// Validate access
+		claims := auth.GetClaims(ctx)
+		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+			return nil, ErrForbidden
+		}
+
+		// Get arguments as a map
+		args, ok := req.GetRawArguments().(map[string]any)
+		if !ok {
+			return nil, errors.New("invalid arguments: expected an object")
+		}
+
+		chartType, ok := args["chart_type"].(string)
+		if !ok || chartType == "" {
+			return nil, fmt.Errorf("chart_type is required and must be a string")
+		}
+
+		spec, ok := args["spec"].(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("spec is required and must be an object")
+		}
+
+		// Validate that metrics_view is specified
+		metricsView, ok := spec["metrics_view"].(string)
+		if !ok || metricsView == "" {
+			return nil, fmt.Errorf("spec must contain a 'metrics_view' field")
+		}
+
+		// Validate that time_range is specified
+		_, hasTimeRange := spec["time_range"]
+		if !hasTimeRange {
+			return nil, fmt.Errorf("spec must contain a 'time_range' field with 'start' and 'end' properties")
+		}
+
+		// Validate that the metrics view exists
+		var err error
+		_, err = s.GetResource(ctx, &runtimev1.GetResourceRequest{
+			InstanceId: instanceID,
+			Name: &runtimev1.ResourceName{
+				Kind: runtime.ResourceKindMetricsView,
+				Name: metricsView,
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("metrics view %q not found: %w", metricsView, err)
+		}
+
+		// Return the chart specification in a structured format
+		result := map[string]any{
+			"chart_type": chartType,
+			"spec":       spec,
+			"message":    fmt.Sprintf("Chart created successfully: %s", chartType),
+		}
+
+		return mcpNewToolResultJSON(result)
+	}
+
+	return tool, handler
 }
 
 // mcpHTTPContextFunc is an MCP server middleware that adds the current instance ID to the context.
