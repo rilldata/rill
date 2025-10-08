@@ -8,7 +8,7 @@
   } from "../../core/conversation-manager";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
-  import ChatMessages from "../../core/messages/ChatMessages.svelte";
+  import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
 
   $: ({ instanceId } = $runtime);
@@ -60,7 +60,7 @@
   <div class="chat-main">
     <div class="chat-content">
       <div class="chat-messages-wrapper">
-        <ChatMessages {conversationManager} layout="fullpage" />
+        <Messages {conversationManager} layout="fullpage" />
       </div>
     </div>
 

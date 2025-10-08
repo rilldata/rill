@@ -8,7 +8,7 @@
   } from "../../core/conversation-manager";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
-  import ChatMessages from "../../core/messages/ChatMessages.svelte";
+  import Messages from "../../core/messages/Messages.svelte";
   import SidebarHeader from "./SidebarHeader.svelte";
   import {
     SIDEBAR_DEFAULTS,
@@ -62,7 +62,7 @@
         onClose={sidebarActions.closeChat}
       />
     </div>
-    <ChatMessages {conversationManager} layout="sidebar" />
+    <Messages {conversationManager} layout="sidebar" />
     <ChatInput
       {conversationManager}
       bind:this={chatInputComponent}
