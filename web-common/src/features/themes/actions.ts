@@ -75,6 +75,24 @@ export function setVariables(
 }
 
 /**
+ * Sets intermediate CSS variables that fall back to light/dark mode variants
+ * This allows variables like --color-theme-600 to work in scoped contexts
+ */
+function setIntermediateVariables(
+  root: HTMLElement,
+  type: string,
+): void {
+  TailwindColorSpacing.forEach((spacing) => {
+    // Set intermediate variable with fallback logic:
+    // In light mode: uses light variant, in dark mode: uses dark variant
+    root.style.setProperty(
+      `--color-${type}-${spacing}`,
+      `light-dark(var(--color-${type}-light-${spacing}), var(--color-${type}-dark-${spacing}))`,
+    );
+  });
+}
+
+/**
  * Updates theme variables based on the provided theme specification
  * @param theme - The theme specification to apply
  * @param scopeElement - Optional element to scope the theme to (defaults to document root)
@@ -142,6 +160,7 @@ function updatePrimaryColor(
     );
 
     setVariables(root, "theme", "dark", dark);
+    setIntermediateVariables(root, "theme");
   } else {
     setVariables(root, "theme", "light");
     setVariables(root, "theme", "dark");
@@ -173,6 +192,7 @@ function updateSecondaryColor(
       allowNewPalette ? light : originalLightPalette,
     );
     setVariables(root, "theme-secondary", "dark", dark);
+    setIntermediateVariables(root, "theme-secondary");
   } else {
     setVariables(root, "theme-secondary", "light");
     setVariables(root, "theme-secondary", "dark");
@@ -315,6 +335,8 @@ function applyPaletteToVariables(
 ): void {
   setVariables(root, type, "light", palettes.light);
   setVariables(root, type, "dark", palettes.dark);
+  // Set intermediate variables that automatically switch between light/dark
+  setIntermediateVariables(root, type);
 }
 
 /**

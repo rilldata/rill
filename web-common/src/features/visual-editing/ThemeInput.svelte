@@ -11,6 +11,7 @@
     defaultSecondaryColors,
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
+  import { extractColorVariables } from "../themes/css-sanitizer";
 
   const DEFAULT_PRIMARY = `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`;
   const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
@@ -46,15 +47,24 @@
 
   $: currentThemeSpec = embeddedTheme || fetchedTheme;
 
+  // Extract colors from CSS-based themes
+  $: cssColors = currentThemeSpec?.css
+    ? extractColorVariables(currentThemeSpec.css)
+    : null;
+
+  // Use CSS colors if available, otherwise fall back to legacy primaryColorRaw/secondaryColorRaw
+  $: primaryFromTheme =
+    cssColors?.primary.lightColor || currentThemeSpec?.primaryColorRaw;
+  $: secondaryFromTheme =
+    cssColors?.secondary.lightColor || currentThemeSpec?.secondaryColorRaw;
+
   $: effectivePrimary = isPresetMode
-    ? currentThemeSpec?.primaryColorRaw || DEFAULT_PRIMARY
-    : customPrimary || currentThemeSpec?.primaryColorRaw || FALLBACK_PRIMARY;
+    ? primaryFromTheme || DEFAULT_PRIMARY
+    : customPrimary || primaryFromTheme || FALLBACK_PRIMARY;
 
   $: effectiveSecondary = isPresetMode
-    ? currentThemeSpec?.secondaryColorRaw || DEFAULT_SECONDARY
-    : customSecondary ||
-      currentThemeSpec?.secondaryColorRaw ||
-      FALLBACK_SECONDARY;
+    ? secondaryFromTheme || DEFAULT_SECONDARY
+    : customSecondary || secondaryFromTheme || FALLBACK_SECONDARY;
 
   $: currentSelectValue = isPresetMode
     ? typeof theme === "string"
@@ -65,11 +75,10 @@
   function handleModeSwitch(mode: string) {
     if (mode === "Custom") {
       if (!customPrimary) {
-        customPrimary = currentThemeSpec?.primaryColorRaw || FALLBACK_PRIMARY;
+        customPrimary = primaryFromTheme || FALLBACK_PRIMARY;
       }
       if (!customSecondary) {
-        customSecondary =
-          currentThemeSpec?.secondaryColorRaw || FALLBACK_SECONDARY;
+        customSecondary = secondaryFromTheme || FALLBACK_SECONDARY;
       }
       onColorChange(customPrimary, customSecondary);
     } else {
