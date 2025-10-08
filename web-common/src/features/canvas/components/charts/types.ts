@@ -50,6 +50,7 @@ export type ChartDataResult = {
   error?: HTTPError | null;
   theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
+  isDarkMode: boolean;
 };
 
 export interface ChartDomainValues {
@@ -114,15 +115,6 @@ export interface FieldConfig
 
 export interface CommonChartProperties {
   metrics_view: string;
-  tooltip?: FieldConfig;
-  vl_config?: string;
-}
-
-// TODO: Remove this once we have a better way to handle chart config
-export interface ChartConfig extends CommonChartProperties {
-  x?: FieldConfig;
-  y?: FieldConfig;
-  color?: FieldConfig | string;
   tooltip?: FieldConfig;
   vl_config?: string;
 }

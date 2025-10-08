@@ -196,9 +196,10 @@ export class FunnelChartComponent extends BaseChart<FunnelChartSpec> {
           newSpec.color = "stage";
         }
 
-        const dimensionsStore = this.parent.spec.getDimensionsForMetricView(
-          currentSpec.metrics_view,
-        );
+        const dimensionsStore =
+          this.parent.metricsView.getDimensionsForMetricView(
+            currentSpec.metrics_view,
+          );
         const dimensions = get(dimensionsStore);
         if (dimensions?.length) {
           newSpec.stage = {
