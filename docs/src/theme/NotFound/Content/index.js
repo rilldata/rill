@@ -12,13 +12,14 @@ export default function NotFoundContent({ className }) {
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
       }}>
         <img src='/img/404.svg' style={{
-          width: '300px',
+          width: '240px',
           marginBottom: '1.5rem'
         }} />
         <Heading as="h3" className="hero__subtitle" style={{
           color: '#1a1a1a',
-          fontSize: '1.5rem',
+          fontSize: '18px',
           fontWeight: '600',
+          lineHeight: '28px',
           marginBottom: '1rem'
         }}>
           <Translate
@@ -29,9 +30,8 @@ export default function NotFoundContent({ className }) {
         </Heading>
         <p style={{
           color: '#71717A',
-          fontSize: '1.25rem',
-          lineHeight: '1.6',
-          marginBottom: '1.5rem'
+          fontSize: '16px',
+          lineHeight: '24px'
         }}>
           <Translate
             id="theme.NotFound.p1"
@@ -42,7 +42,8 @@ export default function NotFoundContent({ className }) {
 
         <p style={{
           color: '#71717A',
-          fontSize: '1.25rem',
+          fontSize: '14px',
+          lineHeight: '20px',
           marginBottom: '0'
         }}>
           Return to <a href="/" style={{
