@@ -1267,6 +1267,11 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              email:
+                type: string
+              slackUser:
+                type: string
   /v1/orgs/{org}/projects/{project}/alerts/{name}/yaml:
     get:
       summary: GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
@@ -3282,6 +3287,14 @@ paths:
                 type: string
               queryForUserEmail:
                 type: string
+              ownerId:
+                type: string
+              emailRecipients:
+                type: array
+                items:
+                  type: string
+              anonRecipients:
+                type: boolean
   /v1/projects/{projectId}/repo/meta:
     get:
       summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -4086,17 +4099,6 @@ paths:
           required: false
           type: string
 definitions:
-  GetReportMetaResponseURLs:
-    type: object
-    properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
-      unsubscribeUrl:
-        type: string
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -4656,12 +4658,21 @@ definitions:
   v1GetAlertMetaResponse:
     type: object
     properties:
+      recipientUrls:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1GetAlertMetaResponseURLs'
+      queryForAttributes:
+        type: object
+  v1GetAlertMetaResponseURLs:
+    type: object
+    properties:
       openUrl:
         type: string
       editUrl:
         type: string
-      queryForAttributes:
-        type: object
+      unsubscribeUrl:
+        type: string
   v1GetAlertYAMLResponse:
     type: object
     properties:
@@ -4896,7 +4907,18 @@ definitions:
       recipientUrls:
         type: object
         additionalProperties:
-          $ref: '#/definitions/GetReportMetaResponseURLs'
+          $ref: '#/definitions/v1GetReportMetaResponseURLs'
+  v1GetReportMetaResponseURLs:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
+      unsubscribeUrl:
+        type: string
   v1GetServiceResponse:
     type: object
     properties:

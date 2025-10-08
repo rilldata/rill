@@ -1,5 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import type { PageContentResized } from "@rilldata/web-common/lib/event-bus/events.ts";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
 import { get } from "svelte/store";
 import {
@@ -8,6 +10,7 @@ import {
 } from "@rilldata/web-common/lib/rpc";
 
 const STATE_CHANGE_THROTTLE_TIMEOUT = 200;
+const RESIZE_THROTTLE_TIMEOUT = 200;
 
 export default function initEmbedPublicAPI(): () => void {
   registerRPCMethod("getState", () => {
@@ -43,7 +46,30 @@ export default function initEmbedPublicAPI(): () => void {
     });
   });
 
-  return unsubscribe;
+  const resizeThrottler = new Throttler(
+    RESIZE_THROTTLE_TIMEOUT,
+    RESIZE_THROTTLE_TIMEOUT,
+  );
+  function onResize(event: PageContentResized) {
+    // Throttle the resize event.
+    // This avoids too many events being fired when size changes quickly, especially when page is loading.
+    resizeThrottler.throttle(() => {
+      emitNotification("resized", {
+        width: event.width,
+        height: event.height,
+      });
+    });
+  }
+  const resizeUnsub = eventBus.on("page-content-resized", onResize);
+  onResize({
+    width: document.body.scrollWidth,
+    height: document.body.scrollHeight,
+  });
+
+  return () => {
+    unsubscribe();
+    resizeUnsub();
+  };
 }
 
 const EmbedParams = [

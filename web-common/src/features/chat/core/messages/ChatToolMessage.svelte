@@ -78,5 +78,6 @@
     gap: 0.5rem;
     max-width: 90%;
     align-self: flex-start;
+    width: 100%;
   }
 </style>

@@ -22,12 +22,12 @@ export function getChartData(
   component: BaseChart<ChartSpec>,
   config: ChartSpec,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
+  isDarkMode: boolean,
 ): Readable<ChartDataResult> {
   const chartDataQuery = component.createChartDataQuery(
     ctx,
     timeAndFilterStore,
   );
-  const { spec } = ctx.canvasEntity;
 
   const themeStore = ctx.canvasEntity.theme;
 
@@ -41,11 +41,19 @@ export function getChartData(
   ];
 
   // Match each field to its corresponding measure or dimension spec.
+  const metricsView = ctx.canvasEntity.metricsView;
+
   const fieldReadableMap = allFields.map((field) => {
     if (field.type === "measure") {
-      return spec.getMeasureForMetricView(field.field, config.metrics_view);
+      return metricsView.getMeasureForMetricView(
+        field.field,
+        config.metrics_view,
+      );
     } else if (field.type === "dimension") {
-      return spec.getDimensionForMetricView(field.field, config.metrics_view);
+      return metricsView.getDimensionForMetricView(
+        field.field,
+        config.metrics_view,
+      );
     } else {
       return getTimeDimensionDefinition(field.field, timeAndFilterStore);
     }
@@ -87,6 +95,7 @@ export function getChartData(
         error: chartData?.error,
         fields: fieldSpecMap,
         domainValues,
+        isDarkMode,
         theme: {
           primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
           secondary:

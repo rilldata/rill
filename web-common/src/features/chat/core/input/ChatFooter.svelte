@@ -12,7 +12,7 @@
 <style lang="postcss">
   .chat-footer {
     padding: 0.5rem 1rem 1rem 1rem;
-    background: #fafafa;
+    background: var(--surface);
     font-size: 0.75rem;
   }
 

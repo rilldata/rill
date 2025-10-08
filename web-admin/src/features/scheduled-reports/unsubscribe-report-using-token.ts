@@ -12,7 +12,7 @@ import {
   type MutationFunction,
 } from "@tanstack/svelte-query";
 import {
-  type AdminServiceUnsubscribeReportBody,
+  type AdminServiceUnsubscribeAlertBodyBody,
   type RpcStatus,
   type V1UnsubscribeReportResponse,
 } from "@rilldata/web-admin/client";
@@ -22,7 +22,7 @@ const adminServiceUnsubscribeReportWithToken = (
   organization: string,
   project: string,
   name: string,
-  adminServiceUnsubscribeReportBody: AdminServiceUnsubscribeReportBody,
+  adminServiceUnsubscribeReportBody: AdminServiceUnsubscribeAlertBodyBody,
   token: string,
 ) => {
   return httpClient<V1UnsubscribeReportResponse>({
@@ -49,7 +49,7 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
       token: string;
     },
     TContext
@@ -63,7 +63,7 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
       token: string;
     }
   > = (props) => {
@@ -85,7 +85,7 @@ export const createAdminServiceUnsubscribeReportUsingToken = <
       organization: string;
       project: string;
       name: string;
-      data: AdminServiceUnsubscribeReportBody;
+      data: AdminServiceUnsubscribeAlertBodyBody;
       token: string;
     },
     TContext
