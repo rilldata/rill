@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AvatarListItem from "./AvatarListItem.svelte";
+  import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
 
   export let name: string;
   export let email: string;

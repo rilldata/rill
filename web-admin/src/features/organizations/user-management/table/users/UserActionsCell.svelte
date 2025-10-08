@@ -1,42 +1,40 @@
 <script lang="ts">
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import {
+    canManageOrgUser,
+    invalidateAfterUserDelete,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
+  import IconButton from "web-common/src/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Trash2Icon } from "lucide-svelte";
-  import RemoveUserFromOrgConfirmDialog from "./RemoveUserFromOrgConfirmDialog.svelte";
+  import RemoveUserFromOrgConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemoveUserFromOrgConfirmDialog.svelte";
   import {
     createAdminServiceRemoveOrganizationMemberUser,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
-    getAdminServiceListUsergroupMemberUsersQueryKey,
+    type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { page } from "$app/stores";
 
   export let email: string;
   export let role: string;
   export let isCurrentUser: boolean;
-  export let currentUserRole: string;
+  export let organizationPermissions: V1OrganizationPermissions;
   export let isBillingContact: boolean;
   // Changing billing contact is not an action for this user. So handle it upstream
   // This also avoids rendering the modal per row.
   export let onAttemptRemoveBillingContactUser: () => void;
+  export let onConvertToMember: () => void;
 
   let isDropdownOpen = false;
   let isRemoveConfirmOpen = false;
 
   $: organization = $page.params.organization;
-  $: isAdmin = currentUserRole === OrgUserRoles.Admin;
-  $: isEditor = currentUserRole === OrgUserRoles.Editor;
+  $: isGuest = role === OrgUserRoles.Guest;
   $: canManageUser =
-    !isCurrentUser &&
-    (isAdmin ||
-      (isEditor &&
-        (role === OrgUserRoles.Editor ||
-          role === OrgUserRoles.Viewer ||
-          role === OrgUserRoles.Guest)));
+    // TODO: backend doesnt restrict removing oneself, revisit this UI check.
+    !isCurrentUser && canManageOrgUser(organizationPermissions, role);
 
   const queryClient = useQueryClient();
   const removeOrganizationMemberUser =
@@ -46,6 +44,8 @@
     if (isBillingContact) {
       // If the user is a billing contact we cannot remove without update contact to a different user 1st.
       onAttemptRemoveBillingContactUser();
+    } else if (isGuest) {
+      void handleRemove(email);
     } else {
       // Else show the confirmation for remove
       isRemoveConfirmOpen = true;
@@ -56,38 +56,10 @@
     try {
       await $removeOrganizationMemberUser.mutateAsync({
         org: organization,
-        email: email,
+        email,
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          "autogroup:users",
-        ),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          "autogroup:members",
-        ),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          "autogroup:guests",
-        ),
-      });
+      await invalidateAfterUserDelete(queryClient, organization);
 
       eventBus.emit("notification", {
         message: "User removed from organization",
@@ -110,6 +82,14 @@
       </IconButton>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
+      {#if role === OrgUserRoles.Guest}
+        <DropdownMenu.Item
+          class="font-normal flex items-center"
+          on:click={onConvertToMember}
+        >
+          Convert to member
+        </DropdownMenu.Item>
+      {/if}
       <DropdownMenu.Item
         class="font-normal flex items-center"
         type="destructive"

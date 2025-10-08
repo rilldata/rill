@@ -3,15 +3,13 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
-    createAdminServiceListUsergroupMemberUsers,
-    createAdminServiceRemoveUsergroupMemberUser,
-    createAdminServiceRenameUsergroup,
+    createAdminServiceCreateUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
+  import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import {
     Dialog,
@@ -22,12 +20,12 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { SLUG_REGEX } from "../constants";
+  import { SLUG_REGEX } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
 
   export let open = false;
   export let groupName: string;
@@ -38,43 +36,24 @@
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
-  let initialized = false;
 
   $: organization = $page.params.organization;
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-    organization,
-    groupName,
-  );
-  $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
-  $: if (
-    userGroupMembersUsers.length > 0 &&
-    selectedUsers.length === 0 &&
-    !initialized
-  ) {
-    selectedUsers = [...userGroupMembersUsers];
-    initialized = true;
-  }
 
   const queryClient = useQueryClient();
+  const createUserGroup = createAdminServiceCreateUsergroup();
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
-  const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
-  const renameUserGroup = createAdminServiceRenameUsergroup();
 
-  function handleRemove(email: string) {
-    selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
-    pendingRemovals = [...pendingRemovals, email];
-    pendingAdditions = pendingAdditions.filter((e) => e !== email);
-  }
-
-  async function handleRename(groupName: string, newName: string) {
+  async function handleCreate(newName: string) {
     try {
-      await $renameUserGroup.mutateAsync({
+      await $createUserGroup.mutateAsync({
         org: organization,
-        usergroup: groupName,
         data: {
           name: newName,
         },
       });
+
+      // Apply pending user changes after group creation
+      await applyPendingChanges(newName);
 
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
@@ -85,13 +64,60 @@
         ),
       });
 
-      eventBus.emit("notification", { message: "User group renamed" });
+      groupName = "";
+      selectedUsers = [];
+      pendingAdditions = [];
+      pendingRemovals = [];
+      open = false;
+
+      eventBus.emit("notification", { message: "User group created" });
     } catch (error) {
       eventBus.emit("notification", {
         message: `Error: ${error.response.data.message}`,
         type: "error",
       });
     }
+  }
+
+  async function applyPendingChanges(usergroup: string) {
+    try {
+      // Add pending users to the group
+      for (const email of pendingAdditions) {
+        await $addUsergroupMemberUser.mutateAsync({
+          org: organization,
+          usergroup: usergroup,
+          email: email,
+          data: {},
+        });
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey:
+          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
+          organization,
+          usergroup,
+        ),
+      });
+
+      eventBus.emit("notification", {
+        message: "User group changes saved successfully",
+      });
+    } catch (error) {
+      eventBus.emit("notification", {
+        message: `Error: ${error.response.data.message}`,
+        type: "error",
+      });
+    }
+  }
+
+  async function handleRemove(email: string) {
+    selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
+    pendingRemovals = [...pendingRemovals, email];
+    pendingAdditions = pendingAdditions.filter((e) => e !== email);
   }
 
   async function handleAdd(email: string) {
@@ -108,69 +134,15 @@
     }
   }
 
-  async function applyPendingChanges() {
-    try {
-      for (const email of pendingAdditions) {
-        await $addUsergroupMemberUser.mutateAsync({
-          org: organization,
-          usergroup: groupName,
-          email: email,
-          data: {},
-        });
-      }
-
-      for (const email of pendingRemovals) {
-        await $removeUserGroupMember.mutateAsync({
-          org: organization,
-          usergroup: groupName,
-          email: email,
-        });
-      }
-
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
-          organization,
-          groupName,
-        ),
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
-
-      pendingAdditions = [];
-      pendingRemovals = [];
-
-      eventBus.emit("notification", {
-        message: "User group changes saved successfully",
-      });
-    } catch (error) {
-      eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
-        type: "error",
-      });
-    }
-  }
-
-  const formId = "edit-user-group-form";
+  const formId = "create-user-group-form";
 
   const initialValues = {
-    newName: groupName,
+    name: "",
   };
 
   const schema = yup(
     object({
-      newName: string()
+      name: string()
         .required("Name is required")
         .min(1, "Name must be at least 1 character")
         .max(40, "Name must be at most 40 characters")
@@ -191,13 +163,8 @@
         if (!form.valid) return;
         const values = form.data;
 
-        try {
-          await handleRename(groupName, values.newName);
-          await applyPendingChanges();
-          open = false;
-        } catch (error) {
-          console.error(error);
-        }
+        await handleCreate(values.name);
+        open = false;
       },
     },
   );
@@ -215,7 +182,7 @@
   }
 
   // Check if form has been modified
-  $: hasFormChanges = $form.newName !== initialValues.newName;
+  $: hasFormChanges = $form.name !== initialValues.name;
 
   function handleClose() {
     open = false;
@@ -223,10 +190,9 @@
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
-    initialized = false;
     // Only reset the form if it has been modified
     if (hasFormChanges) {
-      $form.newName = initialValues.newName;
+      $form.name = initialValues.name;
     }
   }
 </script>
@@ -247,7 +213,7 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
-      <DialogTitle>Edit group</DialogTitle>
+      <DialogTitle>Create a group</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
@@ -257,11 +223,11 @@
     >
       <div class="flex flex-col gap-4 w-full">
         <Input
-          bind:value={$form.newName}
-          id="edit-user-group-name"
+          bind:value={$form.name}
+          id="create-user-group-name"
           label="Name"
           placeholder="Untitled"
-          errors={$errors.newName}
+          errors={$errors.name}
           alwaysShowError={true}
         />
 
@@ -318,22 +284,13 @@
         <div class="flex flex-col gap-2">
           {#each selectedUsers as user (user.userEmail)}
             <div class="flex flex-row justify-between gap-2 items-center">
-              <div class="flex items-center gap-2">
-                <Avatar
-                  avatarSize="h-7 w-7"
-                  alt={user.userName}
-                  src={user.userPhotoUrl}
-                />
-                <div class="flex flex-col text-left">
-                  <span class="text-sm font-medium text-gray-900">
-                    {user.userName}
-                    <span class="text-gray-500 font-normal">
-                      {user.userEmail === currentUserEmail ? "(You)" : ""}
-                    </span>
-                  </span>
-                  <span class="text-xs text-gray-500">{user.userEmail}</span>
-                </div>
-              </div>
+              <AvatarListItem
+                name={user.userName}
+                email={user.userEmail}
+                photoUrl={user.userPhotoUrl}
+                isCurrentUser={user.userEmail === currentUserEmail}
+                role={user.roleName}
+              />
               <Button
                 type="text"
                 danger
@@ -351,13 +308,11 @@
       <Button type="plain" onClick={handleClose}>Cancel</Button>
       <Button
         type="primary"
-        disabled={$submitting ||
-          $form.newName.trim() === "" ||
-          !!$errors.newName}
+        disabled={$submitting || $form.name.trim() === "" || !!$errors.name}
         form={formId}
         submitForm
       >
-        Save
+        Create
       </Button>
     </DialogFooter>
   </DialogContent>

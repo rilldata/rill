@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as Alert from "@rilldata/web-common/components/alert-dialog/index.js";
+  import * as Alert from "@rilldata/web-common/components/alert-dialog";
   import Button from "web-common/src/components/button/Button.svelte";
 
   export let open = false;
@@ -13,12 +13,12 @@
   <Alert.Content noCancel>
     <Alert.Header>
       <Alert.Title>
-        Assign a new billing contact first to change this user's role
+        Assign a new billing contact first to remove this user
       </Alert.Title>
       <Alert.Description>
         <div class="mt-1">
-          This user is currently the billing contact. To change their role,
-          assign another admin as the billing contact first.
+          This user is the current billing contact and can’t be removed. To
+          proceed, assign another admin as the billing contact.
         </div>
       </Alert.Description>
     </Alert.Header>

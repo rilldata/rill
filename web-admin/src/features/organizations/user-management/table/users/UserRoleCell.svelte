@@ -1,23 +1,30 @@
 <script lang="ts">
+  import RemoveUserFromOrgConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemoveUserFromOrgConfirmDialog.svelte";
+  import {
+    canManageOrgUser,
+    invalidateAfterUserDelete,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import {
+    createAdminServiceRemoveOrganizationMemberUser,
     createAdminServiceSetOrganizationMemberUserRole,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
+    type V1OrganizationPermissions,
   } from "@rilldata/web-admin/client";
   import { page } from "$app/stores";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import OrgUpgradeGuestConfirmDialog from "./OrgUpgradeGuestConfirmDialog.svelte";
-  import { ORG_ROLES_DESCRIPTION_MAP } from "../constants";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import OrgUpgradeGuestConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/OrgUpgradeGuestConfirmDialog.svelte";
+  import { ORG_ROLES_DESCRIPTION_MAP } from "@rilldata/web-admin/features/organizations/user-management/constants.ts";
 
   export let email: string;
   export let role: string;
   export let isCurrentUser: boolean;
-  export let currentUserRole: string;
+  export let organizationPermissions: V1OrganizationPermissions;
   export let isBillingContact: boolean;
   // Changing billing contact is not an action for this user. So handle it upstream
   // This also avoids rendering the modal per row.
@@ -25,23 +32,19 @@
 
   let isDropdownOpen = false;
   let isUpgradeConfirmOpen = false;
+  let isRemoveConfirmOpen = false;
   let newRole = "";
 
   $: organization = $page.params.organization;
-  $: isAdmin = currentUserRole === OrgUserRoles.Admin;
-  $: isEditor = currentUserRole === OrgUserRoles.Editor;
   $: isGuest = role === OrgUserRoles.Guest;
   $: canManageUser =
-    !isCurrentUser &&
-    (isAdmin ||
-      (isEditor &&
-        (role === OrgUserRoles.Editor ||
-          role === OrgUserRoles.Viewer ||
-          role === OrgUserRoles.Guest)));
+    !isCurrentUser && canManageOrgUser(organizationPermissions, role);
 
   const queryClient = useQueryClient();
   const setOrganizationMemberUserRole =
     createAdminServiceSetOrganizationMemberUserRole();
+  const removeOrganizationMemberUser =
+    createAdminServiceRemoveOrganizationMemberUser();
 
   async function handleSetRole(role: string) {
     if (role !== OrgUserRoles.Admin && isBillingContact) {
@@ -90,9 +93,9 @@
     try {
       await $setOrganizationMemberUserRole.mutateAsync({
         org: organization,
-        email: email,
+        email,
         data: {
-          role: role,
+          role,
         },
       });
 
@@ -116,6 +119,27 @@
       });
     }
   }
+
+  async function handleRemove() {
+    try {
+      await $removeOrganizationMemberUser.mutateAsync({
+        org: organization,
+        email,
+      });
+
+      await invalidateAfterUserDelete(queryClient, organization);
+
+      eventBus.emit("notification", {
+        message: "User removed from organization",
+      });
+    } catch (error) {
+      console.error("Error removing user from organization", error);
+      eventBus.emit("notification", {
+        message: "Error removing user from organization",
+        type: "error",
+      });
+    }
+  }
 </script>
 
 {#if canManageUser}
@@ -133,7 +157,7 @@
       {/if}
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-[200px]">
-      {#if isAdmin}
+      {#if organizationPermissions.manageOrgAdmins}
         <DropdownMenu.Item
           class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
           'admin'
@@ -171,20 +195,16 @@
           >{ORG_ROLES_DESCRIPTION_MAP.viewer}</span
         >
       </DropdownMenu.Item>
-      {#if isAdmin}
-        <DropdownMenu.Item
-          class="font-normal flex flex-col items-start hover:bg-slate-50 {role ===
-          'guest'
-            ? 'bg-slate-100'
-            : ''}"
-          on:click={() => handleSetRole(OrgUserRoles.Guest)}
-        >
-          <span class="text-xs font-medium text-slate-700">Guest</span>
-          <span class="text-[11px] text-slate-500"
-            >{ORG_ROLES_DESCRIPTION_MAP.guest}</span
-          >
-        </DropdownMenu.Item>
-      {/if}
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item
+        class="font-normal flex items-center py-2"
+        on:click={() => {
+          if (isGuest) void handleRemove();
+          else isRemoveConfirmOpen = true;
+        }}
+      >
+        <span class="text-red-600">Remove</span>
+      </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}
@@ -198,4 +218,10 @@
   {email}
   {newRole}
   onUpgrade={handleUpgrade}
+/>
+
+<RemoveUserFromOrgConfirmDialog
+  bind:open={isRemoveConfirmOpen}
+  {email}
+  onRemove={handleRemove}
 />

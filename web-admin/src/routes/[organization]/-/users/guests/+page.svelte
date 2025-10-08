@@ -1,24 +1,23 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import type { V1OrganizationInvite } from "@rilldata/web-admin/client";
+  import type {
+    V1OrganizationInvite,
+    V1OrganizationMemberUser,
+  } from "@rilldata/web-admin/client";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddUsersDialog.svelte";
-  import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ChangingBillingContactRoleDialog.svelte";
+  import ConvertGuestToMemberDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ConvertGuestToMemberDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/user-management/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/user-management/table/users/OrgUsersTable.svelte";
-  import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemovingBillingContactDialog.svelte";
   import {
     getOrgUserInvites,
     getOrgUserMembers,
   } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
-  import { Plus } from "lucide-svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -29,11 +28,10 @@
   let isSuperUser = false;
 
   let isAddUserDialogOpen = false;
-  let isRemovingBillingContactDialogOpen = false;
-  let isChangingBillingContactRoleDialogOpen = false;
-  let isUpdateBillingContactDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let editingUserGroupName = "";
+  let convertGuestUser: V1OrganizationMemberUser | undefined = undefined;
+  let convertGuestDialogOpen = false;
 
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
@@ -48,7 +46,7 @@
 
   $: orgMemberUsersInfiniteQuery = getOrgUserMembers({
     organization,
-    guestOnly: false,
+    guestOnly: true,
   });
   $: orgInvitesInfiniteQuery = getOrgUserInvites(organization);
 
@@ -76,41 +74,32 @@
 
   // Filter by role
   // Filter by search text
-  $: filteredUsers = combinedRows
-    .filter((user) => {
-      if (user.roleName === OrgUserRoles.Guest) return false;
+  $: filteredUsers = combinedRows.filter((user) => {
+    const searchLower = searchText.toLowerCase();
+    const matchesSearch =
+      (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
+      ("userName" in user &&
+        (user.userName?.toLowerCase() || "").includes(searchLower));
 
-      const searchLower = searchText.toLowerCase();
-      const matchesSearch =
-        (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
-        ("userName" in user &&
-          (user.userName?.toLowerCase() || "").includes(searchLower));
+    let matchesRole = false;
 
-      let matchesRole = false;
+    if (filterSelection === "all") {
+      // All org users (members + guests + pending invites)
+      matchesRole = true;
+    } else if (filterSelection === "members") {
+      // Only members (org admin, editor, viewer)
+      matchesRole =
+        !("invitedBy" in user) &&
+        (user.roleName === OrgUserRoles.Admin ||
+          user.roleName === OrgUserRoles.Editor ||
+          user.roleName === OrgUserRoles.Viewer);
+    } else if (filterSelection === "pending") {
+      // Only users with pending invites
+      matchesRole = "invitedBy" in user;
+    }
 
-      if (filterSelection === "all") {
-        // All org users (members + guests + pending invites)
-        matchesRole = true;
-      } else if (filterSelection === "members") {
-        // Only members (org admin, editor, viewer)
-        matchesRole =
-          !("invitedBy" in user) &&
-          (user.roleName === OrgUserRoles.Admin ||
-            user.roleName === OrgUserRoles.Editor ||
-            user.roleName === OrgUserRoles.Viewer);
-      } else if (filterSelection === "pending") {
-        // Only users with pending invites
-        matchesRole = "invitedBy" in user;
-      }
-
-      return matchesSearch && matchesRole;
-    })
-    .sort((a, b) => {
-      // Sort by current user first
-      if (a.userEmail === $currentUser.data?.user.email) return -1;
-      if (b.userEmail === $currentUser.data?.user.email) return 1;
-      return 0;
-    });
+    return matchesSearch && matchesRole;
+  });
 
   const currentUser = createAdminServiceGetCurrentUser();
   $: billingContactUser = getOrganizationBillingContactUser(organization);
@@ -130,7 +119,7 @@
     </div>
   {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
     <div class="flex flex-col">
-      <div class="flex flex-row gap-x-4">
+      <div class="flex flex-row gap-x-4 h-9">
         <Search
           placeholder="Search"
           bind:value={searchText}
@@ -138,15 +127,7 @@
           autofocus={false}
           showBorderOnFocus={false}
         />
-        <OrgUsersFilters bind:filterSelection />
-        <Button
-          type="primary"
-          large
-          onClick={() => (isAddUserDialogOpen = true)}
-        >
-          <Plus size="16px" />
-          <span>Add users</span>
-        </Button>
+        <OrgUsersFilters bind:filterSelection showMembers={false} />
       </div>
       <div class="mt-6">
         <OrgUsersTable
@@ -158,16 +139,17 @@
           {organizationPermissions}
           billingContact={$billingContactUser?.email}
           {scrollToTopTrigger}
-          guestOnly={false}
-          onAttemptRemoveBillingContactUser={() =>
-            (isRemovingBillingContactDialogOpen = true)}
-          onAttemptChangeBillingContactUserRole={() =>
-            (isChangingBillingContactRoleDialogOpen = true)}
+          guestOnly
+          onAttemptRemoveBillingContactUser={() => {}}
+          onAttemptChangeBillingContactUserRole={() => {}}
           onEditUserGroup={(groupName) => {
             editingUserGroupName = groupName;
             isEditUserGroupDialogOpen = true;
           }}
-          onConvertToMember={() => {}}
+          onConvertToMember={(user) => {
+            convertGuestUser = user;
+            convertGuestDialogOpen = true;
+          }}
         />
       </div>
     </div>
@@ -181,22 +163,6 @@
   {isSuperUser}
 />
 
-<RemovingBillingContactDialog
-  bind:open={isRemovingBillingContactDialogOpen}
-  onChange={() => (isUpdateBillingContactDialogOpen = true)}
-/>
-
-<ChangingBillingContactRoleDialog
-  bind:open={isChangingBillingContactRoleDialogOpen}
-  onChange={() => (isUpdateBillingContactDialogOpen = true)}
-/>
-
-<ChangeBillingContactDialog
-  bind:open={isUpdateBillingContactDialogOpen}
-  {organization}
-  currentBillingContact={$billingContactUser?.email}
-/>
-
 {#if editingUserGroupName}
   <EditUserGroupDialog
     bind:open={isEditUserGroupDialogOpen}
@@ -205,3 +171,8 @@
     currentUserEmail={$currentUser.data?.user.email}
   />
 {/if}
+
+<ConvertGuestToMemberDialog
+  bind:open={convertGuestDialogOpen}
+  user={convertGuestUser}
+/>

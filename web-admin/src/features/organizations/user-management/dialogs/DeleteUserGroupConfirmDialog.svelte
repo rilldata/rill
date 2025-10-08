@@ -12,9 +12,9 @@
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-  } from "@rilldata/web-common/components/alert-dialog/index.js";
-  import { Button } from "@rilldata/web-common/components/button/index.js";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  } from "@rilldata/web-common/components/alert-dialog";
+  import { Button } from "@rilldata/web-common/components/button";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let open = false;
