@@ -64,22 +64,24 @@ export class GithubAccessManager {
   }
 
   private async refetch() {
-    await queryClient.resetQueries({
-      queryKey: getAdminServiceGetGithubUserStatusQueryKey(),
-    });
+    if (this.reSelectingRepos) {
+      this.reSelectingRepos = false;
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceListGithubUserReposQueryKey(),
+      });
 
-    const refetched = await get(this.userStatus).refetch();
-    if (!refetched.data?.hasAccess) {
-      this.githubConnectionFailed.set(true);
-      return;
+      // When github installations are changed, we still need to make sure org list from GetGithubUserStatus is updated.
+      // So refetch that query after ListGithubUserRepos
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceGetGithubUserStatusQueryKey(),
+      });
+    } else {
+      const refetched = await get(this.userStatus).refetch();
+      if (!refetched.data?.hasAccess) {
+        this.githubConnectionFailed.set(true);
+        return;
+      }
+      this.githubConnectionFailed.set(false);
     }
-    this.githubConnectionFailed.set(false);
-
-    if (!this.reSelectingRepos) return;
-    this.reSelectingRepos = false;
-
-    await queryClient.resetQueries({
-      queryKey: getAdminServiceListGithubUserReposQueryKey(),
-    });
   }
 }
