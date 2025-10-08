@@ -11,11 +11,10 @@ import (
 )
 
 func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
-	cfg, err := c.GetAWSConfig(ctx)
+	client, err := getS3Client(ctx, *c.config, "")
 	if err != nil {
 		return nil, err
 	}
-	client := c.GetS3Client(cfg)
 	output, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
 	if err != nil {
 		return nil, err
@@ -77,7 +76,7 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 }
 
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
-	prov, err := c.newCredentialsProvider(ctx)
+	prov, err := newCredentialsProvider(ctx, *c.config)
 	if err != nil {
 		return "", false, err
 	}

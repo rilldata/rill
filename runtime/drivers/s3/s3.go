@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -158,14 +157,15 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	cfg, err := c.GetAWSConfig(ctx)
-	if err != nil {
-		return err
-	}
-	stsClient := c.GetSTSClient(cfg)
-	_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return fmt.Errorf("GetCallerIdentity failed: %w", err)
+	if c.config.Endpoint == "" {
+		stsClient, err := getSTSClient(ctx, *c.config)
+		if err != nil {
+			return err
+		}
+		_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+		if err != nil {
+			return fmt.Errorf("GetCallerIdentity failed: %w", err)
+		}
 	}
 	return nil
 }
@@ -271,31 +271,99 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *Connection) GetS3Client(cfg aws.Config) *s3.Client {
-	if cfg.Region == "" {
-		cfg.Region = "us-east-1"
+// BucketRegion returns the region to use for the given bucket.
+func BucketRegion(ctx context.Context, confProp ConfigProperties, bucket string) (string, error) {
+	cfg, err := getAWSConfig(ctx, confProp)
+	if err != nil {
+		return "", fmt.Errorf("failed to load AWS config for bucket region detection: %w", err)
+	}
+	return bucketRegionFromConfig(ctx, cfg, confProp, bucket)
+}
+
+func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp ConfigProperties, bucket string) (string, error) {
+	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
+	if confProp.Endpoint != "" {
+		if confProp.Region == "" {
+			// Set the default region for bwd compatibility reasons
+			// cloudflare and minio ignore if us-east-1 is set, not tested for others
+			return "us-east-1", nil
+		}
+	}
+	if confProp.Region != "" {
+		return confProp.Region, nil
+	}
+
+	client := s3.NewFromConfig(cfg)
+
+	result, err := client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(bucket)})
+	if err != nil {
+		return "", fmt.Errorf("failed to get bucket location for bucket %s: %w", bucket, err)
+	}
+
+	if result.BucketRegion == nil || *result.BucketRegion == "" {
+		return "", fmt.Errorf(
+			"bucket region is not returned for bucket %s; please define the region explicitly in your configuration",
+			bucket,
+		)
+	}
+
+	return *result.BucketRegion, nil
+}
+
+func getAnonymousS3Client(confProp ConfigProperties) *s3.Client {
+	cfg := aws.Config{
+		Credentials: aws.AnonymousCredentials{},
 	}
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		if c.config.Endpoint != "" {
-			o.BaseEndpoint = aws.String(c.config.Endpoint)
+		if confProp.Endpoint != "" {
+			o.BaseEndpoint = aws.String(confProp.Endpoint)
 			o.UsePathStyle = true
 		}
 	})
 }
 
-func (c *Connection) GetSTSClient(cfg aws.Config) *sts.Client {
-	if cfg.Region == "" {
-		cfg.Region = "us-east-1"
+func getS3Client(ctx context.Context, confProp ConfigProperties, bucket string) (*s3.Client, error) {
+	cfg, err := getAWSConfig(ctx, confProp)
+	if err != nil {
+		return nil, err
 	}
-	return sts.NewFromConfig(cfg, func(o *sts.Options) {
-		if c.config.Endpoint != "" {
-			o.BaseEndpoint = aws.String(c.config.Endpoint)
+	region := confProp.Region
+	// If the region is not explicitly provided in the config,
+	// try to automatically detect it from the bucket
+	if region == "" && bucket != "" {
+		var err error
+		region, err = bucketRegionFromConfig(ctx, cfg, confProp, bucket)
+		if err != nil {
+			return nil, fmt.Errorf("failed to detect bucket region: %w", err)
 		}
-	})
+	}
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if confProp.Endpoint != "" {
+			o.BaseEndpoint = aws.String(confProp.Endpoint)
+			o.UsePathStyle = true
+		}
+		o.Region = region
+	}), nil
 }
 
-func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
-	provider, err := c.newCredentialsProvider(ctx)
+func getSTSClient(ctx context.Context, confProp ConfigProperties) (*sts.Client, error) {
+	cfg, err := getAWSConfig(ctx, confProp)
+	if err != nil {
+		return nil, err
+	}
+	return sts.NewFromConfig(cfg, func(o *sts.Options) {
+		if confProp.Endpoint != "" {
+			o.BaseEndpoint = aws.String(confProp.Endpoint)
+		}
+		// set default region to "us-east-1"
+		if cfg.Region == "" {
+			o.Region = "us-east-1"
+		}
+	}), nil
+}
+
+func getAWSConfig(ctx context.Context, confProp ConfigProperties) (aws.Config, error) {
+	provider, err := newCredentialsProvider(ctx, confProp)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to get AWS credentials: %w", err)
 	}
@@ -303,8 +371,8 @@ func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
 	opts := []func(*config.LoadOptions) error{
 		config.WithCredentialsProvider(provider),
 	}
-	if c.config.Region != "" {
-		opts = append(opts, config.WithRegion(c.config.Region))
+	if confProp.Region != "" {
+		opts = append(opts, config.WithRegion(confProp.Region))
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
@@ -315,24 +383,23 @@ func (c *Connection) GetAWSConfig(ctx context.Context) (aws.Config, error) {
 }
 
 // newCredentialsProvider returns credentials for connecting to AWS.
-func (c *Connection) newCredentialsProvider(ctx context.Context) (aws.CredentialsProvider, error) {
+func newCredentialsProvider(ctx context.Context, confProp ConfigProperties) (aws.CredentialsProvider, error) {
 	// 1. If a role ARN is provided, assume it.
-	if c.config.RoleARN != "" {
-		return c.assumeRole(ctx)
+	if confProp.RoleARN != "" {
+		return assumeRole(ctx, confProp)
 	}
 
 	// 1. Explicit static credentials
-	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
+	if confProp.AccessKeyID != "" && confProp.SecretAccessKey != "" {
 		return aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
-			c.config.AccessKeyID,
-			c.config.SecretAccessKey,
-			c.config.SessionToken,
+			confProp.AccessKeyID,
+			confProp.SecretAccessKey,
+			confProp.SessionToken,
 		)), nil
 	}
 
-	// 3. Allow host-based credentials, but only local (env + shared files)
-	if c.config.AllowHostAccess {
-		os.Setenv("AWS_EC2_METADATA_DISABLED", "true") // Disable remote lookups
+	// 3. Allow host-based credentials
+	if confProp.AllowHostAccess {
 		cfg, err := config.LoadDefaultConfig(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load AWS config: %w", err)
@@ -353,37 +420,45 @@ func (c *Connection) newCredentialsProvider(ctx context.Context) (aws.Credential
 
 // assumeRole returns a credentials provider that assumes the role specified by the ARN using AWS SDK v2.
 // It uses stscreds.NewAssumeRoleProvider so credentials are automatically refreshed before expiration.
-func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, error) {
+func assumeRole(ctx context.Context, confProp ConfigProperties) (aws.CredentialsProvider, error) {
 	// Add session name if specified
-	sessionName := c.config.RoleSessionName
+	sessionName := confProp.RoleSessionName
 	if sessionName == "" {
 		sessionName = "rill-session"
 	}
 
-	loadOpts := []func(*config.LoadOptions) error{
-		config.WithSharedConfigFiles([]string{}), // Disable shared config (~/.aws/config, ~/.aws/credentials)
+	region := confProp.Region
+	if region == "" {
+		region = "us-east-1"
 	}
 
-	// Add region if specified, otherwise default to us-east-1
-	if c.config.Region != "" {
-		loadOpts = append(loadOpts, config.WithRegion(c.config.Region))
-	} else {
-		loadOpts = append(loadOpts, config.WithRegion("us-east-1"))
-	}
+	var credsProvider aws.CredentialsProvider
 
-	// Add static credentials if explicitly provided (AccessKeyID, SecretAccessKey, SessionToken)
-	if c.config.AccessKeyID != "" && c.config.SecretAccessKey != "" {
-		loadOpts = append(loadOpts,
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-				c.config.AccessKeyID,
-				c.config.SecretAccessKey,
-				c.config.SessionToken,
-			)),
+	if confProp.AccessKeyID != "" && confProp.SecretAccessKey != "" {
+		// Use explicit static credentials
+		credsProvider = credentials.NewStaticCredentialsProvider(
+			confProp.AccessKeyID,
+			confProp.SecretAccessKey,
+			confProp.SessionToken,
 		)
+	} else if confProp.AllowHostAccess {
+		hostCfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(region),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load host credentials: %w", err)
+		}
+		credsProvider = hostCfg.Credentials
+	} else {
+		// No valid credentials to assume role
+		return nil, fmt.Errorf("cannot assume role: no base credentials available")
 	}
 
-	// Create AWS config with explicit configuration
-	cfg, err := config.LoadDefaultConfig(ctx, loadOpts...)
+	// Load AWS config with the chosen provider
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(region),
+		config.WithCredentialsProvider(credsProvider),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS config: %w", err)
 	}
@@ -392,30 +467,14 @@ func (c *Connection) assumeRole(ctx context.Context) (aws.CredentialsProvider, e
 	stsClient := sts.NewFromConfig(cfg)
 
 	// Create an assume role provider that automatically refreshes credentials before expiration
-	assumeRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, c.config.RoleARN, func(o *stscreds.AssumeRoleOptions) {
+	assumeRoleProvider := stscreds.NewAssumeRoleProvider(stsClient, confProp.RoleARN, func(o *stscreds.AssumeRoleOptions) {
 		o.RoleSessionName = sessionName
 		// Add external ID if provided to mitigate confused deputy problem
-		if c.config.ExternalID != "" {
-			o.ExternalID = &c.config.ExternalID
+		if confProp.ExternalID != "" {
+			o.ExternalID = &confProp.ExternalID
 		}
 	})
 
 	// Wrap in a credentials cache so multiple calls share refreshed credentials
 	return aws.NewCredentialsCache(assumeRoleProvider), nil
-}
-
-func GetAnonymousS3Client(region, endpoint string) *s3.Client {
-	if region == "" {
-		region = "us-east-1"
-	}
-	cfg := aws.Config{
-		Region:      region,
-		Credentials: aws.AnonymousCredentials{},
-	}
-	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		if endpoint != "" {
-			o.BaseEndpoint = aws.String(endpoint)
-			o.UsePathStyle = true
-		}
-	})
 }

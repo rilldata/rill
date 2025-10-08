@@ -146,7 +146,7 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 			if err != nil {
 				return "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
 			}
-			reg, err := conn.BucketRegion(ctx, uri.Host)
+			reg, err := s3.BucketRegion(ctx, *s3Config, uri.Host)
 			if err != nil {
 				return "", fmt.Errorf("failed to get bucket region (set `region` in s3.yaml): %w", err)
 			}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
@@ -53,25 +52,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.Fi
 	})
 }
 
-// BucketRegion returns the region to use for the given bucket.
-func (c *Connection) BucketRegion(ctx context.Context, bucket string) (string, error) {
-	cfg, err := c.GetAWSConfig(ctx)
-	if err != nil {
-		return "", err
-	}
-	client := c.GetS3Client(cfg)
-
-	result, err := client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(bucket)})
-	if err != nil {
-		return "", fmt.Errorf("failed to get bucket location: %w", err)
-	}
-
-	if result.BucketRegion == nil || *result.BucketRegion == "" {
-		return "", fmt.Errorf("bucket region is not returned for bucket %s", bucket)
-	}
-	return *result.BucketRegion, nil
-}
-
 func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 	path = c.rewriteToS3Path(path)
 	url, err := globutil.ParseBucketURL(path)
@@ -85,22 +65,15 @@ func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 }
 
 func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
-	region := c.config.Region
-	if c.config.Endpoint == "" && region == "" {
-		if r, err := c.BucketRegion(ctx, bucket); err == nil && r != "" {
-			region = r
-		}
-	}
 	var s3client *s3.Client
 	if anonymous {
-		s3client = GetAnonymousS3Client(region, c.config.Endpoint)
+		s3client = getAnonymousS3Client(*c.config)
 	} else {
-		cfg, err := c.GetAWSConfig(ctx)
+		var err error
+		s3client, err = getS3Client(ctx, *c.config, bucket)
 		if err != nil {
 			return nil, err
 		}
-		cfg.Region = region
-		s3client = c.GetS3Client(cfg)
 	}
 
 	s3Bucket, err := s3blob.OpenBucketV2(ctx, s3client, bucket, nil)

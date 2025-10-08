@@ -34,18 +34,10 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	if err != nil {
 		return err
 	}
-	region := c.config.Region
-	if c.config.Endpoint == "" && region == "" {
-		if r, err := c.BucketRegion(ctx, u.Host); err == nil && r != "" {
-			region = r
-		}
-	}
-	cfg, err := c.GetAWSConfig(ctx)
+	client, err := getS3Client(ctx, *c.config, u.Host)
 	if err != nil {
 		return err
 	}
-	cfg.Region = region
-	client := c.GetS3Client(cfg)
 
 	base, _ := doublestar.SplitPattern(strings.TrimPrefix(u.Path, "/"))
 	return deleteObjectsInPrefix(ctx, client, u.Host, base)
