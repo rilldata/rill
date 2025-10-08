@@ -124,10 +124,10 @@ function getRillDefaultExploreViewState(
 
 export function getDefaultTimeRange(
   smallestTimeGrain: V1TimeGrain | undefined,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-) {
+  timeRangeSummary: { min?: string; max?: string } | undefined,
+): string {
   if (!timeRangeSummary?.min || !timeRangeSummary?.max) {
-    return undefined;
+    return "inf";
   }
 
   if (

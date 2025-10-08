@@ -251,6 +251,13 @@
         >
           {V1TimeGrainToDateTimeUnit[option]}
         </DropdownMenu.CheckboxItem>
+      {:else}
+        <div
+          data-testid="searchable-menu-no-results"
+          class="ui-copy-disabled text-center p-2 w-full"
+        >
+          no valid grains
+        </div>
       {/each}
     </DropdownMenu.Group>
 
