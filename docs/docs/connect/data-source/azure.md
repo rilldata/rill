@@ -30,9 +30,6 @@ Choose the method that best fits your setup. For production deployments to Rill 
 To ensure seamless deployment to Rill Cloud, configure your Azure Storage Account Key directly in your project's `.env` file instead of relying solely on Azure CLI authentication (which only works locally).
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-
 type: connector
 
 driver: azure
@@ -48,9 +45,6 @@ This approach ensures your Azure Blob Storage sources authenticate consistently 
 To ensure seamless deployment to Rill Cloud, configure your Azure Blob Storage credentials using a connection string directly in your project's `.env` file instead of relying solely on Azure CLI authentication (which only works locally).
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-
 type: connector
 
 driver: azure
@@ -65,9 +59,6 @@ This approach ensures your Azure Blob Storage sources authenticate consistently 
 Use Shared Access Signature (SAS) tokens as an alternative authentication method for Azure Blob Storage. SAS tokens provide fine-grained access control with specific permissions and expiration times for secure access to your storage resources.
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-
 type: connector
 
 driver: azure

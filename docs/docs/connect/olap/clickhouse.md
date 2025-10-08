@@ -25,14 +25,11 @@ Rill supports connecting to ClickHouse v22.7 or newer versions.
 
 When using ClickHouse for local development, you can connect via connection parameters or by using the DSN. Both local instances of ClickHouse and ClickHouse Cloud are supported.
 
-After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI.
+After selecting "Add Data", select ClickHouse and fill in your connection parameters. This will automatically create the `clickhouse.yaml` file in your `connectors` directory and populate the `.env` file with `connector.clickhouse.password` or `connector.clickhouse.dsn` depending on which you select in the UI.
 
 For more information on supported parameters, see our [ClickHouse connector YAML reference docs](/reference/project-files/connectors#clickhouse).
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 driver: clickhouse
 
@@ -62,9 +59,6 @@ connector.clickhouse.dsn="clickhouse://<hostname>:<port>?username=<username>&pas
 Once the file is created, it will be added directly to the `.env` file in the project directory. To make changes to this connector, modify `connector.clickhouse.dsn`.
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 driver: clickhouse
 
@@ -111,9 +105,6 @@ If you would like to connect Rill to an existing ClickHouse instance, please don
 By setting `managed: true` in your ClickHouse connector, you will enable an embedded ClickHouse server to spin up with Rill. This will allow you to import data directly into this ClickHouse server without having to worry about managing an external database.
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 
 driver: clickhouse

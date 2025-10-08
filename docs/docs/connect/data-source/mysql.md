@@ -26,12 +26,9 @@ For more details, see the [MySQL documentation on DSN formats](https://dev.mysql
 
 ## Connect to MySQL
 
-Create a connector with your credentials to start exploring your data via the Data Explorer. Here's an example connector configuration file you can copy into your `connectors/` folder to get started.
+Create a connector with your credentials to connect to MySQL. Here's an example connector configuration file you can copy into your `connectors` directory to get started.
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-
 type: connector 
 driver: mysql 
 

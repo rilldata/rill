@@ -12,9 +12,6 @@ sidebar_position: 10
 By default, Rill includes DuckDB as an embedded OLAP engine that ingests data from [data sources](/connect) and powers your dashboards. When you start a new project, you'll see a `connectors/duckdb.yaml` file alongside other project files. No additional configuration is needed to use DuckDB with Rill Developer or Rill Cloud.
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 
 driver: duckdb
@@ -48,9 +45,6 @@ For production deployments, consider using our [external DuckDB data source](/co
 Using the UI, select the DuckDB icon under the OLAP section to add a new DuckDB connector. Any existing connectors with data models will need to be refreshed to ingest the data into your external DuckDB. 
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 
 driver: duckdb

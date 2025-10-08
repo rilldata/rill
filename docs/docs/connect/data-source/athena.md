@@ -23,12 +23,9 @@ Choose the method that best fits your setup. For production deployments to Rill 
 
 ### Access Key and Secret Key
 
-Create a connector with your credentials to start exploring your data via the Data Explorer. Here's an example connector configuration file you can copy into your connectors/ folder to get started:
+Create a connector with your credentials to connect to Athena. Here's an example connector configuration file you can copy into your `connectors` directory to get started:
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 
 driver: athena

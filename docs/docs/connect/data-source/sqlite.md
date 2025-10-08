@@ -17,9 +17,6 @@ sidebar_position: 80
 In many cases, since SQLite is used as an in-process database, credentials are not required. Instead, Rill will need to know the path to the SQLite database file so that it can be read accordingly.
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-
 type: connector
 driver: sqlite 
 

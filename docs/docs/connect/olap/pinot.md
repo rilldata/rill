@@ -14,13 +14,10 @@ Rill supports connecting to an existing Pinot cluster via a "live connector" and
 
 When using Rill for local development, there are a few options to configure Rill to enable Pinot as an OLAP engine:
 
-1. Connect to an OLAP engine via Add Data. This will automatically create the `pinot.yaml` file in your `connectors` folder and populate the `.env` file with `connector.pinot.password` or `connector.pinot.dsn` depending on which you select in the UI.
+1. Connect to an OLAP engine via Add Data. This will automatically create the `pinot.yaml` file in your `connectors` directory and populate the `.env` file with `connector.pinot.password` or `connector.pinot.dsn` depending on which you select in the UI.
 
     For more information on supported parameters, see our [Pinot connector YAML reference docs](/reference/project-files/connectors#pinot).
     ```yaml
-    # Connector YAML
-    # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-      
     type: connector
     driver: pinot
 

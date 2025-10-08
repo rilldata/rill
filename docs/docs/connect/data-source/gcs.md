@@ -36,12 +36,9 @@ gcloud iam service-accounts keys create ~/key.json \
 You'll need to contact your internal cloud admin to create your Service Account JSONs for you.
 :::
 
-Then, create a connector via the Add Data UI and it will automatically create the `gcs.yaml` file in your connectors/ folder and populate the `.env` file with `connector.gcs.google_application_credentials`.
+Then, create a connector via the Add Data UI and it will automatically create the `gcs.yaml` file in your `connectors` directory and populate the `.env` file with `connector.gcs.google_application_credentials`.
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-
 type: connector
 
 driver: gcs
@@ -70,8 +67,6 @@ gcloud storage hmac create \
 
 To use these credentials, configure the `key_id` and `secret` parameters in your [GCS connector](/reference/project-files/connectors#gcs).
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
 type: connector
 
 driver: gcs

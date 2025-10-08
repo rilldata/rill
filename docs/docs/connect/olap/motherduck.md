@@ -46,11 +46,9 @@ For more information on supported parameters, see our [MotherDuck connector YAML
 
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector 
 driver: duckdb 
+
 token: '{{ .env.connector.motherduck.token }}' 
 path: "md:my_database" 
 schema_name: "my_schema"

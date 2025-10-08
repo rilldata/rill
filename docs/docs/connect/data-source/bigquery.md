@@ -37,12 +37,10 @@ gcloud iam service-accounts keys create ~/key.json \
 You'll need to contact your internal cloud admin to create your Service Account JSON credentials for you.
 :::
 
-Create a connector with your credentials to start exploring your data via the Data Explorer. Here's an example connector configuration file you can copy into your `connectors/` folder to get started. The UI will also populate your `.env` with `connector.bigquery.google_application_credentials`.
+
+Create a connector with your credentials to connect to BigQuery. Here's an example connector configuration file you can copy into your `connectors` directory to get started. The UI will also populate your `.env` with `connector.bigquery.google_application_credentials`.
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 
 driver: bigquery

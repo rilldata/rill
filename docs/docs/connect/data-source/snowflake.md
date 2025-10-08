@@ -20,12 +20,9 @@ Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/bl
 
 ## Connect to Snowflake
 
-Create a connector with your credentials to start exploring your data via the Data Explorer. Here's an example connector configuration file you can copy into your `connectors/` folder to get started:
+Create a connector with your credentials to connect to Snowflake. Here's an example connector configuration file you can copy into your `connectors` directory to get started:
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-
 type: connector
 driver: snowflake
 
