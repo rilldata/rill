@@ -429,7 +429,11 @@ security:
 	require.Len(t, res.ReferencedMetricsViews["mv1"].GetMetricsView().State.ValidSpec.Measures, 2)
 
 	// Check when doesn't have access to the canvas.
-	ctx = auth.WithClaims(context.Background(), &runtime.SecurityClaims{UserAttributes: map[string]any{"admin": false, "domain": "rilldata.com"}})
+	claims := &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": false, "domain": "rilldata.com"},
+		Permissions:    []runtime.Permission{runtime.ReadAPI},
+	}
+	ctx = auth.WithClaims(context.Background(), claims)
 	res, err = server.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{
 		InstanceId: instanceID,
 		Canvas:     "c1",
@@ -439,7 +443,11 @@ security:
 
 	// Check metrics view column-level security.
 	// The 'sum' measure should be excluded.
-	ctx = auth.WithClaims(context.Background(), &runtime.SecurityClaims{UserAttributes: map[string]any{"admin": true, "domain": "rilldata.com"}})
+	claims = &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": true, "domain": "rilldata.com"},
+		Permissions:    []runtime.Permission{runtime.ReadAPI},
+	}
+	ctx = auth.WithClaims(context.Background(), claims)
 	res, err = server.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{
 		InstanceId: instanceID,
 		Canvas:     "c1",
@@ -453,7 +461,11 @@ security:
 
 	// Check metrics view access security.
 	// Should have access to the canvas, but not the metrics view.
-	ctx = auth.WithClaims(context.Background(), &runtime.SecurityClaims{UserAttributes: map[string]any{"admin": true, "domain": "notrilldata.com"}})
+	claims = &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": true, "domain": "notrilldata.com"},
+		Permissions:    []runtime.Permission{runtime.ReadAPI},
+	}
+	ctx = auth.WithClaims(context.Background(), claims)
 	res, err = server.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{
 		InstanceId: instanceID,
 		Canvas:     "c1",
