@@ -10,13 +10,13 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
-import { NEW_CONVERSATION_ID } from "./chat-utils";
 import { Conversation } from "./conversation";
 import {
   BrowserStorageConversationSelector,
   URLConversationSelector,
   type ConversationSelector,
 } from "./conversation-selector";
+import { NEW_CONVERSATION_ID } from "./utils";
 
 export type ConversationStateType = "url" | "browserStorage";
 
