@@ -9,16 +9,8 @@ async function expectRillYAMLToContainOlapConnector(page: Page, text: string) {
     .getByLabel("codemirror editor")
     .getByRole("textbox");
 
-  // Wait for the editor to be visible with a longer timeout
-  await expect(rillYamlEditor).toBeVisible({ timeout: 10000 });
-
-  // Wait a bit for the content to load
-  await page.waitForTimeout(1000);
-
   // Check for the text with a longer timeout
-  await expect(rillYamlEditor).toContainText(`olap_connector: ${text}`, {
-    timeout: 10000,
-  });
+  await expect(rillYamlEditor).toContainText(`olap_connector: ${text}`);
 }
 
 test.describe("Default olap_connector behavior", () => {
