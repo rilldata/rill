@@ -214,9 +214,10 @@ defaults:
 
 type: theme
 
-# Use CSS for full theming control with data visualization palettes
-# Note: CSS variables are automatically scoped to the dashboard/canvas
-# and won't affect the surrounding Rill Developer interface
+# Themes allow you to customize the appearance of Explore and Canvas dashboards
+# with support for both light and dark modes. Use CSS to define custom colors,
+# surfaces, and data visualization palettes (sequential, diverging, qualitative).
+
 css: |
   :root {
     /* Primary brand color - used for lines, bars, and key UI elements */
