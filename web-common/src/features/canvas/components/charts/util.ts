@@ -349,8 +349,8 @@ export function getColorForValues(
     
     return {
       value,
-      // Resolve CSS variables for canvas rendering
-      color: resolveCSSVariable(color),
+      // Keep CSS variable references as-is, resolve them for display in the UI
+      color: color,
     };
   });
 

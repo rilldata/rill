@@ -2,7 +2,11 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import { getColorForValues, colorToVariableReference } from "@rilldata/web-common/features/canvas/components/charts/util";
+  import {
+    getColorForValues,
+    colorToVariableReference,
+    resolveCSSVariable,
+  } from "@rilldata/web-common/features/canvas/components/charts/util";
   import type {
     ChartFieldInput,
     ColorMapping,
@@ -35,7 +39,8 @@
 
   function handleColorChange(value: string, newColor: string) {
     const valueIndex = colorValues.findIndex((v) => v === value);
-    const defaultColorVar = COMPARIONS_COLORS[valueIndex % COMPARIONS_COLORS.length];
+    const defaultColorVar =
+      COMPARIONS_COLORS[valueIndex % COMPARIONS_COLORS.length];
 
     // Convert the color back to a CSS variable reference if it matches a palette color
     const colorToSave = colorToVariableReference(newColor);
@@ -57,7 +62,10 @@
           index === existingIndex ? { ...item, color: colorToSave } : item,
         );
       } else {
-        updatedMapping = [...currentColorMapping, { value, color: colorToSave }];
+        updatedMapping = [
+          ...currentColorMapping,
+          { value, color: colorToSave },
+        ];
       }
     }
 
@@ -100,7 +108,7 @@
         {#each displayedColorMappings as { value, color } (value)}
           <ColorInput
             small
-            stringColor={color}
+            stringColor={resolveCSSVariable(color)}
             labelFirst
             allowLightnessControl
             label={value}

@@ -230,8 +230,7 @@
         const currentTheme = typeof theme === "object" ? theme : undefined;
 
         if (currentTheme?.css) {
-          // Update user-facing --primary and --secondary variables
-          // The system will automatically remap these to internal variables
+          // Update user-facing --primary and --secondary variables in existing CSS
           let updatedCss = currentTheme.css;
 
           // Replace existing --primary and --secondary values
@@ -250,13 +249,15 @@
             },
           });
         } else {
-          // Use legacy primaryColor/secondaryColor properties
+          // Create new CSS theme instead of using legacy properties
+          const newCss = `:root {
+  --primary: ${primary};
+  --secondary: ${secondary};
+}`;
+
           await updateProperties({
             theme: {
-              colors: {
-                primary,
-                secondary,
-              },
+              css: newCss,
             },
           });
         }

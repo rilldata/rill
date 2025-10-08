@@ -143,7 +143,8 @@ export function createColorEncoding(
 
     if (colorMapping?.length) {
       const domain = colorMapping.map((mapping) => mapping.value);
-      const range = colorMapping.map((mapping) => mapping.color);
+      // Resolve CSS variables for canvas rendering
+      const range = colorMapping.map((mapping) => resolveCSSVariable(mapping.color));
 
       baseEncoding.scale = {
         domain,
