@@ -2,16 +2,16 @@
   import { afterUpdate } from "svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
-  import type { Chat } from "../chat";
+  import type { ConversationManager } from "../conversation-manager";
   import ChatError from "./ChatError.svelte";
   import ChatMessage from "./ChatMessage.svelte";
 
-  export let chat: Chat;
+  export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
 
   let messagesContainer: HTMLDivElement;
 
-  $: currentConversationStore = chat.getCurrentConversation();
+  $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
 

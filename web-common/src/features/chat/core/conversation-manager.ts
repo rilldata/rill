@@ -20,7 +20,7 @@ import {
 
 export type ConversationStateType = "url" | "browserStorage";
 
-export interface ChatOptions {
+export interface ConversationManagerOptions {
   /**
    * How conversation state should be managed and persisted
    * - "url": Use URL parameters (for full-page chat with shareable URLs)
@@ -37,11 +37,11 @@ export interface ChatOptions {
  * (full-page chat with URL state vs sidebar chat with browser storage).
  *
  * Usage:
- * - Access conversations: `chat.listConversationsQuery()` and `chat.getCurrentConversation()`
- * - Navigate conversations: `chat.selectConversation(id)` or `chat.enterNewConversationMode()`
+ * - Access conversations: `conversationManager.listConversationsQuery()` and `conversationManager.getCurrentConversation()`
+ * - Navigate conversations: `conversationManager.selectConversation(id)` or `conversationManager.enterNewConversationMode()`
  * - Send messages: `conversation.sendMessage()` on any conversation instance (new or existing)
  */
-export class Chat {
+export class ConversationManager {
   // Maximum number of conversations that can have active streaming at once
   private static readonly MAX_CONCURRENT_STREAMS = 3;
 
@@ -51,7 +51,7 @@ export class Chat {
 
   constructor(
     private instanceId: string,
-    options: ChatOptions,
+    options: ConversationManagerOptions,
   ) {
     this.newConversation = new Conversation(
       this.instanceId,
@@ -173,11 +173,16 @@ export class Chat {
     try {
       const streamingConversations = this.getActiveStreamingConversations();
 
-      if (streamingConversations.length >= Chat.MAX_CONCURRENT_STREAMS) {
+      if (
+        streamingConversations.length >=
+        ConversationManager.MAX_CONCURRENT_STREAMS
+      ) {
         // Stop the oldest streaming conversations (simple FIFO approach)
         const conversationsToStop = streamingConversations.slice(
           0,
-          streamingConversations.length - Chat.MAX_CONCURRENT_STREAMS + 1,
+          streamingConversations.length -
+            ConversationManager.MAX_CONCURRENT_STREAMS +
+            1,
         );
 
         conversationsToStop.forEach((conv) => {
@@ -304,41 +309,44 @@ export class Chat {
   }
 }
 
-// ===== CHAT SINGLETON MANAGEMENT =====
+// ===== CONVERSATION MANAGER SINGLETON MANAGEMENT =====
 
 /**
- * Global registry of Chat instances, one per instanceId (project)
+ * Global registry of ConversationManager instances, one per instanceId (project)
  * Ensures consistent state across components within the same project
  */
-const chatInstances = new Map<string, Chat>();
+const conversationManagerInstances = new Map<string, ConversationManager>();
 
 /**
- * Get or create a Chat instance for the given instanceId
+ * Get or create a ConversationManager instance for the given instanceId
  *
  * @param instanceId - The project/instance identifier
- * @param options - Configuration options for the chat instance
- * @returns The Chat instance for this project
+ * @param options - Configuration options for the conversation manager instance
+ * @returns The ConversationManager instance for this project
  */
-export function getChatInstance(
+export function getConversationManager(
   instanceId: string,
-  options: ChatOptions,
-): Chat {
-  if (!chatInstances.has(instanceId)) {
-    chatInstances.set(instanceId, new Chat(instanceId, options));
+  options: ConversationManagerOptions,
+): ConversationManager {
+  if (!conversationManagerInstances.has(instanceId)) {
+    conversationManagerInstances.set(
+      instanceId,
+      new ConversationManager(instanceId, options),
+    );
   }
-  return chatInstances.get(instanceId)!;
+  return conversationManagerInstances.get(instanceId)!;
 }
 
 /**
- * Clean up and remove a Chat instance for the given instanceId
+ * Clean up and remove a ConversationManager instance for the given instanceId
  * Called when leaving chat context or switching projects
  *
  * @param instanceId - The project/instance identifier to clean up
  */
-export function cleanupChatInstance(instanceId: string): void {
-  const chatInstance = chatInstances.get(instanceId);
-  if (chatInstance) {
-    chatInstance.cleanup();
-    chatInstances.delete(instanceId);
+export function cleanupConversationManager(instanceId: string): void {
+  const conversationManager = conversationManagerInstances.get(instanceId);
+  if (conversationManager) {
+    conversationManager.cleanup();
+    conversationManagerInstances.delete(instanceId);
   }
 }

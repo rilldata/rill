@@ -3,27 +3,27 @@
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { type V1Conversation } from "../../../../runtime-client";
-  import type { Chat } from "../../core/chat";
+  import type { ConversationManager } from "../../core/conversation-manager";
   import ChatConversationDropdown from "./ChatConversationDropdown.svelte";
 
-  export let chat: Chat;
+  export let conversationManager: ConversationManager;
   export let onNewConversation: () => void;
   export let onClose: () => void;
 
-  $: currentConversationStore = chat.getCurrentConversation();
+  $: currentConversationStore = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversationStore?.getConversationQuery();
   $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
 
-  $: listConversationsQuery = chat.listConversationsQuery();
+  $: listConversationsQuery = conversationManager.listConversationsQuery();
   $: conversations = $listConversationsQuery.data?.conversations ?? [];
 
   function handleNewConversation() {
-    chat.enterNewConversationMode();
+    conversationManager.enterNewConversationMode();
     onNewConversation();
   }
 
   function handleSelectConversation(conversation: V1Conversation) {
-    chat.selectConversation(conversation.id!);
+    conversationManager.selectConversation(conversation.id!);
   }
 </script>
 
