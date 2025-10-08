@@ -85,7 +85,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.11.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
-	github.com/sashabaranov/go-openai v1.24.0
+	github.com/sashabaranov/go-openai v1.41.2
 	github.com/slack-go/slack v0.12.5
 	github.com/snowflakedb/gosnowflake v1.15.0
 	github.com/spf13/cobra v1.9.1

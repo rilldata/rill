@@ -241,15 +241,17 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 
 	// check current branch matches deployed branch
 	headRef, err := repo.Head()
-	if err != nil {
+	if err == nil {
+		if !headRef.Name().IsBranch() {
+			return fmt.Errorf("detached HEAD state detected. Checkout a branch")
+		}
+		branch := headRef.Name().Short()
+		if headRef.Name().Short() != config.DefaultBranch {
+			return fmt.Errorf("current branch %q does not match deployed branch %q", branch, config.DefaultBranch)
+		}
+	} else if !errors.Is(err, plumbing.ErrReferenceNotFound) {
+		// ErrReferenceNotFound happens when looking for HEAD on a fresh repo
 		return err
-	}
-	if !headRef.Name().IsBranch() {
-		return fmt.Errorf("detached HEAD state detected. Checkout a branch")
-	}
-	branch := headRef.Name().Short()
-	if headRef.Name().Short() != config.DefaultBranch {
-		return fmt.Errorf("current branch %q does not match deployed branch %q", branch, config.DefaultBranch)
 	}
 
 	wt, err := repo.Worktree()

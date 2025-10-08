@@ -199,8 +199,8 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 			return nil, err
 		}
 
-		claims := auth.GetClaims(ctx)
-		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+		claims := auth.GetClaims(ctx, instanceID)
+		if !claims.Can(runtime.ReadMetrics) {
 			return nil, ErrForbidden
 		}
 
@@ -210,7 +210,7 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 			ResolverProperties: map[string]any{
 				"metrics_view": metricsViewName,
 			},
-			Claims: claims.SecurityClaims(),
+			Claims: claims,
 		})
 		if err != nil {
 			return nil, err
@@ -346,8 +346,8 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 			return nil, errors.New("invalid arguments: expected an object")
 		}
 
-		claims := auth.GetClaims(ctx)
-		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+		claims := auth.GetClaims(ctx, instanceID)
+		if !claims.Can(runtime.ReadMetrics) {
 			return nil, ErrForbidden
 		}
 
@@ -355,7 +355,7 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 			InstanceID:         instanceID,
 			Resolver:           "metrics",
 			ResolverProperties: metricsProps,
-			Claims:             claims.SecurityClaims(),
+			Claims:             claims,
 		})
 		if err != nil {
 			return nil, err
