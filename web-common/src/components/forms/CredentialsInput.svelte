@@ -14,6 +14,7 @@
   export let hint: string | undefined = undefined;
   export let optional: boolean = false;
   export let hideContent: boolean = false;
+  export let hidden: boolean = false;
 
   let fileInput: HTMLInputElement;
 
@@ -115,56 +116,58 @@
 </script>
 
 <div class="container">
-  {#if label && id}
-    <InputLabel {id} {label} {hint} {optional} />
-  {/if}
+  {#if !hidden}
+    {#if label && id}
+      <InputLabel {id} {label} {hint} {optional} />
+    {/if}
 
-  <div class="file-input-wrapper">
-    <button
-      type="button"
-      class="file-input-button"
-      on:click={() => fileInput.click()}
-      on:dragenter|preventDefault|stopPropagation={() => (dragOver = true)}
-      on:dragleave|preventDefault|stopPropagation={() => (dragOver = false)}
-      on:dragover|preventDefault|stopPropagation
-      on:drop|preventDefault={handleFileDrop}
-      class:drag-over={dragOver}
-    >
-      <span class="choose-file-text">Choose file</span>
-      <span class="file-status-text">
-        {#if Object.values(uploading).some((u) => u)}
-          Uploading...
-        {:else if selectedFileName && !hideContent}
-          {selectedFileName}
-        {:else}
-          No file chosen
-        {/if}
-      </span>
-    </button>
-    {#if selectedFileName && !hideContent && !Object.values(uploading).some((u) => u)}
-      <div class="trash-icon-button">
-        <IconButton size={24} ariaLabel="Remove file" on:click={clearFile}>
-          <Trash size="16px" />
-          <div slot="tooltip-content">Remove file</div>
-        </IconButton>
+    <div class="file-input-wrapper">
+      <button
+        type="button"
+        class="file-input-button"
+        on:click={() => fileInput.click()}
+        on:dragenter|preventDefault|stopPropagation={() => (dragOver = true)}
+        on:dragleave|preventDefault|stopPropagation={() => (dragOver = false)}
+        on:dragover|preventDefault|stopPropagation
+        on:drop|preventDefault={handleFileDrop}
+        class:drag-over={dragOver}
+      >
+        <span class="choose-file-text">Choose file</span>
+        <span class="file-status-text">
+          {#if Object.values(uploading).some((u) => u)}
+            Uploading...
+          {:else if selectedFileName && !hideContent}
+            {selectedFileName}
+          {:else}
+            No file chosen
+          {/if}
+        </span>
+      </button>
+      {#if selectedFileName && !hideContent && !Object.values(uploading).some((u) => u)}
+        <div class="trash-icon-button">
+          <IconButton size={24} ariaLabel="Remove file" on:click={clearFile}>
+            <Trash size="16px" />
+            <div slot="tooltip-content">Remove file</div>
+          </IconButton>
+        </div>
+      {/if}
+    </div>
+    {#if errorMessages.length > 0}
+      <div class="error">
+        {#each errorMessages as errorMessage, i (i)}
+          <div>{errorMessage}</div>
+        {/each}
       </div>
     {/if}
-  </div>
-  {#if errorMessages.length > 0}
-    <div class="error">
-      {#each errorMessages as errorMessage, i (i)}
-        <div>{errorMessage}</div>
-      {/each}
-    </div>
+    <input
+      type="file"
+      {accept}
+      hidden
+      {multiple}
+      bind:this={fileInput}
+      on:input={handleInput}
+    />
   {/if}
-  <input
-    type="file"
-    {accept}
-    hidden
-    {multiple}
-    bind:this={fileInput}
-    on:input={handleInput}
-  />
 </div>
 
 <style lang="postcss">

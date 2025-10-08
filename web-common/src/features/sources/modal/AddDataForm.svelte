@@ -753,7 +753,7 @@
                     bind:value={$paramsForm[propertyKey]}
                     uploadFile={handleFileUpload}
                     accept=".json"
-                    hideContent={true}
+                    hidden={true}
                   />
                 {/if}
               </div>
