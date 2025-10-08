@@ -122,7 +122,13 @@ export class PerRangeFormatter implements Formatter {
     let numParts: NumberParts | undefined = undefined;
 
     if (x === 0) {
-      numParts = { int: "0", dot: "", frac: "", suffix: "", locale: this.locale };
+      numParts = {
+        int: "0",
+        dot: "",
+        frac: "",
+        suffix: "",
+        locale: this.locale,
+      };
     }
 
     if (numParts === undefined) {

@@ -37,7 +37,9 @@ export const numberPartsToString = (parts: NumberParts): string => {
 
   // Apply thousand separators to the integer part if locale is specified
   const formattedInt =
-    locale && thousands ? applyThousandSeparators(parts.int, thousands, grouping) : parts.int;
+    locale && thousands
+      ? applyThousandSeparators(parts.int, thousands, grouping)
+      : parts.int;
 
   // Use locale-specific decimal separator if available
   const dot = parts.dot && locale ? decimal : parts.dot;

@@ -100,20 +100,27 @@ export function humanizeDataType(
 
   switch (preset) {
     case FormatPreset.NONE:
-      return new PerRangeFormatter(selectedOptions.none, locale).stringFormat(value);
+      return new PerRangeFormatter(selectedOptions.none, locale).stringFormat(
+        value,
+      );
 
     case FormatPreset.CURRENCY_USD:
-      return new PerRangeFormatter(selectedOptions.currencyUsd, locale).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(
+        selectedOptions.currencyUsd,
+        locale,
+      ).stringFormat(value);
 
     case FormatPreset.CURRENCY_EUR:
-      return new PerRangeFormatter(selectedOptions.currencyEur, locale).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(
+        selectedOptions.currencyEur,
+        locale,
+      ).stringFormat(value);
 
     case FormatPreset.PERCENTAGE:
-      return new PerRangeFormatter(selectedOptions.percent, locale).stringFormat(value);
+      return new PerRangeFormatter(
+        selectedOptions.percent,
+        locale,
+      ).stringFormat(value);
 
     case FormatPreset.INTERVAL:
       return type === "tooltip"
@@ -121,15 +128,18 @@ export function humanizeDataType(
         : formatMsInterval(value);
 
     case FormatPreset.HUMANIZE:
-      return new PerRangeFormatter(selectedOptions.humanize, locale).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(
+        selectedOptions.humanize,
+        locale,
+      ).stringFormat(value);
 
     default:
       console.warn(
         "Unknown format preset, using none formatter. All number kinds should be handled.",
       );
-      return new PerRangeFormatter(selectedOptions.none, locale).stringFormat(value);
+      return new PerRangeFormatter(selectedOptions.none, locale).stringFormat(
+        value,
+      );
   }
 }
 

@@ -37,7 +37,7 @@ export const formatNumWithOrderOfMag = (
 
   // strip commas from output?
   stripCommas = false,
-  
+
   // Optional locale configuration for formatting
   locale?: LocaleConfig,
 ): NumberParts => {

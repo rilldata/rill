@@ -17,10 +17,10 @@ describe("format-measure-value with d3_locale", () => {
     };
 
     const formatter = createMeasureValueFormatter(measure, "big-number");
-    
+
     // Test with a number that should have thousand separators
     const result = formatter(123456);
-    
+
     // The big number formatter will abbreviate to "123k" but should preserve locale settings
     // For big numbers, we humanize so we get "123k" with space separators
     expect(result).toContain("123");
@@ -40,9 +40,9 @@ describe("format-measure-value with d3_locale", () => {
     };
 
     const formatter = createMeasureValueFormatter(measure, "big-number");
-    
+
     const result = formatter(1234567);
-    
+
     // Should have the rupee symbol
     expect(result).toContain("₹");
     // Should be humanized to something like "₹1.23M" or "₹1M"
@@ -63,9 +63,9 @@ describe("format-measure-value with d3_locale", () => {
     };
 
     const formatter = createMeasureValueFormatter(measure, "tooltip");
-    
+
     const result = formatter(1234.56);
-    
+
     // Tooltip should show the full number with custom separators
     // Since it's a tooltip with d3 format, it will use the d3 formatter directly
     expect(result).toBe("1.234,56");
@@ -85,9 +85,9 @@ describe("format-measure-value with d3_locale", () => {
     };
 
     const formatter = createMeasureValueFormatter(measure, "big-number");
-    
+
     const result = formatter(1234567);
-    
+
     // For big numbers with plain d3 format, it should be humanized and use custom separators
     // Since there's no currency or percent, it should abbreviate the number
     expect(result).toMatch(/\d+\.?\d*[kM]/);
@@ -107,10 +107,10 @@ describe("format-measure-value with d3_locale", () => {
     };
 
     const formatter = createMeasureValueFormatter(measure, "big-number");
-    
+
     // Test with 10 million
     const result = formatter(10000000);
-    
+
     // Should be humanized to something like "10M"
     expect(result).toContain("10");
     expect(result).toMatch(/M/);
@@ -130,12 +130,11 @@ describe("format-measure-value with d3_locale", () => {
     };
 
     const formatter = createMeasureValueFormatter(measure, "big-number");
-    
+
     const result = formatter(5000);
-    
+
     // Should have Euro as suffix
     expect(result).toContain("€");
     expect(result).toMatch(/\d+k?€/);
   });
 });
-
