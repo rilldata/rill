@@ -60,7 +60,7 @@
   let copied = false;
   let gcloudCommandCopied = false;
   let connectionTab: ConnectorType = "parameters";
-  let bigqueryAuthMethod: BigQueryAuthMethod = "inferred";
+  let bigqueryAuthMethod: BigQueryAuthMethod = "credentials";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
