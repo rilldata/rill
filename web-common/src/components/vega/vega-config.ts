@@ -6,9 +6,30 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { Config } from "vega-lite";
 
-const BarFill = "var(--color-primary-400)";
-
-const defaultMarkColor = MainLineColor;
+/**
+ * Resolves a CSS variable to its computed value
+ * This is necessary for canvas rendering where CSS variables need to be resolved
+ */
+function resolveCSSVariable(cssVar: string, fallback?: string): string {
+  if (typeof window === "undefined") return fallback || cssVar;
+  
+  // Extract the variable name from var() syntax
+  const varName = cssVar.replace("var(", "").replace(")", "").split(",")[0].trim();
+  
+  // Try to get computed style from document element
+  const computed = getComputedStyle(document.documentElement).getPropertyValue(varName);
+  
+  if (computed && computed.trim()) {
+    return computed.trim();
+  }
+  
+  // If fallback is provided and is also a CSS variable, resolve it
+  if (fallback && fallback.startsWith("var(")) {
+    return resolveCSSVariable(fallback);
+  }
+  
+  return fallback || cssVar;
+}
 
 // Light and dark mode color values for canvas compatibility
 const colors = {
@@ -32,18 +53,25 @@ export const getRillTheme: (
   const axisLabelColor = isDarkMode
     ? colors.dark.axisLabel
     : colors.light.axisLabel;
+  const surfaceColor = isDarkMode ? colors.dark.surface : colors.light.surface;
+  
+  // Resolve colors at render time for canvas rendering
+  const lineColor = resolveCSSVariable("var(--color-theme-600)", "var(--color-primary-600)");
+  const barColor = resolveCSSVariable("var(--color-theme-400)", "var(--color-primary-400)");
+  const areaGradientLight = resolveCSSVariable("var(--color-theme-50)", "var(--color-primary-50)");
+  const areaGradientDark = resolveCSSVariable("var(--color-theme-300)", "var(--color-primary-300)");
 
   return {
     autosize: {
       type: "fit-x",
     },
-    background: isDarkMode ? colors.dark.surface : colors.light.surface,
+    background: surfaceColor,
     mark: {
       tooltip: isCanvasDashboard,
     },
-    arc: { fill: defaultMarkColor },
+    arc: { fill: lineColor },
     area: {
-      line: { stroke: MainLineColor, strokeWidth: 1 },
+      line: { stroke: lineColor, strokeWidth: 1 },
       stroke: null,
       fillOpacity: 0.8,
       color: {
@@ -55,24 +83,24 @@ export const getRillTheme: (
         stops: [
           {
             offset: 0,
-            color: MainAreaColorGradientLight,
+            color: areaGradientLight,
           },
           {
             offset: 1,
-            color: MainAreaColorGradientDark,
+            color: areaGradientDark,
           },
         ],
       },
     },
     bar: {
-      fill: BarFill,
+      fill: barColor,
       ...(!isCanvasDashboard && { opacity: 0.8 }),
     },
-    line: { stroke: defaultMarkColor, strokeWidth: 1.5, strokeOpacity: 1 },
-    path: { stroke: defaultMarkColor },
-    rect: { fill: defaultMarkColor },
-    shape: { stroke: defaultMarkColor },
-    symbol: { fill: defaultMarkColor },
+    line: { stroke: lineColor, strokeWidth: 1.5, strokeOpacity: 1 },
+    path: { stroke: lineColor },
+    rect: { fill: lineColor },
+    shape: { stroke: lineColor },
+    symbol: { fill: lineColor },
 
     legend: {
       orient: "top",
@@ -130,10 +158,22 @@ export const getRillTheme: (
       strokeWidth: 0,
     },
     range: {
-      category: COMPARIONS_COLORS,
-      heatmap: {
-        scheme: "tealblues", // TODO: Generate this from theme
-      },
+      // Resolve qualitative palette colors for categorical data
+      category: COMPARIONS_COLORS.map((color) => 
+        color.startsWith("var(") ? resolveCSSVariable(color) : color
+      ),
+      // Resolve sequential palette colors for heatmaps
+      heatmap: [
+        resolveCSSVariable("var(--color-sequential-1)"),
+        resolveCSSVariable("var(--color-sequential-2)"),
+        resolveCSSVariable("var(--color-sequential-3)"),
+        resolveCSSVariable("var(--color-sequential-4)"),
+        resolveCSSVariable("var(--color-sequential-5)"),
+        resolveCSSVariable("var(--color-sequential-6)"),
+        resolveCSSVariable("var(--color-sequential-7)"),
+        resolveCSSVariable("var(--color-sequential-8)"),
+        resolveCSSVariable("var(--color-sequential-9)"),
+      ],
     },
     numberFormat: "s",
     tooltipFormat: {

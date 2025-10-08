@@ -226,14 +226,40 @@
         }
       }}
       onColorChange={async (primary, secondary) => {
-        await updateProperties({
-          theme: {
-            colors: {
-              primary,
-              secondary,
+        // Check if current theme has CSS - if so, update CSS variables instead
+        const currentTheme = typeof theme === "object" ? theme : undefined;
+
+        if (currentTheme?.css) {
+          // Update user-facing --primary and --secondary variables
+          // The system will automatically remap these to internal variables
+          let updatedCss = currentTheme.css;
+
+          // Replace existing --primary and --secondary values
+          updatedCss = updatedCss.replace(
+            /(:root\s*\{[^}]*--primary:\s*)([^;]+)(;)/s,
+            `$1${primary}$3`,
+          );
+          updatedCss = updatedCss.replace(
+            /(:root\s*\{[^}]*--secondary:\s*)([^;]+)(;)/s,
+            `$1${secondary}$3`,
+          );
+
+          await updateProperties({
+            theme: {
+              css: updatedCss,
             },
-          },
-        });
+          });
+        } else {
+          // Use legacy primaryColor/secondaryColor properties
+          await updateProperties({
+            theme: {
+              colors: {
+                primary,
+                secondary,
+              },
+            },
+          });
+        }
       }}
     />
   </div>

@@ -29,10 +29,12 @@ function getColorForField(
     }
   }
 
+  // Use qualitative palette colors for the two measures
   if (encoding === "y1") return COMPARIONS_COLORS[0];
   if (encoding === "y2") return COMPARIONS_COLORS[1];
 
-  return "#3524C7";
+  // Fallback to qualitative palette color 3
+  return COMPARIONS_COLORS[2];
 }
 
 export function generateVLComboChartSpec(

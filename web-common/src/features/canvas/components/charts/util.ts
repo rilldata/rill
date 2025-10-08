@@ -278,6 +278,19 @@ export function isDomainStringArray(
     : false;
 }
 
+/**
+ * Resolves a CSS variable to its computed value
+ * Necessary for canvas rendering
+ */
+function resolveCSSVariable(cssVar: string): string {
+  if (typeof window === "undefined" || !cssVar.startsWith("var(")) return cssVar;
+  
+  const varName = cssVar.replace("var(", "").replace(")", "").split(",")[0].trim();
+  const computed = getComputedStyle(document.documentElement).getPropertyValue(varName);
+  
+  return computed && computed.trim() ? computed.trim() : cssVar;
+}
+
 export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
@@ -289,11 +302,12 @@ export function getColorForValues(
     const overrideColor = overrideColorMapping?.find(
       (mapping) => mapping.value === value,
     );
+    const color = overrideColor?.color || COMPARIONS_COLORS[index % COMPARIONS_COLORS.length];
+    
     return {
       value,
-      color:
-        overrideColor?.color ||
-        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
+      // Resolve CSS variables for canvas rendering
+      color: resolveCSSVariable(color),
     };
   });
 

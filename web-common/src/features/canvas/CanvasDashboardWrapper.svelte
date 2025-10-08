@@ -13,6 +13,8 @@
   export let canvasName: string;
   export let onClick: () => void = () => {};
 
+  let themeBoundary: HTMLElement | null = null;
+
   onMount(async () => {
     await restoreSnapshot();
   });
@@ -27,18 +29,24 @@
 
   $: ({ width: clientWidth } = contentRect);
 
-  $: updateThemeVariables($themeSpec);
+  // Apply theme scoped to the canvas boundary element (once it's bound)
+  $: if (themeBoundary) {
+    updateThemeVariables($themeSpec, themeBoundary);
+  }
 
   onDestroy(() => {
     saveSnapshot($page.url.searchParams.toString());
   });
 </script>
 
-<main class="size-full flex flex-col dashboard-theme-boundary overflow-hidden">
+<main
+  class="size-full flex flex-col dashboard-theme-boundary overflow-hidden"
+  bind:this={themeBoundary}
+>
   {#if filtersEnabled}
     <header
       role="presentation"
-      class="bg-background border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
+      class="bg-surface border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
       on:click|self={onClick}
     >
       <CanvasFilters {canvasName} {maxWidth} />
