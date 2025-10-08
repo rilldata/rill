@@ -318,12 +318,27 @@ export class CanvasEntity {
 
     this.themeSpec.set(themeSpec);
 
+    // Extract colors from CSS-based themes if present, otherwise use legacy properties
+    let primaryColor: string | undefined;
+    let secondaryColor: string | undefined;
+
+    if (themeSpec?.css) {
+      // Dynamic import to avoid circular dependency
+      const { extractColorVariables } = await import("@rilldata/web-common/features/themes/css-sanitizer");
+      const cssColors = extractColorVariables(themeSpec.css);
+      primaryColor = cssColors.primary.lightColor || themeSpec.primaryColorRaw;
+      secondaryColor = cssColors.secondary.lightColor || themeSpec.secondaryColorRaw;
+    } else {
+      primaryColor = themeSpec?.primaryColorRaw;
+      secondaryColor = themeSpec?.secondaryColorRaw;
+    }
+
     this.theme.set({
-      primary: themeSpec?.primaryColorRaw
-        ? chroma(themeSpec.primaryColorRaw)
+      primary: primaryColor
+        ? chroma(primaryColor)
         : chroma(`hsl(${defaultPrimaryColors[500]})`),
-      secondary: themeSpec?.secondaryColorRaw
-        ? chroma(themeSpec.secondaryColorRaw)
+      secondary: secondaryColor
+        ? chroma(secondaryColor)
         : chroma(`hsl(${defaultSecondaryColors[500]})`),
     });
   };

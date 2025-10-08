@@ -30,8 +30,9 @@ export function setSequentialColor(
   const chromaColor = typeof color === "string" ? chroma(color) : color;
   const { light, dark } = generatePalette(chromaColor, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
   
-  root.style.setProperty(`--color-sequential-light-${index}`, light[5].css("oklch"));
-  root.style.setProperty(`--color-sequential-dark-${index}`, dark[5].css("oklch"));
+  // Convert all colors to HSL for internal representation
+  root.style.setProperty(`--color-sequential-light-${index}`, light[5].css("hsl"));
+  root.style.setProperty(`--color-sequential-dark-${index}`, dark[5].css("hsl"));
 }
 
 /**
@@ -51,8 +52,9 @@ export function setDivergingColor(
   const chromaColor = typeof color === "string" ? chroma(color) : color;
   const { light, dark } = generatePalette(chromaColor, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
   
-  root.style.setProperty(`--color-diverging-light-${index}`, light[5].css("oklch"));
-  root.style.setProperty(`--color-diverging-dark-${index}`, dark[5].css("oklch"));
+  // Convert all colors to HSL for internal representation
+  root.style.setProperty(`--color-diverging-light-${index}`, light[5].css("hsl"));
+  root.style.setProperty(`--color-diverging-dark-${index}`, dark[5].css("hsl"));
 }
 
 /**
@@ -72,8 +74,9 @@ export function setQualitativeColor(
   const chromaColor = typeof color === "string" ? chroma(color) : color;
   const { light, dark } = generatePalette(chromaColor, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
   
-  root.style.setProperty(`--color-qualitative-light-${index}`, light[5].css("oklch"));
-  root.style.setProperty(`--color-qualitative-dark-${index}`, dark[5].css("oklch"));
+  // Convert all colors to HSL for internal representation
+  root.style.setProperty(`--color-qualitative-light-${index}`, light[5].css("hsl"));
+  root.style.setProperty(`--color-qualitative-dark-${index}`, dark[5].css("hsl"));
 }
 
 /**

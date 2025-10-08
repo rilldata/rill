@@ -99,7 +99,8 @@
     color: var(--color-gray-900);
 
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
-    --surface: oklch(100% 0 0);
+    --surface: hsl(0deg 0% 100%);
+    /* white */
 
     /* SHADCN VARIABLES */
     --background: var(--color-gray-50);
@@ -170,42 +171,42 @@
         var(--color-secondary-light-950));
 
     /* SEQUENTIAL PALETTE - For ordered data that progresses from low to high */
-    --color-sequential-1: oklch(0.95 0.02 250);
-    --color-sequential-2: oklch(0.88 0.04 250);
-    --color-sequential-3: oklch(0.80 0.08 250);
-    --color-sequential-4: oklch(0.70 0.12 250);
-    --color-sequential-5: oklch(0.62 0.16 250);
-    --color-sequential-6: oklch(0.54 0.20 250);
-    --color-sequential-7: oklch(0.46 0.18 250);
-    --color-sequential-8: oklch(0.38 0.16 250);
-    --color-sequential-9: oklch(0.30 0.14 250);
+    --color-sequential-1: hsl(211deg 79% 94%);
+    --color-sequential-2: hsl(211deg 63% 86%);
+    --color-sequential-3: hsl(211deg 75% 77%);
+    --color-sequential-4: hsl(210deg 73% 64%);
+    --color-sequential-5: hsl(208deg 76% 51%);
+    --color-sequential-6: hsl(210deg 100% 43%);
+    --color-sequential-7: hsl(212deg 100% 36%);
+    --color-sequential-8: hsl(214deg 100% 29%);
+    --color-sequential-9: hsl(217deg 100% 22%);
 
     /* DIVERGING PALETTE - For data that diverges from a critical midpoint */
-    --color-diverging-1: oklch(0.58 0.23 25);
-    --color-diverging-2: oklch(0.70 0.20 35);
-    --color-diverging-3: oklch(0.82 0.14 55);
-    --color-diverging-4: oklch(0.92 0.08 85);
-    --color-diverging-5: oklch(0.97 0.02 106);
-    --color-diverging-6: oklch(0.92 0.06 220);
-    --color-diverging-7: oklch(0.82 0.10 230);
-    --color-diverging-8: oklch(0.70 0.14 240);
-    --color-diverging-9: oklch(0.58 0.18 250);
-    --color-diverging-10: oklch(0.46 0.20 260);
-    --color-diverging-11: oklch(0.34 0.18 270);
+    --color-diverging-1: hsl(353deg 87% 48%);
+    --color-diverging-2: hsl(12deg 100% 62%);
+    --color-diverging-3: hsl(27deg 100% 70%);
+    --color-diverging-4: hsl(40deg 96% 82%);
+    --color-diverging-5: hsl(59deg 48% 94%);
+    --color-diverging-6: hsl(194deg 100% 86%);
+    --color-diverging-7: hsl(199deg 91% 73%);
+    --color-diverging-8: hsl(202deg 83% 57%);
+    --color-diverging-9: hsl(207deg 100% 44%);
+    --color-diverging-10: hsl(217deg 100% 39%);
+    --color-diverging-11: hsl(237deg 69% 34%);
 
     /* QUALITATIVE PALETTE - For categorical data without inherent ordering */
-    --color-qualitative-1: oklch(0.75 0.14 163);
-    --color-qualitative-2: oklch(0.82 0.18 50);
-    --color-qualitative-3: oklch(0.70 0.15 230);
-    --color-qualitative-4: oklch(0.78 0.12 320);
-    --color-qualitative-5: oklch(0.80 0.16 140);
-    --color-qualitative-6: oklch(0.85 0.12 85);
-    --color-qualitative-7: oklch(0.72 0.14 10);
-    --color-qualitative-8: oklch(0.65 0.10 260);
-    --color-qualitative-9: oklch(0.68 0.16 170);
-    --color-qualitative-10: oklch(0.76 0.14 40);
-    --color-qualitative-11: oklch(0.70 0.12 280);
-    --color-qualitative-12: oklch(0.82 0.10 120);
+    --color-qualitative-1: hsl(156deg 56% 52%);
+    --color-qualitative-2: hsl(27deg 100% 65%);
+    --color-qualitative-3: hsl(195deg 100% 46%);
+    --color-qualitative-4: hsl(289deg 61% 76%);
+    --color-qualitative-5: hsl(109deg 56% 64%);
+    --color-qualitative-6: hsl(41deg 83% 69%);
+    --color-qualitative-7: hsl(349deg 76% 71%);
+    --color-qualitative-8: hsl(217deg 49% 61%);
+    --color-qualitative-9: hsl(165deg 100% 36%);
+    --color-qualitative-10: hsl(16deg 95% 70%);
+    --color-qualitative-11: hsl(236deg 65% 74%);
+    --color-qualitative-12: hsl(75deg 43% 66%);
 
     --editor-selection: #b0daffb3;
     --line-highlight: #ededed5b;

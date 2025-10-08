@@ -7,6 +7,7 @@
     defaultSecondaryColors,
   } from "@rilldata/web-common/features/themes/color-config";
   import chroma, { type Color } from "chroma-js";
+  import { colorToVariableReference } from "@rilldata/web-common/features/canvas/components/charts/util";
 
   export let markConfig: string;
   export let onChange: (newColor: string) => void;
@@ -66,7 +67,9 @@
 
   function handleColorChange(color: string) {
     customColor = color;
-    onChange(color);
+    // Convert color back to CSS variable reference if it matches a palette color
+    const colorToSave = colorToVariableReference(color);
+    onChange(colorToSave);
   }
 </script>
 

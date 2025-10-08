@@ -66,9 +66,10 @@ export function setVariables(
     }
   } else {
     colors.forEach((color, i) => {
+      // Convert all colors to HSL for internal representation
       root.style.setProperty(
         `--color-${type}-${mode}-${TailwindColorSpacing[i]}`,
-        color.css("oklch"),
+        color.css("hsl"),
       );
     });
   }

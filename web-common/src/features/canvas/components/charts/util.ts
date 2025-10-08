@@ -3,6 +3,7 @@ import type { ComboChartSpec } from "@rilldata/web-common/features/canvas/compon
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/canvas/components/charts/heatmap-charts/HeatmapChart";
 import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import chroma from "chroma-js";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
@@ -280,15 +281,57 @@ export function isDomainStringArray(
 
 /**
  * Resolves a CSS variable to its computed value
- * Necessary for canvas rendering
+ * Necessary for canvas rendering where CSS variables must be resolved
+ * Checks scoped theme boundary first, then falls back to document root
  */
-function resolveCSSVariable(cssVar: string): string {
+export function resolveCSSVariable(cssVar: string): string {
   if (typeof window === "undefined" || !cssVar.startsWith("var(")) return cssVar;
   
   const varName = cssVar.replace("var(", "").replace(")", "").split(",")[0].trim();
+  
+  // First check if there's a dashboard-theme-boundary element (scoped themes)
+  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+  if (themeBoundary) {
+    const scopedValue = getComputedStyle(themeBoundary as HTMLElement).getPropertyValue(varName);
+    if (scopedValue && scopedValue.trim()) {
+      return scopedValue.trim();
+    }
+  }
+  
+  // Fall back to document root for global variables
   const computed = getComputedStyle(document.documentElement).getPropertyValue(varName);
   
   return computed && computed.trim() ? computed.trim() : cssVar;
+}
+
+/**
+ * Converts a resolved color back to its CSS variable reference if it matches a palette color
+ * This allows YAML to store variable references instead of hardcoded values
+ */
+export function colorToVariableReference(resolvedColor: string): string {
+  if (!resolvedColor || typeof window === "undefined") return resolvedColor;
+  
+  // Check all comparison colors (qualitative palette)
+  for (let i = 0; i < COMPARIONS_COLORS.length; i++) {
+    const varRef = COMPARIONS_COLORS[i];
+    const resolved = resolveCSSVariable(varRef);
+    
+    // Compare colors (normalize by converting both to chroma and back)
+    try {
+      const inputChroma = chroma(resolvedColor);
+      const paletteChroma = chroma(resolved);
+      
+      // Check if colors are the same (with small tolerance for rounding)
+      if (chroma.deltaE(inputChroma, paletteChroma) < 1) {
+        return varRef; // Return the CSS variable reference
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }
+  
+  // Not a palette color, return as-is
+  return resolvedColor;
 }
 
 export function getColorForValues(

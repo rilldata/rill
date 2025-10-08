@@ -36,11 +36,23 @@ import type { ChartDataResult } from "./types";
 /**
  * Resolves a CSS variable to its computed value
  * Necessary for canvas rendering where CSS variables must be resolved
+ * Checks scoped theme boundary first, then falls back to document root
  */
 function resolveCSSVariable(cssVar: string): string {
   if (typeof window === "undefined" || !cssVar.startsWith("var(")) return cssVar;
   
   const varName = cssVar.replace("var(", "").replace(")", "").split(",")[0].trim();
+  
+  // First check if there's a dashboard-theme-boundary element (scoped themes)
+  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+  if (themeBoundary) {
+    const scopedValue = getComputedStyle(themeBoundary as HTMLElement).getPropertyValue(varName);
+    if (scopedValue && scopedValue.trim()) {
+      return scopedValue.trim();
+    }
+  }
+  
+  // Fall back to document root for global variables
   const computed = getComputedStyle(document.documentElement).getPropertyValue(varName);
   
   return computed && computed.trim() ? computed.trim() : cssVar;

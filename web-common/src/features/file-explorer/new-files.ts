@@ -221,100 +221,100 @@ type: theme
 css: |
   :root {
     /* Primary brand color - used for lines, bars, and key UI elements */
-    --primary: oklch(0.55 0.25 305);
+    --primary: hsl(274deg 76% 53%);
     
     /* Secondary brand color - used for accents and secondary elements */
-    --secondary: oklch(0.70 0.21 50);
+    --secondary: hsl(25deg 100% 50%);
     
     /* Surface/background color */
-    --surface: oklch(0.98 0.01 85);
+    --surface: hsl(40deg 60% 97%);
     
     /* Sequential palette (9 colors) */
-    --color-sequential-1: oklch(0.95 0.03 320);
-    --color-sequential-2: oklch(0.88 0.06 320);
-    --color-sequential-3: oklch(0.80 0.10 320);
-    --color-sequential-4: oklch(0.70 0.15 320);
-    --color-sequential-5: oklch(0.60 0.20 320);
-    --color-sequential-6: oklch(0.50 0.23 320);
-    --color-sequential-7: oklch(0.42 0.20 320);
-    --color-sequential-8: oklch(0.35 0.17 320);
-    --color-sequential-9: oklch(0.28 0.14 320);
+    --color-sequential-1: hsl(289deg 72% 95%);
+    --color-sequential-2: hsl(289deg 56% 87%);
+    --color-sequential-3: hsl(289deg 55% 78%);
+    --color-sequential-4: hsl(289deg 54% 67%);
+    --color-sequential-5: hsl(289deg 53% 54%);
+    --color-sequential-6: hsl(290deg 81% 38%);
+    --color-sequential-7: hsl(291deg 97% 28%);
+    --color-sequential-8: hsl(291deg 100% 22%);
+    --color-sequential-9: hsl(290deg 100% 16%);
     
     /* Diverging palette (11 colors) */
-    --color-diverging-1: oklch(0.60 0.24 30);
-    --color-diverging-2: oklch(0.70 0.20 40);
-    --color-diverging-3: oklch(0.80 0.15 50);
-    --color-diverging-4: oklch(0.88 0.10 70);
-    --color-diverging-5: oklch(0.94 0.05 90);
-    --color-diverging-6: oklch(0.88 0.08 280);
-    --color-diverging-7: oklch(0.78 0.12 290);
-    --color-diverging-8: oklch(0.68 0.16 300);
-    --color-diverging-9: oklch(0.58 0.20 310);
-    --color-diverging-10: oklch(0.48 0.22 315);
-    --color-diverging-11: oklch(0.38 0.20 320);
+    --color-diverging-1: hsl(5deg 99% 47%);
+    --color-diverging-2: hsl(17deg 100% 58%);
+    --color-diverging-3: hsl(24deg 100% 69%);
+    --color-diverging-4: hsl(33deg 100% 78%);
+    --color-diverging-5: hsl(44deg 78% 87%);
+    --color-diverging-6: hsl(233deg 100% 90%);
+    --color-diverging-7: hsl(249deg 100% 83%);
+    --color-diverging-8: hsl(263deg 73% 71%);
+    --color-diverging-9: hsl(277deg 58% 56%);
+    --color-diverging-10: hsl(285deg 76% 39%);
+    --color-diverging-11: hsl(290deg 100% 25%);
     
     /* Qualitative palette (12 colors) */
-    --color-qualitative-1: oklch(0.70 0.20 340);
-    --color-qualitative-2: oklch(0.75 0.22 60);
-    --color-qualitative-3: oklch(0.65 0.19 280);
-    --color-qualitative-4: oklch(0.72 0.18 160);
-    --color-qualitative-5: oklch(0.78 0.20 110);
-    --color-qualitative-6: oklch(0.80 0.16 40);
-    --color-qualitative-7: oklch(0.68 0.21 10);
-    --color-qualitative-8: oklch(0.60 0.17 240);
-    --color-qualitative-9: oklch(0.65 0.19 180);
-    --color-qualitative-10: oklch(0.73 0.18 90);
-    --color-qualitative-11: oklch(0.66 0.20 310);
-    --color-qualitative-12: oklch(0.77 0.17 130);
+    --color-qualitative-1: hsl(317deg 78% 65%);
+    --color-qualitative-2: hsl(30deg 100% 50%);
+    --color-qualitative-3: hsl(240deg 99% 74%);
+    --color-qualitative-4: hsl(158deg 100% 39%);
+    --color-qualitative-5: hsl(60deg 100% 38%);
+    --color-qualitative-6: hsl(18deg 100% 71%);
+    --color-qualitative-7: hsl(345deg 98% 65%);
+    --color-qualitative-8: hsl(202deg 100% 43%);
+    --color-qualitative-9: hsl(170deg 100% 35%);
+    --color-qualitative-10: hsl(45deg 100% 41%);
+    --color-qualitative-11: hsl(276deg 77% 66%);
+    --color-qualitative-12: hsl(87deg 54% 53%);
   }
   
   .dark {
     /* Primary brand color - dark mode (lighter for visibility) */
-    --primary: oklch(0.70 0.20 305);
+    --primary: hsl(270deg 100% 73%);
     
     /* Secondary brand color - dark mode (lighter for visibility) */
-    --secondary: oklch(0.75 0.18 50);
+    --secondary: hsl(25deg 100% 59%);
     
     /* Surface/background color - dark mode */
-    --surface: oklch(0.18 0.01 264);
+    --surface: hsl(220deg 18% 7%);
     
     /* Sequential palette - Purple/Magenta (inverted for dark mode) */
-    --color-sequential-1: oklch(0.40 0.17 320);
-    --color-sequential-2: oklch(0.48 0.20 320);
-    --color-sequential-3: oklch(0.56 0.23 320);
-    --color-sequential-4: oklch(0.64 0.20 320);
-    --color-sequential-5: oklch(0.70 0.17 320);
-    --color-sequential-6: oklch(0.76 0.14 320);
-    --color-sequential-7: oklch(0.82 0.11 320);
-    --color-sequential-8: oklch(0.88 0.07 320);
-    --color-sequential-9: oklch(0.92 0.04 320);
+    --color-sequential-1: hsl(290deg 69% 29%);
+    --color-sequential-2: hsl(290deg 64% 39%);
+    --color-sequential-3: hsl(290deg 61% 48%);
+    --color-sequential-4: hsl(289deg 60% 60%);
+    --color-sequential-5: hsl(289deg 62% 67%);
+    --color-sequential-6: hsl(289deg 65% 74%);
+    --color-sequential-7: hsl(289deg 70% 81%);
+    --color-sequential-8: hsl(289deg 68% 87%);
+    --color-sequential-9: hsl(289deg 57% 91%);
     
     /* Diverging palette - Orange to Purple (adjusted for dark) */
-    --color-diverging-1: oklch(0.45 0.22 320);
-    --color-diverging-2: oklch(0.52 0.24 315);
-    --color-diverging-3: oklch(0.60 0.22 310);
-    --color-diverging-4: oklch(0.68 0.18 300);
-    --color-diverging-5: oklch(0.76 0.14 290);
-    --color-diverging-6: oklch(0.82 0.10 280);
-    --color-diverging-7: oklch(0.76 0.12 90);
-    --color-diverging-8: oklch(0.68 0.16 70);
-    --color-diverging-9: oklch(0.60 0.18 50);
-    --color-diverging-10: oklch(0.52 0.20 40);
-    --color-diverging-11: oklch(0.45 0.22 30);
+    --color-diverging-1: hsl(291deg 100% 31%);
+    --color-diverging-2: hsl(285deg 76% 44%);
+    --color-diverging-3: hsl(277deg 70% 59%);
+    --color-diverging-4: hsl(264deg 86% 72%);
+    --color-diverging-5: hsl(250deg 100% 81%);
+    --color-diverging-6: hsl(235deg 100% 86%);
+    --color-diverging-7: hsl(44deg 57% 56%);
+    --color-diverging-8: hsl(37deg 100% 42%);
+    --color-diverging-9: hsl(25deg 100% 41%);
+    --color-diverging-10: hsl(12deg 100% 38%);
+    --color-diverging-11: hsl(0deg 100% 34%);
     
     /* Qualitative palette - Vibrant colors (enhanced for dark mode) */
-    --color-qualitative-1: oklch(0.68 0.22 340);
-    --color-qualitative-2: oklch(0.73 0.24 60);
-    --color-qualitative-3: oklch(0.64 0.21 280);
-    --color-qualitative-4: oklch(0.70 0.20 160);
-    --color-qualitative-5: oklch(0.75 0.22 110);
-    --color-qualitative-6: oklch(0.77 0.18 40);
-    --color-qualitative-7: oklch(0.66 0.23 10);
-    --color-qualitative-8: oklch(0.62 0.19 240);
-    --color-qualitative-9: oklch(0.67 0.21 180);
-    --color-qualitative-10: oklch(0.71 0.20 90);
-    --color-qualitative-11: oklch(0.64 0.22 310);
-    --color-qualitative-12: oklch(0.74 0.19 130);
+    --color-qualitative-1: hsl(316deg 79% 62%);
+    --color-qualitative-2: hsl(27deg 100% 50%);
+    --color-qualitative-3: hsl(242deg 100% 73%);
+    --color-qualitative-4: hsl(155deg 100% 38%);
+    --color-qualitative-5: hsl(59deg 100% 36%);
+    --color-qualitative-6: hsl(18deg 100% 66%);
+    --color-qualitative-7: hsl(343deg 98% 61%);
+    --color-qualitative-8: hsl(203deg 100% 46%);
+    --color-qualitative-9: hsl(169deg 100% 37%);
+    --color-qualitative-10: hsl(43deg 100% 41%);
+    --color-qualitative-11: hsl(277deg 81% 64%);
+    --color-qualitative-12: hsl(83deg 72% 44%);
   }
 `;
     case ResourceKind.Alert:

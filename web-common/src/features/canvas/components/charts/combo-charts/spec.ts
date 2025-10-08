@@ -14,6 +14,7 @@ import {
 } from "../builder";
 import type { ChartDataResult } from "../types";
 import type { ComboChartSpec } from "./ComboChart";
+import { resolveCSSVariable } from "../util";
 
 function getColorForField(
   encoding: "y1" | "y2",
@@ -127,7 +128,8 @@ export function generateVLComboChartSpec(
     ...(config.color?.legendOrientation !== "none" && { legend }),
     scale: {
       domain: colorMapping.map((m) => m.value),
-      range: colorMapping.map((m) => m.color),
+      // Resolve CSS variables for canvas rendering
+      range: colorMapping.map((m) => resolveCSSVariable(m.color)),
       type: "ordinal",
     },
   };
