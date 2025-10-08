@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// ClaimsProvider resolves claims from an underlying source.
+// ClaimsProvider resolves a runtime.SecurityClaims from an underlying source (which in practice is a JWT's claims).
 type ClaimsProvider interface {
 	Claims(instanceID string) *runtime.SecurityClaims
 }
@@ -31,9 +31,7 @@ func (c *jwtClaims) Claims(instanceID string) *runtime.SecurityClaims {
 	if attrs == nil {
 		attrs = make(map[string]any)
 	}
-	if c.RegisteredClaims.Subject != "" {
-		attrs["id"] = c.RegisteredClaims.Subject
-	}
+	attrs["id"] = c.RegisteredClaims.Subject
 
 	var permissions []runtime.Permission
 	permissions = append(permissions, c.System...)

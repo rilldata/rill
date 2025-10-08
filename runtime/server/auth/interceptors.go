@@ -117,12 +117,13 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 			return withClaimsProvider(ctx, wrappedClaims{
 				claims: &runtime.SecurityClaims{
 					UserAttributes: map[string]any{"admin": true},
+					Permissions:    runtime.AllPermissions,
 					SkipChecks:     true,
 				},
 			}), nil
 		}
 
-		// If auth header is set when auth is disabled, it must be a devJWT, which we parse without verifying the signature.
+		// If auth header is set when auth is disabled, it must be a devJWTClaims, which we parse without verifying the signature.
 		bearerToken := ""
 		if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[0:6], "bearer") {
 			bearerToken = strings.TrimSpace(authorizationHeader[6:])
@@ -169,10 +170,8 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 	}
 
 	// Set subject in span
-	if jwt, ok := claims.(*jwtClaims); ok && jwt.Subject != "" {
-		span := trace.SpanFromContext(ctx)
-		span.SetAttributes(semconv.EnduserID(jwt.Subject))
-	}
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(semconv.EnduserID(claims.Claims("").UserID))
 
 	ctx = withClaimsProvider(ctx, claims)
 	return ctx, nil
