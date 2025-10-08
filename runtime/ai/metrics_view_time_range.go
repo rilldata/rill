@@ -34,7 +34,7 @@ func (t *QueryMetricsViewTimeRange) Spec() *mcp.Tool {
 }
 
 func (t *QueryMetricsViewTimeRange) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return true
+	return claims.Can(runtime.ReadMetrics)
 }
 
 func (t *QueryMetricsViewTimeRange) Handler(ctx context.Context, args *QueryMetricsViewTimeRangeArgs) (*QueryMetricsViewTimeRangeResult, error) {

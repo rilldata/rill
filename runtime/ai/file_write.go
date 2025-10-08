@@ -34,7 +34,7 @@ func (t *WriteFile) Spec() *mcp.Tool {
 }
 
 func (t *WriteFile) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return t.Runtime.AllowHostAccess() // TODO: Do actual permission flag checks.
+	return claims.Can(runtime.EditRepo)
 }
 
 func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFileResult, error) {

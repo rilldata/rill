@@ -33,7 +33,7 @@ func (t *AnalystAgent) Spec() *mcp.Tool {
 }
 
 func (t *AnalystAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return true
+	return claims.Can(runtime.UseAI)
 }
 
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {

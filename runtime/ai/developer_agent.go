@@ -30,7 +30,7 @@ func (t *DeveloperAgent) Spec() *mcp.Tool {
 }
 
 func (t *DeveloperAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return t.Runtime.AllowHostAccess()
+	return claims.Can(runtime.EditRepo)
 }
 
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {

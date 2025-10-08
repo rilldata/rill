@@ -34,7 +34,7 @@ func (t *GetMetricsView) Spec() *mcp.Tool {
 }
 
 func (t *GetMetricsView) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return true
+	return claims.Can(runtime.ReadObjects)
 }
 
 func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) (*GetMetricsViewResult, error) {

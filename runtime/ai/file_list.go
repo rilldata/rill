@@ -29,7 +29,7 @@ func (t *ListFiles) Spec() *mcp.Tool {
 }
 
 func (t *ListFiles) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return t.Runtime.AllowHostAccess()
+	return claims.Can(runtime.ReadRepo)
 }
 
 func (t *ListFiles) Handler(ctx context.Context, args *ListFilesArgs) (*ListFilesResult, error) {

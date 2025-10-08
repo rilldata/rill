@@ -144,7 +144,7 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 }
 
 func (t *QueryMetricsView) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return true
+	return claims.Can(runtime.ReadMetrics)
 }
 
 func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArgs) (*QueryMetricsViewResult, error) {

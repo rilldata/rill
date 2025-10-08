@@ -34,7 +34,7 @@ func (t *DevelopModel) Spec() *mcp.Tool {
 }
 
 func (t *DevelopModel) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return t.Runtime.AllowHostAccess()
+	return claims.Can(runtime.EditRepo)
 }
 
 func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*DevelopModelResult, error) {

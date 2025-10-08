@@ -45,7 +45,7 @@ func (t *DevelopMetricsView) Spec() *mcp.Tool {
 }
 
 func (t *DevelopMetricsView) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return t.Runtime.AllowHostAccess()
+	return claims.Can(runtime.EditRepo)
 }
 
 func (t *DevelopMetricsView) Handler(ctx context.Context, args *DevelopMetricsViewArgs) (*DevelopMetricsViewResult, error) {

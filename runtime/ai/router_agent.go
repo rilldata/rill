@@ -38,7 +38,7 @@ func (t *RouterAgent) Spec() *mcp.Tool {
 }
 
 func (t *RouterAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return true
+	return claims.Can(runtime.UseAI)
 }
 
 func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*RouterAgentResult, error) {
