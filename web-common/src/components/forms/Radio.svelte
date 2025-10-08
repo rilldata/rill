@@ -20,7 +20,7 @@
 <div class="flex flex-col gap-4">
   {#each options as option (option.value)}
     <label
-      class="flex flex-col gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer transition-all hover:border-gray-300 hover:bg-gray-50 {disabled
+      class="flex flex-col gap-3 cursor-pointer transition-all {disabled
         ? 'cursor-not-allowed opacity-50'
         : ''}"
       class:disabled
