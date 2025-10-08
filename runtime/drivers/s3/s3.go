@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/mitchellh/mapstructure"
@@ -275,7 +276,7 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 func BucketRegion(ctx context.Context, confProp ConfigProperties, bucket string) (string, error) {
 	cfg, err := getAWSConfig(ctx, confProp)
 	if err != nil {
-		return "", fmt.Errorf("failed to load AWS config for bucket region detection: %w", err)
+		return "", fmt.Errorf("failed to load AWS config for bucket region detection (set `region` in s3 connector yaml): %w", err)
 	}
 	return bucketRegionFromConfig(ctx, cfg, confProp, bucket)
 }
@@ -293,21 +294,20 @@ func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp Config
 		return confProp.Region, nil
 	}
 
-	client := s3.NewFromConfig(cfg)
-
-	result, err := client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(bucket)})
-	if err != nil {
-		return "", fmt.Errorf("failed to get bucket location for bucket %s: %w", bucket, err)
+	// default region is required to even to detect bucket region
+	if cfg.Region == "" {
+		cfg.Region = "us-east-1"
 	}
-
-	if result.BucketRegion == nil || *result.BucketRegion == "" {
+	// Use the manager utility to detect the correct bucket region.
+	region, err := manager.GetBucketRegion(ctx, s3.NewFromConfig(cfg), bucket)
+	if err != nil {
 		return "", fmt.Errorf(
-			"bucket region is not returned for bucket %s; please define the region explicitly in your configuration",
-			bucket,
+			"failed to detect bucket region for %s (set `region` in s3 connector yaml): %w",
+			bucket, err,
 		)
 	}
 
-	return *result.BucketRegion, nil
+	return region, nil
 }
 
 func getAnonymousS3Client(confProp ConfigProperties) *s3.Client {
