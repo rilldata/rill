@@ -31,7 +31,7 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	// Must have edit permissions on the repo
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 

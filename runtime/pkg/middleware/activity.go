@@ -21,7 +21,7 @@ func ActivityStreamServerInterceptor(activityClient *activity.Client) grpc.Strea
 		handler grpc.StreamHandler,
 	) error {
 		ctx := ss.Context()
-		subject := auth.GetClaims(ctx).Subject()
+		subject := auth.GetClaims(ctx, "").UserID
 
 		// Only set the user ID attribute if it is not empty. This prevents overwriting a user ID attribute set upstream.
 		// (For example, in the CLI on local, the user ID is set at start time, and individual requests on localhost are unauthenticated.)
@@ -59,7 +59,7 @@ func ActivityUnaryServerInterceptor(activityClient *activity.Client) grpc.UnaryS
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		subject := auth.GetClaims(ctx).Subject()
+		subject := auth.GetClaims(ctx, "").UserID
 
 		// Only set the user ID attribute if it is not empty. This prevents overwriting a user ID attribute set upstream.
 		// (For example, in the CLI on local, the user ID is set at start time, and individual requests on localhost are unauthenticated.)

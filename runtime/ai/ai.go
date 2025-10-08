@@ -49,7 +49,7 @@ func NewRunner(rt *runtime.Runtime) *Runner {
 }
 
 // Session creates or loads an AI session.
-func (r *Runner) Session(ctx context.Context, instanceID, sessionID, userID string, claims *runtime.SecurityClaims) (*Session, error) {
+func (r *Runner) Session(ctx context.Context, instanceID, sessionID string, claims *runtime.SecurityClaims) (*Session, error) {
 	// TODO: Load from database or create in database.
 	if sessionID == "" {
 		sessionID = uuid.NewString()
@@ -69,7 +69,7 @@ func (r *Runner) Session(ctx context.Context, instanceID, sessionID, userID stri
 		id:         sessionID,
 		instanceID: instanceID,
 		title:      "", // TODO: Load from database
-		userID:     userID,
+		userID:     claims.UserID,
 		claims:     claims,
 
 		runner:              r,
