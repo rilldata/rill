@@ -257,3 +257,16 @@ func (a *Audience) ParseAndValidate(tokenStr string) (ClaimsProvider, error) {
 
 	return claims, nil
 }
+
+// NewDevToken creates a new development token with the given user attributes.
+func NewDevToken(attr map[string]any) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodNone, &devJWTClaims{
+		Attrs: attr,
+	})
+	res, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		return "", err
+	}
+
+	return res, nil
+}

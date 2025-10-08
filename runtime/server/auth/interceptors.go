@@ -22,6 +22,7 @@ import (
 type claimsContextKey struct{}
 
 // GetClaims retrieves Claims from a request context.
+// The instanceID is optional, but if provided, the permissions in the result will be scoped to that instance.
 // It should only be used in handlers intercepted by UnaryServerInterceptor or StreamServerInterceptor.
 func GetClaims(ctx context.Context, instanceID string) *runtime.SecurityClaims {
 	cp, ok := ctx.Value(claimsContextKey{}).(ClaimsProvider)
@@ -36,8 +37,12 @@ func GetClaims(ctx context.Context, instanceID string) *runtime.SecurityClaims {
 // It mimics the result of parsing a JWT using a middleware. It should only be used in tests.
 // NOTE: We should remove this when the server tests support interceptors.
 func WithClaims(ctx context.Context, claims *runtime.SecurityClaims) context.Context {
-	var val ClaimsProvider = wrappedClaims{claims: claims}
-	return context.WithValue(ctx, claimsContextKey{}, val)
+	return withClaimsProvider(ctx, wrappedClaims{claims: claims})
+}
+
+// withClaimsProvider adds a ClaimsProvider to the context, for later retrieval with GetClaims.
+func withClaimsProvider(ctx context.Context, cp ClaimsProvider) context.Context {
+	return context.WithValue(ctx, claimsContextKey{}, cp)
 }
 
 // UnaryServerInterceptor is a middleware for setting claims on runtime server requests.
@@ -109,7 +114,7 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 	if aud == nil {
 		// If there's no authorization header, we set open claims since auth is disabled.
 		if authorizationHeader == "" {
-			return context.WithValue(ctx, claimsContextKey{}, wrappedClaims{
+			return withClaimsProvider(ctx, wrappedClaims{
 				claims: &runtime.SecurityClaims{
 					UserAttributes: map[string]any{"admin": true},
 					SkipChecks:     true,
@@ -125,17 +130,17 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 		if bearerToken == "" {
 			return nil, errors.New("no bearer token found in authorization header")
 		}
-		claims := &devJWT{}
+		claims := &devJWTClaims{}
 		_, _, err := jwt.NewParser().ParseUnverified(bearerToken, claims)
 		if err != nil {
 			return nil, err
 		}
-		return context.WithValue(ctx, claimsContextKey{}, claims), nil
+		return withClaimsProvider(ctx, claims), nil
 	}
 
 	// If authorization header is not set, it's an anonymous user so we set empty claims with no permissions.
 	if authorizationHeader == "" {
-		ctx = context.WithValue(ctx, claimsContextKey{}, wrappedClaims{
+		ctx = withClaimsProvider(ctx, wrappedClaims{
 			claims: &runtime.SecurityClaims{
 				UserAttributes: map[string]any{},
 			},
@@ -169,6 +174,6 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 		span.SetAttributes(semconv.EnduserID(jwt.Subject))
 	}
 
-	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
+	ctx = withClaimsProvider(ctx, claims)
 	return ctx, nil
 }

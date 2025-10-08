@@ -28,7 +28,6 @@ type Permission int
 
 const (
 	// System-level permissions
-	AllPermissions  Permission = 0x1C
 	ManageInstances Permission = 0x01
 
 	// Instance-level permissions
@@ -46,8 +45,25 @@ const (
 	UseAI         Permission = 0x1B
 )
 
+// AllPermissions is a list of all valid Permission values.
+var AllPermissions = []Permission{
+	ManageInstances,
+	ReadInstance,
+	EditInstance,
+	EditTrigger,
+	ReadRepo,
+	EditRepo,
+	ReadObjects,
+	ReadOLAP,
+	ReadMetrics,
+	ReadProfiling,
+	ReadAPI,
+	ReadResolvers,
+	UseAI,
+}
+
 // SecurityClaims represents contextual information for the enforcement of security rules.
-// Note that it does not consider instance IDs. For instance-level permissions, it assumes instance ID checks are done by the code that creates the SecurityClaims.
+// Note that it does not consider instance IDs, which must be handled/checked by the code that creates the SecurityClaims.
 type SecurityClaims struct {
 	// UserID is the ID of the end user (or service account).
 	UserID string
@@ -76,15 +92,7 @@ func (c *SecurityClaims) Can(p Permission) bool {
 	if c.SkipChecks {
 		return true
 	}
-	for _, p2 := range c.Permissions {
-		if p2 == p {
-			return true
-		}
-		if p2 == AllPermissions {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(c.Permissions, p)
 }
 
 // MarshalJSON serializes the SecurityClaims to JSON.
@@ -117,7 +125,9 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	c.UserID = tmp.UserID
 	c.UserAttributes = tmp.UserAttributes
+	c.Permissions = tmp.Permissions
 	c.AdditionalRules = make([]*runtimev1.SecurityRule, len(tmp.AdditionalRules))
 	for i, data := range tmp.AdditionalRules {
 		rule := &runtimev1.SecurityRule{}

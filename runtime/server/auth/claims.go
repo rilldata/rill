@@ -71,31 +71,19 @@ func (c *jwtClaims) Claims(instanceID string) *runtime.SecurityClaims {
 	}
 }
 
-// devJWT implements ClaimsProvider and allows all actions but have user attributes for access policies.
+// devJWTClaims implements ClaimsProvider and allows all actions but have user attributes for access policies.
 // It is used for mimicking user attributes on local when auth is disabled.
-type devJWT struct {
+type devJWTClaims struct {
 	jwt.RegisteredClaims
 	Attrs map[string]any `json:"attr,omitempty"`
 }
 
-func NewDevToken(attr map[string]any) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodNone, &devJWT{
-		Attrs: attr,
-	})
-	res, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
-	if err != nil {
-		return "", err
-	}
+var _ ClaimsProvider = (*devJWTClaims)(nil)
 
-	return res, nil
-}
-
-var _ ClaimsProvider = (*devJWT)(nil)
-
-func (c *devJWT) Claims(instanceID string) *runtime.SecurityClaims {
+func (c *devJWTClaims) Claims(instanceID string) *runtime.SecurityClaims {
 	return &runtime.SecurityClaims{
 		UserAttributes: c.Attrs,
-		Permissions:    []runtime.Permission{runtime.AllPermissions},
+		Permissions:    runtime.AllPermissions,
 	}
 }
 
@@ -104,7 +92,7 @@ type wrappedClaims struct {
 	claims *runtime.SecurityClaims
 }
 
-var _ ClaimsProvider = (*wrappedClaims)(nil)
+var _ ClaimsProvider = wrappedClaims{}
 
 func (c wrappedClaims) Claims(instanceID string) *runtime.SecurityClaims {
 	return c.claims
