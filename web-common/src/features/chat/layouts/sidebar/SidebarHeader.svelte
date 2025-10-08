@@ -4,7 +4,7 @@
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import { type V1Conversation } from "../../../../runtime-client";
   import type { ConversationManager } from "../../core/conversation-manager";
-  import ChatConversationDropdown from "./ChatConversationDropdown.svelte";
+  import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
 
   export let conversationManager: ConversationManager;
   export let onNewConversation: () => void;
@@ -38,7 +38,7 @@
       <PlusIcon className="text-gray-500" />
     </IconButton>
 
-    <ChatConversationDropdown
+    <ConversationHistoryMenu
       {conversations}
       currentConversationId={currentConversationDto?.id}
       onSelect={handleSelectConversation}

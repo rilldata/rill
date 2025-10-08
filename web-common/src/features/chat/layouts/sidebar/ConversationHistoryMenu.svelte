@@ -2,7 +2,7 @@
   import { HistoryIcon } from "lucide-svelte";
   import * as DropdownMenu from "../../../../components/dropdown-menu";
   import type { V1Conversation } from "../../../../runtime-client";
-  import ChatConversationItem from "./ChatConversationItem.svelte";
+  import ConversationHistoryItem from "./ConversationHistoryItem.svelte";
   import { GROUP_ORDER, groupConversationsByDate } from "./date-utils";
 
   export let conversations: V1Conversation[] = [];
@@ -50,7 +50,7 @@
               {groupKey}
             </DropdownMenu.Label>
             {#each groupedConversations[groupKey] as conv}
-              <ChatConversationItem
+              <ConversationHistoryItem
                 conversation={conv}
                 isCurrentChat={conv.id === currentConversationIdSnapshot}
                 showRelativeTime={groupKey === "Today"}

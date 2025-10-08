@@ -9,7 +9,7 @@
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import ChatMessages from "../../core/messages/ChatMessages.svelte";
-  import ChatHeader from "./ChatHeader.svelte";
+  import SidebarHeader from "./SidebarHeader.svelte";
   import {
     SIDEBAR_DEFAULTS,
     sidebarActions,
@@ -56,7 +56,7 @@
   />
   <div class="chat-sidebar-content">
     <div class="chatbot-header-container">
-      <ChatHeader
+      <SidebarHeader
         {conversationManager}
         {onNewConversation}
         onClose={sidebarActions.closeChat}
