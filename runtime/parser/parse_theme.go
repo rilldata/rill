@@ -1,12 +1,17 @@
 package parser
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 
 	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/css"
 )
 
 // ThemeYAML is the raw structure of a Theme for the UI in YAML (does not include common fields)
@@ -73,10 +78,15 @@ func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 	}
 
 	if hasCSS {
-		if err := validateCSS(*tmp.CSS); err != nil {
+		if strings.TrimSpace(*tmp.CSS) == "" {
+			return nil, fmt.Errorf("CSS cannot be empty")
+		}
+
+		sanitizedCSS, err := sanitizeCSS(*tmp.CSS)
+		if err != nil {
 			return nil, fmt.Errorf("invalid CSS syntax: %w", err)
 		}
-		spec.Css = *tmp.CSS
+		spec.Css = sanitizedCSS
 	}
 
 	return spec, nil
@@ -91,70 +101,91 @@ func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
 	}
 }
 
-// validateCSS performs basic CSS syntax validation
-func validateCSS(css string) error {
-	if strings.TrimSpace(css) == "" {
-		return fmt.Errorf("CSS cannot be empty")
-	}
+// Dangerous patterns to filter out that could lead to an XSS attack
+var dangerousPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)javascript:`),
+	regexp.MustCompile(`(?i)expression\s*\(`),
+	regexp.MustCompile(`(?i)@import`),
+	regexp.MustCompile(`(?i)document\.`),
+	regexp.MustCompile(`(?i)eval\s*\(`),
+	regexp.MustCompile(`(?i)vbscript:`),
+	regexp.MustCompile(`(?i)data:\s*text/html`),
+}
 
-	// Basic validation: check for balanced braces and semicolons
-	// This is a simple validation - can be enhanced with a proper CSS parser later
-	braceCount := 0
-	parenCount := 0
-	bracketCount := 0
+// Allowed URL schemes
+var allowedSchemes = regexp.MustCompile(`^(https?|data:image|#)`)
 
-	// Remove comments for validation
-	css = removeCSSComments(css)
+func sanitizeCSS(c string) (string, error) {
+	p := css.NewParser(parse.NewInput(bytes.NewBufferString(c)), false)
+	out := ""
 
-	for i, char := range css {
-		switch char {
-		case '{':
-			braceCount++
-		case '}':
-			braceCount--
-			if braceCount < 0 {
-				return fmt.Errorf("unexpected closing brace '}' at position %d", i)
+	for {
+		gt, _, data := p.Next()
+		dataStr := string(data)
+
+		if gt == css.ErrorGrammar {
+			break
+		}
+
+		out += dataStr
+
+		switch gt {
+		case css.CommentGrammar:
+			// ignore comments
+		case css.AtRuleGrammar, css.BeginAtRuleGrammar, css.QualifiedRuleGrammar, css.BeginRulesetGrammar, css.DeclarationGrammar, css.CustomPropertyGrammar:
+			// Check if there is an import. We would need to check the files for xss, so we need to block it for now.
+			if (gt == css.AtRuleGrammar || gt == css.BeginAtRuleGrammar) && strings.HasPrefix(strings.ToLower(strings.TrimSpace(dataStr)), "@import") {
+				return "", fmt.Errorf("imports not allowed: %q", dataStr)
 			}
-		case '(':
-			parenCount++
-		case ')':
-			parenCount--
-			if parenCount < 0 {
-				return fmt.Errorf("unexpected closing parenthesis ')' at position %d", i)
+
+			if gt == css.DeclarationGrammar || gt == css.CustomPropertyGrammar {
+				out += ":"
 			}
-		case '[':
-			bracketCount++
-		case ']':
-			bracketCount--
-			if bracketCount < 0 {
-				return fmt.Errorf("unexpected closing bracket ']' at position %d", i)
+
+			for _, val := range p.Values() {
+				valData := string(val.Data)
+
+				// Check for dangerous patterns in values
+				for _, pattern := range dangerousPatterns {
+					if pattern.MatchString(valData) {
+						return "", fmt.Errorf("disallowed css value: %q", valData)
+					}
+				}
+
+				// Special handling for URL values
+				if (val.TokenType == css.URLToken || val.TokenType == css.FunctionToken) && strings.HasPrefix(strings.ToLower(valData), "url(") {
+					// Extract URL and validate
+					url := strings.TrimPrefix(strings.TrimSuffix(strings.TrimSpace(valData), ")"), "url(")
+					// Remove quotes if present
+					url = strings.Trim(url, `"'`)
+					if url != "" && allowedSchemes.MatchString(url) {
+						return "", fmt.Errorf("invalid URL: %q", url)
+					}
+				}
+
+				out += valData
 			}
+
+			switch gt {
+			case css.BeginAtRuleGrammar, css.BeginRulesetGrammar:
+				out += "{"
+			case css.AtRuleGrammar, css.DeclarationGrammar, css.CustomPropertyGrammar:
+				out += ";"
+			case css.QualifiedRuleGrammar:
+				out += ","
+			default:
+			}
+		case css.EndAtRuleGrammar, css.EndRulesetGrammar:
+			if strings.TrimSpace(dataStr) != "}" {
+				return "", fmt.Errorf("unbalanced braces")
+			}
+		default:
 		}
 	}
 
-	if braceCount != 0 {
-		return fmt.Errorf("unbalanced braces: %d unclosed brace(s)", braceCount)
-	}
-	if parenCount != 0 {
-		return fmt.Errorf("unbalanced parentheses: %d unclosed parenthesis(es)", parenCount)
-	}
-	if bracketCount != 0 {
-		return fmt.Errorf("unbalanced brackets: %d unclosed bracket(s)", bracketCount)
+	if p.Err() != nil && !errors.Is(p.Err(), io.EOF) {
+		return "", p.Err()
 	}
 
-	// Check for basic CSS structure (selector { property: value; })
-	// This regex looks for at least one CSS rule
-	cssRuleRegex := regexp.MustCompile(`[^{}]*\{[^{}]*:[^{}]*[;}]`)
-	if !cssRuleRegex.MatchString(css) {
-		return fmt.Errorf("CSS must contain at least one valid rule (selector { property: value; })")
-	}
-
-	return nil
-}
-
-// removeCSSComments removes CSS comments from the string
-func removeCSSComments(css string) string {
-	// Remove /* */ comments
-	commentRegex := regexp.MustCompile(`/\*.*?\*/`)
-	return commentRegex.ReplaceAllString(css, "")
+	return out, nil
 }

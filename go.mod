@@ -94,6 +94,7 @@ require (
 	github.com/startreedata/pinot-client-go v0.8.0
 	github.com/stretchr/testify v1.10.0
 	github.com/stripe/stripe-go/v79 v79.6.0
+	github.com/tdewolff/parse/v2 v2.8.3
 	github.com/testcontainers/testcontainers-go v0.35.0
 	github.com/testcontainers/testcontainers-go/modules/azurite v0.35.0
 	github.com/testcontainers/testcontainers-go/modules/clickhouse v0.33.0
