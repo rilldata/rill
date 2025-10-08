@@ -20,7 +20,7 @@
 <div class="flex flex-col gap-4">
   {#each options as option (option.value)}
     <label
-      class="flex flex-col gap-3 cursor-pointer transition-all {disabled
+      class="flex flex-col cursor-pointer transition-all {disabled
         ? 'cursor-not-allowed opacity-50'
         : ''}"
       class:disabled
@@ -49,7 +49,7 @@
       </div>
 
       <!-- Custom content slot for nested content -->
-      {#if option.hasCustomContent && value === option.value}
+      {#if value === option.value}
         <div class="ml-7">
           <slot name="custom-content" {option} />
         </div>

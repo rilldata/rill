@@ -649,14 +649,20 @@
             <div class="text-sm font-medium mb-4">Authentication method</div>
             <Radio
               bind:value={bigqueryAuthMethod}
-              options={BIGQUERY_AUTH_OPTIONS.map((option) => ({
-                ...option,
-                hasCustomContent: option.value === "inferred",
-              }))}
+              options={BIGQUERY_AUTH_OPTIONS}
               name="bigquery-auth-method"
             >
               <svelte:fragment slot="custom-content" let:option>
-                {#if option.value === "inferred"}
+                {#if option.value === "credentials"}
+                  <CredentialsInput
+                    id="google_application_credentials"
+                    hint="Upload a JSON key file for a service account with BigQuery access."
+                    optional={false}
+                    bind:value={$paramsForm.google_application_credentials}
+                    uploadFile={handleFileUpload}
+                    accept=".json"
+                  />
+                {:else if option.value === "inferred"}
                   <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
                     <div class="text-sm text-gray-600 mb-2">
                       Run code below to setup first
@@ -722,38 +728,6 @@
                     description={property.description}
                     hint={property.hint}
                     href={property.docsUrl}
-                  />
-                {/if}
-              </div>
-            {/if}
-          {/each}
-
-          <!-- Render credentials input -->
-          {#each filteredParamsProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            {#if propertyKey === "google_application_credentials"}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                {#if bigqueryAuthMethod === "credentials"}
-                  <CredentialsInput
-                    id={propertyKey}
-                    label={property.displayName}
-                    hint={property.hint}
-                    optional={!property.required}
-                    bind:value={$paramsForm[propertyKey]}
-                    uploadFile={handleFileUpload}
-                    accept=".json"
-                  />
-                {:else}
-                  <!-- Show hidden credentials input to maintain form state -->
-                  <CredentialsInput
-                    id={propertyKey}
-                    label={property.displayName}
-                    hint={property.hint}
-                    optional={!property.required}
-                    bind:value={$paramsForm[propertyKey]}
-                    uploadFile={handleFileUpload}
-                    accept=".json"
-                    hidden={true}
                   />
                 {/if}
               </div>
