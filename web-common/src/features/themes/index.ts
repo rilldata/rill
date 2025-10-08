@@ -1,13 +1,3 @@
-/**
- * Theme system exports with data visualization palettes
- * 
- * This module provides:
- * - Theme color management (primary, secondary)
- * - Three data visualization palette types (sequential, diverging, qualitative)
- * - Reactive stores for accessing current theme colors
- * - Utility functions for color manipulation
- */
-
 // Theme color actions
 export {
   updateThemeVariables,
