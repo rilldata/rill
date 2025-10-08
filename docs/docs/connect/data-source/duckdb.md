@@ -22,7 +22,7 @@ There are several limitations with deployment to Rill Cloud, so we do not recomm
 
 ## Attaching an External DuckDB
 
-In the default `connectors/duckdb.yaml` file, you can add `init_sql` statement to attach an external database to Rill's embedded DuckDB.  For more details on the YAML configuration, see the [DuckDB reference page](/reference/project-files/connectors#duckdb).
+In the default `connectors/duckdb.yaml` file, you can use the `init_sql` parameter to execute SQL statements during database initialization, such as attaching an external database to Rill's embedded DuckDB. For more details on the YAML configuration, see the [DuckDB reference page](/reference/project-files/connectors#duckdb).
 
 ```yaml
 # Connector YAML
@@ -38,16 +38,6 @@ init_sql:
   INSTALL httpfs;
   LOAD httpfs;
 ```
-
-## Using DuckDB Extensions
-
-DuckDB supports a wide variety of extensions that can enhance its functionality. To use extensions with Rill's embedded DuckDB, configure them in your connector's `init_sql` parameter.
-
-
-### Popular Extensions
-
-For a complete list of available extensions, see the [DuckDB Extensions documentation](https://duckdb.org/docs/extensions/overview).
-
 
 ## Importing Data to Your External DuckDB
 
