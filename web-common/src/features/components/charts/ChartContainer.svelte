@@ -41,6 +41,7 @@
     themeStore,
     timeAndFilterStore,
     getDomainValues: () => chartProvider.getChartDomainValues($measures),
+    isDarkMode: theme === "dark",
   });
 </script>
 
