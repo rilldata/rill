@@ -663,18 +663,25 @@
                     accept=".json"
                   />
                 {:else if option.value === "inferred"}
-                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                    <div class="text-sm text-gray-600 mb-2">
-                      Run code below to setup first
+                  <div class="rounded-lg">
+                    <div class="flex justify-between items-center mb-3">
+                      <div class="text-base text-gray-600 text-medium">
+                        Run code below to setup first
+                      </div>
+                      <a
+                        href="https://docs.rilldata.com/connect/data-source/bigquery#inferred-credentials"
+                        class="text-primary-500 text-xs hover:underline"
+                        target="_blank">Learn more</a
+                      >
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="relative">
                       <code
-                        class="bg-gray-100 px-2 py-1 rounded text-sm font-mono flex-1"
+                        class="bg-gray-100 px-3 py-2 pr-10 rounded text-sm font-mono border border-gray-200 text-gray-800 select-all block"
                         >gcloud auth application-default login</code
                       >
                       <button
                         type="button"
-                        class="p-1 rounded hover:bg-gray-200"
+                        class="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 rounded hover:bg-gray-200 transition-colors flex items-center justify-center"
                         on:click={copyGcloudCommand}
                       >
                         {#if gcloudCommandCopied}
@@ -683,13 +690,6 @@
                           <CopyIcon size="16px" />
                         {/if}
                       </button>
-                    </div>
-                    <div class="mt-2">
-                      <a
-                        href="https://docs.rilldata.com/connect/data-source/bigquery#inferred-credentials"
-                        class="text-blue-600 text-sm hover:underline"
-                        target="_blank">Learn more</a
-                      >
                     </div>
                   </div>
                 {/if}
