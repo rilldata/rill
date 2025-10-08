@@ -13,7 +13,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 
-const REFETCH_LIST_FILES_THROTTLE_MS = 200;
+const REFETCH_LIST_FILES_THROTTLE_MS = 100;
 
 export class WatchFilesClient {
   public readonly client: WatchRequestClient<V1WatchFilesResponse>;
@@ -78,6 +78,7 @@ export class WatchFilesClient {
           break;
       }
     }
+    // Throttle refetching the list of files. This avoids refetching when many files are added in quick succession.
     if (isNew || res.event === V1FileEvent.FILE_EVENT_DELETE) {
       this.refetchListFilesThrottle.throttle(() =>
         queryClient.refetchQueries({
