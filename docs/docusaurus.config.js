@@ -517,6 +517,14 @@ const config = {
             to: '/build/custom-apis'
           },
           {
+            from: '/integrate/custom-apis/metrics-sql-api',
+            to: '/build/custom-apis'
+          },
+          {
+            from: '/integrate/custom-apis/sql-api',
+            to: '/build/custom-apis'
+          },
+          {
             from: '/explore/filters/filters',
             to: '/explore/filters'
           },
