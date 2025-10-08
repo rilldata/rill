@@ -2,7 +2,9 @@
   import { page } from "$app/stores";
   import initEmbedPublicAPI from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
+  import { VegaLiteTooltipHandler } from "@rilldata/web-common/components/vega/vega-tooltip.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { onMount } from "svelte";
@@ -22,6 +24,10 @@
 
   const { dashboardChat } = featureFlags;
 
+  // Embedded dashboards communicate directly with the project runtime and do not communicate with the admin server.
+  // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
+  featureFlags.set(false, "adminServer");
+
   $: activeResource = {
     kind: $page.route.id?.includes("explore")
       ? ResourceKind.Explore
@@ -38,6 +44,7 @@
 
   onMount(() => {
     createIframeRPCHandler();
+    void waitUntil(() => VegaLiteTooltipHandler.resetElement(), 5000, 100);
 
     return initEmbedPublicAPI();
   });

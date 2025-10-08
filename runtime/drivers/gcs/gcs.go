@@ -67,9 +67,9 @@ type ConfigProperties struct {
 	Secret string `mapstructure:"secret"`
 }
 
-func NewConfigProperties(in map[string]any) (*ConfigProperties, error) {
+func NewConfigProperties(prop map[string]any) (*ConfigProperties, error) {
 	gcsConfig := &ConfigProperties{}
-	err := mapstructure.WeakDecode(in, gcsConfig)
+	err := mapstructure.WeakDecode(prop, gcsConfig)
 	if err != nil {
 		return nil, err
 	}

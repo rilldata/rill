@@ -1,4 +1,8 @@
-import type { BannerEvent, NotificationMessage } from "./events";
+import type {
+  BannerEvent,
+  PageContentResized,
+  NotificationMessage,
+} from "./events";
 
 class EventBus {
   private listeners: EventMap = new Map();
@@ -58,6 +62,7 @@ export interface Events {
   "command-click": null;
   click: null;
   "shift-command-click": null;
+  "page-content-resized": PageContentResized;
 }
 
 type T = keyof Events;
