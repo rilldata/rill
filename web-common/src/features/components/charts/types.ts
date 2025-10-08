@@ -77,6 +77,7 @@ export type ChartDataResult = {
   error?: HTTPError | null;
   theme: { primary: Color; secondary: Color };
   domainValues?: ChartDomainValues;
+  isDarkMode: boolean;
 };
 
 export interface ChartDomainValues {

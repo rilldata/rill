@@ -523,6 +523,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"darkMode":            false,
 				"chat":                true,
 				"dashboardChat":       false,
+				"deploy":              true,
 			},
 		},
 		{
@@ -543,6 +544,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"darkMode":            false,
 				"chat":                true,
 				"dashboardChat":       false,
+				"deploy":              true,
 			},
 		},
 		{
@@ -563,6 +565,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"darkMode":            false,
 				"chat":                true,
 				"dashboardChat":       false,
+				"deploy":              true,
 			},
 		},
 		{
@@ -583,6 +586,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"darkMode":            false,
 				"chat":                false,
 				"dashboardChat":       true,
+				"deploy":              true,
 			},
 		},
 	}

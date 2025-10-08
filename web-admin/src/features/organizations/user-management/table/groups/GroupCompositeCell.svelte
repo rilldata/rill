@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
-  import { cn } from "@rilldata/web-common/lib/shadcn";
+  import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config.ts";
+  import { cn } from "@rilldata/web-common/lib/shadcn.ts";
 
   export let name: string;
   export let usersCount: number;

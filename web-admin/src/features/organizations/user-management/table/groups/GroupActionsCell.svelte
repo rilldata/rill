@@ -1,10 +1,10 @@
 <script lang="ts">
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import IconButton from "web-common/src/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { Trash2Icon, Pencil } from "lucide-svelte";
-  import DeleteUserGroupConfirmDialog from "./DeleteUserGroupConfirmDialog.svelte";
-  import EditUserGroupDialog from "./EditUserGroupDialog.svelte";
+  import DeleteUserGroupConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/DeleteUserGroupConfirmDialog.svelte";
+  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
 
   export let groupName: string;

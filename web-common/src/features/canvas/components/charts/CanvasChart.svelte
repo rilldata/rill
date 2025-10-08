@@ -15,6 +15,7 @@
   export let component: BaseChart<CanvasChartSpec>;
 
   $: themePreference = $themeControl;
+  $: isDarkMode = themePreference === "dark";
 
   $: ({ instanceId } = $runtime);
 
@@ -51,6 +52,7 @@
     component,
     chartSpec,
     timeAndFilterStore,
+    isDarkMode,
   );
 
   $: ({ isFetching, error } = $chartData);
@@ -83,7 +85,7 @@
         {chartData}
         measures={$measures}
         isCanvas
-        theme={themePreference === "dark" ? "dark" : "light"}
+        theme={isDarkMode ? "dark" : "light"}
       />
     {/if}
   {:else}

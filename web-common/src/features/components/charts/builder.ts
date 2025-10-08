@@ -19,6 +19,10 @@ import {
   mergedVlConfig,
   resolveColor,
 } from "@rilldata/web-common/features/components/charts/util";
+import {
+  BarHighlightColorDark,
+  BarHighlightColorLight,
+} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
@@ -349,6 +353,7 @@ export function buildHoverRuleLayer(args: {
   primaryColor: Color;
   xBand?: number;
   isBarMark?: boolean;
+  isDarkMode?: boolean;
 }): UnitSpec<Field> {
   const {
     xField,
@@ -360,6 +365,7 @@ export function buildHoverRuleLayer(args: {
     primaryColor,
     xBand,
     isBarMark = false,
+    isDarkMode = false,
   } = args;
 
   return {
@@ -390,7 +396,11 @@ export function buildHoverRuleLayer(args: {
           {
             param: "hover",
             empty: false,
-            value: isBarMark ? "#eee" : primaryColor.brighten().css(),
+            value: isBarMark
+              ? isDarkMode
+                ? BarHighlightColorDark
+                : BarHighlightColorLight
+              : primaryColor.brighten().css(),
           },
         ],
         value: "transparent",
