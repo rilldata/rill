@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"regexp"
 	"strings"
 
 	"github.com/mazznoer/csscolorparser"
@@ -101,20 +100,7 @@ func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
 	}
 }
 
-// Dangerous patterns to filter out that could lead to an XSS attack
-var dangerousPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)javascript:`),
-	regexp.MustCompile(`(?i)expression\s*\(`),
-	regexp.MustCompile(`(?i)@import`),
-	regexp.MustCompile(`(?i)document\.`),
-	regexp.MustCompile(`(?i)eval\s*\(`),
-	regexp.MustCompile(`(?i)vbscript:`),
-	regexp.MustCompile(`(?i)data:\s*text/html`),
-}
-
-// Allowed URL schemes
-var allowedSchemes = regexp.MustCompile(`^(https?|data:image|#)`)
-
+// sanitizeCSS sanitizes and validates CSS input while reconstructing valid parts in a string format.
 func sanitizeCSS(c string) (string, error) {
 	p := css.NewParser(parse.NewInput(bytes.NewBufferString(c)), false)
 	out := ""
@@ -133,37 +119,12 @@ func sanitizeCSS(c string) (string, error) {
 		case css.CommentGrammar:
 			// ignore comments
 		case css.AtRuleGrammar, css.BeginAtRuleGrammar, css.QualifiedRuleGrammar, css.BeginRulesetGrammar, css.DeclarationGrammar, css.CustomPropertyGrammar:
-			// Check if there is an import. We would need to check the files for xss, so we need to block it for now.
-			if (gt == css.AtRuleGrammar || gt == css.BeginAtRuleGrammar) && strings.HasPrefix(strings.ToLower(strings.TrimSpace(dataStr)), "@import") {
-				return "", fmt.Errorf("imports not allowed: %q", dataStr)
-			}
-
 			if gt == css.DeclarationGrammar || gt == css.CustomPropertyGrammar {
 				out += ":"
 			}
 
 			for _, val := range p.Values() {
-				valData := string(val.Data)
-
-				// Check for dangerous patterns in values
-				for _, pattern := range dangerousPatterns {
-					if pattern.MatchString(valData) {
-						return "", fmt.Errorf("disallowed css value: %q", valData)
-					}
-				}
-
-				// Special handling for URL values
-				if (val.TokenType == css.URLToken || val.TokenType == css.FunctionToken) && strings.HasPrefix(strings.ToLower(valData), "url(") {
-					// Extract URL and validate
-					url := strings.TrimPrefix(strings.TrimSuffix(strings.TrimSpace(valData), ")"), "url(")
-					// Remove quotes if present
-					url = strings.Trim(url, `"'`)
-					if url != "" && allowedSchemes.MatchString(url) {
-						return "", fmt.Errorf("invalid URL: %q", url)
-					}
-				}
-
-				out += valData
+				out += string(val.Data)
 			}
 
 			switch gt {
