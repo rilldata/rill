@@ -31,7 +31,9 @@ func (t *ReadFile) Spec() *mcp.Tool {
 }
 
 func (t *ReadFile) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return claims.Can(runtime.ReadRepo)
+	// NOTE: Disabled pending further improvements
+	// return claims.Can(runtime.ReadRepo)
+	return false
 }
 
 func (t *ReadFile) Handler(ctx context.Context, args *ReadFileArgs) (*ReadFileResult, error) {

@@ -29,7 +29,9 @@ func (t *ListFiles) Spec() *mcp.Tool {
 }
 
 func (t *ListFiles) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return claims.Can(runtime.ReadRepo)
+	// NOTE: Disabled pending further improvements
+	// return claims.Can(runtime.ReadRepo)
+	return false
 }
 
 func (t *ListFiles) Handler(ctx context.Context, args *ListFilesArgs) (*ListFilesResult, error) {

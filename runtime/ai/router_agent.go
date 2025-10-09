@@ -62,7 +62,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	})
 
 	// Create a list of candidate agents that the user has access to.
-	candidates := []string{"developer_agent", "analyst_agent"}
+	candidates := []string{"analyst_agent"}
 	candidates = slices.DeleteFunc(candidates, func(agent string) bool {
 		tool, ok := session.runner.Tools[agent]
 		if !ok {

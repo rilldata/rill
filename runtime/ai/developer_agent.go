@@ -30,7 +30,9 @@ func (t *DeveloperAgent) Spec() *mcp.Tool {
 }
 
 func (t *DeveloperAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return claims.Can(runtime.EditRepo)
+	// NOTE: Disabled pending further improvements
+	// return claims.Can(runtime.EditRepo)
+	return false
 }
 
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
