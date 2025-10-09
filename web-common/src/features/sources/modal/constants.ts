@@ -22,7 +22,7 @@ export const SOURCES = [
   "athena",
   "azure",
   "bigquery",
-  "duckdb",
+
   "gcs",
   "postgres",
   "mysql",
@@ -36,6 +36,12 @@ export const SOURCES = [
   "local_file",
 ];
 
-export const OLAP_ENGINES = ["clickhouse", "motherduck", "druid", "pinot"];
+export const OLAP_ENGINES = [
+  "clickhouse",
+  "motherduck",
+  "duckdb",
+  "druid",
+  "pinot",
+];
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
