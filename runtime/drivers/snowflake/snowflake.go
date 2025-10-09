@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -112,6 +113,9 @@ type configProperties struct {
 	PrivateKey         string         `mapstructure:"privateKey"`
 	ParallelFetchLimit int            `mapstructure:"parallel_fetch_limit"`
 	Extras             map[string]any `mapstructure:",remain"`
+
+	// LogQueries controls whether to log the raw SQL passed to OLAP.
+	LogQueries bool `mapstructure:"log_queries"`
 }
 
 func (c *configProperties) validate() error {
@@ -216,6 +220,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		configProperties: conf,
 		storage:          st,
 		logger:           logger,
+		dbMu:             semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -235,6 +240,10 @@ type connection struct {
 	configProperties *configProperties
 	storage          *storage.Client
 	logger           *zap.Logger
+
+	db    *sqlx.DB // lazily populated using acquireDB
+	dbErr error
+	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
@@ -301,7 +310,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -345,6 +354,24 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+func (c *connection) acquireDB(ctx context.Context) (*sqlx.DB, error) {
+	err := c.dbMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	defer c.dbMu.Release(1)
+	if c.db != nil || c.dbErr != nil {
+		return c.db, c.dbErr
+	}
+	dsn, err := c.configProperties.resolveDSN()
+	if err != nil {
+		return nil, err
+	}
+
+	c.db, c.dbErr = sqlx.Open("snowflake", dsn)
+	return c.db, c.dbErr
 }
 
 // getDB opens a new sqlx.DB connection using the config.
