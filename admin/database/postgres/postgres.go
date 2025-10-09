@@ -1784,7 +1784,7 @@ func (c *connection) ResolveProjectRolesForService(ctx context.Context, serviceI
 	return roles, nil
 }
 
-func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*database.OrganizationMemberUser, error) {
+func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*database.OrganizationMemberUser, error) {
 	args := []any{orgID, afterEmail, limit}
 	var qry strings.Builder
 	qry.WriteString("SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name")
@@ -1815,6 +1815,16 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 		qry.WriteString(" AND uor.org_role_id=$4")
 		args = append(args, filterRoleID)
 	}
+	if searchPattern != "" {
+		searchPatternWithWildcards := "%" + searchPattern + "%"
+		if filterRoleID != "" {
+			qry.WriteString(" AND (lower(u.email) ILIKE $5 OR lower(u.display_name) ILIKE $5)")
+			args = append(args, searchPatternWithWildcards)
+		} else {
+			qry.WriteString(" AND (lower(u.email) ILIKE $4 OR lower(u.display_name) ILIKE $4)")
+			args = append(args, searchPatternWithWildcards)
+		}
+	}
 	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
 
 	var res []*database.OrganizationMemberUser
@@ -1825,14 +1835,25 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	return res, nil
 }
 
-func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error) {
+func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, searchPattern string) (int, error) {
 	var count int
-	query := "SELECT COUNT(*) FROM users_orgs_roles uor WHERE uor.org_id=$1"
+	query := "SELECT COUNT(*) FROM users_orgs_roles uor JOIN users u ON u.id = uor.user_id WHERE uor.org_id=$1"
 	args := []any{orgID}
 
 	if filterRoleID != "" {
 		query += " AND uor.org_role_id=$2"
 		args = append(args, filterRoleID)
+	}
+
+	if searchPattern != "" {
+		searchPatternWithWildcards := "%" + searchPattern + "%"
+		if filterRoleID != "" {
+			query += " AND (lower(u.email) ILIKE $3 OR lower(u.display_name) ILIKE $3)"
+			args = append(args, searchPatternWithWildcards)
+		} else {
+			query += " AND (lower(u.email) ILIKE $2 OR lower(u.display_name) ILIKE $2)"
+			args = append(args, searchPatternWithWildcards)
+		}
 	}
 
 	err := c.getDB(ctx).QueryRowxContext(ctx, query, args...).Scan(&count)
