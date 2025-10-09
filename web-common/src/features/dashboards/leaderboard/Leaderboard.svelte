@@ -4,6 +4,7 @@
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimension,
+    MetricsViewSpecMeasure,
     V1Expression,
     V1MetricsViewAggregationMeasure,
     V1TimeRange,
@@ -33,6 +34,7 @@
   import {
     cleanUpComparisonValue,
     compareLeaderboardValues,
+    getLeaderboardMaxValues,
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
@@ -50,7 +52,7 @@
   export let whereFilter: V1Expression;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let leaderboardSortByMeasureName: string;
-  export let leaderboardMeasureNames: string[];
+  export let leaderboardMeasures: MetricsViewSpecMeasure[];
   export let leaderboardShowContextForAllMeasures: boolean;
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -110,6 +112,10 @@
     displayName = "",
     uri,
   } = dimension);
+
+  $: leaderboardMeasureNames = leaderboardMeasures.map(
+    (measure) => measure.name!,
+  );
 
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
@@ -285,23 +291,11 @@
 
   // Calculate maximum values for relative magnitude bar sizing
   // This includes both above-the-fold and below-the-fold data for accurate scaling
-  $: maxValues = (() => {
-    const allData = [...aboveTheFold, ...belowTheFoldRows];
-    const maxVals: Record<string, number> = {};
-
-    for (const measureName of leaderboardMeasureNames) {
-      let maxVal = 0;
-      for (const item of allData) {
-        const value = item.values[measureName];
-        if (typeof value === "number" && isFinite(value)) {
-          maxVal = Math.max(maxVal, Math.abs(value));
-        }
-      }
-      maxVals[measureName] = maxVal;
-    }
-
-    return maxVals;
-  })();
+  $: maxValues = getLeaderboardMaxValues(
+    [...aboveTheFold, ...belowTheFoldRows],
+    leaderboardTotals,
+    leaderboardMeasures,
+  );
 
   function shouldShowContextColumns(measureName: string): boolean {
     return (

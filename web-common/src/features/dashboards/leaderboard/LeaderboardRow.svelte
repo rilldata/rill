@@ -101,8 +101,8 @@
       : "var(--color-theme-100)";
 
   // Calculate bar width excluding dimension column
-  $: barWidth = tableWidth - dimensionColumnWidth;
-  // Calculate bar lengths based on relative magnitude instead of percent of total
+  $: barWidth = leaderboardMeasureNames.length > 1 ? $valueColumn : tableWidth;
+  // Calculate bar lengths based on max value. For percent-of-total measure, this will be the total.
   $: barLengths = Object.fromEntries(
     Object.entries(values).map(([name, value]) => {
       const maxValue = maxValues[name];

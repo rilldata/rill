@@ -81,9 +81,9 @@
     )
     .filter((d) => d !== undefined);
 
-  $: visibleMeasures = $allMeasures.filter((m) =>
-    leaderboardMeasureNames.includes(m.name as string),
-  );
+  $: visibleMeasures = leaderboardMeasureNames
+    .map((lm) => $allMeasures.find((m) => m.name === lm))
+    .filter(Boolean);
 
   $: measureFormatters = Object.fromEntries(
     visibleMeasures.map((m) => [
@@ -160,7 +160,7 @@
                 {metricsViewName}
                 leaderboardSortByMeasureName={$leaderboardState.leaderboardSortByMeasureName ??
                   leaderboardMeasureNames?.[0]}
-                {leaderboardMeasureNames}
+                leaderboardMeasures={visibleMeasures}
                 leaderboardShowContextForAllMeasures={true}
                 {whereFilter}
                 {dimensionThresholdFilters}

@@ -7,6 +7,7 @@ import {
   V1MetricsViewComparisonMeasureType as ApiSortType,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewComparisonValue,
+  type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
 import { SortType } from "../proto-state/derived-types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -357,4 +358,31 @@ export function makeHref(
   } else {
     return uri;
   }
+}
+
+export function getLeaderboardMaxValues(
+  allData: LeaderboardItemData[],
+  leaderboardTotals: Record<string, number>,
+  leaderboardMeasures: MetricsViewSpecMeasure[],
+) {
+  return Object.fromEntries(
+    leaderboardMeasures.map((measure) => {
+      const measureName = measure.name!;
+      // For valid percent of total measures use the total directly as max width.
+      if (measure.validPercentOfTotal) {
+        return [measureName, leaderboardTotals[measureName]];
+      }
+
+      // Else use the max from the visible values
+      const numericValues = allData
+        .map((item) => {
+          const value = item.values[measureName];
+          return typeof value === "number" && isFinite(value)
+            ? Math.abs(value)
+            : null;
+        })
+        .filter(Boolean) as number[];
+      return [measureName, Math.max(...numericValues)];
+    }),
+  );
 }
