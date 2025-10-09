@@ -1816,14 +1816,8 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 		args = append(args, filterRoleID)
 	}
 	if searchPattern != "" {
-		searchPatternWithWildcards := "%" + searchPattern + "%"
-		if filterRoleID != "" {
-			qry.WriteString(" AND (lower(u.email) ILIKE $5 OR lower(u.display_name) ILIKE $5)")
-			args = append(args, searchPatternWithWildcards)
-		} else {
-			qry.WriteString(" AND (lower(u.email) ILIKE $4 OR lower(u.display_name) ILIKE $4)")
-			args = append(args, searchPatternWithWildcards)
-		}
+		qry.WriteString(fmt.Sprintf(" AND (lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", len(args)+1, len(args)+1))
+		args = append(args, "%"+searchPattern+"%")
 	}
 	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
 
@@ -1846,14 +1840,8 @@ func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, fi
 	}
 
 	if searchPattern != "" {
-		searchPatternWithWildcards := "%" + searchPattern + "%"
-		if filterRoleID != "" {
-			query += " AND (lower(u.email) ILIKE $3 OR lower(u.display_name) ILIKE $3)"
-			args = append(args, searchPatternWithWildcards)
-		} else {
-			query += " AND (lower(u.email) ILIKE $2 OR lower(u.display_name) ILIKE $2)"
-			args = append(args, searchPatternWithWildcards)
-		}
+		query += fmt.Sprintf(" AND (lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", len(args)+1, len(args)+1)
+		args = append(args, "%"+searchPattern+"%")
 	}
 
 	err := c.getDB(ctx).QueryRowxContext(ctx, query, args...).Scan(&count)
