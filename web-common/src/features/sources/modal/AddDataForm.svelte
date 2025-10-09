@@ -665,7 +665,7 @@
                 {:else if option.value === "inferred"}
                   <div class="rounded-lg">
                     <div class="flex justify-between items-center mb-3">
-                      <div class="text-base text-gray-600 text-medium">
+                      <div class="text-sm text-muted-foreground text-medium">
                         Run code below to setup first
                       </div>
                       <a
