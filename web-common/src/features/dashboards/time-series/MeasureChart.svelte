@@ -20,13 +20,15 @@
     ScaleStore,
     SimpleConfigurationStore,
   } from "@rilldata/web-common/components/data-graphic/state/types";
-  import { anomalyExplanation } from "@rilldata/web-common/features/chat/core/presets/anomaly-explanation.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+  import MeasureSelection from "@rilldata/web-common/features/dashboards/time-series/measure-selection/MeasureSelection.svelte";
   import MeasurePan from "@rilldata/web-common/features/dashboards/time-series/MeasurePan.svelte";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { roundDownToTimeUnit } from "@rilldata/web-common/features/dashboards/time-series/round-to-nearest-time-unit.ts";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -35,7 +37,6 @@
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
-  import { DateTime } from "luxon";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   import type { Readable } from "svelte/store";
@@ -84,7 +85,7 @@
   export let scrubStart;
   export let scrubEnd;
 
-  const { validSpecStore, dashboardStore } = getStateManagers();
+  const { validSpecStore } = getStateManagers();
 
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
@@ -245,27 +246,21 @@
     );
   }
 
-  function onMouseClick(e: PointerEvent) {
+  function onMouseClick(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
     // skip if still scrubbing
     if (preventScrubReset) return;
 
     if (
-      (e.ctrlKey || e.metaKey) &&
       hoveredTime &&
       measure.name &&
-      !!TIME_GRAIN[timeGrain]
+      TIME_GRAIN[timeGrain] &&
+      !hasSubrangeSelected
     ) {
-      anomalyExplanation({
-        metricsViewName,
-        measure: measure.name,
-        hoveredTime,
-        scrubStart,
-        scrubEnd,
-        timeGrain,
-        zone,
-        filters: $dashboardStore.whereFilter,
-      });
-      return;
+      const ts = roundDownToTimeUnit(hoveredTime, TIME_GRAIN[timeGrain].label);
+      measureSelection.setStart(measure.name, ts);
     }
 
     // skip if no scrub range selected
@@ -278,6 +273,9 @@
       (mouseoverValue?.x < start || mouseoverValue?.x > end)
     ) {
       resetScrub();
+      measureSelection.clear();
+    } else if (measure.name && scrubStart && scrubEnd) {
+      measureSelection.setRange(measure.name, scrubStart, scrubEnd);
     }
   }
 </script>
@@ -395,6 +393,7 @@
                   {showComparison}
                   {mouseoverFormat}
                   {numberKind}
+                  colorClass="stroke-slate-300"
                 />
               {/if}
             </g>
@@ -426,6 +425,20 @@
     {#if annotations && $annotations}
       <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
     {/if}
+
+    <MeasureSelection
+      {data}
+      measureName={measure.name ?? ""}
+      {xAccessor}
+      {yAccessor}
+      {internalXMin}
+      {internalXMax}
+      {labelAccessor}
+      {mouseoverFormat}
+      {numberKind}
+      {mouseoverTimeFormat}
+      {inBounds}
+    />
   </SimpleDataGraphic>
 
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->

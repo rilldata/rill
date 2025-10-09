@@ -23,6 +23,7 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import { getAnnotationsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/annotations-selectors.ts";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import {
     useTimeSeriesDataStore,
     type TimeSeriesDatum,
@@ -326,6 +327,8 @@
 
   let open = false;
 </script>
+
+<svelte:window on:click={() => measureSelection.clear()} />
 
 <TimeSeriesChartContainer
   enableFullWidth={showTimeDimensionDetail}

@@ -13,7 +13,7 @@ export enum ConversationContextType {
   MetricsView,
   TimeRange,
   Filters,
-  Measures,
+  Measure,
 }
 
 export type ConversationContextEntry = {
@@ -71,8 +71,8 @@ export const ContextTypeData: Record<
     icon: Filter,
     formatter: (filter) => readable(filter),
   },
-  [ConversationContextType.Measures]: {
-    prompt: "Measures",
+  [ConversationContextType.Measure]: {
+    prompt: "Measure",
     icon: LineChart,
     formatter: (measureName, contextRecord, instanceId) =>
       derived(
