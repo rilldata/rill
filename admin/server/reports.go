@@ -49,7 +49,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read report meta")
 	}
 
-	webOpenMode := WebOpenModeCreator // ignore runtime sent open mode and always use creator mode for the 0.73 patch until we can get UI toggle
+	// ignore runtime sent open mode and always use creator mode for the 0.73 patch until we can get UI toggle
+	// this is needed during rolling restarts of runtime where they have not synced the new spec from admin db
+	webOpenMode := WebOpenModeCreator
 	if !webOpenMode.Valid() {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid web open mode %q", req.WebOpenMode)
 	}
