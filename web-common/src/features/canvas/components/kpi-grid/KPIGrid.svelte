@@ -1,7 +1,7 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import type { KPIGridComponent } from ".";
   import ComponentHeader from "../../ComponentHeader.svelte";
-  import ComponentError from "../ComponentError.svelte";
   import { getMinWidth, type KPISpec } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
   import { validateKPIGridSchema } from "./selector";

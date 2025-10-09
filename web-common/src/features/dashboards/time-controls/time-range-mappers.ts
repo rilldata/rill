@@ -105,28 +105,36 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
     return undefined;
   }
 
+  let isoDuration = timeRange.isoDuration;
+  const name = selectedComparisonTimeRange.name;
+
   if (
     timeRange.expression &&
     TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset
   ) {
     const rt = parseRillTime(timeRange.expression);
-    return {
-      expression:
-        rt.toString() +
-        " offset " +
-        TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset,
-    };
+    if (!rt.isOldFormat) {
+      return {
+        expression:
+          rt.toString() +
+          " offset " +
+          TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset,
+      };
+    } else {
+      // Handle old syntax differently until we have the backend parser updated.
+      isoDuration = timeRange.expression;
+    }
   }
 
   const comparisonTimeRange: V1TimeRange = {};
-  switch (selectedComparisonTimeRange.name) {
+  switch (name) {
     default:
       comparisonTimeRange.isoOffset = selectedComparisonTimeRange.name;
-      comparisonTimeRange.isoDuration = timeRange.isoDuration;
+      comparisonTimeRange.isoDuration = isoDuration;
       break;
     case TimeComparisonOption.CONTIGUOUS:
       comparisonTimeRange.isoOffset = comparisonTimeRange.isoDuration =
-        timeRange.isoDuration;
+        isoDuration;
       break;
 
     case TimeComparisonOption.CUSTOM:

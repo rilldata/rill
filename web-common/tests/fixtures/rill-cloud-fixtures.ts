@@ -21,6 +21,7 @@ type MyFixtures = {
   anonPage: Page;
   cli: void;
   embedPage: Page;
+  embeddedInitialState: string | null;
   /**
    * Resource to embed. Should be from the openrtb project.
    * Defaults to "bids_explore"
@@ -30,6 +31,7 @@ type MyFixtures = {
 };
 
 export const rillCloud = base.extend<MyFixtures>({
+  embeddedInitialState: [null, { option: true }],
   embeddedResourceName: ["bids_explore", { option: true }],
   embeddedResourceType: ["rill.runtime.v1.Explore", { option: true }],
 
@@ -69,17 +71,26 @@ export const rillCloud = base.extend<MyFixtures>({
   },
 
   embedPage: [
-    async ({ browser, embeddedResourceName, embeddedResourceType }, use) => {
+    async (
+      {
+        browser,
+        embeddedResourceName,
+        embeddedResourceType,
+        embeddedInitialState,
+      },
+      use,
+    ) => {
       const readPath = path.join(process.cwd(), RILL_EMBED_SERVICE_TOKEN_FILE);
       const rillServiceToken = fs.readFileSync(readPath, "utf-8");
 
-      await generateEmbed(
-        RILL_ORG_NAME,
-        RILL_PROJECT_NAME,
-        embeddedResourceName,
-        embeddedResourceType,
-        rillServiceToken,
-      );
+      await generateEmbed({
+        organization: RILL_ORG_NAME,
+        project: RILL_PROJECT_NAME,
+        resourceName: embeddedResourceName,
+        resourceType: embeddedResourceType,
+        serviceToken: rillServiceToken,
+        initialState: embeddedInitialState,
+      });
       const filePath =
         "file://" + path.resolve(process.cwd(), RILL_EMBED_HTML_FILE);
 
