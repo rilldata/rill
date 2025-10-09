@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ConversationContext from "@rilldata/web-common/features/chat/core/context/ConversationContext.svelte";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
@@ -26,7 +27,6 @@
     const target = e.target as HTMLTextAreaElement;
     const value = target.value;
     draftMessageStore.set(value);
-    autoResize();
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -51,7 +51,6 @@
 
     // Let the parent component manage the input value
     await tick();
-    autoResize();
     textarea?.focus();
   }
 
@@ -81,10 +80,15 @@
 
   // Auto-resize when value changes
   $: if (textarea && value !== undefined) {
-    autoResize();
+    setTimeout(() => {
+      autoResize();
+    }, 5);
   }
 </script>
 
+{#if currentConversation}
+  <ConversationContext conversation={currentConversation} />
+{/if}
 <form class="chat-input-form" on:submit|preventDefault={sendMessage}>
   <textarea
     bind:this={textarea}
