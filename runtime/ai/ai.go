@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	goruntime "runtime"
 	"sync"
 	"time"
 
@@ -146,12 +147,10 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 		},
 		registerWithMCPServer: func(srv *mcp.Server) {
 			mcp.AddTool(srv, spec, func(ctx context.Context, req *mcp.CallToolRequest, args In) (*mcp.CallToolResult, Out, error) {
-				res, err := t.Handler(ctx, args)
-				if err != nil {
-					var emptyOut Out
-					return nil, emptyOut, err
-				}
-				return nil, res, nil
+				s := GetSession(ctx)
+				var res Out
+				_, err := s.CallTool(ctx, RoleAssistant, t.Spec().Name, &res, args)
+				return nil, res, err
 			})
 		},
 	}
@@ -635,14 +634,14 @@ func (s *Session) DefaultCompletionMessages() []*Message {
 	return res
 }
 
-// CallToolResult contains the messages created during a tool call.
-type CallToolResult struct {
+// CallResult contains the messages created during a tool call.
+type CallResult struct {
 	Call   *Message
 	Result *Message
 }
 
 // CallTool runs a tool call in the current session and adds it, its result, and all messages from nested calls to the session.
-func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out, args any) (*CallToolResult, error) {
+func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out, args any) (*CallResult, error) {
 	var argsJSON json.RawMessage
 	if args != nil {
 		var err error
@@ -665,14 +664,14 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 }
 
 // CallLambda runs a function call and adds it, its result, and all messages from nested calls to the session.
-func (s *Session) CallLambda(ctx context.Context, role Role, anonToolName string, out any, fn func(context.Context) (any, error)) (*CallToolResult, error) {
+func (s *Session) CallLambda(ctx context.Context, role Role, anonToolName string, out any, fn func(context.Context) (any, error)) (*CallResult, error) {
 	return s.call(ctx, role, anonToolName, out, nil, fn)
 }
 
 // call is the internal implementation for durable execution of tool/function calls.
 // TODO: Implement resume where if there's a matching tool call, return immediately.
 // TODO: Implement awaiting a human input, where it returns ErrAwaitInput.
-func (s *Session) call(ctx context.Context, role Role, name string, out, args any, handler func(context.Context) (any, error)) (*CallToolResult, error) {
+func (s *Session) call(ctx context.Context, role Role, name string, out, args any, handler func(context.Context) (any, error)) (*CallResult, error) {
 	var argsJSON json.RawMessage
 	if args != nil {
 		var err error
@@ -692,7 +691,22 @@ func (s *Session) call(ctx context.Context, role Role, name string, out, args an
 	callSession := s.WithParent(callMsg.ID)
 	callCtx := WithSession(ctx, callSession)
 
-	handlerOut, handlerErr := handler(callCtx)
+	handlerOut, handlerErr := func() (handlerOut any, handlerErr error) {
+		// Gracefully handle panics in the tool handler
+		defer func() {
+			// Recover panics and handle as internal errors
+			if err := recover(); err != nil {
+				// Get stacktrace
+				stack := make([]byte, 64<<10)
+				stack = stack[:goruntime.Stack(stack, false)]
+
+				// Return an internal error
+				handlerErr = NewInternalError(fmt.Errorf("panic caught: %v\n\n%s", err, string(stack)))
+			}
+		}()
+
+		return handler(callCtx)
+	}()
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -732,7 +746,7 @@ func (s *Session) call(ctx context.Context, role Role, name string, out, args an
 		}
 	}
 
-	res := &CallToolResult{
+	res := &CallResult{
 		Call:   callMsg,
 		Result: resultMsg,
 	}

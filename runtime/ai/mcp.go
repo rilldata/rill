@@ -53,6 +53,14 @@ func (s *Session) MCPServer() *mcp.Server {
 		},
 	})
 
+	// Inject the Session in every request
+	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (result mcp.Result, err error) {
+			ctx = WithSession(ctx, s)
+			return next(ctx, method, req)
+		}
+	})
+
 	for _, t := range s.runner.Tools {
 		if t.checkAccess != nil && !t.checkAccess(s.claims) {
 			continue
