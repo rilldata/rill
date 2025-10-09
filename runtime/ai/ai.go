@@ -198,15 +198,15 @@ const (
 	MessageTypeCall     MessageType = "call"
 	MessageTypeProgress MessageType = "progress"
 	MessageTypeResult   MessageType = "result"
-	MessageTypeError    MessageType = "error"
 )
 
 // MessageContentType is the type of content contained in a message.
 type MessageContentType string
 
 const (
-	MessageContentTypeText MessageContentType = "text"
-	MessageContentTypeJSON MessageContentType = "json"
+	MessageContentTypeText  MessageContentType = "text"
+	MessageContentTypeJSON  MessageContentType = "json"
+	MessageContentTypeError MessageContentType = "error"
 )
 
 // Message represents a message in an AI session.
@@ -287,13 +287,13 @@ func (m *Message) ToProto() (*aiv1.CompletionMessage, error) {
 				},
 			},
 		}
-	case MessageTypeResult, MessageTypeError:
+	case MessageTypeResult:
 		block = &aiv1.ContentBlock{
 			BlockType: &aiv1.ContentBlock_ToolResult{
 				ToolResult: &aiv1.ToolResult{
 					Id:      m.ParentID,
 					Content: m.Content,
-					IsError: m.Type == MessageTypeError,
+					IsError: m.ContentType == MessageContentTypeError,
 				},
 			},
 		}
@@ -590,7 +590,7 @@ func (s *Session) DefaultCompletionMessages() []*Message {
 			callID = msg.ID
 		} else if msg.Type == MessageTypePrompt && msg.Role == RoleUser {
 			previousRootCalls = append(previousRootCalls, msg)
-		} else if msg.ParentID == callID && (msg.Type == MessageTypeResult || msg.Type == MessageTypeError) {
+		} else if msg.ParentID == callID && msg.Type == MessageTypeResult {
 			previousRootCalls = append(previousRootCalls, msg)
 		}
 	}
@@ -621,7 +621,7 @@ func (s *Session) DefaultCompletionMessages() []*Message {
 		if msg.ParentID == currentCall && msg.Type == MessageTypeCall {
 			callID = msg.ID
 			currentCallMessages = append(currentCallMessages, msg)
-		} else if callID != "" && msg.ParentID == callID && (msg.Type == MessageTypeResult || msg.Type == MessageTypeError) {
+		} else if callID != "" && msg.ParentID == callID && msg.Type == MessageTypeResult {
 			currentCallMessages = append(currentCallMessages, msg)
 		}
 	}
@@ -720,24 +720,23 @@ func (s *Session) call(ctx context.Context, role Role, name string, out, args an
 		}
 	}
 
-	var resultMsg *Message
+	var resultContentType MessageContentType
+	var resultContent string
 	if handlerErr == nil {
-		resultMsg = callSession.AddMessage(&AddMessageOptions{
-			Role:        RoleTool,
-			Type:        MessageTypeResult,
-			Tool:        name,
-			ContentType: MessageContentTypeJSON,
-			Content:     string(outJSON),
-		})
+		resultContentType = MessageContentTypeJSON
+		resultContent = string(outJSON)
 	} else {
-		resultMsg = callSession.AddMessage(&AddMessageOptions{
-			Role:        RoleTool,
-			Type:        MessageTypeError,
-			Tool:        name,
-			ContentType: MessageContentTypeText,
-			Content:     handlerErr.Error(),
-		})
+		resultContentType = MessageContentTypeError
+		resultContent = handlerErr.Error()
 	}
+
+	resultMsg := callSession.AddMessage(&AddMessageOptions{
+		Role:        RoleTool,
+		Type:        MessageTypeResult,
+		Tool:        name,
+		ContentType: resultContentType,
+		Content:     resultContent,
+	})
 
 	if out != nil && outJSON != nil {
 		err := json.Unmarshal(outJSON, out)
