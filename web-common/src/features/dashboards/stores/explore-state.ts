@@ -8,7 +8,6 @@ import type {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { MeasureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
 import { type TDDState } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
   DashboardTimeControls,

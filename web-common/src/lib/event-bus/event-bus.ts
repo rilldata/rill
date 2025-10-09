@@ -1,6 +1,5 @@
 import type {
   BannerEvent,
-  ChatIntent,
   PageContentResized,
   NotificationMessage,
 } from "./events";
@@ -63,7 +62,6 @@ export interface Events {
   "command-click": null;
   click: null;
   "shift-command-click": null;
-  "chat-intent": ChatIntent;
   "page-content-resized": PageContentResized;
 }
 

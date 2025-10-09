@@ -20,8 +20,6 @@ export function getFullInitExploreState(
 
     lastDefinedScrubRange: undefined,
 
-    measureSelection: null,
-
     ...partialInitState,
   } as ExploreState;
 }

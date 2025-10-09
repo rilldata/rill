@@ -57,7 +57,6 @@
   } from "./utils";
 
   export let measure: MetricsViewSpecMeasure;
-  export let metricsViewName: string;
   export let exploreName: string;
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
@@ -433,10 +432,8 @@
       {yAccessor}
       {internalXMin}
       {internalXMax}
-      {labelAccessor}
       {mouseoverFormat}
       {numberKind}
-      {mouseoverTimeFormat}
       {inBounds}
     />
   </SimpleDataGraphic>

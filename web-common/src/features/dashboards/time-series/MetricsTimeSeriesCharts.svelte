@@ -83,7 +83,6 @@
     },
     validSpecStore,
     dashboardStore,
-    metricsViewName,
   } = getStateManagers();
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
@@ -541,7 +540,6 @@
               {isScrubbing}
               {scrubStart}
               {scrubEnd}
-              metricsViewName={$metricsViewName}
               {exploreName}
               data={formattedData}
               {dimensionData}

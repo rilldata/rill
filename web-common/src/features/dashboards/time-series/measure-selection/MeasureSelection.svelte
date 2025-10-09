@@ -9,6 +9,7 @@
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import MeasureValueMouseover from "@rilldata/web-common/features/dashboards/time-series/MeasureValueMouseover.svelte";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types.ts";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import WithBisector from "web-common/src/components/data-graphic/functional-components/WithBisector.svelte";
@@ -18,14 +19,13 @@
   export let measureName: string;
   export let xAccessor: string;
   export let yAccessor: string;
-  export let labelAccessor: string;
   export let internalXMin;
   export let internalXMax;
   export let mouseoverFormat;
   export let numberKind: NumberKind;
-  export let mouseoverTimeFormat: (d: unknown) => string;
   export let inBounds: (min, max, value) => boolean;
 
+  $: ({ instanceId } = $runtime);
   const { metricsViewName, dashboardStore } = getStateManagers();
 
   const plotConfig: Writable<SimpleDataGraphicConfiguration> = getContext(
@@ -33,7 +33,7 @@
   );
   const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
-  $: ({ top, bottom, plotLeft, plotTop, plotBottom, bodyBuffer } = $plotConfig);
+  $: ({ top, bottom, plotTop, plotBottom, bodyBuffer } = $plotConfig);
   $: y1 = plotTop + top + 5;
   $: y2 = plotBottom - bottom - 1;
 
@@ -47,6 +47,7 @@
     e.stopPropagation();
     e.preventDefault();
     anomalyExplanation(
+      instanceId,
       $metricsViewName,
       $dashboardStore.whereFilter,
       measureSelection.getContexts(),
