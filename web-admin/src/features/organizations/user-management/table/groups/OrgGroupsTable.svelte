@@ -15,7 +15,8 @@
   export let hasNextPage: boolean;
   export let isFetchingNextPage: boolean;
   export let onLoadMore: () => void;
-  export let ensureAllUsersLoaded: (() => Promise<void>) | undefined = undefined;
+  export let ensureAllUsersLoaded: (() => Promise<void>) | undefined =
+    undefined;
 
   function transformGroupName(groupName: string) {
     return groupName

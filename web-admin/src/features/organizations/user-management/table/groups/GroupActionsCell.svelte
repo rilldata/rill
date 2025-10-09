@@ -10,7 +10,8 @@
   export let groupName: string;
   export let currentUserEmail: string;
   export let searchUsersList: V1OrganizationMemberUser[];
-  export let ensureAllUsersLoaded: (() => Promise<void>) | undefined = undefined;
+  export let ensureAllUsersLoaded: (() => Promise<void>) | undefined =
+    undefined;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
