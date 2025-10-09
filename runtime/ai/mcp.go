@@ -22,36 +22,40 @@ In the workflow, do not proceed with the next step until the previous step has b
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 `
 
+// MCPServer returns a new MCP server scoped to the current session.
+// Since it is scoped to the session, a new MCP server should be created for each client connection.
+// Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
 func (s *Session) MCPServer() *mcp.Server {
-	impl := &mcp.Implementation{
-		Name:    "rill",
-		Title:   "Rill MCP Server",
-		Version: s.runner.Runtime.Version().String(),
-	}
-
-	srv := mcp.NewServer(impl, &mcp.ServerOptions{
-		Instructions: mcpInstructions,
-		InitializedHandler: func(ctx context.Context, r *mcp.InitializedRequest) {
-			// Save user agent in the session
-			clientInfo := r.Session.InitializeParams().ClientInfo
-			if clientInfo != nil && clientInfo.Name != "" {
-				userAgent := clientInfo.Name
-				if clientInfo.Version != "" {
-					userAgent += "/" + clientInfo.Version
-				}
-
-				err := s.UpdateUserAgent(ctx, userAgent)
-				if err != nil && !errors.Is(err, ctx.Err()) {
-					s.logger.Warn("failed to update user agent", zap.Error(err))
-				}
-			}
+	// Create the MCP server
+	srv := mcp.NewServer(
+		&mcp.Implementation{
+			Name:    "rill",
+			Title:   "Rill MCP Server",
+			Version: s.runner.Runtime.Version().String(),
 		},
-		KeepAlive: 30 * time.Second,
-		HasTools:  true,
-		GetSessionID: func() string {
-			return s.id
-		},
-	})
+		&mcp.ServerOptions{
+			Instructions: mcpInstructions,
+			InitializedHandler: func(ctx context.Context, r *mcp.InitializedRequest) {
+				// Save user agent in the session
+				clientInfo := r.Session.InitializeParams().ClientInfo
+				if clientInfo != nil && clientInfo.Name != "" {
+					userAgent := clientInfo.Name
+					if clientInfo.Version != "" {
+						userAgent += "/" + clientInfo.Version
+					}
+
+					err := s.UpdateUserAgent(ctx, userAgent)
+					if err != nil && !errors.Is(err, ctx.Err()) {
+						s.logger.Warn("failed to update user agent", zap.Error(err))
+					}
+				}
+			},
+			KeepAlive: 30 * time.Second,
+			HasTools:  true,
+			GetSessionID: func() string {
+				return s.id
+			},
+		})
 
 	// Inject the Session in every request
 	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
@@ -61,6 +65,7 @@ func (s *Session) MCPServer() *mcp.Server {
 		}
 	})
 
+	// Add only the tools that the user has access to
 	for _, t := range s.runner.Tools {
 		if t.checkAccess != nil && !t.checkAccess(s.claims) {
 			continue
