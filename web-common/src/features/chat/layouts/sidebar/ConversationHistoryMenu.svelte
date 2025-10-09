@@ -3,7 +3,10 @@
   import * as DropdownMenu from "../../../../components/dropdown-menu";
   import type { V1Conversation } from "../../../../runtime-client";
   import ConversationHistoryItem from "./ConversationHistoryItem.svelte";
-  import { GROUP_ORDER, groupConversationsByDate } from "./date-utils";
+  import {
+    GROUP_ORDER,
+    groupConversationsByDate,
+  } from "./conversation-grouping";
 
   export let conversations: V1Conversation[] = [];
   export let currentConversationId: string | undefined = undefined;
