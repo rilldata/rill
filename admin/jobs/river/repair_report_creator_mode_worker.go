@@ -131,4 +131,5 @@ const (
 	WebOpenModeRecipient WebOpenMode = "recipient"
 	WebOpenModeCreator   WebOpenMode = "creator"
 	WebOpenModeNone      WebOpenMode = "none"
+	WebOpenModeFiltered  WebOpenMode = "filtered"
 )
