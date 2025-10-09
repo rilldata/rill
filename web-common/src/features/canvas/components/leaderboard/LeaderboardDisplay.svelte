@@ -12,6 +12,7 @@
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import {
@@ -83,7 +84,7 @@
 
   $: visibleMeasures = leaderboardMeasureNames
     .map((lm) => $allMeasures.find((m) => m.name === lm))
-    .filter(Boolean);
+    .filter(Boolean) as MetricsViewSpecMeasure[];
 
   $: measureFormatters = Object.fromEntries(
     visibleMeasures.map((m) => [
