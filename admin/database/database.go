@@ -223,9 +223,10 @@ type DB interface {
 	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
-	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
+	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]any, ifNotExists bool) (bool, error)
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
+	UpdateOrganizationMemberUserAttributes(ctx context.Context, orgID, userID string, attributes map[string]any) (bool, error)
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*OrganizationMemberUser, error)
 	InsertOrganizationMemberService(ctx context.Context, serviceID, orgID, roleID string) error
@@ -947,13 +948,14 @@ type ProjectRole struct {
 type OrganizationMemberUser struct {
 	ID              string
 	Email           string
-	DisplayName     string    `db:"display_name"`
-	PhotoURL        string    `db:"photo_url"`
-	RoleName        string    `db:"role_name"`
-	ProjectsCount   int       `db:"projects_count"`
-	UsergroupsCount int       `db:"usergroups_count"`
-	CreatedOn       time.Time `db:"created_on"`
-	UpdatedOn       time.Time `db:"updated_on"`
+	DisplayName     string         `db:"display_name"`
+	PhotoURL        string         `db:"photo_url"`
+	RoleName        string         `db:"role_name"`
+	ProjectsCount   int            `db:"projects_count"`
+	UsergroupsCount int            `db:"usergroups_count"`
+	CreatedOn       time.Time      `db:"created_on"`
+	UpdatedOn       time.Time      `db:"updated_on"`
+	Attributes      map[string]any `db:"attributes"`
 }
 
 // ProjectMemberUser is a convenience type used for display-friendly representation of a project member

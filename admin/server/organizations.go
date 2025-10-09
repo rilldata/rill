@@ -486,7 +486,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	}
 
 	// Insert the user in the org and its managed usergroups transactionally.
-	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -767,7 +767,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 	}
 
 	for _, user := range newUsers {
-		err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+		err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 		if err != nil {
 			return nil, err
 		}
