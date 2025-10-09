@@ -1,53 +1,89 @@
-<script context="module" lang="ts">
+<script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
   import { DateTime, Interval } from "luxon";
-</script>
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
-<script lang="ts">
   export let interval: Interval<true> | undefined;
-  export let zone: string;
-  export let firstVisibleMonth: DateTime<true>;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
+  export let zone: string;
   export let applyRange: (range: Interval<true>) => void;
   export let closeMenu: () => void;
 
-  let selectingStart = true;
+  const { rillTime } = featureFlags;
 
-  $: calendarInterval =
-    interval?.set({
-      start: interval.start.startOf("day"),
-      end: interval.end.minus({ millisecond: 1 }).startOf("day"),
-    }) ?? Interval.invalid("Invalid interval");
+  const now = DateTime.now().setZone(zone);
+  const today: Interval<true> = Interval.fromDateTimes(
+    now.startOf("day"),
+    now.plus({ day: 1 }).startOf("day"),
+  ) as Interval<true>;
 
-  function onValidDateInput(date: DateTime) {
+  let inputInterval = interval || today;
+  let firstVisibleMonth = inputInterval.start;
+  let anchorDay: DateTime<true> | undefined = undefined;
+
+  $: usingRillTime = $rillTime;
+
+  $: startDate = inputInterval?.start;
+  $: endDate = inputInterval.end.minus({ millisecond: 1 });
+
+  function onValidDateInput(date: DateTime<true>, boundary?: "start" | "end") {
     let newInterval: Interval;
 
-    const selectedEndDateBeforeStart =
-      calendarInterval?.start && date < calendarInterval.start;
+    if (boundary) {
+      if (boundary === "start") {
+        newInterval = Interval.fromDateTimes(date, inputInterval.end);
+      } else {
+        newInterval = Interval.fromDateTimes(inputInterval.start, date);
+      }
 
-    if (selectingStart || selectedEndDateBeforeStart) {
-      newInterval = calendarInterval.set({ start: date });
-      selectingStart = false;
-    } else {
-      newInterval = calendarInterval.set({ end: date });
-      selectingStart = true;
+      if (newInterval.isValid) {
+        inputInterval = newInterval;
+      } else {
+        inputInterval = Interval.fromDateTimes(
+          date,
+          date.plus({ day: 1 }).startOf("day"),
+        ) as Interval<true>;
+      }
+      applyRange(inputInterval);
+      return;
     }
 
+    if (!anchorDay) {
+      anchorDay = date;
+      inputInterval = Interval.fromDateTimes(
+        anchorDay,
+        anchorDay.plus({ day: 1 }).startOf("day"),
+      ) as Interval<true>;
+      applyRange(inputInterval);
+      return;
+    }
+
+    if (date > anchorDay) {
+      newInterval = Interval.fromDateTimes(
+        anchorDay,
+        date.plus({ day: 1 }).startOf("day"),
+      ) as Interval<true>;
+    } else {
+      newInterval = Interval.fromDateTimes(
+        date.startOf("day"),
+        anchorDay.plus({ day: 1 }).startOf("day"),
+      ) as Interval<true>;
+    }
+    anchorDay = undefined;
+
     if (newInterval.isValid) {
-      calendarInterval = newInterval;
+      inputInterval = newInterval;
     } else {
       const singleDay = Interval.fromDateTimes(date, date.endOf("day"));
       if (singleDay.isValid) {
-        calendarInterval = singleDay;
+        inputInterval = singleDay;
       }
     }
 
-    if (calendarInterval.isValid) {
-      firstVisibleMonth = calendarInterval.start;
-    }
+    applyRange(inputInterval);
   }
 </script>
 
@@ -62,50 +98,52 @@
 <div class="flex flex-col w-full gap-y-3">
   <Calendar
     {maxDate}
-    selection={calendarInterval}
-    {selectingStart}
+    {minDate}
+    interval={inputInterval}
+    {anchorDay}
     {firstVisibleMonth}
     onSelectDay={onValidDateInput}
   />
 
-  <div class="w-full h-px bg-gray-200"></div>
+  {#if usingRillTime}
+    <div class="w-full h-px bg-gray-200"></div>
 
-  <div class="flex flex-col gap-y-2">
-    <DateInput
-      bind:selectingStart
-      date={calendarInterval?.start ?? DateTime.now()}
-      {zone}
-      boundary="start"
-      {minDate}
-      {maxDate}
-      currentYear={firstVisibleMonth.year}
-      {onValidDateInput}
-    />
+    <div class="flex flex-col gap-y-2">
+      <DateInput
+        boundary="start"
+        {zone}
+        {minDate}
+        {maxDate}
+        currentYear={firstVisibleMonth.year}
+        date={startDate}
+        {onValidDateInput}
+        onFocus={() => {
+          firstVisibleMonth = inputInterval.start;
+        }}
+      />
 
-    <DateInput
-      bind:selectingStart
-      date={calendarInterval?.end ?? DateTime.now()}
-      {zone}
-      boundary="end"
-      {minDate}
-      {maxDate}
-      currentYear={firstVisibleMonth.year}
-      {onValidDateInput}
-    />
-  </div>
+      <DateInput
+        boundary="end"
+        {zone}
+        date={endDate}
+        {minDate}
+        {maxDate}
+        currentYear={firstVisibleMonth.year}
+        {onValidDateInput}
+        onFocus={() => {
+          firstVisibleMonth = inputInterval.end;
+        }}
+      />
+    </div>
+  {/if}
   <div class="flex justify-end w-full">
     <Button
       fit
       compact
       type="subtle"
+      disabled={!inputInterval?.isValid}
       onClick={() => {
-        const mapped = calendarInterval?.set({
-          end: calendarInterval.end?.plus({ day: 1 }).startOf("day"),
-        });
-
-        if (mapped?.isValid) {
-          applyRange(mapped);
-        }
+        applyRange(inputInterval);
 
         closeMenu();
       }}

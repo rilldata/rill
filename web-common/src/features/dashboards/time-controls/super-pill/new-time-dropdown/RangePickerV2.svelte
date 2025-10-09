@@ -63,7 +63,6 @@
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
 
-  let firstVisibleMonth = interval?.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
@@ -72,6 +71,7 @@
   let showCalendarPicker = false;
   let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
+  let searchValue = timeString || "";
 
   $: if (timeString) {
     try {
@@ -199,9 +199,9 @@
 
 <Popover.Root
   bind:open
-  onOpenChange={(open) => {
-    if (open) {
-      firstVisibleMonth = interval.start;
+  onOpenChange={(o) => {
+    if (o) {
+      searchValue = timeString;
     }
   }}
 >
@@ -261,6 +261,7 @@
       bind:this={searchComponent}
       {context}
       {timeString}
+      bind:searchValue
       onSelectRange={(range) => {
         open = false;
         handleRangeSelect(range);
@@ -409,14 +410,15 @@
       {#if showCalendarPicker}
         <div class="bg-slate-50 border-l p-3 size-full">
           <CalendarPlusDateInput
-            {firstVisibleMonth}
             {interval}
             {zone}
             {maxDate}
             {minDate}
             applyRange={(interval) => {
               const string = `${interval.start.toFormat("yyyy-MM-dd")} to ${interval.end.toFormat("yyyy-MM-dd")}`;
-              onSelectRange(string);
+
+              console.log("Whats happening");
+              searchValue = string;
             }}
             closeMenu={() => (open = false)}
           />
