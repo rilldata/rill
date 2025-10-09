@@ -34,7 +34,7 @@ var spec = drivers.Spec{
 			DisplayName: "GCP credentials",
 			Description: "GCP credentials inferred from your local environment.",
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs#rill-developer-local-credentials",
+			DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs#local-google-cloud-cli-credentials-local-development-only",
 		},
 		{
 			Key:         "project_id",

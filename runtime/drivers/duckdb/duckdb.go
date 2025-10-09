@@ -541,6 +541,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			Attach:             c.config.Attach,
 			DBName:             c.config.DatabaseName,
 			SchemaName:         c.config.SchemaName,
+			ReadOnlyMode:       c.config.Mode == modeReadOnly,
 			LocalDataDir:       dataDir,
 			LocalCPU:           c.config.CPU,
 			LocalMemoryLimitGB: c.config.MemoryLimitGB,
