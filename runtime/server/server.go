@@ -366,7 +366,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	// Any request type might be limited separately as it is part of Metadata
 	// Any request type might be excluded from this limit check and limited later,
 	// e.g. in the corresponding request handler by calling s.limiter.Limit(ctx, "limitKey", redis_rate.PerMinute(100))
-	if auth.GetClaims(ctx).Subject() == "" {
+	if auth.GetClaims(ctx, "").UserID == "" {
 		method, ok := grpc.Method(ctx)
 		if !ok {
 			return ctx, fmt.Errorf("server context does not have a method")
