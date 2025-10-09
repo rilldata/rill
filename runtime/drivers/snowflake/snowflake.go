@@ -248,7 +248,7 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.getDB()
+	db, err := c.acquireDB(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open snowflake connection: %w", err)
 	}
@@ -372,20 +372,6 @@ func (c *connection) acquireDB(ctx context.Context) (*sqlx.DB, error) {
 
 	c.db, c.dbErr = sqlx.Open("snowflake", dsn)
 	return c.db, c.dbErr
-}
-
-// getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
-	dsn, err := c.configProperties.resolveDSN()
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := sqlx.Open("snowflake", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
-	}
-	return db, nil
 }
 
 // parseRSAPrivateKey parses a private key string

@@ -91,8 +91,32 @@ func (c *connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 }
 
 // Lookup implements drivers.OLAPInformationSchema.
-func (c *connection) Lookup(ctx context.Context, db string, schema string, name string) (*drivers.OlapTable, error) {
-	panic("unimplemented")
+func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
+	meta, err := c.GetTable(ctx, db, schema, name)
+	if err != nil {
+		return nil, err
+	}
+
+	rtSchema := &runtimev1.StructType{}
+	for name, typ := range meta.Schema {
+		t, err := databaseTypeToPB(typ, true)
+		if err != nil {
+			return nil, err
+		}
+		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: t,
+		})
+	}
+	return &drivers.OlapTable{
+		Database:          db,
+		DatabaseSchema:    schema,
+		Name:              name,
+		View:              meta.View,
+		Schema:            rtSchema,
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
+	}, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

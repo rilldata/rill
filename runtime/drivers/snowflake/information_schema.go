@@ -12,7 +12,7 @@ import (
 )
 
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	db, err := c.getDB()
+	db, err := c.acquireDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -106,7 +106,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, limit+1)
 	}
 
-	db, err := c.getDB()
+	db, err := c.acquireDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -144,14 +144,17 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := fmt.Sprintf(`
 		SELECT
-			column_name,
-			data_type
-		FROM %s.INFORMATION_SCHEMA.COLUMNS
-		WHERE table_schema = ? AND table_name = ?
-		ORDER BY ordinal_position
+			CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END as is_view,
+			c.column_name,
+			c.data_type
+		FROM %s.INFORMATION_SCHEMA.TABLES t
+		JOIN %s.INFORMATION_SCHEMA.COLUMNS c
+		ON t.table_schema = c.table_schema AND t.table_name = c.table_name 
+		WHERE t.table_schema = ? AND t.table_name = ?
+		ORDER BY c.ordinal_position
 	`, sqlSafeName(database))
 
-	db, err := c.getDB()
+	db, err := c.acquireDB(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -163,21 +166,25 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}
 	defer rows.Close()
 
-	schemaMap := make(map[string]string)
-	var colName, colType string
+	t := &drivers.TableMetadata{
+		Schema: make(map[string]string),
+	}
+	var (
+		colName, colType string
+		isView           bool
+	)
 	for rows.Next() {
-		if err := rows.Scan(&colName, &colType); err != nil {
+		if err := rows.Scan(&isView, &colName, &colType); err != nil {
 			return nil, err
 		}
-		schemaMap[colName] = colType
+		t.Schema[colName] = colType
+		t.View = isView
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-	}, nil
+	return t, nil
 }
 
 func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, string, error) {
