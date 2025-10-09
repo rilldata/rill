@@ -32,7 +32,6 @@
 
   export let open = false;
   export let groupName: string;
-  export let organizationUsers: V1OrganizationMemberUser[] = []; // Deprecated: use allOrganizationUsers instead
   export let currentUserEmail: string = "";
 
   let searchText = "";
