@@ -8,7 +8,10 @@
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
-  import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils";
+  import {
+    ReportRunAs,
+    type ReportValues,
+  } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -49,6 +52,15 @@
       id="title"
       label="Report title"
       placeholder="My report"
+    />
+    <Select
+      bind:value={$data["webOpenMode"]}
+      id="webOpenMode"
+      label="Run as"
+      options={[
+        { value: ReportRunAs.Recipient, label: "Recipient" },
+        { value: ReportRunAs.Creator, label: "Creator" },
+      ]}
     />
     <ScheduleForm {data} {exploreName} />
     <Select

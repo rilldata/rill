@@ -17,6 +17,7 @@
     createAdminServiceCreateReport,
     createAdminServiceEditReport,
     createAdminServiceGetCurrentUser,
+    createAdminServiceListProjectMemberUsers,
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
@@ -33,10 +34,12 @@
     getFiltersAndTimeControlsFromAggregationRequest,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
+    ReportRunAs,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
@@ -64,6 +67,14 @@
 
   $: ({ organization, project, report: reportName } = $page.params);
   $: ({ instanceId } = $runtime);
+
+  $: listProjectMemberUsersQuery = createAdminServiceListProjectMemberUsers(
+    organization,
+    project,
+  );
+  $: projectMembersSet = new Set(
+    $listProjectMemberUsersQuery.data?.members?.map((m) => m.userEmail) ?? [],
+  );
 
   $: exploreName =
     props.mode === "create"
@@ -115,31 +126,54 @@
   const schema = yup(
     object({
       title: string().required("Required"),
+      webOpenMode: string().required("Required"),
       emailRecipients: array().of(string().email("Invalid email")),
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
       columns: array().of(string()).min(1),
-    }).test(
-      "at-least-one-recipient",
-      "At least one email recipient, slack user, or slack channel is required",
-      function (value) {
-        // Check if at least one array has non-empty values
-        const hasEmailRecipients = value.emailRecipients
-          ? value.emailRecipients.filter(Boolean).length > 0
-          : false;
-        if (!value.enableSlackNotification) return hasEmailRecipients;
+    })
+      .test(
+        "at-least-one-recipient",
+        "At least one email recipient, slack user, or slack channel is required",
+        function (value) {
+          // Check if at least one array has non-empty values
+          const hasEmailRecipients = value.emailRecipients
+            ? value.emailRecipients.filter(Boolean).length > 0
+            : false;
+          if (!value.enableSlackNotification) return hasEmailRecipients;
 
-        const hasSlackUsers = value.slackUsers
-          ? value.slackUsers.filter(Boolean).length > 0
-          : false;
-        const hasSlackChannels = value.slackChannels
-          ? value.slackChannels.filter(Boolean).length > 0
-          : false;
+          const hasSlackUsers = value.slackUsers
+            ? value.slackUsers.filter(Boolean).length > 0
+            : false;
+          const hasSlackChannels = value.slackChannels
+            ? value.slackChannels.filter(Boolean).length > 0
+            : false;
 
-        return hasEmailRecipients || hasSlackUsers || hasSlackChannels;
-      },
-    ),
+          return hasEmailRecipients || hasSlackUsers || hasSlackChannels;
+        },
+      )
+      .test(
+        "as-recipients-in-project",
+        "Recipients should be part of the project when running as recipient",
+        function (values) {
+          if (
+            values.webOpenMode !== ReportRunAs.Recipient ||
+            !values.emailRecipients
+          ) {
+            return true;
+          }
+
+          const enteredRecipients = values.emailRecipients.slice(
+            0,
+            values.emailRecipients.length - 1,
+          );
+
+          return enteredRecipients.every((recipient) =>
+            projectMembersSet.has(recipient),
+          );
+        },
+      ),
   ) as ValidationAdapter<ReportValues>;
 
   $: initialValues =
@@ -228,12 +262,7 @@
                 : (props.reportSpec.annotations as V1ReportSpecAnnotations)[
                     "web_open_state"
                   ],
-            webOpenMode:
-              props.mode === "create"
-                ? "recipient" // To be changed to "filtered" once support is added
-                : ((props.reportSpec.annotations as V1ReportSpecAnnotations)[
-                    "web_open_mode"
-                  ] ?? "recipient"), // Backwards compatibility
+            webOpenMode: values.webOpenMode,
           },
         },
       });
