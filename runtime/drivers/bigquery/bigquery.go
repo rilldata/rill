@@ -267,7 +267,7 @@ func (c *Connection) createClient(ctx context.Context, projectID string) (*bigqu
 	client, err := bigquery.NewClient(ctx, projectID, opts...)
 	if err != nil {
 		if strings.Contains(err.Error(), "unable to detect projectID") {
-			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in the connector YAML")
 		}
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
