@@ -152,7 +152,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		ON t.table_schema = c.table_schema AND t.table_name = c.table_name 
 		WHERE t.table_schema = ? AND t.table_name = ?
 		ORDER BY c.ordinal_position
-	`, sqlSafeName(database))
+	`, sqlSafeName(database), sqlSafeName(database))
 
 	db, err := c.acquireDB(ctx)
 	if err != nil {
