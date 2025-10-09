@@ -2532,6 +2532,8 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for TriggerFull
 
+	// no validation rules for TriggerPartitions
+
 	// no validation rules for DefinedAsSource
 
 	if m.RetryAttempts != nil {
