@@ -70,8 +70,8 @@
     <RangePickerV2
       {context}
       smallestTimeGrain={minTimeGrain}
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      minDate={DateTime.fromJSDate(allTimeRange.start).setZone(activeTimeZone)}
+      maxDate={DateTime.fromJSDate(allTimeRange.end).setZone(activeTimeZone)}
       {watermark}
       {showDefaultItem}
       {defaultTimeRange}
