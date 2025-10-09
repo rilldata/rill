@@ -1,59 +1,6 @@
 import type { V1Conversation } from "../../../../runtime-client";
 
 /**
- * Format date for display in conversation list
- * Shows time for today, day name for this week, or month/day for older
- */
-export function formatDate(dateString: string): string {
-  if (!dateString) return "";
-
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else if (diffInHours < 168) {
-      // 7 days
-      return date.toLocaleDateString([], { weekday: "short" });
-    } else {
-      return date.toLocaleDateString([], { month: "short", day: "numeric" });
-    }
-  } catch {
-    return "";
-  }
-}
-
-/**
- * Get relative time for today's conversations (e.g., "2m ago", "1h ago")
- */
-export function getRelativeTime(dateString: string): string {
-  if (!dateString) return "";
-
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60),
-    );
-
-    if (diffInMinutes < 1) return "now";
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-
-    return "";
-  } catch {
-    return "";
-  }
-}
-
-/**
  * Group conversations by date categories (Today, Yesterday, etc.)
  */
 export function groupConversationsByDate(conversations: V1Conversation[]): {

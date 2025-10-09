@@ -1,7 +1,7 @@
 /**
  * Shared utilities for chat functionality
  *
- * Common functions used across Chat and Conversation classes to avoid duplication
+ * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in error handling, ID generation, and cache management.
  */
 import {
