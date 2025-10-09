@@ -3,6 +3,7 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceListOrganizationMemberUsersInfinite,
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceRenameUsergroup,
@@ -31,7 +32,7 @@
 
   export let open = false;
   export let groupName: string;
-  export let organizationUsers: V1OrganizationMemberUser[] = [];
+  export let organizationUsers: V1OrganizationMemberUser[] = []; // Deprecated: use allOrganizationUsers instead
   export let currentUserEmail: string = "";
 
   let searchText = "";
@@ -45,7 +46,29 @@
     organization,
     groupName,
   );
+  $: listOrganizationMemberUsersInfinite =
+    createAdminServiceListOrganizationMemberUsersInfinite(
+      organization,
+      {
+        pageSize: 50,
+        includeCounts: true,
+      },
+      {
+        query: {
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
+        },
+      },
+    );
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  $: allOrganizationUsers =
+    $listOrganizationMemberUsersInfinite.data?.pages.flatMap(
+      (page) => page.members ?? [],
+    ) ?? [];
   $: if (
     userGroupMembersUsers.length > 0 &&
     selectedUsers.length === 0 &&
@@ -61,6 +84,19 @@
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const renameUserGroup = createAdminServiceRenameUsergroup();
+
+  async function ensureAllUsersLoaded() {
+    if (
+      $listOrganizationMemberUsersInfinite.hasNextPage &&
+      !$listOrganizationMemberUsersInfinite.isFetchingNextPage
+    ) {
+      await $listOrganizationMemberUsersInfinite.fetchNextPage();
+      // Recursively call until all pages are loaded
+      if ($listOrganizationMemberUsersInfinite.hasNextPage) {
+        await ensureAllUsersLoaded();
+      }
+    }
+  }
 
   function handleRemove(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
@@ -97,7 +133,7 @@
   }
 
   async function handleAdd(email: string) {
-    const user = organizationUsers.find((u) => u.userEmail === email);
+    const user = allOrganizationUsers.find((u) => u.userEmail === email);
 
     // Don't add if already in selectedUsers
     if (
@@ -204,13 +240,13 @@
     },
   );
 
-  $: coercedUsersToOptions = organizationUsers.map((user) => ({
+  $: coercedUsersToOptions = allOrganizationUsers.map((user) => ({
     value: user.userEmail,
     label: user.userName,
   }));
 
   function getMetadata(email: string) {
-    const user = organizationUsers.find((user) => user.userEmail === email);
+    const user = allOrganizationUsers.find((user) => user.userEmail === email);
     return user
       ? { name: user.userName, photoUrl: user.userPhotoUrl }
       : undefined;
@@ -218,6 +254,11 @@
 
   // Check if form has been modified
   $: hasFormChanges = $form.newName !== initialValues.newName;
+
+  // Load all users when dialog opens
+  $: if (open) {
+    ensureAllUsersLoaded();
+  }
 
   function handleClose() {
     open = false;
