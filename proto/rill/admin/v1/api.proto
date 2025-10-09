@@ -308,6 +308,19 @@ service AdminService {
     };
   }
 
+  // GetOrganizationMemberUserAttributes gets the attributes for a member
+  rpc GetOrganizationMemberUserAttributes(GetOrganizationMemberUserAttributesRequest) returns (GetOrganizationMemberUserAttributesResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}/attributes"};
+  }
+
+  // UpdateOrganizationMemberUserAttributes updates the attributes for a member
+  rpc UpdateOrganizationMemberUserAttributes(UpdateOrganizationMemberUserAttributesRequest) returns (UpdateOrganizationMemberUserAttributesResponse) {
+    option (google.api.http) = {
+      put: "/v1/orgs/{org}/members/{email}/attributes",
+      body: "*"
+    };
+  }
+
   // ListProjectMemberUsers lists all the project members
   rpc ListProjectMemberUsers(ListProjectMemberUsersRequest) returns (ListProjectMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/members"};
@@ -1669,6 +1682,23 @@ message SetOrganizationMemberUserRoleRequest {
 
 message SetOrganizationMemberUserRoleResponse {}
 
+message GetOrganizationMemberUserAttributesRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+}
+
+message GetOrganizationMemberUserAttributesResponse {
+  google.protobuf.Struct attributes = 1;
+}
+
+message UpdateOrganizationMemberUserAttributesRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+  google.protobuf.Struct attributes = 3;
+}
+
+message UpdateOrganizationMemberUserAttributesResponse {}
+
 message ListSuperusersRequest {}
 
 message ListSuperusersResponse {
@@ -2918,6 +2948,7 @@ message OrganizationMemberUser {
   string role_name = 4;
   uint32 projects_count = 8;
   uint32 usergroups_count = 9;
+  google.protobuf.Struct attributes = 10;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -2989,6 +3020,7 @@ message UserAuthToken {
   string auth_client_display_name = 4;
   string representing_user_id = 5;
   string prefix = 9;
+  google.protobuf.Struct attributes = 10;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp expires_on = 7;
   google.protobuf.Timestamp used_on = 8;

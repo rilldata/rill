@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -640,6 +641,85 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	}
 
 	return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
+}
+
+func (s *Server) GetOrganizationMemberUserAttributes(ctx context.Context, req *adminv1.GetOrganizationMemberUserAttributesRequest) (*adminv1.GetOrganizationMemberUserAttributesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org member attributes")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Find the organization member to get attributes
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, "", true, user.Email, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(members) == 0 {
+		return nil, status.Error(codes.NotFound, "user is not a member of the organization")
+	}
+
+	member := members[0]
+	var attributes *structpb.Struct
+	if len(member.Attributes) > 0 {
+		if s, err := structpb.NewStruct(member.Attributes); err == nil {
+			attributes = s
+		}
+	}
+
+	return &adminv1.GetOrganizationMemberUserAttributesResponse{
+		Attributes: attributes,
+	}, nil
+}
+
+func (s *Server) UpdateOrganizationMemberUserAttributes(ctx context.Context, req *adminv1.UpdateOrganizationMemberUserAttributesRequest) (*adminv1.UpdateOrganizationMemberUserAttributesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org member attributes")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Convert protobuf Struct to map[string]any
+	var attributes map[string]any
+	if req.Attributes != nil {
+		attributes = req.Attributes.AsMap()
+	}
+
+	// Update the attributes
+	_, err = s.admin.DB.UpdateOrganizationMemberUserAttributes(ctx, org.ID, user.ID, attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.UpdateOrganizationMemberUserAttributesResponse{}, nil
 }
 
 func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrganizationRequest) (*adminv1.LeaveOrganizationResponse, error) {
