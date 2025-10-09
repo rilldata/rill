@@ -671,7 +671,7 @@
                         Run code below to setup first
                       </div>
                       <a
-                        href="https://docs.rilldata.com/connect/data-source/bigquery#inferred-credentials"
+                        href="https://docs.rilldata.com/connect/data-source/bigquery#local-google-cloud-cli-credentials-local-development-only"
                         class="text-primary-500 text-xs hover:underline"
                         target="_blank">Learn more</a
                       >
