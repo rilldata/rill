@@ -1835,7 +1835,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	return res, nil
 }
 
-func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, searchPattern string) (int, error) {
+func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID, searchPattern string) (int, error) {
 	var count int
 	query := "SELECT COUNT(*) FROM users_orgs_roles uor JOIN users u ON u.id = uor.user_id WHERE uor.org_id=$1"
 	args := []any{orgID}
