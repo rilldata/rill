@@ -392,9 +392,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					for _, job := range conf.Jobs {
 						job := job
 						group.Go(func() error {
-							_, err := jobs.EnqueueByKind(cmd.Context(), job)
+							res, err := jobs.EnqueueByKind(cmd.Context(), job)
 							if err != nil {
 								return err
+							}
+							if res.Duplicate {
+								logger.Warn("duplicate job skipped", zap.String("job", job), observability.ZapCtx(cmd.Context()))
+							} else {
+								logger.Info("enqueued job", zap.String("job", job), zap.Int64("id", res.ID), observability.ZapCtx(cmd.Context()))
 							}
 							return nil
 						})
