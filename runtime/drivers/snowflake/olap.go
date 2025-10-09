@@ -161,6 +161,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_FLOAT64
 	case "DOUBLE", "DOUBLE PRECISION", "REAL":
 		t.Code = runtimev1.Type_CODE_FLOAT64
+	case "FIXED":
+		t.Code = runtimev1.Type_CODE_STRING
 	case "VARCHAR", "STRING", "TEXT", "CHAR", "CHARACTER":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "BINARY", "VARBINARY":

@@ -44,11 +44,11 @@ func TestOLAP(t *testing.T) {
 			nil,
 			map[string]any{"DATETIME": time.Date(2025, 1, 31, 23, 59, 59, 999999000, time.UTC)},
 		},
-		// {
-		// 	"SELECT 9223372036854775807 AS integer",
-		// 	nil,
-		// 	map[string]any{"INTEGER": int64(9223372036854775807)}, // todo : check this returns a string
-		// },
+		{
+			"SELECT 99999999999999999999999999999999999999 AS integer",
+			nil,
+			map[string]any{"INTEGER": "99999999999999999999999999999999999999"},
+		},
 		{
 			"SELECT 99999999999999999999999999999.999999999::NUMBER(38,9) AS number",
 			nil,

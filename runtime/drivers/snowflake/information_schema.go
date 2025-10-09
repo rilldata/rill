@@ -16,7 +16,6 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	if err != nil {
 		return nil, "", err
 	}
-	defer db.Close()
 
 	curDBName, curSchemaName, err := getCurrentDatabaseAndSchema(ctx, db.DB)
 	if err != nil {
@@ -110,7 +109,6 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	if err != nil {
 		return nil, "", err
 	}
-	defer db.Close()
 	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
@@ -158,7 +156,6 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
 	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
 	if err != nil {

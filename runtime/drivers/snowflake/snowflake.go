@@ -252,7 +252,6 @@ func (c *connection) Ping(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to open snowflake connection: %w", err)
 	}
-	defer db.Close()
 	return db.PingContext(ctx)
 }
 
@@ -280,6 +279,9 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	if c.db != nil {
+		return c.db.Close()
+	}
 	return nil
 }
 
