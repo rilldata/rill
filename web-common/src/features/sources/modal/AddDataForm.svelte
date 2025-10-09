@@ -61,6 +61,7 @@
   let gcloudCommandCopied = false;
   let connectionTab: ConnectorType = "parameters";
   let bigqueryAuthMethod: BigQueryAuthMethod = "credentials";
+  let bigqueryCredentialsFilename: string = "";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -659,6 +660,7 @@
                     hint="Upload a JSON key file for a service account with BigQuery access."
                     optional={false}
                     bind:value={$paramsForm.google_application_credentials}
+                    bind:filename={bigqueryCredentialsFilename}
                     uploadFile={handleFileUpload}
                     accept=".json"
                   />

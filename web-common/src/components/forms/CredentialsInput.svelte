@@ -15,6 +15,7 @@
   export let optional: boolean = false;
   export let hideContent: boolean = false;
   export let hidden: boolean = false;
+  export let filename: string | string[] | undefined = undefined;
 
   let fileInput: HTMLInputElement;
 
@@ -33,7 +34,13 @@
   // maintain a list of filenames to show in error messages.
   // since the final uploaded url set in `value` is usually not the same this is needed.
   let fileNames: string[] = [];
-  $: selectedFileName = fileNames.length > 0 ? fileNames[0] : null;
+  $: selectedFileName = filename
+    ? multiple
+      ? (filename as string[])[0]
+      : (filename as string)
+    : fileNames.length > 0
+      ? fileNames[0]
+      : null;
 
   function uploadFiles(files: FileList) {
     uploading = {};
@@ -41,9 +48,11 @@
     if (multiple) {
       value = new Array(files.length).fill("");
       fileNames = new Array<string>(files.length).fill("");
+      filename = new Array(files.length).fill("");
     } else {
       value = "";
       fileNames = [""];
+      filename = "";
     }
     for (let i = 0; i < files.length; i++) {
       void uploadFileWrapper(files[i], i);
@@ -65,14 +74,19 @@
       fileNames[i] = file.name;
       const result = await uploadFile(file);
 
-      // Store the JSON string content
+      // Store the JSON string content and filename
       if (multiple) {
         if (value === undefined) {
           value = [];
         }
+        if (filename === undefined) {
+          filename = [];
+        }
         (value as string[])[i] = result;
+        (filename as string[])[i] = file.name;
       } else {
         value = result;
+        filename = file.name;
       }
     } catch (err) {
       uploadErrors[i] = err.message;
@@ -96,9 +110,11 @@
     if (multiple) {
       value = [];
       fileNames = [];
+      filename = [];
     } else {
       value = "";
       fileNames = [];
+      filename = "";
     }
     // Clear the file input
     if (fileInput) {
