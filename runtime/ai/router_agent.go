@@ -47,7 +47,10 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	// Handle title
 	session := GetSession(ctx)
 	if session.Title() == "" {
-		session.UpdateTitle(ctx, promptToTitle(args.Prompt))
+		err := session.UpdateTitle(ctx, promptToTitle(args.Prompt))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Add prompt to session

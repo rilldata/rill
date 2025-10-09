@@ -15,8 +15,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/middleware"
-	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -44,16 +42,7 @@ func (s *Server) newMCPServer() *server.MCPServer {
 	}
 
 	mcpServer := server.NewMCPServer("rill", version,
-		server.WithToolHandlerMiddleware(observability.MCPToolHandlerMiddleware()),
 		server.WithToolHandlerMiddleware(mcpErrorMappingMiddleware),
-		server.WithToolHandlerMiddleware(middleware.TimeoutMCPToolHandlerMiddleware(func(tool string) time.Duration {
-			switch tool {
-			case "query_metrics_view_summary", "query_metrics_view":
-				return 120 * time.Second
-			default:
-				return 20 * time.Second
-			}
-		})),
 		server.WithRecovery(),
 		server.WithToolCapabilities(true),
 		server.WithInstructions(mcpInstructions),
@@ -68,7 +57,9 @@ func (s *Server) newMCPServer() *server.MCPServer {
 	return mcpServer
 }
 
-func (s *Server) newMCPHTTPHandler(mcpServer *server.MCPServer) http.Handler {
+// NewMCPHTTPHandler is deprecated in favour of the implementation in mcp.go.
+// TODO: Remove it when all logic has been ported to the new implementation.
+func (s *Server) NewMCPHTTPHandler(mcpServer *server.MCPServer) http.Handler {
 	httpServer := server.NewStreamableHTTPServer(
 		mcpServer,
 		server.WithHeartbeatInterval(30*time.Second),

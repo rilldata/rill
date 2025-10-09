@@ -37,7 +37,12 @@ func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, 
 	sessionID := uuid.NewString()
 	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
 	r := ai.NewRunner(rt)
-	s, err := r.Session(t.Context(), instanceID, sessionID, claims)
+	s, err := r.Session(t.Context(), &ai.SessionOptions{
+		InstanceID: instanceID,
+		SessionID:  sessionID,
+		Claims:     claims,
+		UserAgent:  "rill-evals",
+	})
 	require.NoError(t, err)
 	defer s.Close()
 

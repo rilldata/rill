@@ -1,6 +1,14 @@
 package ai
 
-import "github.com/modelcontextprotocol/go-sdk/mcp"
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"go.uber.org/zap"
+)
 
 const mcpInstructions = `
 # Rill MCP Server
@@ -23,6 +31,26 @@ func (s *Session) MCPServer() *mcp.Server {
 
 	srv := mcp.NewServer(impl, &mcp.ServerOptions{
 		Instructions: mcpInstructions,
+		InitializedHandler: func(ctx context.Context, r *mcp.InitializedRequest) {
+			// Save user agent in the session
+			clientInfo := r.Session.InitializeParams().ClientInfo
+			if clientInfo != nil && clientInfo.Name != "" {
+				userAgent := clientInfo.Name
+				if clientInfo.Version != "" {
+					userAgent += "/" + clientInfo.Version
+				}
+
+				err := s.UpdateUserAgent(ctx, userAgent)
+				if err != nil && !errors.Is(err, ctx.Err()) {
+					s.logger.Warn("failed to update user agent", zap.Error(err))
+				}
+			}
+		},
+		KeepAlive: 30 * time.Second,
+		HasTools:  true,
+		GetSessionID: func() string {
+			return s.id
+		},
 	})
 
 	for _, t := range s.runner.Tools {
@@ -33,4 +61,23 @@ func (s *Session) MCPServer() *mcp.Server {
 	}
 
 	return srv
+}
+
+// InternalError represents an internal error in a tool call.
+// This is needed because by default, downstream logic (such as the MCP middleware) treats errors returned from tool handlers as user errors, not internal errors.
+type InternalError struct {
+	err error
+}
+
+// NewInternalError creates a new internal error. See InternalError for details.
+func NewInternalError(err error) error {
+	if err == nil {
+		err = fmt.Errorf("nil error")
+	}
+	return InternalError{err: err}
+}
+
+// Error implements the error interface.
+func (e InternalError) Error() string {
+	return fmt.Sprintf("internal: %s", e.err.Error())
 }

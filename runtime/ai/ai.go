@@ -14,6 +14,7 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -48,31 +49,46 @@ func NewRunner(rt *runtime.Runtime) *Runner {
 	return r
 }
 
+// SessionOptions provides options for initializing a new session.
+type SessionOptions struct {
+	InstanceID string
+	SessionID  string
+	Claims     *runtime.SecurityClaims
+	UserAgent  string
+}
+
 // Session creates or loads an AI session.
-func (r *Runner) Session(ctx context.Context, instanceID, sessionID string, claims *runtime.SecurityClaims) (*Session, error) {
+func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (*Session, error) {
 	// TODO: Load from database or create in database.
-	if sessionID == "" {
-		sessionID = uuid.NewString()
+	if opts.SessionID == "" {
+		opts.SessionID = uuid.NewString()
 	}
 
-	ai, release, err := r.Runtime.AI(ctx, instanceID)
+	ai, release, err := r.Runtime.AI(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	instance, err := r.Runtime.Instance(ctx, instanceID)
+	instance, err := r.Runtime.Instance(ctx, opts.InstanceID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get instance %q: %w", instanceID, err)
+		return nil, fmt.Errorf("failed to get instance %q: %w", opts.InstanceID, err)
 	}
 
+	logger := r.Runtime.Logger.Named("ai").With(
+		zap.String("instance_id", opts.InstanceID),
+		zap.String("session_id", opts.SessionID),
+		zap.String("user_id", opts.Claims.UserID),
+	)
+
 	base := &BaseSession{
-		id:         sessionID,
-		instanceID: instanceID,
+		id:         opts.SessionID,
+		instanceID: opts.InstanceID,
 		title:      "", // TODO: Load from database
-		userID:     claims.UserID,
-		claims:     claims,
+		userID:     opts.Claims.UserID,
+		claims:     opts.Claims,
 
 		runner:              r,
+		logger:              logger,
 		llm:                 ai,
 		llmRelease:          release,
 		projectInstructions: instance.AIInstructions,
@@ -308,10 +324,12 @@ type BaseSession struct {
 	id         string
 	instanceID string
 	title      string
+	userAgent  string
 	userID     string
 	claims     *runtime.SecurityClaims
 
 	runner              *Runner
+	logger              *zap.Logger
 	llm                 drivers.AIService
 	llmRelease          func()
 	projectInstructions string
@@ -343,9 +361,14 @@ func (s *BaseSession) Title() string {
 	return s.title
 }
 
-func (s *BaseSession) UpdateTitle(ctx context.Context, title string) string {
+func (s *BaseSession) UpdateTitle(ctx context.Context, title string) error {
 	s.title = title
-	return s.title
+	return nil
+}
+
+func (s *BaseSession) UpdateUserAgent(ctx context.Context, userAgent string) error {
+	s.userAgent = userAgent
+	return nil
 }
 
 func (s *BaseSession) Subscribe() chan *Message {

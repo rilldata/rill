@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
@@ -38,6 +39,9 @@ func (t *QueryMetricsViewTimeRange) CheckAccess(claims *runtime.SecurityClaims) 
 }
 
 func (t *QueryMetricsViewTimeRange) Handler(ctx context.Context, args *QueryMetricsViewTimeRangeArgs) (*QueryMetricsViewTimeRangeResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
 	session := GetSession(ctx)
 
 	res, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -176,9 +177,21 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return status.Error(codes.InvalidArgument, "prompt cannot be empty")
 	}
 
+	// Setup user agent
+	version := s.runtime.Version().Number
+	if version == "" {
+		version = "unknown"
+	}
+	userAgent := fmt.Sprintf("rill/%s", version)
+
 	// Open the AI session
 	runner := ai.NewRunner(s.runtime)
-	session, err := runner.Session(stream.Context(), req.InstanceId, req.ConversationId, claims)
+	session, err := runner.Session(stream.Context(), &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+		UserAgent:  userAgent,
+	})
 	if err != nil {
 		return err
 	}

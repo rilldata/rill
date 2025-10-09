@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -148,6 +149,9 @@ func (t *QueryMetricsView) CheckAccess(claims *runtime.SecurityClaims) bool {
 }
 
 func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArgs) (*QueryMetricsViewResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
 	session := GetSession(ctx)
 
 	res, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
