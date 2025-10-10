@@ -715,6 +715,7 @@ message ThemeSpec {
   optional Color secondary_color = 2;
   string primary_color_raw = 3;
   string secondary_color_raw = 4;
+  string css = 5;
 }
 
 message ThemeState {}

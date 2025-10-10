@@ -8872,6 +8872,8 @@ func (m *ThemeSpec) validate(all bool) error {
 
 	// no validation rules for SecondaryColorRaw
 
+	// no validation rules for Css
+
 	if m.PrimaryColor != nil {
 
 		if all {

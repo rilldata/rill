@@ -1,8 +1,16 @@
 package parser
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+
 	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/css"
 )
 
 // ThemeYAML is the raw structure of a Theme for the UI in YAML (does not include common fields)
@@ -12,6 +20,7 @@ type ThemeYAML struct {
 		Primary   string `yaml:"primary"`
 		Secondary string `yaml:"secondary"`
 	} `yaml:"colors"`
+	CSS *string `yaml:"css"`
 }
 
 // parseTheme parses a theme definition and adds the resulting resource to p.Resources.
@@ -40,22 +49,43 @@ func (p *Parser) parseTheme(node *Node) error {
 func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 	spec := &runtimev1.ThemeSpec{}
 
-	if tmp.Colors.Primary != "" {
-		pc, err := csscolorparser.Parse(tmp.Colors.Primary)
-		if err != nil {
-			return nil, err
-		}
-		spec.PrimaryColor = toThemeColor(pc)
-		spec.PrimaryColorRaw = tmp.Colors.Primary
+	hasLegacyColors := tmp.Colors.Primary != "" || tmp.Colors.Secondary != ""
+	hasCSS := tmp.CSS != nil
+
+	if hasLegacyColors && hasCSS {
+		return nil, fmt.Errorf("cannot use both legacy color properties (primary, secondary) and the new CSS property simultaneously")
 	}
 
-	if tmp.Colors.Secondary != "" {
-		sc, err := csscolorparser.Parse(tmp.Colors.Secondary)
-		if err != nil {
-			return nil, err
+	if hasLegacyColors {
+		if tmp.Colors.Primary != "" {
+			pc, err := csscolorparser.Parse(tmp.Colors.Primary)
+			if err != nil {
+				return nil, fmt.Errorf("invalid primary color: %w", err)
+			}
+			spec.PrimaryColor = toThemeColor(pc)
+			spec.PrimaryColorRaw = tmp.Colors.Primary
 		}
-		spec.SecondaryColor = toThemeColor(sc)
-		spec.SecondaryColorRaw = tmp.Colors.Secondary
+
+		if tmp.Colors.Secondary != "" {
+			sc, err := csscolorparser.Parse(tmp.Colors.Secondary)
+			if err != nil {
+				return nil, fmt.Errorf("invalid secondary color: %w", err)
+			}
+			spec.SecondaryColor = toThemeColor(sc)
+			spec.SecondaryColorRaw = tmp.Colors.Secondary
+		}
+	}
+
+	if hasCSS {
+		if strings.TrimSpace(*tmp.CSS) == "" {
+			return nil, fmt.Errorf("CSS cannot be empty")
+		}
+
+		sanitizedCSS, err := sanitizeCSS(*tmp.CSS)
+		if err != nil {
+			return nil, fmt.Errorf("invalid CSS syntax: %w", err)
+		}
+		spec.Css = sanitizedCSS
 	}
 
 	return spec, nil
@@ -68,4 +98,55 @@ func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
 		Blue:  float32(c.B),
 		Alpha: float32(c.A),
 	}
+}
+
+// sanitizeCSS sanitizes and validates CSS input while reconstructing valid parts in a string format.
+func sanitizeCSS(c string) (string, error) {
+	p := css.NewParser(parse.NewInput(bytes.NewBufferString(c)), false)
+	out := ""
+
+	for {
+		gt, _, data := p.Next()
+		dataStr := string(data)
+
+		if gt == css.ErrorGrammar {
+			break
+		}
+
+		out += dataStr
+
+		switch gt {
+		case css.CommentGrammar:
+			// ignore comments
+		case css.AtRuleGrammar, css.BeginAtRuleGrammar, css.QualifiedRuleGrammar, css.BeginRulesetGrammar, css.DeclarationGrammar, css.CustomPropertyGrammar:
+			if gt == css.DeclarationGrammar || gt == css.CustomPropertyGrammar {
+				out += ":"
+			}
+
+			for _, val := range p.Values() {
+				out += string(val.Data)
+			}
+
+			switch gt {
+			case css.BeginAtRuleGrammar, css.BeginRulesetGrammar:
+				out += "{"
+			case css.AtRuleGrammar, css.DeclarationGrammar, css.CustomPropertyGrammar:
+				out += ";"
+			case css.QualifiedRuleGrammar:
+				out += ","
+			default:
+			}
+		case css.EndAtRuleGrammar, css.EndRulesetGrammar:
+			if strings.TrimSpace(dataStr) != "}" {
+				return "", fmt.Errorf("unbalanced braces")
+			}
+		default:
+		}
+	}
+
+	if p.Err() != nil && !errors.Is(p.Err(), io.EOF) {
+		return "", p.Err()
+	}
+
+	return out, nil
 }
