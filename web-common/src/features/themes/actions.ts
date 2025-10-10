@@ -11,9 +11,10 @@ import chroma, { type Color } from "chroma-js";
 import { generateColorPalette } from "./palette-generator.ts";
 import { featureFlags } from "../feature-flags.ts";
 import { get } from "svelte/store";
-import { generatePalette, DEFAULT_STEP_COUNT, DEFAULT_GAMMA } from "./color-generation.ts";
+import { generatePalette, DEFAULT_STEP_COUNT, DEFAULT_GAMMA, createDarkVariation as createDarkVariationFn } from "./color-generation.ts";
 import { sanitizeAndExtractSafeVariables, extractColorVariables } from "./css-sanitizer.ts";
 import { setPaletteColors, clearAllPaletteColors } from "./palette-colors.ts";
+import { defaultPrimaryPalette, defaultSecondaryPalette } from "./colors.ts";
 
 // Re-export from color-generation for backward compatibility
 export { createDarkVariation, BLACK, WHITE, MODE } from "./color-generation.ts";
@@ -262,12 +263,17 @@ function applyPrimaryColorVariables(
   if (!lightColor && !darkColor) return;
   
   try {
-    const palettes = generatePalettesFromColors(lightColor, darkColor);
+    // Generate default dark palette from default light palette
+    const defaultDarkPalette = createDarkVariationFn(defaultPrimaryPalette);
+    const palettes = generatePalettesFromColors(
+      lightColor, 
+      darkColor,
+      defaultPrimaryPalette,
+      defaultDarkPalette
+    );
     
-    if (palettes) {
-      applyPaletteToVariables(root, "theme", palettes);
-      applyPaletteToVariables(root, "primary", palettes);
-    }
+    applyPaletteToVariables(root, "theme", palettes);
+    applyPaletteToVariables(root, "primary", palettes);
   } catch (error) {
     console.error('Failed to generate palette from primary colors:', { lightColor, darkColor }, error);
   }
@@ -285,45 +291,58 @@ function applySecondaryColorVariables(
   if (!lightColor && !darkColor) return;
   
   try {
-    const palettes = generatePalettesFromColors(lightColor, darkColor);
+    // Generate default dark palette from default light palette
+    const defaultDarkPalette = createDarkVariationFn(defaultSecondaryPalette);
+    const palettes = generatePalettesFromColors(
+      lightColor, 
+      darkColor,
+      defaultSecondaryPalette,
+      defaultDarkPalette
+    );
     
-    if (palettes) {
-      applyPaletteToVariables(root, "theme-secondary", palettes);
-      applyPaletteToVariables(root, "secondary", palettes);
-    }
+    applyPaletteToVariables(root, "theme-secondary", palettes);
+    applyPaletteToVariables(root, "secondary", palettes);
   } catch (error) {
     console.error('Failed to generate palette from secondary colors:', { lightColor, darkColor }, error);
   }
 }
 
 /**
- * Generates palettes from light and dark colors
+ * Generates palettes from light and dark colors, falling back to defaults when not defined
  */
 function generatePalettesFromColors(
   lightColor: string | null,
   darkColor: string | null,
-): ColorPalette | null {
-  let lightPalette: ColorPalette | undefined;
-  let darkPalette: ColorPalette | undefined;
+  defaultLightPalette: Color[],
+  defaultDarkPalette: Color[],
+): ColorPalette {
+  let lightPalette: Color[];
+  let darkPalette: Color[];
   
   if (lightColor) {
     const color = chroma(lightColor);
-    lightPalette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
+    const palette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
+    lightPalette = palette.light;
+  } else {
+    // Use default light palette when not defined
+    lightPalette = defaultLightPalette;
   }
   
   if (darkColor) {
     const color = chroma(darkColor);
-    darkPalette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
+    const palette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
+    darkPalette = palette.dark;
+  } else if (lightColor) {
+    // If light is defined but dark isn't, generate dark from light
+    const color = chroma(lightColor);
+    const palette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
+    darkPalette = palette.dark;
+  } else {
+    // Use default dark palette when not defined
+    darkPalette = defaultDarkPalette;
   }
   
-  // Use the same palette for both if only one color is provided
-  if (lightColor && !darkColor) {
-    darkPalette = lightPalette;
-  } else if (darkColor && !lightColor) {
-    lightPalette = darkPalette;
-  }
-  
-  return lightPalette && darkPalette ? { light: lightPalette.light, dark: darkPalette.dark } : null;
+  return { light: lightPalette, dark: darkPalette };
 }
 
 /**
