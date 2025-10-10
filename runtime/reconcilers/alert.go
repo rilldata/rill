@@ -257,12 +257,6 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 		if err != nil {
 			return nil, err
 		}
-		// if there is field access rule, add "explore" and "canvas" to condition kinds just to prevent name leakages from there
-		for _, r := range inferred {
-			if rfa := r.GetFieldAccess(); rfa != nil {
-				conditionKinds = append(conditionKinds, runtime.ResourceKindExplore, runtime.ResourceKindCanvas)
-			}
-		}
 
 		rules = append(rules, inferred...)
 
@@ -291,12 +285,6 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 		inferred, err := resolver.InferRequiredSecurityRules()
 		if err != nil {
 			return nil, err
-		}
-		// if there is field access rule, add "explore" and "canvas" to condition kinds just to prevent field name leakages from there
-		for _, r := range inferred {
-			if rfa := r.GetFieldAccess(); rfa != nil {
-				conditionKinds = append(conditionKinds, runtime.ResourceKindExplore, runtime.ResourceKindCanvas)
-			}
 		}
 
 		rules = append(rules, inferred...)
@@ -332,11 +320,24 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 		}
 	}
 
+	// add explore and canvas to access and field access rule's condition resources
 	if explore != "" {
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore})
+		exp := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+		conditionResources = append(conditionResources, exp)
+		for _, r := range rules {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				rfa.ConditionResources = append(rfa.ConditionResources, exp)
+			}
+		}
 	}
 	if canvas != "" {
-		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas})
+		c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+		conditionResources = append(conditionResources, c)
+		for _, r := range rules {
+			if rfa := r.GetFieldAccess(); rfa != nil {
+				rfa.ConditionResources = append(rfa.ConditionResources, c)
+			}
+		}
 	}
 
 	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
