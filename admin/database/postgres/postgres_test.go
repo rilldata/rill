@@ -43,6 +43,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
+	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
 		cases := []struct {
@@ -648,6 +649,64 @@ func testManagedGitRepos(t *testing.T, db database.DB) {
 	require.NoError(t, db.DeleteOrganization(context.Background(), org2.Name))
 	require.NoError(t, db.DeleteUser(context.Background(), user.ID))
 	require.NoError(t, db.DeleteManagedGitRepos(context.Background(), []string{m1.ID, m2.ID, m3.ID}))
+}
+
+func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	// Create test data
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test@rilldata.com"})
+	require.NoError(t, err)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	// Add user to organization
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
+	require.NoError(t, err)
+
+	t.Run("GetOrganizationMemberUserAttributes - no attributes", func(t *testing.T) {
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
+		require.NoError(t, err)
+		require.Len(t, member, 1)
+		require.Equal(t, user.Email, member[0].Email)
+	})
+
+	attributes := map[string]any{"attr1": "value1", "attr2": "value2"}
+
+	t.Run("UpdateOrganizationMemberUserAttributes - add attributes to existing user", func(t *testing.T) {
+		_, err = db.UpdateOrganizationMemberUserAttributes(ctx, org.ID, user.ID, attributes)
+		require.NoError(t, err)
+	})
+
+	t.Run("GetOrganizationMemberUserAttributes - with attributes", func(t *testing.T) {
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
+		require.NoError(t, err)
+		require.Len(t, member, 1)
+		require.Equal(t, user.Email, member[0].Email)
+		require.Equal(t, attributes, member[0].Attributes)
+	})
+
+	t.Run("UpdateOrganizationMemberUserAttributes - update attributes of existing user", func(t *testing.T) {
+		attributes["attr1"] = "new-value1"
+		_, err = db.UpdateOrganizationMemberUserAttributes(ctx, org.ID, user.ID, attributes)
+		require.NoError(t, err)
+	})
+
+	t.Run("GetOrganizationMemberUserAttributes - with updated attributes", func(t *testing.T) {
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
+		require.NoError(t, err)
+		require.Len(t, member, 1)
+		require.Equal(t, user.Email, member[0].Email)
+		require.Equal(t, attributes, member[0].Attributes)
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
 }
 
 func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
