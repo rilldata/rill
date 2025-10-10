@@ -1616,6 +1616,7 @@ message ListOrganizationMemberUsersRequest {
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
   bool superuser_force_access = 6;
+  string search_pattern = 7; // Optional search pattern to filter users by email or display name
 }
 
 message ListOrganizationMemberUsersResponse {

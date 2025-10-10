@@ -754,6 +754,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: searchPattern
+          description: Optional search pattern to filter users by email or display name
+          in: query
+          required: false
+          type: string
     post:
       summary: AddOrganizationMemberUser adds a user to the organization
       operationId: AdminService_AddOrganizationMemberUser
