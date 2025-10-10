@@ -173,6 +173,7 @@ type MessageContent struct {
 	ToolResultIsError bool   `json:"tool_result_is_error,omitempty"`
 }
 
+// AISession represents a session of AI interaction, such as a chat or MCP connection.
 type AISession struct {
 	ID         string    `db:"id"`
 	InstanceID string    `db:"instance_id"`
@@ -183,6 +184,7 @@ type AISession struct {
 	UpdatedOn  time.Time `db:"updated_on"`
 }
 
+// AIMessage represents a message in an AISession.
 type AIMessage struct {
 	ID          string    `db:"id"`
 	ParentID    string    `db:"parent_id"`
