@@ -44,13 +44,16 @@ func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, 
 		UserAgent:  "rill-evals",
 	})
 	require.NoError(t, err)
-	defer s.Close()
+	defer s.Flush(t.Context())
 
 	// Wrap the session's LLM with a recordingAIService to capture every LLM call.
 	ai, release, err := rt.AI(t.Context(), instanceID)
 	require.NoError(t, err)
+	t.Cleanup(release)
 	wrappedAI := &recordingAIService{ai: ai}
-	s.SetLLM(wrappedAI, release)
+	s.SetLLM(func(ctx context.Context) (drivers.AIService, func(), error) {
+		return wrappedAI, func() {}, nil
+	})
 
 	// When the test is done, save the transcripts to ./evals
 	t.Cleanup(func() {

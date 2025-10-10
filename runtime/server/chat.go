@@ -195,7 +195,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer session.Flush(stream.Context())
 
 	// Context
 	ctx, cancel := context.WithCancel(stream.Context())

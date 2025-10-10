@@ -55,13 +55,19 @@ func (s *Session) MCPServer() *mcp.Server {
 			GetSessionID: func() string {
 				return s.id
 			},
-		})
+		},
+	)
 
-	// Inject the Session in every request
+	// Inject the Session before every request, and trigger a flush after each request is finished.
 	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
-		return func(ctx context.Context, method string, req mcp.Request) (result mcp.Result, err error) {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 			ctx = WithSession(ctx, s)
-			return next(ctx, method, req)
+			res, err := next(ctx, method, req)
+			err = s.Flush(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to flush session: %w", err)
+			}
+			return res, err
 		}
 	})
 

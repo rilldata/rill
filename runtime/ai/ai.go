@@ -15,6 +15,7 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -59,44 +60,91 @@ type SessionOptions struct {
 }
 
 // Session creates or loads an AI session.
-func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (*Session, error) {
-	// TODO: Load from database or create in database.
-	if opts.SessionID == "" {
-		opts.SessionID = uuid.NewString()
-	}
-
-	ai, release, err := r.Runtime.AI(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	instance, err := r.Runtime.Instance(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance %q: %w", opts.InstanceID, err)
-	}
-
+func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Session, resErr error) {
+	// Setup logger
 	logger := r.Runtime.Logger.Named("ai").With(
 		zap.String("instance_id", opts.InstanceID),
 		zap.String("session_id", opts.SessionID),
 		zap.String("user_id", opts.Claims.UserID),
 	)
 
+	// Load instance metadata to get project instructions
+	instance, err := r.Runtime.Instance(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instance %q: %w", opts.InstanceID, err)
+	}
+
+	// Open catalog
+	catalog, release, err := r.Runtime.Catalog(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	// Create or load the session in the catalog
+	var session *drivers.AISession
+	var messages []*Message
+	if opts.SessionID != "" {
+		session, err = catalog.FindAISession(ctx, opts.SessionID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
+		}
+
+		ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find messages for session %q: %w", opts.SessionID, err)
+		}
+		for _, m := range ms {
+			messages = append(messages, &Message{
+				ID:          m.ID,
+				ParentID:    m.ParentID,
+				SessionID:   m.SessionID,
+				Time:        m.CreatedOn,
+				Index:       m.Index,
+				Role:        Role(m.Role),
+				Type:        MessageType(m.Type),
+				Tool:        m.Tool,
+				ContentType: MessageContentType(m.ContentType),
+				Content:     m.Content,
+			})
+		}
+	}
+	if opts.SessionID == "" {
+		session = &drivers.AISession{
+			ID:         uuid.NewString(),
+			InstanceID: opts.InstanceID,
+			OwnerID:    opts.Claims.UserID,
+			Title:      "",
+			UserAgent:  opts.UserAgent,
+			CreatedOn:  time.Now(),
+			UpdatedOn:  time.Now(),
+		}
+		err = catalog.InsertAISession(ctx, session)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create session: %w", err)
+		}
+	}
+
+	// Create the session
 	base := &BaseSession{
 		id:         opts.SessionID,
 		instanceID: opts.InstanceID,
-		title:      "", // TODO: Load from database
-		userID:     opts.Claims.UserID,
 		claims:     opts.Claims,
 
 		runner:              r,
 		logger:              logger,
-		llm:                 ai,
-		llmRelease:          release,
 		projectInstructions: instance.AIInstructions,
+		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
+			return r.Runtime.AI(ctx, opts.InstanceID)
+		},
+		acquireCatalog: func(ctx context.Context) (drivers.CatalogStore, func(), error) {
+			return r.Runtime.Catalog(ctx, opts.InstanceID)
+		},
 
+		dto:         session,
+		messages:    messages,
 		subscribers: make(map[chan *Message]struct{}),
 	}
-
 	return &Session{
 		BaseSession: base,
 	}, nil
@@ -238,6 +286,8 @@ type Message struct {
 	ContentType MessageContentType `json:"content_type" yaml:"content_type"`
 	// Content is the content of the message.
 	Content string `json:"content" yaml:"content"`
+	// dirty is true if the Message has not yet been persisted.
+	dirty bool
 }
 
 // ToProto converts the message to an aiv1.CompletionMessage
@@ -322,25 +372,72 @@ func WithSession(ctx context.Context, s *Session) context.Context {
 type BaseSession struct {
 	id         string
 	instanceID string
-	title      string
-	userAgent  string
-	userID     string
 	claims     *runtime.SecurityClaims
 
 	runner              *Runner
 	logger              *zap.Logger
-	llm                 drivers.AIService
-	llmRelease          func()
 	projectInstructions string
+	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
+	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
 
-	mu          sync.RWMutex
-	messages    []*Message
-	subscribers map[chan *Message]struct{}
+	mu            sync.RWMutex
+	dto           *drivers.AISession
+	dtoDirty      bool
+	messages      []*Message
+	messagesDirty bool
+	subscribers   map[chan *Message]struct{}
 }
 
-func (s *BaseSession) Close() error {
-	// TODO: Flush messages and title to DB
-	s.llmRelease()
+func (s *BaseSession) Flush(ctx context.Context) error {
+	// Flushes may happen after a context cancellation. Make sure we have at least a bit of time to save.
+	ctx, cancel := graceful.WithMinimumDuration(ctx, 5*time.Second)
+	defer cancel()
+
+	// Exit early if nothing to flush
+	if !s.dtoDirty && s.messagesDirty {
+		return nil
+	}
+
+	// Open the catalog
+	catalog, release, err := s.acquireCatalog(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	// Update session metadata
+	if s.dtoDirty {
+		err = catalog.UpdateAISession(ctx, s.dto)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Flush messages
+	if s.messagesDirty {
+		for _, msg := range s.messages {
+			if !msg.dirty {
+				continue
+			}
+			err = catalog.InsertAIMessage(ctx, &drivers.AIMessage{
+				ID:          msg.ID,
+				ParentID:    msg.ParentID,
+				SessionID:   msg.SessionID,
+				CreatedOn:   msg.Time,
+				UpdatedOn:   msg.Time,
+				Index:       msg.Index,
+				Role:        string(msg.Role),
+				Type:        string(msg.Type),
+				Tool:        msg.Tool,
+				ContentType: string(msg.ContentType),
+				Content:     msg.Content,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -348,25 +445,27 @@ func (s *BaseSession) InstanceID() string {
 	return s.instanceID
 }
 
-func (s *BaseSession) UserID() string {
-	return s.userID
-}
-
 func (s *BaseSession) Claims() *runtime.SecurityClaims {
 	return s.claims
 }
 
 func (s *BaseSession) Title() string {
-	return s.title
+	return s.dto.Title
 }
 
 func (s *BaseSession) UpdateTitle(ctx context.Context, title string) error {
-	s.title = title
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dto.Title = title
+	s.dtoDirty = true
 	return nil
 }
 
 func (s *BaseSession) UpdateUserAgent(ctx context.Context, userAgent string) error {
-	s.userAgent = userAgent
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dto.UserAgent = userAgent
+	s.dtoDirty = true
 	return nil
 }
 
@@ -396,12 +495,8 @@ func (s *BaseSession) ProjectInstructions() string {
 	return s.projectInstructions
 }
 
-func (s *BaseSession) SetLLM(llm drivers.AIService, release func()) {
-	if s.llmRelease != nil {
-		s.llmRelease()
-	}
-	s.llm = llm
-	s.llmRelease = release
+func (s *BaseSession) SetLLM(acquireLLM func(ctx context.Context) (drivers.AIService, func(), error)) {
+	s.acquireLLM = acquireLLM
 }
 
 func (s *BaseSession) NextIndex() int {
@@ -831,6 +926,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		// Reload session from the new context (may be a sub-call if CallLambda was used.)
 		s := GetSession(ctx)
 
+		// Get LLM handle
+		llm, release, err := s.acquireLLM(ctx)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+
 		// Setup input messages.
 		messages := make([]*aiv1.CompletionMessage, 0, len(opts.Messages))
 		for _, msg := range opts.Messages {
@@ -840,9 +942,6 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			}
 			messages = append(messages, aimsg)
 		}
-
-		// Filter out messages if there are too many
-		messages = maybeTruncateMessages(messages)
 
 		// TODO: For durable execution, add messages from current scope.
 
@@ -854,8 +953,11 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				tools = nil
 			}
 
+			// Filter out messages if there are too many
+			messages = maybeTruncateMessages(messages)
+
 			// Call the LLM to complete the messages.
-			res, err := s.llm.Complete(ctx, messages, tools, outputSchema)
+			res, err := llm.Complete(ctx, messages, tools, outputSchema)
 			if err != nil {
 				return nil, fmt.Errorf("completion failed: %w", err)
 			}
