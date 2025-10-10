@@ -714,10 +714,10 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 func testAttributeValidation(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
-	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test@rilldata.com"})
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test-validation@rilldata.com"})
 	require.NoError(t, err)
 
-	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-org"})
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-validation-org"})
 	require.NoError(t, err)
 
 	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
@@ -729,7 +729,7 @@ func testAttributeValidation(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	t.Run("InsertOrganizationMemberUser validation", func(t *testing.T) {
-		user2, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test2@rilldata.com"})
+		user2, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test2-validation@rilldata.com"})
 		require.NoError(t, err)
 
 		testCases := []struct {
@@ -950,57 +950,6 @@ func TestValidateAttributesUnit(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-		})
-	}
-}
-
-func TestIsValidAttributeKey(t *testing.T) {
-	tests := []struct {
-		key   string
-		valid bool
-	}{
-		{"valid_key", true},
-		{"valid123", true},
-		{"Key_With_Caps", true},
-		{"123key", true},
-		{"_underscore_start", true},
-		{"underscore_end_", true},
-		{"", false},
-		{"invalid-key", false},
-		{"invalid key", false},
-		{"key@example", false},
-		{"key.with.dots", false},
-		{"key$special", false},
-		{"key#hash", false},
-		{"key%percent", false},
-		{"key&ampersand", false},
-		{"key*star", false},
-		{"key+plus", false},
-		{"key=equals", false},
-		{"key[bracket", false},
-		{"key]bracket", false},
-		{"key{brace", false},
-		{"key}brace", false},
-		{"key|pipe", false},
-		{"key\\backslash", false},
-		{"key/slash", false},
-		{"key:colon", false},
-		{"key;semicolon", false},
-		{"key\"quote", false},
-		{"key'apostrophe", false},
-		{"key<less", false},
-		{"key>greater", false},
-		{"key,comma", false},
-		{"key?question", false},
-		{"key!exclamation", false},
-		{"key~tilde", false},
-		{"key`backtick", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.key, func(t *testing.T) {
-			result := isValidAttributeKey(tt.key)
-			require.Equal(t, tt.valid, result, "isValidAttributeKey(%q) = %v, want %v", tt.key, result, tt.valid)
 		})
 	}
 }

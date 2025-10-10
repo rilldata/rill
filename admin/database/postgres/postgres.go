@@ -3546,7 +3546,7 @@ func decrypt(ciphertext, key []byte) ([]byte, error) {
 	return d, nil
 }
 
-// validateAttributes validates user/member attributes according to business rules
+// validateAttributes validates keys and values of an attributes map
 func (c *connection) validateAttributes(attributes map[string]any) error {
 	if len(attributes) > 50 {
 		return fmt.Errorf("too many attributes: maximum 50 allowed, got %d", len(attributes))
