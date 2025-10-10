@@ -667,6 +667,30 @@ type billingIssue struct {
 	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }
 
+// FormatValue formats a value for display, avoiding scientific notation for numbers
+func FormatValue(val interface{}) string {
+	if val == nil {
+		return "null"
+	}
+
+	switch v := val.(type) {
+	case float64:
+		if v == float64(int64(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case float32:
+		if v == float32(int32(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(float64(v), 'f', -1, 32)
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
 // PrintQueryResponse prints the query response in the desired format (human, json, csv)
 func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 	if len(res.Data) == 0 {
@@ -684,7 +708,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			rows[i] = make([]string, len(headers))
 			for j, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					rows[i][j] = fmt.Sprintf("%v", val.AsInterface())
+					rows[i][j] = FormatValue(val.AsInterface())
 				} else {
 					rows[i][j] = "null"
 				}
@@ -707,7 +731,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			record := make([]string, len(headers))
 			for i, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					record[i] = fmt.Sprintf("%v", val.AsInterface())
+					record[i] = FormatValue(val.AsInterface())
 				} else {
 					record[i] = ""
 				}
