@@ -272,15 +272,17 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			}
 		}
 
-		// Show if any partitions errored
+		// Surface warnings (non-blocking) for partitions and tests
+		var warnings []string
 		if model.State.PartitionsHaveErrors {
-			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+			warnings = append(warnings, errPartitionsHaveErrors.Error())
 		}
-		// Show if any model tests failed
 		if len(model.State.TestErrors) > 0 {
-			return runtime.ReconcileResult{Err: newTestsError(model.State.TestErrors), Retrigger: refreshOn}
+			// Include first few errors to avoid excessive log spam; full list is in state
+			// Note: model.State.TestErrors is persisted for UIs/APIs to show details
+			warnings = append(warnings, newTestsError(model.State.TestErrors).Error())
 		}
-		return runtime.ReconcileResult{Retrigger: refreshOn}
+		return runtime.ReconcileResult{Retrigger: refreshOn, Warnings: warnings}
 	}
 
 	// Acquire the execution semaphore for the remainder of the function.
@@ -403,18 +405,15 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 	}
 
-	// Show if any partitions errored
+	// Return the next refresh time with warnings as non-blocking signals
+	var warnings []string
 	if model.State.PartitionsHaveErrors {
-		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
+		warnings = append(warnings, errPartitionsHaveErrors.Error())
 	}
-
-	// Show if the model has tests that failed
 	if len(model.State.TestErrors) > 0 {
-		return runtime.ReconcileResult{Err: newTestsError(model.State.TestErrors), Retrigger: refreshOn}
+		warnings = append(warnings, newTestsError(model.State.TestErrors).Error())
 	}
-
-	// Return the next refresh time
-	return runtime.ReconcileResult{Retrigger: refreshOn}
+	return runtime.ReconcileResult{Retrigger: refreshOn, Warnings: warnings}
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
