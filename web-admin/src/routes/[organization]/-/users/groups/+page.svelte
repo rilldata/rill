@@ -128,7 +128,6 @@
         <OrgGroupsTable
           data={filteredGroups}
           currentUserEmail={$currentUser.data?.user.email}
-          searchUsersList={allOrganizationUsers}
           {hasNextPage}
           {isFetchingNextPage}
           onLoadMore={handleLoadMore}

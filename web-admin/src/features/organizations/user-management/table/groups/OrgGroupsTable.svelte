@@ -1,8 +1,5 @@
 <script lang="ts">
-  import type {
-    V1OrganizationMemberUser,
-    V1MemberUsergroup,
-  } from "@rilldata/web-admin/client";
+  import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import GroupActionsCell from "@rilldata/web-admin/features/organizations/user-management/table/groups/GroupActionsCell.svelte";
@@ -11,7 +8,6 @@
 
   export let data: V1MemberUsergroup[];
   export let currentUserEmail: string;
-  export let searchUsersList: V1OrganizationMemberUser[];
   export let hasNextPage: boolean;
   export let isFetchingNextPage: boolean;
   export let onLoadMore: () => void;
@@ -62,7 +58,6 @@
         flexRender(GroupActionsCell, {
           groupName: row.original.groupName,
           currentUserEmail: currentUserEmail,
-          searchUsersList: searchUsersList,
         }),
       meta: {
         widthPercent: 5,
