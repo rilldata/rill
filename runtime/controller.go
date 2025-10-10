@@ -66,6 +66,7 @@ type Reconciler interface {
 type ReconcileResult struct {
 	Err       error
 	Retrigger time.Time
+	Warnings  []string
 }
 
 // ReconcilerInitializer is a function that initializes a new reconciler for a specific controller
@@ -1390,6 +1391,13 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		c.Logger.Warn("Reconcile failed", logArgs...)
 	} else {
 		c.Logger.Info("Reconciled resource", logArgs...)
+	}
+
+	// Log warnings, if any, without affecting DAG scheduling
+	if len(inv.result.Warnings) > 0 {
+		for _, w := range inv.result.Warnings {
+			c.Logger.Warn("Reconcile warning", append(logArgs, zap.String("warning", w))...)
+		}
 	}
 
 	commonDims := []attribute.KeyValue{
