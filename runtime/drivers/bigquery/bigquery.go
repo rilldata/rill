@@ -31,7 +31,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "project_id",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
 			Placeholder: "my-project",
@@ -43,7 +42,6 @@ var spec = drivers.Spec{
 			DisplayName: "GCP Credentials",
 			Description: "GCP credentials as JSON string",
 			Placeholder: "Paste your GCP service account JSON here",
-			Required:    true,
 			Secret:      true,
 		},
 	},
