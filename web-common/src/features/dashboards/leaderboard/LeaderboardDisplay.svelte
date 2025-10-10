@@ -29,7 +29,7 @@
       measures: { measureLabel, isMeasureValidPercentOfTotal },
       leaderboard: {
         leaderboardShowContextForAllMeasures,
-        leaderboardMeasureNames,
+        leaderboardMeasures,
         leaderboardSortByMeasureName,
       },
     },
@@ -82,7 +82,7 @@
               isValidPercentOfTotal={$isMeasureValidPercentOfTotal}
               {metricsViewName}
               leaderboardSortByMeasureName={$leaderboardSortByMeasureName}
-              leaderboardMeasureNames={$leaderboardMeasureNames}
+              leaderboardMeasures={$leaderboardMeasures}
               leaderboardShowContextForAllMeasures={$leaderboardShowContextForAllMeasures}
               {whereFilter}
               {dimensionThresholdFilters}
@@ -106,7 +106,7 @@
                 timeRange.end,
               )}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              formatters={$leaderboardMeasureNames.length > 1
+              formatters={$leaderboardMeasures.length > 1
                 ? $measureFormatters
                 : { [$leaderboardSortByMeasureName]: $activeMeasureFormatter }}
               {setPrimaryDimension}
