@@ -67,7 +67,7 @@ export function getUserGroupsForUsersInOrg(
   });
 }
 
-const INFINITE_PAGE_SIZE = 12;
+const INFINITE_PAGE_SIZE = 50;
 
 export function getOrgUserMembers({
   organization,

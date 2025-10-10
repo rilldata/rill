@@ -5,11 +5,8 @@
   import { Trash2Icon, Pencil } from "lucide-svelte";
   import DeleteUserGroupConfirmDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/DeleteUserGroupConfirmDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
-  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
-
   export let groupName: string;
   export let currentUserEmail: string;
-  export let searchUsersList: V1OrganizationMemberUser[];
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
@@ -52,5 +49,4 @@
   bind:open={isEditDialogOpen}
   {groupName}
   {currentUserEmail}
-  organizationUsers={searchUsersList}
 />
