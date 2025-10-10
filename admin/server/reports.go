@@ -528,10 +528,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
-	res.Annotations.WebOpenMode = WebOpenMode(opts.WebOpenMode)
-	if res.Annotations.WebOpenMode == "" {
-		res.Annotations.WebOpenMode = WebOpenModeRecipient // Backwards compatibility
-	}
+	res.Annotations.WebOpenMode = WebOpenModeCreator // ignore runtime sent open mode and always use creator mode for the 0.73 patch until we can get UI toggle
 	if !res.Annotations.WebOpenMode.Valid() {
 		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
 	}
@@ -583,10 +580,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.WebOpenPath = opts.WebOpenPath
-	res.Annotations.WebOpenMode = WebOpenMode(opts.WebOpenMode)
-	if res.Annotations.WebOpenMode == "" {
-		res.Annotations.WebOpenMode = WebOpenModeRecipient // Backwards compatibility
-	}
+	res.Annotations.WebOpenMode = WebOpenModeCreator // ignore runtime sent open mode and always use creator mode for the 0.73 patch until we can get UI toggle
 	if !res.Annotations.WebOpenMode.Valid() {
 		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
 	}
