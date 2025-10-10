@@ -27,7 +27,7 @@ func (w *MigrateReportsCreatorModeWorker) Work(ctx context.Context, job *river.J
 	afterPath := ""
 	limit := 100
 	for {
-		reports, err := w.admin.DB.ListVirtualReportFiles(ctx, afterPath, limit)
+		reports, err := w.admin.DB.ListNonExpiredVirtualReportFiles(ctx, afterPath, limit)
 		if err != nil {
 			return err
 		}

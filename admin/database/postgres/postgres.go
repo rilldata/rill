@@ -2549,12 +2549,12 @@ func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention ti
 	return parseErr("virtual files", err)
 }
 
-func (c *connection) ListVirtualReportFiles(ctx context.Context, afterPath string, limit int) ([]*database.VirtualFileWithProjectID, error) {
+func (c *connection) ListNonExpiredVirtualReportFiles(ctx context.Context, afterPath string, limit int) ([]*database.VirtualFileWithProjectID, error) {
 	var res []*database.VirtualFileWithProjectID
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT project_id, path, data, deleted, updated_on
 		FROM virtual_files
-		WHERE path LIKE 'reports/%' AND environment = 'prod' AND path > $1
+		WHERE NOT deleted AND path LIKE 'reports/%' AND environment = 'prod' AND path > $1
 		ORDER BY path LIMIT $2
 	`, afterPath, limit)
 	if err != nil {

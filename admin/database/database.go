@@ -290,7 +290,7 @@ type DB interface {
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
-	ListVirtualReportFiles(ctx context.Context, afterPath string, limit int) ([]*VirtualFileWithProjectID, error)
+	ListNonExpiredVirtualReportFiles(ctx context.Context, afterPath string, limit int) ([]*VirtualFileWithProjectID, error)
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
 	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
