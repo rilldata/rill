@@ -29,20 +29,20 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/connect/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:         "google_application_credentials",
-			Type:        drivers.FilePropertyType,
-			DisplayName: "GCP Credentials",
-			Description: "GCP credentials as JSON string",
-			Placeholder: "Paste your GCP service account JSON here",
-			Secret:      true,
-		},
-		{
 			Key:         "project_id",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
 			Placeholder: "my-project",
 			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
+		},
+		{
+			Key:         "google_application_credentials",
+			Type:        drivers.FilePropertyType,
+			DisplayName: "GCP Credentials",
+			Description: "GCP credentials as JSON string",
+			Placeholder: "Paste your GCP service account JSON here",
+			Secret:      true,
 		},
 	},
 	ImplementsWarehouse: true,
