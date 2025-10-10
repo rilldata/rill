@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -12,6 +13,7 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -20,6 +22,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListConversations returns a list of conversations for an instance.
@@ -174,45 +177,72 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return status.Error(codes.InvalidArgument, "prompt cannot be empty")
 	}
 
-	// Create tool service for this server
-	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
+	// Setup user agent
+	version := s.runtime.Version().Number
+	if version == "" {
+		version = "unknown"
+	}
+	userAgent := fmt.Sprintf("rill/%s", version)
 
-	// Delegate to runtime business logic
-	_, err := s.runtime.CompleteWithTools(stream.Context(), &runtime.CompleteWithToolsOptions{
-		OwnerID:        claims.UserID,
-		InstanceID:     req.InstanceId,
-		ConversationID: req.ConversationId,
-		Messages: []*runtimev1.Message{{Role: "user", Content: []*aiv1.ContentBlock{{
-			BlockType: &aiv1.ContentBlock_Text{
-				Text: req.Prompt,
-			},
-		}}}},
-		ToolService: toolService,
-		OnMessage: func(conversationID string, msg *runtimev1.Message) error {
-			// Emit one message for each content block.
-			// In a future refactor, we'll try to apply this in the internal interfaces as well.
-			for _, block := range msg.Content {
-				err := stream.Send(&runtimev1.CompleteStreamingResponse{
-					ConversationId: conversationID,
-					Message: &runtimev1.Message{
-						Id:        msg.Id,
-						Role:      msg.Role,
-						Content:   []*aiv1.ContentBlock{block},
-						CreatedOn: msg.CreatedOn,
-						UpdatedOn: msg.UpdatedOn,
-					},
-				})
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+	// Open the AI session
+	runner := ai.NewRunner(s.runtime)
+	session, err := runner.Session(stream.Context(), &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+		UserAgent:  userAgent,
 	})
 	if err != nil {
 		return err
 	}
+	defer session.Flush(stream.Context())
 
+	// Context
+	ctx, cancel := context.WithCancel(stream.Context())
+	defer cancel()
+
+	// Open subscription for session messages and stream them to the client in the background
+	subCh := session.Subscribe()
+	defer session.Unsubscribe(subCh)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-subCh:
+				if !ok {
+					return
+				}
+				pb, err := msg.ToProto()
+				if err != nil {
+					s.logger.Error("failed to convert AI message to protobuf", zap.Error(err))
+					continue
+				}
+				err = stream.Send(&runtimev1.CompleteStreamingResponse{
+					ConversationId: msg.SessionID,
+					Message: &runtimev1.Message{
+						Id:        msg.ID,
+						Role:      pb.Role,
+						Content:   pb.Content,
+						CreatedOn: timestamppb.New(msg.Time),
+						UpdatedOn: timestamppb.New(msg.Time),
+					},
+				})
+				if err != nil {
+					s.logger.Warn("failed to send AI message to stream", zap.Error(err))
+				}
+			}
+		}
+	}()
+
+	// Make the call
+	var res *ai.RouterAgentResult
+	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+		Prompt: req.Prompt,
+	})
+	if err != nil && !errors.Is(err, context.Canceled) {
+		return err
+	}
 	return nil
 }
 
