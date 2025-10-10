@@ -1,6 +1,9 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
+  import MetricsViewIcon from "../../../../components/icons/MetricsViewIcon.svelte";
+  import Tooltip from "../../../../components/tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../../components/tooltip/TooltipContent.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
     cleanupConversationManager,
@@ -10,6 +13,7 @@
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
+  import MetricsViewCatalog from "./MetricsViewCatalog.svelte";
 
   $: ({ instanceId } = $runtime);
 
@@ -18,6 +22,11 @@
   });
 
   let chatInputComponent: ChatInput;
+  let catalogOpen = false;
+
+  function toggleCatalog() {
+    catalogOpen = !catalogOpen;
+  }
 
   // Focus on mount with a small delay for component initialization
   onMount(() => {
@@ -58,6 +67,18 @@
 
   <!-- Main Chat Area -->
   <div class="chat-main">
+    {#if !catalogOpen}
+      <Tooltip distance={8}>
+        <button class="catalog-toggle-button" on:click={toggleCatalog}>
+          <MetricsViewIcon size="16px" color="#6366f1" />
+          <span class="catalog-toggle-label">Metrics</span>
+        </button>
+        <TooltipContent slot="tooltip-content">
+          Show available metrics
+        </TooltipContent>
+      </Tooltip>
+    {/if}
+
     <div class="chat-content">
       <div class="chat-messages-wrapper">
         <Messages {conversationManager} layout="fullpage" />
@@ -75,6 +96,11 @@
       </div>
     </div>
   </div>
+
+  <!-- Metrics View Catalog Sidebar -->
+  {#if catalogOpen}
+    <MetricsViewCatalog onClose={toggleCatalog} />
+  {/if}
 </div>
 
 <style lang="postcss">
@@ -92,6 +118,34 @@
     flex-direction: column;
     overflow: hidden;
     background: var(--surface);
+    position: relative;
+  }
+
+  .catalog-toggle-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .catalog-toggle-button:hover {
+    background: #f9fafb;
+    border-color: #6366f1;
+  }
+
+  .catalog-toggle-label {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: #374151;
   }
 
   .chat-content {
@@ -136,6 +190,11 @@
 
     .chat-input-section {
       padding: 1rem;
+    }
+
+    .catalog-toggle-button {
+      top: 0.5rem;
+      right: 0.5rem;
     }
   }
 
