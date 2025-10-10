@@ -207,12 +207,18 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		})
 	}
 
-	for _, d := range e.metricsView.Dimensions {
+	for _, d := range e.metricsView.TimeDimensions {
 		if e.security.CanAccessField(d.Name) {
 			if e.metricsView.TimeDimension == d.Name {
 				// Skip the time dimension if it is already added
 				continue
 			}
+			qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: d.Name})
+		}
+	}
+
+	for _, d := range e.metricsView.Dimensions {
+		if e.security.CanAccessField(d.Name) {
 			qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: d.Name})
 		}
 	}
@@ -756,8 +762,8 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 
 // timeColumnOrExpr returns the time column or expression to use for the metrics view. ues time column if provided, otherwise fall back to the metrics view TimeDimension.
 func (e *Executor) timeColumnOrExpr(timeDim string) (string, error) {
-	// figure out the time column or expression to use from the dimension list
-	for _, dim := range e.metricsView.Dimensions {
+	// figure out the time column or expression to use from the time dimension list
+	for _, dim := range e.metricsView.TimeDimensions {
 		if dim.Name == timeDim {
 			expr, err := e.olap.Dialect().MetricsViewDimensionExpression(dim)
 			if err != nil {
