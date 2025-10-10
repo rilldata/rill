@@ -85,7 +85,8 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *metricsview.TimeRan
 	}
 
 	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{
-		SmallestGrain: timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
+		SmallestGrain:   timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
+		DefaultTimeZone: tz,
 	})
 	if err != nil {
 		return err
