@@ -145,6 +145,7 @@ export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  saveAnyway: boolean = false,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -196,17 +197,21 @@ export async function submitAddSourceForm(
       connector.name as string,
     );
   } catch (error) {
-    // The source file was already created, so we need to delete it
-    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
+    if (!saveAnyway) {
+      // The source file was already created, so we need to delete it
+      await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+      const errorDetails = (error as any).details;
 
-    throw {
-      message: error.message || "Unable to establish a connection",
-      details:
-        errorDetails && errorDetails !== error.message
-          ? errorDetails
-          : undefined,
-    };
+      throw {
+        message: error.message || "Unable to establish a connection",
+        details:
+          errorDetails && errorDetails !== error.message
+            ? errorDetails
+            : undefined,
+      };
+    }
+    // If saveAnyway is true, we continue despite the reconciliation error
+    // The file will be saved but may have connection issues
   }
 
   // Check for file errors
@@ -216,10 +221,12 @@ export async function submitAddSourceForm(
     instanceId,
     newSourceFilePath,
   );
-  if (errorMessage) {
+  if (errorMessage && !saveAnyway) {
     await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
     throw new Error(errorMessage);
   }
+  // If saveAnyway is true, we continue despite file errors
+  // The file will be saved but may have parsing issues
 
   await goto(`/files/${newSourceFilePath}`);
 }
@@ -228,6 +235,7 @@ export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  saveAnyway: boolean = false,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -286,17 +294,21 @@ export async function submitAddConnectorForm(
       connector.name as string,
     );
   } catch (error) {
-    // The connector file was already created, so we need to delete it
-    await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
+    if (!saveAnyway) {
+      // The connector file was already created, so we need to delete it
+      await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
+      const errorDetails = (error as any).details;
 
-    throw {
-      message: error.message || "Unable to establish a connection",
-      details:
-        errorDetails && errorDetails !== error.message
-          ? errorDetails
-          : undefined,
-    };
+      throw {
+        message: error.message || "Unable to establish a connection",
+        details:
+          errorDetails && errorDetails !== error.message
+            ? errorDetails
+            : undefined,
+      };
+    }
+    // If saveAnyway is true, we continue despite the reconciliation error
+    // The file will be saved but may have connection issues
   }
 
   // Check for file errors
@@ -306,10 +318,12 @@ export async function submitAddConnectorForm(
     instanceId,
     newConnectorFilePath,
   );
-  if (errorMessage) {
+  if (errorMessage && !saveAnyway) {
     await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
     throw new Error(errorMessage);
   }
+  // If saveAnyway is true, we continue despite file errors
+  // The file will be saved but may have parsing issues
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
     await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);

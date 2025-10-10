@@ -42,6 +42,9 @@
   ) => void = () => {};
   export let connectionTab: ConnectorType = "parameters";
   export { paramsForm, dsnForm };
+  export let isSavingAnyway: boolean = false;
+
+  let saveAnyway = false;
 
   const dispatch = createEventDispatcher();
 
@@ -224,7 +227,7 @@
     }
 
     try {
-      await submitAddConnectorForm(queryClient, connector, values);
+      await submitAddConnectorForm(queryClient, connector, values, saveAnyway);
       onClose();
     } catch (e) {
       let error: string;
@@ -261,6 +264,10 @@
         dsnErrorDetails = details;
         setError(dsnError, dsnErrorDetails);
       }
+    } finally {
+      // Reset saveAnyway state after submission completes
+      saveAnyway = false;
+      isSavingAnyway = false;
     }
   }
 
