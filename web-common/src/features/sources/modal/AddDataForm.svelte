@@ -50,6 +50,9 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
+  let saveAnyway = false;
+  let isSavingAnyway = false;
+
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
 
@@ -132,6 +135,7 @@
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
   let clickhouseParamsForm;
   let clickhouseDsnForm;
+  let clickhouseIsSavingAnyway: boolean;
 
   // Helper function to check if connector only has DSN (no tabs)
   function hasOnlyDsn() {
@@ -333,9 +337,14 @@
 
     try {
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
+        await submitAddSourceForm(queryClient, connector, values, saveAnyway);
       } else {
-        await submitAddConnectorForm(queryClient, connector, values);
+        await submitAddConnectorForm(
+          queryClient,
+          connector,
+          values,
+          saveAnyway,
+        );
       }
       onClose();
     } catch (e) {
@@ -375,6 +384,13 @@
         paramsError = error;
         paramsErrorDetails = details;
       }
+    } finally {
+      // Reset saveAnyway state after submission completes
+      saveAnyway = false;
+      isSavingAnyway = false;
+      if (connector.name === "clickhouse") {
+        clickhouseIsSavingAnyway = false;
+      }
     }
   }
 </script>
@@ -408,6 +424,7 @@
           bind:connectionTab
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
+          bind:isSavingAnyway={clickhouseIsSavingAnyway}
           on:submitting
         />
       {:else if hasDsnFormOption}
@@ -560,42 +577,85 @@
     >
       <Button onClick={onBack} type="secondary">Back</Button>
 
-      <Button
-        disabled={connector.name === "clickhouse"
-          ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-          : submitting || isSubmitDisabled}
-        loading={connector.name === "clickhouse"
-          ? clickhouseSubmitting
-          : submitting}
-        loadingCopy={connector.name === "clickhouse"
-          ? "Connecting..."
-          : "Testing connection..."}
-        form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-        submitForm
-        type="primary"
-      >
-        {#if connector.name === "clickhouse"}
-          {#if clickhouseConnectorType === "rill-managed"}
-            {#if clickhouseSubmitting}
-              Connecting...
-            {:else}
-              Connect
-            {/if}
-          {:else if clickhouseSubmitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else if isConnectorForm}
-          {#if submitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else}
-          Test and Add data
+      <div class="flex gap-2">
+        <!-- Save Anyway button - only show when there are errors -->
+        {#if dsnError || paramsError || clickhouseError}
+          <Button
+            disabled={connector.name === "clickhouse"
+              ? clickhouseSubmitting
+              : submitting}
+            loading={connector.name === "clickhouse"
+              ? clickhouseSubmitting
+              : submitting}
+            loadingCopy="Saving..."
+            onClick={() => {
+              saveAnyway = true;
+              isSavingAnyway = true;
+              // For ClickHouse, also set the flag in the child component
+              if (connector.name === "clickhouse") {
+                // The binding will sync this automatically
+              }
+              // Trigger form submission by dispatching a submit event
+              const formElement = document.getElementById(
+                connector.name === "clickhouse" ? clickhouseFormId : formId,
+              );
+              if (formElement) {
+                const submitEvent = new Event("submit", {
+                  bubbles: true,
+                  cancelable: true,
+                });
+                formElement.dispatchEvent(submitEvent);
+              }
+            }}
+            type="secondary"
+          >
+            Save Anyway
+          </Button>
         {/if}
-      </Button>
+
+        <Button
+          disabled={connector.name === "clickhouse"
+            ? clickhouseSubmitting ||
+              clickhouseIsSubmitDisabled ||
+              isSavingAnyway ||
+              clickhouseIsSavingAnyway
+            : submitting || isSubmitDisabled || isSavingAnyway}
+          loading={connector.name === "clickhouse"
+            ? clickhouseSubmitting &&
+              !(isSavingAnyway || clickhouseIsSavingAnyway)
+            : submitting && !isSavingAnyway}
+          loadingCopy={connector.name === "clickhouse"
+            ? "Connecting..."
+            : "Testing connection..."}
+          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+          submitForm
+          type="primary"
+        >
+          {#if connector.name === "clickhouse"}
+            {#if clickhouseConnectorType === "rill-managed"}
+              {#if clickhouseSubmitting && !(isSavingAnyway || clickhouseIsSavingAnyway)}
+                Connecting...
+              {:else}
+                Connect
+              {/if}
+            {:else if clickhouseSubmitting && !(isSavingAnyway || clickhouseIsSavingAnyway)}
+              Testing connection...
+            {:else}
+              Test and Connect
+            {/if}
+          {:else if isConnectorForm}
+            {#if submitting && !isSavingAnyway}
+              Testing connection...
+            {:else}
+              Test and Connect
+            {/if}
+          {:else if submitting && !isSavingAnyway}
+            Testing connection...
+          {:else}
+            Test and Add data
+          {/if}
+        </Button>
+      </div>
     </div>
   </div>
 
