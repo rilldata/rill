@@ -1,4 +1,4 @@
-import type { NumberParts } from "../humanizer-types";
+import type { LocaleConfig, NumberParts } from "../humanizer-types";
 import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
 
 export const orderOfMagnitude = (x) => {
@@ -37,6 +37,9 @@ export const formatNumWithOrderOfMag = (
 
   // strip commas from output?
   stripCommas = false,
+
+  // Optional locale configuration for formatting
+  locale?: LocaleConfig,
 ): NumberParts => {
   if (typeof x !== "number") {
     // FIXME add these warnings back in when the upstream code is robust enough
@@ -95,7 +98,8 @@ export const formatNumWithOrderOfMag = (
   let int = int_frac[0];
   const frac = int_frac[1];
 
-  if (stripCommas) {
+  // Always strip commas when locale is provided - we'll apply locale-specific separators later
+  if (stripCommas || locale) {
     int = int.replace(/,/g, "");
   }
 
@@ -113,5 +117,5 @@ export const formatNumWithOrderOfMag = (
       ? "."
       : "";
 
-  return { neg, int, dot, frac: frac ?? "", suffix };
+  return { neg, int, dot, frac: frac ?? "", suffix, locale };
 };

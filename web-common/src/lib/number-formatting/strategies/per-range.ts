@@ -2,6 +2,7 @@ import {
   type Formatter,
   type FormatterOptionsCommon,
   type FormatterRangeSpecsStrategy,
+  type LocaleConfig,
   NumberKind,
   type NumberParts,
   type RangeFormatSpec,
@@ -15,9 +16,13 @@ import {
 import { numberPartsToString } from "../utils/number-parts-utils";
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 
-const formatWithRangeSpec = (x: number, spec: RangeFormatSpec): NumberParts => {
+const formatWithRangeSpec = (
+  x: number,
+  spec: RangeFormatSpec,
+  locale?: LocaleConfig,
+): NumberParts => {
   if (spec.overrideValue !== undefined) {
-    return spec.overrideValue;
+    return { ...spec.overrideValue, locale };
   }
   const baseMag = spec.baseMagnitude ?? orderOfMagnitudeEng(spec.minMag);
   const padWithInsignificantZeros =
@@ -32,6 +37,8 @@ const formatWithRangeSpec = (x: number, spec: RangeFormatSpec): NumberParts => {
     spec.maxDigitsRight,
     padWithInsignificantZeros,
     useTrailingDot,
+    false,
+    locale,
   );
 };
 
@@ -55,9 +62,14 @@ const numPartsNotZero = (parts: NumberParts): boolean => {
 export class PerRangeFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
   initialSample: number[];
+  locale?: LocaleConfig;
 
-  constructor(options: FormatterRangeSpecsStrategy & FormatterOptionsCommon) {
+  constructor(
+    options: FormatterRangeSpecsStrategy & FormatterOptionsCommon,
+    locale?: LocaleConfig,
+  ) {
     this.options = options;
+    this.locale = locale;
 
     // sort ranges from small to large by lower bound
     this.options.rangeSpecs = this.options.rangeSpecs.sort(
@@ -110,7 +122,13 @@ export class PerRangeFormatter implements Formatter {
     let numParts: NumberParts | undefined = undefined;
 
     if (x === 0) {
-      numParts = { int: "0", dot: "", frac: "", suffix: "" };
+      numParts = {
+        int: "0",
+        dot: "",
+        frac: "",
+        suffix: "",
+        locale: this.locale,
+      };
     }
 
     if (numParts === undefined) {
@@ -123,11 +141,11 @@ export class PerRangeFormatter implements Formatter {
         if (spec.overrideValue !== undefined) {
           const OoM = orderOfMagnitude(x);
           if (OoM >= spec.minMag && OoM < spec.supMag) {
-            numParts = spec.overrideValue;
+            numParts = { ...spec.overrideValue, locale: this.locale };
             break;
           }
         }
-        numParts = formatWithRangeSpec(x, spec);
+        numParts = formatWithRangeSpec(x, spec, this.locale);
         if (
           numberPartsValidForRangeSpec(numParts, spec) &&
           numPartsNotZero(numParts)
@@ -151,7 +169,15 @@ export class PerRangeFormatter implements Formatter {
       const hasSmallFraction = magE <= -3;
 
       const maxDigitsLeft = hasSmallFraction ? 1 : 3;
-      numParts = formatNumWithOrderOfMag(x, magE, defaultMaxDigitsRight, true);
+      numParts = formatNumWithOrderOfMag(
+        x,
+        magE,
+        defaultMaxDigitsRight,
+        true,
+        false,
+        false,
+        this.locale,
+      );
       // Note that if this attempt at formatting results in more
       // digits left of the decimal point than maxDigitsLeft, then we must format this
       // number according to the next magnitude up. We'll attempt this up to 3 times
@@ -163,6 +189,9 @@ export class PerRangeFormatter implements Formatter {
           magE + maxDigitsLeft + attempts,
           defaultMaxDigitsRight,
           true,
+          false,
+          false,
+          this.locale,
         );
         attempts++;
       }
