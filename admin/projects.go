@@ -47,7 +47,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// The creating user becomes project admin
 	if opts.CreatedByUserID != nil {
-		err = s.InsertProjectMemberUser(txCtx, org.ID, proj.ID, *opts.CreatedByUserID, adminRole.ID)
+		err = s.InsertProjectMemberUser(txCtx, org.ID, proj.ID, *opts.CreatedByUserID, adminRole.ID, nil)
 		if err != nil {
 			return nil, err
 		}

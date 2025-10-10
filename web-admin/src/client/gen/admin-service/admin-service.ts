@@ -91,6 +91,7 @@ import type {
   AdminServiceUnsubscribeAlertBodyBody,
   AdminServiceUpdateBillingSubscriptionBodyBody,
   AdminServiceUpdateOrganizationBody,
+  AdminServiceUpdateOrganizationMemberUserAttributesBody,
   AdminServiceUpdateProjectBody,
   AdminServiceUpdateProjectVariablesBody,
   AdminServiceUpdateServiceBody,
@@ -145,6 +146,7 @@ import type {
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
+  V1GetOrganizationMemberUserAttributesResponse,
   V1GetOrganizationNameForDomainResponse,
   V1GetOrganizationResponse,
   V1GetPaymentsPortalURLResponse,
@@ -254,6 +256,7 @@ import type {
   V1UpdateBillingSubscriptionResponse,
   V1UpdateBookmarkRequest,
   V1UpdateBookmarkResponse,
+  V1UpdateOrganizationMemberUserAttributesResponse,
   V1UpdateOrganizationResponse,
   V1UpdateProjectResponse,
   V1UpdateProjectVariablesResponse,
@@ -3494,6 +3497,247 @@ export const createAdminServiceSetOrganizationMemberUserRole = <
 > => {
   const mutationOptions =
     getAdminServiceSetOrganizationMemberUserRoleMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GetOrganizationMemberUserAttributes gets the attributes for a member
+ */
+export const adminServiceGetOrganizationMemberUserAttributes = (
+  org: string,
+  email: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetOrganizationMemberUserAttributesResponse>({
+    url: `/v1/orgs/${org}/members/${email}/attributes`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetOrganizationMemberUserAttributesQueryKey = (
+  org: string,
+  email: string,
+) => {
+  return [`/v1/orgs/${org}/members/${email}/attributes`] as const;
+};
+
+export const getAdminServiceGetOrganizationMemberUserAttributesQueryOptions = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceGetOrganizationMemberUserAttributes>
+  >,
+  TError = RpcStatus,
+>(
+  org: string,
+  email: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<
+          ReturnType<typeof adminServiceGetOrganizationMemberUserAttributes>
+        >,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetOrganizationMemberUserAttributesQueryKey(org, email);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUserAttributes>>
+  > = ({ signal }) =>
+    adminServiceGetOrganizationMemberUserAttributes(org, email, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && email),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUserAttributes>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetOrganizationMemberUserAttributesQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationMemberUserAttributes>>
+  >;
+export type AdminServiceGetOrganizationMemberUserAttributesQueryError =
+  RpcStatus;
+
+/**
+ * @summary GetOrganizationMemberUserAttributes gets the attributes for a member
+ */
+
+export function createAdminServiceGetOrganizationMemberUserAttributes<
+  TData = Awaited<
+    ReturnType<typeof adminServiceGetOrganizationMemberUserAttributes>
+  >,
+  TError = RpcStatus,
+>(
+  org: string,
+  email: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<
+          ReturnType<typeof adminServiceGetOrganizationMemberUserAttributes>
+        >,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getAdminServiceGetOrganizationMemberUserAttributesQueryOptions(
+      org,
+      email,
+      options,
+    );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary UpdateOrganizationMemberUserAttributes updates the attributes for a member
+ */
+export const adminServiceUpdateOrganizationMemberUserAttributes = (
+  org: string,
+  email: string,
+  adminServiceUpdateOrganizationMemberUserAttributesBody: AdminServiceUpdateOrganizationMemberUserAttributesBody,
+) => {
+  return httpClient<V1UpdateOrganizationMemberUserAttributesResponse>({
+    url: `/v1/orgs/${org}/members/${email}/attributes`,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateOrganizationMemberUserAttributesBody,
+  });
+};
+
+export const getAdminServiceUpdateOrganizationMemberUserAttributesMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+      >,
+      TError,
+      {
+        org: string;
+        email: string;
+        data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+      },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+    >,
+    TError,
+    {
+      org: string;
+      email: string;
+      data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+    },
+    TContext
+  > => {
+    const mutationKey = ["adminServiceUpdateOrganizationMemberUserAttributes"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+      >,
+      {
+        org: string;
+        email: string;
+        data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+      }
+    > = (props) => {
+      const { org, email, data } = props ?? {};
+
+      return adminServiceUpdateOrganizationMemberUserAttributes(
+        org,
+        email,
+        data,
+      );
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceUpdateOrganizationMemberUserAttributesMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+    >
+  >;
+export type AdminServiceUpdateOrganizationMemberUserAttributesMutationBody =
+  AdminServiceUpdateOrganizationMemberUserAttributesBody;
+export type AdminServiceUpdateOrganizationMemberUserAttributesMutationError =
+  RpcStatus;
+
+/**
+ * @summary UpdateOrganizationMemberUserAttributes updates the attributes for a member
+ */
+export const createAdminServiceUpdateOrganizationMemberUserAttributes = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+      >,
+      TError,
+      {
+        org: string;
+        email: string;
+        data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<
+    ReturnType<typeof adminServiceUpdateOrganizationMemberUserAttributes>
+  >,
+  TError,
+  {
+    org: string;
+    email: string;
+    data: AdminServiceUpdateOrganizationMemberUserAttributesBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceUpdateOrganizationMemberUserAttributesMutationOptions(
+      options,
+    );
 
   return createMutation(mutationOptions, queryClient);
 };
