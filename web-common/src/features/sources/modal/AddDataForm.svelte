@@ -56,7 +56,6 @@
 
   let copied = false;
   let connectionTab: ConnectorType = "parameters";
-  let bigqueryCredentialsFilename: string = "";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -577,58 +576,6 @@
                   errors={$dsnErrors[propertyKey]}
                   bind:value={$dsnForm[propertyKey]}
                   alwaysShowError
-                />
-              {/if}
-            </div>
-          {/each}
-        </form>
-      {:else if connector.name === "bigquery"}
-        <form
-          id={paramsFormId}
-          class="pb-5 flex-grow overflow-y-auto"
-          use:paramsEnhance
-          on:submit|preventDefault={paramsSubmit}
-        >
-          {#each filteredParamsProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <Checkbox
-                  id={propertyKey}
-                  bind:checked={$paramsForm[propertyKey]}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                <InformationalField
-                  description={property.description}
-                  hint={property.hint}
-                  href={property.docsUrl}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                <CredentialsInput
-                  id={propertyKey}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                  bind:value={$paramsForm[propertyKey]}
-                  bind:filename={bigqueryCredentialsFilename}
-                  uploadFile={handleFileUpload}
-                  accept=".json"
                 />
               {/if}
             </div>
