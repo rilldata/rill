@@ -19,6 +19,10 @@ import { defaultPrimaryPalette, defaultSecondaryPalette } from "./colors.ts";
 // Re-export from color-generation for backward compatibility
 export { createDarkVariation, BLACK, WHITE, MODE } from "./color-generation.ts";
 
+// Cache default dark palettes (computed once on module load)
+const defaultPrimaryDarkPalette = createDarkVariationFn(defaultPrimaryPalette);
+const defaultSecondaryDarkPalette = createDarkVariationFn(defaultSecondaryPalette);
+
 // Re-export palette functions
 export {
   setSequentialColor,
@@ -205,6 +209,10 @@ function updateSecondaryColor(
  * Injects custom CSS from theme definition
  * Scopes CSS to .dashboard-theme-boundary to prevent affecting global Rill chrome
  * Only extracts and injects known safe CSS variables to prevent XSS attacks
+ * 
+ * Note: When switching between CSS themes on scoped elements, color variables are set
+ * programmatically and may need explicit cleanup if the new theme doesn't define them.
+ * The setVariables() function handles removal for scoped elements when colors are undefined.
  */
 function injectCustomCSS(css: string, scopeElement: HTMLElement): void {
   removeExistingCustomCSS();
@@ -263,13 +271,11 @@ function applyPrimaryColorVariables(
   if (!lightColor && !darkColor) return;
   
   try {
-    // Generate default dark palette from default light palette
-    const defaultDarkPalette = createDarkVariationFn(defaultPrimaryPalette);
     const palettes = generatePalettesFromColors(
       lightColor, 
       darkColor,
       defaultPrimaryPalette,
-      defaultDarkPalette
+      defaultPrimaryDarkPalette
     );
     
     applyPaletteToVariables(root, "theme", palettes);
@@ -291,13 +297,11 @@ function applySecondaryColorVariables(
   if (!lightColor && !darkColor) return;
   
   try {
-    // Generate default dark palette from default light palette
-    const defaultDarkPalette = createDarkVariationFn(defaultSecondaryPalette);
     const palettes = generatePalettesFromColors(
       lightColor, 
       darkColor,
       defaultSecondaryPalette,
-      defaultDarkPalette
+      defaultSecondaryDarkPalette
     );
     
     applyPaletteToVariables(root, "theme-secondary", palettes);
@@ -319,26 +323,27 @@ function generatePalettesFromColors(
   let lightPalette: Color[];
   let darkPalette: Color[];
   
+  // Generate palette from lightColor if provided
+  let generatedPalette: { light: Color[]; dark: Color[] } | null = null;
   if (lightColor) {
     const color = chroma(lightColor);
-    const palette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
-    lightPalette = palette.light;
+    generatedPalette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
+    lightPalette = generatedPalette.light;
   } else {
     // Use default light palette when not defined
     lightPalette = defaultLightPalette;
   }
   
+  // Handle dark palette
   if (darkColor) {
     const color = chroma(darkColor);
     const palette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
     darkPalette = palette.dark;
-  } else if (lightColor) {
-    // If light is defined but dark isn't, generate dark from light
-    const color = chroma(lightColor);
-    const palette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
-    darkPalette = palette.dark;
+  } else if (generatedPalette) {
+    // If light was generated but dark wasn't specified, reuse the generated dark variant
+    darkPalette = generatedPalette.dark;
   } else {
-    // Use default dark palette when not defined
+    // Use default dark palette when neither is defined
     darkPalette = defaultDarkPalette;
   }
   

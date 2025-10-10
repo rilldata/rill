@@ -305,27 +305,45 @@ export function extractSafeVariablesAsObject(css: string): {
 /**
  * Extracts color variables from CSS (--primary and --secondary)
  * Supports both :root.dark and .dark syntax
+ * Uses a more robust approach that handles nested braces
  */
 export function extractColorVariables(css: string): {
   primary: { lightColor: string | null; darkColor: string | null };
   secondary: { lightColor: string | null; darkColor: string | null };
 } {
-  // Match :root { --primary: ... }
-  const lightPrimaryMatch = css.match(/:root\s*\{[^}]*--primary:\s*([^;]+);/s);
-  // Match both :root.dark { } and .dark { }
-  const darkPrimaryMatch = css.match(/(?::root)?\.dark\s*\{[^}]*--primary:\s*([^;]+);/s);
-  const lightSecondaryMatch = css.match(/:root\s*\{[^}]*--secondary:\s*([^;]+);/s);
-  const darkSecondaryMatch = css.match(/(?::root)?\.dark\s*\{[^}]*--secondary:\s*([^;]+);/s);
-  
-  return {
-    primary: {
-      lightColor: lightPrimaryMatch ? lightPrimaryMatch[1].trim() : null,
-      darkColor: darkPrimaryMatch ? darkPrimaryMatch[1].trim() : null,
-    },
-    secondary: {
-      lightColor: lightSecondaryMatch ? lightSecondaryMatch[1].trim() : null,
-      darkColor: darkSecondaryMatch ? darkSecondaryMatch[1].trim() : null,
-    },
+  const result = {
+    primary: { lightColor: null as string | null, darkColor: null as string | null },
+    secondary: { lightColor: null as string | null, darkColor: null as string | null },
   };
+  
+  // Extract all CSS rules with their content
+  const rulePattern = /([^{]+)\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}/gs;
+  let match: RegExpExecArray | null;
+  
+  while ((match = rulePattern.exec(css)) !== null) {
+    const selector = match[1]?.trim();
+    const declarations = match[2];
+    
+    if (!selector || !declarations) continue;
+    
+    const isRoot = selector === ':root';
+    const isDark = selector === '.dark' || selector === ':root.dark';
+    
+    if (!isRoot && !isDark) continue;
+    
+    // Extract --primary and --secondary from declarations
+    const primaryMatch = declarations.match(/--primary:\s*([^;]+);/);
+    const secondaryMatch = declarations.match(/--secondary:\s*([^;]+);/);
+    
+    if (isRoot) {
+      if (primaryMatch) result.primary.lightColor = primaryMatch[1].trim();
+      if (secondaryMatch) result.secondary.lightColor = secondaryMatch[1].trim();
+    } else if (isDark) {
+      if (primaryMatch) result.primary.darkColor = primaryMatch[1].trim();
+      if (secondaryMatch) result.secondary.darkColor = secondaryMatch[1].trim();
+    }
+  }
+  
+  return result;
 }
 
