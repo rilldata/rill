@@ -1876,6 +1876,10 @@ func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, 
 }
 
 func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]interface{}, ifNotExists bool) (bool, error) {
+	if err := c.validateAttributes(attributes); err != nil {
+		return false, err
+	}
+
 	if !ifNotExists {
 		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4)", userID, orgID, roleID, attributes)
 		if err != nil {
@@ -1920,6 +1924,10 @@ func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID
 }
 
 func (c *connection) UpdateOrganizationMemberUserAttributes(ctx context.Context, orgID, userID string, attributes map[string]any) (bool, error) {
+	if err := c.validateAttributes(attributes); err != nil {
+		return false, err
+	}
+
 	res, err := c.getDB(ctx).ExecContext(ctx, `
 		UPDATE users_orgs_roles
 		SET attributes = $1
@@ -3536,4 +3544,37 @@ func decrypt(ciphertext, key []byte) ([]byte, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+// validateAttributes validates user/member attributes according to business rules
+func (c *connection) validateAttributes(attributes map[string]any) error {
+	if len(attributes) > 50 {
+		return fmt.Errorf("too many attributes: maximum 50 allowed, got %d", len(attributes))
+	}
+
+	for key, value := range attributes {
+		// Validate key format
+		if !isValidAttributeKey(key) {
+			return fmt.Errorf("invalid attribute key '%s': must contain only alphanumeric characters and underscores", key)
+		}
+
+		// Validate value length
+		if str, ok := value.(string); ok && len(str) > 256 {
+			return fmt.Errorf("attribute value for key '%s' too long: maximum 256 characters, got %d", key, len(str))
+		}
+	}
+	return nil
+}
+
+// isValidAttributeKey checks if an attribute key contains only alphanumeric characters and underscores
+func isValidAttributeKey(key string) bool {
+	if key == "" {
+		return false
+	}
+	for _, r := range key {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_') {
+			return false
+		}
+	}
+	return true
 }

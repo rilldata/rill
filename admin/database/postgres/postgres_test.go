@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -44,6 +45,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
+	t.Run("TestAttributeValidation", func(t *testing.T) { testAttributeValidation(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
 		cases := []struct {
@@ -709,6 +711,95 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	require.NoError(t, db.DeleteUser(ctx, user.ID))
 }
 
+func testAttributeValidation(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test@rilldata.com"})
+	require.NoError(t, err)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	// First add user to organization with valid attributes
+	validAttrs := map[string]interface{}{"valid_key": "value"}
+	_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, validAttrs, false)
+	require.NoError(t, err)
+
+	t.Run("InsertOrganizationMemberUser validation", func(t *testing.T) {
+		user2, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test2@rilldata.com"})
+		require.NoError(t, err)
+
+		testCases := []struct {
+			name        string
+			attributes  map[string]interface{}
+			expectError bool
+			errorMsg    string
+		}{
+			{
+				name: "valid attributes",
+				attributes: map[string]interface{}{
+					"valid_key_123": "value",
+					"another_key":   "another value",
+				},
+				expectError: false,
+			},
+			{
+				name: "invalid key with hyphen",
+				attributes: map[string]interface{}{
+					"invalid-key": "value",
+				},
+				expectError: true,
+				errorMsg:    "invalid attribute key 'invalid-key': must contain only alphanumeric characters and underscores",
+			},
+			{
+				name: "value too long",
+				attributes: map[string]interface{}{
+					"key": strings.Repeat("a", 257),
+				},
+				expectError: true,
+				errorMsg:    "attribute value for key 'key' too long: maximum 256 characters, got 257",
+			},
+			{
+				name: "too many attributes",
+				attributes: func() map[string]interface{} {
+					attrs := make(map[string]interface{})
+					for i := 0; i < 51; i++ {
+						attrs[fmt.Sprintf("key_%d", i)] = "value"
+					}
+					return attrs
+				}(),
+				expectError: true,
+				errorMsg:    "too many attributes: maximum 50 allowed, got 51",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := db.InsertOrganizationMemberUser(ctx, org.ID, user2.ID, role.ID, tc.attributes, false)
+				if tc.expectError {
+					require.Error(t, err)
+					if tc.errorMsg != "" {
+						require.Contains(t, err.Error(), tc.errorMsg)
+					}
+				} else {
+					require.NoError(t, err)
+					require.NoError(t, db.DeleteOrganizationMemberUser(ctx, org.ID, user2.ID))
+				}
+			})
+		}
+
+		// Clean up
+		require.NoError(t, db.DeleteUser(ctx, user2.ID))
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
 func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	ctx := context.Background()
 
@@ -729,6 +820,189 @@ func seed(t *testing.T, db database.DB) (orgID, projectID, userID string) {
 	require.NoError(t, err)
 
 	return org.ID, proj.ID, adminUser.ID
+}
+
+func TestValidateAttributesUnit(t *testing.T) {
+	c := &connection{}
+
+	tests := []struct {
+		name        string
+		attributes  map[string]any
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid attributes",
+			attributes: map[string]any{
+				"valid_key_123": "value",
+				"another_key":   "another value",
+				"key123":        "value123",
+				"Key_With_Caps": "value",
+			},
+			expectError: false,
+		},
+		{
+			name:        "empty attributes",
+			attributes:  map[string]any{},
+			expectError: false,
+		},
+		{
+			name:        "nil attributes",
+			attributes:  nil,
+			expectError: false,
+		},
+		{
+			name: "invalid key with hyphen",
+			attributes: map[string]any{
+				"invalid-key": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key 'invalid-key': must contain only alphanumeric characters and underscores",
+		},
+		{
+			name: "invalid key with space",
+			attributes: map[string]any{
+				"invalid key": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key 'invalid key': must contain only alphanumeric characters and underscores",
+		},
+		{
+			name: "invalid key with special characters",
+			attributes: map[string]any{
+				"key@example": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key 'key@example': must contain only alphanumeric characters and underscores",
+		},
+		{
+			name: "empty key",
+			attributes: map[string]any{
+				"": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key '': must contain only alphanumeric characters and underscores",
+		},
+		{
+			name: "value too long",
+			attributes: map[string]any{
+				"key": strings.Repeat("a", 257),
+			},
+			expectError: true,
+			errorMsg:    "attribute value for key 'key' too long: maximum 256 characters, got 257",
+		},
+		{
+			name: "value exactly 256 characters",
+			attributes: map[string]any{
+				"key": strings.Repeat("a", 256),
+			},
+			expectError: false,
+		},
+		{
+			name: "non-string value",
+			attributes: map[string]any{
+				"key": 123,
+			},
+			expectError: false,
+		},
+		{
+			name: "too many attributes",
+			attributes: func() map[string]any {
+				attrs := make(map[string]any)
+				for i := 0; i < 51; i++ {
+					attrs[fmt.Sprintf("key_%d", i)] = "value"
+				}
+				return attrs
+			}(),
+			expectError: true,
+			errorMsg:    "too many attributes: maximum 50 allowed, got 51",
+		},
+		{
+			name: "exactly 50 attributes",
+			attributes: func() map[string]any {
+				attrs := make(map[string]any)
+				for i := 0; i < 50; i++ {
+					attrs[fmt.Sprintf("key_%d", i)] = "value"
+				}
+				return attrs
+			}(),
+			expectError: false,
+		},
+		{
+			name: "mixed valid and invalid keys",
+			attributes: map[string]any{
+				"valid_key":   "value",
+				"invalid-key": "value",
+			},
+			expectError: true,
+			errorMsg:    "invalid attribute key 'invalid-key': must contain only alphanumeric characters and underscores",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := c.validateAttributes(tt.attributes)
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorMsg != "" {
+					require.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestIsValidAttributeKey(t *testing.T) {
+	tests := []struct {
+		key   string
+		valid bool
+	}{
+		{"valid_key", true},
+		{"valid123", true},
+		{"Key_With_Caps", true},
+		{"123key", true},
+		{"_underscore_start", true},
+		{"underscore_end_", true},
+		{"", false},
+		{"invalid-key", false},
+		{"invalid key", false},
+		{"key@example", false},
+		{"key.with.dots", false},
+		{"key$special", false},
+		{"key#hash", false},
+		{"key%percent", false},
+		{"key&ampersand", false},
+		{"key*star", false},
+		{"key+plus", false},
+		{"key=equals", false},
+		{"key[bracket", false},
+		{"key]bracket", false},
+		{"key{brace", false},
+		{"key}brace", false},
+		{"key|pipe", false},
+		{"key\\backslash", false},
+		{"key/slash", false},
+		{"key:colon", false},
+		{"key;semicolon", false},
+		{"key\"quote", false},
+		{"key'apostrophe", false},
+		{"key<less", false},
+		{"key>greater", false},
+		{"key,comma", false},
+		{"key?question", false},
+		{"key!exclamation", false},
+		{"key~tilde", false},
+		{"key`backtick", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.key, func(t *testing.T) {
+			result := isValidAttributeKey(tt.key)
+			require.Equal(t, tt.valid, result, "isValidAttributeKey(%q) = %v, want %v", tt.key, result, tt.valid)
+		})
+	}
 }
 
 func randomName() string {
