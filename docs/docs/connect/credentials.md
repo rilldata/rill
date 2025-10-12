@@ -13,23 +13,24 @@ At a high level, configuring credentials and credential management in Rill can b
 
 ## Setting credentials for Rill Developer
 
+
 When reading from a data source (or using a different OLAP engine), Rill will attempt to use credentials in the following order of priority:
 
 :::warning **Highly Recommended: Use .env for credentials**
 
-While Rill **can** infer credentials from your local environment (AWS CLI, Azure CLI, Google Cloud CLI), **we HIGHLY recommend explicitly configuring credentials in your `.env` file** for better security, reliability, and portability. Environment-inferred credentials may vary across different setups and may not work consistently across different environments, team members or when deploying to Rill Cloud.
+While Rill **can** infer credentials from your local environment (AWS CLI, Azure CLI, Google Cloud CLI), **we HIGHLY recommend explicitly configuring credentials in your `.env` file** for better security, reliability, and portability. Environment-inferred credentials may vary across different setups and may not work consistently across different environments, team members, or when deploying to Rill Cloud.
 
 :::
 
 1. **Credentials referenced in connection strings or DSN within YAML files (RECOMMENDED)** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)
-2. Credentials that have been passed in as a [variable](/connect/templating) when starting Rill Developer via `rill start --env key=value`
-3. Credentials that have been configured in your local environment via the CLI (for [AWS](/connect/data-source/s3#rill-developer-local-credentials) / [Azure](/connect/data-source/azure#rill-developer-local-credentials) / [Google Cloud](/connect/data-source/gcs#rill-developer-local-credentials)) - **NOT RECOMMENDED for production use**
+2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [templating](/connect/templating) for more details)
+3. **Credentials configured via CLI** - For [AWS](/connect/data-source/s3#rill-developer-local-credentials) / [Azure](/connect/data-source/azure#rill-developer-local-credentials) / [Google Cloud](/connect/data-source/gcs#rill-developer-local-credentials) - **NOT RECOMMENDED for production use**
 
 For more details, please refer to the corresponding [connector](/connect) or [OLAP engine](/connect/olap) page.
 
 :::note Ensuring security of credentials in use
 
-If you plan to deploy a project (to Rill Cloud), it is not recommended to pass in credentials directly through the local connection string or DSN as your credentials will then be checked in directly to your Git repository (and thus accessible by others). To ensure better security, credentials should be passed in as a variable / configured locally or specified in the project's local `.env` file (which is part of `.gitignore` and thus won't be included).
+If you plan to deploy a project (to Rill Cloud), it is not recommended to pass in credentials directly through the local connection string or DSN as your credentials will then be checked in directly to your Git repository (and thus accessible by others). To ensure better security, credentials should be passed in as a variable, configured locally, or specified in the project's local `.env` file (which is part of `.gitignore` and thus won't be included).
 
 :::
 
@@ -68,7 +69,7 @@ Additional variables can then be usable and referenceable for [templating](/conn
 
 ### Credentials Naming Schema 
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard coded project variables (that happen to correspond to the [Druid](/connect/olap/druid) and [ClickHouse](/connect/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard-coded project variables (that happen to correspond to the [Druid](/connect/olap/druid) and [ClickHouse](/connect/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!
 
 :::tip Avoid committing sensitive information to Git
 

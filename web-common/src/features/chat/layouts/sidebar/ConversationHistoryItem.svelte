@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "../../../../components/dropdown-menu";
+  import { getRelativeTime } from "../../../../lib/time/relative-time";
   import type { V1Conversation } from "../../../../runtime-client";
-  import { getRelativeTime } from "../../core/utils/date-utils";
 
   export let conversation: V1Conversation;
   export let isCurrentChat: boolean = false;

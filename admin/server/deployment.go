@@ -223,29 +223,29 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
-	instancePermissions := []runtimeauth.Permission{
-		runtimeauth.ReadObjects,
-		runtimeauth.ReadMetrics,
-		runtimeauth.ReadAPI,
-		runtimeauth.UseAI,
+	instancePermissions := []runtime.Permission{
+		runtime.ReadObjects,
+		runtime.ReadMetrics,
+		runtime.ReadAPI,
+		runtime.UseAI,
 	}
 	if depl.Environment == "dev" {
 		instancePermissions = append(instancePermissions,
-			runtimeauth.ReadOLAP,
-			runtimeauth.ReadProfiling,
-			runtimeauth.ReadRepo,
-			runtimeauth.ReadResolvers,
+			runtime.ReadOLAP,
+			runtime.ReadProfiling,
+			runtime.ReadRepo,
+			runtime.ReadResolvers,
 		)
 		if permissions.ManageDev {
 			instancePermissions = append(instancePermissions,
-				runtimeauth.EditRepo,
-				runtimeauth.EditTrigger,
+				runtime.EditRepo,
+				runtime.EditTrigger,
 			)
 		}
 	} else if permissions.ManageProd {
 		instancePermissions = append(instancePermissions,
-			runtimeauth.ReadResolvers,
-			runtimeauth.EditTrigger,
+			runtime.ReadResolvers,
+			runtime.EditTrigger,
 		)
 	}
 
@@ -254,7 +254,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			depl.RuntimeInstanceID: instancePermissions,
 		},
 		Attributes: attr,
@@ -608,12 +608,12 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-				runtimeauth.UseAI,
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
+				runtime.UseAI,
 			},
 		},
 		Attributes: attr,
@@ -711,12 +711,12 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         ttlDuration,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
-				runtimeauth.UseAI,
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
+				runtime.UseAI,
 			},
 		},
 		Attributes: attr,

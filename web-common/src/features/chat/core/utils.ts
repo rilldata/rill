@@ -1,7 +1,7 @@
 /**
  * Shared utilities for chat functionality
  *
- * Common functions used across Chat and Conversation classes to avoid duplication
+ * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in error handling, ID generation, and cache management.
  */
 import {
@@ -84,5 +84,16 @@ export function detectAppContext(page: Page): V1AppContext | null {
       };
     default:
       return null;
+  }
+}
+
+// Helper to check if a tool result contains chart data
+export function isChartToolResult(toolResult: any): boolean {
+  if (!toolResult || !toolResult.content) return false;
+  try {
+    const parsed = JSON.parse(toolResult.content);
+    return !!(parsed.chart_type && parsed.spec);
+  } catch {
+    return false;
   }
 }

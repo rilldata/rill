@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { isChartToolResult } from "@rilldata/web-common/features/chat/core/utils/component-utils";
+  import ChartBlock from "@rilldata/web-common/features/chat/core/messages/ChartBlock.svelte";
+  import { isChartToolResult } from "@rilldata/web-common/features/chat/core/utils";
   import type { V1Message } from "../../../../runtime-client";
-  import ChatChartBlock from "./ChatChartBlock.svelte";
-  import ChatTextMessage from "./ChatTextMessage.svelte";
-  import ChatToolCallBlock from "./ChatToolCallBlock.svelte";
+  import TextMessage from "./TextMessage.svelte";
+  import ToolCallBlock from "./ToolCallBlock.svelte";
 
   export let message: V1Message;
 
@@ -104,13 +104,13 @@
   {#each groupedContent as group, i (i)}
     {#if group.type === "text"}
       <!-- Text block -->
-      <ChatTextMessage {message} content={group.content} />
+      <TextMessage {message} content={group.content} />
     {:else if group.type === "chart"}
       <!-- Chart block -->
-      <ChatChartBlock chartType={group.chartType} chartSpec={group.chartSpec} />
+      <ChartBlock chartType={group.chartType} chartSpec={group.chartSpec} />
     {:else if group.type === "tool"}
       <!-- Tool Call + Result block -->
-      <ChatToolCallBlock
+      <ToolCallBlock
         toolCall={group.toolCall}
         toolResult={group.toolResult}
         isExpanded={expandedBlocks[i] || false}
