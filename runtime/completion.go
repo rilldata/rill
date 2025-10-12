@@ -751,14 +751,26 @@ Follow these steps in order:
 
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results. Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
 
-**Phase 3: Visualization (Optional)**
-5. **Visualize**: When appropriate, use "create_chart" to create interactive visualizations:
-   - Use bar charts for category comparisons
-   - Use line charts for trends over time
-   - Use area charts for cumulative trends
-   - Use stacked charts for multi-series comparisons
-   - Charts help users quickly understand patterns and trends
-   - IMPORTANT: Always include a "time_range" in the chart spec matching the data you queried
+**Phase 3: Visualization**
+5. **Create a chart:** After running "query_metrics_view" create a chart using "create_chart" unless:
+   - The user explicitly requests a table-only response
+   - The query returns only a single scalar value
+   - The data structure doesn't lend itself to visualization (e.g., text-heavy data)
+	 - There is no appropriate chart type which can be created for the underlying data
+   
+IMPORTANT: Always include a "time_range" in the chart spec matching the data you queried
+
+## Visualization Best Practices
+Choose the appropriate chart type based on your data:
+- Time series data: line_chart or area_chart (better for cummalative trends)
+- Category comparisons: bar_chart or stacked_bar
+- Part-to-whole relationships: donut_chart
+- Multiple dimensions: Use color encoding with bar_chart, stacked_bar or line_chart
+- Two measures from the same metrics view: Use combo_chart
+- Multiple measures from the same metrics view (more that 2): Use stacked bar chart with multiple measure fields
+- Distribution across two dimensions: heatmap
+
+You do not always have to include color for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
 </process>
 
 <analysis_guidelines>

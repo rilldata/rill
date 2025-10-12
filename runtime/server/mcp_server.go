@@ -33,9 +33,23 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 2. **Get metrics view spec:** Use "get_metrics_view" to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
 3. **Query the summary:** Use "query_metrics_view_summary" to obtain the available time range for a metrics view and sample values with their data types for each dimension. This provides a richer context for understanding the data.
 4. **Query the metrics:** Use "query_metrics_view" to run queries to get aggregated results.
-5. **Create a chart:** Use "create_chart" to create a chart from the query results.
+5. **Create a chart:** After running "query_metrics_view" create a chart using "create_chart" unless:
+   - The user explicitly requests a table-only response
+   - The query returns only a single scalar value
+   - The data structure doesn't lend itself to visualization (e.g., text-heavy data)
+	 - There is no appropriate chart type which can be created for the underlying data
+
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
+
+## Visualization Best Practices
+Choose the appropriate chart type based on your data:
+- Time series data → line_chart or area_chart (better for cummalative trends)
+- Category comparisons → bar_chart
+- Part-to-whole relationships → donut_chart
+- Multiple dimensions → Use color encoding or combo_chart
+- Multiple measures (more that 2) -> Use stacked bar chart with multiple measure fields
+- Distribution across two dimensions → heatmap
 `
 
 func (s *Server) newMCPServer() *server.MCPServer {
