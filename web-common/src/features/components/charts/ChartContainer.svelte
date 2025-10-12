@@ -27,7 +27,6 @@
   export let project: string | undefined = undefined;
 
   let chartProvider: ChartProvider;
-  $: console.log(chartType, $spec);
   $: {
     const chartConfig = CHART_CONFIG[chartType];
     chartProvider = new chartConfig.provider(spec, {});
@@ -53,6 +52,8 @@
     getDomainValues: () => chartProvider.getChartDomainValues($measures),
     isDarkMode: theme === "dark",
   });
+
+  $: chartTitle = chartProvider?.chartTitle?.($chartData.fields) ?? "";
 
   $: exploreAvailability = showExploreLink
     ? useExploreAvailability($runtime.instanceId, $spec?.metrics_view)
@@ -90,6 +91,20 @@
 
 {#if $spec}
   <div class="size-full flex flex-col">
+    {#if chartTitle}
+      <div class="flex items-center justify-between px-4 py-2">
+        <h4 class="text-base font-semibold ui-copy-inactive">{chartTitle}</h4>
+        {#if showExploreLink && $exploreAvailability.isAvailable}
+          <ExploreLink
+            exploreName={$exploreName}
+            {organization}
+            {project}
+            exploreState={$exploreState}
+            mode="icon-button"
+          />
+        {/if}
+      </div>
+    {/if}
     <div class="flex-1">
       <Chart
         {chartType}
@@ -100,16 +115,5 @@
         isCanvas={true}
       />
     </div>
-    {#if showExploreLink && $exploreAvailability.isAvailable}
-      <div class="flex justify-end p-2">
-        <ExploreLink
-          exploreName={$exploreName}
-          {organization}
-          {project}
-          exploreState={$exploreState}
-          mode="icon-button"
-        />
-      </div>
-    {/if}
   </div>
 {/if}

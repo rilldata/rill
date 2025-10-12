@@ -63,6 +63,13 @@
         ) {
           const chartData = parseChartData(toolResult);
           if (chartData) {
+            // Add both tool call+result block AND chart block
+            groups.push({
+              type: "tool",
+              toolCall: block.toolCall,
+              toolResult,
+              index,
+            });
             groups.push({
               type: "chart",
               chartType: chartData.chartType,
