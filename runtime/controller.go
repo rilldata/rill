@@ -1393,7 +1393,6 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
 
-	// Log warnings, if any, without affecting DAG scheduling
 	if len(inv.result.Warnings) > 0 {
 		for _, w := range inv.result.Warnings {
 			c.Logger.Warn("Reconcile warning", append(logArgs, zap.String("warning", w))...)

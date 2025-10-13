@@ -278,9 +278,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			warnings = append(warnings, errPartitionsHaveErrors.Error())
 		}
 		if len(model.State.TestErrors) > 0 {
-			// Include first few errors to avoid excessive log spam; full list is in state
-			// Note: model.State.TestErrors is persisted for UIs/APIs to show details
-			warnings = append(warnings, newTestsError(model.State.TestErrors).Error())
+			warnings = append(warnings, model.State.TestErrors...)
 		}
 		return runtime.ReconcileResult{Retrigger: refreshOn, Warnings: warnings}
 	}
@@ -411,7 +409,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		warnings = append(warnings, errPartitionsHaveErrors.Error())
 	}
 	if len(model.State.TestErrors) > 0 {
-		warnings = append(warnings, newTestsError(model.State.TestErrors).Error())
+		warnings = append(warnings, model.State.TestErrors...)
 	}
 	return runtime.ReconcileResult{Retrigger: refreshOn, Warnings: warnings}
 }
@@ -1790,14 +1788,6 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	}
 
 	return fmt.Sprintf("%s: test did not pass", test.Name), nil
-}
-
-// newTestsError creates a new error that summarizes the messages returned from runModelTests.
-func newTestsError(msgs []string) error {
-	if len(msgs) == 0 {
-		return nil // No errors
-	}
-	return fmt.Errorf("tests failed:\n%s", strings.Join(msgs, "\n"))
 }
 
 // hashWriteMapOrdered writes the keys and values of a map to the writer in a deterministic order.
