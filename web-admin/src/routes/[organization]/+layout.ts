@@ -7,7 +7,11 @@ export const load = async ({ params: { organization }, parent }) => {
   const { user, organizationPermissions } = await parent();
 
   let issues: V1BillingIssue[] = [];
-  if (user && organizationPermissions.readOrg) {
+  if (
+    user &&
+    organizationPermissions.readOrg &&
+    !organizationPermissions.guest
+  ) {
     // only try to get issues if the user can read org
     // also public projects will not have a user but will have `readOrg` permission
     try {

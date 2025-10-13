@@ -163,13 +163,8 @@
             return true;
           }
 
-          const enteredRecipients = values.emailRecipients.slice(
-            0,
-            values.emailRecipients.length - 1,
-          );
-
-          return enteredRecipients.every((recipient) =>
-            projectMembersSet.has(recipient),
+          return values.emailRecipients.every(
+            (recipient) => !recipient || projectMembersSet.has(recipient),
           );
         },
       ),
