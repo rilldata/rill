@@ -417,6 +417,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	return runtime.ReconcileResult{Retrigger: refreshOn}
 }
 
+func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}
+
 // executionSpecHash computes a hash of those model properties that impact execution.
 // It also incorporates the spec hashes of the model's refs.
 // If the spec hash changes, it means the model should be reset and fully re-executed.
@@ -1562,7 +1566,12 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 // newModelEnv makes a ModelEnv configured using the current instance.
 func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, error) {
-	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access instance: %w", err)
+	}
+
+	cfg, err := inst.Config()
 	if err != nil {
 		return nil, fmt.Errorf("failed to access instance config: %w", err)
 	}
@@ -1583,6 +1592,7 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 		RepoRoot:           repoRoot,
 		StageChanges:       cfg.StageChanges,
 		DefaultMaterialize: cfg.ModelDefaultMaterialize,
+		Connectors:         inst.ResolveConnectors(),
 		AcquireConnector:   r.C.AcquireConn,
 	}, nil
 }

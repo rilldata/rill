@@ -6923,20 +6923,61 @@ definitions:
         $ref: '#/definitions/v1SecurityRuleFieldAccess'
       rowFilter:
         $ref: '#/definitions/v1SecurityRuleRowFilter'
+      transitiveAccess:
+        $ref: '#/definitions/v1SecurityRuleTransitiveAccess'
   v1SecurityRuleAccess:
     type: object
     properties:
-      condition:
+      conditionExpression:
         type: string
+        description: |-
+          The condition under which this rule applies.
+          It is ANDed together with the condition_kinds and condition_resources.
+      conditionKinds:
+        type: array
+        items:
+          type: string
+        description: The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+      conditionResources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        description: |-
+          The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+          It is ORed together with the condition_kinds.
       allow:
         type: boolean
+        description: Whether to allow or deny access to the resources covered by the conditions.
+      exclusive:
+        type: boolean
+        description: If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true).
   v1SecurityRuleFieldAccess:
     type: object
     properties:
-      condition:
+      conditionExpression:
         type: string
+        description: |-
+          The condition under which this rule applies.
+          It is ANDed together with the condition_kinds and condition_resources.
+      conditionKinds:
+        type: array
+        items:
+          type: string
+        description: The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+      conditionResources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        description: |-
+          The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+          It is ORed together with the condition_kinds.
       allow:
         type: boolean
+      exclusive:
+        type: boolean
+        description: If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
       fields:
         type: array
         items:
@@ -6946,14 +6987,36 @@ definitions:
   v1SecurityRuleRowFilter:
     type: object
     properties:
-      condition:
+      conditionExpression:
         type: string
+        description: |-
+          The condition under which this rule applies.
+          It is ANDed together with the condition_kinds and condition_resources.
+      conditionKinds:
+        type: array
+        items:
+          type: string
+        description: The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+      conditionResources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        description: |-
+          The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+          It is ORed together with the condition_kinds.
       sql:
         type: string
         title: Raw SQL expression to apply to the underlying table
       expression:
         $ref: '#/definitions/v1Expression'
         title: Regular query expression referencing dimension names
+  v1SecurityRuleTransitiveAccess:
+    type: object
+    properties:
+      resource:
+        $ref: '#/definitions/v1ResourceName'
+        description: this rules resolves to rules that provides access to whatever is needed to access this resource.
   v1Source:
     type: object
     properties:

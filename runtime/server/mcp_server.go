@@ -199,8 +199,8 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 			return nil, err
 		}
 
-		claims := auth.GetClaims(ctx)
-		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+		claims := auth.GetClaims(ctx, instanceID)
+		if !claims.Can(runtime.ReadMetrics) {
 			return nil, ErrForbidden
 		}
 
@@ -210,7 +210,7 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 			ResolverProperties: map[string]any{
 				"metrics_view": metricsViewName,
 			},
-			Claims: claims.SecurityClaims(),
+			Claims: claims,
 		})
 		if err != nil {
 			return nil, err
@@ -231,9 +231,14 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 func (s *Server) mcpQueryMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	description := `
 Perform an arbitrary aggregation on a metrics view.
-Tip: Use the 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets.
-Important note: The 'time_range' parameter is inclusive of the start time and exclusive of the end time.
-Note: 'time_dimension' is an optional parameter under "time_range" that can be used to specify the time dimension to use for the time range. If not provided, the default time column of the metrics view will be used.
+
+Parameter notes:
+• The 'time_range' parameter is inclusive of the start time and exclusive of the end time
+• 'time_dimension' is optional under 'time_range' to specify which time column to use (defaults to the metrics view's default time column)
+
+Best practices:
+• Use 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets
+• For comparison queries: ensure 'time_range' and 'comparison_time_range' are non-overlapping and similar in duration (~20% tolerance) to ensure valid period-over-period comparisons
 
 Example: Get the total revenue by country and product category for 2024:
     {
@@ -341,8 +346,8 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 			return nil, errors.New("invalid arguments: expected an object")
 		}
 
-		claims := auth.GetClaims(ctx)
-		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+		claims := auth.GetClaims(ctx, instanceID)
+		if !claims.Can(runtime.ReadMetrics) {
 			return nil, ErrForbidden
 		}
 
@@ -350,7 +355,7 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 			InstanceID:         instanceID,
 			Resolver:           "metrics",
 			ResolverProperties: metricsProps,
-			Claims:             claims.SecurityClaims(),
+			Claims:             claims,
 		})
 		if err != nil {
 			return nil, err
