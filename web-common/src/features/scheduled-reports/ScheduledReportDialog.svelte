@@ -39,7 +39,6 @@
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
