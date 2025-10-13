@@ -1817,7 +1817,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	}
 	if searchPattern != "" {
 		qry.WriteString(fmt.Sprintf(" AND (lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", len(args)+1, len(args)+1))
-		args = append(args, "%"+searchPattern+"%")
+		args = append(args, searchPattern)
 	}
 	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
 
@@ -1841,7 +1841,7 @@ func (c *connection) CountOrganizationMemberUsers(ctx context.Context, orgID, fi
 
 	if searchPattern != "" {
 		query += fmt.Sprintf(" AND (lower(u.email) ILIKE $%d OR lower(u.display_name) ILIKE $%d)", len(args)+1, len(args)+1)
-		args = append(args, "%"+searchPattern+"%")
+		args = append(args, searchPattern)
 	}
 
 	err := c.getDB(ctx).QueryRowxContext(ctx, query, args...).Scan(&count)
