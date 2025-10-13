@@ -518,10 +518,7 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 		if mv == nil {
 			return nil
 		}
-		availableFields = make([]string, 0, len(mv.TimeDimensions)+len(mv.Dimensions)+len(mv.Measures))
-		for _, f := range mv.TimeDimensions {
-			availableFields = append(availableFields, f.Name)
-		}
+		availableFields = make([]string, 0, len(mv.Dimensions)+len(mv.Measures))
 		for _, f := range mv.Dimensions {
 			availableFields = append(availableFields, f.Name)
 		}

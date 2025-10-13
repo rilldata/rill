@@ -198,10 +198,7 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	e.metricsView.CacheKeyTtlSeconds = parent.CacheKeyTtlSeconds
 
 	// Override the dimensions and measures in the normalized metrics view if defined in the current metrics view.
-	names := make([]string, 0, len(parent.TimeDimensions)+len(parent.Dimensions))
-	for _, d := range parent.TimeDimensions {
-		names = append(names, d.Name)
-	}
+	names := make([]string, 0, len(parent.Dimensions))
 	for _, d := range parent.Dimensions {
 		names = append(names, d.Name)
 	}
@@ -216,14 +213,6 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 		}
 	}
 	e.metricsView.Dimensions = filteredDims
-
-	filteredTimeDims := make([]*runtimev1.MetricsViewSpec_Dimension, 0, len(parent.TimeDimensions))
-	for _, d := range parent.TimeDimensions {
-		if slices.Contains(names, d.Name) {
-			filteredTimeDims = append(filteredTimeDims, d)
-		}
-	}
-	e.metricsView.TimeDimensions = filteredTimeDims
 
 	names = make([]string, 0, len(parent.Measures))
 	for _, m := range parent.Measures {
@@ -621,22 +610,22 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 
 	// Populate the dimension types and separate time dimensions from regular dimensions
 	var dims []*runtimev1.MetricsViewSpec_Dimension
-	var timeDims []*runtimev1.MetricsViewSpec_Dimension
 	for _, d := range e.metricsView.Dimensions {
 		if typ, ok := types[d.Name]; ok {
 			d.DataType = typ
 		} // ignore dimensions that don't have a type in the schema
 		switch d.DataType.GetCode() {
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
-			timeDims = append(timeDims, d)
+			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
 		default:
-			dims = append(dims, d)
+			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
 		}
+		dims = append(dims, d)
 	}
 	// Ensure the primary time dimension is in the time dimensions list
 	if e.metricsView.TimeDimension != "" {
 		var found bool
-		for _, d := range timeDims {
+		for _, d := range dims {
 			if d.Name == e.metricsView.TimeDimension {
 				found = true
 				break
@@ -644,17 +633,17 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 		}
 		if !found {
 			// Create one and add it to the front of the list
-			timeDims = append([]*runtimev1.MetricsViewSpec_Dimension{
+			dims = append([]*runtimev1.MetricsViewSpec_Dimension{
 				{
 					Name:     e.metricsView.TimeDimension,
 					Column:   e.metricsView.TimeDimension,
 					DataType: types[e.metricsView.TimeDimension],
+					Type:     runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME,
 				},
-			}, timeDims...)
+			}, dims...)
 		}
 	}
 	e.metricsView.Dimensions = dims
-	e.metricsView.TimeDimensions = timeDims
 
 	return nil
 }

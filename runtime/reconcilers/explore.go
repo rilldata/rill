@@ -203,10 +203,7 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	}
 
 	// Validate and rewrite dimensions
-	allDims := make([]string, 0, len(mv.TimeDimensions)+len(mv.Dimensions))
-	for _, d := range mv.TimeDimensions {
-		allDims = append(allDims, d.Name)
-	}
+	allDims := make([]string, 0, len(mv.Dimensions))
 	for _, d := range mv.Dimensions {
 		allDims = append(allDims, d.Name)
 	}

@@ -61,6 +61,7 @@ export interface MetricsViewSpecDimension {
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
   dataType?: Runtimev1Type;
+  type?: MetricsViewSpecDimensionType;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -68,6 +69,16 @@ export interface MetricsViewSpecDimensionSelector {
   timeGrain?: V1TimeGrain;
   desc?: boolean;
 }
+
+export type MetricsViewSpecDimensionType =
+  (typeof MetricsViewSpecDimensionType)[keyof typeof MetricsViewSpecDimensionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecDimensionType = {
+  DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
+  DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
+  DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+} as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
 
@@ -1517,8 +1528,6 @@ export interface V1MetricsViewSpec {
   smallestTimeGrain?: V1TimeGrain;
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
-  /** List of dimensions of type timestamp/date. It will be populated in `state.valid_spec`. */
-  timeDimensions?: MetricsViewSpecDimension[];
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
   parentDimensions?: V1FieldSelector;

@@ -585,12 +585,6 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 	// not checking access if its primary time dimension
 	if name == a.MetricsView.TimeDimension {
 		// check if its defined in the dimensions or time dimension list otherwise return a default dimension spec
-		// we need to check dim list as well because this can be called as part of validation step before the time dimension list is set
-		for _, dim := range a.MetricsView.TimeDimensions {
-			if dim.Name == name {
-				return dim, nil
-			}
-		}
 		for _, dim := range a.MetricsView.Dimensions {
 			if dim.Name == name {
 				return dim, nil
@@ -605,12 +599,6 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 	if visible {
 		if !a.Security.CanAccessField(name) {
 			return nil, ErrForbidden
-		}
-	}
-
-	for _, dim := range a.MetricsView.TimeDimensions {
-		if dim.Name == name {
-			return dim, nil
 		}
 	}
 
@@ -1281,12 +1269,6 @@ func (a *AST) checkNameForComputedField(name string) error {
 
 	if name == a.MetricsView.TimeDimension {
 		return errors.New("name for computed field collides with the time dimension name")
-	}
-
-	for _, d := range a.MetricsView.TimeDimensions {
-		if d.Name == name {
-			return errors.New("name for computed field collides with an existing time dimension name")
-		}
 	}
 
 	for _, d := range a.MetricsView.Dimensions {

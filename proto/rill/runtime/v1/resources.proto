@@ -205,6 +205,13 @@ message MetricsViewSpec {
     string lookup_default_expression = 11;
     // The data type of the dimension. Only populated in ValidSpec.
     Type data_type = 12;
+    // The dimension type. Only populated in ValidSpec.
+    DimensionType type = 13;
+  }
+  enum DimensionType {
+    DIMENSION_TYPE_UNSPECIFIED = 0;
+    DIMENSION_TYPE_CATEGORICAL = 1;
+    DIMENSION_TYPE_TIME = 2;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -297,8 +304,6 @@ message MetricsViewSpec {
   TimeGrain smallest_time_grain = 8;
   // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
   string watermark_expression = 20;
-  // List of dimensions of type timestamp/date. It will be populated in `state.valid_spec`.
-  repeated Dimension time_dimensions = 33;
   // Dimensions in the metrics view
   repeated Dimension dimensions = 6;
   // Measures in the metrics view

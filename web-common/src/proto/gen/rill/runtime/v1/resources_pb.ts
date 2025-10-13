@@ -1400,13 +1400,6 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   watermarkExpression = "";
 
   /**
-   * List of dimensions of type timestamp/date. It will be populated in `state.valid_spec`.
-   *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Dimension time_dimensions = 33;
-   */
-  timeDimensions: MetricsViewSpec_Dimension[] = [];
-
-  /**
    * Dimensions in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Dimension dimensions = 6;
@@ -1499,7 +1492,6 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 33, name: "time_dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
     { no: 31, name: "parent_dimensions", kind: "message", T: FieldSelector },
@@ -1529,6 +1521,32 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     return proto3.util.equals(MetricsViewSpec, a, b);
   }
 }
+
+/**
+ * @generated from enum rill.runtime.v1.MetricsViewSpec.DimensionType
+ */
+export enum MetricsViewSpec_DimensionType {
+  /**
+   * @generated from enum value: DIMENSION_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_CATEGORICAL = 1;
+   */
+  CATEGORICAL = 1,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_TIME = 2;
+   */
+  TIME = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_DimensionType)
+proto3.util.setEnumType(MetricsViewSpec_DimensionType, "rill.runtime.v1.MetricsViewSpec.DimensionType", [
+  { no: 0, name: "DIMENSION_TYPE_UNSPECIFIED" },
+  { no: 1, name: "DIMENSION_TYPE_CATEGORICAL" },
+  { no: 2, name: "DIMENSION_TYPE_TIME" },
+]);
 
 /**
  * Type of measure query to generate
@@ -1634,6 +1652,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    */
   dataType?: Type;
 
+  /**
+   * The dimension type. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.DimensionType type = 13;
+   */
+  type = MetricsViewSpec_DimensionType.UNSPECIFIED;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1654,6 +1679,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "data_type", kind: "message", T: Type },
+    { no: 13, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_DimensionType) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Dimension {

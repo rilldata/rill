@@ -3397,6 +3397,9 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the dimension. Only populated in ValidSpec.
+      type:
+        $ref: '#/definitions/MetricsViewSpecDimensionType'
+        description: The dimension type. Only populated in ValidSpec.
     title: Dimensions are columns to filter and group by
   MetricsViewSpecDimensionSelector:
     type: object
@@ -3410,6 +3413,13 @@ definitions:
         type: boolean
         title: Only for when ordering (optional)
     title: Selector for a dimension
+  MetricsViewSpecDimensionType:
+    type: string
+    enum:
+      - DIMENSION_TYPE_UNSPECIFIED
+      - DIMENSION_TYPE_CATEGORICAL
+      - DIMENSION_TYPE_TIME
+    default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
     properties:
@@ -5832,12 +5842,6 @@ definitions:
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
-      timeDimensions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewSpecDimension'
-        description: List of dimensions of type timestamp/date. It will be populated in `state.valid_spec`.
       dimensions:
         type: array
         items:

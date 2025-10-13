@@ -592,13 +592,6 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 				TimeDimension: timeDim,
 				Measures:      make([]*runtimev1.MetricsViewSpec_Measure, len(measures)/2),
 				Dimensions:    make([]*runtimev1.MetricsViewSpec_Dimension, len(dimensions)/2),
-				TimeDimensions: []*runtimev1.MetricsViewSpec_Dimension{
-					{
-						Name:     timeDim,
-						Column:   timeDim,
-						DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true},
-					},
-				},
 			},
 		},
 	}
@@ -633,8 +626,17 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 			DisplayName: parser.ToDisplayName(name),
 			Column:      name,
 			DataType:    &runtimev1.Type{Code: dimensions[idx+1].(runtimev1.Type_Code), Nullable: true},
+			Type:        runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL,
 		}
 	}
+	// prepend the time dimension to metrics.State.ValidSpec.Dimensions
+	metrics.State.ValidSpec.Dimensions = slices.Insert(metrics.State.ValidSpec.Dimensions, 0, &runtimev1.MetricsViewSpec_Dimension{
+		Name:     timeDim,
+		Column:   timeDim,
+		DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true},
+		Type:     runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME,
+	})
+
 	metricsRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},
