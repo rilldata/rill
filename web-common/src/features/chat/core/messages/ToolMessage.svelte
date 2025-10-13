@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { V1Message } from "../../../../runtime-client";
-  import ChatTextMessage from "./ChatTextMessage.svelte";
-  import ChatToolCallBlock from "./ChatToolCallBlock.svelte";
+  import TextMessage from "./TextMessage.svelte";
+  import ToolCallBlock from "./ToolCallBlock.svelte";
 
   export let message: V1Message;
 
@@ -58,10 +58,10 @@
   {#each groupedContent as group, i (i)}
     {#if group.type === "text"}
       <!-- Text block -->
-      <ChatTextMessage {message} content={group.content} />
+      <TextMessage {message} content={group.content} />
     {:else if group.type === "tool"}
       <!-- Tool Call + Result block -->
-      <ChatToolCallBlock
+      <ToolCallBlock
         toolCall={group.toolCall}
         toolResult={group.toolResult}
         isExpanded={expandedBlocks[i] || false}

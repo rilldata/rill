@@ -2,15 +2,18 @@
   import { beforeNavigate } from "$app/navigation";
   import { onMount } from "svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { cleanupChatInstance, getChatInstance } from "../../core/chat";
+  import {
+    cleanupConversationManager,
+    getConversationManager,
+  } from "../../core/conversation-manager";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
-  import ChatMessages from "../../core/messages/ChatMessages.svelte";
+  import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
 
   $: ({ instanceId } = $runtime);
 
-  $: chat = getChatInstance(instanceId, {
+  $: conversationManager = getConversationManager(instanceId, {
     conversationState: "url",
   });
 
@@ -28,11 +31,11 @@
     chatInputComponent?.focusInput();
   }
 
-  // Clean up chat resources when leaving the chat context entirely
+  // Clean up conversation manager resources when leaving the chat context entirely
   beforeNavigate(({ to }) => {
     const isChatRoute = to?.route?.id?.includes("ai");
     if (!isChatRoute) {
-      cleanupChatInstance(instanceId);
+      cleanupConversationManager(instanceId);
     }
   });
 </script>
@@ -40,7 +43,7 @@
 <div class="chat-fullpage">
   <!-- Conversation List Sidebar -->
   <ConversationSidebar
-    {chat}
+    {conversationManager}
     onConversationClick={() => {
       chatInputComponent?.focusInput();
     }}
@@ -57,14 +60,14 @@
   <div class="chat-main">
     <div class="chat-content">
       <div class="chat-messages-wrapper">
-        <ChatMessages {chat} layout="fullpage" />
+        <Messages {conversationManager} layout="fullpage" />
       </div>
     </div>
 
     <div class="chat-input-section">
       <div class="chat-input-wrapper">
         <ChatInput
-          {chat}
+          {conversationManager}
           onSend={onMessageSend}
           bind:this={chatInputComponent}
         />
