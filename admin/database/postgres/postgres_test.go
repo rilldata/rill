@@ -459,36 +459,36 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "test2@rilldata.com", users[0].Email)
 
 	// test search pattern functionality
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test1")
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test1%")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test2")
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test2%")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)
 
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test")
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test%")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 2)
 
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "nonexistent")
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%nonexistent%")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 0)
 
 	// test display name search functionality
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "John")
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "John%")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "Jane")
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%Jane%")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)
 
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "Admin")
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%Admin")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
