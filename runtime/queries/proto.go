@@ -342,7 +342,7 @@ func rowFilterJSONAndFields(where *runtimev1.Expression, whereSQL string, filter
 		return "", nil, fmt.Errorf("invalid where expression: %w", err)
 	}
 
-	fields := extractFieldsFromExpression(where)
+	fields := metricsview.AnalyzeExpressionFields(metricsview.NewExpressionFromProto(where))
 
 	return string(b), fields, nil
 }
@@ -358,46 +358,4 @@ func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRang
 
 	tr.End = timestamppb.New(t)
 	return tr
-}
-
-func extractFieldsFromExpression(expr *runtimev1.Expression) []string {
-	fieldsMap := make(map[string]bool)
-	extractFieldsFromExpressionWalk(expr, fieldsMap)
-
-	var fields []string
-	for f := range fieldsMap {
-		fields = append(fields, f)
-	}
-	return fields
-}
-
-func extractFieldsFromExpressionWalk(expr *runtimev1.Expression, fields map[string]bool) {
-	if expr == nil {
-		return
-	}
-
-	if expr.GetIdent() != "" {
-		fields[expr.GetIdent()] = true
-	}
-
-	if expr.GetCond() != nil {
-		for _, ex := range expr.GetCond().Exprs {
-			extractFieldsFromExpressionWalk(ex, fields)
-		}
-	}
-
-	if expr.GetSubquery() != nil {
-		if expr.GetSubquery().Dimension != "" {
-			fields[expr.GetSubquery().Dimension] = true
-		}
-		if len(expr.GetSubquery().Measures) > 0 {
-			for _, m := range expr.GetSubquery().Measures {
-				if m != "" {
-					fields[m] = true
-				}
-			}
-		}
-		extractFieldsFromExpressionWalk(expr.GetSubquery().Where, fields)
-		extractFieldsFromExpressionWalk(expr.GetSubquery().Having, fields)
-	}
 }
