@@ -425,6 +425,10 @@ func rowFilterJSON(where *runtimev1.Expression, whereSQL string, filter *runtime
 		where = whereSQLExp
 	}
 
+	if where == nil {
+		return "", nil
+	}
+
 	b, err := protojson.Marshal(where)
 	if err != nil {
 		return "", fmt.Errorf("invalid where expression: %w", err)
