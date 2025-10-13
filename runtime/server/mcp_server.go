@@ -41,15 +41,6 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
-
-## Visualization Best Practices
-Choose the appropriate chart type based on your data:
-- Time series data → line_chart or area_chart (better for cummalative trends)
-- Category comparisons → bar_chart
-- Part-to-whole relationships → donut_chart
-- Multiple dimensions → Use color encoding or combo_chart
-- Multiple measures (more that 2) -> Use stacked bar chart with multiple measure fields
-- Distribution across two dimensions → heatmap
 `
 
 func (s *Server) newMCPServer() *server.MCPServer {
@@ -564,7 +555,8 @@ Example Specification
 ` + "```" + `
 
 ### 4. Stacked Bar Chart (` + "`stacked_bar`" + `)
-**Use for:** Showing multiple data series stacked on top of each other
+**Use for:** Showing multiple data series stacked on top of each other.
+
 
 Example Specification
 ` + "```json" + `
@@ -602,6 +594,10 @@ Example Specification
   }
 }
 ` + "```" + `
+
+**IMPORTANT** : The chart types bar_chart, area_chart, line_chart and stacked_bar follow the same schema definition.
+Note that when charting out multiple fields using "fields" key, you must also add a "field" key with value being the first field in fields array
+
 
 ### 5. Normalized Stacked Bar Chart (` + "`stacked_bar_normalized`" + `)
 **Use for:** Showing proportions instead of absolute values (100% stacked)
@@ -773,9 +769,9 @@ Example Specification
 ## Field Type Definitions
 
 ### Data Types
-- **nominal**: Categorical data (e.g., categories, names, labels)
-- **temporal**: Time-based data (dates, timestamps)
-- **quantitative**: Numerical data (counts, amounts, measurements)
+- **nominal**: Categorical data (e.g., categories, names, labels), use for dimensions
+- **temporal**: Time-based data (dates, timestamps), use for time dimensions and timstamps
+- **quantitative**: Numerical data (counts, amounts, measurements), use for measures
 - **value**: Special type for multiple measures (used in color field)
 
 ### Common Field Properties
@@ -807,14 +803,37 @@ Example Specification
   }
   ` + "```" + `
 
-## Usage Guidelines
 
-1. **Time-based visualizations**: Use ` + "`line_chart`" + ` or ` + "`area_chart`" + ` with temporal x-axis
-2. **Categorical comparisons**: Use ` + "`bar_chart`" + ` with nominal x-axis
-3. **Part-to-whole relationships**: Use ` + "`donut_chart`" + ` or ` + "`stacked_bar_normalized`" + `
-4. **Process flows**: Use ` + "`funnel_chart`" + ` for conversion or stage-based data
-5. **Two-dimensional patterns**: Use ` + "`heatmap`" + ` for correlations or patterns across two dimensions
-6. **Multiple metrics**: Use ` + "`combo_chart`" + ` to compare different scales or ` + "`stacked_bar`" + ` for cumulative values
+## Visualization Best Practices & Usage Guidelines
+
+Choose the appropriate chart type based on your data and analysis goals:
+
+### Time Series Analysis
+- **` + "`line_chart`" + `**: Best for showing trends over time, especially with continuous data or multiple series
+- **` + "`area_chart`" + `**: Ideal for cumulative trends or showing magnitude of change over time
+- **Temporal axis**: Always use temporal encoding for time-based x-axis
+
+### Categorical Comparisons
+- **` + "`bar_chart`" + `**: Standard choice for comparing discrete categories or groups
+- **` + "`stacked_bar`" + `**: Standard choice for comparing discrete categories or groups when split by dimension is involved
+- **Nominal axis**: Use nominal encoding for categorical x-axis
+
+### Part-to-Whole Relationships
+- **` + "`donut_chart`" + `**: Shows composition of a whole
+- **` + "`stacked_bar_normalized`" + `**: Compares part-to-whole across multiple groups
+- **Consideration**: Avoid when precise value comparison is needed
+
+### Multiple Dimensions
+- **` + "`combo_chart`" + `**: Combines different chart types for metrics with different scales. Used when comparing 2 measures.
+- **` + "`stacked_bar`" + `**: Shows cumulative values across categories (use for 2+ measures)
+- **` + "`heatmap`" + `**: Reveals patterns across two categorical dimensions along with single measure
+- **Color encoding**: Add a second dimension to bar, stacked bar, line and area charts through color mapping
+
+### Specialized Use Cases
+- **` + "`funnel_chart`" + `**: Visualizes conversion rates or stage-based processes
+- **Distribution patterns**: Use ` + "`heatmap`" + ` for density or correlation analysis
+- **Multi-measure comparison**: Prefer ` + "`stacked_bar`" + ` when comparing 3 or more related measures
+
 
 ## Important Notes
 
@@ -842,8 +861,8 @@ Example Specification
 		instanceID := mcpInstanceIDFromContext(ctx)
 
 		// Validate access
-		claims := auth.GetClaims(ctx)
-		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+		claims := auth.GetClaims(ctx, instanceID)
+		if !claims.Can(runtime.ReadMetrics) {
 			return nil, ErrForbidden
 		}
 
