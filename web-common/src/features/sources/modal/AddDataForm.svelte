@@ -585,8 +585,8 @@
               ? clickhouseSubmitting
               : submitting}
             loading={connector.name === "clickhouse"
-              ? clickhouseSubmitting
-              : submitting}
+              ? clickhouseSubmitting && clickhouseIsSavingAnyway
+              : submitting && isSavingAnyway}
             loadingCopy="Saving..."
             onClick={() => {
               saveAnyway = true;
@@ -621,8 +621,7 @@
               clickhouseIsSavingAnyway
             : submitting || isSubmitDisabled || isSavingAnyway}
           loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting &&
-              !(isSavingAnyway || clickhouseIsSavingAnyway)
+            ? clickhouseSubmitting && !clickhouseIsSavingAnyway
             : submitting && !isSavingAnyway}
           loadingCopy={connector.name === "clickhouse"
             ? "Connecting..."
@@ -633,12 +632,12 @@
         >
           {#if connector.name === "clickhouse"}
             {#if clickhouseConnectorType === "rill-managed"}
-              {#if clickhouseSubmitting && !(isSavingAnyway || clickhouseIsSavingAnyway)}
+              {#if clickhouseSubmitting && !clickhouseIsSavingAnyway}
                 Connecting...
               {:else}
                 Connect
               {/if}
-            {:else if clickhouseSubmitting && !(isSavingAnyway || clickhouseIsSavingAnyway)}
+            {:else if clickhouseSubmitting && !clickhouseIsSavingAnyway}
               Testing connection...
             {:else}
               Test and Connect
