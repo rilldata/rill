@@ -31,6 +31,8 @@
 
   export let data: LayoutData;
 
+  const { deploy } = featureFlags;
+
   queryClient.getQueryCache().config.onError = (
     error: AxiosError,
     query: Query,
@@ -81,7 +83,9 @@
         <BannerCenter />
         <RepresentingUserBanner />
         <ApplicationHeader {mode} />
-        <RemoteProjectManager />
+        {#if $deploy}
+          <RemoteProjectManager />
+        {/if}
       {/if}
 
       <slot />

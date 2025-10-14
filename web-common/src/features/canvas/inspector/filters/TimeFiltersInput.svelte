@@ -4,8 +4,8 @@
   import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { DateTime, Interval } from "luxon";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { DateTime, Interval } from "luxon";
   import type { TimeControls } from "../../stores/time-control";
 
   export let id: string;
@@ -17,9 +17,7 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: {
-      spec: { canvasSpec },
-    },
+    canvasEntity: { spec },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({
@@ -42,8 +40,8 @@
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange;
-  $: timeRanges = $canvasSpec?.timeRanges ?? [];
+  $: defaultTimeRange = $spec?.defaultPreset?.timeRange;
+  $: timeRanges = $spec?.timeRanges ?? [];
 
   $: activeTimeZone = $selectedTimezone;
 

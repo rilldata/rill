@@ -2,13 +2,12 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { colorToVariableReference } from "@rilldata/web-common/features/components/charts/util";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,
   } from "@rilldata/web-common/features/themes/color-config";
   import chroma, { type Color } from "chroma-js";
-  import { colorToVariableReference } from "@rilldata/web-common/features/canvas/components/charts/util";
-
   export let markConfig: string;
   export let onChange: (newColor: string) => void;
   export let small = false;

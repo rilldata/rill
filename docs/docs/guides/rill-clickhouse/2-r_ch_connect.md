@@ -40,7 +40,7 @@ You can obtain the credentials from your ClickHouse Cloud account by clicking th
 ```
 
 :::
-Once this is created, a `clickhouse.yaml` file will appear in the `connectors` folder and the following will be added to your rill.yaml.
+Once this is created, a `clickhouse.yaml` file will appear in the `connectors` directory and the following will be added to your rill.yaml.
 
 ```yaml
 compiler: rillv1

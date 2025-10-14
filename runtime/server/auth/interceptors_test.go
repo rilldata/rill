@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,10 +17,10 @@ func TestMiddleware(t *testing.T) {
 
 	t.Run("Anon", func(t *testing.T) {
 		handler := HTTPMiddleware(aud, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims := GetClaims(r.Context())
+			claims := GetClaims(r.Context(), "")
 			require.NotNil(t, claims)
-			require.Equal(t, "", claims.Subject())
-			require.False(t, claims.Can(ManageInstances))
+			require.Equal(t, "", claims.UserID)
+			require.False(t, claims.Can(runtime.ManageInstances))
 		}))
 
 		req := httptest.NewRequest("GET", "/", nil)
@@ -32,16 +33,16 @@ func TestMiddleware(t *testing.T) {
 			AudienceURL:       aud.audienceURL,
 			Subject:           "token",
 			TTL:               time.Hour,
-			SystemPermissions: []Permission{ManageInstances},
+			SystemPermissions: []runtime.Permission{runtime.ReadInstance},
 		})
 		require.NoError(t, err)
 
 		handler := HTTPMiddleware(aud, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims := GetClaims(r.Context())
+			claims := GetClaims(r.Context(), "")
 			require.NotNil(t, claims)
-			require.Equal(t, "token", claims.Subject())
-			require.True(t, claims.Can(ManageInstances))
-			require.False(t, claims.Can(ReadOLAP))
+			require.Equal(t, "token", claims.UserID)
+			require.True(t, claims.Can(runtime.ReadInstance))
+			require.False(t, claims.Can(runtime.ReadOLAP))
 		}))
 
 		req := httptest.NewRequest("GET", "/", nil)
@@ -53,11 +54,11 @@ func TestMiddleware(t *testing.T) {
 	t.Run("Open", func(t *testing.T) {
 		// NOTE: aud is nil, indicating no authentication
 		handler := HTTPMiddleware(nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims := GetClaims(r.Context())
+			claims := GetClaims(r.Context(), "")
 			require.NotNil(t, claims)
-			require.Equal(t, "", claims.Subject())
-			require.True(t, claims.Can(ManageInstances))
-			require.True(t, claims.Can(ReadOLAP))
+			require.Equal(t, "", claims.UserID)
+			require.True(t, claims.Can(runtime.ManageInstances))
+			require.True(t, claims.Can(runtime.ReadOLAP))
 		}))
 
 		req := httptest.NewRequest("GET", "/", nil)

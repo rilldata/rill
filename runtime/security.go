@@ -20,12 +20,57 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+// ErrForbidden is returned when an action is not allowed.
 var ErrForbidden = errors.New("action not allowed")
 
+// Permission represents runtime access permissions.
+type Permission int
+
+const (
+	// System-level permissions
+	ManageInstances Permission = 0x01
+
+	// Instance-level permissions
+	ReadInstance  Permission = 0x11
+	EditInstance  Permission = 0x12
+	EditTrigger   Permission = 0x20
+	ReadRepo      Permission = 0x13
+	EditRepo      Permission = 0x14
+	ReadObjects   Permission = 0x15
+	ReadOLAP      Permission = 0x16
+	ReadMetrics   Permission = 0x17
+	ReadProfiling Permission = 0x18
+	ReadAPI       Permission = 0x19
+	ReadResolvers Permission = 0x1A
+	UseAI         Permission = 0x1B
+)
+
+// AllPermissions is a list of all valid Permission values.
+var AllPermissions = []Permission{
+	ManageInstances,
+	ReadInstance,
+	EditInstance,
+	EditTrigger,
+	ReadRepo,
+	EditRepo,
+	ReadObjects,
+	ReadOLAP,
+	ReadMetrics,
+	ReadProfiling,
+	ReadAPI,
+	ReadResolvers,
+	UseAI,
+}
+
 // SecurityClaims represents contextual information for the enforcement of security rules.
+// Note that it does not consider instance IDs, which must be handled/checked by the code that creates the SecurityClaims.
 type SecurityClaims struct {
+	// UserID is the ID of the end user (or service account).
+	UserID string
 	// UserAttributes about the current user (or service account). Usually exposed through templating as {{ .user }}.
 	UserAttributes map[string]any
+	// Permissions is a list of assigned permissions.
+	Permissions []Permission
 	// AdditionalRules are optional security rules to apply *in addition* to the built-in rules and the rules defined on the requested resource.
 	// These are currently leveraged by the admin service to enforce restrictions for magic auth tokens.
 	AdditionalRules []*runtimev1.SecurityRule
@@ -42,21 +87,21 @@ func (c *SecurityClaims) Admin() bool {
 	return admin
 }
 
-// UserID is a convenience function for extracting an "id" string from the user attributes.
-// Note that the ID may not correspond to an actual user, but could also be a service ID or similar.
-func (c *SecurityClaims) UserID() string {
-	if c.UserAttributes == nil {
-		return ""
+// Can returns true if the claims have the specified permission.
+func (c *SecurityClaims) Can(p Permission) bool {
+	if c.SkipChecks {
+		return true
 	}
-	id, _ := c.UserAttributes["id"].(string)
-	return id
+	return slices.Contains(c.Permissions, p)
 }
 
 // MarshalJSON serializes the SecurityClaims to JSON.
 // It serializes the AdditionalRules using protojson.
 func (c *SecurityClaims) MarshalJSON() ([]byte, error) {
 	tmp := securityClaimsJSON{
+		UserID:          c.UserID,
 		UserAttributes:  c.UserAttributes,
+		Permissions:     c.Permissions,
 		AdditionalRules: make([]json.RawMessage, len(c.AdditionalRules)),
 		SkipChecks:      c.SkipChecks,
 	}
@@ -80,7 +125,9 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	c.UserID = tmp.UserID
 	c.UserAttributes = tmp.UserAttributes
+	c.Permissions = tmp.Permissions
 	c.AdditionalRules = make([]*runtimev1.SecurityRule, len(tmp.AdditionalRules))
 	for i, data := range tmp.AdditionalRules {
 		rule := &runtimev1.SecurityRule{}
@@ -97,7 +144,9 @@ func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
 // securityClaimsJSON is a JSON-serializable representation of SecurityClaims.
 // SecurityClaims can't be directly serialized to JSON because the SecurityRule proto is not directly JSON serializable.
 type securityClaimsJSON struct {
+	UserID          string            `json:"uid"`
 	UserAttributes  map[string]any    `json:"attrs"`
+	Permissions     []Permission      `json:"perms"`
 	AdditionalRules []json.RawMessage `json:"rules"`
 	SkipChecks      bool              `json:"skip"`
 }

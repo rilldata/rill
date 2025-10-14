@@ -187,7 +187,7 @@ func deleteObjectsInPrefix(ctx context.Context, cfg aws.Config, bucketName, pref
 			}
 		}
 
-		if *out.IsTruncated && out.NextContinuationToken != nil {
+		if out.IsTruncated != nil && *out.IsTruncated && out.NextContinuationToken != nil {
 			continuationToken = out.NextContinuationToken
 		} else {
 			break

@@ -16,7 +16,7 @@
   $: ({
     specStore,
     parent: {
-      spec: { getDimensionsForMetricView, getMeasuresForMetricView },
+      metricsView: { getDimensionsForMetricView, getMeasuresForMetricView },
     },
     timeAndFilterStore,
     localFilters,

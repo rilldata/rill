@@ -44,3 +44,6 @@ export const BarColor = "var(--color-theme-400)";
 export const AnnotationDiamondColor = "var(--color-theme-800)";
 export const AnnotationHighlightColor = "var(--color-theme-500)";
 export const AnnotationHighlightBottomColor = "var(--color-theme-800)";
+
+export const BarHighlightColorLight = "#eeeeee";
+export const BarHighlightColorDark = "#353535";

@@ -1,16 +1,18 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy, onMount } from "svelte";
+  import { updateThemeVariables } from "../themes/actions";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { page } from "$app/stores";
-  import { updateThemeVariables } from "../themes/actions";
 
   export let maxWidth: number;
   export let clientWidth = 0;
   export let showGrabCursor = false;
   export let filtersEnabled: boolean | undefined;
   export let canvasName: string;
+  export let embedded: boolean = false;
   export let onClick: () => void = () => {};
 
   let themeBoundary: HTMLElement | null = null;
@@ -40,8 +42,10 @@
 </script>
 
 <main
-  class="size-full flex flex-col dashboard-theme-boundary overflow-hidden"
+  class="flex flex-col dashboard-theme-boundary overflow-hidden"
   bind:this={themeBoundary}
+  class:w-full={$dynamicHeight}
+  class:size-full={!$dynamicHeight}
 >
   {#if filtersEnabled}
     <header
@@ -56,8 +60,11 @@
   <div
     role="presentation"
     id="canvas-scroll-container"
-    class="size-full p-2 pb-48 flex flex-col items-center bg-surface select-none overflow-y-auto overflow-x-hidden"
+    class="p-2 flex flex-col items-center bg-surface select-none overflow-y-auto overflow-x-hidden"
     class:!cursor-grabbing={showGrabCursor}
+    class:w-full={$dynamicHeight}
+    class:size-full={!$dynamicHeight}
+    class:pb-48={!embedded}
     on:click|self={onClick}
   >
     <div

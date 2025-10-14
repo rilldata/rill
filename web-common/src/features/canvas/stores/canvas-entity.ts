@@ -13,6 +13,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
+  type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
@@ -31,6 +32,7 @@ import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
+import { MetricsViewSelectors } from "../../metrics-views/metrics-view-selectors";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
@@ -41,7 +43,6 @@ import {
 } from "../components/util";
 import { Filters } from "./filters";
 import { Grid } from "./grid";
-import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
 
 // Store for managing URL search parameters
@@ -65,10 +66,11 @@ export class CanvasEntity {
   // Dimension and measure filter state
   filters: Filters;
 
-  /**
-   * Spec store containing selectors derived from ResolveCanvas query
-   */
-  spec: CanvasResolvedSpec;
+  // Metrics view selectors
+  metricsView: MetricsViewSelectors;
+
+  // Canvas resource infered from YAML spec
+  spec: Readable<V1CanvasSpec | undefined>;
   selectedComponent = writable<string | null>(null);
   fileArtifact: FileArtifact | undefined;
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
@@ -125,14 +127,24 @@ export class CanvasEntity {
       };
     })();
 
-    this.spec = new CanvasResolvedSpec(this.specStore);
+    this.spec = derived(this.specStore, ($specStore) => {
+      return $specStore.data?.canvas;
+    });
+
+    this.metricsView = new MetricsViewSelectors(
+      instanceId,
+      derived(this.specStore, ($specStore) => {
+        return $specStore.data?.metricsViews || {};
+      }),
+    );
+
     this.timeControls = new TimeControls(
       this.specStore,
       searchParamsStore,
       undefined,
       this.name,
     );
-    this.filters = new Filters(this.spec, searchParamsStore);
+    this.filters = new Filters(this.metricsView, searchParamsStore);
 
     searchParamsStore.subscribe((searchParams) => {
       const themeFromUrl = searchParams.get("theme");
@@ -214,7 +226,7 @@ export class CanvasEntity {
     }
 
     const metricsViewSpec = get(
-      this.spec.getMetricsViewFromName(metricsViewName),
+      this.metricsView.getMetricsViewFromName(metricsViewName),
     ).metricsView;
 
     if (!metricsViewSpec) {
@@ -324,10 +336,13 @@ export class CanvasEntity {
 
     if (themeSpec?.css) {
       // Dynamic import to avoid circular dependency
-      const { extractColorVariables } = await import("@rilldata/web-common/features/themes/css-sanitizer");
+      const { extractColorVariables } = await import(
+        "@rilldata/web-common/features/themes/css-sanitizer"
+      );
       const cssColors = extractColorVariables(themeSpec.css);
       primaryColor = cssColors.primary.lightColor || themeSpec.primaryColorRaw;
-      secondaryColor = cssColors.secondary.lightColor || themeSpec.secondaryColorRaw;
+      secondaryColor =
+        cssColors.secondary.lightColor || themeSpec.secondaryColorRaw;
     } else {
       primaryColor = themeSpec?.primaryColorRaw;
       secondaryColor = themeSpec?.secondaryColorRaw;

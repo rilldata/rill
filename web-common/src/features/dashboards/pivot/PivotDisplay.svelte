@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -45,16 +46,21 @@
   }
 </script>
 
-<div class="layout">
+<div class="layout" class:h-full={!$dynamicHeight}>
   {#if showPanels}
     <PivotSidebar />
   {/if}
-  <div class="flex flex-col size-full overflow-hidden">
+  <div
+    class="flex flex-col overflow-hidden"
+    class:w-full={$dynamicHeight}
+    class:size-full={!$dynamicHeight}
+  >
     {#if showPanels}
       <PivotHeader />
     {/if}
     <div
       class="content"
+      class:size-full={!$dynamicHeight}
       role="presentation"
       on:mousedown|self={removeActiveCell}
     >
@@ -91,11 +97,11 @@
 
 <style lang="postcss">
   .layout {
-    @apply flex box-border h-full overflow-hidden;
+    @apply flex box-border overflow-hidden;
   }
 
   .content {
-    @apply flex w-full flex-col bg-gray-50 overflow-hidden size-full;
+    @apply flex w-full flex-col bg-gray-50 overflow-hidden;
     @apply p-2 gap-y-2;
   }
 </style>
