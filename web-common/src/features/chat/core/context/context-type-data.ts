@@ -1,5 +1,5 @@
 import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
-import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
+import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
 import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
 import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
 import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
@@ -73,7 +73,7 @@ export const ContextTypeData: Record<
   },
   [ConversationContextType.Measure]: {
     prompt: "Measure",
-    icon: LineChart,
+    icon: Compare,
     formatter: (measureName, contextRecord, instanceId) =>
       derived(
         useMetricsView(

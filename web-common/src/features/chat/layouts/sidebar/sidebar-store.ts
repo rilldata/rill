@@ -1,5 +1,6 @@
 import { getChatInstance } from "@rilldata/web-common/features/chat/core/chat.ts";
 import { type ConversationContextEntry } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { get } from "svelte/store";
 import { localStorageStore } from "../../../../lib/store-utils/local-storage";
 import { sessionStorageStore } from "../../../../lib/store-utils/session-storage";
@@ -54,6 +55,7 @@ export const sidebarActions = {
     chat.enterNewConversationMode();
     get(chat.getCurrentConversation()).draftMessage.set(prompt);
     get(chat.getCurrentConversation()).context.override(contextEntries);
+    eventBus.emit("start-chat");
   },
 
   closeChat(): void {

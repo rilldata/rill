@@ -114,8 +114,6 @@
     $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
 
-  $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
-
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
   $: mouseOverCords = mouseoverValue?.x && $xScale(mouseoverValue?.x);
@@ -249,33 +247,38 @@
     e.stopPropagation();
     e.preventDefault();
 
-    // skip if still scrubbing
+    // skip if still scrubbing, avoid any click interactions with the chart
     if (preventScrubReset) return;
 
-    if (
-      hoveredTime &&
-      measure.name &&
-      TIME_GRAIN[timeGrain] &&
-      !hasSubrangeSelected
-    ) {
-      const ts = roundDownToTimeUnit(hoveredTime, TIME_GRAIN[timeGrain].label);
-      measureSelection.setStart(measure.name, ts);
-    }
+    const hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
     // skip if no scrub range selected
-    if (!hasSubrangeSelected) return;
+    if (!hasSubrangeSelected) {
+      maybeSelectMeasureHoverTime();
+
+      return;
+    }
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
-    if (
+    const mouseOutsideOfScrubRange =
       mouseoverValue?.x &&
-      (mouseoverValue?.x < start || mouseoverValue?.x > end)
-    ) {
+      (mouseoverValue?.x < start || mouseoverValue?.x > end);
+
+    if (mouseOutsideOfScrubRange) {
       resetScrub();
       measureSelection.clear();
-    } else if (measure.name && scrubStart && scrubEnd) {
+    } else if (measure.name) {
       measureSelection.setRange(measure.name, scrubStart, scrubEnd);
     }
+  }
+
+  function maybeSelectMeasureHoverTime() {
+    const hasValidMeasureSelectionTarget =
+      hoveredTime && measure.name && TIME_GRAIN[timeGrain];
+    if (!hasValidMeasureSelectionTarget) return;
+    const ts = roundDownToTimeUnit(hoveredTime, TIME_GRAIN[timeGrain].label);
+    measureSelection.setStart(measure.name!, ts);
   }
 </script>
 

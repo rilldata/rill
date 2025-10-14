@@ -9,6 +9,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
 import {
   TimeRangePreset,
   type DashboardTimeControls,
@@ -418,6 +419,8 @@ const metricsViewReducers = {
   },
 
   setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
+    measureSelection.clear();
+
     updateMetricsExplorerByName(name, (exploreState) => {
       setSelectedScrubRange(exploreState, undefined);
       exploreState.selectedTimeRange = timeRange;
@@ -425,6 +428,8 @@ const metricsViewReducers = {
   },
 
   setSelectedScrubRange(name: string, scrubRange: ScrubRange | undefined) {
+    measureSelection.clear();
+
     updateMetricsExplorerByName(name, (exploreState) => {
       setSelectedScrubRange(exploreState, scrubRange);
     });

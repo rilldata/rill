@@ -1,5 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { onMount } from "svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { cleanupChatInstance, getChatInstance } from "../../core/chat";
@@ -38,6 +40,11 @@
     if (currentProject !== targetProject) {
       cleanupChatInstance(instanceId);
     }
+  });
+
+  onMount(() => {
+    chatInputComponent?.focusInput();
+    return eventBus.on("start-chat", onNewConversation);
   });
 </script>
 

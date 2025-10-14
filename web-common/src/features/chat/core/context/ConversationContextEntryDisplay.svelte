@@ -21,7 +21,7 @@
   $: formattedValue = formatter(value, $contextRecord, instanceId);
 </script>
 
-<Chip>
+<Chip readOnly>
   <svelte:fragment slot="body">
     <svelte:component this={icon} size="16px" />
     <span>{$formattedValue}</span>

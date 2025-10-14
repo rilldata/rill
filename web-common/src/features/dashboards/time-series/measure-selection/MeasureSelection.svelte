@@ -4,7 +4,7 @@
     ScaleStore,
     SimpleDataGraphicConfiguration,
   } from "@rilldata/web-common/components/data-graphic/state/types";
-  import { anomalyExplanation } from "@rilldata/web-common/features/chat/core/presets/anomaly-explanation.ts";
+  import { anomalyExplanation } from "@rilldata/web-common/features/chat/core/prompts/anomaly-explanation.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers.ts";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import MeasureValueMouseover from "@rilldata/web-common/features/dashboards/time-series/MeasureValueMouseover.svelte";
@@ -50,7 +50,6 @@
       instanceId,
       $metricsViewName,
       $dashboardStore.whereFilter,
-      measureSelection.getContexts(),
     );
   }
 </script>
@@ -73,14 +72,14 @@
       {#if forThisMeasure}
         <Bot
           size={16}
-          class="stroke-primary"
+          class="stroke-primary cursor-pointer"
           x={$xScale(point[xAccessor]) - 35}
           y={plotBottom - 3 + bodyBuffer}
           on:click={onExplain}
         />
         <text
           role="presentation"
-          class="fill-primary stroke-surface"
+          class="fill-primary stroke-surface cursor-pointer"
           style:paint-order="stroke"
           stroke-width="1px"
           x={$xScale(point[xAccessor]) - 15}
@@ -107,14 +106,14 @@
 
   <Bot
     size={16}
-    class="stroke-primary"
+    class="stroke-primary cursor-pointer"
     x={(xStart + xEnd) / 2 - 35}
     y={plotBottom - 3 + bodyBuffer}
     on:click={onExplain}
   />
   <text
     role="presentation"
-    class="fill-primary stroke-surface"
+    class="fill-primary stroke-surface cursor-pointer"
     style:paint-order="stroke"
     stroke-width="1px"
     x={(xStart + xEnd) / 2 - 15}

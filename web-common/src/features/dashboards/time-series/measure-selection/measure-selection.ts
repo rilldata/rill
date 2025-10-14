@@ -27,6 +27,10 @@ export class MeasureSelection {
     this.end.set(null);
   }
 
+  public hasSelection() {
+    return Boolean(get(this.measure));
+  }
+
   public getContexts() {
     const measure = get(this.measure);
     const start = get(this.start);
@@ -42,7 +46,7 @@ export class MeasureSelection {
     }
 
     if (start && end) {
-      const timeRange = `${start.toISOString()} - ${end.toISOString()}`;
+      const timeRange = `${start.toISOString()} to ${end.toISOString()}`;
       contextEntries.push({
         type: ConversationContextType.TimeRange,
         value: timeRange,

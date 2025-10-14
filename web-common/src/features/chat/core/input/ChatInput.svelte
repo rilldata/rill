@@ -80,46 +80,49 @@
 
   // Auto-resize when value changes
   $: if (textarea && value !== undefined) {
+    // There is an race condition where scrollHeight has not updated yet.
+    // Adding a timeout makes sure it is avoided.
     setTimeout(() => {
       autoResize();
     }, 5);
   }
 </script>
 
-{#if currentConversation}
-  <ConversationContext conversation={currentConversation} />
-{/if}
 <form class="chat-input-form" on:submit|preventDefault={sendMessage}>
-  <textarea
-    bind:this={textarea}
-    {value}
-    class="chat-input"
-    {placeholder}
-    rows="1"
-    on:keydown={handleKeydown}
-    on:input={handleInput}
-  />
-  {#if canCancel}
-    <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
-      <span class="stop-icon">
-        <StopCircle size="1.2em" />
-      </span>
-    </IconButton>
-  {:else}
-    <IconButton
-      ariaLabel="Send message"
-      disabled={!canSend}
-      on:click={sendMessage}
-    >
-      <SendIcon size="1.3em" disabled={!canSend} />
-    </IconButton>
+  {#if currentConversation}
+    <ConversationContext conversation={currentConversation} />
   {/if}
+  <div class="chat-input-elements">
+    <textarea
+      bind:this={textarea}
+      {value}
+      class="chat-input"
+      {placeholder}
+      rows="1"
+      on:keydown={handleKeydown}
+      on:input={handleInput}
+    />
+    {#if canCancel}
+      <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+        <span class="stop-icon">
+          <StopCircle size="1.2em" />
+        </span>
+      </IconButton>
+    {:else}
+      <IconButton
+        ariaLabel="Send message"
+        disabled={!canSend}
+        on:click={sendMessage}
+      >
+        <SendIcon size="1.3em" disabled={!canSend} />
+      </IconButton>
+    {/if}
+  </div>
 </form>
 
 <style lang="postcss">
   .chat-input-form {
-    display: flex;
-    align-items: flex-end;
+    @apply flex flex-col;
     gap: 0.25rem;
     background: var(--background);
     border: 1px solid var(--border);
@@ -127,6 +130,10 @@
     padding: 0.25rem;
     margin: 0 1rem;
     transition: border-color 0.2s;
+  }
+
+  .chat-input-elements {
+    @apply flex flex-row;
   }
 
   .chat-input-form:focus-within {
