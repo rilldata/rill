@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -67,14 +69,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	// The handling can now be done with duckdb's native connectors by setting a SQL that creates secret to access the object store.
 	// However duckdb does not support GCS's native credentials(google_application_credentials) so we still maintain the hack for the same.
 	// We expect to remove this rewriting once all users start using GCS's s3 compatibility API support.
-	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
-		if secretSQL != "" {
-			if inputProps.PreExec == "" {
-				inputProps.PreExec = secretSQL
-			} else {
-				inputProps.PreExec += ";" + secretSQL
-			}
-		} else if scheme == "gcs" {
+	if scheme, ast, ok := objectStoreRef(inputProps, opts); ok {
+		switch scheme {
+		case "gcs":
 			// rewrite duckdb sql with locally downloaded files
 			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
 			if err != nil {
@@ -87,7 +84,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				return nil, err
 			}
 			defer deleteFiles()
-		} else {
+		case "local_file":
 			rewrittenSQL, err := rewriteLocalPaths(ast, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
 			if err != nil {
 				return nil, fmt.Errorf("invalid local path: %w", err)
@@ -97,15 +94,27 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}
 
 	// Add PreExec statements that create temporary secrets for object store connectors.
-	for _, connector := range e.c.config.secretConnectors() {
-		secretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
-		}
-		if inputProps.PreExec == "" {
-			inputProps.PreExec = secretSQL
-		} else {
-			inputProps.PreExec += ";" + secretSQL
+	// Only add secrets if the user has not already added a CREATE SECRET statement in PreExec.
+	// This is to avoid adding two secrets which could conflict.
+	if !createSecretRegex.MatchString(inputProps.PreExec) {
+		secretConnectors, autoDetected := secretConnectors(inputProps.Secrets, e.c.config.Secrets, opts.Env.Connectors)
+		for _, connector := range secretConnectors {
+			secretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
+			if err != nil {
+				if autoDetected {
+					// if user has not explicitly configured this secret container then do not fail
+					continue
+				}
+				if errors.Is(err, errGCSUsesNativeCreds) {
+					continue
+				}
+				return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
+			}
+			if inputProps.PreExec == "" {
+				inputProps.PreExec = secretSQL
+			} else {
+				inputProps.PreExec += ";" + secretSQL
+			}
 		}
 	}
 
@@ -256,52 +265,44 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 	})
 }
 
-func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *drivers.ModelExecuteOptions) (string, string, *duckdbsql.AST, bool) {
+func objectStoreRef(props *ModelInputProperties, opts *drivers.ModelExecuteOptions) (string, *duckdbsql.AST, bool) {
 	// We take an assumption that if there is a pre_exec query, the user has already set the secret SQL.
 	if props.PreExec != "" || opts.InputConnector != "duckdb" {
-		return "", "", nil, false
+		return "", nil, false
 	}
 	// Parse AST
 	ast, err := duckdbsql.Parse(props.SQL)
 	if err != nil {
 		// If we can't parse the SQL just let duckdb run on it and give a sql parse error.
-		return "", "", nil, false
+		return "", nil, false
 	}
 
 	// If there is a single table reference check if it is an object store reference.
 	refs := ast.GetTableRefs()
 	if len(refs) != 1 {
-		return "", "", nil, false
+		return "", nil, false
 	}
 	ref := refs[0]
 	// Parse the path as a URL (also works for local paths)
 	if len(ref.Paths) == 0 {
-		return "", "", nil, false
+		return "", nil, false
 	}
 	uri, err := url.Parse(ref.Paths[0])
 	if err != nil {
-		return "", "", nil, false
+		return "", nil, false
 	}
 
 	if uri.Scheme == "s3" || uri.Scheme == "azure" || uri.Scheme == "gcs" || uri.Scheme == "gs" {
 		if uri.Scheme == "gs" {
 			uri.Scheme = "gcs"
 		}
-		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
-		secretSQL, err := objectStoreSecretSQL(ctx, opts, uri.Scheme, ref.Paths[0], opts.InputProperties)
-		if err != nil {
-			if errors.Is(err, errGCSUsesNativeCreds) {
-				return uri.Scheme, "", ast, true
-			}
-			return "", "", nil, false
-		}
-		return uri.Scheme, secretSQL, ast, true
+		return uri.Scheme, ast, true
 	}
 	if uri.Scheme == "" && uri.Host == "" {
 		// local file reference
-		return "local_file", "", ast, true
+		return "local_file", ast, true
 	}
-	return "", "", nil, false
+	return "", nil, false
 }
 
 func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, path string, ast *duckdbsql.AST) (release func(), retErr error) {
@@ -395,3 +396,39 @@ func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool
 
 	return ast.Format()
 }
+
+// secretConnectors returns the list of connectors to create secrets for.
+// A user can explicitly specify a comma-separated list of connector names specific to a model in model configuration.
+// A user can also specify the list in the duckdb driver configuration which will be used for all models using duckdb driver. This is only used if the model specific configuration is not set.
+// The boolean return value is true if the returned list was auto-detected.
+func secretConnectors(modelSecrets *string, duckdbSecrets string, allConnectors []*runtimev1.Connector) ([]string, bool) {
+	var configuredSecret string
+	if modelSecrets != nil {
+		fmt.Printf("Using model specific secret configuration: %q\n", *modelSecrets)
+		configuredSecret = *modelSecrets
+	} else {
+		// fallback to driver level configuration
+		configuredSecret = duckdbSecrets
+	}
+	if configuredSecret == "" {
+		// no secrets to be created
+		return nil, false
+	}
+	if configuredSecret != "*" {
+		res := strings.Split(configuredSecret, ",")
+		for i, s := range res {
+			res[i] = strings.TrimSpace(s)
+		}
+		return res, false
+	}
+	// all applicable connectors
+	var res []string
+	for _, c := range allConnectors {
+		if c.Type == "s3" || c.Type == "azure" || c.Type == "gcs" {
+			res = append(res, c.Name)
+		}
+	}
+	return res, true
+}
+
+var createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\b`)

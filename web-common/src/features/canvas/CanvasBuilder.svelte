@@ -1,36 +1,37 @@
 <script lang="ts">
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { portal } from "@rilldata/web-common/lib/actions/portal";
   import {
     type V1CanvasRow,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { onDestroy } from "svelte";
   import { get, writable } from "svelte/store";
   import { parseDocument } from "yaml";
+  import ComponentError from "../components/ComponentError.svelte";
   import type { FileArtifact } from "../entity-management/file-artifact";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { CanvasComponentType } from "./components/types";
+  import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import type { Transaction, YAMLRow } from "./layout-util";
   import {
     COLUMN_COUNT,
     DEFAULT_DASHBOARD_WIDTH,
-    mapGuard,
-    rowsGuard,
-    mousePosition,
     generateNewAssets,
+    mapGuard,
+    mousePosition,
+    rowsGuard,
   } from "./layout-util";
-  import { activeDivider } from "./stores/ui-stores";
   import RowWrapper from "./RowWrapper.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
-  import { dropZone } from "./stores/ui-stores";
-  import ComponentError from "./components/ComponentError.svelte";
-  import EditableCanvasRow from "./EditableCanvasRow.svelte";
-  import { onDestroy } from "svelte";
-  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import { activeDivider, dropZone } from "./stores/ui-stores";
   import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
 
   const activelyEditing = writable(false);
@@ -63,6 +64,7 @@
   let dragItemPosition = { top: 0, left: 0 };
   let dragItemDimensions = { width: 0, height: 0 };
   let openSidebarAfterSelection = false;
+  let pendingComponentDelete: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
@@ -421,10 +423,7 @@
         e.target.tagName !== "TEXTAREA" &&
         !e.target.isContentEditable)
     ) {
-      const component = components.get(selected);
-      if (!component) return;
-
-      deleteComponent(component);
+      pendingComponentDelete = selected;
     }
   }}
 />
@@ -554,6 +553,57 @@
       selected
     />
   </div>
+{/if}
+
+{#if pendingComponentDelete !== undefined}
+  <AlertDialog.Root
+    open
+    onOpenChange={(open) => {
+      if (!open) pendingComponentDelete = undefined;
+    }}
+  >
+    <AlertDialog.Content>
+      <AlertDialog.Title>Delete widget?</AlertDialog.Title>
+
+      <AlertDialog.Description>
+        Are you sure you want to delete this widget? This action cannot be
+        undone.
+      </AlertDialog.Description>
+
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel asChild let:builder>
+          <Button
+            large
+            builders={[builder]}
+            type="secondary"
+            onClick={() => {
+              pendingComponentDelete = undefined;
+            }}
+          >
+            Cancel
+          </Button>
+        </AlertDialog.Cancel>
+
+        <AlertDialog.Action asChild let:builder>
+          <Button
+            large
+            builders={[builder]}
+            type="primary"
+            danger
+            onClick={() => {
+              if (!pendingComponentDelete) return;
+              const component = components.get(pendingComponentDelete);
+              if (!component) return;
+              deleteComponent(component);
+              pendingComponentDelete = undefined;
+            }}
+          >
+            Delete
+          </Button>
+        </AlertDialog.Action>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
 {/if}
 
 <style lang="postcss">

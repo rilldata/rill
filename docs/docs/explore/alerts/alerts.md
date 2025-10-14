@@ -61,14 +61,14 @@ To avoid getting over alerted, consider adding a metric filter to avoid long tai
 - Creating a filter on customers with less than 100 logins <u>but</u> filtered to more than 100 users to alert on active user drops within active accounts.
 - Creating a filter against campaigns with a greater than 20% decrease in spend <u>but</u> filtered to spend greater than $1000 to avoid large percentage changes on small campaigns.
 
-For more information, refer to our documentation on [metric filters](/explore/filters/filters.md#filter-by-metrics).
+For more information, refer to our documentation on [metric filters](/explore/filters#filter-by-measures).
 :::
 
 ### Criteria
 
 On the second tab, you will have the opportunity to specify the criteria for which your alert will be triggered once certain conditions are met.
 1. For any metric in your data selection (previous tab), set your alert criteria to include an operator (e.g. less than, greater than), the value or percentage, and a comparison period and/or threshold amount.
-2. You will also have the ability to set dependencies or add multiple criteria using boolean conditions (AND/OR) to combine conditions across metrics.
+2. You will also have the ability to set dependencies or add multiple criteria using boolean conditions (AND/OR) to combine conditions across measures.
 
 ### Delivery
 

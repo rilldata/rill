@@ -8,7 +8,7 @@ sidebar_position: 15
 [MotherDuck](https://motherduck.com/) is a cloud-native DuckDB service that provides scalable analytics and data processing capabilities. Built on the same core engine as DuckDB, MotherDuck offers the familiar SQL interface and performance characteristics while adding cloud-native features like serverless compute, automatic scaling, and collaborative data sharing.
 
 
-<img src='/img/reference/olap-engines/motherduck/rill-developer.png' class='rounded-gif' />
+<img src='/img/connect/olap-engines/motherduck/rill-developer.png' class='rounded-gif' />
 <br />
 
 
@@ -19,39 +19,7 @@ Rill supports connecting to MotherDuck and using it as an OLAP engine to power d
 Rill supports connecting to MotherDuck using the latest DuckDB-compatible drivers and protocols.
 :::
 
-## Configuring Rill Developer with MotherDuck
-
-When using MotherDuck for local development, you can connect using your MotherDuck access token. The connection is established through MotherDuck's secure API endpoints.
-
-1. Connect to MotherDuck via modifying the existing /connectors/duckdb.yaml. 
-
-```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-
-type: connector 
-driver: motherduck 
-
-token: '{{ .env.connector.motherduck.token }}'
-path: "md:my_database"
-schema_name: "my_schema" 
-```
-
-:::tip Dont have an .env file?
-
-If it's your first time running Rill, a .env file wont exist yet. Either make a blank file and rename to .env and add your token or run `touch .env` from the project directory in the CLI.
-
-```
-connector.motherduck.token="TOKEN_HERE"
-```
-
-:::
-
 ## Getting Your MotherDuck Access Token
-
-<img src='/img/reference/olap-engines/motherduck/service-token.png' class='rounded-gif' />
-<br />
-
 
 To connect to MotherDuck, you'll need a access token from your MotherDuck account:
 
@@ -59,7 +27,9 @@ To connect to MotherDuck, you'll need a access token from your MotherDuck accoun
 2. Navigate to the **Settings** section
 3. Go to **Access Tokens**
 4. Create a new access token or copy an existing one
-5. Use this token as the value for `motherduck_token` in your `.env` file
+   
+<img src='/img/connect/olap-engines/motherduck/service-token.png' class='rounded-gif' />
+<br />
 
 :::warning Keep Your Token Secure
 
@@ -67,13 +37,36 @@ Your MotherDuck access token provides access to your data. Keep it secure and ne
 
 :::
 
-## Connection Configuration
 
-MotherDuck connections are established through secure API endpoints. The connection is automatically configured when you provide your access token:
+## Configuring Rill Developer with MotherDuck
 
-```bash
-motherduck_token="your_motherduck_service_token_here"
+Connect to your OLAP engine via Add Data. This will automatically create the motherduck.yaml file in your connectors folder and populate the .env file with `.connector.motherduck.token`.
+
+For more information on supported parameters, see our [MotherDuck connector YAML reference docs](/reference/project-files/connectors#motherduck).
+
+
+```yaml
+type: connector 
+driver: duckdb 
+
+token: '{{ .env.connector.motherduck.token }}' 
+path: "md:my_database" 
+schema_name: "my_schema"
 ```
+
+### Setting the Default OLAP Connection
+
+Creating a connection to MotherDuck will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to `motherduck`.
+
+```yaml
+olap_connector: motherduck
+```
+
+:::info Interested in using multiple OLAP engines in the same project?
+
+Please see our [Using Multiple OLAP Engines](/connect/olap/multiple-olap) page.
+:::
+
 
 ## Configuring Rill Cloud
 
@@ -89,18 +82,6 @@ When deploying a MotherDuck-backed project to Rill Cloud, you have the following
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
 :::
 
-## Setting the Default OLAP Connection
-
-Creating a connection to MotherDuck will automatically add the `olap_connector` property in your project's [rill.yaml](/reference/project-files/rill-yaml) and change the default OLAP engine to MotherDuck.
-
-```yaml
-olap_connector: motherduck
-```
-
-:::info Interested in using multiple OLAP engines in the same project?
-
-Please see our [Using Multiple OLAP Engines](/connect/olap/multiple-olap) page.
-:::
 
 
 ## Additional Notes

@@ -33,7 +33,7 @@ func (o *Options) getModel() string {
 	if o.Model != "" {
 		return o.Model
 	}
-	return openai.GPT4o // Default model if not specified
+	return openai.GPT4Dot1 // Default model if not specified
 }
 
 func (o *Options) getTemperature() float32 {
@@ -72,6 +72,7 @@ func NewOpenAI(apiKey string, opts *Options) (Client, error) {
 	return &openAI{
 		client: c,
 		apiKey: apiKey,
+		opts:   opts,
 	}, nil
 }
 

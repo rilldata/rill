@@ -9,6 +9,7 @@ const darkCodeTheme = themes.dracula;
 const llmsTxtPlugin = require('./plugins/llms-txt-plugin');
 
 const def = require("redocusaurus");
+const path = require('path');
 def;
 
 /** @type {import('@docusaurus/types').Config} */
@@ -62,6 +63,24 @@ const config = {
         },
       }),
     ],
+    // [
+    //   'redocusaurus',
+    //   {
+    //     config: path.join(__dirname, 'redocly.yaml'),
+    //     specs: [
+    //       {
+    //         id: 'admin-api',
+    //         spec: 'api/rill/admin/v1/public.swagger.yaml',
+    //         route: '/api/admin/',
+    //         layout: {
+    //           title: "Rill Public API",
+    //           description: "Public Rill API documentation",
+    //         },
+    //       },
+    //     ],
+    //     theme: {},
+    //   },
+    // ]
   ],
 
   themeConfig:
@@ -76,6 +95,15 @@ const config = {
         appId: "4U01DM4NS4",
         apiKey: "c0399915ae21a35c6d34a473d017c15b",
         indexName: "rilldata",
+
+        // Navbar button text (before clicking)
+        translations: {
+          button: {
+            buttonText: 'Search...',
+            buttonAriaLabel: 'Open search',
+          },
+        },
+        placeholder: "Looking for something?",
         debug: false // Set debug to true if you want to inspect the modal        
       },
       metadata: [
@@ -114,6 +142,12 @@ const config = {
             position: "left",
             label: "Reference",
           },
+
+          // {
+          //   to: "/api/admin/",
+          //   position: "left",
+          //   label: "API",
+          // },
 
           {
             type: "docSidebar",
@@ -212,6 +246,10 @@ const config = {
             to: '/build/metrics-view/security'
           },
           {
+            from: '/manage/security',
+            to: '/build/metrics-view/security'
+          },
+          {
             from: '/deploy/credentials/',
             to: '/connect/credentials/'
           },
@@ -253,7 +291,7 @@ const config = {
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/connect/data-source/duckdb'
+            to: '/connect/olap/motherduck'
           },
           {
             from: '/deploy/source-refresh',
@@ -479,6 +517,58 @@ const config = {
             to: '/build/custom-apis'
           },
           {
+            from: '/integrate/custom-apis/metrics-sql-api',
+            to: '/build/custom-apis'
+          },
+          {
+            from: '/integrate/custom-apis/sql-api',
+            to: '/build/custom-apis'
+          },
+          {
+            from: '/explore/filters/filters',
+            to: '/explore/filters'
+          },
+          {
+            from: '/explore/filters/time-series',
+            to: '/explore/time-series'
+          },
+          {    
+            from: '/build/metrics-view/advanced-expressions/case-statements',
+            to: '/build/metrics-view/measures/case-statements'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/fixed-metrics',
+            to: '/build/metrics-view/measures/fixed-measures'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/metric-formatting',
+            to: '/build/metrics-view/measures/measures-formatting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/quantiles',
+            to: '/build/metrics-view/measures/quantiles'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/referencing',
+            to: '/build/metrics-view/measures/referencing'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/unnesting',
+            to: '/build/metrics-view/dimensions/unnesting'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/windows',
+            to: '/build/metrics-view/measures/windows'
+          },
+          {
+            from: '/build/metrics-view/advanced-expressions/advanced-expressions',
+            to: '/build/metrics-view/measures'
+          },
+          {
+            from: '/build/metrics-view/customize',
+            to: '/build/metrics-view'
+          },
+          {
             from: '/deploy/performance',
             to: '/guides/performance'
           },
@@ -489,6 +579,18 @@ const config = {
           {
             from: '/home/get-started',
             to: '/get-started/quickstart'
+          },
+          {
+            from: '/build/canvas/canvas',
+            to: '/build/dashboards/canvas',
+          },
+          {
+            from: '/build/canvas/customization',
+            to: '/build/dashboards/customization',
+          },
+          {
+            from: '/build/canvas',
+            to: '/build/dashboards/canvas',
           },
           // {
           //   from: '/old-page',
@@ -507,6 +609,7 @@ const config = {
   stylesheets: [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
   ],
+
 };
 
 module.exports = config;

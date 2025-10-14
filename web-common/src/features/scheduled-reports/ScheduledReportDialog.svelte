@@ -201,7 +201,7 @@
 
     try {
       await $mutation.mutateAsync({
-        organization,
+        org: organization,
         project,
         name: reportName,
         data: {
@@ -271,7 +271,7 @@
 </script>
 
 <Dialog.Root bind:open closeOnEscape={false}>
-  <Dialog.Content class="min-w-[802px]">
+  <Dialog.Content class="min-w-[900px]">
     <Dialog.Title>Schedule report</Dialog.Title>
 
     <BaseScheduledReportForm

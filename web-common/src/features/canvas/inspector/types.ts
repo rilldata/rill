@@ -1,13 +1,17 @@
+import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 import type {
   ChartLegend,
   ChartSortDirectionOptions,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
-import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
+} from "@rilldata/web-common/features/components/charts/types";
 
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea" | "select";
 type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
-type CustomInputTypes = "rill_time" | "sparkline" | "comparison_options";
+type CustomInputTypes =
+  | "rill_time"
+  | "sparkline"
+  | "comparison_options"
+  | "switcher_tab";
 type PositionalInputTypes = "alignment";
 
 export type InputType =
@@ -36,7 +40,14 @@ export type ChartFieldInput = {
   originSelector?: boolean;
   sortSelector?: SortSelectorConfig;
   limitSelector?: { defaultLimit: number };
-  colorMappingSelector?: { enable: boolean; values?: string[] };
+  colorMappingSelector?: {
+    enable: boolean;
+    values?: string[];
+    isContinuous?: boolean;
+  };
+  colorRangeSelector?: {
+    enable: boolean;
+  };
   nullSelector?: boolean;
   labelAngleSelector?: boolean;
   axisRangeSelector?: boolean;
@@ -50,6 +61,10 @@ export type ChartFieldInput = {
    * If this key is not specified, legend selector will not be shown.
    */
   defaultLegendOrientation?: ChartLegend;
+  /**
+   * For measures toggle for displaying measure total value
+   */
+  totalSelector?: boolean;
 };
 
 export interface ComponentInputParam {
@@ -65,8 +80,6 @@ export interface ComponentInputParam {
     [key: string]: any;
   };
 }
-
-export type ColorMapping = { value: string; color: string }[];
 
 export interface FilterInputParam {
   type: FilterInputTypes;

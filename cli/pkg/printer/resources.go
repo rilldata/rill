@@ -651,7 +651,7 @@ func toBillingIssueRow(e *adminv1.BillingIssue) *billingIssue {
 		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
 	}
 	return &billingIssue{
-		Organization: e.Organization,
+		Organization: e.Org,
 		Type:         e.Type.String(),
 		Level:        e.Level.String(),
 		Metadata:     string(meta), // TODO pretty print

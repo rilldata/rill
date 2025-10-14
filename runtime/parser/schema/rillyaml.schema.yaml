@@ -19,6 +19,9 @@ allOf:
       features:
         type: object
         description: Optional feature flags. Can be specified as a map of feature names to booleans.
+      ai_connector:
+        type: string
+        description: Specifies the default AI connector for the project. Defaults to Rill's internal AI connector if not set.
       ai_instructions:
         type: string
         description: Extra instructions for LLM/AI features. Used to guide natural language question answering and routing.
@@ -47,7 +50,7 @@ allOf:
       :::info Hierarchy of inheritance and property overrides
       As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
       1. Individual [models](models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object level properties (e.g. `models.yaml` or `explore-dashboards.yaml`)
-      2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
+      2. [Environment](/build/models/templating) level properties (e.g. a specific property that have been set for `dev`)
       3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
       :::
     properties:

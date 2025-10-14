@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -159,17 +158,16 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 	case "gcs":
 		// GCS works via S3 compatibility mode.
 		// This means we that gcsConfig.KeyID and gcsConfig.Secret should be set instead of gcsConfig.SecretJSON.
-		conn, ok := handle.(*gcs.Connection)
-		if !ok {
-			return "", fmt.Errorf("internal error: expected gcs connector handle")
-		}
-		gcsConfig := conn.ParsedConfig()
-		err := mapstructure.WeakDecode(optionalAdditionalConfig, gcsConfig)
+		gcsConnectorProp := handle.Config()
+		gcsConfig, err := gcs.NewConfigProperties(gcsConnectorProp)
 		if err != nil {
+			return "", fmt.Errorf("failed to load gcs base config: %w", err)
+		}
+		if err := mapstructure.WeakDecode(optionalAdditionalConfig, gcsConfig); err != nil {
 			return "", fmt.Errorf("failed to parse gcs config properties: %w", err)
 		}
 		// If no credentials are provided we assume that the user wants to use the native credentials
-		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "" && gcsConfig.SecretJSON == "") {
+		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "") {
 			return "", errGCSUsesNativeCreds
 		}
 		var sb strings.Builder
@@ -199,19 +197,15 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE AZURE")
 		// if connection string is set then use that and fall back to env credentials only if host access is allowed and connection string is not set
-		if azureConfig.ConnectionString != "" {
-			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(azureConfig.ConnectionString))
+		connectionString := azureConfig.GetConnectionString()
+		if connectionString != "" {
+			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
 		} else if azureConfig.AllowHostAccess {
-			// backwards compatibility for allowing azure_storage_connection_string to be set as env variable which duckdb does not (keys are different)
-			connectionString := os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
-			if connectionString != "" {
-				fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
-			} else {
-				sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
-			}
+			// duckdb will use default defaultazurecredential https://github.com/Azure/azure-sdk-for-cpp/blob/azure-identity_1.6.0/sdk/identity/azure-identity/README.md#defaultazurecredential
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
-		if azureConfig.Account != "" {
-			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.Account))
+		if azureConfig.GetAccount() != "" {
+			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.GetAccount()))
 		}
 		sb.WriteRune(')')
 		return sb.String(), nil

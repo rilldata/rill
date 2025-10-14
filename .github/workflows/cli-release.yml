@@ -87,6 +87,7 @@ jobs:
         with:
           path: rill
           destination: prod-cdn.rilldata.com/rill/nightly/binaries/${{ matrix.platform }}/
+          process_gcloudignore: false
           headers: |-
             cache-control: no-store
 
@@ -96,6 +97,7 @@ jobs:
         with:
           path: rill
           destination: prod-cdn.rilldata.com/rill/${{ github.ref_name }}/binaries/${{ matrix.platform }}/
+          process_gcloudignore: false
           headers: |-
             cache-control: no-store
 
@@ -163,10 +165,10 @@ jobs:
 
       - name: Notify Slack
         uses: ravsamhq/notify-slack-action@v2
-        if: env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true'
+        if: always() && (env.PUBLISH_NIGHTLY == 'true' || env.PUBLISH_RELEASE == 'true')
         with:
           status: ${{ job.status }}
-          notification_title: "{workflow} has {status_message}"
+          notification_title: "Nightly - ${{ env.PUBLISH_NIGHTLY }} / Release - ${{ env.PUBLISH_RELEASE }} "
           message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
           footer: "Linked Repo <{repo_url}|{repo}>"
           notify_when: "failure"

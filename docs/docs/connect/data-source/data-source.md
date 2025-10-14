@@ -15,9 +15,6 @@ Don't forget to [create a managed ClickHouse server](/connect/olap/clickhouse#ri
 
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 
 driver: clickhouse
@@ -155,7 +152,7 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 </div>
 
 ## Other Data Connectors
-
+### External DuckDB
 ### Google Sheets
 ### HTTPS
 ### Local File
@@ -164,6 +161,14 @@ Rill supports connecting your data to both [DuckDB](/connect/olap/duckdb) and [C
 
 
 <div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-DuckDB.svg" alt="DuckDB" className="duckdb-icon"/>}
+    header="DuckDB"
+    content="Attach your local DuckDB database to Rill's embedded database."
+    link="/connect/data-source/duckdb"
+    linkLabel="Learn more"
+    referenceLink="external-duckdb"
+  />
   <ConnectorIcon
     icon={<img src="/img/connect/icons/Logo-Sheets.svg" alt="Google Sheets" className="sheets-icon" />}
     header="Google Sheets"
@@ -226,7 +231,7 @@ In the case of **sub 100GB of data**, we recommend keeping the default engine, D
 
 On the other hand, if you need to analyze **100s of GB of data**, we would recommend using Managed ClickHouse. This will add some complexity ([staging tables](/build/models/staging-models)), but will in turn provide better dashboard performance. 
 
-If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/build/models/models-101#intermediate-processing) or using [arithmetic functions](/build/metrics-view/advanced-expressions) in the metrics view, you'll need to utilize the engine's built-in functions.
+If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/build/models/models-101#intermediate-processing) or using [arithmetic functions](/build/metrics-view) in the metrics view, you'll need to utilize the engine's built-in functions.
 
 
 :::note Supported Connectors

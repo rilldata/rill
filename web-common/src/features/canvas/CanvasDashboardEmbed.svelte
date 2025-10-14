@@ -31,6 +31,7 @@
     {maxWidth}
     {canvasName}
     filtersEnabled={canvas?.spec?.filtersEnabled}
+    embedded
   >
     {#each rows as row, rowIndex (rowIndex)}
       <StaticCanvasRow

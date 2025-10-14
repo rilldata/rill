@@ -13,6 +13,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
+  type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
@@ -31,7 +32,7 @@ import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
-import { updateThemeVariables } from "../../themes/actions";
+import { MetricsViewSelectors } from "../../metrics-views/metrics-view-selectors";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
@@ -42,7 +43,6 @@ import {
 } from "../components/util";
 import { Filters } from "./filters";
 import { Grid } from "./grid";
-import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
 
 // Store for managing URL search parameters
@@ -66,10 +66,11 @@ export class CanvasEntity {
   // Dimension and measure filter state
   filters: Filters;
 
-  /**
-   * Spec store containing selectors derived from ResolveCanvas query
-   */
-  spec: CanvasResolvedSpec;
+  // Metrics view selectors
+  metricsView: MetricsViewSelectors;
+
+  // Canvas resource infered from YAML spec
+  spec: Readable<V1CanvasSpec | undefined>;
   selectedComponent = writable<string | null>(null);
   fileArtifact: FileArtifact | undefined;
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
@@ -77,6 +78,7 @@ export class CanvasEntity {
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = writable(true);
   theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
+  themeSpec: Writable<V1ThemeSpec | undefined> = writable(undefined);
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
@@ -125,19 +127,29 @@ export class CanvasEntity {
       };
     })();
 
-    this.spec = new CanvasResolvedSpec(this.specStore);
+    this.spec = derived(this.specStore, ($specStore) => {
+      return $specStore.data?.canvas;
+    });
+
+    this.metricsView = new MetricsViewSelectors(
+      instanceId,
+      derived(this.specStore, ($specStore) => {
+        return $specStore.data?.metricsViews || {};
+      }),
+    );
+
     this.timeControls = new TimeControls(
       this.specStore,
       searchParamsStore,
       undefined,
       this.name,
     );
-    this.filters = new Filters(this.spec, searchParamsStore);
+    this.filters = new Filters(this.metricsView, searchParamsStore);
 
     searchParamsStore.subscribe((searchParams) => {
       const themeFromUrl = searchParams.get("theme");
       if (themeFromUrl) {
-        this.processAndSetTheme(themeFromUrl, undefined).catch(console.error);
+        this.processTheme(themeFromUrl, undefined).catch(console.error);
       }
     });
 
@@ -146,7 +158,7 @@ export class CanvasEntity {
       const theme = spec.data?.canvas?.theme;
       const embeddedTheme = spec.data?.canvas?.embeddedTheme;
 
-      this.processAndSetTheme(theme, embeddedTheme).catch(console.error);
+      this.processTheme(theme, embeddedTheme).catch(console.error);
 
       if (!filePath) {
         return;
@@ -214,7 +226,7 @@ export class CanvasEntity {
     }
 
     const metricsViewSpec = get(
-      this.spec.getMetricsViewFromName(metricsViewName),
+      this.metricsView.getMetricsViewFromName(metricsViewName),
     ).metricsView;
 
     if (!metricsViewSpec) {
@@ -292,7 +304,7 @@ export class CanvasEntity {
     this.firstLoad.set(false);
   };
 
-  processAndSetTheme = async (
+  processTheme = async (
     themeName: string | undefined,
     embeddedTheme: V1ThemeSpec | undefined,
   ) => {
@@ -316,6 +328,8 @@ export class CanvasEntity {
       themeSpec = embeddedTheme;
     }
 
+    this.themeSpec.set(themeSpec);
+
     this.theme.set({
       primary: themeSpec?.primaryColorRaw
         ? chroma(themeSpec.primaryColorRaw)
@@ -324,8 +338,6 @@ export class CanvasEntity {
         ? chroma(themeSpec.secondaryColorRaw)
         : chroma(`hsl(${defaultSecondaryColors[500]})`),
     });
-
-    updateThemeVariables(themeSpec);
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {
