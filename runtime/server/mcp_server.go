@@ -455,7 +455,49 @@ All chart specifications must include:
   - ` + "`time_range`" + `: **Required** - Time range for the data query
     - ` + "`start`" + `: ISO 8601 timestamp (inclusive)
     - ` + "`end`" + `: ISO 8601 timestamp (exclusive)
+    - ` + "`time_zone`" + `: Optional time zone (defaults to "UTC")
     - Example: ` + "`\"start\": \"2024-01-01T00:00:00Z\", \"end\": \"2024-12-31T23:59:59Z\"`" + `
+
+## Optional Parameters
+
+- ` + "`time_grain`" + `: Time granularity for temporal aggregations (e.g., "TIME_GRAIN_DAY", "TIME_GRAIN_MONTH", "TIME_GRAIN_YEAR"). Defaults to "TIME_GRAIN_DAY" if not specified.
+- ` + "`where`" + `: Filter expression to apply to the underlying data. Use the same structure as in query_metrics_view.
+
+### Where Expression Structure
+The where clause follows this structure:
+` + "```json" + `
+{
+  "cond": {
+    "op": "and",  // or "or", "eq", "neq", "in", "nin", "lt", "lte", "gt", "gte", "ilike", "nilike"
+    "exprs": [
+      {
+        "cond": {
+          "op": "eq",
+          "exprs": [
+            {"name": "dimension_name"},
+            {"val": "value"}
+          ]
+        }
+      }
+    ]
+  }
+}
+` + "```" + `
+
+Example with country filter:
+` + "```json" + `
+{
+  "where": {
+    "cond": {
+      "op": "in",
+      "exprs": [
+        {"name": "country"},
+        {"val": ["US", "CA", "GB"]}
+      ]
+    }
+  }
+}
+` + "```" + `
 
 ## Supported Chart Types
 
@@ -489,10 +531,45 @@ Example Specification: Plotting a bar chart of the top 20 advertisers by total b
 }
 ` + "```" + `
 
+Example with filters: Bar chart showing top advertisers in specific countries
+` + "```json" + `
+{
+  "chart_type": "bar_chart",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "where": {
+      "cond": {
+        "op": "in",
+        "exprs": [
+          {"name": "country"},
+          {"val": ["US", "CA", "GB"]}
+        ]
+      }
+    },
+    "color": "primary",
+    "x": {
+      "field": "advertiser_name",
+      "limit": 20,
+      "type": "nominal",
+      "sort": "-y"
+    },
+    "y": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
 ### 2. Line Chart (` + "`line_chart`" + `)
 **Use for:** Showing trends over time
 
-Example Specification
+Example Specification: Line chart with monthly aggregation
 ` + "```json" + `
 {
   "chart_type": "line_chart",
@@ -502,6 +579,7 @@ Example Specification
       "start": "2024-01-01T00:00:00Z",
       "end": "2024-12-31T23:59:59Z"
     },
+    "time_grain": "TIME_GRAIN_MONTH",
     "color": {
       "field": "device_os",
       "limit": 3,
@@ -511,6 +589,43 @@ Example Specification
       "field": "__time",
       "limit": 20,
       "sort": "-y",
+      "type": "temporal"
+    },
+    "y": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+Example with filters and time grain: Daily trends for specific device types
+` + "```json" + `
+{
+  "chart_type": "line_chart",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "time_grain": "TIME_GRAIN_DAY",
+    "where": {
+      "cond": {
+        "op": "in",
+        "exprs": [
+          {"name": "device_os"},
+          {"val": ["iOS", "Android"]}
+        ]
+      }
+    },
+    "color": {
+      "field": "device_os",
+      "type": "nominal"
+    },
+    "x": {
+      "field": "__time",
       "type": "temporal"
     },
     "y": {
@@ -885,6 +1000,8 @@ Choose the appropriate chart type based on your data and analysis goals:
 
 - The ` + "`time_range`" + ` parameter is **required** for all charts
 - Time range ` + "`start`" + ` is inclusive, ` + "`end`" + ` is exclusive
+- Use ` + "`time_grain`" + ` to control temporal aggregation granularity (defaults to "TIME_GRAIN_DAY")
+- Use ` + "`where`" + ` to filter data displayed in charts - this applies the same filtering as query_metrics_view
 - You do not always have to include color field object for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
 - Ensure the metrics_view name matches exactly with available views
 - Field names must match the exact field names in the metrics view
@@ -940,6 +1057,41 @@ Choose the appropriate chart type based on your data and analysis goals:
 		_, hasTimeRange := spec["time_range"]
 		if !hasTimeRange {
 			return nil, fmt.Errorf("spec must contain a 'time_range' field with 'start' and 'end' properties")
+		}
+
+		// Optional: Validate where clause structure if present
+		if whereClause, hasWhere := spec["where"]; hasWhere {
+			whereMap, ok := whereClause.(map[string]any)
+			if !ok {
+				return nil, fmt.Errorf("'where' must be an object with a 'cond' property")
+			}
+			if _, hasCond := whereMap["cond"]; !hasCond {
+				return nil, fmt.Errorf("'where' must contain a 'cond' property with 'op' and 'exprs'")
+			}
+		}
+
+		// Optional: Validate time_grain if present
+		if timeGrain, hasTimeGrain := spec["time_grain"]; hasTimeGrain {
+			timeGrainStr, ok := timeGrain.(string)
+			if !ok {
+				return nil, fmt.Errorf("'time_grain' must be a string (e.g., 'TIME_GRAIN_DAY', 'TIME_GRAIN_MONTH')")
+			}
+			// Validate it's a valid time grain
+			validTimeGrains := []string{
+				"TIME_GRAIN_MILLISECOND", "TIME_GRAIN_SECOND", "TIME_GRAIN_MINUTE",
+				"TIME_GRAIN_HOUR", "TIME_GRAIN_DAY", "TIME_GRAIN_WEEK",
+				"TIME_GRAIN_MONTH", "TIME_GRAIN_QUARTER", "TIME_GRAIN_YEAR",
+			}
+			isValid := false
+			for _, valid := range validTimeGrains {
+				if timeGrainStr == valid {
+					isValid = true
+					break
+				}
+			}
+			if !isValid {
+				return nil, fmt.Errorf("'time_grain' must be one of: %v", validTimeGrains)
+			}
 		}
 
 		// Validate that the metrics view exists

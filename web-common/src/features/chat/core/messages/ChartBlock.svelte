@@ -21,14 +21,14 @@
         end: chartSpec.time_range.end,
         timeZone: chartSpec.time_range.time_zone || "UTC",
       }
-    : undefined;
+    : {
+        start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to last 30 days
+        end: new Date().toISOString(),
+        timeZone: "UTC",
+      };
 
   $: timeAndFilterStore = readable({
-    timeRange: timeRange || {
-      start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // Default to last 30 days
-      end: new Date().toISOString(),
-      timeZone: "UTC",
-    },
+    timeRange: timeRange,
     comparisonTimeRange: undefined,
     showTimeComparison: false,
     where: chartSpec.where || {

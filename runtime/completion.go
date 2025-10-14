@@ -758,8 +758,6 @@ Execute a MINIMUM of 4-6 distinct analytical queries, building each query based 
    - The data structure doesn't lend itself to visualization (e.g., text-heavy data)
 	 - There is no appropriate chart type which can be created for the underlying data
    
-IMPORTANT: Always include a "time_range" in the chart spec matching the data you queried
-
 ## Visualization Best Practices
 Choose the appropriate chart type based on your data:
 - Time series data: line_chart or area_chart (better for cummalative trends)
