@@ -53,7 +53,7 @@ interface TimeRange {
   };
 }
 
-export type ChartSpecAIBase =
+export type ChartSpecAI =
   | { chart_type: "bar_chart"; spec: CartesianChartSpec & TimeRange }
   | { chart_type: "line_chart"; spec: CartesianChartSpec & TimeRange }
   | { chart_type: "area_chart"; spec: CartesianChartSpec & TimeRange }
@@ -67,8 +67,6 @@ export type ChartSpecAIBase =
   | { chart_type: "funnel_chart"; spec: FunnelChartSpec & TimeRange }
   | { chart_type: "heatmap"; spec: HeatmapChartSpec & TimeRange }
   | { chart_type: "combo_chart"; spec: ComboChartSpec & TimeRange };
-
-export type ChartSpecAI = ChartSpecAIBase;
 
 export type ChartType =
   | "bar_chart"

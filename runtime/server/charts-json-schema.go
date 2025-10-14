@@ -1,1277 +1,439 @@
 package server
 
-const ChartsJSONSchema = `
-{
-  "$ref": "#/definitions/ChartSpecAI",
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "definitions": {
-    "Categorical": {
-      "enum": [
-        "accent",
-        "category10",
-        "category20",
-        "category20b",
-        "category20c",
-        "dark2",
-        "paired",
-        "pastel1",
-        "pastel2",
-        "set1",
-        "set2",
-        "set3",
-        "tableau10",
-        "tableau20",
-        "observable10"
-      ],
-      "type": "string"
+const ChartsJSONSchema = `{
+  "type": "object",
+  "required": ["chart_type", "spec"],
+  "properties": {
+    "chart_type": {
+      "type": "string",
+      "description": "The type of chart to render."
     },
-    "ChartLegend": {
-      "enum": [
-        "none",
-        "top",
-        "bottom",
-        "left",
-        "right"
-      ],
-      "type": "string"
-    },
-    "ChartSortDirection": {
-      "anyOf": [
-        {
-          "enum": [
-            "x",
-            "y",
-            "-x",
-            "-y",
-            "color",
-            "-color",
-            "measure",
-            "-measure"
-          ],
-          "type": "string"
+    "spec": {
+      "$ref": "#/$defs/ChartSpec",
+      "description": "The chart specification containing configuration and data references."
+    }
+  },
+  "$defs": {
+    "ChartSpec": {
+      "type": "object",
+      "required": ["metrics_view", "time_range"],
+      "properties": {
+        "metrics_view": {
+          "type": "string",
+          "description": "The metrics view to query data from."
         },
-        {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      ]
-    },
-    "ChartSpecAI": {
-      "$ref": "#/definitions/ChartSpecAIBase"
-    },
-    "ChartSpecAIBase": {
-      "anyOf": [
-        {
-          "additionalProperties": false,
+        "time_range": {
+          "type": "object",
+          "required": ["start", "end"],
           "properties": {
-            "chart_type": {
-              "const": "bar_chart",
-              "type": "string"
+            "start": {
+              "type": "string",
+              "description": "Start time for the time range."
             },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/FieldConfig<nominal>"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                },
-                "x": {
-                  "$ref": "#/definitions/FieldConfig<nominal-or-time>"
-                },
-                "y": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
+            "end": {
+              "type": "string",
+              "description": "End time for the time range."
             }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "line_chart",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/FieldConfig<nominal>"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                },
-                "x": {
-                  "$ref": "#/definitions/FieldConfig<nominal-or-time>"
-                },
-                "y": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "area_chart",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/FieldConfig<nominal>"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                },
-                "x": {
-                  "$ref": "#/definitions/FieldConfig<nominal-or-time>"
-                },
-                "y": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "stacked_bar",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/FieldConfig<nominal>"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                },
-                "x": {
-                  "$ref": "#/definitions/FieldConfig<nominal-or-time>"
-                },
-                "y": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "stacked_bar_normalized",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/FieldConfig<nominal>"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                },
-                "x": {
-                  "$ref": "#/definitions/FieldConfig<nominal-or-time>"
-                },
-                "y": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "donut_chart",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "$ref": "#/definitions/FieldConfig<nominal>"
-                },
-                "innerRadius": {
-                  "type": "number"
-                },
-                "measure": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "pie_chart",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "$ref": "#/definitions/FieldConfig<nominal>"
-                },
-                "innerRadius": {
-                  "type": "number"
-                },
-                "measure": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "funnel_chart",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "breakdownMode": {
-                  "$ref": "#/definitions/FunnelBreakdownMode"
-                },
-                "color": {
-                  "$ref": "#/definitions/FunnelColorMode"
-                },
-                "measure": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "mode": {
-                  "$ref": "#/definitions/FunnelMode"
-                },
-                "stage": {
-                  "$ref": "#/definitions/FieldConfig<nominal>"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "heatmap",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "$ref": "#/definitions/FieldConfig<quantitative>"
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "show_data_labels": {
-                  "type": "boolean"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                },
-                "x": {
-                  "$ref": "#/definitions/FieldConfig<nominal-or-time>"
-                },
-                "y": {
-                  "$ref": "#/definitions/FieldConfig<nominal-or-time>"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "chart_type": {
-              "const": "combo_chart",
-              "type": "string"
-            },
-            "spec": {
-              "additionalProperties": false,
-              "properties": {
-                "color": {
-                  "$ref": "#/definitions/FieldConfig<nominal>"
-                },
-                "metrics_view": {
-                  "type": "string"
-                },
-                "time_range": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "end": {
-                      "type": "string"
-                    },
-                    "start": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "start",
-                    "end"
-                  ],
-                  "type": "object"
-                },
-                "x": {
-                  "$ref": "#/definitions/FieldConfig<nominal-or-time>"
-                },
-                "y1": {
-                  "$ref": "#/definitions/FieldConfig<quantitative-or-mark>"
-                },
-                "y2": {
-                  "$ref": "#/definitions/FieldConfig<quantitative-or-mark>"
-                }
-              },
-              "required": [
-                "metrics_view",
-                "time_range"
-              ],
-              "type": "object"
-            }
-          },
-          "required": [
-            "chart_type",
-            "spec"
-          ],
-          "type": "object"
-        }
-      ]
-    },
-    "ColorMapping": {
-      "items": {
-        "additionalProperties": false,
-        "properties": {
-          "color": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
           }
         },
-        "required": [
-          "value",
-          "color"
-        ],
-        "type": "object"
-      },
-      "type": "array"
-    },
-    "ColorRangeMapping": {
-      "anyOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "mode": {
-              "const": "scheme",
-              "type": "string"
-            },
-            "scheme": {
-              "$ref": "#/definitions/ColorScheme"
-            }
-          },
-          "required": [
-            "mode",
-            "scheme"
+        "where": {
+          "$ref": "#/$defs/Expression",
+          "description": "Optional expression for filtering the underlying data before aggregation."
+        },
+        "time_grain": {
+          "$ref": "#/$defs/TimeGrain",
+          "description": "Time grain for temporal aggregation."
+        },
+        "x": {
+          "$ref": "#/$defs/FieldConfig",
+          "description": "X-axis field configuration."
+        },
+        "y": {
+          "$ref": "#/$defs/FieldConfig",
+          "description": "Y-axis field configuration."
+        },
+        "y1": {
+          "$ref": "#/$defs/FieldConfig",
+          "description": "Y-axis field configuration."
+        },
+        "y2": {
+          "$ref": "#/$defs/FieldConfig",
+          "description": "Tertiary Y-axis field configuration."
+        },
+        "color": {
+          "anyOf": [
+            { "$ref": "#/$defs/FieldConfig" },
+            { "type": "string" }
           ],
-          "type": "object"
+          "description": "Color field configuration or static color value."
         },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "end": {
-              "type": "string"
-            },
-            "mode": {
-              "const": "gradient",
-              "type": "string"
-            },
-            "start": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "mode",
-            "start",
-            "end"
-          ],
-          "type": "object"
+        "measure": {
+          "$ref": "#/$defs/FieldConfig",
+          "description": "Measure field configuration."
+        },
+        "stage": {
+          "$ref": "#/$defs/FieldConfig",
+          "description": "Stage field configuration for funnel charts."
+        },
+        "innerRadius": {
+          "type": "number",
+          "description": "Inner radius for donut charts."
+        },
+        "breakdownMode": {
+          "type": "string",
+          "description": "Breakdown mode for the chart."
+        },
+        "mode": {
+          "type": "string",
+          "description": "Display mode for the chart."
+        },
+        "show_data_labels": {
+          "type": "boolean",
+          "description": "Whether to show data labels on the chart."
         }
-      ]
+      }
     },
-    "ColorScheme": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/Categorical"
-        },
-        {
-          "$ref": "#/definitions/SequentialSingleHue"
-        },
-        {
-          "$ref": "#/definitions/SequentialMultiHue"
-        },
-        {
-          "$ref": "#/definitions/Diverging"
-        },
-        {
-          "$ref": "#/definitions/Cyclical"
-        }
-      ]
-    },
-    "Cyclical": {
-      "enum": [
-        "rainbow",
-        "sinebow"
-      ],
-      "type": "string"
-    },
-    "Diverging": {
-      "enum": [
-        "blueorange",
-        "blueorange-3",
-        "blueorange-4",
-        "blueorange-5",
-        "blueorange-6",
-        "blueorange-7",
-        "blueorange-8",
-        "blueorange-9",
-        "blueorange-10",
-        "blueorange-11",
-        "brownbluegreen",
-        "brownbluegreen-3",
-        "brownbluegreen-4",
-        "brownbluegreen-5",
-        "brownbluegreen-6",
-        "brownbluegreen-7",
-        "brownbluegreen-8",
-        "brownbluegreen-9",
-        "brownbluegreen-10",
-        "brownbluegreen-11",
-        "purplegreen",
-        "purplegreen-3",
-        "purplegreen-4",
-        "purplegreen-5",
-        "purplegreen-6",
-        "purplegreen-7",
-        "purplegreen-8",
-        "purplegreen-9",
-        "purplegreen-10",
-        "purplegreen-11",
-        "pinkyellowgreen",
-        "pinkyellowgreen-3",
-        "pinkyellowgreen-4",
-        "pinkyellowgreen-5",
-        "pinkyellowgreen-6",
-        "pinkyellowgreen-7",
-        "pinkyellowgreen-8",
-        "pinkyellowgreen-9",
-        "pinkyellowgreen-10",
-        "pinkyellowgreen-11",
-        "purpleorange",
-        "purpleorange-3",
-        "purpleorange-4",
-        "purpleorange-5",
-        "purpleorange-6",
-        "purpleorange-7",
-        "purpleorange-8",
-        "purpleorange-9",
-        "purpleorange-10",
-        "purpleorange-11",
-        "redblue",
-        "redblue-3",
-        "redblue-4",
-        "redblue-5",
-        "redblue-6",
-        "redblue-7",
-        "redblue-8",
-        "redblue-9",
-        "redblue-10",
-        "redblue-11",
-        "redgrey",
-        "redgrey-3",
-        "redgrey-4",
-        "redgrey-5",
-        "redgrey-6",
-        "redgrey-7",
-        "redgrey-8",
-        "redgrey-9",
-        "redgrey-10",
-        "redgrey-11",
-        "redyellowblue",
-        "redyellowblue-3",
-        "redyellowblue-4",
-        "redyellowblue-5",
-        "redyellowblue-6",
-        "redyellowblue-7",
-        "redyellowblue-8",
-        "redyellowblue-9",
-        "redyellowblue-10",
-        "redyellowblue-11",
-        "redyellowgreen",
-        "redyellowgreen-3",
-        "redyellowgreen-4",
-        "redyellowgreen-5",
-        "redyellowgreen-6",
-        "redyellowgreen-7",
-        "redyellowgreen-8",
-        "redyellowgreen-9",
-        "redyellowgreen-10",
-        "redyellowgreen-11",
-        "spectral",
-        "spectral-3",
-        "spectral-4",
-        "spectral-5",
-        "spectral-6",
-        "spectral-7",
-        "spectral-8",
-        "spectral-9",
-        "spectral-10",
-        "spectral-11"
-      ],
-      "type": "string"
-    },
-    "FieldConfig<nominal>": {
+    "FieldConfig": {
+      "type": "object",
+      "required": ["field", "type"],
       "properties": {
-        "colorMapping": {
-          "$ref": "#/definitions/ColorMapping"
-        },
         "field": {
-          "type": "string"
-        },
-        "fields": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "labelAngle": {
-          "type": "number"
-        },
-        "legendOrientation": {
-          "$ref": "#/definitions/ChartLegend"
-        },
-        "limit": {
-          "type": "number"
-        },
-        "showAxisTitle": {
-          "type": "boolean"
-        },
-        "showNull": {
-          "type": "boolean"
-        },
-        "sort": {
-          "$ref": "#/definitions/ChartSortDirection"
+          "type": "string",
+          "description": "The field name from the metrics view."
         },
         "type": {
-          "enum": [
-            "quantitative",
-            "ordinal",
-            "nominal",
-            "temporal",
-            "value"
-          ],
-          "type": "string"
-        }
-      },
-      "required": [
-        "field",
-        "type"
-      ],
-      "type": "object"
-    },
-    "FieldConfig<quantitative>": {
-      "properties": {
-        "colorRange": {
-          "$ref": "#/definitions/ColorRangeMapping"
-        },
-        "field": {
-          "type": "string"
+          "type": "string",
+          "description": "The field type (dimension or measure)."
         },
         "fields": {
+          "type": "array",
           "items": {
             "type": "string"
           },
-          "type": "array"
+          "description": "Array of field names for multi-field configurations."
+        },
+        "colorMapping": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "The value to map."
+              },
+              "color": {
+                "type": "string",
+                "description": "The color to use for this value."
+              }
+            }
+          },
+          "description": "Mapping of values to colors."
+        },
+        "colorRange": {
+          "type": "object",
+          "description": "Color range configuration for continuous scales."
+        },
+        "labelAngle": {
+          "type": "number",
+          "description": "Angle for axis labels in degrees."
+        },
+        "legendOrientation": {
+          "type": "string",
+          "description": "Orientation of the legend."
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum number of values to display."
         },
         "max": {
-          "type": "number"
+          "type": "number",
+          "description": "Maximum value for the axis."
         },
         "min": {
-          "type": "number"
-        },
-        "showAxisTitle": {
-          "type": "boolean"
-        },
-        "showTotal": {
-          "type": "boolean"
-        },
-        "type": {
-          "enum": [
-            "quantitative",
-            "ordinal",
-            "nominal",
-            "temporal",
-            "value"
-          ],
-          "type": "string"
-        },
-        "zeroBasedOrigin": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "field",
-        "type"
-      ],
-      "type": "object"
-    },
-    "FieldConfig<nominal-or-time>": {
-      "properties": {
-        "colorMapping": {
-          "$ref": "#/definitions/ColorMapping"
-        },
-        "field": {
-          "type": "string"
-        },
-        "fields": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "labelAngle": {
-          "type": "number"
-        },
-        "legendOrientation": {
-          "$ref": "#/definitions/ChartLegend"
-        },
-        "limit": {
-          "type": "number"
-        },
-        "showAxisTitle": {
-          "type": "boolean"
-        },
-        "showNull": {
-          "type": "boolean"
-        },
-        "sort": {
-          "$ref": "#/definitions/ChartSortDirection"
-        },
-        "timeUnit": {
-          "type": "string"
-        },
-        "type": {
-          "enum": [
-            "quantitative",
-            "ordinal",
-            "nominal",
-            "temporal",
-            "value"
-          ],
-          "type": "string"
-        }
-      },
-      "required": [
-        "field",
-        "type"
-      ],
-      "type": "object"
-    },
-    "FieldConfig<quantitative-or-mark>": {
-      "properties": {
-        "colorRange": {
-          "$ref": "#/definitions/ColorRangeMapping"
-        },
-        "field": {
-          "type": "string"
-        },
-        "fields": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
+          "type": "number",
+          "description": "Minimum value for the axis."
         },
         "mark": {
-          "enum": [
-            "bar",
-            "line"
-          ],
-          "type": "string"
-        },
-        "max": {
-          "type": "number"
-        },
-        "min": {
-          "type": "number"
+          "type": "string",
+          "description": "Mark type for the field."
         },
         "showAxisTitle": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether to show the axis title."
+        },
+        "showNull": {
+          "type": "boolean",
+          "description": "Whether to show null values."
         },
         "showTotal": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether to show total values."
         },
-        "type": {
-          "enum": [
-            "quantitative",
-            "ordinal",
-            "nominal",
-            "temporal",
-            "value"
+        "sort": {
+          "anyOf": [
+            {
+              "enum": [
+                "x",
+                "y",
+                "-x",
+                "-y",
+                "color",
+                "-color",
+                "measure",
+                "-measure"
+              ],
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
           ],
-          "type": "string"
+          "description": "Sort order for the field values."
+        },
+        "timeUnit": {
+          "type": "string",
+          "description": "Time unit for temporal fields."
         },
         "zeroBasedOrigin": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Whether to use zero-based origin for the axis."
+        }
+      }
+    },
+    "Expression": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Expression name"
+        },
+        "val": {
+          "description": "Expression value"
+        },
+        "cond": {
+          "$ref": "#/$defs/Condition"
+        },
+        "subquery": {
+          "$ref": "#/$defs/Subquery"
+        }
+      }
+    },
+    "Condition": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "$ref": "#/$defs/Operator",
+          "description": "Operator for the condition"
+        },
+        "exprs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Expression"
+          },
+          "description": "Expressions in the condition"
         }
       },
-      "required": [
-        "field",
-        "type"
-      ],
-      "type": "object"
+      "required": ["op"]
     },
-    "FunnelBreakdownMode": {
-      "enum": [
-        "dimension",
-        "measures"
-      ],
-      "type": "string"
+    "Subquery": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "$ref": "#/$defs/Dimension"
+        },
+        "measures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Measure"
+          }
+        },
+        "where": {
+          "$ref": "#/$defs/Expression"
+        },
+        "having": {
+          "$ref": "#/$defs/Expression"
+        }
+      },
+      "required": ["dimension", "measures"]
     },
-    "FunnelColorMode": {
-      "enum": [
-        "stage",
-        "measure",
-        "name",
-        "value"
-      ],
-      "type": "string"
+    "Dimension": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the dimension"
+        },
+        "compute": {
+          "$ref": "#/$defs/DimensionCompute",
+          "description": "Optionally configure a derived dimension, such as a time floor."
+        }
+      },
+      "required": ["name"]
     },
-    "FunnelMode": {
-      "enum": [
-        "width",
-        "order"
-      ],
-      "type": "string"
+    "DimensionCompute": {
+      "type": "object",
+      "properties": {
+        "time_floor": {
+          "$ref": "#/$defs/DimensionComputeTimeFloor"
+        }
+      }
     },
-    "SequentialMultiHue": {
-      "enum": [
-        "turbo",
-        "viridis",
-        "inferno",
-        "magma",
-        "plasma",
-        "cividis",
-        "bluegreen",
-        "bluegreen-3",
-        "bluegreen-4",
-        "bluegreen-5",
-        "bluegreen-6",
-        "bluegreen-7",
-        "bluegreen-8",
-        "bluegreen-9",
-        "bluepurple",
-        "bluepurple-3",
-        "bluepurple-4",
-        "bluepurple-5",
-        "bluepurple-6",
-        "bluepurple-7",
-        "bluepurple-8",
-        "bluepurple-9",
-        "goldgreen",
-        "goldgreen-3",
-        "goldgreen-4",
-        "goldgreen-5",
-        "goldgreen-6",
-        "goldgreen-7",
-        "goldgreen-8",
-        "goldgreen-9",
-        "goldorange",
-        "goldorange-3",
-        "goldorange-4",
-        "goldorange-5",
-        "goldorange-6",
-        "goldorange-7",
-        "goldorange-8",
-        "goldorange-9",
-        "goldred",
-        "goldred-3",
-        "goldred-4",
-        "goldred-5",
-        "goldred-6",
-        "goldred-7",
-        "goldred-8",
-        "goldred-9",
-        "greenblue",
-        "greenblue-3",
-        "greenblue-4",
-        "greenblue-5",
-        "greenblue-6",
-        "greenblue-7",
-        "greenblue-8",
-        "greenblue-9",
-        "orangered",
-        "orangered-3",
-        "orangered-4",
-        "orangered-5",
-        "orangered-6",
-        "orangered-7",
-        "orangered-8",
-        "orangered-9",
-        "purplebluegreen",
-        "purplebluegreen-3",
-        "purplebluegreen-4",
-        "purplebluegreen-5",
-        "purplebluegreen-6",
-        "purplebluegreen-7",
-        "purplebluegreen-8",
-        "purplebluegreen-9",
-        "purpleblue",
-        "purpleblue-3",
-        "purpleblue-4",
-        "purpleblue-5",
-        "purpleblue-6",
-        "purpleblue-7",
-        "purpleblue-8",
-        "purpleblue-9",
-        "purplered",
-        "purplered-3",
-        "purplered-4",
-        "purplered-5",
-        "purplered-6",
-        "purplered-7",
-        "purplered-8",
-        "purplered-9",
-        "redpurple",
-        "redpurple-3",
-        "redpurple-4",
-        "redpurple-5",
-        "redpurple-6",
-        "redpurple-7",
-        "redpurple-8",
-        "redpurple-9",
-        "yellowgreenblue",
-        "yellowgreenblue-3",
-        "yellowgreenblue-4",
-        "yellowgreenblue-5",
-        "yellowgreenblue-6",
-        "yellowgreenblue-7",
-        "yellowgreenblue-8",
-        "yellowgreenblue-9",
-        "yellowgreen",
-        "yellowgreen-3",
-        "yellowgreen-4",
-        "yellowgreen-5",
-        "yellowgreen-6",
-        "yellowgreen-7",
-        "yellowgreen-8",
-        "yellowgreen-9",
-        "yelloworangebrown",
-        "yelloworangebrown-3",
-        "yelloworangebrown-4",
-        "yelloworangebrown-5",
-        "yelloworangebrown-6",
-        "yelloworangebrown-7",
-        "yelloworangebrown-8",
-        "yelloworangebrown-9",
-        "yelloworangered",
-        "yelloworangered-3",
-        "yelloworangered-4",
-        "yelloworangered-5",
-        "yelloworangered-6",
-        "yelloworangered-7",
-        "yelloworangered-8",
-        "yelloworangered-9",
-        "darkblue",
-        "darkblue-3",
-        "darkblue-4",
-        "darkblue-5",
-        "darkblue-6",
-        "darkblue-7",
-        "darkblue-8",
-        "darkblue-9",
-        "darkgold",
-        "darkgold-3",
-        "darkgold-4",
-        "darkgold-5",
-        "darkgold-6",
-        "darkgold-7",
-        "darkgold-8",
-        "darkgold-9",
-        "darkgreen",
-        "darkgreen-3",
-        "darkgreen-4",
-        "darkgreen-5",
-        "darkgreen-6",
-        "darkgreen-7",
-        "darkgreen-8",
-        "darkgreen-9",
-        "darkmulti",
-        "darkmulti-3",
-        "darkmulti-4",
-        "darkmulti-5",
-        "darkmulti-6",
-        "darkmulti-7",
-        "darkmulti-8",
-        "darkmulti-9",
-        "darkred",
-        "darkred-3",
-        "darkred-4",
-        "darkred-5",
-        "darkred-6",
-        "darkred-7",
-        "darkred-8",
-        "darkred-9",
-        "lightgreyred",
-        "lightgreyred-3",
-        "lightgreyred-4",
-        "lightgreyred-5",
-        "lightgreyred-6",
-        "lightgreyred-7",
-        "lightgreyred-8",
-        "lightgreyred-9",
-        "lightgreyteal",
-        "lightgreyteal-3",
-        "lightgreyteal-4",
-        "lightgreyteal-5",
-        "lightgreyteal-6",
-        "lightgreyteal-7",
-        "lightgreyteal-8",
-        "lightgreyteal-9",
-        "lightmulti",
-        "lightmulti-3",
-        "lightmulti-4",
-        "lightmulti-5",
-        "lightmulti-6",
-        "lightmulti-7",
-        "lightmulti-8",
-        "lightmulti-9",
-        "lightorange",
-        "lightorange-3",
-        "lightorange-4",
-        "lightorange-5",
-        "lightorange-6",
-        "lightorange-7",
-        "lightorange-8",
-        "lightorange-9",
-        "lighttealblue",
-        "lighttealblue-3",
-        "lighttealblue-4",
-        "lighttealblue-5",
-        "lighttealblue-6",
-        "lighttealblue-7",
-        "lighttealblue-8",
-        "lighttealblue-9"
-      ],
-      "type": "string"
+    "DimensionComputeTimeFloor": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "description": "Dimension to apply time floor to"
+        },
+        "grain": {
+          "$ref": "#/$defs/TimeGrain",
+          "description": "Time grain for flooring"
+        }
+      },
+      "required": ["dimension", "grain"]
     },
-    "SequentialSingleHue": {
+    "Measure": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the measure"
+        },
+        "compute": {
+          "$ref": "#/$defs/MeasureCompute",
+          "description": "Optionally configure a derived measure, such as a comparison."
+        }
+      },
+      "required": ["name"]
+    },
+    "MeasureCompute": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "boolean",
+          "description": "Whether to compute count"
+        },
+        "count_distinct": {
+          "$ref": "#/$defs/MeasureComputeCountDistinct"
+        },
+        "comparison_value": {
+          "$ref": "#/$defs/MeasureComputeComparisonValue"
+        },
+        "comparison_delta": {
+          "$ref": "#/$defs/MeasureComputeComparisonDelta"
+        },
+        "comparison_ratio": {
+          "$ref": "#/$defs/MeasureComputeComparisonRatio"
+        },
+        "percent_of_total": {
+          "$ref": "#/$defs/MeasureComputePercentOfTotal"
+        },
+        "uri": {
+          "$ref": "#/$defs/MeasureComputeURI"
+        }
+      }
+    },
+    "MeasureComputeCountDistinct": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "description": "Dimension to count distinct values for"
+        }
+      },
+      "required": ["dimension"]
+    },
+    "MeasureComputeComparisonValue": {
+      "type": "object",
+      "properties": {
+        "measure": {
+          "type": "string",
+          "description": "Measure to compare"
+        }
+      },
+      "required": ["measure"]
+    },
+    "MeasureComputeComparisonDelta": {
+      "type": "object",
+      "properties": {
+        "measure": {
+          "type": "string",
+          "description": "Measure to compute delta for"
+        }
+      },
+      "required": ["measure"]
+    },
+    "MeasureComputeComparisonRatio": {
+      "type": "object",
+      "properties": {
+        "measure": {
+          "type": "string",
+          "description": "Measure to compute ratio for"
+        }
+      },
+      "required": ["measure"]
+    },
+    "MeasureComputePercentOfTotal": {
+      "type": "object",
+      "properties": {
+        "measure": {
+          "type": "string",
+          "description": "Measure to compute percentage for"
+        },
+        "total": {
+          "type": "number",
+          "description": "Total value to use for percentage calculation"
+        }
+      },
+      "required": ["measure"]
+    },
+    "MeasureComputeURI": {
+      "type": "object",
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "description": "Dimension to generate URI for"
+        }
+      },
+      "required": ["dimension"]
+    },
+    "Operator": {
+      "type": "string",
       "enum": [
-        "blues",
-        "tealblues",
-        "teals",
-        "greens",
-        "browns",
-        "greys",
-        "purples",
-        "warmgreys",
-        "reds",
-        "oranges"
+        "",
+        "eq",
+        "neq",
+        "lt",
+        "lte",
+        "gt",
+        "gte",
+        "in",
+        "nin",
+        "ilike",
+        "nilike",
+        "or",
+        "and"
       ],
-      "type": "string"
+      "description": "Comparison or logical operator"
+    },
+    "TimeGrain": {
+      "type": "string",
+      "enum": [
+        "TIME_GRAIN_UNSPECIFIED",
+        "TIME_GRAIN_MILLISECOND",
+        "TIME_GRAIN_SECOND",
+        "TIME_GRAIN_MINUTE",
+        "TIME_GRAIN_HOUR",
+        "TIME_GRAIN_DAY",
+        "TIME_GRAIN_WEEK",
+        "TIME_GRAIN_MONTH",
+        "TIME_GRAIN_QUARTER",
+        "TIME_GRAIN_YEAR"
+      ],
+      "description": "Time granularity"
     }
   }
 }`
