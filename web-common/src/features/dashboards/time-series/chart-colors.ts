@@ -15,8 +15,9 @@ export const MainAreaColorGradientLight = "var(--color-theme-50)";
 
 /**
  * Color used for the time series comparison
+ * Using diverging palette neutral color for comparison period baseline
  */
-export const TimeComparisonLineColor = "var(--color-gray-500)";
+export const TimeComparisonLineColor = "var(--color-diverging-6)";
 
 /**
  * Color used for the unfocused line in time series chart,

@@ -7,6 +7,7 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
+import chroma from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import type {
@@ -187,11 +188,14 @@ export function getColorForValues(
     const overrideColor = overrideColorMapping?.find(
       (mapping) => mapping.value === value,
     );
+    const color =
+      overrideColor?.color ||
+      COMPARIONS_COLORS[index % COMPARIONS_COLORS.length];
+
     return {
       value,
-      color:
-        overrideColor?.color ||
-        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
+      // Keep CSS variable references as-is, resolve them for display in the UI
+      color: color,
     };
   });
 
@@ -215,4 +219,68 @@ export function getColorMappingForChart(
   }
 
   return colorMapping;
+}
+
+/**
+ * Resolves a CSS variable to its computed value
+ * Necessary for canvas rendering where CSS variables must be resolved
+ * Checks scoped theme boundary first, then falls back to document root
+ */
+export function resolveCSSVariable(cssVar: string): string {
+  if (typeof window === "undefined" || !cssVar.startsWith("var("))
+    return cssVar;
+
+  const varName = cssVar
+    .replace("var(", "")
+    .replace(")", "")
+    .split(",")[0]
+    .trim();
+
+  // First check if there's a dashboard-theme-boundary element (scoped themes)
+  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+  if (themeBoundary) {
+    const scopedValue = getComputedStyle(
+      themeBoundary as HTMLElement,
+    ).getPropertyValue(varName);
+    if (scopedValue && scopedValue.trim()) {
+      return scopedValue.trim();
+    }
+  }
+
+  // Fall back to document root for global variables
+  const computed = getComputedStyle(document.documentElement).getPropertyValue(
+    varName,
+  );
+
+  return computed && computed.trim() ? computed.trim() : cssVar;
+}
+
+/**
+ * Converts a resolved color back to its CSS variable reference if it matches a palette color
+ * This allows YAML to store variable references instead of hardcoded values
+ */
+export function colorToVariableReference(resolvedColor: string): string {
+  if (!resolvedColor || typeof window === "undefined") return resolvedColor;
+
+  // Check all comparison colors (qualitative palette)
+  for (let i = 0; i < COMPARIONS_COLORS.length; i++) {
+    const varRef = COMPARIONS_COLORS[i];
+    const resolved = resolveCSSVariable(varRef);
+
+    // Compare colors (normalize by converting both to chroma and back)
+    try {
+      const inputChroma = chroma(resolvedColor);
+      const paletteChroma = chroma(resolved);
+
+      // Check if colors are the same (with small tolerance for rounding)
+      if (chroma.deltaE(inputChroma, paletteChroma) < 1) {
+        return varRef; // Return the CSS variable reference
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }
+
+  // Not a palette color, return as-is
+  return resolvedColor;
 }

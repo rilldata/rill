@@ -1,142 +1,153 @@
+/**
+ * Theme Actions
+ * 
+ * Main functions for updating theme variables, including CSS-based themes
+ * and legacy color-based themes.
+ */
+
 import { TailwindColorSpacing } from "./color-config.ts";
 import type { V1ThemeSpec } from "../../../../web-common/src/runtime-client/index.ts";
 import chroma, { type Color } from "chroma-js";
-import { clamp } from "../../../../web-common/src/lib/clamp.ts";
 import { generateColorPalette } from "./palette-generator.ts";
 import { featureFlags } from "../feature-flags.ts";
 import { get } from "svelte/store";
+import { generatePalette, DEFAULT_STEP_COUNT, DEFAULT_GAMMA, createDarkVariation as createDarkVariationFn } from "./color-generation.ts";
+import { sanitizeAndExtractSafeVariables, extractColorVariables } from "./css-sanitizer.ts";
+import { setPaletteColors, clearAllPaletteColors } from "./palette-colors.ts";
+import { defaultPrimaryPalette, defaultSecondaryPalette } from "./colors.ts";
 
-export const BLACK = chroma("black");
-export const WHITE = chroma("white");
-export const MODE = "oklab";
+// Re-export from color-generation for backward compatibility
+export { createDarkVariation, BLACK, WHITE, MODE } from "./color-generation.ts";
 
-export function createDarkVariation(colors: Color[]) {
-  return generatePalette(colors[5]).dark;
-}
+// Cache default dark palettes (computed once on module load)
+const defaultPrimaryDarkPalette = createDarkVariationFn(defaultPrimaryPalette);
+const defaultSecondaryDarkPalette = createDarkVariationFn(defaultSecondaryPalette);
 
-function generatePalette(
-  refColor: Color,
-  desaturateNearGray: boolean = true,
-  stepCount: number = 11,
-  gamma: number = 1.12,
-) {
-  const [l, c, h] = refColor.oklch();
+// Re-export palette functions
+export {
+  setSequentialColor,
+  setDivergingColor,
+  setQualitativeColor,
+  setPaletteColors,
+  clearPaletteColor,
+  clearAllPaletteColors,
+  type PaletteType,
+} from "./palette-colors";
 
-  if (desaturateNearGray && c < 0.05) {
-    const spectrum = chroma
-      .scale([chroma("black"), refColor, chroma("white")])
-      .mode(MODE)
-      .gamma(1)
-      .colors(102, null);
+// Constants
+const CUSTOM_THEME_STYLE_ID = "rill-custom-theme";
 
-    const darkestDark = findContrast(spectrum, BLACK, 1.06) ?? spectrum[0];
-    const lightestDark =
-      findContrast(spectrum, darkestDark, 18.5) ?? spectrum[0];
+// Type definitions
+type ColorMatch = {
+  lightColor: string | null;
+  darkColor: string | null;
+};
 
-    const middleValue = findContrast(spectrum, darkestDark, 5) ?? spectrum[50];
+type ColorPalette = {
+  light: Color[];
+  dark: Color[];
+};
 
-    return {
-      dark: [
-        ...chroma
-          .scale([darkestDark, middleValue])
-          .mode(MODE)
-          .gamma(1.15)
-          .colors(6, null)
-          .slice(0, -1),
-        middleValue,
-        ...chroma
-          .scale([middleValue, lightestDark])
-          .mode(MODE)
-          .gamma(0.6)
-          .colors(6, null)
-          .slice(1),
-      ],
-      light: chroma
-        .scale([chroma("white"), chroma("black")])
-        .mode(MODE)
-        .gamma(1)
-        .colors(stepCount + 2, null)
-        .slice(1, -1),
-    };
-  }
+type ColorType = string;
 
-  const darkRef = chroma.oklch(clamp(0.6, l, 1), c, h);
-
-  const lightRef = chroma.oklch(clamp(0, l, 0.82), c, h);
-
-  const darkSpectrum = chroma
-    .scale([chroma("black"), darkRef, chroma("white")])
-    .mode(MODE)
-    .gamma(1)
-    .colors(102, null);
-
-  const lightSpectrum = chroma
-    .scale([chroma("black"), lightRef, chroma("white")])
-    .mode(MODE)
-    .gamma(1)
-    .colors(102, null);
-
-  const reversedDarkSpectrum = [...darkSpectrum].reverse();
-  const reversedLightSpectrum = [...lightSpectrum].reverse();
-
-  const darkestDark = findLuminance(darkSpectrum, 0.25) ?? darkSpectrum[0];
-  const find700 =
-    findContrast(darkSpectrum, darkestDark, 10.8, 0.088, 0.073) ??
-    darkSpectrum[0];
-
-  const find300 = findContrast(darkSpectrum, darkestDark, 2) ?? darkSpectrum[0];
-
-  const lightestDark =
-    findLuminance(darkSpectrum, 0.965) ?? reversedDarkSpectrum[0];
-
-  const lightestLight =
-    findContrast(reversedLightSpectrum, WHITE, 1.065) ??
-    reversedLightSpectrum[0];
-  const darkestLight =
-    findContrast(lightSpectrum, BLACK, 1.2) ?? lightSpectrum[0];
-
-  return {
-    dark: chroma
-      .scale([darkestDark, find300, darkRef, find700, lightestDark])
-      .mode(MODE)
-      .gamma(gamma)
-      .colors(stepCount, null),
-    light: chroma
-      .scale([lightestLight, lightRef, darkestLight])
-      .mode(MODE)
-      .gamma(gamma)
-      .colors(stepCount, null),
-  };
-}
-
+/**
+ * Sets CSS variables for a color type (theme, theme-secondary, etc.)
+ */
 export function setVariables(
   root: HTMLElement,
   type: string,
   mode: "dark" | "light",
-
   colors?: Color[],
-) {
+): void {
   if (!colors) {
-    TailwindColorSpacing.forEach((_, i) => {
-      root.style.removeProperty(
-        `--color-${type}-${mode}-${TailwindColorSpacing[i]}`,
-      );
-    });
+    // Only remove properties if we're working with a scoped element (not document root)
+    // This prevents removing default theme colors from the global scope
+    if (root !== document.documentElement) {
+      TailwindColorSpacing.forEach((_, i) => {
+        root.style.removeProperty(
+          `--color-${type}-${mode}-${TailwindColorSpacing[i]}`,
+        );
+      });
+    }
   } else {
     colors.forEach((color, i) => {
+      // Convert all colors to HSL for internal representation
       root.style.setProperty(
         `--color-${type}-${mode}-${TailwindColorSpacing[i]}`,
-        color.css("oklch"),
+        color.css("hsl"),
       );
     });
   }
 }
 
-export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
-  const root = document.documentElement;
+/**
+ * Sets intermediate CSS variables that fall back to light/dark mode variants
+ * This allows variables like --color-theme-600 to work in scoped contexts
+ */
+function setIntermediateVariables(
+  root: HTMLElement,
+  type: string,
+): void {
+  TailwindColorSpacing.forEach((spacing) => {
+    // Set intermediate variable with fallback logic:
+    // In light mode: uses light variant, in dark mode: uses dark variant
+    root.style.setProperty(
+      `--color-${type}-${spacing}`,
+      `light-dark(var(--color-${type}-light-${spacing}), var(--color-${type}-dark-${spacing}))`,
+    );
+  });
+}
+
+/**
+ * Updates theme variables based on the provided theme specification
+ * @param theme - The theme specification to apply
+ * @param scopeElement - Optional element to scope the theme to (defaults to document root)
+ */
+export function updateThemeVariables(
+  theme: V1ThemeSpec | undefined,
+  scopeElement?: HTMLElement | null,
+): void {
+  // Use provided scope element or fall back to document root
+  const root = scopeElement || document.documentElement;
   const { darkMode } = featureFlags;
   const allowNewPalette = get(darkMode);
 
+  // Handle new CSS property first (takes precedence over legacy colors)
+  if (theme?.css) {
+    injectCustomCSS(theme.css, root);
+    return; // CSS themes override legacy color themes
+  }
+
+  // If no theme or no CSS, remove any existing custom CSS
+  removeExistingCustomCSS();
+
+  // Handle legacy color properties (this clears them if theme is undefined)
+  updateLegacyColors(theme, root, allowNewPalette);
+  
+  // Update palette colors if provided (this clears them if theme is undefined)
+  updatePaletteColorsFromTheme(theme, root);
+}
+
+/**
+ * Updates legacy color properties (primary and secondary)
+ */
+function updateLegacyColors(
+  theme: V1ThemeSpec | undefined,
+  root: HTMLElement,
+  allowNewPalette: boolean,
+): void {
+  updatePrimaryColor(theme, root, allowNewPalette);
+  updateSecondaryColor(theme, root, allowNewPalette);
+}
+
+/**
+ * Updates primary color variables
+ */
+function updatePrimaryColor(
+  theme: V1ThemeSpec | undefined,
+  root: HTMLElement,
+  allowNewPalette: boolean,
+): void {
   if (theme?.primaryColor) {
     const chromaColor = chroma.rgb(
       (theme.primaryColor.red ?? 1) * 256,
@@ -155,11 +166,21 @@ export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
     );
 
     setVariables(root, "theme", "dark", dark);
+    setIntermediateVariables(root, "theme");
   } else {
     setVariables(root, "theme", "light");
     setVariables(root, "theme", "dark");
   }
+}
 
+/**
+ * Updates secondary color variables
+ */
+function updateSecondaryColor(
+  theme: V1ThemeSpec | undefined,
+  root: HTMLElement,
+  allowNewPalette: boolean,
+): void {
   if (theme?.secondaryColor) {
     const chromaColor = chroma.rgb(
       (theme.secondaryColor.red ?? 1) * 256,
@@ -177,37 +198,221 @@ export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
       allowNewPalette ? light : originalLightPalette,
     );
     setVariables(root, "theme-secondary", "dark", dark);
+    setIntermediateVariables(root, "theme-secondary");
   } else {
     setVariables(root, "theme-secondary", "light");
     setVariables(root, "theme-secondary", "dark");
   }
 }
 
-function findLuminance(spectrum: Color[], lumn: number) {
-  return spectrum.find((color) => {
-    const [l] = color.oklch();
-    return l >= lumn;
-  });
+/**
+ * Injects custom CSS from theme definition
+ * Scopes CSS to .dashboard-theme-boundary to prevent affecting global Rill chrome
+ * Only extracts and injects known safe CSS variables to prevent XSS attacks
+ * 
+ * Note: When switching between CSS themes on scoped elements, color variables are set
+ * programmatically and may need explicit cleanup if the new theme doesn't define them.
+ * The setVariables() function handles removal for scoped elements when colors are undefined.
+ */
+function injectCustomCSS(css: string, scopeElement: HTMLElement): void {
+  removeExistingCustomCSS();
+  
+  // Sanitize CSS and scope it to the dashboard boundary
+  const sanitizedCSS = sanitizeAndExtractSafeVariables(css, ".dashboard-theme-boundary");
+  
+  // Only inject if we have safe variables
+  if (sanitizedCSS) {
+    createAndInjectStyle(sanitizedCSS);
+  }
+  
+  // Apply primary/secondary color variables to legacy theme system
+  applySimpleColorVariables(css, scopeElement);
 }
 
-function findContrast(
-  spectrum: Color[],
-  comparedTo: Color,
-  contrast: number,
-  maxSaturation?: number,
-  minSaturation?: number,
-) {
-  const color = spectrum.find((color) => {
-    return chroma.contrast(comparedTo, color) >= contrast;
-  });
+/**
+ * Removes any existing custom theme CSS
+ */
+function removeExistingCustomCSS(): void {
+  const existingStyle = document.getElementById(CUSTOM_THEME_STYLE_ID);
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+}
 
-  const saturation = color?.oklch()[1] ?? 0;
+/**
+ * Creates and injects new style element
+ */
+function createAndInjectStyle(css: string): void {
+  const style = document.createElement('style');
+  style.id = CUSTOM_THEME_STYLE_ID;
+  style.textContent = css;
+  document.head.appendChild(style);
+}
 
-  if (maxSaturation && saturation > maxSaturation) {
-    return color?.set("oklch.c", maxSaturation);
-  } else if (minSaturation && saturation < minSaturation) {
-    return color?.set("oklch.c", minSaturation);
+/**
+ * Applies simple color variables (--primary, --secondary) to the existing theme system
+ */
+function applySimpleColorVariables(css: string, scopeElement: HTMLElement): void {
+  const colorMatches = extractColorVariables(css);
+  
+  applyPrimaryColorVariables(colorMatches, scopeElement);
+  applySecondaryColorVariables(colorMatches, scopeElement);
+}
+
+/**
+ * Applies primary color variables to the theme system
+ */
+function applyPrimaryColorVariables(
+  colorMatches: { primary: ColorMatch; secondary: ColorMatch },
+  root: HTMLElement,
+): void {
+  const { lightColor, darkColor } = colorMatches.primary;
+  
+  if (!lightColor && !darkColor) return;
+  
+  try {
+    const palettes = generatePalettesFromColors(
+      lightColor, 
+      darkColor,
+      defaultPrimaryPalette,
+      defaultPrimaryDarkPalette
+    );
+    
+    applyPaletteToVariables(root, "theme", palettes);
+    applyPaletteToVariables(root, "primary", palettes);
+  } catch (error) {
+    console.error('Failed to generate palette from primary colors:', { lightColor, darkColor }, error);
+  }
+}
+
+/**
+ * Applies secondary color variables to the theme system
+ */
+function applySecondaryColorVariables(
+  colorMatches: { primary: ColorMatch; secondary: ColorMatch },
+  root: HTMLElement,
+): void {
+  const { lightColor, darkColor } = colorMatches.secondary;
+  
+  if (!lightColor && !darkColor) return;
+  
+  try {
+    const palettes = generatePalettesFromColors(
+      lightColor, 
+      darkColor,
+      defaultSecondaryPalette,
+      defaultSecondaryDarkPalette
+    );
+    
+    applyPaletteToVariables(root, "theme-secondary", palettes);
+    applyPaletteToVariables(root, "secondary", palettes);
+  } catch (error) {
+    console.error('Failed to generate palette from secondary colors:', { lightColor, darkColor }, error);
+  }
+}
+
+/**
+ * Generates palettes from light and dark colors, falling back to defaults when not defined
+ */
+function generatePalettesFromColors(
+  lightColor: string | null,
+  darkColor: string | null,
+  defaultLightPalette: Color[],
+  defaultDarkPalette: Color[],
+): ColorPalette {
+  let lightPalette: Color[];
+  let darkPalette: Color[];
+  
+  // Generate palette from lightColor if provided
+  let generatedPalette: { light: Color[]; dark: Color[] } | null = null;
+  if (lightColor) {
+    const color = chroma(lightColor);
+    generatedPalette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
+    lightPalette = generatedPalette.light;
+  } else {
+    // Use default light palette when not defined
+    lightPalette = defaultLightPalette;
+  }
+  
+  // Handle dark palette
+  if (darkColor) {
+    const color = chroma(darkColor);
+    const palette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
+    darkPalette = palette.dark;
+  } else if (generatedPalette) {
+    // If light was generated but dark wasn't specified, reuse the generated dark variant
+    darkPalette = generatedPalette.dark;
+  } else {
+    // Use default dark palette when neither is defined
+    darkPalette = defaultDarkPalette;
+  }
+  
+  return { light: lightPalette, dark: darkPalette };
+}
+
+/**
+ * Applies a palette to CSS variables
+ */
+function applyPaletteToVariables(
+  root: HTMLElement,
+  type: ColorType,
+  palettes: ColorPalette,
+): void {
+  setVariables(root, type, "light", palettes.light);
+  setVariables(root, type, "dark", palettes.dark);
+  // Set intermediate variables that automatically switch between light/dark
+  setIntermediateVariables(root, type);
+}
+
+/**
+ * Updates palette colors from a theme specification
+ */
+export function updatePaletteColorsFromTheme(
+  theme: V1ThemeSpec | undefined,
+  scopeElement?: HTMLElement,
+): void {
+  const themeWithPalettes = theme as V1ThemeSpec & {
+    sequentialColors?: Array<{ red?: number; green?: number; blue?: number }>;
+    divergingColors?: Array<{ red?: number; green?: number; blue?: number }>;
+    qualitativeColors?: Array<{ red?: number; green?: number; blue?: number }>;
+  };
+
+  // Clear all if no palette colors defined
+  if (!themeWithPalettes?.sequentialColors && 
+      !themeWithPalettes?.divergingColors && 
+      !themeWithPalettes?.qualitativeColors) {
+    clearAllPaletteColors(undefined, scopeElement);
+    return;
   }
 
-  return color;
+  try {
+    if (themeWithPalettes.sequentialColors) {
+      const colors = themeWithPalettes.sequentialColors.map(convertThemeColorToChroma);
+      setPaletteColors("sequential", colors, scopeElement);
+    }
+
+    if (themeWithPalettes.divergingColors) {
+      const colors = themeWithPalettes.divergingColors.map(convertThemeColorToChroma);
+      setPaletteColors("diverging", colors, scopeElement);
+    }
+
+    if (themeWithPalettes.qualitativeColors) {
+      const colors = themeWithPalettes.qualitativeColors.map(convertThemeColorToChroma);
+      setPaletteColors("qualitative", colors, scopeElement);
+    }
+  } catch (error) {
+    console.error('Failed to set palette colors from theme:', error);
+    clearAllPaletteColors(undefined, scopeElement);
+  }
+}
+
+/**
+ * Helper function to convert theme color to chroma color
+ */
+function convertThemeColorToChroma(color: { red?: number; green?: number; blue?: number }): Color {
+  return chroma.rgb(
+    (color.red ?? 0) * 256,
+    (color.green ?? 0) * 256,
+    (color.blue ?? 0) * 256,
+  );
 }

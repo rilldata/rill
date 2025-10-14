@@ -5,14 +5,20 @@
 
 #vg-tooltip-element,
 #rill-vg-tooltip {
-  @apply absolute border border-slate-300 p-3 rounded-lg pointer-events-none;
+  @apply absolute border p-3 rounded-lg pointer-events-none;
   @apply ui-copy-number;
-  background: rgba(255, 255, 255, 0.9);
+  background: light-dark(rgba(255, 255, 255, 0.95), rgba(30, 30, 30, 0.95));
+  border-color: light-dark(rgb(203 213 225), rgb(71 85 105));
+  /* slate-300 / slate-600 */
+  color: light-dark(rgb(15 23 42), rgb(226 232 240));
+  /* slate-900 / slate-200 */
   font-family: "Inter";
   border-radius: 5px;
 
   & h2 {
-    @apply text-slate-500 text-sm font-semibold mb-2;
+    @apply text-sm font-semibold mb-2;
+    color: light-dark(rgb(100 116 139), rgb(148 163 184));
+    /* slate-500 / slate-400 */
   }
 
   & table {
@@ -25,7 +31,9 @@
 
   & table tr td.key {
     @apply flex items-center gap-x-1;
-    @apply text-left px-1 font-normal truncate text-slate-600 text-xs;
+    @apply text-left px-1 font-normal truncate text-xs;
+    color: light-dark(rgb(71 85 105), rgb(148 163 184));
+    /* slate-600 / slate-400 */
     max-width: 250px;
   }
 

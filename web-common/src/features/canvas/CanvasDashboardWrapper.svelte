@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy, onMount } from "svelte";
+  import { updateThemeVariables } from "../themes/actions";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { page } from "$app/stores";
-  import { updateThemeVariables } from "../themes/actions";
 
   export let maxWidth: number;
   export let clientWidth = 0;
@@ -14,6 +14,8 @@
   export let canvasName: string;
   export let embedded: boolean = false;
   export let onClick: () => void = () => {};
+
+  let themeBoundary: HTMLElement | null = null;
 
   onMount(async () => {
     await restoreSnapshot();
@@ -29,7 +31,10 @@
 
   $: ({ width: clientWidth } = contentRect);
 
-  $: updateThemeVariables($themeSpec);
+  // Apply theme scoped to the canvas boundary element (once it's bound)
+  $: if (themeBoundary) {
+    updateThemeVariables($themeSpec, themeBoundary);
+  }
 
   onDestroy(() => {
     saveSnapshot($page.url.searchParams.toString());
@@ -38,13 +43,14 @@
 
 <main
   class="flex flex-col dashboard-theme-boundary overflow-hidden"
+  bind:this={themeBoundary}
   class:w-full={$dynamicHeight}
   class:size-full={!$dynamicHeight}
 >
   {#if filtersEnabled}
     <header
       role="presentation"
-      class="bg-background border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
+      class="bg-surface border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
       on:click|self={onClick}
     >
       <CanvasFilters {canvasName} {maxWidth} />

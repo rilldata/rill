@@ -153,7 +153,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
         field: randomMeasure,
         colorRange: {
           mode: "scheme",
-          scheme: "tealblues",
+          scheme: "sequential", // Use sequential palette for ordered data
         },
       },
     };

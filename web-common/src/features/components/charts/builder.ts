@@ -37,6 +37,40 @@ import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { ExprRef, SignalRef } from "vega-typings";
 
+/**
+ * Resolves a CSS variable to its computed value
+ * Necessary for canvas rendering where CSS variables must be resolved
+ * Checks scoped theme boundary first, then falls back to document root
+ */
+function resolveCSSVariable(cssVar: string): string {
+  if (typeof window === "undefined" || !cssVar.startsWith("var("))
+    return cssVar;
+
+  const varName = cssVar
+    .replace("var(", "")
+    .replace(")", "")
+    .split(",")[0]
+    .trim();
+
+  // First check if there's a dashboard-theme-boundary element (scoped themes)
+  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+  if (themeBoundary) {
+    const scopedValue = getComputedStyle(
+      themeBoundary as HTMLElement,
+    ).getPropertyValue(varName);
+    if (scopedValue && scopedValue.trim()) {
+      return scopedValue.trim();
+    }
+  }
+
+  // Fall back to document root for global variables
+  const computed = getComputedStyle(document.documentElement).getPropertyValue(
+    varName,
+  );
+
+  return computed && computed.trim() ? computed.trim() : cssVar;
+}
+
 export function createMultiLayerBaseSpec() {
   const baseSpec: VisualizationSpec = {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
@@ -122,7 +156,10 @@ export function createColorEncoding(
 
     if (colorMapping?.length) {
       const domain = colorMapping.map((mapping) => mapping.value);
-      const range = colorMapping.map((mapping) => mapping.color);
+      // Resolve CSS variables for canvas rendering
+      const range = colorMapping.map((mapping) =>
+        resolveCSSVariable(mapping.color),
+      );
 
       baseEncoding.scale = {
         domain,
@@ -135,9 +172,45 @@ export function createColorEncoding(
       const colorRange = colorField.colorRange;
 
       if (colorRange.mode === "scheme") {
-        baseEncoding.scale = {
-          scheme: colorRange.scheme,
-        };
+        // Support palette scheme names
+        if (colorRange.scheme === "sequential") {
+          // Use our sequential palette (9 colors) - resolve for canvas rendering
+          baseEncoding.scale = {
+            range: [
+              resolveCSSVariable("var(--color-sequential-1)"),
+              resolveCSSVariable("var(--color-sequential-2)"),
+              resolveCSSVariable("var(--color-sequential-3)"),
+              resolveCSSVariable("var(--color-sequential-4)"),
+              resolveCSSVariable("var(--color-sequential-5)"),
+              resolveCSSVariable("var(--color-sequential-6)"),
+              resolveCSSVariable("var(--color-sequential-7)"),
+              resolveCSSVariable("var(--color-sequential-8)"),
+              resolveCSSVariable("var(--color-sequential-9)"),
+            ],
+          };
+        } else if (colorRange.scheme === "diverging") {
+          // Use our diverging palette (11 colors) - resolve for canvas rendering
+          baseEncoding.scale = {
+            range: [
+              resolveCSSVariable("var(--color-diverging-1)"),
+              resolveCSSVariable("var(--color-diverging-2)"),
+              resolveCSSVariable("var(--color-diverging-3)"),
+              resolveCSSVariable("var(--color-diverging-4)"),
+              resolveCSSVariable("var(--color-diverging-5)"),
+              resolveCSSVariable("var(--color-diverging-6)"),
+              resolveCSSVariable("var(--color-diverging-7)"),
+              resolveCSSVariable("var(--color-diverging-8)"),
+              resolveCSSVariable("var(--color-diverging-9)"),
+              resolveCSSVariable("var(--color-diverging-10)"),
+              resolveCSSVariable("var(--color-diverging-11)"),
+            ],
+          };
+        } else {
+          // Use Vega's built-in color schemes
+          baseEncoding.scale = {
+            scheme: colorRange.scheme,
+          };
+        }
       } else if (colorRange.mode === "gradient") {
         baseEncoding.scale = {
           range: [

