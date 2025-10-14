@@ -90,7 +90,7 @@ describe("format-measure-value with d3_locale", () => {
 
     // For big numbers with plain d3 format, it should be humanized and use custom separators
     // Since there's no currency or percent, it should abbreviate the number
-    expect(result).toMatch(/\d+\.?\d*[kM]/);
+    expect(result).toBe("1.23M");
   });
 
   it("should handle different grouping patterns", () => {
