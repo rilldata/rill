@@ -803,7 +803,7 @@ You only engage in conversation that relates to the project's data. If a questio
 </guardrails>
 
 <thinking>
-After each query in Phase 2, think through:
+After each query in Phase 3, think through:
 - What patterns or anomalies did this reveal?
 - How does this connect to previous findings?
 - What new questions does this raise?

@@ -36,9 +36,9 @@ import {
 
 export type CartesianChartSpec = {
   metrics_view: string;
-  x?: FieldConfig;
-  y?: FieldConfig;
-  color?: FieldConfig | string;
+  x?: FieldConfig<"nominal" | "time">;
+  y?: FieldConfig<"quantitative">;
+  color?: FieldConfig<"nominal"> | string;
 };
 
 export type CartesianChartDefaultOptions = {

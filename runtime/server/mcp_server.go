@@ -845,6 +845,8 @@ Choose the appropriate chart type based on your data and analysis goals:
 - When using ` + "`__time`" + ` field, set type to ` + "`\"temporal\"`" + `
 - For multiple measures, use the ` + "`fields`" + ` array in the y-axis configuration`
 
+	// tool := mcp.NewToolWithRawSchema("create_chart", description, json.RawMessage(ChartsJSONSchema))
+
 	tool := mcp.NewTool("create_chart",
 		mcp.WithDescription(description),
 		mcp.WithString("chart_type",

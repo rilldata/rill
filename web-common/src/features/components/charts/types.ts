@@ -46,6 +46,30 @@ export type ChartSpec = ChartSpecBase & {
   vl_config?: string;
 };
 
+interface TimeRange {
+  time_range: {
+    start: string;
+    end: string;
+  };
+}
+
+export type ChartSpecAIBase =
+  | { chart_type: "bar_chart"; spec: CartesianChartSpec & TimeRange }
+  | { chart_type: "line_chart"; spec: CartesianChartSpec & TimeRange }
+  | { chart_type: "area_chart"; spec: CartesianChartSpec & TimeRange }
+  | { chart_type: "stacked_bar"; spec: CartesianChartSpec & TimeRange }
+  | {
+      chart_type: "stacked_bar_normalized";
+      spec: CartesianChartSpec & TimeRange;
+    }
+  | { chart_type: "donut_chart"; spec: CircularChartSpec & TimeRange }
+  | { chart_type: "pie_chart"; spec: CircularChartSpec & TimeRange }
+  | { chart_type: "funnel_chart"; spec: FunnelChartSpec & TimeRange }
+  | { chart_type: "heatmap"; spec: HeatmapChartSpec & TimeRange }
+  | { chart_type: "combo_chart"; spec: ComboChartSpec & TimeRange };
+
+export type ChartSpecAI = ChartSpecAIBase;
+
 export type ChartType =
   | "bar_chart"
   | "line_chart"
@@ -121,6 +145,10 @@ interface MarkFieldConfig {
   mark?: "bar" | "line";
 }
 
+interface TimeFieldConfig {
+  timeUnit?: string; // For temporal fields
+}
+
 interface QuantitativeFieldConfig {
   zeroBasedOrigin?: boolean; // Default is false
   min?: number;
@@ -129,16 +157,24 @@ interface QuantitativeFieldConfig {
   colorRange?: ColorRangeMapping;
 }
 
-export interface FieldConfig
-  extends NominalFieldConfig,
-    QuantitativeFieldConfig,
-    MarkFieldConfig {
+interface BaseFieldConfig {
   field: string;
   type: "quantitative" | "ordinal" | "nominal" | "temporal" | "value";
   showAxisTitle?: boolean; // Default is false
-  timeUnit?: string; // For temporal fields
   fields?: string[]; // To support multi metric chart variants
 }
+
+export type FieldConfig<
+  TInclude extends "nominal" | "quantitative" | "time" | "mark" =
+    | "nominal"
+    | "quantitative"
+    | "time"
+    | "mark",
+> = BaseFieldConfig &
+  ("nominal" extends TInclude ? NominalFieldConfig : object) &
+  ("quantitative" extends TInclude ? QuantitativeFieldConfig : object) &
+  ("time" extends TInclude ? TimeFieldConfig : object) &
+  ("mark" extends TInclude ? MarkFieldConfig : object);
 
 export interface CommonChartProperties {
   metrics_view: string;
