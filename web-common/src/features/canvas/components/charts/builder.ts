@@ -69,7 +69,9 @@ export function createPositionEncoding(
     type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     ...(field.sort &&
-      field.type !== "temporal" && { sort: data.domainValues?.[field.field] }),
+      field.type !== "temporal" && {
+        sort: data.domainValues?.[field.field],
+      }),
     ...(field.type === "quantitative" && {
       scale: {
         ...(field.zeroBasedOrigin !== true && { zero: false }),
