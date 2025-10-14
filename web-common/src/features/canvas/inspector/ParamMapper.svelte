@@ -116,10 +116,14 @@
               small
               label={config.label ?? key}
               id={key}
-              faint={!localParamValues[key]}
+              faint={config.meta?.invertBoolean
+                ? localParamValues[key]
+                : !localParamValues[key]}
             />
             <Switch
-              checked={$specStore[key]}
+              checked={config.meta?.invertBoolean
+                ? !$specStore[key]
+                : $specStore[key]}
               on:click={() => {
                 component.updateProperty(key, !localParamValues[key]);
               }}
