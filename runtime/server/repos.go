@@ -10,6 +10,7 @@ import (
 
 	"github.com/r3labs/sse/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -31,7 +32,7 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -66,7 +67,7 @@ func (s *Server) WatchFilesHandler(w http.ResponseWriter, req *http.Request) {
 		attribute.String("args.instance_id", instanceID),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadRepo) {
+	if !auth.GetClaims(ctx, instanceID).Can(runtime.ReadRepo) {
 		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}
@@ -127,7 +128,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		attribute.Bool("args.replay", req.Replay),
 	)
 
-	if !auth.GetClaims(ss.Context()).CanInstance(req.InstanceId, auth.ReadRepo) {
+	if !auth.GetClaims(ss.Context(), req.InstanceId).Can(runtime.ReadRepo) {
 		return ErrForbidden
 	}
 
@@ -177,7 +178,7 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -200,7 +201,7 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -221,7 +222,7 @@ func (s *Server) CreateDirectory(ctx context.Context, req *runtimev1.CreateDirec
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -242,7 +243,7 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -264,7 +265,7 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -283,7 +284,7 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request) {
 	instanceID := req.PathValue("instance_id")
 	path := req.PathValue("path")
 
-	if !auth.GetClaims(req.Context()).CanInstance(instanceID, auth.EditRepo) {
+	if !auth.GetClaims(req.Context(), instanceID).Can(runtime.EditRepo) {
 		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}

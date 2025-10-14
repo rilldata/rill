@@ -188,7 +188,7 @@ func (r *legacyMetricsResolver) ResolveExport(ctx context.Context, w io.Writer, 
 }
 
 func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	// Extract fields and row filter from the query using the queries.SecurityFromQuery helper
+	// Extract fields and row filter from the query using the queries.SecurityFromRuntimeQuery helper
 	rowFilter, fields, err := queries.SecurityFromRuntimeQuery(r.query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract accessible fields: %w", err)

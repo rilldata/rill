@@ -4,11 +4,14 @@
   import { onMount } from "svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { cleanupChatInstance, getChatInstance } from "../../core/chat";
+  import {
+    cleanupConversationManager,
+    getConversationManager,
+  } from "../../core/conversation-manager";
   import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
-  import ChatMessages from "../../core/messages/ChatMessages.svelte";
-  import ChatHeader from "./ChatHeader.svelte";
+  import Messages from "../../core/messages/Messages.svelte";
+  import SidebarHeader from "./SidebarHeader.svelte";
   import {
     SIDEBAR_DEFAULTS,
     sidebarActions,
@@ -17,8 +20,8 @@
 
   $: ({ instanceId } = $runtime);
 
-  // Initialize chat with browser storage for conversation management
-  $: chat = getChatInstance(instanceId, {
+  // Initialize conversation manager with browser storage for conversation management
+  $: conversationManager = getConversationManager(instanceId, {
     conversationState: "browserStorage",
   });
 
@@ -32,13 +35,13 @@
     chatInputComponent?.focusInput();
   }
 
-  // Clean up chat resources when switching projects
+  // Clean up conversation manager resources when switching projects
   beforeNavigate(({ from, to }) => {
     const currentProject = from?.params?.project;
     const targetProject = to?.params?.project;
 
     if (currentProject !== targetProject) {
-      cleanupChatInstance(instanceId);
+      cleanupConversationManager(instanceId);
     }
   });
 
@@ -60,14 +63,18 @@
   />
   <div class="chat-sidebar-content">
     <div class="chatbot-header-container">
-      <ChatHeader
-        {chat}
+      <SidebarHeader
+        {conversationManager}
         {onNewConversation}
         onClose={sidebarActions.closeChat}
       />
     </div>
-    <ChatMessages {chat} layout="sidebar" />
-    <ChatInput {chat} bind:this={chatInputComponent} onSend={onMessageSend} />
+    <Messages {conversationManager} layout="sidebar" />
+    <ChatInput
+      {conversationManager}
+      bind:this={chatInputComponent}
+      onSend={onMessageSend}
+    />
     <ChatFooter />
   </div>
 </div>

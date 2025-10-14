@@ -4,15 +4,15 @@
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
-  import type { Chat } from "../chat";
+  import type { ConversationManager } from "../conversation-manager";
 
-  export let chat: Chat;
+  export let conversationManager: ConversationManager;
   export let onSend: () => void;
 
   let textarea: HTMLTextAreaElement;
   let placeholder = "Ask about your data...";
 
-  $: currentConversationStore = chat.getCurrentConversation();
+  $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
   $: draftMessageStore = currentConversation.draftMessage;
