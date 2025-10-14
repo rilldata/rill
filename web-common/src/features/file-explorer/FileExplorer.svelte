@@ -25,6 +25,7 @@
   import { findDirectory, transformFileList } from "./transform-file-list";
 
   export let hasUnsaved: boolean;
+  export let basePath: string;
 
   $: ({ instanceId } = $runtime);
   $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
@@ -163,6 +164,7 @@
 <ul class="flex flex-col w-full items-start justify-start overflow-auto">
   {#if fileTree}
     <NavDirectory
+      {basePath}
       directory={fileTree}
       {onRename}
       {onDuplicate}

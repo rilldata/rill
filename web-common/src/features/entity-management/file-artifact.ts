@@ -126,6 +126,7 @@ export class FileArtifact {
     const queryParams = {
       path: this.path,
     };
+    console.log({ path: this.path, instanceId });
     const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, queryParams);
 
     if (invalidate) await queryClient.invalidateQueries({ queryKey });

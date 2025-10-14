@@ -40,6 +40,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   export let filePath: string;
+  export let basePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDuplicate: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
@@ -105,7 +106,7 @@
     isDotFile
       ? 'text-gray-500 hover:text-gray-500'
       : 'text-gray-900 hover:text-gray-900'}"
-    href={`/files${filePath}`}
+    href="{basePath}/files{filePath}"
     {id}
     class:italic={$hasUnsavedChanges || $saving}
     on:click={fireTelemetry}
@@ -131,6 +132,7 @@
     </div>
     <span class="truncate w-full" class:text-red-600={$hasErrors}>
       {fileName}
+      <!-- {basePath}/files{filePath} -->
     </span>
   </a>
   {#if !isProtectedDirectory && !isProtectedFile}

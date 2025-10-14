@@ -9,6 +9,7 @@
   import type { Directory } from "./transform-file-list";
 
   export let directory: Directory;
+  export let basePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDuplicate: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
@@ -39,6 +40,7 @@
       {#each directory.directories as dir (dir.path)}
         <!-- Recursive call to display subdirectories -->
         <svelte:self
+          {basePath}
           directory={dir}
           {onRename}
           {onDuplicate}
@@ -51,7 +53,14 @@
     {#each directory.files as file (file)}
       {@const filePath =
         directory.path === "/" ? `/${file}` : `${directory.path}/${file}`}
-      <NavFile {filePath} {onRename} {onDuplicate} {onDelete} {onMouseDown} />
+      <NavFile
+        {basePath}
+        {filePath}
+        {onRename}
+        {onDuplicate}
+        {onDelete}
+        {onMouseDown}
+      />
     {/each}
   {/if}
 </ul>

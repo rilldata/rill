@@ -22,6 +22,8 @@
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
 
+  export let basePath = "";
+
   const DEFAULT_PERCENTAGE = 0.4;
 
   let width = DEFAULT_NAV_WIDTH;
@@ -95,7 +97,7 @@
     <div class="scroll-container">
       <div class="nav-wrapper" bind:contentRect>
         <section class="size-full overflow-y-auto pb-4">
-          <FileExplorer hasUnsaved={unsavedFileCount > 0} />
+          <FileExplorer {basePath} hasUnsaved={unsavedFileCount > 0} />
         </section>
 
         {#if navWrapperHeight}

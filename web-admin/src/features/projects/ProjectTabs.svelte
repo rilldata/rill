@@ -26,6 +26,11 @@
       hasPermission: true,
     },
     {
+      route: `/${organization}/${project}/-/edit`,
+      label: "Edit",
+      hasPermission: true,
+    },
+    {
       route: `/${organization}/${project}/-/reports`,
       label: "Reports",
       hasPermission: $reports,
