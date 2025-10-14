@@ -45,8 +45,6 @@
       )
     : undefined;
 
-  $: firstVisibleMonth = interval?.start ?? currentInterval.end;
-
   $: comparisonOption =
     (selectedComparison?.name as TimeComparisonOption | undefined) || null;
   $: firstOption = timeComparisonOptionsState[0];
@@ -88,10 +86,7 @@
 <DropdownMenu.Root
   bind:open
   closeOnItemClick={false}
-  onOpenChange={(open) => {
-    if (open && interval && interval?.isValid) {
-      firstVisibleMonth = interval.start;
-    }
+  onOpenChange={() => {
     showSelector = !!(
       comparisonOption === TimeComparisonOption.CUSTOM && showComparison
     );
@@ -169,14 +164,14 @@
         {/if}
       </div>
       {#if showSelector}
-        <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
+        <div class="bg-slate-50 flex flex-col w-60 p-3">
           {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
               {maxDate}
               {minDate}
               {interval}
               {zone}
-              {applyRange}
+              onApply={applyRange}
               closeMenu={() => (open = false)}
             />
           {/if}
