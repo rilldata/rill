@@ -186,22 +186,22 @@ func createExpressionStatement(exprNode astNode) (string, error) {
 		return "", err
 	}
 	baseJSON := map[string]interface{}{
-		"error":      false,
+		"error": false,
 		"statements": []map[string]interface{}{
 			{
 				"node": map[string]interface{}{
-					"type":               "SELECT_NODE",
-					"modifiers":          []interface{}{},
-					"cte_map":            map[string]interface{}{"map": []interface{}{}},
-					"select_list":        []json.RawMessage{jsonNode},
-					"from_table":         map[string]interface{}{
-						"type":               "BASE_TABLE",
-						"alias":              "",
-						"sample":             nil,
-						"schema_name":        "",
-						"table_name":         "Dummy",
-						"column_name_alias":  []interface{}{},
-						"catalog_name":       "",
+					"type":        "SELECT_NODE",
+					"modifiers":   []interface{}{},
+					"cte_map":     map[string]interface{}{"map": []interface{}{}},
+					"select_list": []json.RawMessage{jsonNode},
+					"from_table": map[string]interface{}{
+						"type":              "BASE_TABLE",
+						"alias":             "",
+						"sample":            nil,
+						"schema_name":       "",
+						"table_name":        "Dummy",
+						"column_name_alias": []interface{}{},
+						"catalog_name":      "",
 					},
 					"where_clause":       nil,
 					"group_expressions":  []interface{}{},
