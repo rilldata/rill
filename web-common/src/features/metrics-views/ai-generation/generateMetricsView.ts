@@ -8,10 +8,10 @@ import { overlay } from "../../../layout/overlay-store";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 import { waitUntil } from "../../../lib/waitUtils";
 import { behaviourEvent } from "../../../metrics/initMetrics";
-import type { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 import {
   MetricsEventScreenName,
-  type MetricsEventSpace,
+  MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
 import {
   type RuntimeServiceGenerateMetricsViewFileBody,
@@ -254,25 +254,67 @@ export async function createDashboardFromTableInMetricsEditor(
 }
 
 /**
- * Creates a model from a table, then generates a metrics view and explore dashboard.
- * This is used for non-OLAP connectors that need to follow the Rill architecture:
- * 1. Create model (ingests from source → OLAP)
- * 2. Create metrics view (on top of model)
- * 3. Create explore dashboard (on top of metrics view)
+ * Unified function that generates metrics (and optionally explore dashboard) from a table.
+ * Handles both OLAP and non-OLAP connectors with appropriate logic for each case.
  */
-export async function createModelAndMetricsViewAndExplore(
+export async function generateMetricsFromTable(
   instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
   table: string,
+  createExplore: boolean,
+  isOlapConnector: boolean,
+  behaviourEventMedium: BehaviourEventMedium = BehaviourEventMedium.Menu,
+  metricsEventSpace: MetricsEventSpace = MetricsEventSpace.LeftPanel,
+) {
+  if (isOlapConnector) {
+    // For OLAP connectors, use direct metrics view generation
+    const createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      createExplore,
+      behaviourEventMedium,
+      metricsEventSpace,
+    );
+    await createMetricsViewFromTable();
+  } else {
+    // For non-OLAP connectors, follow Rill architecture: Model → Metrics → (Optional) Explore
+    await createModelAndMetricsAndExplore(
+      instanceId,
+      connector,
+      database,
+      databaseSchema,
+      table,
+      createExplore,
+    );
+  }
+}
+
+/**
+ * Creates a model from a table, then generates a metrics view and optionally an explore dashboard.
+ * This is used for non-OLAP connectors that need to follow the Rill architecture:
+ * 1. Create model (ingests from source → OLAP)
+ * 2. Create metrics view (on top of model)
+ * 3. Optionally create explore dashboard (on top of metrics view)
+ */
+export async function createModelAndMetricsAndExplore(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  table: string,
+  createExplore: boolean = true,
 ) {
   let isAICancelled = false;
   const abortController = new AbortController();
 
   const isAiEnabled = get(featureFlags.ai);
   overlay.set({
-    title: `Creating your metrics and dashboard${isAiEnabled ? " with AI" : ""}...`,
+    title: `Creating your ${createExplore ? "metrics and dashboard" : "metrics"}${isAiEnabled ? " with AI" : ""}...`,
     detail: {
       component: OptionToCancelAIGeneration,
       props: {
@@ -385,6 +427,22 @@ export async function createModelAndMetricsViewAndExplore(
     if (!resource) {
       throw new Error("Failed to create a Metrics View resource");
     }
+
+    // If we're not creating an Explore, navigate to the Metrics View file
+    if (!createExplore) {
+      const previousScreenName = getScreenNameFromPage();
+      await goto(`/files${metricsViewFilePath}`);
+      void behaviourEvent?.fireNavigationEvent(
+        metricsViewName,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        previousScreenName,
+        MetricsEventScreenName.MetricsDefinition,
+      );
+      return;
+    }
+
+    // If we are creating an Explore...
 
     // Update overlay for explore dashboard creation
     overlay.set({

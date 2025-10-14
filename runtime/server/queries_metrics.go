@@ -43,7 +43,8 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 	)
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
@@ -70,7 +71,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Limit:               &req.Limit,
 		Offset:              req.Offset,
 		PivotOn:             req.PivotOn,
-		SecurityClaims:      auth.GetClaims(ctx).SecurityClaims(),
+		SecurityClaims:      claims,
 		Exact:               req.Exact,
 		Aliases:             req.Aliases,
 		FillMissing:         req.FillMissing,
@@ -102,7 +103,8 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
@@ -124,7 +126,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Having:          req.Having,
 		HavingSQL:       req.HavingSql,
 		Filter:          req.Filter,
-		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		SecurityClaims:  claims,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -164,7 +166,8 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		observability.AddRequestAttributes(ctx, attribute.String("args.comparison_time_range.end", safeTimeStr(req.ComparisonTimeRange.End)))
 	}
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
@@ -188,7 +191,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		HavingSQL:           req.HavingSql,
 		Exact:               req.Exact,
 		Filter:              req.Filter,
-		SecurityClaims:      auth.GetClaims(ctx).SecurityClaims(),
+		SecurityClaims:      claims,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -214,7 +217,8 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
@@ -230,7 +234,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		HavingSQL:       req.HavingSql,
 		TimeZone:        req.TimeZone,
 		Filter:          req.Filter,
-		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -255,7 +259,8 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
@@ -267,7 +272,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		Where:           req.Where,
 		WhereSQL:        req.WhereSql,
 		Filter:          req.Filter,
-		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		SecurityClaims:  claims,
 		TimeDimension:   req.TimeDimension,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -295,7 +300,8 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
@@ -341,11 +347,12 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, claims, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -370,13 +377,14 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.MetricsViewSchema{
 		MetricsViewName: req.MetricsViewName,
-		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		SecurityClaims:  claims,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -399,7 +407,8 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
@@ -413,7 +422,7 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		Having:          req.Having,
 		Priority:        req.Priority,
 		Limit:           &limit,
-		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+		SecurityClaims:  claims,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -431,7 +440,8 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.time_dimension", req.TimeDimension),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -441,7 +451,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
-	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, claims, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +508,8 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		attribute.String("args.measures", strings.Join(req.Measures, ",")),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -544,7 +555,7 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 		InstanceID:         req.InstanceId,
 		Resolver:           "annotations",
 		ResolverProperties: props,
-		Claims:             auth.GetClaims(ctx).SecurityClaims(),
+		Claims:             claims,
 	})
 	if err != nil {
 		return nil, err
@@ -611,7 +622,7 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, auth.GetClaims(ctx).SecurityClaims(), res)
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, auth.GetClaims(ctx, instanceID), res)
 	if err != nil {
 		return nil, nil, err
 	}

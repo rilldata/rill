@@ -1,9 +1,8 @@
+import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
 import type {
   ChartLegend,
   ChartSortDirectionOptions,
-} from "@rilldata/web-common/features/canvas/components/charts/types";
-import type { ComponentAlignment } from "@rilldata/web-common/features/canvas/components/types";
-import type { ColorScheme } from "vega-typings";
+} from "@rilldata/web-common/features/components/charts/types";
 
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea" | "select";
 type SemanticInputTypes = "metrics" | "measure" | "dimension" | "multi_fields";
@@ -81,19 +80,6 @@ export interface ComponentInputParam {
     [key: string]: any;
   };
 }
-
-export type ColorMapping = { value: string; color: string }[];
-
-export type ColorRangeMapping =
-  | {
-      mode: "scheme";
-      scheme: ColorScheme;
-    }
-  | {
-      mode: "gradient";
-      start: string;
-      end: string;
-    };
 
 export interface FilterInputParam {
   type: FilterInputTypes;

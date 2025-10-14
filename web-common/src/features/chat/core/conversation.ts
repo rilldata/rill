@@ -15,7 +15,7 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./chat-utils";
+import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
 
 /**
  * Individual conversation state management.
