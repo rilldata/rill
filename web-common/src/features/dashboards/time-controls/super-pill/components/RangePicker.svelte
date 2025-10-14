@@ -26,17 +26,13 @@
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
 
-  let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let showSelector = false;
 </script>
 
 <DropdownMenu.Root
   bind:open
-  onOpenChange={(open) => {
-    if (open) {
-      firstVisibleMonth = interval.start;
-    }
+  onOpenChange={() => {
     showSelector = selected === "CUSTOM";
   }}
   closeOnItemClick={false}
@@ -78,14 +74,15 @@
         />
       </div>
       {#if showSelector}
-        <div class="bg-slate-50 border-l flex flex-col w-64 p-2 py-1">
+        <div class="bg-slate-50 border-l flex flex-col w-64 p-3">
           <CalendarPlusDateInput
-            {firstVisibleMonth}
             {interval}
             {zone}
             {maxDate}
             {minDate}
-            applyRange={applyCustomRange}
+            onApply={(i) => {
+              applyCustomRange(i);
+            }}
             closeMenu={() => (open = false)}
           />
         </div>

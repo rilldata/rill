@@ -3,16 +3,14 @@
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
   import { DateTime, Interval } from "luxon";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let interval: Interval<true> | undefined;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
   export let zone: string;
-  export let applyRange: (range: Interval<true>) => void;
+  export let updateRange: (range: string) => void = () => {};
+  export let onApply: (interval: Interval<true>) => void;
   export let closeMenu: () => void;
-
-  const { rillTime } = featureFlags;
 
   const now = DateTime.now().setZone(zone);
   const today: Interval<true> = Interval.fromDateTimes(
@@ -23,8 +21,6 @@
   let inputInterval = interval || today;
   let firstVisibleMonth = inputInterval.start;
   let anchorDay: DateTime<true> | undefined = undefined;
-
-  $: usingRillTime = $rillTime;
 
   $: startDate = inputInterval?.start;
   $: endDate = inputInterval.end.minus({ millisecond: 1 });
@@ -38,41 +34,25 @@
       } else {
         newInterval = Interval.fromDateTimes(inputInterval.start, date);
       }
-
-      if (newInterval.isValid) {
-        inputInterval = newInterval;
-      } else {
-        inputInterval = Interval.fromDateTimes(
-          date,
-          date.plus({ day: 1 }).startOf("day"),
-        ) as Interval<true>;
-      }
-      applyRange(inputInterval);
-      return;
-    }
-
-    if (!anchorDay) {
+    } else if (!anchorDay) {
       anchorDay = date;
-      inputInterval = Interval.fromDateTimes(
+      newInterval = Interval.fromDateTimes(
         anchorDay,
         anchorDay.plus({ day: 1 }).startOf("day"),
       ) as Interval<true>;
-      applyRange(inputInterval);
-      return;
-    }
-
-    if (date > anchorDay) {
+    } else if (date > anchorDay) {
       newInterval = Interval.fromDateTimes(
         anchorDay,
         date.plus({ day: 1 }).startOf("day"),
       ) as Interval<true>;
+      anchorDay = undefined;
     } else {
       newInterval = Interval.fromDateTimes(
         date.startOf("day"),
         anchorDay.plus({ day: 1 }).startOf("day"),
       ) as Interval<true>;
+      anchorDay = undefined;
     }
-    anchorDay = undefined;
 
     if (newInterval.isValid) {
       inputInterval = newInterval;
@@ -83,7 +63,9 @@
       }
     }
 
-    applyRange(inputInterval);
+    updateRange(
+      `${inputInterval.start.toFormat("yyyy-MM-dd")} to ${inputInterval.end.toFormat("yyyy-MM-dd")}`,
+    );
   }
 </script>
 
@@ -105,37 +87,37 @@
     onSelectDay={onValidDateInput}
   />
 
-  {#if usingRillTime}
-    <div class="w-full h-px bg-gray-200"></div>
+  <!-- {#if usingRillTime} -->
+  <div class="w-full h-px bg-gray-200"></div>
 
-    <div class="flex flex-col gap-y-2">
-      <DateInput
-        boundary="start"
-        {zone}
-        {minDate}
-        {maxDate}
-        currentYear={firstVisibleMonth.year}
-        date={startDate}
-        {onValidDateInput}
-        onFocus={() => {
-          firstVisibleMonth = inputInterval.start;
-        }}
-      />
+  <div class="flex flex-col gap-y-2">
+    <DateInput
+      boundary="start"
+      {zone}
+      {minDate}
+      {maxDate}
+      currentYear={firstVisibleMonth.year}
+      date={startDate}
+      {onValidDateInput}
+      onFocus={() => {
+        firstVisibleMonth = inputInterval.start;
+      }}
+    />
 
-      <DateInput
-        boundary="end"
-        {zone}
-        date={endDate}
-        {minDate}
-        {maxDate}
-        currentYear={firstVisibleMonth.year}
-        {onValidDateInput}
-        onFocus={() => {
-          firstVisibleMonth = inputInterval.end;
-        }}
-      />
-    </div>
-  {/if}
+    <DateInput
+      boundary="end"
+      {zone}
+      date={endDate}
+      {minDate}
+      {maxDate}
+      currentYear={firstVisibleMonth.year}
+      {onValidDateInput}
+      onFocus={() => {
+        firstVisibleMonth = inputInterval.end;
+      }}
+    />
+  </div>
+  <!-- {/if} -->
   <div class="flex justify-end w-full">
     <Button
       fit
@@ -143,7 +125,7 @@
       type="subtle"
       disabled={!inputInterval?.isValid}
       onClick={() => {
-        applyRange(inputInterval);
+        onApply(inputInterval);
 
         closeMenu();
       }}

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { DateTime, Interval } from "luxon";
 
+  type OverlapType = "in-range" | "start" | "end" | "full-interval";
+
   export let date: DateTime<true>;
   export let interval: Interval<true>;
   export let outOfMonth: boolean;
@@ -13,8 +15,6 @@
   export let onHoverDay: (date: DateTime<true>) => void;
 
   $: overlapType = determineClassTypes(date, potentialInterval, interval);
-
-  type OverlapType = "in-range" | "start" | "end" | "full-interval";
 
   function getOrderedInterval(
     date1: DateTime<true>,
@@ -106,19 +106,12 @@
     @apply pointer-events-none text-gray-300;
   }
 
-  .day:hover {
+  button:hover .day:not(.potential) {
     @apply bg-primary-300 text-white;
   }
 
-  .day:not(.in-range, .start, .end):hover {
+  button:hover .day:not(.in-range, .start, .end) {
     @apply rounded-full;
-  }
-
-  .in-range,
-  .start,
-  .end,
-  .full-interval {
-    @apply bg-primary-500 text-white;
   }
 
   .in-range.potential,
@@ -128,8 +121,12 @@
     @apply bg-gray-200 text-foreground;
   }
 
+  .in-range,
+  .start,
+  .end,
+  .full-interval,
   .anchor.potential {
-    @apply bg-primary-500 text-white;
+    @apply bg-primary-400 text-white;
   }
 
   .end,

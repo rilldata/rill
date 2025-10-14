@@ -174,7 +174,6 @@
             <CalendarPlusDateInput
               {maxDate}
               {minDate}
-              {firstVisibleMonth}
               {interval}
               {zone}
               {applyRange}

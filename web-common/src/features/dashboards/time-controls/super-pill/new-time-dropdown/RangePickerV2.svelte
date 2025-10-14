@@ -71,7 +71,7 @@
   let showCalendarPicker = false;
   let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
-  let searchValue = timeString || "";
+  let searchValue: string | undefined = timeString;
 
   $: if (timeString) {
     try {
@@ -414,10 +414,10 @@
             {zone}
             {maxDate}
             {minDate}
-            applyRange={(interval) => {
-              const string = `${interval.start.toFormat("yyyy-MM-dd")} to ${interval.end.toFormat("yyyy-MM-dd")}`;
-
-              console.log("Whats happening");
+            onApply={() => {
+              if (searchValue) handleRangeSelect(searchValue);
+            }}
+            updateRange={(string) => {
               searchValue = string;
             }}
             closeMenu={() => (open = false)}
