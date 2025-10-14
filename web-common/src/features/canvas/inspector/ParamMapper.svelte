@@ -111,7 +111,7 @@
 
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
-          <div class="flex items-center justify-between py-2">
+          <div class="flex items-center justify-between py-1">
             <InputLabel
               small
               label={config.label ?? key}
