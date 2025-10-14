@@ -285,42 +285,42 @@
         var(--color-secondary-dark-950));
 
     /* SEQUENTIAL PALETTE - Dark mode (brighter for visibility) */
-    --color-sequential-1: oklch(0.35 0.14 250);
-    --color-sequential-2: oklch(0.42 0.16 250);
-    --color-sequential-3: oklch(0.50 0.18 250);
-    --color-sequential-4: oklch(0.58 0.20 250);
-    --color-sequential-5: oklch(0.66 0.18 250);
-    --color-sequential-6: oklch(0.74 0.16 250);
-    --color-sequential-7: oklch(0.80 0.12 250);
-    --color-sequential-8: oklch(0.86 0.08 250);
-    --color-sequential-9: oklch(0.92 0.04 250);
+    --color-sequential-1: hsl(210deg 20% 25%);
+    --color-sequential-2: hsl(210deg 25% 30%);
+    --color-sequential-3: hsl(210deg 30% 35%);
+    --color-sequential-4: hsl(210deg 35% 40%);
+    --color-sequential-5: hsl(210deg 40% 45%);
+    --color-sequential-6: hsl(210deg 45% 50%);
+    --color-sequential-7: hsl(210deg 50% 55%);
+    --color-sequential-8: hsl(210deg 55% 60%);
+    --color-sequential-9: hsl(210deg 60% 65%);
 
     /* DIVERGING PALETTE - Dark mode (adjusted for dark backgrounds) */
-    --color-diverging-1: oklch(0.40 0.18 270);
-    --color-diverging-2: oklch(0.48 0.20 260);
-    --color-diverging-3: oklch(0.58 0.18 250);
-    --color-diverging-4: oklch(0.68 0.14 240);
-    --color-diverging-5: oklch(0.78 0.10 230);
-    --color-diverging-6: oklch(0.85 0.08 220);
-    --color-diverging-7: oklch(0.78 0.10 85);
-    --color-diverging-8: oklch(0.68 0.14 55);
-    --color-diverging-9: oklch(0.58 0.18 35);
-    --color-diverging-10: oklch(0.48 0.20 25);
-    --color-diverging-11: oklch(0.40 0.18 15);
+    --color-diverging-1: hsl(270deg 40% 30%);
+    --color-diverging-2: hsl(260deg 45% 35%);
+    --color-diverging-3: hsl(250deg 50% 40%);
+    --color-diverging-4: hsl(240deg 45% 45%);
+    --color-diverging-5: hsl(230deg 40% 50%);
+    --color-diverging-6: hsl(220deg 35% 55%);
+    --color-diverging-7: hsl(85deg 40% 50%);
+    --color-diverging-8: hsl(55deg 45% 45%);
+    --color-diverging-9: hsl(35deg 50% 40%);
+    --color-diverging-10: hsl(25deg 45% 35%);
+    --color-diverging-11: hsl(15deg 40% 30%);
 
     /* QUALITATIVE PALETTE - Dark mode (saturated for distinction) */
-    --color-qualitative-1: oklch(0.65 0.16 163);
-    --color-qualitative-2: oklch(0.72 0.20 50);
-    --color-qualitative-3: oklch(0.62 0.18 230);
-    --color-qualitative-4: oklch(0.68 0.16 320);
-    --color-qualitative-5: oklch(0.70 0.18 140);
-    --color-qualitative-6: oklch(0.75 0.16 85);
-    --color-qualitative-7: oklch(0.64 0.18 10);
-    --color-qualitative-8: oklch(0.60 0.16 260);
-    --color-qualitative-9: oklch(0.62 0.18 170);
-    --color-qualitative-10: oklch(0.68 0.18 40);
-    --color-qualitative-11: oklch(0.64 0.16 280);
-    --color-qualitative-12: oklch(0.72 0.14 120);
+    --color-qualitative-1: hsl(163deg 50% 45%);
+    --color-qualitative-2: hsl(50deg 60% 50%);
+    --color-qualitative-3: hsl(230deg 55% 45%);
+    --color-qualitative-4: hsl(320deg 50% 50%);
+    --color-qualitative-5: hsl(140deg 55% 50%);
+    --color-qualitative-6: hsl(85deg 50% 55%);
+    --color-qualitative-7: hsl(10deg 55% 45%);
+    --color-qualitative-8: hsl(260deg 50% 45%);
+    --color-qualitative-9: hsl(170deg 55% 45%);
+    --color-qualitative-10: hsl(40deg 55% 50%);
+    --color-qualitative-11: hsl(280deg 50% 50%);
+    --color-qualitative-12: hsl(120deg 45% 55%);
 
     --editor-selection: #304e75;
     --line-highlight: #26262659;
