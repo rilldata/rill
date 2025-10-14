@@ -1010,18 +1010,6 @@ Choose the appropriate chart type based on your data and analysis goals:
 
 	tool := mcp.NewToolWithRawSchema("create_chart", description, json.RawMessage(ChartsJSONSchema))
 
-	// tool := mcp.NewTool("create_chart",
-	// 	mcp.WithDescription(description),
-	// 	mcp.WithString("chart_type",
-	// 		mcp.Required(),
-	// 		mcp.Description("Type of chart: bar_chart, line_chart, area_chart, stacked_bar, stacked_bar_normalized, donut_chart, funnel_chart, heatmap, combo_chart"),
-	// 	),
-	// 	mcp.WithObject("spec",
-	// 		mcp.Required(),
-	// 		mcp.Description("Chart specification object containing metrics_view, x, y, color, and other chart properties"),
-	// 	),
-	// )
-
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		instanceID := mcpInstanceIDFromContext(ctx)
 
