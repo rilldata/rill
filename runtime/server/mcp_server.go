@@ -462,7 +462,7 @@ All chart specifications must include:
 ### 1. Bar Chart (` + "`bar_chart`" + `)
 **Use for:** Comparing values across different categories
 
-Example Specification
+Example Specification: Plotting a bar chart of the top 20 advertisers by total bids
 ` + "```json" + `
 {
   "chart_type": "bar_chart",
@@ -652,16 +652,17 @@ Example Specification
     "innerRadius": 50,
     "measure": {
       "field": "number_of_commits",
-      "type": "quantitative"
+      "type": "quantitative",
+			"showTotal": true
     }
   }
 }
 ` + "```" + `
 
 ### 7. Funnel Chart (` + "`funnel_chart`" + `)
-**Use for:** Showing flow through a process with decreasing/increasing values at each stage
+**Use for:** Showing flow through a process with decreasing values at each stage or measure
 
-Example Specification
+Example Specification with 1 dimension and 1 measure breakdown
 ` + "```json" + `
 {
   "chart_type": "funnel_chart",
@@ -671,6 +672,7 @@ Example Specification
       "start": "2024-01-01T00:00:00Z",
       "end": "2024-12-31T23:59:59Z"
     },
+	"breakdownMode": "dimension",
     "color": "stage",
     "measure": {
       "field": "total_users_measure",
@@ -685,6 +687,31 @@ Example Specification
   }
 }
 ` + "```" + `
+
+Example Specification with multiple measures breakdown
+` + "```json" + `
+{
+  "chart_type": "funnel_chart",
+  "spec": {
+    "breakdownMode": "measures",
+		"time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "color": "name",
+    "measure": {
+      "field": "impressions",
+      "type": "quantitative",
+      "fields": [
+        "impressions",
+        "video_starts",
+        "video_completes"
+      ]
+    },
+    "metrics_view": "bids",
+    "mode": "width"
+  }
+	` + "```" + `
 
 ### 8. Heat Map (` + "`heatmap`" + `)
 **Use for:** Visualizing data density using color intensity across two dimensions
@@ -777,32 +804,51 @@ Example Specification
 ### Common Field Properties
 - **field**: The field name from the metrics view
 - **type**: Data type (nominal, temporal, quantitative, value)
-- **limit**: Maximum number of values to display
+- **limit**: Maximum number of values to display for selected sort mode
 - **showNull**: Include null values in the visualization (true/false)
 - **sort**: Sorting order
   - ` + "`\"x\"`" + ` or ` + "`\"-x\"`" + `: Sort by x-axis values (ascending/descending)
   - ` + "`\"y\"`" + ` or ` + "`\"-y\"`" + `: Sort by y-axis values (ascending/descending)
-	- ` + "`\"color\"`" + ` or ` + "`\"-color\"`" + `: Sort by color field values (ascending/descending) (Useful for heatmaps)
-
+	- ` + "`\"color\"`" + ` or ` + "`\"-color\"`" + `: Sort by color field values (ascending/descending) Only used for heatmap charts
+	- ` + "`\"measure\"`" + ` or ` + "`\"-measure\"`" + `: Sort by measure field values (ascending/descending) Only used for donut charts
   - Array of values for custom sort order (e.g., weekday names)
 - **zeroBasedOrigin**: Start y-axis from zero (true/false)
+- **showTotal**: Displays the measure total without any breakdown. Only used for donut chart to display totals in center
 
 ### Special Fields
 - **__time**: Built-in time dimension field
 - **rill_measures**: Special field for multiple measures in stacked charts
 
 ## Color Configuration
-- Can be a string (e.g., ` + "`\"primary\"`" + `, ` + "`\"stage\"`" + `) for single color
-- Can be an object for field-based coloring:
-  ` + "```json" + `
-  {
-    "field": "dimension_name",
-    "type": "nominal|temporal|value",
-    "limit": 10,
-    "legendOrientation": "top|bottom|left|right"
-  }
-  ` + "```" + `
 
+Colors can be specified in three ways depending on the chart type and requirements:
+
+### 1. Single Color String
+For bar_chart, stacked_bar, line_chart, and area_chart types:
+- Named colors: "primary" or "secondary"
+- CSS color values: "#FF5733", "rgb(255, 87, 51)", "hsl(12, 100%, 60%)"
+- **Note**: If no color field object is provided, a color string MUST be included for the mentioned chart types
+
+### 2. Special Values (Funnel Charts Only)
+For funnel_chart type, use one of these special keywords:
+In breakdown mode "dimension" - 
+- "stage" - Colors each dimensional funnel segment with different color
+- "measure" - Colors funnel segments with similar color based on value
+
+In breakdown mode "measures" - 
+- "name" - Colors each measure funnel segment with different color
+- "value" - Colors measures with similar color based on value. Prefer this over "name" when possible.
+
+### 3. Field-Based Color Object
+For dynamic coloring based on data dimensions:
+` + "```json" + `
+{
+  "field": "dimension_name",      // The data field to base colors on
+  "type": "nominal", // Data type: categorical, time-based, or numeric
+  "limit": 10,                     // Maximum number of color categories
+  "legendOrientation": "top|bottom|left|right" // Legend position (optional)
+}
+` + "```" + `
 
 ## Visualization Best Practices & Usage Guidelines
 
@@ -839,7 +885,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 
 - The ` + "`time_range`" + ` parameter is **required** for all charts
 - Time range ` + "`start`" + ` is inclusive, ` + "`end`" + ` is exclusive
-- You do not always have to include color for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
+- You do not always have to include color field object for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
 - Ensure the metrics_view name matches exactly with available views
 - Field names must match the exact field names in the metrics view
 - When using ` + "`__time`" + ` field, set type to ` + "`\"temporal\"`" + `

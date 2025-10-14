@@ -769,8 +769,6 @@ Choose the appropriate chart type based on your data:
 - Two measures from the same metrics view: Use combo_chart
 - Multiple measures from the same metrics view (more that 2): Use stacked bar chart with multiple measure fields
 - Distribution across two dimensions: heatmap
-
-You do not always have to include color for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
 </process>
 
 <analysis_guidelines>
