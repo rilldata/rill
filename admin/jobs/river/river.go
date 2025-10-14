@@ -114,6 +114,9 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &HibernateExpiredDeploymentsWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &RunAutoscalerWorker{admin: adm, logger: adm.Logger})
 
+	// worker for migrating reports to creator mode
+	river.AddWorker(workers, &MigrateReportsCreatorModeWorker{admin: adm, logger: adm.Logger})
+
 	jobConfigs := []periodicJobConfig{
 		{&ValidateDeploymentsArgs{}, "*/30 * * * *", true},         // half-hourly
 		{&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true},  // daily at 1am UTC
@@ -264,6 +267,8 @@ func (c *Client) EnqueueByKind(ctx context.Context, kind string) (*jobs.InsertRe
 		jobArgs = DeleteUnusedServiceTokenArgs{}
 	case "delete_unused_github_repos":
 		jobArgs = deleteUnusedGithubReposArgs{}
+	case "migrate_reports_creator_mode":
+		jobArgs = MigrateReportsCreatorModeArgs{}
 	default:
 		return nil, fmt.Errorf("unknown job kind: %s", kind)
 	}

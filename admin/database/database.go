@@ -290,6 +290,7 @@ type DB interface {
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
+	ListNonExpiredVirtualReportFiles(ctx context.Context, afterPath string, limit int) ([]*VirtualFileWithProjectID, error)
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
 	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
@@ -1140,6 +1141,15 @@ type UpdateBookmarkOptions struct {
 
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)
 type VirtualFile struct {
+	Path      string    `db:"path"`
+	Data      []byte    `db:"data"`
+	Deleted   bool      `db:"deleted"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+// VirtualFileWithProjectID represents an ad-hoc file for a project (not managed in Git) along with its associated ProjectID
+type VirtualFileWithProjectID struct {
+	ProjectID string    `db:"project_id"`
 	Path      string    `db:"path"`
 	Data      []byte    `db:"data"`
 	Deleted   bool      `db:"deleted"`
