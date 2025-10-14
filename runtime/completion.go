@@ -806,6 +806,13 @@ Based on the data analysis, here are the key insights:
 
 [Optional: Offer specific follow-up analysis options]
 `+"```"+`
+
+**Citation Requirements**:
+- Each query_metrics_view result includes an 'open_url' field with a shareable link to view the data in Rill
+- Always cite the source of quantitative claims by including the 'open_url' as a markdown link
+- When multiple insights come from the same query, cite once at the end (e.g., "[View analysis](url)")
+- When insights come from different queries, cite each inline with descriptive text (e.g., "Revenue increased 25%% ([view data](url))")
+- Use descriptive link text that indicates what the query shows
 </output_format>`, currentTime.Format("Monday, January 2, 2006"), currentTime.Format("2006-01-02"))
 
 	if aiInstructions != "" {
@@ -847,7 +854,15 @@ func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, me
 
 	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" tool must include \"metrics_view\": %q in the payload.**\n\n", metricsViewName))
 
-	// 5. CUSTOMIZE: Provide user-specific instructions
+	// 5. HOW TO CITE: Describe citation requirements
+	prompt.WriteString("## Citation Requirements\n")
+	prompt.WriteString("Each query_metrics_view result includes an 'open_url' field with a shareable link to view the data in Rill. ")
+	prompt.WriteString("Always cite the source of quantitative claims by including the 'open_url' as a markdown link. ")
+	prompt.WriteString("When multiple insights come from the same query, cite once at the end (e.g., \"[View analysis](url)\"). ")
+	prompt.WriteString("When insights come from different queries, cite each inline with descriptive text (e.g., \"Revenue increased 25%% ([view data](url))\"). ")
+	prompt.WriteString("Use descriptive link text that indicates what the query shows.\n\n")
+
+	// 6. CUSTOMIZE: Provide user-specific instructions
 	if aiInstructions != "" {
 		prompt.WriteString("## Additional Instructions (provided by the Rill project developer)\n")
 		prompt.WriteString(aiInstructions)
