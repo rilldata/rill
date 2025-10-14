@@ -3,7 +3,6 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
-    createAdminServiceListOrganizationMemberUsersInfinite,
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceRenameUsergroup,
@@ -11,6 +10,7 @@
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
+  import { getOrgUserMembers } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
   import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -45,27 +45,13 @@
     organization,
     groupName,
   );
-  $: listOrganizationMemberUsersInfinite =
-    createAdminServiceListOrganizationMemberUsersInfinite(
-      organization,
-      {
-        pageSize: 50,
-        includeCounts: true,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
+  $: orgMemberUsersInfiniteQuery = getOrgUserMembers({
+    organization,
+    guestOnly: false,
+  });
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
   $: allOrganizationUsers =
-    $listOrganizationMemberUsersInfinite.data?.pages.flatMap(
+    $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
       (page) => page.members ?? [],
     ) ?? [];
   $: if (
@@ -85,15 +71,8 @@
   const renameUserGroup = createAdminServiceRenameUsergroup();
 
   async function ensureAllUsersLoaded() {
-    if (
-      $listOrganizationMemberUsersInfinite.hasNextPage &&
-      !$listOrganizationMemberUsersInfinite.isFetchingNextPage
-    ) {
-      await $listOrganizationMemberUsersInfinite.fetchNextPage();
-      // Recursively call until all pages are loaded
-      if ($listOrganizationMemberUsersInfinite.hasNextPage) {
-        await ensureAllUsersLoaded();
-      }
+    while ($orgMemberUsersInfiniteQuery.hasNextPage) {
+      await $orgMemberUsersInfiniteQuery.fetchNextPage();
     }
   }
 
