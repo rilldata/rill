@@ -4,7 +4,6 @@
   import { anomalyExplanation } from "@rilldata/web-common/features/chat/core/prompts/anomaly-explanation.ts";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     type DashboardTimeControls,

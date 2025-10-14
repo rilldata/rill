@@ -35,9 +35,9 @@
         <Collapsible.Trigger asChild let:builder>
           <Button type="link" builders={[builder]} class="ml-1">
             {#if contextOpened}
-              <CaretDownFilledIcon size="12px" />
+              <CaretDownFilledIcon size="12px" fillColor="white" />
             {:else}
-              <CaretRightFilledIcon size="12px" />
+              <CaretRightFilledIcon size="12px" fillColor="white" />
             {/if}
             <span class="text-white">Additional context</span>
           </Button>
