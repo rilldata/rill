@@ -80,9 +80,11 @@ export function mapMetricsResolverQueryToDashboard(
   }
 
   // Convert where filter
-  partialExploreState.whereFilter = mapResolverExpressionToV1Expression(
-    query.where,
-  );
+  if (query.where) {
+    partialExploreState.whereFilter = mapResolverExpressionToV1Expression(
+      query.where,
+    );
+  }
 
   // Convert sort
   if (query.sort) {
@@ -256,12 +258,12 @@ function mapActivePage(
   partialExploreState: Partial<ExploreState>,
   timeDimensions: Dimension[],
 ) {
-  const hasVisibleMeasures =
-    (partialExploreState.visibleMeasures?.length ?? 0) > 0;
+  const hasExactlyOneMeasure =
+    (partialExploreState.visibleMeasures?.length ?? 0) === 1;
   const visibleDimensions = partialExploreState.visibleDimensions ?? [];
   const showTDD =
     timeDimensions.length === 1 &&
-    hasVisibleMeasures &&
+    hasExactlyOneMeasure &&
     visibleDimensions.length <= 1;
   const showDimensionTable = !showTDD && visibleDimensions.length === 1;
   const showPivot = timeDimensions.length > 1 || visibleDimensions.length > 1;
@@ -275,6 +277,14 @@ function mapActivePage(
     partialExploreState.selectedComparisonDimension = visibleDimensions[0];
     partialExploreState.activePage =
       DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+
+    const dim = timeDimensions[0];
+    const shouldUpdateTimeGrain =
+      partialExploreState.selectedTimeRange && dim?.compute?.time_floor?.grain;
+    if (shouldUpdateTimeGrain) {
+      partialExploreState.selectedTimeRange!.interval =
+        DateTimeUnitToV1TimeGrain[dim.compute!.time_floor!.grain];
+    }
   } else if (showDimensionTable) {
     partialExploreState.selectedDimensionName = visibleDimensions[0];
     partialExploreState.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
