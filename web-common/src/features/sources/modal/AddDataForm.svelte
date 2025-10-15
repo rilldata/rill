@@ -492,16 +492,6 @@
                       hint={property.hint}
                       href={property.docsUrl}
                     />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                    <CredentialsInput
-                      id={propertyKey}
-                      label={property.displayName}
-                      hint={property.hint}
-                      optional={!property.required}
-                      bind:value={$paramsForm[propertyKey]}
-                      uploadFile={handleFileUpload}
-                      accept=".json"
-                    />
                   {/if}
                 </div>
               {/each}
@@ -517,28 +507,16 @@
               {#each filteredDsnProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                    <CredentialsInput
-                      id={propertyKey}
-                      label={property.displayName}
-                      hint={property.hint}
-                      optional={!property.required}
-                      bind:value={$dsnForm[propertyKey]}
-                      uploadFile={handleFileUpload}
-                      accept=".json"
-                    />
-                  {:else}
-                    <Input
-                      id={propertyKey}
-                      label={property.displayName}
-                      placeholder={property.placeholder}
-                      secret={property.secret}
-                      hint={property.hint}
-                      errors={$dsnErrors[propertyKey]}
-                      bind:value={$dsnForm[propertyKey]}
-                      alwaysShowError
-                    />
-                  {/if}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={$dsnErrors[propertyKey]}
+                    bind:value={$dsnForm[propertyKey]}
+                    alwaysShowError
+                  />
                 </div>
               {/each}
             </form>
@@ -555,28 +533,16 @@
           {#each filteredDsnProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                <CredentialsInput
-                  id={propertyKey}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                  bind:value={$dsnForm[propertyKey]}
-                  uploadFile={handleFileUpload}
-                  accept=".json"
-                />
-              {:else}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={$dsnErrors[propertyKey]}
-                  bind:value={$dsnForm[propertyKey]}
-                  alwaysShowError
-                />
-              {/if}
+              <Input
+                id={propertyKey}
+                label={property.displayName}
+                placeholder={property.placeholder}
+                secret={property.secret}
+                hint={property.hint}
+                errors={$dsnErrors[propertyKey]}
+                bind:value={$dsnForm[propertyKey]}
+                alwaysShowError
+              />
             </div>
           {/each}
         </form>
