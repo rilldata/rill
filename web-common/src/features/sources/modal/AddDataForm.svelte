@@ -332,7 +332,7 @@
     cancel: () => void;
     result: Extract<ActionResult, { type: "success" | "failure" }>;
   }) {
-    if (!event.form.valid) return;
+    if (!event.form.valid && !saveAnyway) return;
     const values = event.form.data;
 
     try {
@@ -593,7 +593,7 @@
               isSavingAnyway = true;
               // For ClickHouse, also set the flag in the child component
               if (connector.name === "clickhouse") {
-                // The binding will sync this automatically
+                clickhouseIsSavingAnyway = true;
               }
               // Trigger form submission by dispatching a submit event
               const formElement = document.getElementById(
@@ -624,7 +624,9 @@
             ? clickhouseSubmitting && !clickhouseIsSavingAnyway
             : submitting && !isSavingAnyway}
           loadingCopy={connector.name === "clickhouse"
-            ? "Connecting..."
+            ? clickhouseIsSavingAnyway
+              ? "Saving..."
+              : "Connecting..."
             : "Testing connection..."}
           form={connector.name === "clickhouse" ? clickhouseFormId : formId}
           submitForm
@@ -632,11 +634,15 @@
         >
           {#if connector.name === "clickhouse"}
             {#if clickhouseConnectorType === "rill-managed"}
-              {#if clickhouseSubmitting && !clickhouseIsSavingAnyway}
+              {#if clickhouseSubmitting && clickhouseIsSavingAnyway}
+                Saving...
+              {:else if clickhouseSubmitting && !clickhouseIsSavingAnyway}
                 Connecting...
               {:else}
                 Connect
               {/if}
+            {:else if clickhouseSubmitting && clickhouseIsSavingAnyway}
+              Saving...
             {:else if clickhouseSubmitting && !clickhouseIsSavingAnyway}
               Testing connection...
             {:else}

@@ -46,6 +46,9 @@
 
   let saveAnyway = false;
 
+  // Sync the local saveAnyway with the parent's isSavingAnyway state
+  $: saveAnyway = isSavingAnyway;
+
   const dispatch = createEventDispatcher();
 
   // ClickHouse schema includes the 'managed' property for backend compatibility
@@ -213,7 +216,17 @@
       { type: "success" | "failure" }
     >;
   }) {
-    if (!event.form.valid) return;
+    console.log("handleOnUpdate called:", {
+      formValid: event.form.valid,
+      saveAnyway,
+      connectionTab,
+      formData: event.form.data,
+    });
+
+    if (!event.form.valid && !saveAnyway) {
+      console.log("Form is invalid and saveAnyway is false, returning early");
+      return;
+    }
     const values = { ...event.form.data };
 
     // Ensure ClickHouse Cloud specific requirements are met
@@ -227,6 +240,11 @@
     }
 
     try {
+      console.log("Calling submitAddConnectorForm with:", {
+        connector: connector.name,
+        values,
+        saveAnyway,
+      });
       await submitAddConnectorForm(queryClient, connector, values, saveAnyway);
       onClose();
     } catch (e) {
@@ -266,7 +284,7 @@
       }
     } finally {
       // Reset saveAnyway state after submission completes
-      saveAnyway = false;
+      // Note: saveAnyway is now reactive and will be reset when isSavingAnyway changes
       isSavingAnyway = false;
     }
   }
