@@ -81,7 +81,9 @@
             <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
           </Tooltip.Trigger>
           <Tooltip.Content side="right">
-            {tooltip}
+            {#each tooltip.split(/\n/gm) as line (line)}
+              <div>{line}</div>
+            {/each}
           </Tooltip.Content>
         </Tooltip.Root>
       {/if}
