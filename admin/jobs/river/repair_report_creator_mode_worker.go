@@ -35,7 +35,7 @@ func (w *MigrateReportsCreatorModeWorker) Work(ctx context.Context, job *river.J
 			y, err := unmarshalReportYAML(report.Data)
 			if err != nil {
 				w.logger.Error("failed to unmarshal report yaml", zap.String("report", report.Path), zap.Error(err))
-				return err
+				continue
 			}
 			if y.Annotations.WebOpenMode == WebOpenModeCreator {
 				w.logger.Info("Skipping report already in creator mode", zap.String("report", report.Path))
