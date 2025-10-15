@@ -763,6 +763,10 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 	err := db.Ping()
 	if err != nil {
+		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
+		if strings.Contains(err.Error(), "EOF") || strings.Contains(err.Error(), "[handshake] unexpected packet [21]") {
+			return nil, fmt.Errorf("Error: %w — this usually happens due to SSL/TLS mismatch", err)
+		}
 		// Return immediately without retrying in the following cases:
 		//   1. The error is not a known transient native-protocol failure:
 		//        - "unexpected packet"   → The native protocol hit an HTTP endpoint.
@@ -782,6 +786,11 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 		err := db.Ping()
 		if err != nil {
+			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
+			if strings.Contains(err.Error(), "EOF") ||
+				(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+				return nil, fmt.Errorf("Error: %w — this usually happens due to SSL/TLS mismatch", err)
+			}
 			return nil, err
 		}
 		// connection with http protocol is successful
