@@ -65,7 +65,7 @@
 
   $: if (
     (minDate && date < minDate.startOf("day")) ||
-    (maxDate && date > maxDate.endOf("day"))
+    (maxDate && !(date < maxDate))
   ) {
     errorType = "out-of-range";
   } else {
@@ -153,7 +153,8 @@
                 date = minDate ?? DateTime.now().startOf("day");
                 onValidDateInput(date, boundary);
               } else {
-                date = maxDate ?? DateTime.now().endOf("day");
+                date =
+                  maxDate ?? DateTime.now().plus({ day: 1 }).startOf("day");
                 onValidDateInput(date, boundary);
               }
             }}

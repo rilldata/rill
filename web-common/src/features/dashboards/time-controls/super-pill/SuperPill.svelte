@@ -96,6 +96,7 @@
       {showFullRange}
       {defaultTimeRange}
       {allowCustomTimeRange}
+      smallestTimeGrain={minTimeGrain}
       selected={selectedRangeAlias ?? ""}
       {side}
       {interval}

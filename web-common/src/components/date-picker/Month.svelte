@@ -6,9 +6,9 @@
 
   const weekCount = 6; // show 6 weeks to avoid layout shift
 
+  export let interval: Interval<true>;
   export let startDay: DateTime<true>;
   export let firstDayOfWeek: WeekdayNumbers;
-  export let interval: Interval<true>;
   export let visibleMonths = 2;
   export let visibleIndex: number;
   export let singleDaySelection = false;

@@ -5,15 +5,15 @@
 
   type MaybeDate = DateTime | undefined;
 
-  export let interval: Interval<true>;
+  export let selection: Interval | DateTime;
   export let maxDate: MaybeDate = DateTime.now().startOf("day");
   export let minDate: MaybeDate = undefined;
   export let visibleMonths = 1;
   export let anchorDay: DateTime<true> | undefined = undefined;
-  export let firstVisibleMonth: MaybeDate = isValidDateTime(interval)
-    ? interval
-    : isValidInterval(interval)
-      ? (interval.start ?? DateTime.now())
+  export let firstVisibleMonth: MaybeDate = isValidDateTime(selection)
+    ? selection
+    : isValidInterval(selection)
+      ? (selection.start ?? DateTime.now())
       : DateTime.now();
   export let singleDaySelection = false;
   export let onSelectDay: (date: DateTime<true>) => void;
@@ -25,6 +25,18 @@
   $: firstMonth = isValidDateTime(firstVisibleMonth)
     ? firstVisibleMonth
     : DateTime.now();
+
+  $: interval = isValidInterval(selection)
+    ? selection
+    : isValidDateTime(selection)
+      ? (Interval.fromDateTimes(
+          selection.startOf("day"),
+          selection.startOf("day").plus({ day: 1 }),
+        ) as Interval<true>)
+      : (Interval.fromDateTimes(
+          DateTime.now().startOf("day"),
+          DateTime.now().startOf("day").plus({ day: 1 }),
+        ) as Interval<true>);
 
   function onPan(direction: -1 | 1) {
     firstMonth = firstMonth.plus({ month: direction });

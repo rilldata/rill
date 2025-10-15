@@ -2,11 +2,12 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
-  import { DateTime, Interval } from "luxon";
+  import { DateTime, Interval, type DateTimeUnit } from "luxon";
 
   export let interval: Interval<true> | undefined;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
+  export let minTimeGrain: DateTimeUnit;
   export let zone: string;
   export let updateRange: (range: string) => void = () => {};
   export let onApply: (interval: Interval<true>) => void;
@@ -24,6 +25,11 @@
 
   $: startDate = inputInterval?.start;
   $: endDate = inputInterval.end.minus({ millisecond: 1 });
+
+  $: adjustedMinDate = minDate?.startOf("day");
+  $: adjustedMaxDate = maxDate
+    ?.plus({ [minTimeGrain]: 1 })
+    .startOf(minTimeGrain);
 
   function onValidDateInput(date: DateTime<true>, boundary?: "start" | "end") {
     let newInterval: Interval;
@@ -79,9 +85,9 @@
 
 <div class="flex flex-col w-full gap-y-3">
   <Calendar
-    {maxDate}
-    {minDate}
-    interval={inputInterval}
+    minDate={adjustedMinDate}
+    maxDate={adjustedMaxDate}
+    selection={inputInterval}
     {anchorDay}
     {firstVisibleMonth}
     onSelectDay={onValidDateInput}
@@ -94,8 +100,8 @@
     <DateInput
       boundary="start"
       {zone}
-      {minDate}
-      {maxDate}
+      minDate={adjustedMinDate}
+      maxDate={adjustedMaxDate}
       currentYear={firstVisibleMonth.year}
       date={startDate}
       {onValidDateInput}
@@ -108,8 +114,8 @@
       boundary="end"
       {zone}
       date={endDate}
-      {minDate}
-      {maxDate}
+      minDate={adjustedMinDate}
+      maxDate={adjustedMaxDate}
       currentYear={firstVisibleMonth.year}
       {onValidDateInput}
       onFocus={() => {
