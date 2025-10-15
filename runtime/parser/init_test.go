@@ -61,6 +61,7 @@ func TestInitWithDuckDB(t *testing.T) {
 	require.NoError(err)
 	require.Contains(duckdbYAML, "type: connector")
 	require.Contains(duckdbYAML, "driver: duckdb")
+	require.Contains(duckdbYAML, "managed: true")
 }
 
 func TestInitWithClickHouse(t *testing.T) {
@@ -90,6 +91,7 @@ func TestInitWithClickHouse(t *testing.T) {
 	require.NoError(err)
 	require.Contains(clickhouseYAML, "type: connector")
 	require.Contains(clickhouseYAML, "driver: clickhouse")
+	require.Contains(clickhouseYAML, "managed: true")
 
 	// Verify that duckdb.yaml is NOT created for ClickHouse projects
 	_, err = repo.Get(t.Context(), "connectors/duckdb.yaml")
