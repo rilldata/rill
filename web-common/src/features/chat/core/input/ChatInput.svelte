@@ -6,7 +6,7 @@
   import type { ConversationManager } from "../conversation-manager";
 
   export let conversationManager: ConversationManager;
-  export let onSend: () => void;
+  export let onSend: (() => void) | undefined = undefined;
 
   let textarea: HTMLTextAreaElement;
   let placeholder = "Ask about your data...";
@@ -44,7 +44,7 @@
     // Message handling with input focus
     try {
       await currentConversation.sendMessage();
-      onSend();
+      onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
     }
