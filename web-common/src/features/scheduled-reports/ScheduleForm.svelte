@@ -11,12 +11,11 @@
   import type { Readable } from "svelte/store";
 
   export let data: Readable<ReturnType<typeof getInitialScheduleFormValues>>;
-  export let exploreName: string;
 
   $: ({ instanceId } = $runtime);
 
   // Pull the time zone options from the dashboard's spec
-  $: exploreSpec = useExploreValidSpec(instanceId, exploreName);
+  $: exploreSpec = useExploreValidSpec(instanceId, $data["exploreName"]);
   $: availableTimeZones = $exploreSpec.data?.explore?.timeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
 </script>

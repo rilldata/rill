@@ -521,7 +521,6 @@ describe("Report rows and columns", () => {
                   }
                 : undefined,
               enableComparison: !!timeControlState.showTimeComparison,
-              isFlat: exploreState.pivot.tableMode === "flat",
               pivotState: exploreState.pivot,
             })!,
         );

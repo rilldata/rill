@@ -1,12 +1,9 @@
 <script lang="ts">
-  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
-  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
-  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
-  import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
+  import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors.ts";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import {
     ReportRunAs,
@@ -28,9 +25,6 @@
   export let errors: SuperFormErrors<ReportValues>;
   export let submit: () => void;
   export let enhance;
-  export let exploreName: string;
-  export let filters: Filters;
-  export let timeControls: TimeControls;
 
   const RUN_AS_TOOLTIP = `Choose how the report is run as.
 For Recipient, the report will be run using recipient's security policy.
@@ -38,7 +32,21 @@ For Creator, the report will be run using creator's security policy.`;
 
   $: ({ instanceId } = $runtime);
 
+  $: explores = useValidExplores(instanceId);
+  $: exploreOptions =
+    $explores.data?.map((res) => {
+      const name = res.meta!.name!.name!; // name is never null
+      return {
+        value: name,
+        label: res.explore?.state?.validSpec?.displayName ?? name,
+      };
+    }) ?? [];
+
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
+
+  function handleExploreChange(exploreName: string) {
+    metricsExplorerStore.remove(exploreName);
+  }
 </script>
 
 <form
@@ -48,7 +56,6 @@ For Creator, the report will be run using creator's security policy.`;
   on:submit|preventDefault={submit}
   use:enhance
 >
-  <span>Email recurring exports to recipients.</span>
   <div class="flex flex-col gap-y-3 w-full h-[600px] overflow-y-scroll">
     <Input
       bind:value={$data["title"]}
@@ -56,6 +63,13 @@ For Creator, the report will be run using creator's security policy.`;
       id="title"
       label="Report title"
       placeholder="My report"
+    />
+    <Select
+      bind:value={$data["exploreName"]}
+      id="exploreName"
+      label="Explore"
+      options={exploreOptions}
+      onChange={handleExploreChange}
     />
     <Select
       bind:value={$data["webOpenMode"]}
@@ -67,7 +81,7 @@ For Creator, the report will be run using creator's security policy.`;
       ]}
       tooltip={RUN_AS_TOOLTIP}
     />
-    <ScheduleForm {data} {exploreName} />
+    <ScheduleForm {data} />
     <Select
       bind:value={$data["exportFormat"]}
       id="exportFormat"
@@ -108,19 +122,6 @@ For Creator, the report will be run using creator's security policy.`;
         </TooltipContent>
       </Tooltip>
     </div>
-
-    <div class="flex flex-col gap-y-3">
-      <InputLabel label="Filters" id="filters" capitalize={false} />
-      <FiltersForm {filters} {timeControls} side="top" />
-    </div>
-
-    <RowsAndColumnsForm
-      bind:rows={$data["rows"]}
-      bind:columns={$data["columns"]}
-      columnErrors={$errors["columns"]}
-      {instanceId}
-      {exploreName}
-    />
 
     <MultiInput
       id="emailRecipients"
