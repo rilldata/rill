@@ -228,6 +228,9 @@ css: |
     
     /* Surface/background color */
     --surface: hsl(40deg 60% 97%);
+
+    /* Background color */
+    --background: hsl(40deg 60% 97%);
     
     /* Sequential palette (9 colors) */
     --color-sequential-1: hsl(289deg 72% 95%);

@@ -50,7 +50,7 @@
   {#if filtersEnabled}
     <header
       role="presentation"
-      class="bg-surface border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
+      class="bg-background border-b py-4 px-2 w-full h-fit select-none z-50 flex items-center justify-center"
       on:click|self={onClick}
     >
       <CanvasFilters {canvasName} {maxWidth} />
