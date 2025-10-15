@@ -52,6 +52,7 @@
 
   let saveAnyway = false;
   let isSavingAnyway = false;
+  let showSaveAnyway = false;
 
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
@@ -136,6 +137,7 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseIsSavingAnyway: boolean;
+  let clickhouseShowSaveAnyway: boolean = false;
 
   // Helper function to check if connector only has DSN (no tabs)
   function hasOnlyDsn() {
@@ -211,6 +213,77 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  async function handleSaveAnyway() {
+    saveAnyway = true;
+    isSavingAnyway = true;
+    // For ClickHouse, also set the flag in the child component
+    if (connector.name === "clickhouse") {
+      clickhouseIsSavingAnyway = true;
+    }
+
+    // Get the current form values based on the active form
+    let values: Record<string, unknown>;
+    if (connector.name === "clickhouse") {
+      values =
+        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
+    } else {
+      values = hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+    }
+
+    try {
+      if (formType === "source") {
+        await submitAddSourceForm(queryClient, connector, values, true);
+      } else {
+        await submitAddConnectorForm(queryClient, connector, values, true);
+      }
+      onClose();
+    } catch (e) {
+      let error: string;
+      let details: string | undefined = undefined;
+
+      // Handle different error types
+      if (e instanceof Error) {
+        error = e.message;
+        details = undefined;
+      } else if (e?.message && e?.details) {
+        error = e.message;
+        details = e.details !== e.message ? e.details : undefined;
+      } else if (e?.response?.data) {
+        const originalMessage = e.response.data.message;
+        const humanReadable = humanReadableErrorMessage(
+          connector.name,
+          e.response.data.code,
+          originalMessage,
+        );
+        error = humanReadable;
+        details =
+          humanReadable !== originalMessage ? originalMessage : undefined;
+      } else if (e?.message) {
+        error = e.message;
+        details = undefined;
+      } else {
+        error = "Unknown error";
+        details = undefined;
+      }
+
+      // Keep error state for each form - match the display logic
+      if (hasOnlyDsn() || connectionTab === "dsn") {
+        dsnError = error;
+        dsnErrorDetails = details;
+      } else {
+        paramsError = error;
+        paramsErrorDetails = details;
+      }
+    } finally {
+      // Reset saveAnyway state after submission completes
+      saveAnyway = false;
+      isSavingAnyway = false;
+      if (connector.name === "clickhouse") {
+        clickhouseIsSavingAnyway = false;
+      }
+    }
+  }
 
   function getClickHouseYamlPreview(
     values: Record<string, unknown>,
@@ -332,6 +405,9 @@
     cancel: () => void;
     result: Extract<ActionResult, { type: "success" | "failure" }>;
   }) {
+    // Show Save Anyway button as soon as form submission starts
+    showSaveAnyway = true;
+
     if (!event.form.valid && !saveAnyway) return;
     const values = event.form.data;
 
@@ -425,6 +501,7 @@
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
           bind:isSavingAnyway={clickhouseIsSavingAnyway}
+          bind:showSaveAnyway={clickhouseShowSaveAnyway}
           on:submitting
         />
       {:else if hasDsnFormOption}
@@ -578,35 +655,15 @@
       <Button onClick={onBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
-        <!-- Save Anyway button - only show when there are errors -->
-        {#if dsnError || paramsError || clickhouseError}
+        <!-- Save Anyway button - show when there are errors or when form is being submitted -->
+        {#if dsnError || paramsError || clickhouseError || showSaveAnyway || clickhouseShowSaveAnyway}
           <Button
-            disabled={connector.name === "clickhouse"
-              ? clickhouseSubmitting
-              : submitting}
+            disabled={false}
             loading={connector.name === "clickhouse"
               ? clickhouseSubmitting && clickhouseIsSavingAnyway
               : submitting && isSavingAnyway}
             loadingCopy="Saving..."
-            onClick={() => {
-              saveAnyway = true;
-              isSavingAnyway = true;
-              // For ClickHouse, also set the flag in the child component
-              if (connector.name === "clickhouse") {
-                clickhouseIsSavingAnyway = true;
-              }
-              // Trigger form submission by dispatching a submit event
-              const formElement = document.getElementById(
-                connector.name === "clickhouse" ? clickhouseFormId : formId,
-              );
-              if (formElement) {
-                const submitEvent = new Event("submit", {
-                  bubbles: true,
-                  cancelable: true,
-                });
-                formElement.dispatchEvent(submitEvent);
-              }
-            }}
+            onClick={handleSaveAnyway}
             type="secondary"
           >
             Save Anyway
