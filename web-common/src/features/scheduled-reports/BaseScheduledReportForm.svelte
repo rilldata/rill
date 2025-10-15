@@ -32,6 +32,10 @@
   export let filters: Filters;
   export let timeControls: TimeControls;
 
+  const RUN_AS_TOOLTIP = `Choose how the report is run as.
+For Recipient, the report will be run using recipient's security policy.
+For Creator, the report will be run using creator's security policy.`;
+
   $: ({ instanceId } = $runtime);
 
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
@@ -61,6 +65,7 @@
         { value: ReportRunAs.Recipient, label: "Recipient" },
         { value: ReportRunAs.Creator, label: "Creator" },
       ]}
+      tooltip={RUN_AS_TOOLTIP}
     />
     <ScheduleForm {data} {exploreName} />
     <Select

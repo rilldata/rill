@@ -154,17 +154,14 @@
       )
       .test(
         "as-recipients-in-project",
-        "Recipients should be part of the project when running as recipient",
+        "Recipients must be part of the project when running as recipient",
         function (values) {
-          if (
-            values.webOpenMode !== ReportRunAs.Recipient ||
-            !values.emailRecipients
-          ) {
-            return true;
-          }
+          if (values.webOpenMode !== ReportRunAs.Recipient) return true;
 
-          return values.emailRecipients.every(
-            (recipient) => !recipient || projectMembersSet.has(recipient),
+          return (
+            values.emailRecipients?.every(
+              (recipient) => !recipient || projectMembersSet.has(recipient),
+            ) ?? true
           );
         },
       ),
