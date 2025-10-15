@@ -43,6 +43,7 @@
   export let connectionTab: ConnectorType = "parameters";
   export { paramsForm, dsnForm };
   export let isSavingAnyway: boolean = false;
+  export let showSaveAnyway: boolean = false;
 
   let saveAnyway = false;
 
@@ -216,15 +217,11 @@
       { type: "success" | "failure" }
     >;
   }) {
-    console.log("handleOnUpdate called:", {
-      formValid: event.form.valid,
-      saveAnyway,
-      connectionTab,
-      formData: event.form.data,
-    });
+    // Show Save Anyway button as soon as form submission starts
+    showSaveAnyway = true;
 
+    // Form is invalid and saveAnyway is false, returning early
     if (!event.form.valid && !saveAnyway) {
-      console.log("Form is invalid and saveAnyway is false, returning early");
       return;
     }
     const values = { ...event.form.data };
@@ -240,11 +237,6 @@
     }
 
     try {
-      console.log("Calling submitAddConnectorForm with:", {
-        connector: connector.name,
-        values,
-        saveAnyway,
-      });
       await submitAddConnectorForm(queryClient, connector, values, saveAnyway);
       onClose();
     } catch (e) {

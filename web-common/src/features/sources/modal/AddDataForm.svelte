@@ -655,8 +655,8 @@
       <Button onClick={onBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
-        <!-- Save Anyway button - show when there are errors or when form is being submitted -->
-        {#if dsnError || paramsError || clickhouseError || showSaveAnyway || clickhouseShowSaveAnyway}
+        <!-- Show Save Anyway button when form submission has started -->
+        {#if showSaveAnyway || clickhouseShowSaveAnyway}
           <Button
             disabled={false}
             loading={connector.name === "clickhouse"
