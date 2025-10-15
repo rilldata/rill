@@ -808,11 +808,10 @@ Based on the data analysis, here are the key insights:
 `+"```"+`
 
 **Citation Requirements**:
-- Each query_metrics_view result includes an 'open_url' field with a shareable link to view the data in Rill
-- Always cite the source of quantitative claims by including the 'open_url' as a markdown link
-- When multiple insights come from the same query, cite once at the end (e.g., "[View analysis](url)")
-- When insights come from different queries, cite each inline with descriptive text (e.g., "Revenue increased 25%% ([view data](url))")
-- Use descriptive link text that indicates what the query shows
+- Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user
+- Citations must be inline at the end of a sentence or paragraph, not on a separate line
+- Use descriptive text in sentence case (e.g. "This suggests Android is valuable ([Device breakdown](url))." or "Revenue increased 25%% ([Revenue by country](url)).")
+- When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph
 </output_format>`, currentTime.Format("Monday, January 2, 2006"), currentTime.Format("2006-01-02"))
 
 	if aiInstructions != "" {
