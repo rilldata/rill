@@ -56,8 +56,10 @@ export const getYupSchema = {
   }),
 
   bigquery: yup.object().shape({
-    google_application_credentials: yup.string(),
     project_id: yup.string(),
+    google_application_credentials: yup
+      .string()
+      .required("Google application credentials is required"),
   }),
 
   azure: yup.object().shape({
