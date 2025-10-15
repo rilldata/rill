@@ -4,6 +4,7 @@
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
+  import MetricsContextPill from "./MetricsContextPill.svelte";
 
   export let conversationManager: ConversationManager;
   export let onSend: () => void;
@@ -85,34 +86,43 @@
   }
 </script>
 
-<form class="chat-input-form" on:submit|preventDefault={sendMessage}>
-  <textarea
-    bind:this={textarea}
-    {value}
-    class="chat-input"
-    {placeholder}
-    rows="1"
-    on:keydown={handleKeydown}
-    on:input={handleInput}
-  />
-  {#if canCancel}
-    <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
-      <span class="stop-icon">
-        <StopCircle size="1.2em" />
-      </span>
-    </IconButton>
-  {:else}
-    <IconButton
-      ariaLabel="Send message"
-      disabled={!canSend}
-      on:click={sendMessage}
-    >
-      <SendIcon size="1.3em" disabled={!canSend} />
-    </IconButton>
-  {/if}
-</form>
+<div class="chat-input-container">
+  <form class="chat-input-form" on:submit|preventDefault={sendMessage}>
+    <div class="chat-input-wrapper">
+      <textarea
+        bind:this={textarea}
+        {value}
+        class="chat-input"
+        {placeholder}
+        rows="1"
+        on:keydown={handleKeydown}
+        on:input={handleInput}
+      />
+      <MetricsContextPill />
+    </div>
+    {#if canCancel}
+      <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+        <span class="stop-icon">
+          <StopCircle size="1.2em" />
+        </span>
+      </IconButton>
+    {:else}
+      <IconButton
+        ariaLabel="Send message"
+        disabled={!canSend}
+        on:click={sendMessage}
+      >
+        <SendIcon size="1.3em" disabled={!canSend} />
+      </IconButton>
+    {/if}
+  </form>
+</div>
 
 <style lang="postcss">
+  .chat-input-container {
+    margin: 0 1rem;
+  }
+
   .chat-input-form {
     display: flex;
     align-items: flex-end;
@@ -121,12 +131,20 @@
     border: 1px solid var(--border);
     border-radius: 0.75rem;
     padding: 0.25rem;
-    margin: 0 1rem;
     transition: border-color 0.2s;
   }
 
   .chat-input-form:focus-within {
     @apply border-primary-400;
+  }
+
+  .chat-input-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    align-items: flex-start;
   }
 
   .chat-input {
@@ -139,7 +157,6 @@
     resize: none;
     min-height: 1.75rem;
     max-height: 6rem;
-    padding: 0.25rem;
     font-family: inherit;
     overflow-y: auto;
   }
