@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -15,7 +16,7 @@ import (
 
 // testCtx provides authentication context for testing
 func testCtx() context.Context {
-	return auth.WithClaims(context.Background(), auth.NewOpenClaims())
+	return auth.WithClaims(context.Background(), &runtime.SecurityClaims{SkipChecks: true})
 }
 
 func newMCPTestServer(t *testing.T) (*Server, string) {

@@ -129,9 +129,15 @@ export const numberKindForMeasure = (measure: MetricsViewSpecMeasure) => {
   return formatPresetToNumberKind(measure.formatPreset as FormatPreset);
 };
 
+export type LocaleConfig = {
+  decimal?: string;
+  thousands?: string;
+  grouping?: number[];
+};
+
 export type NumberParts = {
   neg?: "-";
-  currencySymbol?: "$" | "€";
+  currencySymbol?: "$" | "€" | string;
   int: string;
   dot: "" | ".";
   frac: string;
@@ -139,6 +145,7 @@ export type NumberParts = {
   prefix?: string;
   percent?: "%";
   approxZero?: boolean;
+  locale?: LocaleConfig;
 };
 
 /**

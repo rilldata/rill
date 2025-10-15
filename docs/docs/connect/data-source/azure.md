@@ -11,100 +11,93 @@ sidebar_position: 05
 [Azure Blob Storage (ABS)](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction) is a scalable, fully managed, and highly reliable object storage solution offered by Microsoft Azure, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common storage formats such as CSV and Parquet. Rill supports connecting to and reading from Azure Blob Storage using the following Resource URI syntax:
 
 ```bash
-azure://<BUCKET>/<GLOB_PATTERN>
+azure://<account>.blob.core.windows.net/<container>/path/file.csv
 ```
 
-<img src='/img/reference/connectors/azure/abs.png' class='centered' />
-<br />
+## Connect to Azure Blob Storage
 
-## Local credentials
+To connect to Azure Blob Storage, you need to provide authentication credentials. You have four options:
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill will either use the credentials configured in your local environment using the Azure CLI (`az`) or the explicitly defined [credentials in a connector YAML](/reference/project-files/connectors#azure).
+1. **Use Storage Account Key** (recommended for cloud deployment)
+2. **Use Connection String** (alternative for cloud deployment)
+3. **Use Shared Access Signature (SAS) Token** (most secure, fine-grained control)
+4. **Use Azure CLI authentication** (local development only - not recommended for production)
 
-Assuming you have the Azure CLI installed, follow the steps below to configure it:
+Choose the method that best fits your setup. For production deployments to Rill Cloud, use Storage Account Key, Connection String, or SAS tokens. Azure CLI authentication only works for local development and will cause deployment failures.
 
-1. Open a terminal window and run the following command to log in to your Azure account:
+### Storage Account Key
 
-    ```bash
-    az login
-    ```
+To ensure seamless deployment to Rill Cloud, configure your Azure Storage Account Key directly in your project's `.env` file instead of relying solely on Azure CLI authentication (which only works locally).
 
-    Follow the on-screen instructions to complete the login process. This will authenticate you with your Azure account.
+```yaml
+type: connector
 
-    :::info
+driver: azure
 
-    To check if you already have the Azure CLI installed and are authenticated, you can open a terminal window and run the following command:
+azure_storage_account: rilltest
+azure_storage_key: "{{ .env.connector.azure.azure_storage_key }}"
+```
 
-    ```bash
-    az account show
-    ```
+This approach ensures your Azure Blob Storage sources authenticate consistently across both local development and cloud deployment. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your storage account keys.
 
-    If it does not display any information about your Azure account, you can [install the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) if it is not already installed on your system.
+### Connection String
 
-    :::
+To ensure seamless deployment to Rill Cloud, configure your Azure Blob Storage credentials using a connection string directly in your project's `.env` file instead of relying solely on Azure CLI authentication (which only works locally).
 
-2. Once you are logged in, Rill will automatically use the credentials obtained from `az login` to authenticate with Azure Blob Storage when you interact with Azure Blob Storage sources.
+```yaml
+type: connector
 
-### Using Connection String
+driver: azure
 
-Alternatively, you can use an Azure Blob Storage connection string to configure the credentials. To do this:
+azure_storage_connection_string: "{{ .env.connector.azure.azure_storage_connection_string }}"
+```
 
-1. Obtain the connection string for your Azure Blob Storage account. You can find this in the Azure Portal under "Access keys" in your storage account settings.
+This approach ensures your Azure Blob Storage sources authenticate consistently across both local development and cloud deployment. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal) to retrieve your connection string.
 
-2. Set the `AZURE_STORAGE_CONNECTION_STRING` environment variable in your local environment to the connection string value. You can do this in your terminal:
+### Shared Access Signature (SAS) Token
 
-    ```bash
-    export AZURE_STORAGE_CONNECTION_STRING="your_connection_string_here"
-    ```
+Use Shared Access Signature (SAS) tokens as an alternative authentication method for Azure Blob Storage. SAS tokens provide fine-grained access control with specific permissions and expiration times for secure access to your storage resources.
 
-    Replace "your_connection_string_here" with your actual connection string.
+```yaml
+type: connector
 
-3. Rill will automatically use the connection string from the `AZURE_STORAGE_CONNECTION_STRING` environment variable to authenticate with Azure Blob Storage when you interact with Azure Blob Storage sources.
+driver: azure
 
-### Using Shared Access Signature (SAS) Token
+azure_storage_account: rilltest 
+azure_storage_sas_token: "{{ .env.connector.azure.azure_storage_sas_token }}"
+```
 
-As another alternative, you can configure credentials using a Shared Access Signature (SAS) token. To do this:
+This method provides fine-grained access control and enhanced security for your Azure Blob Storage connections. Follow the [Azure Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers) to create your Azure SAS token.
 
-1. Generate a SAS token for the Azure Blob Storage container or blob you want to access. You can create SAS tokens using the Azure Portal or programmatically using the Azure SDKs.
+###  Azure CLI Authentication (Local Development Only)
 
-    > [Learn how to create SAS tokens using this guide](https://learn.microsoft.com/en-us/azure/ai-services/translator/document-translation/how-to-guides/create-sas-tokens?tabs=Containers).
+:::warning Not recommended for production
+Azure CLI authentication only works for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Use one of the methods above for production deployments.
+:::
 
-2. Set the `AZURE_STORAGE_SAS_TOKEN` environment variable in your local environment to the SAS token value. You can do this in your terminal:
+1. Install the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) if not already installed.
+2. Open a terminal window and run the following command to log in to your Azure account: `az login`
+3. Verify your authentication status: `az account show`
 
-    ```bash
-    export AZURE_STORAGE_SAS_TOKEN="your_sas_token_here"
-    ```
+You've now configured Azure access from your local environment. Rill will automatically detect and use these credentials when you connect to Azure Blob Storage sources.
 
-    Replace "your_sas_token_here" with your actual SAS token.
+:::tip Cloud Credentials Management
 
-3. Rill will use the SAS token from the `AZURE_STORAGE_SAS_TOKEN` environment variable to authenticate with Azure Blob Storage when interacting with Azure Blob Storage sources.
-
-:::tip Did you know?
-
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](//connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
+If your project is already deployed to Rill Cloud with configured credentials, use `rill env pull` to [retrieve and sync these cloud credentials](/connect/credentials/#rill-env-pull) to your local `.env` file. **Warning**: This operation will overwrite any existing local credentials for this source.
 
 :::
 
-## Separating Dev and Prod Environments
+## Deploy to Rill Cloud
 
-When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+When deploying your project to Rill Cloud, you must provide either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token for the containers used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically. If you're using inferred credentials only, your deployment will result in errored dashboards.
 
-For more details, see our [Dev/Prod setup docs](/connect/templating).
-
-## Cloud deployment
-
-When deploying a project to Rill Cloud, Rill requires either an Azure Blob Storage connection string, Azure Storage Key, or Azure Storage SAS token to be explicitly provided for the Azure Blob Storage containers used in your project.
-
-When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
-
-If you subsequently add sources that require new credentials (or if you enter the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
-
+To manually configure your environment variables, run:
 ```bash
 rill env configure
 ```
 
 :::tip Did you know?
 
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This allows other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 
 :::

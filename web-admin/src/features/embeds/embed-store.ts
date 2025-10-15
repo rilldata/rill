@@ -1,3 +1,5 @@
+import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+
 /**
  * Stores embed params in-memory so that the components that manipulate url need not be aware of these.
  * It can also increase the url size unnessarily, especially the `access_token`.
@@ -45,5 +47,7 @@ export class EmbedStore {
     if (!this.accessToken) {
       this.missingRequireParams.push("access_token");
     }
+
+    dynamicHeight.set(url.searchParams.get("dynamic_height") === "true");
   }
 }

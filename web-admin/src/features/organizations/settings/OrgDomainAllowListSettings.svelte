@@ -31,12 +31,12 @@
   async function updateAllowedDomain() {
     if (domainAllowed) {
       await $disallowDomainMutation.mutateAsync({
-        organization,
+        org: organization,
         domain: $userDomain.data,
       });
     } else {
       await $allowDomainMutation.mutateAsync({
-        organization,
+        org: organization,
         data: {
           domain: $userDomain.data,
           role: OrgUserRoles.Viewer,

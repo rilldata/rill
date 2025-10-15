@@ -3623,6 +3623,47 @@ func (m *SecurityRule) validate(all bool) error {
 			}
 		}
 
+	case *SecurityRule_TransitiveAccess:
+		if v == nil {
+			err := SecurityRuleValidationError{
+				field:  "Rule",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTransitiveAccess()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "TransitiveAccess",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "TransitiveAccess",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTransitiveAccess()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleValidationError{
+					field:  "TransitiveAccess",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -3726,9 +3767,45 @@ func (m *SecurityRuleAccess) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Condition
+	// no validation rules for ConditionExpression
+
+	for idx, item := range m.GetConditionResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleAccessValidationError{
+					field:  fmt.Sprintf("ConditionResources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Allow
+
+	// no validation rules for Exclusive
 
 	if len(errors) > 0 {
 		return SecurityRuleAccessMultiError(errors)
@@ -3832,9 +3909,45 @@ func (m *SecurityRuleFieldAccess) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Condition
+	// no validation rules for ConditionExpression
+
+	for idx, item := range m.GetConditionResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleFieldAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleFieldAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleFieldAccessValidationError{
+					field:  fmt.Sprintf("ConditionResources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Allow
+
+	// no validation rules for Exclusive
 
 	// no validation rules for AllFields
 
@@ -3940,7 +4053,41 @@ func (m *SecurityRuleRowFilter) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Condition
+	// no validation rules for ConditionExpression
+
+	for idx, item := range m.GetConditionResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleRowFilterValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleRowFilterValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleRowFilterValidationError{
+					field:  fmt.Sprintf("ConditionResources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Sql
 
@@ -4052,6 +4199,138 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SecurityRuleRowFilterValidationError{}
+
+// Validate checks the field values on SecurityRuleTransitiveAccess with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SecurityRuleTransitiveAccess) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SecurityRuleTransitiveAccess with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SecurityRuleTransitiveAccessMultiError, or nil if none found.
+func (m *SecurityRuleTransitiveAccess) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SecurityRuleTransitiveAccess) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResource()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SecurityRuleTransitiveAccessValidationError{
+					field:  "Resource",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SecurityRuleTransitiveAccessValidationError{
+					field:  "Resource",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResource()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SecurityRuleTransitiveAccessValidationError{
+				field:  "Resource",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SecurityRuleTransitiveAccessMultiError(errors)
+	}
+
+	return nil
+}
+
+// SecurityRuleTransitiveAccessMultiError is an error wrapping multiple
+// validation errors returned by SecurityRuleTransitiveAccess.ValidateAll() if
+// the designated constraints aren't met.
+type SecurityRuleTransitiveAccessMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SecurityRuleTransitiveAccessMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SecurityRuleTransitiveAccessMultiError) AllErrors() []error { return m }
+
+// SecurityRuleTransitiveAccessValidationError is the validation error returned
+// by SecurityRuleTransitiveAccess.Validate if the designated constraints
+// aren't met.
+type SecurityRuleTransitiveAccessValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SecurityRuleTransitiveAccessValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SecurityRuleTransitiveAccessValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SecurityRuleTransitiveAccessValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SecurityRuleTransitiveAccessValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SecurityRuleTransitiveAccessValidationError) ErrorName() string {
+	return "SecurityRuleTransitiveAccessValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SecurityRuleTransitiveAccessValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSecurityRuleTransitiveAccess.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SecurityRuleTransitiveAccessValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SecurityRuleTransitiveAccessValidationError{}
 
 // Validate checks the field values on MetricsViewState with the rules defined
 // in the proto definition for this message. If any rules are violated, the
