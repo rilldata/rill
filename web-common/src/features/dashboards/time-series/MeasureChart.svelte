@@ -214,6 +214,16 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
+    const shouldUpdateSelectedRange =
+      !isScrubbing &&
+      measureSelection.hasSelection() &&
+      // Type safety
+      measure.name &&
+      TIME_GRAIN[timeGrain];
+    if (shouldUpdateSelectedRange) {
+      measureSelection.setRange(measure.name!, start, end);
+    }
+
     metricsExplorerStore.setSelectedScrubRange(exploreName, {
       start: adjustedStart,
       end: adjustedEnd,

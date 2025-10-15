@@ -51,7 +51,12 @@
   });
 </script>
 
-<div class="chat-sidebar" style="--sidebar-width: {$sidebarWidth}px;">
+<div
+  class="chat-sidebar"
+  style="--sidebar-width: {$sidebarWidth}px;"
+  on:click|preventDefault|stopPropagation
+  role="presentation"
+>
   <Resizer
     min={SIDEBAR_DEFAULTS.MIN_SIDEBAR_WIDTH}
     max={SIDEBAR_DEFAULTS.MAX_SIDEBAR_WIDTH}

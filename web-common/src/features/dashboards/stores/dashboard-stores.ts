@@ -428,7 +428,7 @@ const metricsViewReducers = {
   },
 
   setSelectedScrubRange(name: string, scrubRange: ScrubRange | undefined) {
-    measureSelection.clear();
+    if (!scrubRange) measureSelection.clear();
 
     updateMetricsExplorerByName(name, (exploreState) => {
       setSelectedScrubRange(exploreState, scrubRange);

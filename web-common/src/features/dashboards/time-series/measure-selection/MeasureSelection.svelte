@@ -79,7 +79,7 @@
         />
         <text
           role="presentation"
-          class="fill-primary stroke-surface cursor-pointer"
+          class="fill-primary stroke-surface cursor-pointer hover:underline"
           style:paint-order="stroke"
           stroke-width="1px"
           x={$xScale(point[xAccessor]) - 15}
@@ -113,7 +113,7 @@
   />
   <text
     role="presentation"
-    class="fill-primary stroke-surface cursor-pointer"
+    class="fill-primary stroke-surface cursor-pointer hover:underline"
     style:paint-order="stroke"
     stroke-width="1px"
     x={(xStart + xEnd) / 2 - 15}
