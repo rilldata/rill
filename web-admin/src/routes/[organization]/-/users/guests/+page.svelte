@@ -167,7 +167,6 @@
   <EditUserGroupDialog
     bind:open={isEditUserGroupDialogOpen}
     groupName={editingUserGroupName}
-    organizationUsers={allOrgMemberUsersRows}
     currentUserEmail={$currentUser.data?.user.email}
   />
 {/if}
