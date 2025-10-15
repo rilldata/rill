@@ -11,7 +11,6 @@
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -84,9 +83,8 @@
   const queryClient = useQueryClient();
   const deleteReport = createAdminServiceDeleteReport();
 
-  let showEditReportDialog = false;
   function handleEditReport() {
-    showEditReportDialog = true;
+    void goto(`/${organization}/${project}/-/reports/${report}/edit`);
   }
 
   async function handleDeleteReport() {
@@ -95,10 +93,10 @@
       project,
       name: $reportQuery.data.resource.meta.name.name,
     });
-    queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
     });
-    goto(`/${organization}/${project}/-/reports`);
+    void goto(`/${organization}/${project}/-/reports`);
   }
 </script>
 
@@ -220,14 +218,4 @@
       <MetadataList data={emailNotifier.recipients} label="Email recipients" />
     {/if}
   </div>
-{/if}
-
-{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending}
-  <ScheduledReportDialog
-    bind:open={showEditReportDialog}
-    props={{
-      mode: "edit",
-      reportSpec,
-    }}
-  />
 {/if}

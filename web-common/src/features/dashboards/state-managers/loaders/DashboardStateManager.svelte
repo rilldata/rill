@@ -24,6 +24,7 @@
   export let bookmarkOrTokenExploreState:
     | CompoundQueryResult<Partial<ExploreState> | null>
     | undefined = undefined;
+  export let disableSessionStorage: boolean = false;
   export let disableMostRecentDashboardState: boolean = false;
 
   $: ({ instanceId } = $runtime);
@@ -37,6 +38,7 @@
     exploreName,
     storageNamespacePrefix,
     bookmarkOrTokenExploreState,
+    disableSessionStorage,
     disableMostRecentDashboardState,
   );
 
