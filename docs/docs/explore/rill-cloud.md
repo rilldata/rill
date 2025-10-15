@@ -40,7 +40,7 @@ Ask questions about your data in natural language using AI. Rill offers two ways
 ### Dashboards
 Explore your data through interactive dashboards that make it easy to slice, dice, and drill down into your metrics:
 
-- **[Dashboard Quickstart](/explore/dashboard-101/dashboard-101)** - Learn the basics of navigating and using Rill dashboards with measures, dimensions, and time series.
+- **[Dashboard Quickstart](/explore/dashboard-101)** - Learn the basics of navigating and using Rill dashboards with measures, dimensions, and time series.
 - **[Filters & Comparisons](/explore/filters)** - Apply powerful filters and time comparisons to focus your analysis.
 - **[Bookmarks](/explore/bookmarks)** - Save specific dashboard states (filters, metrics, dimensions) and share them with others.
 - **[Public URLs](/explore/public-url)** - Share dashboards externally with customers and partners without requiring them to have Rill accounts.
