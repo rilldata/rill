@@ -45,11 +45,6 @@
   export let isSavingAnyway: boolean = false;
   export let showSaveAnyway: boolean = false;
 
-  let saveAnyway = false;
-
-  // Sync the local saveAnyway with the parent's isSavingAnyway state
-  $: saveAnyway = isSavingAnyway;
-
   const dispatch = createEventDispatcher();
 
   // ClickHouse schema includes the 'managed' property for backend compatibility
@@ -220,8 +215,8 @@
     // Show Save Anyway button as soon as form submission starts
     showSaveAnyway = true;
 
-    // Form is invalid and saveAnyway is false, returning early
-    if (!event.form.valid && !saveAnyway) {
+    // Form is invalid and isSavingAnyway is false, returning early
+    if (!event.form.valid && !isSavingAnyway) {
       return;
     }
     const values = { ...event.form.data };
@@ -237,7 +232,12 @@
     }
 
     try {
-      await submitAddConnectorForm(queryClient, connector, values, saveAnyway);
+      await submitAddConnectorForm(
+        queryClient,
+        connector,
+        values,
+        isSavingAnyway,
+      );
       onClose();
     } catch (e) {
       let error: string;
@@ -275,8 +275,7 @@
         setError(dsnError, dsnErrorDetails);
       }
     } finally {
-      // Reset saveAnyway state after submission completes
-      // Note: saveAnyway is now reactive and will be reset when isSavingAnyway changes
+      // Reset isSavingAnyway state after submission completes
       isSavingAnyway = false;
     }
   }
