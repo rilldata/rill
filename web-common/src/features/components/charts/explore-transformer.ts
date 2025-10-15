@@ -1,4 +1,7 @@
-import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types";
+import type {
+  ChartSpec,
+  FieldConfig,
+} from "@rilldata/web-common/features/components/charts/types";
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import type {
   PivotChipData,
@@ -24,45 +27,38 @@ export function transformChartSpecToPivotState(
       continue;
     }
 
-    // Check if this property is a field config object
-    if (isFieldConfig(value)) {
-      const fieldConfig = value;
+    if (!isFieldConfig(value)) {
+      continue;
+    }
 
-      let chipType: PivotChipType;
-      let id: string;
-      if (fieldConfig.fields?.length) {
-        columns.push(
-          ...fieldConfig.fields.map((f) => ({
-            id: f,
-            title: f,
-            type: PivotChipType.Measure,
-          })),
-        );
-        continue;
-      } else if (fieldConfig.type === "quantitative") {
-        id = fieldConfig.field;
-        chipType = PivotChipType.Measure;
-      } else if (fieldConfig.type === "temporal") {
-        id = timeGrain || V1TimeGrain.TIME_GRAIN_DAY;
-        chipType = PivotChipType.Time;
-      } else {
-        id = fieldConfig.field;
-        chipType = PivotChipType.Dimension;
-      }
+    const fieldConfig = value;
 
-      if (key === "x" || chipType === PivotChipType.Measure) {
-        columns.push({
-          id,
-          title: fieldConfig.field,
-          type: chipType,
-        });
-      } else {
-        rows.push({
-          id,
-          title: fieldConfig.field,
-          type: chipType,
-        });
-      }
+    // Handle multiple fields case
+    if (fieldConfig.fields?.length) {
+      columns.push(
+        ...fieldConfig.fields.map((f) => ({
+          id: f,
+          title: f,
+          type: PivotChipType.Measure,
+        })),
+      );
+      continue;
+    }
+
+    // Determine chip type and id based on field config
+    const { chipType, id } = getChipTypeAndId(fieldConfig, timeGrain);
+
+    // Add to columns or rows based on key and chip type
+    const chipData = {
+      id,
+      title: fieldConfig.field,
+      type: chipType,
+    };
+
+    if (key === "x" || chipType === PivotChipType.Measure) {
+      columns.push(chipData);
+    } else {
+      rows.push(chipData);
     }
   }
 
@@ -76,5 +72,29 @@ export function transformChartSpecToPivotState(
     enableComparison: false,
     tableMode: "nest",
     activeCell: null,
+  };
+}
+
+function getChipTypeAndId(
+  fieldConfig: FieldConfig,
+  timeGrain: V1TimeGrain | undefined,
+): { chipType: PivotChipType; id: string } {
+  if (fieldConfig.type === "quantitative") {
+    return {
+      chipType: PivotChipType.Measure,
+      id: fieldConfig.field,
+    };
+  }
+
+  if (fieldConfig.type === "temporal") {
+    return {
+      chipType: PivotChipType.Time,
+      id: timeGrain || V1TimeGrain.TIME_GRAIN_DAY,
+    };
+  }
+
+  return {
+    chipType: PivotChipType.Dimension,
+    id: fieldConfig.field,
   };
 }

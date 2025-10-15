@@ -27,77 +27,90 @@
         chartType: parsed.chart_type,
         chartSpec: parsed.spec,
       };
-    } catch {
+    } catch (error) {
+      console.error("Failed to parse chart data:", error);
       return null;
     }
   }
 
+  // Helper to create a tool block
+  function createToolBlock(toolCall: any, toolResult: any, index: number) {
+    return { type: "tool", toolCall, toolResult, index };
+  }
+
+  // Helper to create a chart block
+  function createChartBlock(
+    chartData: any,
+    toolCall: any,
+    toolResult: any,
+    index: number,
+  ) {
+    return {
+      type: "chart",
+      chartType: chartData.chartType,
+      chartSpec: chartData.chartSpec,
+      toolCall,
+      toolResult,
+      index,
+    };
+  }
+
+  // Helper to process a tool call block
+  function processToolCallBlock(
+    block: any,
+    index: number,
+    toolResults: Map<string, any>,
+  ): any[] {
+    // Streaming merges tool results into toolCall blocks.
+    // For initial fetch (GetConversation), calls/results are separate, so we attach via fallback.
+    const toolResult = block.toolResult || toolResults.get(block.toolCall.id);
+
+    if (!isChartToolResult(toolResult, block.toolCall)) {
+      return [createToolBlock(block.toolCall, toolResult, index)];
+    }
+
+    // Try to parse chart data
+    const chartData = parseChartData(toolResult);
+    if (!chartData) {
+      // Parsing failed, fallback to regular tool block
+      return [createToolBlock(block.toolCall, toolResult, index)];
+    }
+
+    // Add both tool block and chart block
+    return [
+      createToolBlock(block.toolCall, toolResult, index),
+      createChartBlock(chartData, block.toolCall, toolResult, index),
+    ];
+  }
+
   // Group tool calls with their results within this message
   function groupToolCallsWithResults(content: any[]) {
-    const groups: any[] = [];
-    const toolResults = new Map();
-
     // First pass: collect all tool results by ID within this message
-    content.forEach((block) => {
-      if (block.toolResult && block.toolResult.id) {
+    const toolResults = new Map();
+    for (const block of content) {
+      if (block.toolResult?.id) {
         toolResults.set(block.toolResult.id, block.toolResult);
       }
-    });
+    }
 
     // Second pass: process blocks and create groups
-    content.forEach((block, index) => {
+    const groups: any[] = [];
+    for (let index = 0; index < content.length; index++) {
+      const block = content[index];
+
       if (block.text) {
         groups.push({ type: "text", content: block.text, index });
-      } else if (block.toolCall) {
-        // Streaming merges tool results into toolCall blocks.
-        // For initial fetch (GetConversation), calls/results are separate, so we attach via fallback.
-        const toolResult =
-          block.toolResult || toolResults.get(block.toolCall.id);
-
-        // Check if this is a chart tool result
-        if (
-          toolResult &&
-          !toolResult.isError &&
-          block.toolCall.name === "create_chart" &&
-          isChartToolResult(toolResult)
-        ) {
-          const chartData = parseChartData(toolResult);
-          if (chartData) {
-            // Add both tool call+result block AND chart block
-            groups.push({
-              type: "tool",
-              toolCall: block.toolCall,
-              toolResult,
-              index,
-            });
-            groups.push({
-              type: "chart",
-              chartType: chartData.chartType,
-              chartSpec: chartData.chartSpec,
-              toolCall: block.toolCall,
-              toolResult,
-              index,
-            });
-          } else {
-            // Fallback to regular tool block if parsing fails
-            groups.push({
-              type: "tool",
-              toolCall: block.toolCall,
-              toolResult,
-              index,
-            });
-          }
-        } else {
-          groups.push({
-            type: "tool",
-            toolCall: block.toolCall,
-            toolResult,
-            index,
-          });
-        }
+        continue;
       }
+
+      if (block.toolCall) {
+        const toolBlocks = processToolCallBlock(block, index, toolResults);
+        groups.push(...toolBlocks);
+        continue;
+      }
+
       // Skip standalone toolResult blocks as they should be merged with toolCalls
-    });
+    }
 
     return groups;
   }
