@@ -309,11 +309,11 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName {
-		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
+		return time.Minute * 5
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
-		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
+		return time.Minute * 5
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Health_FullMethodName || fullMethodName == runtimev1.RuntimeService_InstanceHealth_FullMethodName {
