@@ -222,7 +222,7 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
 
-	// Add timeout matching the completionTimeout from runtime/completion.go
+	// Add timeout for AI completion
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
 	defer cancel()
 
