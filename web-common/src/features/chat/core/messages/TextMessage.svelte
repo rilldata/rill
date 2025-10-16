@@ -1,9 +1,28 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import {
+    getCitationUrlConverter,
+    getMetricsResolverQueryToUrlParamsMapperStore,
+  } from "@rilldata/web-common/features/chat/core/messages/convert-citation-urls.ts";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
 
   export let message: V1Message;
   export let content: string;
+
+  $: ({ instanceId } = $runtime);
+
+  $: exploreName = $page.params.dashboard ?? $page.params.name ?? "";
+
+  $: mapperStore = getMetricsResolverQueryToUrlParamsMapperStore(
+    instanceId,
+    exploreName,
+  );
+  let convertCitationUrls;
+  $: convertCitationUrls = $mapperStore.data
+    ? getCitationUrlConverter($mapperStore.data, $page.url.pathname)
+    : undefined;
 
   $: role = message.role;
 </script>
@@ -11,7 +30,7 @@
 <div class="chat-message chat-message--{role}">
   <div class="chat-message-content">
     {#if role === "assistant"}
-      <Markdown {content} />
+      <Markdown {content} converter={convertCitationUrls} />
     {:else}
       {content}
     {/if}
