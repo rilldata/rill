@@ -310,16 +310,27 @@ func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp *Confi
 	return region, nil
 }
 
-func getAnonymousS3Client(confProp *ConfigProperties) *s3.Client {
+func getAnonymousS3Client(ctx context.Context, confProp *ConfigProperties, bucket string) (*s3.Client, error) {
 	cfg := aws.Config{
 		Credentials: aws.AnonymousCredentials{},
+	}
+	region := confProp.Region
+	// If the region is not explicitly provided in the config,
+	// try to automatically detect it from the bucket
+	if region == "" && bucket != "" {
+		var err error
+		region, err = bucketRegionFromConfig(ctx, cfg, confProp, bucket)
+		if err != nil {
+			return nil, fmt.Errorf("failed to detect bucket region: %w", err)
+		}
 	}
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
 		if confProp.Endpoint != "" {
 			o.BaseEndpoint = aws.String(confProp.Endpoint)
 			o.UsePathStyle = true
 		}
-	})
+		o.Region = region
+	}), nil
 }
 
 func getS3Client(ctx context.Context, confProp *ConfigProperties, bucket string) (*s3.Client, error) {
