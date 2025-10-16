@@ -536,9 +536,10 @@ export class Conversation {
       (typeof navigator !== "undefined" && !navigator.onLine);
 
     if (isNetworkError) {
-      return "Connection lost. Check your internet connection and try again.";
+      return "Unable to connect to server. Please check your connection and try again.";
     }
 
+    // Fallback error message
     return "Failed to connect to server. Please try again or refresh the page.";
   }
 
