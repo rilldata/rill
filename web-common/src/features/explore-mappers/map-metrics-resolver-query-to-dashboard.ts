@@ -278,12 +278,14 @@ function mapActivePage(
     partialExploreState.activePage =
       DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
 
-    const dim = timeDimensions[0];
+    const timeDimension = timeDimensions[0];
     const shouldUpdateTimeGrain =
-      partialExploreState.selectedTimeRange && dim?.compute?.time_floor?.grain;
+      partialExploreState.selectedTimeRange &&
+      timeDimension?.compute?.time_floor?.grain;
     if (shouldUpdateTimeGrain) {
+      // Selected time grain is used in TDD's pivot table at the bottom.
       partialExploreState.selectedTimeRange!.interval =
-        DateTimeUnitToV1TimeGrain[dim.compute!.time_floor!.grain];
+        DateTimeUnitToV1TimeGrain[timeDimension.compute!.time_floor!.grain];
     }
   } else if (showDimensionTable) {
     partialExploreState.selectedDimensionName = visibleDimensions[0];
