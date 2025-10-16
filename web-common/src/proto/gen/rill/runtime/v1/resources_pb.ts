@@ -4231,14 +4231,14 @@ export class ThemeSpec extends Message<ThemeSpec> {
   secondaryColorRaw = "";
 
   /**
-   * @generated from field: optional rill.runtime.v1.ThemeCSS light = 5;
+   * @generated from field: optional rill.runtime.v1.ThemeColors light = 5;
    */
-  light?: ThemeCSS;
+  light?: ThemeColors;
 
   /**
-   * @generated from field: optional rill.runtime.v1.ThemeCSS dark = 6;
+   * @generated from field: optional rill.runtime.v1.ThemeColors dark = 6;
    */
-  dark?: ThemeCSS;
+  dark?: ThemeColors;
 
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
@@ -4252,8 +4252,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
     { no: 3, name: "primary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "light", kind: "message", T: ThemeCSS, opt: true },
-    { no: 6, name: "dark", kind: "message", T: ThemeCSS, opt: true },
+    { no: 5, name: "light", kind: "message", T: ThemeColors, opt: true },
+    { no: 6, name: "dark", kind: "message", T: ThemeColors, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
@@ -4305,9 +4305,9 @@ export class ThemeState extends Message<ThemeState> {
 }
 
 /**
- * @generated from message rill.runtime.v1.ThemeCSS
+ * @generated from message rill.runtime.v1.ThemeColors
  */
-export class ThemeCSS extends Message<ThemeCSS> {
+export class ThemeColors extends Message<ThemeColors> {
   /**
    * @generated from field: string primary = 1;
    */
@@ -4319,37 +4319,37 @@ export class ThemeCSS extends Message<ThemeCSS> {
   secondary = "";
 
   /**
-   * @generated from field: map<string, string> properties = 3;
+   * @generated from field: map<string, string> variables = 3;
    */
-  properties: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
-  constructor(data?: PartialMessage<ThemeCSS>) {
+  constructor(data?: PartialMessage<ThemeColors>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ThemeCSS";
+  static readonly typeName = "rill.runtime.v1.ThemeColors";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "primary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "secondary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeCSS {
-    return new ThemeCSS().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeColors {
+    return new ThemeColors().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeCSS {
-    return new ThemeCSS().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeColors {
+    return new ThemeColors().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeCSS {
-    return new ThemeCSS().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeColors {
+    return new ThemeColors().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ThemeCSS | PlainMessage<ThemeCSS> | undefined, b: ThemeCSS | PlainMessage<ThemeCSS> | undefined): boolean {
-    return proto3.util.equals(ThemeCSS, a, b);
+  static equals(a: ThemeColors | PlainMessage<ThemeColors> | undefined, b: ThemeColors | PlainMessage<ThemeColors> | undefined): boolean {
+    return proto3.util.equals(ThemeColors, a, b);
   }
 }
 
