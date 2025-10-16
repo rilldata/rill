@@ -174,11 +174,28 @@ func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
 }
 
 func (t *ThemeCSS) validate() (*runtimev1.ThemeCSS, error) {
-	for k := range t.Properties {
+	for k, v := range t.Properties {
 		if !allowedCSSVariables[k] {
-			return nil, fmt.Errorf("invalid CSS variable: %s", k)
+			return nil, fmt.Errorf("invalid CSS variable: %q", k)
 		}
-		// TODO: once frontend stabilises validate the value as well
+		_, err := csscolorparser.Parse(v)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value %q for CSS variable %q: %w", v, k, err)
+		}
+	}
+
+	if t.Primary != "" {
+		_, err := csscolorparser.Parse(t.Primary)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value %q for primary: %w", t.Primary, err)
+		}
+	}
+
+	if t.Secondary != "" {
+		_, err := csscolorparser.Parse(t.Secondary)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value %q for secondary: %w", t.Secondary, err)
+		}
 	}
 
 	return &runtimev1.ThemeCSS{
