@@ -298,7 +298,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	if tmp.Parent != "" {
 		if len(tmp.Dimensions) > 0 || len(tmp.Measures) > 0 {
-			return fmt.Errorf("cannot define dimensions or measures in a derived metrics view, use dimension_selector and measure_selector to select from parent %q", tmp.Parent)
+			return fmt.Errorf("cannot define dimensions or measures in a derived metrics view, use parent_dimensions and parent_measures to select from parent %q", tmp.Parent)
 		}
 		if tmp.Database != "" || tmp.DatabaseSchema != "" || tmp.Table != "" || tmp.Model != "" {
 			return fmt.Errorf("cannot set data source in a derived metrics view (parent %q)", tmp.Parent)
