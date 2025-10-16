@@ -223,7 +223,7 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	instanceID := req.PathValue("instance_id")
 
 	// Add timeout for AI completion
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 
 	// Replace request context with the timed context
