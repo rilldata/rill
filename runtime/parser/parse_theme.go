@@ -1,16 +1,10 @@
 package parser
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/mazznoer/csscolorparser"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/css"
 )
 
 // ThemeYAML is the raw structure of a Theme for the UI in YAML (does not include common fields)
@@ -20,7 +14,81 @@ type ThemeYAML struct {
 		Primary   string `yaml:"primary"`
 		Secondary string `yaml:"secondary"`
 	} `yaml:"colors"`
-	CSS *string `yaml:"css"`
+	Light *ThemeCSS `yaml:"light"`
+	Dark  *ThemeCSS `yaml:"dark"`
+}
+
+type ThemeCSS struct {
+	Primary    string            `yaml:"primary"`
+	Secondary  string            `yaml:"secondary"`
+	Properties map[string]string `yaml:",inline"`
+}
+
+var allowedCSSVariables = map[string]bool{
+	// Primary theme colors (for backward compatibility)
+	"primary":   true,
+	"secondary": true,
+
+	// Core theme colors
+	"ring":       true,
+	"radius":     true,
+	"surface":    true,
+	"background": true,
+	"foreground": true,
+
+	// UI component colors
+	"card":                   true,
+	"card-foreground":        true,
+	"popover":                true,
+	"popover-foreground":     true,
+	"primary-foreground":     true,
+	"secondary-foreground":   true,
+	"muted":                  true,
+	"muted-foreground":       true,
+	"accent":                 true,
+	"accent-foreground":      true,
+	"destructive":            true,
+	"destructive-foreground": true,
+	"border":                 true,
+	"input":                  true,
+
+	// Sequential palette (9 colors)
+	"color-sequential-1": true,
+	"color-sequential-2": true,
+	"color-sequential-3": true,
+	"color-sequential-4": true,
+	"color-sequential-5": true,
+	"color-sequential-6": true,
+	"color-sequential-7": true,
+	"color-sequential-8": true,
+	"color-sequential-9": true,
+
+	// Diverging palette (11 colors)
+	"color-diverging-1":  true,
+	"color-diverging-2":  true,
+	"color-diverging-3":  true,
+	"color-diverging-4":  true,
+	"color-diverging-5":  true,
+	"color-diverging-6":  true,
+	"color-diverging-7":  true,
+	"color-diverging-8":  true,
+	"color-diverging-9":  true,
+	"color-diverging-10": true,
+	"color-diverging-11": true,
+
+	// Qualitative palette (12 colors)
+	"color-qualitative-1":  true,
+	"color-qualitative-2":  true,
+	"color-qualitative-3":  true,
+	"color-qualitative-4":  true,
+	"color-qualitative-5":  true,
+	"color-qualitative-6":  true,
+	"color-qualitative-7":  true,
+	"color-qualitative-8":  true,
+	"color-qualitative-9":  true,
+	"color-qualitative-10": true,
+	"color-qualitative-11": true,
+	"color-qualitative-12": true,
 }
 
 // parseTheme parses a theme definition and adds the resulting resource to p.Resources.
@@ -50,9 +118,9 @@ func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 	spec := &runtimev1.ThemeSpec{}
 
 	hasLegacyColors := tmp.Colors.Primary != "" || tmp.Colors.Secondary != ""
-	hasCSS := tmp.CSS != nil
+	hasCSSProperties := tmp.Light != nil || tmp.Dark != nil
 
-	if hasLegacyColors && hasCSS {
+	if hasLegacyColors && hasCSSProperties {
 		return nil, fmt.Errorf("cannot use both legacy color properties (primary, secondary) and the new CSS property simultaneously")
 	}
 
@@ -74,18 +142,23 @@ func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 			spec.SecondaryColor = toThemeColor(sc)
 			spec.SecondaryColorRaw = tmp.Colors.Secondary
 		}
+
+		return spec, nil
 	}
 
-	if hasCSS {
-		if strings.TrimSpace(*tmp.CSS) == "" {
-			return nil, fmt.Errorf("CSS cannot be empty")
-		}
-
-		sanitizedCSS, err := sanitizeCSS(*tmp.CSS)
+	var err error
+	if tmp.Light != nil {
+		spec.Light, err = tmp.Light.validate()
 		if err != nil {
-			return nil, fmt.Errorf("invalid CSS syntax: %w", err)
+			return nil, fmt.Errorf("invalid light theme: %w", err)
 		}
-		spec.Css = sanitizedCSS
+	}
+
+	if tmp.Dark != nil {
+		spec.Dark, err = tmp.Dark.validate()
+		if err != nil {
+			return nil, fmt.Errorf("invalid dark theme: %w", err)
+		}
 	}
 
 	return spec, nil
@@ -100,53 +173,17 @@ func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
 	}
 }
 
-// sanitizeCSS sanitizes and validates CSS input while reconstructing valid parts in a string format.
-func sanitizeCSS(c string) (string, error) {
-	p := css.NewParser(parse.NewInput(bytes.NewBufferString(c)), false)
-	out := ""
-
-	for {
-		gt, _, data := p.Next()
-		dataStr := string(data)
-
-		if gt == css.ErrorGrammar {
-			break
+func (t *ThemeCSS) validate() (*runtimev1.ThemeCSS, error) {
+	for k := range t.Properties {
+		if !allowedCSSVariables[k] {
+			return nil, fmt.Errorf("invalid CSS variable: %s", k)
 		}
-
-		out += dataStr
-
-		switch gt {
-		case css.CommentGrammar:
-			// ignore comments
-		case css.AtRuleGrammar, css.BeginAtRuleGrammar, css.QualifiedRuleGrammar, css.BeginRulesetGrammar, css.DeclarationGrammar, css.CustomPropertyGrammar:
-			if gt == css.DeclarationGrammar || gt == css.CustomPropertyGrammar {
-				out += ":"
-			}
-
-			for _, val := range p.Values() {
-				out += string(val.Data)
-			}
-
-			switch gt {
-			case css.BeginAtRuleGrammar, css.BeginRulesetGrammar:
-				out += "{"
-			case css.AtRuleGrammar, css.DeclarationGrammar, css.CustomPropertyGrammar:
-				out += ";"
-			case css.QualifiedRuleGrammar:
-				out += ","
-			default:
-			}
-		case css.EndAtRuleGrammar, css.EndRulesetGrammar:
-			if strings.TrimSpace(dataStr) != "}" {
-				return "", fmt.Errorf("unbalanced braces")
-			}
-		default:
-		}
+		// TODO: once frontend stabilises validate the value as well
 	}
 
-	if p.Err() != nil && !errors.Is(p.Err(), io.EOF) {
-		return "", p.Err()
-	}
-
-	return out, nil
+	return &runtimev1.ThemeCSS{
+		Primary:    t.Primary,
+		Secondary:  t.Secondary,
+		Properties: t.Properties,
+	}, nil
 }

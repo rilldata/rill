@@ -2321,12 +2321,21 @@ export interface V1Theme {
   state?: V1ThemeState;
 }
 
+export type V1ThemeCSSProperties = { [key: string]: string };
+
+export interface V1ThemeCSS {
+  primary?: string;
+  secondary?: string;
+  properties?: V1ThemeCSSProperties;
+}
+
 export interface V1ThemeSpec {
   primaryColor?: V1Color;
   secondaryColor?: V1Color;
   primaryColorRaw?: string;
   secondaryColorRaw?: string;
-  css?: string;
+  light?: V1ThemeCSS;
+  dark?: V1ThemeCSS;
 }
 
 export interface V1ThemeState {

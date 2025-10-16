@@ -2504,11 +2504,11 @@ func normalizeJSON(t *testing.T, s string) string {
 
 func TestThemeValidation(t *testing.T) {
 	tests := []struct {
-		name        string
-		yaml        string
-		expectError bool
-		errorMsg    string
-		expectedCss string
+		name         string
+		yaml         string
+		expectError  bool
+		errorMsg     string
+		expectedSpec *runtimev1.ThemeSpec
 	}{
 		{
 			name: "valid legacy colors",
@@ -2524,14 +2524,17 @@ colors:
 			name: "valid CSS",
 			yaml: `
 type: theme
-css: |
-  .my-class {
-    color: red;
-    background: blue;
-  }
+light:
+  primary: red
+  secondary: green
 `,
 			expectError: false,
-			expectedCss: `.my-class{color:red;background:blue;}`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeCSS{
+					Primary:   "red",
+					Secondary: "green",
+				},
+			},
 		},
 		{
 			name: "mixing legacy and CSS should fail",
@@ -2539,84 +2542,63 @@ css: |
 type: theme
 colors:
   primary: "#ff0000"
-css: |
-  .my-class { color: red; }
+light:
+  primary: red
+  secondary: green
 `,
 			expectError: true,
 			errorMsg:    "cannot use both legacy color properties (primary, secondary) and the new CSS property simultaneously",
 		},
 		{
-			name: "invalid CSS syntax - unbalanced braces",
+			name: "invalid CSS syntax - unknown property",
 			yaml: `
 type: theme
-css: |
-  .my-class {
-    color: red;
+light:
+  primary: red
+  secondary: green
+  unrecognised: blue
 `,
 			expectError: true,
-			errorMsg:    "unbalanced braces",
+			errorMsg:    "invalid light theme: invalid CSS variable: unrecognised",
 		},
 		{
-			name: "invalid CSS syntax - no valid rules",
+			name: "expansive valid css",
 			yaml: `
 type: theme
-css: "just some text"
-`,
-			expectError: true,
-			errorMsg: `invalid CSS syntax: unexpected ending in qualified rule on line 1 and column 15
-    1: just some text
-                     ^`,
-		},
-		{
-			name: "empty CSS should fail",
-			yaml: `
-type: theme
-css: ""
-`,
-			expectError: true,
-			errorMsg:    "CSS cannot be empty",
-		},
-		{
-			name: "complex valid css",
-			yaml: `
-type: theme
-css: |
-  @layer utilities {
-    .ui-copy {
-      @apply text-gray-900;
-    }
-
-    /* Comment */
-  	.ui-copy-number {
-  			font-feature-settings:
-  				"case" 0,
-  				"numr",
-  				"salt" 0,
-  				"tnum";
-  	}
-  }
-  
-  @layer base {
-    :root {
-      --background: var(--color-gray-50);
-      --foreground: var(--color-gray-900);
-  
-  		--color-theme-50: var(
-        --color-theme-light-50,
-        var(--color-primary-light-50)
-      );
-    }
-  
-    :root.dark {
-      --background: var(--color-gray-500);
-    }
-  }
+light:
+  primary: red
+  secondary: green
+  background: blue
+  foreground: yellow
+  card-foreground: yellow
+dark:
+  primary: gray
+  secondary: slate
+  background: black
+  foreground: white
+  card-foreground: white
 `,
 			expectError: false,
-			expectedCss: `@layer utilities{.ui-copy{@apply text-gray-900;}.ui-copy-number{font-feature-settings:"case" 0,"numr","salt" 0,"tnum";}}@layer base{:root{--background: var(--color-gray-50);--foreground: var(--color-gray-900);--color-theme-50: var(
-      --color-theme-light-50,
-      var(--color-primary-light-50)
-    );}:root.dark{--background: var(--color-gray-500);}}`,
+			expectedSpec: &runtimev1.ThemeSpec{
+				Light: &runtimev1.ThemeCSS{
+					Primary:   "red",
+					Secondary: "green",
+					Properties: map[string]string{
+						"background":      "blue",
+						"foreground":      "yellow",
+						"card-foreground": "yellow",
+					},
+				},
+				Dark: &runtimev1.ThemeCSS{
+					Primary:   "gray",
+					Secondary: "slate",
+					Properties: map[string]string{
+						"background":      "black",
+						"foreground":      "white",
+						"card-foreground": "white",
+					},
+				},
+			},
 		},
 	}
 
@@ -2652,10 +2634,10 @@ css: |
 				require.Len(t, themeErrors, 0)
 			}
 
-			if tt.expectedCss != "" {
+			if tt.expectedSpec != nil {
 				res, ok := p.Resources[ResourceName{Kind: ResourceKindTheme, Name: "test"}]
 				require.True(t, ok)
-				require.Equal(t, tt.expectedCss, res.ThemeSpec.Css)
+				require.Equal(t, tt.expectedSpec, res.ThemeSpec)
 			}
 		})
 	}
