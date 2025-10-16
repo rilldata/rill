@@ -11,7 +11,7 @@ import (
 )
 
 func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
-	client, err := getS3Client(ctx, *c.config, "")
+	client, err := getS3Client(ctx, c.config, "")
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 }
 
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
-	prov, err := newCredentialsProvider(ctx, *c.config)
+	prov, err := newCredentialsProvider(ctx, c.config)
 	if err != nil {
 		return "", false, err
 	}

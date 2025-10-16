@@ -67,10 +67,10 @@ func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
 	var s3client *s3.Client
 	if anonymous {
-		s3client = getAnonymousS3Client(*c.config)
+		s3client = getAnonymousS3Client(c.config)
 	} else {
 		var err error
-		s3client, err = getS3Client(ctx, *c.config, bucket)
+		s3client, err = getS3Client(ctx, c.config, bucket)
 		if err != nil {
 			return nil, err
 		}

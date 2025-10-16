@@ -159,7 +159,7 @@ var _ drivers.Handle = &Connection{}
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
 	if c.config.Endpoint == "" {
-		stsClient, err := getSTSClient(ctx, *c.config)
+		stsClient, err := getSTSClient(ctx, c.config)
 		if err != nil {
 			return err
 		}
@@ -273,7 +273,7 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // BucketRegion returns the region to use for the given bucket.
-func BucketRegion(ctx context.Context, confProp ConfigProperties, bucket string) (string, error) {
+func BucketRegion(ctx context.Context, confProp *ConfigProperties, bucket string) (string, error) {
 	cfg, err := getAWSConfig(ctx, confProp)
 	if err != nil {
 		return "", fmt.Errorf("failed to load AWS config for bucket region detection (set `region` in s3 connector yaml): %w", err)
@@ -281,7 +281,7 @@ func BucketRegion(ctx context.Context, confProp ConfigProperties, bucket string)
 	return bucketRegionFromConfig(ctx, cfg, confProp, bucket)
 }
 
-func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp ConfigProperties, bucket string) (string, error) {
+func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp *ConfigProperties, bucket string) (string, error) {
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
 	if confProp.Endpoint != "" {
 		if confProp.Region == "" {
@@ -310,7 +310,7 @@ func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp Config
 	return region, nil
 }
 
-func getAnonymousS3Client(confProp ConfigProperties) *s3.Client {
+func getAnonymousS3Client(confProp *ConfigProperties) *s3.Client {
 	cfg := aws.Config{
 		Credentials: aws.AnonymousCredentials{},
 	}
@@ -322,7 +322,7 @@ func getAnonymousS3Client(confProp ConfigProperties) *s3.Client {
 	})
 }
 
-func getS3Client(ctx context.Context, confProp ConfigProperties, bucket string) (*s3.Client, error) {
+func getS3Client(ctx context.Context, confProp *ConfigProperties, bucket string) (*s3.Client, error) {
 	cfg, err := getAWSConfig(ctx, confProp)
 	if err != nil {
 		return nil, err
@@ -346,7 +346,7 @@ func getS3Client(ctx context.Context, confProp ConfigProperties, bucket string) 
 	}), nil
 }
 
-func getSTSClient(ctx context.Context, confProp ConfigProperties) (*sts.Client, error) {
+func getSTSClient(ctx context.Context, confProp *ConfigProperties) (*sts.Client, error) {
 	cfg, err := getAWSConfig(ctx, confProp)
 	if err != nil {
 		return nil, err
@@ -362,7 +362,7 @@ func getSTSClient(ctx context.Context, confProp ConfigProperties) (*sts.Client, 
 	}), nil
 }
 
-func getAWSConfig(ctx context.Context, confProp ConfigProperties) (aws.Config, error) {
+func getAWSConfig(ctx context.Context, confProp *ConfigProperties) (aws.Config, error) {
 	provider, err := newCredentialsProvider(ctx, confProp)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to get AWS credentials: %w", err)
@@ -383,7 +383,7 @@ func getAWSConfig(ctx context.Context, confProp ConfigProperties) (aws.Config, e
 }
 
 // newCredentialsProvider returns credentials for connecting to AWS.
-func newCredentialsProvider(ctx context.Context, confProp ConfigProperties) (aws.CredentialsProvider, error) {
+func newCredentialsProvider(ctx context.Context, confProp *ConfigProperties) (aws.CredentialsProvider, error) {
 	// 1. If a role ARN is provided, assume it.
 	if confProp.RoleARN != "" {
 		return assumeRole(ctx, confProp)
@@ -420,7 +420,7 @@ func newCredentialsProvider(ctx context.Context, confProp ConfigProperties) (aws
 
 // assumeRole returns a credentials provider that assumes the role specified by the ARN using AWS SDK v2.
 // It uses stscreds.NewAssumeRoleProvider so credentials are automatically refreshed before expiration.
-func assumeRole(ctx context.Context, confProp ConfigProperties) (aws.CredentialsProvider, error) {
+func assumeRole(ctx context.Context, confProp *ConfigProperties) (aws.CredentialsProvider, error) {
 	// Add session name if specified
 	sessionName := confProp.RoleSessionName
 	if sessionName == "" {
