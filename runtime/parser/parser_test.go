@@ -2559,7 +2559,18 @@ light:
   unrecognised: blue
 `,
 			expectError: true,
-			errorMsg:    "invalid light theme: invalid CSS variable: unrecognised",
+			errorMsg:    `invalid CSS variable: "unrecognised"`,
+		},
+		{
+			name: "invalid CSS syntax - invalid value",
+			yaml: `
+type: theme
+light:
+  primary: red
+  secondary: gren
+`,
+			expectError: true,
+			errorMsg:    "Invalid color format, gren",
 		},
 		{
 			name: "expansive valid css",
@@ -2573,7 +2584,7 @@ light:
   card-foreground: yellow
 dark:
   primary: gray
-  secondary: slate
+  secondary: black
   background: black
   foreground: white
   card-foreground: white
@@ -2591,7 +2602,7 @@ dark:
 				},
 				Dark: &runtimev1.ThemeCSS{
 					Primary:   "gray",
-					Secondary: "slate",
+					Secondary: "black",
 					Properties: map[string]string{
 						"background":      "black",
 						"foreground":      "white",
