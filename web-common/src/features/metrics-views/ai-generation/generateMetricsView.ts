@@ -20,11 +20,11 @@ import {
   runtimeServiceGetFile,
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
+import { createYamlModelFromTable } from "../../connectors/code-utils";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
 import { createAndPreviewExplore } from "../create-and-preview-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
-import { createYamlModelFromTable } from "../../connectors/code-utils";
 
 /**
  * TanStack Query does not support mutation cancellation (at least as of v4).
@@ -73,7 +73,7 @@ export function useCreateMetricsViewFromTableUIAction(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort("AI generation cancelled by user");
             isAICancelled = true;
           },
         },
@@ -198,7 +198,7 @@ export async function createDashboardFromTableInMetricsEditor(
       component: OptionToCancelAIGeneration,
       props: {
         onCancel: () => {
-          abortController.abort();
+          abortController.abort("Dashboard generation cancelled by user");
           isAICancelled = true;
         },
       },
@@ -277,7 +277,7 @@ export async function createModelAndMetricsViewAndExplore(
       component: OptionToCancelAIGeneration,
       props: {
         onCancel: () => {
-          abortController.abort();
+          abortController.abort("Metrics creation cancelled by user");
           isAICancelled = true;
         },
       },
@@ -292,7 +292,7 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort("Model creation cancelled by user");
             isAICancelled = true;
           },
         },
@@ -331,7 +331,7 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort("Metrics view creation cancelled by user");
             isAICancelled = true;
           },
         },
@@ -393,7 +393,9 @@ export async function createModelAndMetricsViewAndExplore(
         component: OptionToCancelAIGeneration,
         props: {
           onCancel: () => {
-            abortController.abort();
+            abortController.abort(
+              "Explore dashboard creation cancelled by user",
+            );
             isAICancelled = true;
           },
         },
