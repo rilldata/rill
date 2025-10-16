@@ -12243,6 +12243,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for Type
+
 	// no validation rules for DisplayName
 
 	// no validation rules for Description
@@ -12291,8 +12293,6 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for Type
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)

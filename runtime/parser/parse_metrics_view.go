@@ -321,7 +321,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	names := make(map[string]uint8)
 	names[strings.ToLower(tmp.TimeDimension)] = nameIsDimension
-	timeSeen := false
+	timeDimSeenInDimList := false
 
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -369,12 +369,12 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if _, ok := names[lower]; ok {
 			// allow time dimension to be defined in the dimensions list once
 			if strings.EqualFold(lower, tmp.TimeDimension) {
-				if timeSeen {
+				if timeDimSeenInDimList {
 					return fmt.Errorf("time dimension %q defined multiple times", tmp.TimeDimension)
 				} else if dim.Name != tmp.TimeDimension {
 					return fmt.Errorf("dimension name %q does not match the case of time dimension %q", dim.Name, tmp.TimeDimension)
 				}
-				timeSeen = true
+				timeDimSeenInDimList = true
 			} else {
 				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 			}
@@ -736,6 +736,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			LookupValueColumn:       dim.LookupValueColumn,
 			LookupDefaultExpression: dim.LookupDefaultExpression,
 		})
+	}
+
+	// if time dimension is not defined in the dimensions list but is defined in the `timeseries` key, we prepend it to the dimensions list here
+	if !timeDimSeenInDimList && tmp.TimeDimension != "" {
+		spec.Dimensions = append([]*runtimev1.MetricsViewSpec_Dimension{
+			{
+				Name:        tmp.TimeDimension,
+				Column:      tmp.TimeDimension,
+				DisplayName: ToDisplayName(tmp.TimeDimension),
+			},
+		}, spec.Dimensions...)
 	}
 
 	for _, annotation := range tmp.Annotations {

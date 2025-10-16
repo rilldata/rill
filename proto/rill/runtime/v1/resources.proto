@@ -192,6 +192,8 @@ message MetricsViewSpec {
   // Dimensions are columns to filter and group by
   message Dimension {
     string name = 1;
+    // The dimension type. Only populated in ValidSpec.
+    DimensionType type = 13;
     string display_name = 3;
     string description = 4;
     string column = 2;
@@ -205,8 +207,6 @@ message MetricsViewSpec {
     string lookup_default_expression = 11;
     // The data type of the dimension. Only populated in ValidSpec.
     Type data_type = 12;
-    // The dimension type. Only populated in ValidSpec.
-    DimensionType type = 13;
   }
   enum DimensionType {
     DIMENSION_TYPE_UNSPECIFIED = 0;

@@ -608,8 +608,7 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 		m.DataType = typ
 	}
 
-	// Populate the dimension types and separate time dimensions from regular dimensions
-	var dims []*runtimev1.MetricsViewSpec_Dimension
+	// Populate the dimension types and data types
 	for _, d := range e.metricsView.Dimensions {
 		if typ, ok := types[d.Name]; ok {
 			d.DataType = typ
@@ -620,30 +619,7 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 		default:
 			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
 		}
-		dims = append(dims, d)
 	}
-	// Ensure the primary time dimension is in the time dimensions list
-	if e.metricsView.TimeDimension != "" {
-		var found bool
-		for _, d := range dims {
-			if d.Name == e.metricsView.TimeDimension {
-				found = true
-				break
-			}
-		}
-		if !found {
-			// Create one and add it to the front of the list
-			dims = append([]*runtimev1.MetricsViewSpec_Dimension{
-				{
-					Name:     e.metricsView.TimeDimension,
-					Column:   e.metricsView.TimeDimension,
-					DataType: types[e.metricsView.TimeDimension],
-					Type:     runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME,
-				},
-			}, dims...)
-		}
-	}
-	e.metricsView.Dimensions = dims
 
 	return nil
 }

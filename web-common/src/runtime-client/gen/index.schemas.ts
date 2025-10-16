@@ -50,6 +50,7 @@ export interface MetricsViewSearchResponseSearchResult {
 
 export interface MetricsViewSpecDimension {
   name?: string;
+  type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
   column?: string;
@@ -61,7 +62,6 @@ export interface MetricsViewSpecDimension {
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
   dataType?: Runtimev1Type;
-  type?: MetricsViewSpecDimensionType;
 }
 
 export interface MetricsViewSpecDimensionSelector {
