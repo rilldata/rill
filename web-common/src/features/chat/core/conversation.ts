@@ -526,11 +526,16 @@ export class Conversation {
       return "Too many requests. Please wait a moment before trying again.";
     }
 
-    // Network errors
-    if (
-      error.name === "NetworkError" ||
-      (typeof navigator !== "undefined" && !navigator.onLine)
-    ) {
+    // Network/connection errors (fetch() throws TypeError for network failures)
+    const lowerMessage = error.message?.toLowerCase() || "";
+    const isNetworkError =
+      (error.name === "TypeError" &&
+        (lowerMessage.includes("fetch") ||
+          lowerMessage.includes("network") ||
+          lowerMessage.includes("load failed"))) ||
+      (typeof navigator !== "undefined" && !navigator.onLine);
+
+    if (isNetworkError) {
       return "Connection lost. Check your internet connection and try again.";
     }
 
