@@ -138,6 +138,7 @@
   let clickhouseDsnForm;
   let clickhouseIsSavingAnyway: boolean;
   let clickhouseShowSaveAnyway: boolean = false;
+  let clickhouseHandleSaveAnyway: () => Promise<void>;
 
   // Helper function to check if connector only has DSN (no tabs)
   function hasOnlyDsn() {
@@ -215,21 +216,19 @@
   $: dispatch("submitting", { submitting });
 
   async function handleSaveAnyway() {
-    saveAnyway = true;
-    isSavingAnyway = true;
-    // For ClickHouse, also set the flag in the child component
+    // For ClickHouse, delegate to the child component's handleSaveAnyway function
     if (connector.name === "clickhouse") {
-      clickhouseIsSavingAnyway = true;
+      await clickhouseHandleSaveAnyway();
+      return;
     }
 
+    // For other connectors, use the original logic
+    saveAnyway = true;
+    isSavingAnyway = true;
+
     // Get the current form values based on the active form
-    let values: Record<string, unknown>;
-    if (connector.name === "clickhouse") {
-      values =
-        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-    } else {
-      values = hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
-    }
+    const values =
+      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
     try {
       if (formType === "source") {
@@ -279,9 +278,6 @@
       // Reset saveAnyway state after submission completes
       saveAnyway = false;
       isSavingAnyway = false;
-      if (connector.name === "clickhouse") {
-        clickhouseIsSavingAnyway = false;
-      }
     }
   }
 
@@ -464,9 +460,6 @@
       // Reset saveAnyway state after submission completes
       saveAnyway = false;
       isSavingAnyway = false;
-      if (connector.name === "clickhouse") {
-        clickhouseIsSavingAnyway = false;
-      }
     }
   }
 </script>
@@ -502,6 +495,7 @@
           bind:dsnForm={clickhouseDsnForm}
           bind:isSavingAnyway={clickhouseIsSavingAnyway}
           bind:showSaveAnyway={clickhouseShowSaveAnyway}
+          bind:handleSaveAnyway={clickhouseHandleSaveAnyway}
           on:submitting
         />
       {:else if hasDsnFormOption}
