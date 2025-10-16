@@ -197,10 +197,10 @@ for any of its children.
   });
 
   // update the xMin, xMax, yMin, yMax as needed
-  const xMinStore = getContext(contexts.min("x")) as ExtremumResolutionStore;
-  const xMaxStore = getContext(contexts.max("x")) as ExtremumResolutionStore;
-  const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
-  const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
+  const xMinStore = getContext<ExtremumResolutionStore>(contexts.min("x"));
+  const xMaxStore = getContext<ExtremumResolutionStore>(contexts.max("x"));
+  const yMinStore = getContext<ExtremumResolutionStore>(contexts.min("y"));
+  const yMaxStore = getContext<ExtremumResolutionStore>(contexts.max("y"));
 
   $: if (yMaxTweenProps && yMaxStore) {
     yMaxStore.setTweenProps(yMaxTweenProps);

@@ -291,7 +291,9 @@ export function calculateTimeRangePartial(
   let parsed: RillTime | undefined;
 
   try {
-    parsed = parseRillTime(currentSelectedTimeRange.name || "");
+    if (currentSelectedTimeRange.name !== TimeRangePreset.CUSTOM) {
+      parsed = parseRillTime(currentSelectedTimeRange.name || "");
+    }
   } catch (e) {
     console.error("Error parsing rill time", e);
   }

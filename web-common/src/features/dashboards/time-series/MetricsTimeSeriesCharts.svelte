@@ -335,6 +335,7 @@
   start={startValue}
   {workspaceWidth}
   {timeSeriesWidth}
+  bottom={showTimeDimensionDetail ? 20 : 4}
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if showTimeDimensionDetail}

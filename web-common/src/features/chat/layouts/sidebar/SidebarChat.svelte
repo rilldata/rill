@@ -54,7 +54,7 @@
 <div
   class="chat-sidebar"
   style="--sidebar-width: {$sidebarWidth}px;"
-  on:click|preventDefault|stopPropagation
+  on:click|stopPropagation
   role="presentation"
 >
   <Resizer

@@ -52,7 +52,7 @@ export const sidebarActions = {
     const conversationManager = getConversationManager(instanceId, {
       conversationState: "browserStorage",
     });
-    conversationManager.enterNewConversationMode();
+    // conversationManager.enterNewConversationMode();
     get(conversationManager.getCurrentConversation()).draftMessage.set(prompt);
     get(conversationManager.getCurrentConversation()).context.override(
       contextEntries,
