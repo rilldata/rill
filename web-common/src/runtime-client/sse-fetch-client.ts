@@ -175,7 +175,7 @@ export class SSEFetchClient {
    */
   public stop(): void {
     if (this.abortController) {
-      this.abortController.abort();
+      this.abortController.abort("SSE stream stopped by client");
       this.abortController = undefined;
     }
   }
