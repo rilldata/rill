@@ -4231,9 +4231,14 @@ export class ThemeSpec extends Message<ThemeSpec> {
   secondaryColorRaw = "";
 
   /**
-   * @generated from field: string css = 5;
+   * @generated from field: optional rill.runtime.v1.ThemeCSS light = 5;
    */
-  css = "";
+  light?: ThemeCSS;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeCSS dark = 6;
+   */
+  dark?: ThemeCSS;
 
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
@@ -4247,7 +4252,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
     { no: 3, name: "primary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "css", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "light", kind: "message", T: ThemeCSS, opt: true },
+    { no: 6, name: "dark", kind: "message", T: ThemeCSS, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
@@ -4295,6 +4301,55 @@ export class ThemeState extends Message<ThemeState> {
 
   static equals(a: ThemeState | PlainMessage<ThemeState> | undefined, b: ThemeState | PlainMessage<ThemeState> | undefined): boolean {
     return proto3.util.equals(ThemeState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeCSS
+ */
+export class ThemeCSS extends Message<ThemeCSS> {
+  /**
+   * @generated from field: string primary = 1;
+   */
+  primary = "";
+
+  /**
+   * @generated from field: string secondary = 2;
+   */
+  secondary = "";
+
+  /**
+   * @generated from field: map<string, string> properties = 3;
+   */
+  properties: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<ThemeCSS>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeCSS";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "primary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "secondary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeCSS {
+    return new ThemeCSS().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeCSS {
+    return new ThemeCSS().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeCSS {
+    return new ThemeCSS().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeCSS | PlainMessage<ThemeCSS> | undefined, b: ThemeCSS | PlainMessage<ThemeCSS> | undefined): boolean {
+    return proto3.util.equals(ThemeCSS, a, b);
   }
 }
 
