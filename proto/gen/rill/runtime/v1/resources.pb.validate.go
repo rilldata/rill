@@ -9180,22 +9180,22 @@ var _ interface {
 	ErrorName() string
 } = ThemeStateValidationError{}
 
-// Validate checks the field values on ThemeCSS with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
+// Validate checks the field values on ThemeColors with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *ThemeCSS) Validate() error {
+func (m *ThemeColors) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ThemeCSS with the rules defined in
+// ValidateAll checks the field values on ThemeColors with the rules defined in
 // the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ThemeCSSMultiError, or nil
-// if none found.
-func (m *ThemeCSS) ValidateAll() error {
+// result is a list of violation errors wrapped in ThemeColorsMultiError, or
+// nil if none found.
+func (m *ThemeColors) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ThemeCSS) validate(all bool) error {
+func (m *ThemeColors) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -9206,21 +9206,21 @@ func (m *ThemeCSS) validate(all bool) error {
 
 	// no validation rules for Secondary
 
-	// no validation rules for Properties
+	// no validation rules for Variables
 
 	if len(errors) > 0 {
-		return ThemeCSSMultiError(errors)
+		return ThemeColorsMultiError(errors)
 	}
 
 	return nil
 }
 
-// ThemeCSSMultiError is an error wrapping multiple validation errors returned
-// by ThemeCSS.ValidateAll() if the designated constraints aren't met.
-type ThemeCSSMultiError []error
+// ThemeColorsMultiError is an error wrapping multiple validation errors
+// returned by ThemeColors.ValidateAll() if the designated constraints aren't met.
+type ThemeColorsMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ThemeCSSMultiError) Error() string {
+func (m ThemeColorsMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -9229,11 +9229,11 @@ func (m ThemeCSSMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ThemeCSSMultiError) AllErrors() []error { return m }
+func (m ThemeColorsMultiError) AllErrors() []error { return m }
 
-// ThemeCSSValidationError is the validation error returned by
-// ThemeCSS.Validate if the designated constraints aren't met.
-type ThemeCSSValidationError struct {
+// ThemeColorsValidationError is the validation error returned by
+// ThemeColors.Validate if the designated constraints aren't met.
+type ThemeColorsValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -9241,22 +9241,22 @@ type ThemeCSSValidationError struct {
 }
 
 // Field function returns field value.
-func (e ThemeCSSValidationError) Field() string { return e.field }
+func (e ThemeColorsValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ThemeCSSValidationError) Reason() string { return e.reason }
+func (e ThemeColorsValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ThemeCSSValidationError) Cause() error { return e.cause }
+func (e ThemeColorsValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ThemeCSSValidationError) Key() bool { return e.key }
+func (e ThemeColorsValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ThemeCSSValidationError) ErrorName() string { return "ThemeCSSValidationError" }
+func (e ThemeColorsValidationError) ErrorName() string { return "ThemeColorsValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ThemeCSSValidationError) Error() string {
+func (e ThemeColorsValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -9268,14 +9268,14 @@ func (e ThemeCSSValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sThemeCSS.%s: %s%s",
+		"invalid %sThemeColors.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ThemeCSSValidationError{}
+var _ error = ThemeColorsValidationError{}
 
 var _ interface {
 	Field() string
@@ -9283,7 +9283,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ThemeCSSValidationError{}
+} = ThemeColorsValidationError{}
 
 // Validate checks the field values on Component with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

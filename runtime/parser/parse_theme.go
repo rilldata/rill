@@ -14,14 +14,14 @@ type ThemeYAML struct {
 		Primary   string `yaml:"primary"`
 		Secondary string `yaml:"secondary"`
 	} `yaml:"colors"`
-	Light *ThemeCSS `yaml:"light"`
-	Dark  *ThemeCSS `yaml:"dark"`
+	Light *ThemeColors `yaml:"light"`
+	Dark  *ThemeColors `yaml:"dark"`
 }
 
-type ThemeCSS struct {
-	Primary    string            `yaml:"primary"`
-	Secondary  string            `yaml:"secondary"`
-	Properties map[string]string `yaml:",inline"`
+type ThemeColors struct {
+	Primary   string            `yaml:"primary"`
+	Secondary string            `yaml:"secondary"`
+	Variables map[string]string `yaml:",inline"`
 }
 
 var allowedCSSVariables = map[string]bool{
@@ -173,8 +173,8 @@ func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
 	}
 }
 
-func (t *ThemeCSS) validate() (*runtimev1.ThemeCSS, error) {
-	for k, v := range t.Properties {
+func (t *ThemeColors) validate() (*runtimev1.ThemeColors, error) {
+	for k, v := range t.Variables {
 		if !allowedCSSVariables[k] {
 			return nil, fmt.Errorf("invalid CSS variable: %q", k)
 		}
@@ -198,9 +198,9 @@ func (t *ThemeCSS) validate() (*runtimev1.ThemeCSS, error) {
 		}
 	}
 
-	return &runtimev1.ThemeCSS{
-		Primary:    t.Primary,
-		Secondary:  t.Secondary,
-		Properties: t.Properties,
+	return &runtimev1.ThemeColors{
+		Primary:   t.Primary,
+		Secondary: t.Secondary,
+		Variables: t.Variables,
 	}, nil
 }

@@ -2530,7 +2530,7 @@ light:
 `,
 			expectError: false,
 			expectedSpec: &runtimev1.ThemeSpec{
-				Light: &runtimev1.ThemeCSS{
+				Light: &runtimev1.ThemeColors{
 					Primary:   "red",
 					Secondary: "green",
 				},
@@ -2591,19 +2591,19 @@ dark:
 `,
 			expectError: false,
 			expectedSpec: &runtimev1.ThemeSpec{
-				Light: &runtimev1.ThemeCSS{
+				Light: &runtimev1.ThemeColors{
 					Primary:   "red",
 					Secondary: "green",
-					Properties: map[string]string{
+					Variables: map[string]string{
 						"background":      "blue",
 						"foreground":      "yellow",
 						"card-foreground": "yellow",
 					},
 				},
-				Dark: &runtimev1.ThemeCSS{
+				Dark: &runtimev1.ThemeColors{
 					Primary:   "gray",
 					Secondary: "black",
-					Properties: map[string]string{
+					Variables: map[string]string{
 						"background":      "black",
 						"foreground":      "white",
 						"card-foreground": "white",

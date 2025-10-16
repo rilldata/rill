@@ -2321,12 +2321,12 @@ export interface V1Theme {
   state?: V1ThemeState;
 }
 
-export type V1ThemeCSSProperties = { [key: string]: string };
+export type V1ThemeColorsVariables = { [key: string]: string };
 
-export interface V1ThemeCSS {
+export interface V1ThemeColors {
   primary?: string;
   secondary?: string;
-  properties?: V1ThemeCSSProperties;
+  variables?: V1ThemeColorsVariables;
 }
 
 export interface V1ThemeSpec {
@@ -2334,8 +2334,8 @@ export interface V1ThemeSpec {
   secondaryColor?: V1Color;
   primaryColorRaw?: string;
   secondaryColorRaw?: string;
-  light?: V1ThemeCSS;
-  dark?: V1ThemeCSS;
+  light?: V1ThemeColors;
+  dark?: V1ThemeColors;
 }
 
 export interface V1ThemeState {
