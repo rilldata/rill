@@ -754,7 +754,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
 		conn, err := net.DialTimeout("tcp", target, 5*time.Second)
 		if err != nil {
-			return nil, fmt.Errorf("failed to reach ClickHouse at %s: please check that the host and port are correct. Error: %w", target, err)
+			return nil, fmt.Errorf("Error: %w - please check that the host and port are correct %s", err, target)
 		}
 		conn.Close()
 	}
