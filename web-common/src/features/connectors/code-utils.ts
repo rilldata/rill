@@ -98,7 +98,7 @@ driver: ${connector.name}`;
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
         return `${key}: "{{ .env.${makeDotEnvConnectorKey(
-          options?.connectorInstanceName || (connector.name as string),
+          connector.name as string,
           key,
           options?.connectorInstanceName,
         )} }}"`;
@@ -164,7 +164,7 @@ export async function updateDotEnvWithSecrets(
     }
 
     const connectorSecretKey = makeDotEnvConnectorKey(
-      connectorInstanceName || (connector.name as string),
+      connector.name as string,
       key,
       connectorInstanceName,
     );
