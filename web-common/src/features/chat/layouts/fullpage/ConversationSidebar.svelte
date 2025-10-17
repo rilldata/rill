@@ -5,20 +5,20 @@
   import DelayedContent from "../../../entity-management/DelayedContent.svelte";
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
-  import type { Chat } from "../../core/chat";
+  import type { ConversationManager } from "../../core/conversation-manager";
 
-  export let chat: Chat;
+  export let conversationManager: ConversationManager;
   export let onConversationClick: () => void = () => {};
   export let onNewConversationClick: () => void = () => {};
 
   // Get URL parameters for href construction
   $: ({ organization, project } = $page.params);
 
-  $: currentConversation = chat.getCurrentConversation();
+  $: currentConversation = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversation?.getConversationQuery();
   $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
 
-  $: listConversationsQuery = chat.listConversationsQuery();
+  $: listConversationsQuery = conversationManager.listConversationsQuery();
 
   $: conversations = $listConversationsQuery.data?.conversations ?? [];
   $: isLoading = $listConversationsQuery.isLoading;
@@ -31,7 +31,7 @@
 
   // Handle new conversation button click (for focus, navigation handled by href)
   function handleNewConversationButtonClick() {
-    chat.enterNewConversationMode();
+    conversationManager.enterNewConversationMode();
     onNewConversationClick();
   }
 </script>

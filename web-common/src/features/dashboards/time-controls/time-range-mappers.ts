@@ -62,6 +62,7 @@ export function mapSelectedTimeRangeToV1TimeRange(
   if (!validateRillTime(selectedTimeRange.name)) {
     return {
       expression: selectedTimeRange.name,
+      timeZone,
     };
   }
 

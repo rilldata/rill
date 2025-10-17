@@ -10,6 +10,7 @@
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
+  import { getOrgUserMembers } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
   import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -31,7 +32,6 @@
 
   export let open = false;
   export let groupName: string;
-  export let organizationUsers: V1OrganizationMemberUser[] = [];
   export let currentUserEmail: string = "";
 
   let searchText = "";
@@ -45,7 +45,15 @@
     organization,
     groupName,
   );
+  $: orgMemberUsersInfiniteQuery = getOrgUserMembers({
+    organization,
+    guestOnly: false,
+  });
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  $: allOrganizationUsers =
+    $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
+      (page) => page.members ?? [],
+    ) ?? [];
   $: if (
     userGroupMembersUsers.length > 0 &&
     selectedUsers.length === 0 &&
@@ -61,6 +69,12 @@
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const renameUserGroup = createAdminServiceRenameUsergroup();
+
+  async function ensureAllUsersLoaded() {
+    while ($orgMemberUsersInfiniteQuery.hasNextPage) {
+      await $orgMemberUsersInfiniteQuery.fetchNextPage();
+    }
+  }
 
   function handleRemove(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
@@ -97,7 +111,7 @@
   }
 
   async function handleAdd(email: string) {
-    const user = organizationUsers.find((u) => u.userEmail === email);
+    const user = allOrganizationUsers.find((u) => u.userEmail === email);
 
     // Don't add if already in selectedUsers
     if (
@@ -204,13 +218,13 @@
     },
   );
 
-  $: coercedUsersToOptions = organizationUsers.map((user) => ({
+  $: coercedUsersToOptions = allOrganizationUsers.map((user) => ({
     value: user.userEmail,
     label: user.userName,
   }));
 
   function getMetadata(email: string) {
-    const user = organizationUsers.find((user) => user.userEmail === email);
+    const user = allOrganizationUsers.find((user) => user.userEmail === email);
     return user
       ? { name: user.userName, photoUrl: user.userPhotoUrl }
       : undefined;
@@ -218,6 +232,11 @@
 
   // Check if form has been modified
   $: hasFormChanges = $form.newName !== initialValues.newName;
+
+  // Load all users when dialog opens
+  $: if (open) {
+    ensureAllUsersLoaded();
+  }
 
   function handleClose() {
     open = false;
