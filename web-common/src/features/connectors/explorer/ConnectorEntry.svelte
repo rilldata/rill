@@ -7,7 +7,10 @@
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
-  import { connectorIconMapping } from "../connector-icon-mapping";
+  import {
+    connectorIconMapping,
+    getConnectorIconKeyForMotherDuck,
+  } from "../connector-icon-mapping";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
 
   export let connector: V1AnalyzedConnector;
@@ -49,9 +52,11 @@
           size="14px"
         />
         <span class="flex-none">
-          {#if connector.name}
+          {#if connector.driver?.name}
             <svelte:component
-              this={connectorIconMapping[connector.name]}
+              this={connectorIconMapping[
+                getConnectorIconKeyForMotherDuck(connector)
+              ]}
               size="16px"
             />
           {/if}
