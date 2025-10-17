@@ -165,35 +165,7 @@
         if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
-
-          if (
-            connector.name === "gcs" &&
-            (key === "google_application_credentials" ||
-              key === "key_id" ||
-              key === "secret")
-          ) {
-            // GCS authentication method validation
-            if (key === "google_application_credentials") {
-              // Only require credentials if credentials method is selected
-              if (
-                gcsAuthMethod === "credentials" &&
-                (isEmpty(value) || $paramsErrors[key]?.length)
-              ) {
-                return true;
-              }
-            } else if (key === "key_id" || key === "secret") {
-              // Only require HMAC keys if HMAC method is selected
-              if (
-                gcsAuthMethod === "hmac" &&
-                (isEmpty(value) || $paramsErrors[key]?.length)
-              ) {
-                return true;
-              }
-            }
-          } else {
-            // Normal validation for other properties
-            if (isEmpty(value) || $paramsErrors[key]?.length) return true;
-          }
+          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
         }
       }
       return false;
@@ -617,10 +589,10 @@
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
-          <!-- Render path first -->
+          <!-- Render name and path first -->
           {#each filteredParamsProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
-            {#if propertyKey === "path"}
+            {#if propertyKey === "name" || propertyKey === "path"}
               <div class="py-1.5 first:pt-0 last:pb-0">
                 <Input
                   id={propertyKey}
