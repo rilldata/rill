@@ -5,61 +5,46 @@ import {
   type V1Bookmark,
   type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
+import type {
+  BookmarkEntry,
+  Bookmarks,
+} from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
 import {
   type CompoundQueryResult,
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
-import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import {
-  getTimeControlState,
-  timeControlStateSelector,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
-  V1TimeGrain,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { QueryClient } from "@tanstack/query-core";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { DateTime, Interval } from "luxon";
-import { derived, get, type Readable } from "svelte/store";
+import { derived, get } from "svelte/store";
 
-export type BookmarkEntry = {
-  resource: V1Bookmark;
-  filtersOnly: boolean;
-  absoluteTimeRange: boolean;
-  url: string;
-};
-
-export type Bookmarks = {
-  home: BookmarkEntry | undefined;
-  personal: BookmarkEntry[];
-  shared: BookmarkEntry[];
-};
-
-export function getBookmarks(projectId: string, exploreName: string) {
+export function getBookmarks(
+  projectId: string,
+  resourceKind: ResourceKind,
+  resourceName: string,
+) {
   return derived(createAdminServiceGetCurrentUser(), (userResp, set) =>
     createAdminServiceListBookmarks(
       {
         projectId,
-        resourceKind: ResourceKind.Explore,
-        resourceName: exploreName,
+        resourceKind,
+        resourceName,
       },
       {
         query: {
@@ -148,74 +133,17 @@ export function getHomeBookmarkExploreState(
   );
 }
 
-export function searchBookmarks(
-  bookmarks: Bookmarks | undefined,
-  searchText: string,
-): Bookmarks | undefined {
-  if (!searchText || !bookmarks) return bookmarks;
-  searchText = searchText.toLowerCase();
-  const matchName = (bookmark: BookmarkEntry | undefined) =>
-    bookmark?.resource.displayName &&
-    bookmark.resource.displayName.toLowerCase().includes(searchText);
-  return {
-    home: matchName(bookmarks.home) ? bookmarks.home : undefined,
-    personal: bookmarks?.personal.filter(matchName) ?? [],
-    shared: bookmarks?.shared.filter(matchName) ?? [],
-  };
-}
-
-export function getPrettySelectedTimeRange(
-  queryClient: QueryClient,
-  instanceId: string,
-  metricsViewName: string,
-  exploreName: string,
-): Readable<string> {
-  return derived(
-    [
-      useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName, {}, queryClient),
-      useExploreState(metricsViewName),
-    ],
-    ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {
-      const timeRangeState = timeControlStateSelector([
-        validSpec.data?.metricsView ?? {},
-        validSpec.data?.explore ?? {},
-        timeRangeSummary,
-        metricsExplorerEntity,
-      ]);
-      if (
-        !timeRangeState.ready ||
-        !timeRangeState.selectedTimeRange?.start ||
-        !timeRangeState.selectedTimeRange?.end
-      )
-        return "";
-      return prettyFormatTimeRange(
-        Interval.fromDateTimes(
-          DateTime.fromJSDate(timeRangeState.selectedTimeRange.start).setZone(
-            metricsExplorerEntity?.selectedTimezone ?? "UTC",
-          ),
-          DateTime.fromJSDate(timeRangeState.selectedTimeRange.end).setZone(
-            metricsExplorerEntity?.selectedTimezone ?? "UTC",
-          ),
-        ),
-        timeRangeState.selectedTimeRange?.interval ??
-          V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-      );
-    },
-  );
-}
-
-function parseBookmark(
-  bookmarkResource: V1Bookmark,
+export function exploreBookmarkDataTransformer(
+  bookmarksData: string,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
   exploreState: ExploreState,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   rillDefaultExploreURLParams: URLSearchParams,
-): BookmarkEntry {
+) {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
-    bookmarkResource.data ?? "",
+    bookmarksData,
     metricsViewSpec,
     exploreSpec,
     schema,
@@ -243,22 +171,7 @@ function parseBookmark(
     url,
   );
 
-  url.search = searchParams.toString();
-
-  return {
-    resource: bookmarkResource,
-    absoluteTimeRange:
-      exploreStateFromBookmark.selectedTimeRange?.name ===
-      TimeRangePreset.CUSTOM,
-    filtersOnly: isFilterOnlyBookmark(
-      exploreStateFromBookmark,
-      metricsViewSpec,
-      exploreSpec,
-      timeRangeSummary,
-      rillDefaultExploreURLParams,
-    ),
-    url: url.toString(),
-  };
+  return "?" + searchParams.toString();
 }
 
 // These are the only parameters that are stored in a filter-only bookmark
@@ -291,17 +204,4 @@ function isFilterOnlyBookmark(
   // Check if all the bookmark's search params are in the allowed list
   const urlParams = Array.from(searchParams.keys());
   return urlParams.every((param) => filterOnlyParams.has(param));
-}
-
-export function isBookmarkActive(entry: BookmarkEntry, curUrl: URL) {
-  const bookmarkUrl = new URL(entry.url);
-
-  if (entry.filtersOnly) {
-    return bookmarkUrl.searchParams.entries().every(([key, value]) => {
-      const curValue = curUrl.searchParams.get(key);
-      return curValue === value;
-    });
-  }
-
-  return bookmarkUrl.search === curUrl.search;
 }

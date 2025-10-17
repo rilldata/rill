@@ -8,7 +8,10 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { get } from "svelte/store";
 
 // TODO: move this to a compound mutation similar to ProjectGithubConnectionUpdater
-export function createHomeBookmarkModifier(exploreName: string) {
+export function createHomeBookmarkModifier(
+  resourceKind: ResourceKind,
+  resourceName: string,
+) {
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
@@ -32,8 +35,8 @@ export function createHomeBookmarkModifier(exploreName: string) {
           displayName: "Go to Home",
           description: "",
           projectId,
-          resourceKind: ResourceKind.Explore,
-          resourceName: exploreName,
+          resourceKind,
+          resourceName,
           shared: true,
           default: true,
           data,
