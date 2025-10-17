@@ -7,6 +7,8 @@
   } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
 
+  export let noMargin = false;
+
   $: ({ instanceId } = $runtime);
 
   $: conversationManager = getConversationManager(instanceId, {
@@ -24,4 +26,4 @@
   });
 </script>
 
-<ChatInput {conversationManager} />
+<ChatInput {conversationManager} {noMargin} />
