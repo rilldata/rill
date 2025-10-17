@@ -45,7 +45,7 @@ export function compileConnectorYAML(
   
 type: connector
 
-driver: ${connector.name}`;
+driver: ${connector.name === "motherduck" ? "duckdb" : connector.name}`;
 
   // Use the provided orderedProperties if available, otherwise fall back to configProperties/sourceProperties
   let properties =
