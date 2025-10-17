@@ -3,7 +3,7 @@
   import {
     type BookmarkEntry,
     isBookmarkActive,
-  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  } from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
   import BookmarkFilled from "@rilldata/web-common/components/icons/BookmarkFilled.svelte";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
