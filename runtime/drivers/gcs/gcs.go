@@ -29,10 +29,14 @@ var spec = drivers.Spec{
 	Description: "Connect to Google Cloud Storage.",
 	DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs",
 	ConfigProperties: []*drivers.PropertySpec{
+
 		{
-			Key:  "google_application_credentials",
-			Type: drivers.FilePropertyType,
-			Hint: "Enter path of file to load from.",
+			Key:         "google_application_credentials",
+			Type:        drivers.FilePropertyType,
+			DisplayName: "GCP Credentials",
+			Description: "GCP credentials as JSON string",
+			Placeholder: "Paste your GCP service account JSON here",
+			Secret:      true,
 		},
 		{
 			Key:         "key_id",
