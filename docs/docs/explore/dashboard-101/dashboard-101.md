@@ -2,7 +2,7 @@
 title: "Dashboard Quickstart"
 description: Dashboard Quickstart
 sidebar_label: "Dashboard Quickstart"
-sidebar_position: 03
+sidebar_position: 15
 ---
 
 <div style={{ 
