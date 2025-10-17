@@ -36,12 +36,16 @@
   import { isEmpty, normalizeErrors } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
+    GCS_AUTH_OPTIONS,
     type ClickHouseConnectorType,
+    type GCSAuthMethod,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
+  import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -55,6 +59,7 @@
 
   let copied = false;
   let connectionTab: ConnectorType = "parameters";
+  let gcsAuthMethod: GCSAuthMethod = "credentials";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -332,10 +337,13 @@
     const values = event.form.data;
 
     try {
+      // For GCS, modify the form data based on authentication method
+      let processedValues = values;
+
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
+        await submitAddSourceForm(queryClient, connector, processedValues);
       } else {
-        await submitAddConnectorForm(queryClient, connector, values);
+        await submitAddConnectorForm(queryClient, connector, processedValues);
       }
       onClose();
     } catch (e) {
@@ -375,6 +383,24 @@
         paramsError = error;
         paramsErrorDetails = details;
       }
+    }
+  }
+
+  // Handle file upload for credential files
+  async function handleFileUpload(file: File): Promise<string> {
+    try {
+      const content = await file.text();
+
+      // Parse and re-stringify JSON to sanitize whitespace
+      const parsedJson = JSON.parse(content);
+      const sanitizedJson = JSON.stringify(parsedJson);
+
+      return sanitizedJson;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(`Invalid JSON file: ${error.message}`);
+      }
+      throw new Error(`Failed to read file: ${error.message}`);
     }
   }
 </script>
@@ -456,6 +482,16 @@
                       hint={property.hint}
                       href={property.docsUrl}
                     />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                    <CredentialsInput
+                      id={propertyKey}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                      bind:value={$paramsForm[propertyKey]}
+                      uploadFile={handleFileUpload}
+                      accept=".json"
+                    />
                   {/if}
                 </div>
               {/each}
@@ -471,16 +507,28 @@
               {#each filteredDsnProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 <div class="py-1.5 first:pt-0 last:pb-0">
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={$dsnErrors[propertyKey]}
-                    bind:value={$dsnForm[propertyKey]}
-                    alwaysShowError
-                  />
+                  {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                    <CredentialsInput
+                      id={propertyKey}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                      bind:value={$dsnForm[propertyKey]}
+                      uploadFile={handleFileUpload}
+                      accept=".json"
+                    />
+                  {:else}
+                    <Input
+                      id={propertyKey}
+                      label={property.displayName}
+                      placeholder={property.placeholder}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={$dsnErrors[propertyKey]}
+                      bind:value={$dsnForm[propertyKey]}
+                      alwaysShowError
+                    />
+                  {/if}
                 </div>
               {/each}
             </form>
@@ -497,17 +545,143 @@
           {#each filteredDsnProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             <div class="py-1.5 first:pt-0 last:pb-0">
-              <Input
-                id={propertyKey}
-                label={property.displayName}
-                placeholder={property.placeholder}
-                secret={property.secret}
-                hint={property.hint}
-                errors={$dsnErrors[propertyKey]}
-                bind:value={$dsnForm[propertyKey]}
-                alwaysShowError
-              />
+              {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                  bind:value={$dsnForm[propertyKey]}
+                  uploadFile={handleFileUpload}
+                  accept=".json"
+                />
+              {:else}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={$dsnErrors[propertyKey]}
+                  bind:value={$dsnForm[propertyKey]}
+                  alwaysShowError
+                />
+              {/if}
             </div>
+          {/each}
+        </form>
+      {:else if connector.name === "gcs"}
+        <!-- GCS with Radio UI for authentication methods -->
+        <form
+          id={paramsFormId}
+          class="pb-5 flex-grow overflow-y-auto"
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
+        >
+          <!-- Render name and path first -->
+          {#each filteredParamsProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            {#if propertyKey === "name" || propertyKey === "path"}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              </div>
+            {/if}
+          {/each}
+
+          <!-- Authentication method selection -->
+          <div class="py-1.5 first:pt-0 last:pb-0">
+            <div class="text-sm font-medium mb-4">Authentication method</div>
+            <Radio
+              bind:value={gcsAuthMethod}
+              options={GCS_AUTH_OPTIONS}
+              name="gcs-auth-method"
+            >
+              <svelte:fragment slot="custom-content" let:option>
+                {#if option.value === "credentials"}
+                  <CredentialsInput
+                    id="google_application_credentials"
+                    hint="Upload a JSON key file for a service account with GCS access."
+                    optional={false}
+                    bind:value={$paramsForm.google_application_credentials}
+                    uploadFile={handleFileUpload}
+                    accept=".json"
+                  />
+                {:else if option.value === "hmac"}
+                  <div class="space-y-3">
+                    <Input
+                      id="key_id"
+                      label="Access Key ID"
+                      placeholder="Enter your HMAC access key ID"
+                      optional={false}
+                      secret={false}
+                      hint="HMAC access key ID for S3-compatible authentication"
+                      errors={normalizeErrors($paramsErrors.key_id)}
+                      bind:value={$paramsForm.key_id}
+                      alwaysShowError
+                    />
+                    <Input
+                      id="secret"
+                      label="Secret Access Key"
+                      placeholder="Enter your HMAC secret access key"
+                      optional={false}
+                      secret={true}
+                      hint="HMAC secret access key for S3-compatible authentication"
+                      errors={normalizeErrors($paramsErrors.secret)}
+                      bind:value={$paramsForm.secret}
+                      alwaysShowError
+                    />
+                  </div>
+                {/if}
+              </svelte:fragment>
+            </Radio>
+          </div>
+
+          <!-- Render other properties (excluding path and auth fields) -->
+          {#each filteredParamsProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            {#if propertyKey !== "path" && propertyKey !== "google_application_credentials" && propertyKey !== "key_id" && propertyKey !== "secret"}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={normalizeErrors($paramsErrors[propertyKey])}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <Checkbox
+                    id={propertyKey}
+                    bind:checked={$paramsForm[propertyKey]}
+                    label={property.displayName}
+                    hint={property.hint}
+                    optional={!property.required}
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                  <InformationalField
+                    description={property.description}
+                    hint={property.hint}
+                    href={property.docsUrl}
+                  />
+                {/if}
+              </div>
+            {/if}
           {/each}
         </form>
       {:else}
@@ -546,6 +720,16 @@
                   description={property.description}
                   hint={property.hint}
                   href={property.docsUrl}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                  bind:value={$paramsForm[propertyKey]}
+                  uploadFile={handleFileUpload}
+                  accept=".json"
                 />
               {/if}
             </div>
