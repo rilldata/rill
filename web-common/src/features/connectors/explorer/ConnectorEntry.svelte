@@ -7,10 +7,8 @@
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
-  import {
-    connectorIconMapping,
-    getConnectorIconKeyForMotherDuck,
-  } from "../connector-icon-mapping";
+  import { connectorIconMapping } from "../connector-icon-mapping";
+  import { getConnectorIconKeyForMotherDuck } from "../connector-utils";
   import DatabaseExplorer from "./DatabaseExplorer.svelte";
 
   export let connector: V1AnalyzedConnector;
