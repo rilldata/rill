@@ -114,9 +114,9 @@ Rounded table corners are tricky:
     @apply border-r;
   }
   tbody tr:last-child td:first-child {
-    @apply rounded-bl-sm;
+    @apply rounded-bl-lg;
   }
   tbody tr:last-child td:last-child {
-    @apply rounded-br-sm;
+    @apply rounded-br-lg;
   }
 </style>

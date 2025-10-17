@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
   import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
@@ -12,8 +13,13 @@
   import { useDashboards } from "./selectors";
 
   export let isEmbedded = false;
+  export let isPreview = false;
+  export let previewLimit = 5;
 
   $: ({ instanceId } = $runtime);
+  $: ({
+    params: { organization, project },
+  } = $page);
 
   $: dashboards = useDashboards(instanceId);
   $: ({
@@ -23,6 +29,12 @@
     isSuccess,
     error,
   } = $dashboards);
+
+  $: displayData = isPreview
+    ? (dashboardsData?.slice(0, previewLimit) ?? [])
+    : (dashboardsData ?? []);
+  $: hasMoreDashboards =
+    isPreview && dashboardsData && dashboardsData.length > previewLimit;
 
   /**
    * Table column definitions.
@@ -118,8 +130,26 @@
       </svelte:fragment>
     </NoResourceCTA>
   {:else}
-    <Table kind="dashboard" data={dashboardsData} {columns} {columnVisibility}>
-      <ResourceHeader kind="dashboard" icon={ExploreIcon} slot="header" />
-    </Table>
+    <div class="flex flex-col gap-y-3 w-full">
+      <Table
+        kind="dashboard"
+        data={displayData}
+        {columns}
+        {columnVisibility}
+        toolbar={!isPreview}
+      >
+        <ResourceHeader kind="dashboard" icon={ExploreIcon} slot="header" />
+      </Table>
+      {#if hasMoreDashboards}
+        <div class="pl-4 py-1">
+          <a
+            href={`/${organization}/${project}/-/dashboards`}
+            class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+          >
+            See all dashboards →
+          </a>
+        </div>
+      {/if}
+    </div>
   {/if}
 {/if}

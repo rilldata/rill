@@ -34,9 +34,9 @@ Rounded table corners are tricky:
     @apply border-y;
   }
   thead tr td:first-child {
-    @apply border-l rounded-tl-sm;
+    @apply border-l rounded-tl-lg;
   }
   thead tr td:last-child {
-    @apply border-r rounded-tr-sm;
+    @apply border-r rounded-tr-lg;
   }
 </style>

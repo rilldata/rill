@@ -6,7 +6,8 @@
   import type { ConversationManager } from "../conversation-manager";
 
   export let conversationManager: ConversationManager;
-  export let onSend: () => void;
+  export let onSend: (() => void) | undefined = undefined;
+  export let noMargin = false;
 
   let textarea: HTMLTextAreaElement;
   let placeholder = "Ask about your data...";
@@ -44,7 +45,7 @@
     // Message handling with input focus
     try {
       await currentConversation.sendMessage();
-      onSend();
+      onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -85,7 +86,11 @@
   }
 </script>
 
-<form class="chat-input-form" on:submit|preventDefault={sendMessage}>
+<form
+  class="chat-input-form"
+  class:no-margin={noMargin}
+  on:submit|preventDefault={sendMessage}
+>
   <textarea
     bind:this={textarea}
     {value}
@@ -127,6 +132,10 @@
 
   .chat-input-form:focus-within {
     @apply border-primary-400;
+  }
+
+  .chat-input-form.no-margin {
+    margin: 0;
   }
 
   .chat-input {
