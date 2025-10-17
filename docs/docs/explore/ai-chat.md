@@ -2,7 +2,7 @@
 title: "AI Chat in Rill Cloud"
 description: Chat with your data using natural language in Rill Cloud
 sidebar_label: "AI Chat"
-sidebar_position: 05
+sidebar_position: 00
 ---
 
 ## Overview
@@ -18,10 +18,9 @@ AI Chat is powered by [Rill's Model Context Protocol (MCP)](/explore/mcp) integr
 
 AI Chat uses the same [Rill MCP Server](/explore/mcp) technology that powers external AI integrations with tools like Claude Desktop. This means:
 
-- **Governed Data Access** - The AI only queries [metrics views](/build/metrics-view) you've already defined, ensuring accuracy and consistency
-- **Structured Responses** - Results are based on predefined measures and dimensions, not raw database queries
-- **Context-Aware** - The AI understands your metrics view structure, including available dimensions, measures, and time ranges
-- **Secure** - Respects your [project's access](/build/metrics-view/security) controls and user permissions
+- **Fast!** - Get instant answers powered by Rill's optimized query engine 
+- **Accurate Responses** - The Agent only queries [metrics views](/build/metrics-view) you've already defined, ensuring accuracy and consistency
+- **Secure Data Access** - Respects your [project's access](/build/metrics-view/security) controls and user permissions
 
 ## Accessing AI Chat
 
@@ -31,6 +30,7 @@ AI Chat uses the same [Rill MCP Server](/explore/mcp) technology that powers ext
 2. Click on the **AI** tab in the project navigation
 3. Start typing your question in the chat interface
 
+<!-- 
 ### Access AI Chat from a Dashboard
 
 You can also access AI Chat directly while exploring a dashboard, making it easy to ask questions about what you're currently viewing:
@@ -55,7 +55,7 @@ This context-aware functionality means you can ask questions like:
 
 :::tip Context-Aware Queries
 Opening AI Chat from within a dashboard allows for more natural, context-aware questions. The AI understands what you're looking at, so you don't need to repeat filters or time ranges in your questions.
-:::
+::: -->
 
 ## Understanding Responses
 
@@ -64,11 +64,11 @@ AI Chat provides rich, multi-layered responses to help you understand your data 
 ### What's Included in Responses
 
 1. **Summary** - A concise answer to your question with key findings and insights
-2. **Canvas Dashboard Components** - Interactive visualizations built using canvas dashboard widgets that help you see patterns at a glance. These can include:
+2. **Visualizations** _Coming soon!_ - Interactive visualizations that help you see patterns at a glance. These can include:
    - Time series charts showing trends over time
    - Bar charts comparing dimensions or categories
    - Tables with formatted data
-   - Big number displays for key metrics
+   - and more!
 3. **Detailed Results** - Tables or lists with specific numbers and breakdowns
 4. **Dashboard Links** - Direct links to your existing [Explore dashboards](/explore/dashboard-101) with filters and time ranges pre-applied based on your question
 5. **Suggested Next Steps** - Follow-up questions or areas to investigate further
@@ -106,9 +106,7 @@ To get the most accurate and contextual responses from AI Chat, you can add cust
 AI instructions help the AI:
 - Understand your specific business context and terminology
 - Format responses in ways that match your team's preferences
-- Generate properly formatted Explore dashboard links
 - Focus on the metrics and dimensions most relevant to your use case
-- Provide more actionable insights tailored to your workflows
 
 ### Where to Add Instructions
 
@@ -119,22 +117,6 @@ You can add `ai_instructions` in two places:
 
 For detailed examples and best practices on writing effective AI instructions, see the [Rill MCP documentation](/explore/mcp#adding-ai-instructions-to-your-model).
 
-
-## AI Chat vs. Rill MCP Server
-
-Rill offers two ways to chat with your data using AI:
-
-| Feature      | AI Chat (in Rill Cloud)                    | Rill MCP Server                               |
-| ------------ | ------------------------------------------ | --------------------------------------------- |
-| **Location** | Built into Rill Cloud browser interface    | External AI assistants (Claude Desktop, etc.) |
-| **Setup**    | No setup required                          | Requires MCP client configuration             |
-| **Access**   | Any Rill Cloud user with project access    | Requires personal access token                |
-| **Use Case** | Quick questions while exploring dashboards | Deep analysis sessions in your AI assistant   |
-| **Best For** | Business users and analysts                | Data teams and power users                    |
-
-Both use the same underlying technology and provide equally accurate results based on your metrics views.
-
-## Best Practices
 <!-- 
 ### Start Broad, Then Narrow
 Begin with general questions to understand the data, then ask follow-up questions to dive deeper:
