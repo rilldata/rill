@@ -4,26 +4,27 @@
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
   import Day from "./Day.svelte";
 
+  const weekCount = 6; // show 6 weeks to avoid layout shift
+
+  export let interval: Interval<true>;
   export let startDay: DateTime<true>;
   export let firstDayOfWeek: WeekdayNumbers;
-  export let interval: Interval<true> | undefined;
-  export let selectingStart: boolean;
   export let visibleMonths = 2;
   export let visibleIndex: number;
-  export let potentialEnd: DateTime | undefined;
-  export let potentialStart: DateTime | undefined;
   export let singleDaySelection = false;
+  export let anchorDay: DateTime<true> | undefined;
   export let maxDate: DateTime<true> | DateTime<false> | undefined;
+  export let minDate: DateTime<true> | DateTime<false> | undefined;
   export let onPan: (direction: 1 | -1) => void;
   export let onSelectDay: (date: DateTime<true>) => void;
+  export let onHoverDay: (date: DateTime<true>) => void;
+
+  let potentialInterval: Interval<true> | undefined = undefined;
 
   $: weekDayOfFirstDay = startDay.startOf("month").localWeekday;
 
-  $: weekCount = Math.ceil((weekDayOfFirstDay + startDay.daysInMonth) / 7);
-
-  $: inclusiveEnd = interval?.end?.minus({ millisecond: 0 });
-
   $: forwardPanEnabled = !maxDate || startDay.plus({ month: 1 }) < maxDate;
+  $: backwardPanEnabled = !minDate || startDay.minus({ month: 1 }) >= minDate;
 
   $: days = Array.from({ length: weekCount * 7 }, (_, i) =>
     startDay.plus({ day: i + 1 - weekDayOfFirstDay }),
@@ -35,16 +36,16 @@
   });
 
   function resetPotentialDates() {
-    potentialEnd = undefined;
-    potentialStart = undefined;
+    potentialInterval = undefined;
   }
 </script>
 
 <div class="flex flex-col gap-2 w-full">
-  <div class="flex justify-between px-2">
+  <div class="flex justify-between items-center px-2">
     <button
       type="button"
-      class="hover:opacity-50"
+      class="hover:bg-gray-200 rounded-full aspect-square size-5 flex items-center justify-center"
+      class:opacity-50={!backwardPanEnabled}
       class:hide={visibleIndex !== 0}
       on:click={() => onPan(-1)}
     >
@@ -56,23 +57,21 @@
       <b>{startDay.monthLong}</b>
       <p>{startDay.year}</p>
     </div>
-    {#if forwardPanEnabled}
-      <button
-        type="button"
-        class="hover:opacity-50"
-        class:hide={visibleIndex !== visibleMonths - 1}
-        on:click={() => onPan(1)}
-      >
-        <ChevronRight size="14px" />
-      </button>
-    {/if}
+
+    <button
+      type="button"
+      class="hover:bg-gray-200 rounded-full aspect-square size-5 flex items-center justify-center"
+      class:opacity-50={!forwardPanEnabled}
+      class:hide={visibleIndex !== visibleMonths - 1}
+      on:click={() => onPan(1)}
+    >
+      <ChevronRight size="14px" />
+    </button>
   </div>
 
   <div
     role="presentation"
-    class="grid grid-cols-7 gap-y-1 w-full"
-    class:single-day-selection={singleDaySelection}
-    class:selecting-start={selectingStart}
+    class="grid grid-cols-7 w-full"
     on:mouseleave={resetPotentialDates}
   >
     {#each weekdays as weekday (weekday)}
@@ -81,16 +80,15 @@
     {#each days as date (date.toISO())}
       <Day
         {date}
-        {selectingStart}
-        {inclusiveEnd}
-        bind:potentialEnd
-        bind:potentialStart
+        {interval}
+        bind:potentialInterval
         {singleDaySelection}
-        {onSelectDay}
-        {resetPotentialDates}
-        start={interval?.start}
+        {anchorDay}
         outOfMonth={date.month !== startDay.month}
         disabled={false}
+        {onSelectDay}
+        {resetPotentialDates}
+        {onHoverDay}
       />
     {/each}
   </div>

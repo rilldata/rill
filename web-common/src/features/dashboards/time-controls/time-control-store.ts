@@ -290,14 +290,18 @@ export function calculateTimeRangePartial(
 
   let parsed: RillTime | undefined;
 
-  try {
-    parsed = parseRillTime(currentSelectedTimeRange.name || "");
-  } catch (e) {
-    console.error("Error parsing rill time", e);
+  if (currentSelectedTimeRange.name === TimeRangePreset.CUSTOM) {
+    parsed = undefined;
+  } else if (currentSelectedTimeRange?.name) {
+    try {
+      parsed = parseRillTime(currentSelectedTimeRange.name);
+    } catch (e) {
+      console.error("Error parsing rill time", e);
+    }
   }
 
-  const rillTimeGrain = parsed?.asOfLabel?.snap
-    ? GrainAliasToV1TimeGrain[parsed.asOfLabel.snap]
+  const rillTimeGrain: V1TimeGrain | undefined = parsed?.asOfLabel?.snap
+    ? GrainAliasToV1TimeGrain[parsed?.asOfLabel.snap]
     : parsed?.interval.getGrain();
 
   // Temporary for the new rill-time UX to work.

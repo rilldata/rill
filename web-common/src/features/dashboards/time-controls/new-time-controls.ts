@@ -324,6 +324,7 @@ import {
   RillLegacyIsoInterval,
   RillPeriodToGrainInterval,
   RillShorthandInterval,
+  RillTimeLabel,
   RillTimeStartEndInterval,
   type RillTime,
 } from "../url-state/time-ranges/RillTime";
@@ -662,23 +663,23 @@ export function convertLegacyTime(timeString: string) {
 }
 
 export function constructAsOfString(
-  asOf: string,
+  asOf: RillTimeLabel | undefined,
   grain: V1TimeGrain | undefined | null,
   pad: boolean,
 ): string {
   if (!grain) {
-    return asOf;
+    return asOf ?? RillTimeLabel.Now;
   }
 
   const alias = V1TimeGrainToAlias[grain];
 
   let base: string;
 
-  if (asOf === "latest" || asOf === undefined) {
+  if (asOf === RillTimeLabel.Latest || asOf === undefined) {
     base = `latest/${alias}`;
-  } else if (asOf === "watermark") {
+  } else if (asOf === RillTimeLabel.Watermark) {
     base = `watermark/${alias}`;
-  } else if (asOf === "now") {
+  } else if (asOf === RillTimeLabel.Now) {
     base = `now/${alias}`;
   } else {
     base = `${asOf}/${alias}`;
@@ -709,7 +710,7 @@ export function constructNewString({
   currentString: string;
   truncationGrain: V1TimeGrain | undefined | null;
   snapToEnd: boolean;
-  ref: "watermark" | "latest" | "now" | string;
+  ref: RillTimeLabel | undefined;
 }): string {
   const legacy = isUsingLegacyTime(currentString);
 

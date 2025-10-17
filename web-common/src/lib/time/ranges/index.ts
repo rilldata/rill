@@ -147,7 +147,9 @@ export function convertTimeRangePreset(
       name: timeRangePreset,
       start,
       end: DateTime.fromJSDate(end)
+        .setZone(zone || "UTC")
         .plus({ [minTimeGrain || "millisecond"]: 1 })
+        .startOf(minTimeGrain || "millisecond")
         .toJSDate(),
     };
   }
