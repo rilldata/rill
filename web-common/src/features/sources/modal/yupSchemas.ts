@@ -59,7 +59,7 @@ export const getYupSchema = {
   }),
 
   bigquery: yup.object().shape({
-    google_application_credentials: yup.string(),
+    google_application_credentials: yup.string().optional(),
     project_id: yup.string().optional(),
   }),
 

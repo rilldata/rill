@@ -36,10 +36,8 @@
   import { isEmpty, normalizeErrors } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
-    BIGQUERY_AUTH_OPTIONS,
     GCS_AUTH_OPTIONS,
     type ClickHouseConnectorType,
-    type BigQueryAuthMethod,
     type GCSAuthMethod,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
@@ -60,10 +58,7 @@
   const isConnectorForm = formType === "connector";
 
   let copied = false;
-  let gcloudCommandCopied = false;
   let connectionTab: ConnectorType = "parameters";
-  let bigqueryAuthMethod: BigQueryAuthMethod = "credentials";
-  let bigqueryCredentialsFilename: string = "";
   let gcsAuthMethod: GCSAuthMethod = "credentials";
 
   // Form 1: Individual parameters
@@ -171,19 +166,7 @@
           const key = String(property.key);
           const value = $paramsForm[key];
 
-          // Special handling for BigQuery credentials
           if (
-            connector.name === "bigquery" &&
-            key === "google_application_credentials"
-          ) {
-            // Only require credentials if credentials method is selected
-            if (
-              bigqueryAuthMethod === "credentials" &&
-              (isEmpty(value) || $paramsErrors[key]?.length)
-            ) {
-              return true;
-            }
-          } else if (
             connector.name === "gcs" &&
             (key === "google_application_credentials" ||
               key === "key_id" ||
@@ -350,14 +333,6 @@
     }, 2_000);
   }
 
-  function copyGcloudCommand() {
-    navigator.clipboard.writeText("gcloud auth application-default login");
-    gcloudCommandCopied = true;
-    setTimeout(() => {
-      gcloudCommandCopied = false;
-    }, 2_000);
-  }
-
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
     const { name, value } = target;
@@ -390,15 +365,9 @@
     const values = event.form.data;
 
     try {
-      // For BigQuery, modify the form data based on authentication method
+      // For GCS, modify the form data based on authentication method
       let processedValues = values;
-      if (connector.name === "bigquery") {
-        processedValues = { ...values };
-        if (bigqueryAuthMethod === "inferred") {
-          // Remove credentials when using inferred method
-          delete processedValues.google_application_credentials;
-        }
-      } else if (connector.name === "gcs") {
+      if (connector.name === "gcs") {
         processedValues = { ...values };
         if (gcsAuthMethod === "credentials") {
           // Remove HMAC keys when using credentials method
@@ -465,18 +434,6 @@
       const parsedJson = JSON.parse(content);
       const sanitizedJson = JSON.stringify(parsedJson);
 
-      // For BigQuery, try to extract project_id from the credentials JSON
-      if (connector.name === "bigquery" && parsedJson.project_id) {
-        // Update the project_id field in the form
-        paramsForm.update(
-          ($form) => {
-            $form.project_id = parsedJson.project_id;
-            return $form;
-          },
-          { taint: false },
-        );
-      }
-
       return sanitizedJson;
     } catch (error) {
       if (error instanceof SyntaxError) {
@@ -497,7 +454,6 @@
         'clickhouse',
         'snowflake',
         'salesforce',
-        'bigquery',
       ].includes(connector.name ?? '')
         ? 'max-h-[38.5rem] min-h-[38.5rem]'
         : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
@@ -651,126 +607,6 @@
                 />
               {/if}
             </div>
-          {/each}
-        </form>
-      {:else if connector.name === "bigquery"}
-        <!-- BigQuery with Radio UI for authentication methods -->
-        <form
-          id={paramsFormId}
-          class="pb-5 flex-grow overflow-y-auto"
-          use:paramsEnhance
-          on:submit|preventDefault={paramsSubmit}
-        >
-          <!-- Render Project ID first -->
-          {#each filteredParamsProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            {#if propertyKey === "project_id"}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              </div>
-            {/if}
-          {/each}
-
-          <!-- Authentication method selection -->
-          <div class="py-1.5 first:pt-0 last:pb-0">
-            <div class="text-sm font-medium mb-4">Authentication method</div>
-            <Radio
-              bind:value={bigqueryAuthMethod}
-              options={BIGQUERY_AUTH_OPTIONS}
-              name="bigquery-auth-method"
-            >
-              <svelte:fragment slot="custom-content" let:option>
-                {#if option.value === "credentials"}
-                  <CredentialsInput
-                    id="google_application_credentials"
-                    hint="Upload a JSON key file for a service account with BigQuery access."
-                    optional={false}
-                    bind:value={$paramsForm.google_application_credentials}
-                    bind:filename={bigqueryCredentialsFilename}
-                    uploadFile={handleFileUpload}
-                    accept=".json"
-                  />
-                {:else if option.value === "inferred"}
-                  <div class="rounded-lg">
-                    <div class="flex justify-between items-center mb-3">
-                      <div class="text-sm text-muted-foreground text-medium">
-                        Run code below to setup first
-                      </div>
-                      <a
-                        href="https://docs.rilldata.com/connect/data-source/bigquery#local-google-cloud-cli-credentials-local-development-only"
-                        class="text-primary-500 text-xs hover:underline"
-                        target="_blank">Learn more</a
-                      >
-                    </div>
-                    <div class="relative">
-                      <code
-                        class="bg-gray-100 px-3 py-2 pr-10 rounded text-sm font-mono border border-gray-200 text-gray-800 select-all block"
-                        >gcloud auth application-default login</code
-                      >
-                      <button
-                        type="button"
-                        class="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 rounded hover:bg-gray-200 transition-colors flex items-center justify-center"
-                        on:click={copyGcloudCommand}
-                      >
-                        {#if gcloudCommandCopied}
-                          <Check size="16px" />
-                        {:else}
-                          <CopyIcon size="16px" />
-                        {/if}
-                      </button>
-                    </div>
-                  </div>
-                {/if}
-              </svelte:fragment>
-            </Radio>
-          </div>
-
-          <!-- Render other properties (excluding project_id and credentials) -->
-          {#each filteredParamsProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            {#if propertyKey !== "project_id" && propertyKey !== "google_application_credentials"}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    optional={!property.required}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={normalizeErrors($paramsErrors[propertyKey])}
-                    bind:value={$paramsForm[propertyKey]}
-                    onInput={(_, e) => onStringInputChange(e)}
-                    alwaysShowError
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                  <Checkbox
-                    id={propertyKey}
-                    bind:checked={$paramsForm[propertyKey]}
-                    label={property.displayName}
-                    hint={property.hint}
-                    optional={!property.required}
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                  <InformationalField
-                    description={property.description}
-                    hint={property.hint}
-                    href={property.docsUrl}
-                  />
-                {/if}
-              </div>
-            {/if}
           {/each}
         </form>
       {:else if connector.name === "gcs"}
