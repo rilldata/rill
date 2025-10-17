@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -746,15 +747,38 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		opts.ReadTimeout = time.Second * 300
 	}
 
+	// Quick check to ensure the host and port are reachable.
+	// This only verifies that the TCP socket is open; it will succeed even if the ClickHouse instance is scaled to zero.
+	// Ensures that only valid hosts and ports proceed to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
+	if conf.Host != "" && conf.Port != 0 {
+		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
+		conn, err := net.DialTimeout("tcp", target, 5*time.Second)
+		if err != nil {
+			return nil, fmt.Errorf("Error: %w - please check that the host and port are correct %s", err, target)
+		}
+		conn.Close()
+	}
+
 	// Open the connection
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 	err := db.Ping()
 	if err != nil {
-		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
-			return nil, err
+		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
+		if strings.Contains(err.Error(), "EOF") || strings.Contains(err.Error(), "[handshake] unexpected packet [21]") {
+			return nil, fmt.Errorf("Error: %w — this usually happens due to SSL/TLS mismatch", err)
 		}
-
-		if conf.DSN != "" {
+		// Return immediately without retrying in the following cases:
+		//   1. The error is not a known transient native-protocol failure:
+		//        - "unexpected packet"   → The native protocol hit an HTTP endpoint.
+		//        - "i/o timeout"         → The native TCP port is unreachable or the cluster is paused.
+		//        - "operation timed out" → variant of "i/o timeout", commonly seen on macOS and BSD systems.
+		//   2. The current protocol is already HTTP (no need to retry with HTTP again).
+		//   3. A DSN was explicitly provided (respect the user’s configuration).
+		if (!strings.Contains(err.Error(), "unexpected packet") &&
+			!strings.Contains(err.Error(), "i/o timeout") &&
+			!strings.Contains(err.Error(), "operation timed out")) ||
+			opts.Protocol == clickhouse.HTTP ||
+			conf.DSN != "" {
 			return nil, err
 		}
 		// may be the port is http, also try with http protocol if DSN is not provided
@@ -762,6 +786,11 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 		err := db.Ping()
 		if err != nil {
+			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
+			if strings.Contains(err.Error(), "EOF") ||
+				(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+				return nil, fmt.Errorf("Error: %w — this usually happens due to SSL/TLS mismatch", err)
+			}
 			return nil, err
 		}
 		// connection with http protocol is successful
