@@ -50,6 +50,10 @@
   export let onBack: () => void;
   export let onClose: () => void;
 
+  let saveAnyway = false;
+  let isSavingAnyway = false;
+  let showSaveAnyway = false;
+
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
 
@@ -132,6 +136,9 @@
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
   let clickhouseParamsForm;
   let clickhouseDsnForm;
+  let clickhouseIsSavingAnyway: boolean;
+  let clickhouseShowSaveAnyway: boolean = false;
+  let clickhouseHandleSaveAnyway: () => Promise<void>;
 
   // Helper function to check if connector only has DSN (no tabs)
   function hasOnlyDsn() {
@@ -207,6 +214,72 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  async function handleSaveAnyway() {
+    // For ClickHouse, delegate to the child component's handleSaveAnyway function
+    if (connector.name === "clickhouse") {
+      await clickhouseHandleSaveAnyway();
+      return;
+    }
+
+    // For other connectors, use the original logic
+    saveAnyway = true;
+    isSavingAnyway = true;
+
+    // Get the current form values based on the active form
+    const values =
+      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+
+    try {
+      if (formType === "source") {
+        await submitAddSourceForm(queryClient, connector, values, true);
+      } else {
+        await submitAddConnectorForm(queryClient, connector, values, true);
+      }
+      onClose();
+    } catch (e) {
+      let error: string;
+      let details: string | undefined = undefined;
+
+      // Handle different error types
+      if (e instanceof Error) {
+        error = e.message;
+        details = undefined;
+      } else if (e?.message && e?.details) {
+        error = e.message;
+        details = e.details !== e.message ? e.details : undefined;
+      } else if (e?.response?.data) {
+        const originalMessage = e.response.data.message;
+        const humanReadable = humanReadableErrorMessage(
+          connector.name,
+          e.response.data.code,
+          originalMessage,
+        );
+        error = humanReadable;
+        details =
+          humanReadable !== originalMessage ? originalMessage : undefined;
+      } else if (e?.message) {
+        error = e.message;
+        details = undefined;
+      } else {
+        error = "Unknown error";
+        details = undefined;
+      }
+
+      // Keep error state for each form - match the display logic
+      if (hasOnlyDsn() || connectionTab === "dsn") {
+        dsnError = error;
+        dsnErrorDetails = details;
+      } else {
+        paramsError = error;
+        paramsErrorDetails = details;
+      }
+    } finally {
+      // Reset saveAnyway state after submission completes
+      saveAnyway = false;
+      isSavingAnyway = false;
+    }
+  }
 
   function getClickHouseYamlPreview(
     values: Record<string, unknown>,
@@ -328,14 +401,22 @@
     cancel: () => void;
     result: Extract<ActionResult, { type: "success" | "failure" }>;
   }) {
-    if (!event.form.valid) return;
+    // Show Save Anyway button as soon as form submission starts
+    showSaveAnyway = true;
+
+    if (!event.form.valid && !saveAnyway) return;
     const values = event.form.data;
 
     try {
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
+        await submitAddSourceForm(queryClient, connector, values, saveAnyway);
       } else {
-        await submitAddConnectorForm(queryClient, connector, values);
+        await submitAddConnectorForm(
+          queryClient,
+          connector,
+          values,
+          saveAnyway,
+        );
       }
       onClose();
     } catch (e) {
@@ -375,6 +456,10 @@
         paramsError = error;
         paramsErrorDetails = details;
       }
+    } finally {
+      // Reset saveAnyway state after submission completes
+      saveAnyway = false;
+      isSavingAnyway = false;
     }
   }
 </script>
@@ -408,6 +493,9 @@
           bind:connectionTab
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
+          bind:isSavingAnyway={clickhouseIsSavingAnyway}
+          bind:showSaveAnyway={clickhouseShowSaveAnyway}
+          bind:handleSaveAnyway={clickhouseHandleSaveAnyway}
           on:submitting
         />
       {:else if hasDsnFormOption}
@@ -560,42 +648,70 @@
     >
       <Button onClick={onBack} type="secondary">Back</Button>
 
-      <Button
-        disabled={connector.name === "clickhouse"
-          ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-          : submitting || isSubmitDisabled}
-        loading={connector.name === "clickhouse"
-          ? clickhouseSubmitting
-          : submitting}
-        loadingCopy={connector.name === "clickhouse"
-          ? "Connecting..."
-          : "Testing connection..."}
-        form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-        submitForm
-        type="primary"
-      >
-        {#if connector.name === "clickhouse"}
-          {#if clickhouseConnectorType === "rill-managed"}
-            {#if clickhouseSubmitting}
-              Connecting...
-            {:else}
-              Connect
-            {/if}
-          {:else if clickhouseSubmitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else if isConnectorForm}
-          {#if submitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else}
-          Test and Add data
+      <div class="flex gap-2">
+        <!-- Show Save Anyway button when form submission has started -->
+        {#if showSaveAnyway || clickhouseShowSaveAnyway}
+          <Button
+            disabled={false}
+            loading={connector.name === "clickhouse"
+              ? clickhouseSubmitting && clickhouseIsSavingAnyway
+              : submitting && isSavingAnyway}
+            loadingCopy="Saving..."
+            onClick={handleSaveAnyway}
+            type="secondary"
+          >
+            Save Anyway
+          </Button>
         {/if}
-      </Button>
+
+        <Button
+          disabled={connector.name === "clickhouse"
+            ? clickhouseSubmitting ||
+              clickhouseIsSubmitDisabled ||
+              isSavingAnyway ||
+              clickhouseIsSavingAnyway
+            : submitting || isSubmitDisabled || isSavingAnyway}
+          loading={connector.name === "clickhouse"
+            ? clickhouseSubmitting && !clickhouseIsSavingAnyway
+            : submitting && !isSavingAnyway}
+          loadingCopy={connector.name === "clickhouse"
+            ? clickhouseIsSavingAnyway
+              ? "Saving..."
+              : "Connecting..."
+            : "Testing connection..."}
+          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+          submitForm
+          type="primary"
+        >
+          {#if connector.name === "clickhouse"}
+            {#if clickhouseConnectorType === "rill-managed"}
+              {#if clickhouseSubmitting && clickhouseIsSavingAnyway}
+                Saving...
+              {:else if clickhouseSubmitting && !clickhouseIsSavingAnyway}
+                Connecting...
+              {:else}
+                Connect
+              {/if}
+            {:else if clickhouseSubmitting && clickhouseIsSavingAnyway}
+              Saving...
+            {:else if clickhouseSubmitting && !clickhouseIsSavingAnyway}
+              Testing connection...
+            {:else}
+              Test and Connect
+            {/if}
+          {:else if isConnectorForm}
+            {#if submitting && !isSavingAnyway}
+              Testing connection...
+            {:else}
+              Test and Connect
+            {/if}
+          {:else if submitting && !isSavingAnyway}
+            Testing connection...
+          {:else}
+            Test and Add data
+          {/if}
+        </Button>
+      </div>
     </div>
   </div>
 

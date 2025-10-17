@@ -42,6 +42,11 @@
   ) => void = () => {};
   export let connectionTab: ConnectorType = "parameters";
   export { paramsForm, dsnForm };
+  export let isSavingAnyway: boolean = false;
+  export let showSaveAnyway: boolean = false;
+
+  // Export the handleSaveAnyway function for parent component
+  export { handleSaveAnyway };
 
   const dispatch = createEventDispatcher();
 
@@ -198,20 +203,11 @@
     }
   }
 
-  async function handleOnUpdate<
-    T extends Record<string, unknown>,
-    M = any,
-    In extends Record<string, unknown> = T,
-  >(event: {
-    form: SuperValidated<T, M, In>;
-    cancel: () => void;
-    result: Extract<
-      import("@sveltejs/kit").ActionResult,
-      { type: "success" | "failure" }
-    >;
-  }) {
-    if (!event.form.valid) return;
-    const values = { ...event.form.data };
+  async function handleSaveAnyway() {
+    isSavingAnyway = true;
+
+    // Get the current form values based on the active tab
+    const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
     // Ensure ClickHouse Cloud specific requirements are met
     // Only apply these when using parameters tab, not DSN tab
@@ -224,7 +220,12 @@
     }
 
     try {
-      await submitAddConnectorForm(queryClient, connector, values);
+      await submitAddConnectorForm(
+        queryClient,
+        connector,
+        values,
+        true, // saveAnyway = true
+      );
       onClose();
     } catch (e) {
       let error: string;
@@ -261,6 +262,89 @@
         dsnErrorDetails = details;
         setError(dsnError, dsnErrorDetails);
       }
+    } finally {
+      // Reset isSavingAnyway state after submission completes
+      isSavingAnyway = false;
+    }
+  }
+
+  async function handleOnUpdate<
+    T extends Record<string, unknown>,
+    M = any,
+    In extends Record<string, unknown> = T,
+  >(event: {
+    form: SuperValidated<T, M, In>;
+    cancel: () => void;
+    result: Extract<
+      import("@sveltejs/kit").ActionResult,
+      { type: "success" | "failure" }
+    >;
+  }) {
+    // Show Save Anyway button as soon as form submission starts
+    showSaveAnyway = true;
+
+    // Form is invalid and isSavingAnyway is false, returning early
+    if (!event.form.valid && !isSavingAnyway) {
+      return;
+    }
+    const values = { ...event.form.data };
+
+    // Ensure ClickHouse Cloud specific requirements are met
+    // Only apply these when using parameters tab, not DSN tab
+    if (
+      connectorType === "clickhouse-cloud" &&
+      connectionTab === "parameters"
+    ) {
+      (values as any).ssl = true;
+      (values as any).port = "8443";
+    }
+
+    try {
+      await submitAddConnectorForm(
+        queryClient,
+        connector,
+        values,
+        isSavingAnyway,
+      );
+      onClose();
+    } catch (e) {
+      let error: string;
+      let details: string | undefined = undefined;
+      if (e instanceof Error) {
+        error = e.message;
+        details = undefined;
+      } else if (e?.message && e?.details) {
+        error = e.message;
+        details = e.details !== e.message ? e.details : undefined;
+      } else if (e?.response?.data) {
+        const originalMessage = e.response.data.message;
+        const humanReadable = humanReadableErrorMessage(
+          connector.name,
+          e.response.data.code,
+          originalMessage,
+        );
+        error = humanReadable;
+        details =
+          humanReadable !== originalMessage ? originalMessage : undefined;
+      } else if (e?.message) {
+        error = e.message;
+        details = undefined;
+      } else {
+        error = "Unknown error";
+        details = undefined;
+      }
+      if (connectionTab === "parameters") {
+        paramsError = error;
+        paramsErrorDetails = details;
+        setError(paramsError, paramsErrorDetails);
+      } else if (connectionTab === "dsn") {
+        dsnError = error;
+        dsnErrorDetails = details;
+        setError(dsnError, dsnErrorDetails);
+      }
+    } finally {
+      // Reset isSavingAnyway state after submission completes
+      isSavingAnyway = false;
     }
   }
 

@@ -145,6 +145,7 @@ export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  saveAnyway: boolean = false,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -178,47 +179,58 @@ export async function submitAddSourceForm(
     "source",
   );
 
-  // Make sure the file has reconciled before testing the connection
-  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
-    path: ".env",
-    blob: newEnvBlob,
-    create: true,
-    createOnly: false,
-  });
+  if (saveAnyway) {
+    // When saving anyway, just create the .env file without waiting for reconciliation
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: newEnvBlob,
+      create: true,
+      createOnly: false,
+    });
+    // Skip reconciliation and error checking - just save the files
+  } else {
+    // Make sure the file has reconciled before testing the connection
+    await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+      path: ".env",
+      blob: newEnvBlob,
+      create: true,
+      createOnly: false,
+    });
 
-  // Wait for source resource-level reconciliation
-  // This must happen after .env reconciliation since sources depend on secrets
-  try {
-    await waitForResourceReconciliation(
+    // Wait for source resource-level reconciliation
+    // This must happen after .env reconciliation since sources depend on secrets
+    try {
+      await waitForResourceReconciliation(
+        instanceId,
+        newSourceName,
+        ResourceKind.Model,
+        connector.name as string,
+      );
+    } catch (error) {
+      // The source file was already created, so we need to delete it
+      await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+      const errorDetails = (error as any).details;
+
+      throw {
+        message: error.message || "Unable to establish a connection",
+        details:
+          errorDetails && errorDetails !== error.message
+            ? errorDetails
+            : undefined,
+      };
+    }
+
+    // Check for file errors
+    // If the model file has errors, rollback the changes
+    const errorMessage = await fileArtifacts.checkFileErrors(
+      queryClient,
       instanceId,
-      newSourceName,
-      ResourceKind.Model,
-      connector.name as string,
+      newSourceFilePath,
     );
-  } catch (error) {
-    // The source file was already created, so we need to delete it
-    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
-
-    throw {
-      message: error.message || "Unable to establish a connection",
-      details:
-        errorDetails && errorDetails !== error.message
-          ? errorDetails
-          : undefined,
-    };
-  }
-
-  // Check for file errors
-  // If the model file has errors, rollback the changes
-  const errorMessage = await fileArtifacts.checkFileErrors(
-    queryClient,
-    instanceId,
-    newSourceFilePath,
-  );
-  if (errorMessage) {
-    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-    throw new Error(errorMessage);
+    if (errorMessage) {
+      await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+      throw new Error(errorMessage);
+    }
   }
 
   await goto(`/files/${newSourceFilePath}`);
@@ -228,6 +240,7 @@ export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
+  saveAnyway: boolean = false,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -268,47 +281,58 @@ export async function submitAddConnectorForm(
     newConnectorName,
   );
 
-  // Make sure the file has reconciled before testing the connection
-  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
-    path: ".env",
-    blob: newEnvBlob,
-    create: true,
-    createOnly: false,
-  });
+  if (saveAnyway) {
+    // When saving anyway, just create the .env file without waiting for reconciliation
+    await runtimeServicePutFile(instanceId, {
+      path: ".env",
+      blob: newEnvBlob,
+      create: true,
+      createOnly: false,
+    });
+    // Skip reconciliation and error checking - just save the files
+  } else {
+    // Make sure the file has reconciled before testing the connection
+    await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+      path: ".env",
+      blob: newEnvBlob,
+      create: true,
+      createOnly: false,
+    });
 
-  // Wait for connector resource-level reconciliation
-  // This must happen after .env reconciliation since connectors depend on secrets
-  try {
-    await waitForResourceReconciliation(
+    // Wait for connector resource-level reconciliation
+    // This must happen after .env reconciliation since connectors depend on secrets
+    try {
+      await waitForResourceReconciliation(
+        instanceId,
+        newConnectorName,
+        ResourceKind.Connector,
+        connector.name as string,
+      );
+    } catch (error) {
+      // The connector file was already created, so we need to delete it
+      await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
+      const errorDetails = (error as any).details;
+
+      throw {
+        message: error.message || "Unable to establish a connection",
+        details:
+          errorDetails && errorDetails !== error.message
+            ? errorDetails
+            : undefined,
+      };
+    }
+
+    // Check for file errors
+    // If the connector file has errors, rollback the changes
+    const errorMessage = await fileArtifacts.checkFileErrors(
+      queryClient,
       instanceId,
-      newConnectorName,
-      ResourceKind.Connector,
-      connector.name as string,
+      newConnectorFilePath,
     );
-  } catch (error) {
-    // The connector file was already created, so we need to delete it
-    await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
-    const errorDetails = (error as any).details;
-
-    throw {
-      message: error.message || "Unable to establish a connection",
-      details:
-        errorDetails && errorDetails !== error.message
-          ? errorDetails
-          : undefined,
-    };
-  }
-
-  // Check for file errors
-  // If the connector file has errors, rollback the changes
-  const errorMessage = await fileArtifacts.checkFileErrors(
-    queryClient,
-    instanceId,
-    newConnectorFilePath,
-  );
-  if (errorMessage) {
-    await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
-    throw new Error(errorMessage);
+    if (errorMessage) {
+      await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
+      throw new Error(errorMessage);
+    }
   }
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
