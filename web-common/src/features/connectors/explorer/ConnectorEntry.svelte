@@ -49,9 +49,9 @@
           size="14px"
         />
         <span class="flex-none">
-          {#if connector.driver?.name}
+          {#if connector.name}
             <svelte:component
-              this={connectorIconMapping[connector.driver.name]}
+              this={connectorIconMapping[connector.name]}
               size="16px"
             />
           {/if}
