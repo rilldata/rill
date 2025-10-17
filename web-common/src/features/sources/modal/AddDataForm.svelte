@@ -339,17 +339,6 @@
     try {
       // For GCS, modify the form data based on authentication method
       let processedValues = values;
-      // if (connector.name === "gcs") {
-      //   processedValues = { ...values };
-      //   if (gcsAuthMethod === "credentials") {
-      //     // Remove HMAC keys when using credentials method
-      //     delete processedValues.key_id;
-      //     delete processedValues.secret;
-      //   } else if (gcsAuthMethod === "hmac") {
-      //     // Remove credentials when using HMAC method
-      //     delete processedValues.google_application_credentials;
-      //   }
-      // }
 
       if (formType === "source") {
         await submitAddSourceForm(queryClient, connector, processedValues);
