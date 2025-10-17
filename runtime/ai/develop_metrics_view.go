@@ -1,4 +1,4 @@
-package server
+package ai
 
 import (
 	"bytes"
@@ -10,183 +10,171 @@ import (
 	"strings"
 	"time"
 
-	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
-	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/server/auth"
-	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 )
 
-// aiGenerateTimeout is the maximum time to wait for the AI to generate a file.
-// If the AI takes longer than this, we should use fallback logic.
-const aiGenerateTimeout = 30 * time.Second
+type DevelopMetricsView struct {
+	Runtime *runtime.Runtime
+}
 
-// GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
-func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.GenerateMetricsViewFileRequest) (*runtimev1.GenerateMetricsViewFileResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.model", req.Model),
-		attribute.String("args.connector", req.Connector),
-		attribute.String("args.database", req.Database),
-		attribute.String("args.database_schema", req.DatabaseSchema),
-		attribute.String("args.table", req.Table),
-		attribute.String("args.path", req.Path),
-		attribute.Bool("args.use_ai", req.UseAi),
-	)
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+var _ Tool[*DevelopMetricsViewArgs, *DevelopMetricsViewResult] = (*DevelopMetricsView)(nil)
 
-	// Must have edit permissions on the repo
-	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
-		return nil, ErrForbidden
+type DevelopMetricsViewArgs struct {
+	Path  string `json:"path" jsonschema:"The path of a .yaml file in which to create or update a Rill metrics view definition."`
+	Model string `json:"model" jsonschema:"The name of the Rill model which the metrics view should build on."`
+}
+
+type DevelopMetricsViewResult struct {
+	MetricsViewName string `json:"metrics_view_name" jsonschema:"The name of the developed Rill metrics view."`
+}
+
+func (t *DevelopMetricsView) Spec() *mcp.Tool {
+	return &mcp.Tool{
+		Name:        "develop_metrics_view",
+		Title:       "Develop Metrics View",
+		Description: "Agent that develops a single Rill metrics view.",
+	}
+}
+
+func (t *DevelopMetricsView) CheckAccess(claims *runtime.SecurityClaims) bool {
+	// NOTE: Disabled pending further improvements
+	// return claims.Can(runtime.EditRepo)
+	return false
+}
+
+func (t *DevelopMetricsView) Handler(ctx context.Context, args *DevelopMetricsViewArgs) (*DevelopMetricsViewResult, error) {
+	// Validate input
+	if !strings.HasPrefix(args.Path, "/") && args.Path == "" {
+		args.Path = "/" + args.Path
 	}
 
-	// Get instance
-	inst, err := s.runtime.Instance(ctx, req.InstanceId)
+	// Resolve the table information
+	connector, dialect, tbl, isModel, err := t.resolveTable(ctx, args.Model)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check that only one of model or table is provided
-	if req.Model != "" && req.Table != "" {
-		return nil, status.Error(codes.InvalidArgument, "only one of model or table can be provided")
-	} else if req.Model == "" && req.Table == "" {
-		return nil, status.Error(codes.InvalidArgument, "either model or table must be provided")
-	}
-
-	// The `model:` field has fuzzy logic, supporting either models, sources, or external table names.
-	// So we need some similarly fuzzy logic here to determine if there's a matching model.
-	var modelFound bool
-	var modelConnector, modelTable string
-	searchName := req.Table
-	if req.Model != "" {
-		searchName = req.Model
-	}
-	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	// Determine if it's the default connector
+	s := GetSession(ctx)
+	inst, err := t.Runtime.Instance(ctx, s.InstanceID())
 	if err != nil {
 		return nil, err
 	}
-	model, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: searchName}, false)
-	if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
-		return nil, err
-	}
-	if model != nil {
-		modelFound = true
-		modelConnector = model.GetModel().State.ResultConnector
-		modelTable = model.GetModel().State.ResultTable
-	} else {
-		// Check if it's a source
-		source, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: searchName}, false)
-		if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, err
-		}
-		if source != nil {
-			modelFound = true
-			modelConnector = source.GetSource().State.Connector
-			modelTable = source.GetSource().State.Table
-		}
-	}
-
-	// Depending on the result, we populate req.Connector and req.Table which we use subsequently.
-	if modelFound {
-		// We found a matching model.
-		if req.Model != "" { // We found req.Model
-			req.Connector = modelConnector
-			req.Table = modelTable
-		} else if (req.Connector == "" || req.Connector == modelConnector) && strings.EqualFold(req.Table, modelTable) { // We found a model with the same name as req.Table
-			req.Connector = modelConnector
-			req.Table = modelTable
-		} else { // We found a model that doesn't match the request.
-			modelFound = false
-		}
-	} else {
-		// We did not find a model. We proceed to check if "model" references an external table in the default OLAP.
-		if req.Model != "" {
-			req.Connector = ""
-			req.Table = req.Model
-		}
-	}
-
-	// If a connector is not provided, default to the instance's OLAP connector
-	if req.Connector == "" {
-		req.Connector = inst.ResolveOLAPConnector()
-	}
-	isDefaultConnector := req.Connector == inst.ResolveOLAPConnector()
-
-	// Connect to connector and check it's an OLAP db
-	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	// Get table info
-	tbl, err := olap.InformationSchema().Lookup(ctx, req.Database, req.DatabaseSchema, req.Table)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "table not found: %s", err)
-	}
+	isDefaultConnector := connector == inst.ResolveOLAPConnector()
 
 	// Try to generate the YAML with AI
-	var data string
-	var aiSucceeded bool
-	if req.UseAi {
-		// Generate
-		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, modelFound)
-		if err != nil {
-			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err), observability.ZapCtx(ctx))
-		} else {
-			data = res.data
-			aiSucceeded = true
-		}
 
-		// Emit event
-		attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(tbl.Schema.Fields))}
-		attrs = append(attrs,
-			attribute.Bool("succeeded", aiSucceeded),
-			attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()),
-		)
-		if res != nil {
-			attrs = append(attrs,
-				attribute.Int("valid_measures_count", res.validMeasures),
-				attribute.Int("invalid_measures_count", res.invalidMeasures),
-			)
-		}
-		if err != nil {
-			attrs = append(attrs, attribute.String("error", err.Error()))
-		}
-		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_metrics_view_yaml", attrs...)
+	// Generate
+	var data string
+	res, err := t.generateMetricsViewYAMLWithAI(ctx, s.InstanceID(), dialect.String(), connector, tbl, isDefaultConnector, isModel)
+	if err == nil {
+		data = res.data
 	}
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
 	if data == "" {
-		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, modelFound)
+		data, err = generateMetricsViewYAMLSimple(connector, tbl, isDefaultConnector, isModel)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// Write the file to the repo
-	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	repo, release, err := t.Runtime.Repo(ctx, s.InstanceID())
 	if err != nil {
 		return nil, err
 	}
 	defer release()
-	err = repo.Put(ctx, req.Path, strings.NewReader(data))
+	err = repo.Put(ctx, args.Path, strings.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.GenerateMetricsViewFileResponse{AiSucceeded: aiSucceeded}, nil
+	// Wait for it to reconcile
+	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
+	if err != nil {
+		return nil, err
+	}
+	err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName) // TODO: Only if not streaming
+	if err != nil {
+		return nil, err
+	}
+	select {
+	case <-time.After(time.Millisecond * 500):
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	err = ctrl.WaitUntilIdle(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DevelopMetricsViewResult{
+		MetricsViewName: fileutil.Stem(args.Path), // Get name from input path
+	}, nil
+}
+
+func (t *DevelopMetricsView) resolveTable(ctx context.Context, modelName string) (string, drivers.Dialect, *drivers.OlapTable, bool, error) {
+	// Get instance
+	s := GetSession(ctx)
+	inst, err := t.Runtime.Instance(ctx, s.InstanceID())
+	if err != nil {
+		return "", drivers.DialectUnspecified, nil, false, err
+	}
+
+	// Check that a model is provided
+	if modelName == "" {
+		return "", drivers.DialectUnspecified, nil, false, fmt.Errorf("the model name must not be nil")
+	}
+
+	// The `model:` field has fuzzy logic, supporting either models, sources, or external table names.
+	// So we need some similarly fuzzy logic here to determine if there's a matching model.
+	var isModel bool
+	var connector, table string
+	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
+	if err != nil {
+		return "", drivers.DialectUnspecified, nil, false, err
+	}
+	model, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: modelName}, false)
+	if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
+		return "", drivers.DialectUnspecified, nil, false, err
+	}
+	if model != nil {
+		isModel = true
+		connector = model.GetModel().State.ResultConnector
+		table = model.GetModel().State.ResultTable
+	}
+
+	// If we did not find a model. We proceed to check if "model" references an external table in the default OLAP.
+	if connector == "" {
+		connector = inst.ResolveOLAPConnector()
+	}
+	if table == "" {
+		table = modelName
+	}
+
+	// Connect to connector and check it's an OLAP db
+	olap, release, err := t.Runtime.OLAP(ctx, s.InstanceID(), connector)
+	if err != nil {
+		return "", drivers.DialectUnspecified, nil, false, err
+	}
+	defer release()
+
+	// Get table info
+	tbl, err := olap.InformationSchema().Lookup(ctx, "", "", table)
+	if err != nil {
+		return "", drivers.DialectUnspecified, nil, false, fmt.Errorf("table not found: %w", err)
+	}
+
+	return connector, olap.Dialect(), tbl, isModel, nil
 }
 
 // generateMetricsViewYAMLWithres is a struct for the result of generateMetricsViewYAMLWithAI.
@@ -198,63 +186,31 @@ type generateMetricsViewYAMLWithres struct {
 
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
-func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
-	// Build messages
-	systemPrompt := metricsViewYAMLSystemPrompt()
-	userPrompt := metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)
+func (t *DevelopMetricsView) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
+	// Add system prompt
+	s := GetSession(ctx)
+	systemMsg := s.AddMessage(&AddMessageOptions{
+		Role:        RoleSystem,
+		Type:        MessageTypePrompt,
+		ContentType: MessageContentTypeText,
+		Content:     metricsViewYAMLSystemPrompt(),
+	})
 
-	msgs := []*aiv1.CompletionMessage{
-		{
-			Role: "system",
-			Content: []*aiv1.ContentBlock{
-				{
-					BlockType: &aiv1.ContentBlock_Text{
-						Text: systemPrompt,
-					},
-				},
-			},
-		},
-		{
-			Role: "user",
-			Content: []*aiv1.ContentBlock{
-				{
-					BlockType: &aiv1.ContentBlock_Text{
-						Text: userPrompt,
-					},
-				},
-			},
-		},
-	}
-
-	// Connect to the AI service configured for the instance
-	ai, release, err := s.runtime.AI(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	// Apply timeout
-	ctx, cancel := context.WithTimeout(ctx, aiGenerateTimeout)
-	defer cancel()
+	// Add user prompt
+	userMsg := s.AddMessage(&AddMessageOptions{
+		Role:        RoleUser,
+		Type:        MessageTypePrompt,
+		ContentType: MessageContentTypeText,
+		Content:     metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema),
+	})
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil, nil)
+	var responseText string
+	err := GetSession(ctx).Complete(ctx, "Generate metrics view", &responseText, &CompleteOptions{
+		Messages: []*Message{systemMsg, userMsg},
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	// Extract text from content blocks
-	var responseText string
-	for _, block := range res.Content {
-		switch blockType := block.GetBlockType().(type) {
-		case *aiv1.ContentBlock_Text:
-			if text := blockType.Text; text != "" {
-				responseText += text
-			}
-		default:
-			// For metrics view generation, we only expect text responses
-			return nil, fmt.Errorf("unexpected content block type in AI response: %T", blockType)
-		}
 	}
 
 	// The AI may produce Markdown output. Remove the code tags around the YAML.
@@ -269,7 +225,6 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
-	doc.Version = 1
 	doc.Type = "metrics_view"
 	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
@@ -320,7 +275,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		})
 	}
 
-	e, err := executor.New(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(ctx, t.Runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +365,6 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
 func generateMetricsViewYAMLSimple(connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (string, error) {
 	doc := &metricsViewYAML{
-		Version:       1,
 		Type:          "metrics_view",
 		DisplayName:   identifierToDisplayName(tbl.Name),
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema),
@@ -508,7 +462,6 @@ func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.OlapTable) []*metricsVie
 // metricsViewYAML is a struct for generating a metrics view YAML file.
 // We do not use the parser's structs since they are not suitable for generating pretty output YAML.
 type metricsViewYAML struct {
-	Version        int                         `yaml:"version,omitempty"`
 	Type           string                      `yaml:"type,omitempty"`
 	DisplayName    string                      `yaml:"display_name,omitempty"`
 	Connector      string                      `yaml:"connector,omitempty"`

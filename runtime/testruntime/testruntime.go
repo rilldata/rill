@@ -33,6 +33,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
+	_ "github.com/rilldata/rill/runtime/drivers/openai"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
@@ -132,11 +133,20 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		}
 	}
 
+	// If 'openai' is included in the test connectors, set it as the default AI connector.
+	var aiConnector string
+	for _, conn := range opts.TestConnectors {
+		if conn == "openai" {
+			aiConnector = conn
+		}
+	}
+
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
 		Environment:      "test",
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
+		AIConnector:      aiConnector,
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
@@ -161,6 +171,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		FrontendURL: opts.FrontendURL,
 	}
 
+	if opts.Files == nil {
+		opts.Files = make(map[string]string)
+	}
 	if _, ok := opts.Files["rill.yaml"]; !ok {
 		opts.Files["rill.yaml"] = ""
 	}

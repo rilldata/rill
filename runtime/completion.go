@@ -391,7 +391,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID, conversat
 
 		// Call the AI service with individual timeout - returns structured ContentBlocks
 		aiCtx, aiCancel := context.WithTimeout(ctx, aiRequestTimeout)
-		res, err := ai.Complete(aiCtx, completionMessages, tools)
+		res, err := ai.Complete(aiCtx, completionMessages, tools, nil)
 		aiCancel()
 		if err != nil {
 			return nil, err
@@ -548,7 +548,7 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID, conversat
 	}
 
 	// Get final response from AI without tools
-	res, err := ai.Complete(ctx, completionMessages, []*aiv1.Tool{}) // No tools provided
+	res, err := ai.Complete(ctx, completionMessages, []*aiv1.Tool{}, nil) // No tools provided
 	if err != nil {
 		return nil, err
 	}

@@ -462,3 +462,130 @@ func (c *catalogStore) InsertMessage(ctx context.Context, conversationID, role s
   `, c.instanceID, conversationID, c.instanceID, conversationID, messageID, role, msg.ContentJSON)
 	return messageID, err
 }
+
+// FindAISessions fetches all AI sessions for a given owner.
+func (c *catalogStore) FindAISessions(ctx context.Context, ownerID string) ([]*drivers.AISession, error) {
+	rows, err := c.db.QueryxContext(ctx, `
+		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
+		FROM ai_sessions
+		WHERE instance_id = ? AND owner_id = ?
+		ORDER BY updated_on DESC
+	`, c.instanceID, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*drivers.AISession
+	for rows.Next() {
+		var s drivers.AISession
+		if err := rows.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.CreatedOn, &s.UpdatedOn); err != nil {
+			return nil, err
+		}
+		result = append(result, &s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// FindAISession fetches an AI session by ID.
+func (c *catalogStore) FindAISession(ctx context.Context, sessionID string) (*drivers.AISession, error) {
+	row := c.db.QueryRowxContext(ctx, `
+		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
+		FROM ai_sessions
+		WHERE instance_id = ? AND id = ?
+	`, c.instanceID, sessionID)
+
+	var s drivers.AISession
+	if err := row.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.CreatedOn, &s.UpdatedOn); err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+// InsertAISession inserts a new AI session.
+func (c *catalogStore) InsertAISession(ctx context.Context, s *drivers.AISession) error {
+	if s.ID == "" {
+		s.ID = uuid.NewString()
+	}
+	s.InstanceID = c.instanceID
+	now := time.Now()
+	_, err := c.db.ExecContext(ctx, `
+		INSERT INTO ai_sessions (id, instance_id, owner_id, title, user_agent, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, s.ID, s.InstanceID, s.OwnerID, s.Title, s.UserAgent, now, now)
+	if err != nil {
+		return err
+	}
+	s.CreatedOn = now
+	s.UpdatedOn = now
+	return nil
+}
+
+// UpdateAISession updates an existing AI session.
+func (c *catalogStore) UpdateAISession(ctx context.Context, s *drivers.AISession) error {
+	now := time.Now()
+	_, err := c.db.ExecContext(ctx, `
+		UPDATE ai_sessions SET title = ?, user_agent = ?, updated_on = ?
+		WHERE instance_id = ? AND id = ?
+	`, s.Title, s.UserAgent, now, c.instanceID, s.ID)
+	if err != nil {
+		return err
+	}
+	s.UpdatedOn = now
+	return nil
+}
+
+// FindAIMessages fetches all AI messages for a session, ordered by sequence number.
+func (c *catalogStore) FindAIMessages(ctx context.Context, sessionID string) ([]*drivers.AIMessage, error) {
+	rows, err := c.db.QueryxContext(ctx, `
+		SELECT id, parent_id, session_id, created_on, updated_on, "index", role, type, tool, content_type, content
+		FROM ai_messages
+		WHERE instance_id = ? AND session_id = ?
+		ORDER BY "index" ASC
+	`, c.instanceID, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*drivers.AIMessage
+	for rows.Next() {
+		var m drivers.AIMessage
+		if err := rows.Scan(&m.ID, &m.ParentID, &m.SessionID, &m.CreatedOn, &m.UpdatedOn, &m.Index, &m.Role, &m.Type, &m.Tool, &m.ContentType, &m.Content); err != nil {
+			return nil, err
+		}
+		result = append(result, &m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// InsertAIMessage inserts a new AI message into a session.
+func (c *catalogStore) InsertAIMessage(ctx context.Context, m *drivers.AIMessage) error {
+	if m.ID == "" {
+		m.ID = uuid.NewString()
+	}
+	now := time.Now()
+	// Auto-calculate index using a subquery - this is atomic and race-condition safe
+	var idx int
+	err := c.db.QueryRowxContext(ctx, `SELECT COALESCE(MAX("index"), 0) + 1 FROM ai_messages WHERE instance_id = ? AND session_id = ?`, c.instanceID, m.SessionID).Scan(&idx)
+	if err != nil {
+		return err
+	}
+	m.Index = idx
+	_, err = c.db.ExecContext(ctx, `
+		INSERT INTO ai_messages (id, instance_id, parent_id, session_id, created_on, updated_on, "index", role, type, tool, content_type, content)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, m.ID, c.instanceID, m.ParentID, m.SessionID, now, now, m.Index, m.Role, m.Type, m.Tool, m.ContentType, m.Content)
+	if err != nil {
+		return err
+	}
+	m.CreatedOn = now
+	m.UpdatedOn = now
+	return nil
+}
