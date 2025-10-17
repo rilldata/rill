@@ -37,8 +37,10 @@
   import {
     CONNECTION_TAB_OPTIONS,
     BIGQUERY_AUTH_OPTIONS,
+    GCS_AUTH_OPTIONS,
     type ClickHouseConnectorType,
     type BigQueryAuthMethod,
+    type GCSAuthMethod,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { compileConnectorYAML } from "../../connectors/code-utils";
@@ -62,6 +64,7 @@
   let connectionTab: ConnectorType = "parameters";
   let bigqueryAuthMethod: BigQueryAuthMethod = "credentials";
   let bigqueryCredentialsFilename: string = "";
+  let gcsAuthMethod: GCSAuthMethod = "credentials";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -179,6 +182,30 @@
               (isEmpty(value) || $paramsErrors[key]?.length)
             ) {
               return true;
+            }
+          } else if (
+            connector.name === "gcs" &&
+            (key === "google_application_credentials" ||
+              key === "key_id" ||
+              key === "secret")
+          ) {
+            // GCS authentication method validation
+            if (key === "google_application_credentials") {
+              // Only require credentials if credentials method is selected
+              if (
+                gcsAuthMethod === "credentials" &&
+                (isEmpty(value) || $paramsErrors[key]?.length)
+              ) {
+                return true;
+              }
+            } else if (key === "key_id" || key === "secret") {
+              // Only require HMAC keys if HMAC method is selected
+              if (
+                gcsAuthMethod === "hmac" &&
+                (isEmpty(value) || $paramsErrors[key]?.length)
+              ) {
+                return true;
+              }
             }
           } else {
             // Normal validation for other properties
@@ -369,6 +396,16 @@
         processedValues = { ...values };
         if (bigqueryAuthMethod === "inferred") {
           // Remove credentials when using inferred method
+          delete processedValues.google_application_credentials;
+        }
+      } else if (connector.name === "gcs") {
+        processedValues = { ...values };
+        if (gcsAuthMethod === "credentials") {
+          // Remove HMAC keys when using credentials method
+          delete processedValues.key_id;
+          delete processedValues.secret;
+        } else if (gcsAuthMethod === "hmac") {
+          // Remove credentials when using HMAC method
           delete processedValues.google_application_credentials;
         }
       }
@@ -703,6 +740,120 @@
           {#each filteredParamsProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             {#if propertyKey !== "project_id" && propertyKey !== "google_application_credentials"}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={normalizeErrors($paramsErrors[propertyKey])}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <Checkbox
+                    id={propertyKey}
+                    bind:checked={$paramsForm[propertyKey]}
+                    label={property.displayName}
+                    hint={property.hint}
+                    optional={!property.required}
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                  <InformationalField
+                    description={property.description}
+                    hint={property.hint}
+                    href={property.docsUrl}
+                  />
+                {/if}
+              </div>
+            {/if}
+          {/each}
+        </form>
+      {:else if connector.name === "gcs"}
+        <!-- GCS with Radio UI for authentication methods -->
+        <form
+          id={paramsFormId}
+          class="pb-5 flex-grow overflow-y-auto"
+          use:paramsEnhance
+          on:submit|preventDefault={paramsSubmit}
+        >
+          <!-- Render path first -->
+          {#each filteredParamsProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            {#if propertyKey === "path"}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  optional={!property.required}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={normalizeErrors($paramsErrors[propertyKey])}
+                  bind:value={$paramsForm[propertyKey]}
+                  onInput={(_, e) => onStringInputChange(e)}
+                  alwaysShowError
+                />
+              </div>
+            {/if}
+          {/each}
+
+          <!-- Authentication method selection -->
+          <div class="py-1.5 first:pt-0 last:pb-0">
+            <div class="text-sm font-medium mb-4">Authentication method</div>
+            <Radio
+              bind:value={gcsAuthMethod}
+              options={GCS_AUTH_OPTIONS}
+              name="gcs-auth-method"
+            >
+              <svelte:fragment slot="custom-content" let:option>
+                {#if option.value === "credentials"}
+                  <CredentialsInput
+                    id="google_application_credentials"
+                    hint="Upload a JSON key file for a service account with GCS access."
+                    optional={false}
+                    bind:value={$paramsForm.google_application_credentials}
+                    uploadFile={handleFileUpload}
+                    accept=".json"
+                  />
+                {:else if option.value === "hmac"}
+                  <div class="space-y-3">
+                    <Input
+                      id="key_id"
+                      label="Access Key ID"
+                      placeholder="Enter your HMAC access key ID"
+                      optional={false}
+                      secret={false}
+                      hint="HMAC access key ID for S3-compatible authentication"
+                      errors={normalizeErrors($paramsErrors.key_id)}
+                      bind:value={$paramsForm.key_id}
+                      alwaysShowError
+                    />
+                    <Input
+                      id="secret"
+                      label="Secret Access Key"
+                      placeholder="Enter your HMAC secret access key"
+                      optional={false}
+                      secret={true}
+                      hint="HMAC secret access key for S3-compatible authentication"
+                      errors={normalizeErrors($paramsErrors.secret)}
+                      bind:value={$paramsForm.secret}
+                      alwaysShowError
+                    />
+                  </div>
+                {/if}
+              </svelte:fragment>
+            </Radio>
+          </div>
+
+          <!-- Render other properties (excluding path and auth fields) -->
+          {#each filteredParamsProperties as property (property.key)}
+            {@const propertyKey = property.key ?? ""}
+            {#if propertyKey !== "path" && propertyKey !== "google_application_credentials" && propertyKey !== "key_id" && propertyKey !== "secret"}
               <div class="py-1.5 first:pt-0 last:pb-0">
                 {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
                   <Input

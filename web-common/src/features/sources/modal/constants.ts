@@ -39,6 +39,28 @@ export const BIGQUERY_AUTH_OPTIONS: {
   },
 ];
 
+export type GCSAuthMethod = "credentials" | "hmac";
+
+export const GCS_AUTH_OPTIONS: {
+  value: GCSAuthMethod;
+  label: string;
+  description: string;
+  hint?: string;
+}[] = [
+  {
+    value: "credentials",
+    label: "GCP credentials",
+    description:
+      "Upload a JSON key file for a service account with GCS access.",
+  },
+  {
+    value: "hmac",
+    label: "HMAC keys",
+    description:
+      "Use HMAC access key and secret for S3-compatible authentication.",
+  },
+];
+
 // pre-defined order for sources
 export const SOURCES = [
   "athena",
