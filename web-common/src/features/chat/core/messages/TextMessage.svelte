@@ -14,15 +14,17 @@
   $: ({ instanceId } = $runtime);
 
   $: exploreName = $page.params.dashboard ?? $page.params.name ?? "";
+  $: renderedInExplore = !!exploreName;
 
   $: mapperStore = getMetricsResolverQueryToUrlParamsMapperStore(
     instanceId,
     exploreName,
   );
-  let convertCitationUrls;
-  $: convertCitationUrls = $mapperStore.data
-    ? getCitationUrlConverter($mapperStore.data, $page.url.pathname)
-    : undefined;
+  $: hasMapper = !!$mapperStore.data;
+  $: convertCitationUrls =
+    renderedInExplore && hasMapper
+      ? getCitationUrlConverter($mapperStore.data!)
+      : undefined;
 
   $: role = message.role;
 </script>

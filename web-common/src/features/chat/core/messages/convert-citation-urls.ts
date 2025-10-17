@@ -10,7 +10,6 @@ import { derived, type Readable } from "svelte/store";
 
 export function getCitationUrlConverter(
   mapper: MetricsResolverQueryToUrlParamsMapper,
-  basePath: string,
 ) {
   return (text: string): string | Promise<string> => {
     marked.use({
@@ -22,9 +21,7 @@ export function getCitationUrlConverter(
           const [isValid, urlParams] = mapper(queryJSON);
           if (!isValid) return false;
 
-          const newUrl = `${basePath}?${urlParams.toString()}`;
-
-          return `<a href="${newUrl}">${tokens.text}</a>`;
+          return `<a href="?${urlParams.toString()}">${tokens.text}</a>`;
         },
       },
     });
@@ -38,6 +35,14 @@ type MetricsResolverQueryToUrlParamsMapper = (
   queryJSON: string,
 ) => [boolean, URLSearchParams];
 
+/**
+ * Creates a store that contains a metrics resolver query to url params mapper.
+ * Calls {@link mapMetricsResolverQueryToDashboard} to get partial explore state from a metrics resolver query.
+ * Then calls {@link convertPartialExploreStateToUrlParams} to convert the partial explore to url params.
+ *
+ * @param instanceId
+ * @param exploreName
+ */
 export function getMetricsResolverQueryToUrlParamsMapperStore(
   instanceId: string,
   exploreName: string,
