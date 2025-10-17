@@ -117,6 +117,31 @@ You can add `ai_instructions` in two places:
 
 For detailed examples and best practices on writing effective AI instructions, see the [Rill MCP documentation](/explore/mcp#adding-ai-instructions-to-your-model).
 
+## Use in Your Favorite AI Client
+
+Want to chat with your Rill data in Claude Desktop, ChatGPT, or other AI assistants? The **Rill MCP Server** lets you connect your Rill projects to external AI clients, giving you the same powerful, governed analytics experience outside of Rill Cloud.
+
+### Why Use an External Client?
+
+Using the Rill MCP Server with external AI assistants is ideal for:
+- **Integration with workflows** - Combine Rill data queries with other tools and capabilities in your AI client
+- **Power users** - Data teams and analysts who want full control over their AI environment
+
+### Getting Started with Rill MCP Server
+
+To connect your Rill projects to external AI clients like Claude Desktop:
+
+1. **Check the prerequisites** - You'll need Node.js and an MCP-compatible client
+2. **Create a personal access token** - Generate a token for authentication (for Rill Cloud projects)
+3. **Configure your client** - Add the Rill MCP server configuration to your AI client
+4. **Start chatting** - Ask questions about your data using the same predefined metrics
+
+For detailed setup instructions, configuration examples, and troubleshooting, see the **[Rill MCP Server documentation](/explore/mcp)**.
+
+:::info Same Technology, Different Interface
+Both AI Chat and the Rill MCP Server use the same underlying technology, ensuring equally accurate and consistent results based on your metrics views. Choose AI Chat for quick, browser-based queries or MCP Server for integration with your preferred AI assistant.
+:::
+
 <!-- 
 ### Start Broad, Then Narrow
 Begin with general questions to understand the data, then ask follow-up questions to dive deeper:
