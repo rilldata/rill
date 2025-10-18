@@ -32,8 +32,8 @@ export type FunnelBreakdownMode = "dimension" | "measures";
 export type FunnelChartSpec = {
   metrics_view: string;
   breakdownMode?: FunnelBreakdownMode;
-  measure?: FieldConfig;
-  stage?: FieldConfig;
+  measure?: FieldConfig<"quantitative">;
+  stage?: FieldConfig<"nominal">;
   mode?: FunnelMode;
   color?: FunnelColorMode;
 };

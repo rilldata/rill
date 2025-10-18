@@ -1,8 +1,3 @@
-import type {
-  CreateQueryOptions,
-  CreateQueryResult,
-  QueryClient,
-} from "@tanstack/svelte-query";
 import {
   ResourceKind,
   useFilteredResources,
@@ -16,7 +11,18 @@ import {
   type V1ResolveCanvasResponseResolvedComponents,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import type {
+  CreateQueryOptions,
+  CreateQueryResult,
+  QueryClient,
+} from "@tanstack/svelte-query";
 
+/**
+ * Returns the default metrics view for a given instance, prioritizing in order:
+ * 1. A specific metrics view by name if provided
+ * 2. The first metrics view with a time dimension
+ * 3. The first available metrics view
+ */
 export function useDefaultMetrics(
   instanceId: string,
   metricsViewName?: string,

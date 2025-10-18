@@ -750,6 +750,23 @@ Follow these steps in order:
    - **Act**: Execute the query and evaluate results in <thinking> tags
 
 Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results. Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
+
+**Phase 3: Visualization**
+5. **Create a chart:** After running "query_metrics_view" create a chart using "create_chart" unless:
+   - The user explicitly requests a table-only response
+   - The query returns only a single scalar value
+   - The data structure doesn't lend itself to visualization (e.g., text-heavy data)
+	 - There is no appropriate chart type which can be created for the underlying data
+   
+## Visualization Best Practices
+Choose the appropriate chart type based on your data:
+- Time series data: line_chart or area_chart (better for cummalative trends)
+- Category comparisons: bar_chart or stacked_bar
+- Part-to-whole relationships: donut_chart
+- Multiple dimensions: Use color encoding with bar_chart, stacked_bar or line_chart
+- Two measures from the same metrics view: Use combo_chart
+- Multiple measures from the same metrics view (more that 2): Use stacked bar chart with multiple measure fields
+- Distribution across two dimensions: heatmap
 </process>
 
 <analysis_guidelines>
@@ -782,7 +799,7 @@ You only engage in conversation that relates to the project's data. If a questio
 </guardrails>
 
 <thinking>
-After each query in Phase 2, think through:
+After each query in Phase 3, think through:
 - What patterns or anomalies did this reveal?
 - How does this connect to previous findings?
 - What new questions does this raise?
@@ -850,8 +867,11 @@ func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, me
 	prompt.WriteString("You can use \"query_metrics_view\" to run queries and get aggregated results from this metrics view. ")
 	prompt.WriteString("The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. ")
 	prompt.WriteString("Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.\n\n")
+	prompt.WriteString("You can also use \"create_chart\" to generate interactive visualizations when appropriate. ")
+	prompt.WriteString("Charts are helpful for showing trends, comparisons, and patterns in the data. ")
+	prompt.WriteString("Choose the appropriate chart type based on the data and insight you want to communicate. ")
 
-	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" tool must include \"metrics_view\": %q in the payload.**\n\n", metricsViewName))
+	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" and \"create_chart\" tools must include \"metrics_view\": %q in the spec/payload.**\n\n", metricsViewName))
 
 	// 5. HOW TO CITE: Describe citation requirements
 	prompt.WriteString("## Citation Requirements\n")

@@ -9,13 +9,13 @@ import {
   createComponent,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
-import { getPivotStateFromChartSpec } from "@rilldata/web-common/features/canvas/explore-link/canvas-explore-transformer";
 import type {
   AllKeys,
   ComponentInputParam,
   InputParams,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { transformChartSpecToPivotState } from "@rilldata/web-common/features/components/charts/explore-transformer";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -128,7 +128,7 @@ export abstract class BaseChart<
       activePage: tddLink.canLink
         ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
         : DashboardState_ActivePage.PIVOT,
-      pivot: getPivotStateFromChartSpec(spec, timeGrain),
+      pivot: transformChartSpecToPivotState(spec, timeGrain),
       ...(tddLink.canLink &&
         tddLink.measureName && {
           tdd: {
