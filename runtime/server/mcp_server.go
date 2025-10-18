@@ -33,17 +33,12 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 2. **Get metrics view spec:** Use "get_metrics_view" to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
 3. **Query the summary:** Use "query_metrics_view_summary" to obtain the available time range for a metrics view and sample values with their data types for each dimension. This provides a richer context for understanding the data.
 4. **Query the metrics:** Use "query_metrics_view" to run queries to get aggregated results.
-5. **Create a chart:** After running "query_metrics_view" create a chart using "create_chart" unless:
-   - The user explicitly requests a table-only response
-   - The query returns only a single scalar value
-   - The data structure doesn't lend itself to visualization (e.g., text-heavy data)
-	 - There is no appropriate chart type which can be created for the underlying data
 
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 `
 
-func (s *Server) newMCPServer() *server.MCPServer {
+func (s *Server) newMCPServer(external bool) *server.MCPServer {
 	version := s.runtime.Version().Number
 	if version == "" {
 		version = "0.0.1"
@@ -70,12 +65,16 @@ func (s *Server) newMCPServer() *server.MCPServer {
 	mcpServer.AddTool(s.mcpGetMetricsView())
 	mcpServer.AddTool(s.mcpQueryMetricsView())
 	mcpServer.AddTool(s.mcpQueryMetricsViewSummary())
-	mcpServer.AddTool(s.mcpCreateChart())
+	if !external {
+		mcpServer.AddTool(s.mcpCreateChart())
+	}
 
 	return mcpServer
 }
 
-func (s *Server) newMCPHTTPHandler(mcpServer *server.MCPServer) http.Handler {
+func (s *Server) newMCPHTTPHandler() http.Handler {
+	mcpServer := s.newMCPServer(true)
+
 	httpServer := server.NewStreamableHTTPServer(
 		mcpServer,
 		server.WithHeartbeatInterval(30*time.Second),
