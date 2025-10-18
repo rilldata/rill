@@ -3,10 +3,11 @@
   import { marked } from "marked";
 
   export let content: string;
+  export let converter = (c: string) => marked(c);
 </script>
 
 <div class="chat-markdown">
-  {#await marked(content) then html}
+  {#await converter(content) then html}
     {@html DOMPurify.sanitize(html)}
   {/await}
 </div>
