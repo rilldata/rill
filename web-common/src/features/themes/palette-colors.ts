@@ -58,7 +58,7 @@ export function setDivergingColor(
 }
 
 /**
- * Sets a single qualitative color (1-12)
+ * Sets a single qualitative color (1-24)
  * Qualitative colors are for categorical data without inherent ordering
  */
 export function setQualitativeColor(
@@ -66,8 +66,8 @@ export function setQualitativeColor(
   color: string | Color,
   scopeElement?: HTMLElement,
 ): void {
-  if (index < 1 || index > 12) {
-    throw new Error("Qualitative color index must be between 1 and 12");
+  if (index < 1 || index > 24) {
+    throw new Error("Qualitative color index must be between 1 and 24");
   }
 
   const root = scopeElement || document.documentElement;
@@ -94,7 +94,7 @@ export function setPaletteColors(
     if (colors.length > 11) throw new Error("Maximum of 11 diverging colors allowed");
     colors.forEach((color, index) => setDivergingColor(index + 1, color, scopeElement));
   } else {
-    if (colors.length > 12) throw new Error("Maximum of 12 qualitative colors allowed");
+    if (colors.length > 24) throw new Error("Maximum of 24 qualitative colors allowed");
     colors.forEach((color, index) => setQualitativeColor(index + 1, color, scopeElement));
   }
 }
@@ -121,7 +121,7 @@ export function clearPaletteColor(
     root.style.removeProperty(`--color-diverging-light-${index}`);
     root.style.removeProperty(`--color-diverging-dark-${index}`);
   } else {
-    if (index < 1 || index > 12) throw new Error("Qualitative index must be between 1 and 12");
+    if (index < 1 || index > 24) throw new Error("Qualitative index must be between 1 and 24");
     root.style.removeProperty(`--color-qualitative-light-${index}`);
     root.style.removeProperty(`--color-qualitative-dark-${index}`);
   }
@@ -154,7 +154,7 @@ export function clearAllPaletteColors(
   }
   
   if (!type || type === "qualitative") {
-    for (let i = 1; i <= 12; i++) {
+    for (let i = 1; i <= 24; i++) {
       root.style.removeProperty(`--color-qualitative-light-${i}`);
       root.style.removeProperty(`--color-qualitative-dark-${i}`);
     }

@@ -215,110 +215,130 @@ defaults:
 type: theme
 
 # Themes allow you to customize the appearance of Explore and Canvas dashboards
-# with support for both light and dark modes. Use CSS to define custom colors,
-# surfaces, and data visualization palettes (sequential, diverging, qualitative).
+# with support for both light and dark modes. All properties are optional - any
+# properties not defined will fall back to Rill's default theme.
 
-css: |
-  :root {
-    /* Primary brand color - used for lines, bars, and key UI elements */
-    --primary: hsl(274deg 76% 53%);
-    
-    /* Secondary brand color - used for accents and secondary elements */
-    --secondary: hsl(25deg 100% 50%);
-    
-    /* Surface/background color */
-    --surface: hsl(40deg 60% 97%);
-
-    /* Background color */
-    --background: hsl(40deg 60% 97%);
-    
-    /* Sequential palette (9 colors) */
-    --color-sequential-1: hsl(289deg 72% 95%);
-    --color-sequential-2: hsl(289deg 56% 87%);
-    --color-sequential-3: hsl(289deg 55% 78%);
-    --color-sequential-4: hsl(289deg 54% 67%);
-    --color-sequential-5: hsl(289deg 53% 54%);
-    --color-sequential-6: hsl(290deg 81% 38%);
-    --color-sequential-7: hsl(291deg 97% 28%);
-    --color-sequential-8: hsl(291deg 100% 22%);
-    --color-sequential-9: hsl(290deg 100% 16%);
-    
-    /* Diverging palette (11 colors) */
-    --color-diverging-1: hsl(5deg 99% 47%);
-    --color-diverging-2: hsl(17deg 100% 58%);
-    --color-diverging-3: hsl(24deg 100% 69%);
-    --color-diverging-4: hsl(33deg 100% 78%);
-    --color-diverging-5: hsl(44deg 78% 87%);
-    --color-diverging-6: hsl(233deg 100% 90%);
-    --color-diverging-7: hsl(249deg 100% 83%);
-    --color-diverging-8: hsl(263deg 73% 71%);
-    --color-diverging-9: hsl(277deg 58% 56%);
-    --color-diverging-10: hsl(285deg 76% 39%);
-    --color-diverging-11: hsl(290deg 100% 25%);
-    
-    /* Qualitative palette (12 colors) */
-    --color-qualitative-1: hsl(317deg 78% 65%);
-    --color-qualitative-2: hsl(30deg 100% 50%);
-    --color-qualitative-3: hsl(240deg 99% 74%);
-    --color-qualitative-4: hsl(158deg 100% 39%);
-    --color-qualitative-5: hsl(60deg 100% 38%);
-    --color-qualitative-6: hsl(18deg 100% 71%);
-    --color-qualitative-7: hsl(345deg 98% 65%);
-    --color-qualitative-8: hsl(202deg 100% 43%);
-    --color-qualitative-9: hsl(170deg 100% 35%);
-    --color-qualitative-10: hsl(45deg 100% 41%);
-    --color-qualitative-11: hsl(276deg 77% 66%);
-    --color-qualitative-12: hsl(87deg 54% 53%);
-  }
+light:
+  # Primary brand color - used for lines, bars, and key UI elements
+  primary: hsl(180deg 65% 45%)
   
-  .dark {
-    /* Primary brand color - dark mode (lighter for visibility) */
-    --primary: hsl(270deg 100% 73%);
-    
-    /* Secondary brand color - dark mode (lighter for visibility) */
-    --secondary: hsl(25deg 100% 59%);
-    
-    /* Surface/background color - dark mode */
-    --surface: hsl(220deg 18% 7%);
-    
-    /* Sequential palette - Purple/Magenta (inverted for dark mode) */
-    --color-sequential-1: hsl(290deg 69% 29%);
-    --color-sequential-2: hsl(290deg 64% 39%);
-    --color-sequential-3: hsl(290deg 61% 48%);
-    --color-sequential-4: hsl(289deg 60% 60%);
-    --color-sequential-5: hsl(289deg 62% 67%);
-    --color-sequential-6: hsl(289deg 65% 74%);
-    --color-sequential-7: hsl(289deg 70% 81%);
-    --color-sequential-8: hsl(289deg 68% 87%);
-    --color-sequential-9: hsl(289deg 57% 91%);
-    
-    /* Diverging palette - Orange to Purple (adjusted for dark) */
-    --color-diverging-1: hsl(291deg 100% 31%);
-    --color-diverging-2: hsl(285deg 76% 44%);
-    --color-diverging-3: hsl(277deg 70% 59%);
-    --color-diverging-4: hsl(264deg 86% 72%);
-    --color-diverging-5: hsl(250deg 100% 81%);
-    --color-diverging-6: hsl(235deg 100% 86%);
-    --color-diverging-7: hsl(44deg 57% 56%);
-    --color-diverging-8: hsl(37deg 100% 42%);
-    --color-diverging-9: hsl(25deg 100% 41%);
-    --color-diverging-10: hsl(12deg 100% 38%);
-    --color-diverging-11: hsl(0deg 100% 34%);
-    
-    /* Qualitative palette - Vibrant colors (enhanced for dark mode) */
-    --color-qualitative-1: hsl(316deg 79% 62%);
-    --color-qualitative-2: hsl(27deg 100% 50%);
-    --color-qualitative-3: hsl(242deg 100% 73%);
-    --color-qualitative-4: hsl(155deg 100% 38%);
-    --color-qualitative-5: hsl(59deg 100% 36%);
-    --color-qualitative-6: hsl(18deg 100% 66%);
-    --color-qualitative-7: hsl(343deg 98% 61%);
-    --color-qualitative-8: hsl(203deg 100% 46%);
-    --color-qualitative-9: hsl(169deg 100% 37%);
-    --color-qualitative-10: hsl(43deg 100% 41%);
-    --color-qualitative-11: hsl(277deg 81% 64%);
-    --color-qualitative-12: hsl(83deg 72% 44%);
-  }
+  # Secondary brand color - used for accents and secondary elements
+  secondary: hsl(45deg 85% 55%)
+  
+  # Surface/background colors
+  surface: hsl(180deg 30% 96%)
+  background: hsl(180deg 30% 98%)
+  
+  # Sequential palette (9 colors) - for gradients and heatmaps (Teal theme)
+  color-sequential-1: hsl(180deg 70% 95%)
+  color-sequential-2: hsl(180deg 65% 85%)
+  color-sequential-3: hsl(180deg 60% 75%)
+  color-sequential-4: hsl(180deg 65% 65%)
+  color-sequential-5: hsl(180deg 65% 55%)
+  color-sequential-6: hsl(180deg 70% 45%)
+  color-sequential-7: hsl(180deg 75% 35%)
+  color-sequential-8: hsl(180deg 80% 25%)
+  color-sequential-9: hsl(180deg 85% 18%)
+  
+  # Diverging palette (11 colors) - for positive/negative comparisons (Amber to Teal)
+  color-diverging-1: hsl(35deg 95% 45%)
+  color-diverging-2: hsl(40deg 90% 55%)
+  color-diverging-3: hsl(45deg 85% 65%)
+  color-diverging-4: hsl(50deg 75% 75%)
+  color-diverging-5: hsl(55deg 65% 85%)
+  color-diverging-6: hsl(165deg 65% 85%)
+  color-diverging-7: hsl(170deg 75% 75%)
+  color-diverging-8: hsl(175deg 85% 65%)
+  color-diverging-9: hsl(180deg 90% 55%)
+  color-diverging-10: hsl(185deg 95% 45%)
+  color-diverging-11: hsl(190deg 100% 35%)
+  
+  # Qualitative palette (24 colors) - for categorical data, inspired by ColorBrewer
+  color-qualitative-1: hsl(317deg 78% 65%)
+  color-qualitative-2: hsl(30deg 100% 50%)
+  color-qualitative-3: hsl(240deg 99% 74%)
+  color-qualitative-4: hsl(158deg 100% 39%)
+  color-qualitative-5: hsl(60deg 100% 38%)
+  color-qualitative-6: hsl(18deg 100% 71%)
+  color-qualitative-7: hsl(345deg 98% 65%)
+  color-qualitative-8: hsl(202deg 100% 43%)
+  color-qualitative-9: hsl(170deg 100% 35%)
+  color-qualitative-10: hsl(45deg 100% 41%)
+  color-qualitative-11: hsl(276deg 77% 66%)
+  color-qualitative-12: hsl(87deg 54% 53%)
+  color-qualitative-13: hsl(15deg 86% 58%)
+  color-qualitative-14: hsl(280deg 65% 55%)
+  color-qualitative-15: hsl(195deg 100% 45%)
+  color-qualitative-16: hsl(75deg 75% 45%)
+  color-qualitative-17: hsl(330deg 85% 60%)
+  color-qualitative-18: hsl(50deg 95% 50%)
+  color-qualitative-19: hsl(210deg 85% 65%)
+  color-qualitative-20: hsl(140deg 70% 45%)
+  color-qualitative-21: hsl(25deg 90% 60%)
+  color-qualitative-22: hsl(260deg 70% 60%)
+  color-qualitative-23: hsl(180deg 80% 40%)
+  color-qualitative-24: hsl(100deg 60% 50%)
+
+dark:
+  # Primary brand color - lighter for visibility in dark mode
+  primary: hsl(180deg 70% 65%)
+  
+  # Secondary brand color - lighter for visibility in dark mode
+  secondary: hsl(45deg 90% 65%)
+  
+  # Surface/background colors - dark mode
+  surface: hsl(180deg 15% 12%)
+  background: hsl(180deg 15% 8%)
+  
+  # Sequential palette - inverted for dark mode (Teal theme)
+  color-sequential-1: hsl(180deg 85% 25%)
+  color-sequential-2: hsl(180deg 80% 35%)
+  color-sequential-3: hsl(180deg 75% 45%)
+  color-sequential-4: hsl(180deg 70% 55%)
+  color-sequential-5: hsl(180deg 65% 65%)
+  color-sequential-6: hsl(180deg 60% 75%)
+  color-sequential-7: hsl(180deg 55% 82%)
+  color-sequential-8: hsl(180deg 50% 88%)
+  color-sequential-9: hsl(180deg 45% 92%)
+  
+  # Diverging palette - adjusted for dark mode (Amber to Teal)
+  color-diverging-1: hsl(190deg 100% 40%)
+  color-diverging-2: hsl(185deg 95% 50%)
+  color-diverging-3: hsl(180deg 90% 60%)
+  color-diverging-4: hsl(175deg 85% 70%)
+  color-diverging-5: hsl(170deg 75% 78%)
+  color-diverging-6: hsl(55deg 75% 78%)
+  color-diverging-7: hsl(50deg 85% 70%)
+  color-diverging-8: hsl(45deg 90% 60%)
+  color-diverging-9: hsl(40deg 95% 50%)
+  color-diverging-10: hsl(35deg 100% 45%)
+  color-diverging-11: hsl(30deg 100% 40%)
+  
+  # Qualitative palette (24 colors) - enhanced for dark mode
+  color-qualitative-1: hsl(316deg 79% 62%)
+  color-qualitative-2: hsl(27deg 100% 50%)
+  color-qualitative-3: hsl(242deg 100% 73%)
+  color-qualitative-4: hsl(155deg 100% 38%)
+  color-qualitative-5: hsl(59deg 100% 36%)
+  color-qualitative-6: hsl(18deg 100% 66%)
+  color-qualitative-7: hsl(343deg 98% 61%)
+  color-qualitative-8: hsl(203deg 100% 46%)
+  color-qualitative-9: hsl(169deg 100% 37%)
+  color-qualitative-10: hsl(43deg 100% 41%)
+  color-qualitative-11: hsl(277deg 81% 64%)
+  color-qualitative-12: hsl(83deg 72% 44%)
+  color-qualitative-13: hsl(15deg 90% 60%)
+  color-qualitative-14: hsl(280deg 70% 58%)
+  color-qualitative-15: hsl(195deg 100% 50%)
+  color-qualitative-16: hsl(75deg 80% 48%)
+  color-qualitative-17: hsl(330deg 90% 63%)
+  color-qualitative-18: hsl(50deg 100% 55%)
+  color-qualitative-19: hsl(210deg 90% 68%)
+  color-qualitative-20: hsl(140deg 75% 48%)
+  color-qualitative-21: hsl(25deg 95% 63%)
+  color-qualitative-22: hsl(260deg 75% 63%)
+  color-qualitative-23: hsl(180deg 85% 45%)
+  color-qualitative-24: hsl(100deg 65% 53%)
 `;
     case ResourceKind.Alert:
       return `# Alert YAML

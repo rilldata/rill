@@ -11,7 +11,6 @@
     defaultSecondaryColors,
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
-  import { extractColorVariables } from "../themes/css-sanitizer";
 
   const DEFAULT_PRIMARY = `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`;
   const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
@@ -47,16 +46,11 @@
 
   $: currentThemeSpec = embeddedTheme || fetchedTheme;
 
-  // Extract colors from CSS-based themes
-  $: cssColors = currentThemeSpec?.css
-    ? extractColorVariables(currentThemeSpec.css)
-    : null;
-
-  // Use CSS colors if available, otherwise fall back to legacy primaryColorRaw/secondaryColorRaw
+  // Extract colors from theme (new structure: theme.light.primary, or legacy: theme.primaryColorRaw)
   $: primaryFromTheme =
-    cssColors?.primary.lightColor || currentThemeSpec?.primaryColorRaw;
+    currentThemeSpec?.light?.primary || currentThemeSpec?.primaryColorRaw;
   $: secondaryFromTheme =
-    cssColors?.secondary.lightColor || currentThemeSpec?.secondaryColorRaw;
+    currentThemeSpec?.light?.secondary || currentThemeSpec?.secondaryColorRaw;
 
   $: effectivePrimary = isPresetMode
     ? primaryFromTheme || DEFAULT_PRIMARY

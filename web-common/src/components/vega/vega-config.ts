@@ -1,23 +1,47 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
-import {
-  MainAreaColorGradientDark,
-  MainAreaColorGradientLight,
-  MainLineColor,
-} from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { Config } from "vega-lite";
 
 /**
- * Resolves a CSS variable to its computed value
- * This is necessary for canvas rendering where CSS variables need to be resolved
- * Checks scoped theme boundary first, then falls back to document root
+ * Resolves a CSS variable to its computed value for canvas rendering
+ * This is necessary because canvas rendering requires concrete color values, not CSS variables
+ * 
+ * For palette variables (--color-theme-600), explicitly resolves to light/dark variant
+ * For theme variables (--color-sequential-1), reads the computed value considering dark mode
  */
-function resolveCSSVariable(cssVar: string, fallback?: string): string {
+function resolveCSSVariable(cssVar: string, isDarkMode: boolean, fallback?: string): string {
   if (typeof window === "undefined") return fallback || cssVar;
   
   // Extract the variable name from var() syntax
   const varName = cssVar.replace("var(", "").replace(")", "").split(",")[0].trim();
   
-  // First check if there's a dashboard-theme-boundary element (scoped themes)
+  // For theme palette variables (--color-theme-600, --color-primary-500, etc), 
+  // these use light-dark() CSS function, so resolve to explicit light/dark variant
+  const palettePattern = /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
+  const match = varName.match(palettePattern);
+  
+  if (match) {
+    const [, colorType, shade] = match;
+    const modeVariant = isDarkMode ? `--color-${colorType}-dark-${shade}` : `--color-${colorType}-light-${shade}`;
+    
+    // Try scoped theme boundary first
+    const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+    if (themeBoundary) {
+      const scopedValue = getComputedStyle(themeBoundary as HTMLElement).getPropertyValue(modeVariant);
+      if (scopedValue && scopedValue.trim()) {
+        return scopedValue.trim();
+      }
+    }
+    
+    // Fall back to document root
+    const computed = getComputedStyle(document.documentElement).getPropertyValue(modeVariant);
+    if (computed && computed.trim()) {
+      return computed.trim();
+    }
+  }
+  
+  // For other variables (--color-sequential-1, --primary, custom vars from theme),
+  // read directly - the CSS rules handle light/dark switching via :root vs :root.dark selectors
+  // We just need to ensure we're reading when the .dark class state matches isDarkMode
   const themeBoundary = document.querySelector(".dashboard-theme-boundary");
   if (themeBoundary) {
     const scopedValue = getComputedStyle(themeBoundary as HTMLElement).getPropertyValue(varName);
@@ -26,16 +50,15 @@ function resolveCSSVariable(cssVar: string, fallback?: string): string {
     }
   }
   
-  // Fall back to document root for global variables
+  // Fall back to document root
   const computed = getComputedStyle(document.documentElement).getPropertyValue(varName);
-  
   if (computed && computed.trim()) {
     return computed.trim();
   }
   
   // If fallback is provided and is also a CSS variable, resolve it
   if (fallback && fallback.startsWith("var(")) {
-    return resolveCSSVariable(fallback);
+    return resolveCSSVariable(fallback, isDarkMode);
   }
   
   return fallback || cssVar;
@@ -65,11 +88,11 @@ export const getRillTheme: (
     : colors.light.axisLabel;
   const surfaceColor = isDarkMode ? colors.dark.surface : colors.light.surface;
   
-  // Resolve colors at render time for canvas rendering
-  const lineColor = resolveCSSVariable("var(--color-theme-600)", "var(--color-primary-600)");
-  const barColor = resolveCSSVariable("var(--color-theme-400)", "var(--color-primary-400)");
-  const areaGradientLight = resolveCSSVariable("var(--color-theme-50)", "var(--color-primary-50)");
-  const areaGradientDark = resolveCSSVariable("var(--color-theme-300)", "var(--color-primary-300)");
+  // Resolve colors at render time for canvas rendering, passing isDarkMode for light/dark variant resolution
+  const lineColor = resolveCSSVariable("var(--color-theme-600)", isDarkMode, "var(--color-primary-600)");
+  const barColor = resolveCSSVariable("var(--color-theme-400)", isDarkMode, "var(--color-primary-400)");
+  const areaGradientLight = resolveCSSVariable("var(--color-theme-50)", isDarkMode, "var(--color-primary-50)");
+  const areaGradientDark = resolveCSSVariable("var(--color-theme-300)", isDarkMode, "var(--color-primary-300)");
 
   return {
     autosize: {
@@ -170,19 +193,19 @@ export const getRillTheme: (
     range: {
       // Resolve qualitative palette colors for categorical data
       category: COMPARIONS_COLORS.map((color) => 
-        color.startsWith("var(") ? resolveCSSVariable(color) : color
+        color.startsWith("var(") ? resolveCSSVariable(color, isDarkMode) : color
       ),
       // Resolve sequential palette colors for heatmaps
       heatmap: [
-        resolveCSSVariable("var(--color-sequential-1)"),
-        resolveCSSVariable("var(--color-sequential-2)"),
-        resolveCSSVariable("var(--color-sequential-3)"),
-        resolveCSSVariable("var(--color-sequential-4)"),
-        resolveCSSVariable("var(--color-sequential-5)"),
-        resolveCSSVariable("var(--color-sequential-6)"),
-        resolveCSSVariable("var(--color-sequential-7)"),
-        resolveCSSVariable("var(--color-sequential-8)"),
-        resolveCSSVariable("var(--color-sequential-9)"),
+        resolveCSSVariable("var(--color-sequential-1)", isDarkMode),
+        resolveCSSVariable("var(--color-sequential-2)", isDarkMode),
+        resolveCSSVariable("var(--color-sequential-3)", isDarkMode),
+        resolveCSSVariable("var(--color-sequential-4)", isDarkMode),
+        resolveCSSVariable("var(--color-sequential-5)", isDarkMode),
+        resolveCSSVariable("var(--color-sequential-6)", isDarkMode),
+        resolveCSSVariable("var(--color-sequential-7)", isDarkMode),
+        resolveCSSVariable("var(--color-sequential-8)", isDarkMode),
+        resolveCSSVariable("var(--color-sequential-9)", isDarkMode),
       ],
     },
     numberFormat: "s",

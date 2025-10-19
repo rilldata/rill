@@ -33,7 +33,7 @@ export function createEmbedOptions({
   const jwt = get(runtime).jwt;
 
   return {
-    config: config || getRillTheme(canvasDashboard),
+    config: config || getRillTheme(canvasDashboard, theme === "dark"),
     renderer,
     tooltip: {
       theme: theme,

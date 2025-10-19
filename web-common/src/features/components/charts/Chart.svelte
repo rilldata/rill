@@ -58,7 +58,12 @@
     ),
   };
 
-  $: colorMapping = getColorMappingForChart(chartSpec, domainValues);
+  // Color mapping needs to be reactive to theme changes because colors are resolved differently for light/dark mode
+  $: colorMapping = getColorMappingForChart(
+    chartSpec,
+    domainValues,
+    theme === "dark",
+  );
 </script>
 
 {#if isFetching}

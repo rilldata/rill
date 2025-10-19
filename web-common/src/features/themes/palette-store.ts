@@ -40,7 +40,7 @@ export interface DivergingColors {
 }
 
 /**
- * Qualitative palette colors (12 colors) - for categorical data
+ * Qualitative palette colors (24 colors) - for categorical data
  */
 export interface QualitativeColors {
   qualitative1: string;
@@ -55,6 +55,18 @@ export interface QualitativeColors {
   qualitative10: string;
   qualitative11: string;
   qualitative12: string;
+  qualitative13: string;
+  qualitative14: string;
+  qualitative15: string;
+  qualitative16: string;
+  qualitative17: string;
+  qualitative18: string;
+  qualitative19: string;
+  qualitative20: string;
+  qualitative21: string;
+  qualitative22: string;
+  qualitative23: string;
+  qualitative24: string;
 }
 
 /**
@@ -173,6 +185,18 @@ function updateQualitativeColors() {
     qualitative10: getCSSVariableValue("--color-qualitative-10"),
     qualitative11: getCSSVariableValue("--color-qualitative-11"),
     qualitative12: getCSSVariableValue("--color-qualitative-12"),
+    qualitative13: getCSSVariableValue("--color-qualitative-13"),
+    qualitative14: getCSSVariableValue("--color-qualitative-14"),
+    qualitative15: getCSSVariableValue("--color-qualitative-15"),
+    qualitative16: getCSSVariableValue("--color-qualitative-16"),
+    qualitative17: getCSSVariableValue("--color-qualitative-17"),
+    qualitative18: getCSSVariableValue("--color-qualitative-18"),
+    qualitative19: getCSSVariableValue("--color-qualitative-19"),
+    qualitative20: getCSSVariableValue("--color-qualitative-20"),
+    qualitative21: getCSSVariableValue("--color-qualitative-21"),
+    qualitative22: getCSSVariableValue("--color-qualitative-22"),
+    qualitative23: getCSSVariableValue("--color-qualitative-23"),
+    qualitative24: getCSSVariableValue("--color-qualitative-24"),
   };
   qualitativeStore.set(colors);
 }
@@ -402,6 +426,18 @@ export function getQualitativeColorsSnapshot(): QualitativeColors {
     qualitative10: getCSSVariableValue("--color-qualitative-10"),
     qualitative11: getCSSVariableValue("--color-qualitative-11"),
     qualitative12: getCSSVariableValue("--color-qualitative-12"),
+    qualitative13: getCSSVariableValue("--color-qualitative-13"),
+    qualitative14: getCSSVariableValue("--color-qualitative-14"),
+    qualitative15: getCSSVariableValue("--color-qualitative-15"),
+    qualitative16: getCSSVariableValue("--color-qualitative-16"),
+    qualitative17: getCSSVariableValue("--color-qualitative-17"),
+    qualitative18: getCSSVariableValue("--color-qualitative-18"),
+    qualitative19: getCSSVariableValue("--color-qualitative-19"),
+    qualitative20: getCSSVariableValue("--color-qualitative-20"),
+    qualitative21: getCSSVariableValue("--color-qualitative-21"),
+    qualitative22: getCSSVariableValue("--color-qualitative-22"),
+    qualitative23: getCSSVariableValue("--color-qualitative-23"),
+    qualitative24: getCSSVariableValue("--color-qualitative-24"),
   };
 }
 

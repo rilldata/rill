@@ -24,6 +24,11 @@ type ThemeColors struct {
 	Variables map[string]string `yaml:",inline"`
 }
 
+// allowedCSSVariables defines which CSS variable names can be used in theme YAML files.
+// These are the property names users can set under the "light:" and "dark:" sections.
+//
+// IMPORTANT: When adding new variables here, also update the theme template in:
+// web-common/src/features/file-explorer/new-files.ts (ResourceKind.Theme case)
 var allowedCSSVariables = map[string]bool{
 	// Primary theme colors (for backward compatibility)
 	"primary":   true,
@@ -76,7 +81,7 @@ var allowedCSSVariables = map[string]bool{
 	"color-diverging-10": true,
 	"color-diverging-11": true,
 
-	// Qualitative palette (12 colors)
+	// Qualitative palette (24 colors) - inspired by ColorBrewer categorical schemes
 	"color-qualitative-1":  true,
 	"color-qualitative-2":  true,
 	"color-qualitative-3":  true,
@@ -89,6 +94,18 @@ var allowedCSSVariables = map[string]bool{
 	"color-qualitative-10": true,
 	"color-qualitative-11": true,
 	"color-qualitative-12": true,
+	"color-qualitative-13": true,
+	"color-qualitative-14": true,
+	"color-qualitative-15": true,
+	"color-qualitative-16": true,
+	"color-qualitative-17": true,
+	"color-qualitative-18": true,
+	"color-qualitative-19": true,
+	"color-qualitative-20": true,
+	"color-qualitative-21": true,
+	"color-qualitative-22": true,
+	"color-qualitative-23": true,
+	"color-qualitative-24": true,
 }
 
 // parseTheme parses a theme definition and adds the resulting resource to p.Resources.

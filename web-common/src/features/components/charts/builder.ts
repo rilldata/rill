@@ -18,6 +18,7 @@ import {
   isFieldConfig,
   mergedVlConfig,
   resolveColor,
+  resolveCSSVariable,
 } from "@rilldata/web-common/features/components/charts/util";
 import {
   BarHighlightColorDark,
@@ -36,40 +37,6 @@ import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { ExprRef, SignalRef } from "vega-typings";
-
-/**
- * Resolves a CSS variable to its computed value
- * Necessary for canvas rendering where CSS variables must be resolved
- * Checks scoped theme boundary first, then falls back to document root
- */
-function resolveCSSVariable(cssVar: string): string {
-  if (typeof window === "undefined" || !cssVar.startsWith("var("))
-    return cssVar;
-
-  const varName = cssVar
-    .replace("var(", "")
-    .replace(")", "")
-    .split(",")[0]
-    .trim();
-
-  // First check if there's a dashboard-theme-boundary element (scoped themes)
-  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
-  if (themeBoundary) {
-    const scopedValue = getComputedStyle(
-      themeBoundary as HTMLElement,
-    ).getPropertyValue(varName);
-    if (scopedValue && scopedValue.trim()) {
-      return scopedValue.trim();
-    }
-  }
-
-  // Fall back to document root for global variables
-  const computed = getComputedStyle(document.documentElement).getPropertyValue(
-    varName,
-  );
-
-  return computed && computed.trim() ? computed.trim() : cssVar;
-}
 
 export function createMultiLayerBaseSpec() {
   const baseSpec: VisualizationSpec = {

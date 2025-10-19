@@ -181,6 +181,7 @@ export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
   overrideColorMapping: ColorMapping | undefined,
+  isDarkMode?: boolean,
 ): ColorMapping | undefined {
   if (!colorValues || colorValues.length === 0) return undefined;
 
@@ -188,14 +189,14 @@ export function getColorForValues(
     const overrideColor = overrideColorMapping?.find(
       (mapping) => mapping.value === value,
     );
-    const color =
+    const colorVar =
       overrideColor?.color ||
       COMPARIONS_COLORS[index % COMPARIONS_COLORS.length];
 
     return {
       value,
-      // Keep CSS variable references as-is, resolve them for display in the UI
-      color: color,
+      // Resolve CSS variables for canvas rendering and tooltips, considering dark mode
+      color: resolveCSSVariable(colorVar, isDarkMode),
     };
   });
 
@@ -205,6 +206,7 @@ export function getColorForValues(
 export function getColorMappingForChart(
   chartSpec: ChartSpec,
   domainValues: ChartDomainValues | undefined,
+  isDarkMode?: boolean,
 ): ColorMapping | undefined {
   if (!("color" in chartSpec) || !domainValues) return undefined;
   const colorField = chartSpec.color;
@@ -214,7 +216,7 @@ export function getColorMappingForChart(
     const fieldKey = colorField.field;
     const colorValues = domainValues[fieldKey];
     if (isDomainStringArray(colorValues)) {
-      colorMapping = getColorForValues(colorValues, colorField.colorMapping);
+      colorMapping = getColorForValues(colorValues, colorField.colorMapping, isDarkMode);
     }
   }
 
@@ -225,8 +227,9 @@ export function getColorMappingForChart(
  * Resolves a CSS variable to its computed value
  * Necessary for canvas rendering where CSS variables must be resolved
  * Checks scoped theme boundary first, then falls back to document root
+ * For palette variables, explicitly resolves to light/dark variant based on current theme
  */
-export function resolveCSSVariable(cssVar: string): string {
+export function resolveCSSVariable(cssVar: string, isDarkMode?: boolean): string {
   if (typeof window === "undefined" || !cssVar.startsWith("var("))
     return cssVar;
 
@@ -236,6 +239,35 @@ export function resolveCSSVariable(cssVar: string): string {
     .split(",")[0]
     .trim();
 
+  // Determine dark mode if not explicitly provided
+  const darkMode = isDarkMode ?? document.documentElement.classList.contains('dark');
+
+  // For theme palette variables (--color-theme-600, --color-primary-500, etc), 
+  // these use light-dark() CSS function, so resolve to explicit light/dark variant
+  const palettePattern = /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
+  const match = varName.match(palettePattern);
+  
+  if (match) {
+    const [, colorType, shade] = match;
+    const modeVariant = darkMode ? `--color-${colorType}-dark-${shade}` : `--color-${colorType}-light-${shade}`;
+    
+    // Try scoped theme boundary first
+    const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+    if (themeBoundary) {
+      const scopedValue = getComputedStyle(themeBoundary as HTMLElement).getPropertyValue(modeVariant);
+      if (scopedValue && scopedValue.trim()) {
+        return scopedValue.trim();
+      }
+    }
+    
+    // Fall back to document root
+    const computed = getComputedStyle(document.documentElement).getPropertyValue(modeVariant);
+    if (computed && computed.trim()) {
+      return computed.trim();
+    }
+  }
+
+  // For other variables, read directly from the appropriate context
   // First check if there's a dashboard-theme-boundary element (scoped themes)
   const themeBoundary = document.querySelector(".dashboard-theme-boundary");
   if (themeBoundary) {
@@ -259,13 +291,13 @@ export function resolveCSSVariable(cssVar: string): string {
  * Converts a resolved color back to its CSS variable reference if it matches a palette color
  * This allows YAML to store variable references instead of hardcoded values
  */
-export function colorToVariableReference(resolvedColor: string): string {
+export function colorToVariableReference(resolvedColor: string, isDarkMode?: boolean): string {
   if (!resolvedColor || typeof window === "undefined") return resolvedColor;
 
   // Check all comparison colors (qualitative palette)
   for (let i = 0; i < COMPARIONS_COLORS.length; i++) {
     const varRef = COMPARIONS_COLORS[i];
-    const resolved = resolveCSSVariable(varRef);
+    const resolved = resolveCSSVariable(varRef, isDarkMode);
 
     // Compare colors (normalize by converting both to chroma and back)
     try {
