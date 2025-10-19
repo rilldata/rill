@@ -253,7 +253,7 @@ light:
   color-diverging-10: hsl(185deg 95% 45%)
   color-diverging-11: hsl(190deg 100% 35%)
   
-  # Qualitative palette (24 colors) - for categorical data, inspired by ColorBrewer
+  # Qualitative palette (24 colors) - for categorical data
   color-qualitative-1: hsl(317deg 78% 65%)
   color-qualitative-2: hsl(30deg 100% 50%)
   color-qualitative-3: hsl(240deg 99% 74%)
