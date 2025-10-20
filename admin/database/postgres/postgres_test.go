@@ -706,7 +706,7 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	t.Run("GetOrganizationMemberUserAttributes - no attributes", func(t *testing.T) {
-		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
 		require.NoError(t, err)
 		require.Len(t, member, 1)
 		require.Equal(t, user.Email, member[0].Email)
@@ -720,7 +720,7 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	})
 
 	t.Run("GetOrganizationMemberUserAttributes - with attributes", func(t *testing.T) {
-		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
 		require.NoError(t, err)
 		require.Len(t, member, 1)
 		require.Equal(t, user.Email, member[0].Email)
@@ -734,7 +734,7 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	})
 
 	t.Run("GetOrganizationMemberUserAttributes - with updated attributes", func(t *testing.T) {
-		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
+		member, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
 		require.NoError(t, err)
 		require.Len(t, member, 1)
 		require.Equal(t, user.Email, member[0].Email)
