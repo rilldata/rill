@@ -292,8 +292,8 @@ export function calculateTimeRangePartial(
 
   try {
     parsed = parseRillTime(currentSelectedTimeRange.name || "");
-  } catch (e) {
-    console.error("Error parsing rill time", e);
+  } catch {
+    // no-op
   }
 
   const rillTimeGrain = parsed?.asOfLabel?.snap

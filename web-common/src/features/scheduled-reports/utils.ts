@@ -68,7 +68,7 @@ export function getExistingReportInitialFormValues(
   return {
     title: reportSpec.displayName ?? "",
     webOpenMode:
-      reportSpec.annotations?.web_open_mode ?? (ReportRunAs.Creator as string),
+      reportSpec.annotations?.web_open_mode || (ReportRunAs.Creator as string),
     ...getExistingScheduleFormValues(reportSpec.refreshSchedule),
     exportFormat:
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
