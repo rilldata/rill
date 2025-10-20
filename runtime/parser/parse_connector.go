@@ -28,7 +28,6 @@ func (p *Parser) parseConnector(node *Node) error {
 	// "Managed" indicates that we should automatically provision the connector
 	var provision bool
 	var provisionArgsPB *structpb.Struct
-	var managed string
 	if !tmp.Managed.IsZero() {
 		switch tmp.Managed.Kind {
 		case yaml.ScalarNode:
@@ -36,14 +35,8 @@ func (p *Parser) parseConnector(node *Node) error {
 			if err != nil {
 				return fmt.Errorf("failed to decode 'managed': %w", err)
 			}
-			if provision {
-				managed = "true"
-			} else {
-				managed = "false"
-			}
 		case yaml.MappingNode:
 			provision = true
-			managed = "true"
 			var provisionArgs map[string]any
 			err := tmp.Managed.Decode(&provisionArgs)
 			if err != nil {
@@ -76,14 +69,6 @@ func (p *Parser) parseConnector(node *Node) error {
 	r.ConnectorSpec.TemplatedProperties = templatedProps
 	r.ConnectorSpec.Provision = provision
 	r.ConnectorSpec.ProvisionArgs = provisionArgsPB
-
-	// Add the managed field to properties so drivers can access it
-	if managed != "" {
-		if r.ConnectorSpec.Properties == nil {
-			r.ConnectorSpec.Properties = make(map[string]string)
-		}
-		r.ConnectorSpec.Properties["managed"] = managed
-	}
 
 	return nil
 }
