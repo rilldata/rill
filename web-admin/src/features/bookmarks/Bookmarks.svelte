@@ -13,7 +13,7 @@
     type Bookmarks,
     getBookmarkData,
     searchBookmarks,
-  } from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
+  } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import HomeBookmarkButton from "@rilldata/web-admin/features/bookmarks/HomeBookmarkButton.svelte";
   import {
     getProjectPermissions,

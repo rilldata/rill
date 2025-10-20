@@ -10,7 +10,7 @@
     type BookmarkFormValues,
     formatTimeRange,
     getBookmarkData,
-  } from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
+  } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import { useProjectId } from "@rilldata/web-admin/features/projects/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";

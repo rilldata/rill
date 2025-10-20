@@ -4,7 +4,7 @@
   import {
     categorizeBookmarks,
     parseBookmarks,
-  } from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
+  } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import {
     exploreBookmarkDataTransformer,
     getBookmarks,
@@ -93,19 +93,15 @@
     $bookmarks.data?.bookmarks ?? [],
     $page.url.searchParams,
     rillDefaultExploreURLParams,
-    (data, rawData) => {
-      if (data.startsWith("?")) return data; // New format that has the params directly, start with '?'.
-      // Old format where we had base64 encoded proto. So use rawData for this.
-      return exploreBookmarkDataTransformer(
+    (data, rawData) =>
+      exploreBookmarkDataTransformer({
+        data,
         rawData,
         metricsViewSpec,
         exploreSpec,
         schema,
-        $exploreState,
         timeRangeSummary,
-        rillDefaultExploreURLParams,
-      );
-    },
+      }),
   );
   $: categorizedBookmarks = categorizeBookmarks(parsedBookmarks);
 </script>

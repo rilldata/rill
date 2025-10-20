@@ -69,13 +69,16 @@ export function getBookmarkData({
   }
 
   // If the bookmark is for absolute time range. Update the time range and compare time range params with resolved start and end.
-  if (absoluteTimeRange && selectedTimeRange.start && selectedTimeRange.end) {
+  if (absoluteTimeRange && selectedTimeRange?.start && selectedTimeRange?.end) {
     bookmarkUrlParams.set(
       ExploreStateURLParams.TimeRange,
       `${selectedTimeRange.start.toISOString()},${selectedTimeRange.end.toISOString()}`,
     );
 
-    if (selectedComparisonTimeRange.start && selectedComparisonTimeRange.end) {
+    if (
+      selectedComparisonTimeRange?.start &&
+      selectedComparisonTimeRange?.end
+    ) {
       bookmarkUrlParams.set(
         ExploreStateURLParams.ComparisonTimeRange,
         `${selectedComparisonTimeRange.start.toISOString()},${selectedComparisonTimeRange.end.toISOString()}`,
@@ -87,9 +90,8 @@ export function getBookmarkData({
   if (filtersOnly) {
     const filterOnlyUrlParams = new URLSearchParams();
     FILTER_ONLY_PARAMS.forEach((param) => {
-      if (bookmarkUrlParams.has(param)) {
-        filterOnlyUrlParams.set(param, bookmarkUrlParams.get(param));
-      }
+      const bookmarkParam = bookmarkUrlParams.get(param);
+      if (bookmarkParam) filterOnlyUrlParams.set(param, bookmarkParam);
     });
 
     return btoa("?" + filterOnlyUrlParams.toString());
@@ -122,34 +124,35 @@ export function parseBookmarks(
   return bookmarkResp.map((bookmarkResource) => {
     const rawData = bookmarkResource.data ?? "";
 
-    let urlSearchParams = new URLSearchParams(
+    const bookmarkUrlParams = new URLSearchParams(
       dataTransformer(atob(rawData), rawData),
     );
-    if (defaultUrlParams) {
-      urlSearchParams = cleanUrlParams(urlSearchParams, defaultUrlParams);
-    }
-    const url = urlSearchParams.toString();
 
-    const absoluteTimeRange = isAbsoluteTimeRangeBookmark(urlSearchParams);
-    const filtersOnly = isFilterOnlyBookmark(urlSearchParams);
+    const cleanedUrlParams = defaultUrlParams
+      ? cleanUrlParams(bookmarkUrlParams, defaultUrlParams)
+      : bookmarkUrlParams;
+    const url = cleanedUrlParams.toString();
+
+    const absoluteTimeRange = isAbsoluteTimeRangeBookmark(bookmarkUrlParams);
+    const filtersOnly = isFilterOnlyBookmark(bookmarkUrlParams);
 
     // Filter only bookmark should not change non-filter params.
     // So copy over other params from the current url.
     if (filtersOnly) {
       curUrlParams.forEach((v, p) => {
-        if (urlSearchParams.has(p)) return;
-        urlSearchParams.set(p, v);
+        if (bookmarkUrlParams.has(p)) return;
+        bookmarkUrlParams.set(p, v);
       });
     }
 
     const isActive = isBookmarkActive(
-      urlSearchParams,
+      cleanedUrlParams,
       curUrlParams,
       filtersOnly,
     );
 
     // Relative url that updates just the params. So no need to include path etc
-    const fullUrl = "?" + urlSearchParams.toString();
+    const fullUrl = "?" + bookmarkUrlParams.toString();
 
     const bookmark = <BookmarkEntry>{
       resource: bookmarkResource,
@@ -208,7 +211,7 @@ function isBookmarkActive(
   if (!filtersOnly)
     return bookmarkUrlParams.toString() === curUrlParams.toString();
 
-  return bookmarkUrlParams.entries().every(([key, value]) => {
+  return [...bookmarkUrlParams.entries()].every(([key, value]) => {
     const curValue = curUrlParams.get(key);
     return curValue === value;
   });

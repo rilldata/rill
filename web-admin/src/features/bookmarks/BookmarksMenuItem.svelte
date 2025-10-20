@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
+  import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
   import BookmarkFilled from "@rilldata/web-common/components/icons/BookmarkFilled.svelte";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";

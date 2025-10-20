@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
-  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
+  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
@@ -26,7 +26,7 @@
   export let onCreate: () => void;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
-  $: homeBookmarkUrl = homeBookmark?.url ?? defaultHomeBookmarkUrl;
+  $: homeBookmarkUrl = homeBookmark?.fullUrl ?? defaultHomeBookmarkUrl;
   $: isHomeBookmarkActive = homeBookmarkUrl === $page.url.toString();
 
   function goToDashboardHome() {

@@ -170,9 +170,13 @@ export function getDashboardStateFromProto(
     entity.leaderboardSortByMeasureName = dashboard.leaderboardMeasure;
   }
 
+  const isActivePageSet =
+    dashboard.activePage !== undefined &&
+    dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED;
+
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
-  } else {
+  } else if (isActivePageSet) {
     entity.selectedComparisonDimension = "";
   }
   if (dashboard.expandedMeasure) {
@@ -181,10 +185,7 @@ export function getDashboardStateFromProto(
       chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: dashboard.expandedMeasure,
     };
-  } else if (
-    dashboard.activePage !== undefined &&
-    dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED
-  ) {
+  } else if (isActivePageSet) {
     entity.tdd = {
       pinIndex: -1,
       chartType: TDDChart.DEFAULT,
