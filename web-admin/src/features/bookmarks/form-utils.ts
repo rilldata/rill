@@ -1,17 +1,23 @@
 import type { V1Bookmark } from "@rilldata/web-admin/client";
 import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
+import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { type DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Interval } from "luxon";
 
 export type BookmarkEntry = {
   resource: V1Bookmark;
   filtersOnly: boolean;
   absoluteTimeRange: boolean;
+  // Url directly converted from bookmark.
   url: string;
+  // Full url to be used to navigate.
+  // This contains existing non-filter params on top of filter params for filters only bookmark.
+  fullUrl: string;
+  isActive: boolean;
 };
 
 export type Bookmarks = {
@@ -86,10 +92,10 @@ export function getBookmarkData({
       }
     });
 
-    return "?" + filterOnlyUrlParams.toString();
+    return btoa("?" + filterOnlyUrlParams.toString());
   }
 
-  return "?" + bookmarkUrlParams.toString();
+  return btoa("?" + bookmarkUrlParams.toString());
 }
 
 export function formatTimeRange(
@@ -109,18 +115,49 @@ export function formatTimeRange(
 
 export function parseBookmarks(
   bookmarkResp: V1Bookmark[],
-  dataTransformer: (data: string) => string = (data) => data,
+  curUrlParams: URLSearchParams,
+  defaultUrlParams: URLSearchParams | undefined,
+  dataTransformer: (data: string, rawData: string) => string = (data) => data,
 ) {
   return bookmarkResp.map((bookmarkResource) => {
-    const urlSearchParams = new URLSearchParams(
-      dataTransformer(bookmarkResource.data ?? ""),
+    const rawData = bookmarkResource.data ?? "";
+
+    let urlSearchParams = new URLSearchParams(
+      dataTransformer(atob(rawData), rawData),
     );
+    if (defaultUrlParams) {
+      urlSearchParams = cleanUrlParams(urlSearchParams, defaultUrlParams);
+    }
+    const url = urlSearchParams.toString();
+
+    const absoluteTimeRange = isAbsoluteTimeRangeBookmark(urlSearchParams);
+    const filtersOnly = isFilterOnlyBookmark(urlSearchParams);
+
+    // Filter only bookmark should not change non-filter params.
+    // So copy over other params from the current url.
+    if (filtersOnly) {
+      curUrlParams.forEach((v, p) => {
+        if (urlSearchParams.has(p)) return;
+        urlSearchParams.set(p, v);
+      });
+    }
+
+    const isActive = isBookmarkActive(
+      urlSearchParams,
+      curUrlParams,
+      filtersOnly,
+    );
+
+    // Relative url that updates just the params. So no need to include path etc
+    const fullUrl = "?" + urlSearchParams.toString();
 
     const bookmark = <BookmarkEntry>{
       resource: bookmarkResource,
-      absoluteTimeRange: isAbsoluteTimeRangeBookmark(urlSearchParams),
-      filtersOnly: isFilterOnlyBookmark(urlSearchParams),
-      url: "?" + urlSearchParams.toString(),
+      absoluteTimeRange,
+      filtersOnly,
+      url,
+      fullUrl,
+      isActive,
     };
 
     return bookmark;
@@ -135,9 +172,9 @@ export function categorizeBookmarks(bookmarkEntries: BookmarkEntry[]) {
   };
 
   bookmarkEntries.forEach((bookmark) => {
-    if (isHomeBookmark(bookmark)) {
+    if (isHomeBookmark(bookmark.resource)) {
       bookmarks.home = bookmark;
-    } else if (bookmark.shared) {
+    } else if (bookmark.resource.shared) {
       bookmarks.shared.push(bookmark);
     } else {
       bookmarks.personal.push(bookmark);
@@ -163,17 +200,18 @@ export function searchBookmarks(
   };
 }
 
-export function isBookmarkActive(entry: BookmarkEntry, curUrl: URL) {
-  const bookmarkUrl = new URL(entry.url);
+function isBookmarkActive(
+  bookmarkUrlParams: URLSearchParams,
+  curUrlParams: URLSearchParams,
+  filtersOnly: boolean,
+) {
+  if (!filtersOnly)
+    return bookmarkUrlParams.toString() === curUrlParams.toString();
 
-  if (entry.filtersOnly) {
-    return bookmarkUrl.searchParams.entries().every(([key, value]) => {
-      const curValue = curUrl.searchParams.get(key);
-      return curValue === value;
-    });
-  }
-
-  return bookmarkUrl.search === curUrl.search;
+  return bookmarkUrlParams.entries().every(([key, value]) => {
+    const curValue = curUrlParams.get(key);
+    return curValue === value;
+  });
 }
 
 function isAbsoluteTimeRangeBookmark(bookmarkUrlParams: URLSearchParams) {
@@ -190,5 +228,5 @@ function isAbsoluteTimeRangeBookmark(bookmarkUrlParams: URLSearchParams) {
 
 function isFilterOnlyBookmark(bookmarkUrlParams: URLSearchParams): boolean {
   const urlParams = Array.from(bookmarkUrlParams.keys());
-  return urlParams.every((param) => filterOnlyParams.has(param));
+  return urlParams.every((param) => FILTER_ONLY_PARAMS.has(param));
 }

@@ -5,10 +5,6 @@ import {
   type V1Bookmark,
   type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
-import type {
-  BookmarkEntry,
-  Bookmarks,
-} from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
 import {
   type CompoundQueryResult,
   getCompoundQuery,
@@ -17,12 +13,9 @@ import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboar
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
-import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
   type V1ExploreSpec,
@@ -60,49 +53,6 @@ export function isHomeBookmark(bookmark: V1Bookmark) {
   return Boolean(bookmark.default);
 }
 
-export function categorizeBookmarks(
-  bookmarkResp: V1Bookmark[],
-  metricsSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
-  schema: V1StructType,
-  exploreState: ExploreState,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-) {
-  const bookmarks: Bookmarks = {
-    home: undefined,
-    personal: [],
-    shared: [],
-  };
-  if (!exploreState) return bookmarks;
-
-  const rillDefaultExploreURLParams = getRillDefaultExploreUrlParams(
-    metricsSpec,
-    exploreSpec,
-    timeRangeSummary,
-  );
-
-  bookmarkResp?.forEach((bookmarkResource) => {
-    const bookmark = parseBookmark(
-      bookmarkResource,
-      metricsSpec,
-      exploreSpec,
-      schema,
-      exploreState,
-      timeRangeSummary,
-      rillDefaultExploreURLParams,
-    );
-    if (isHomeBookmark(bookmarkResource)) {
-      bookmarks.home = bookmark;
-    } else if (bookmarkResource.shared) {
-      bookmarks.shared.push(bookmark);
-    } else {
-      bookmarks.personal.push(bookmark);
-    }
-  });
-
-  return bookmarks;
-}
-
 export function getHomeBookmarkExploreState(
   projectId: string,
   instanceId: string,
@@ -111,7 +61,7 @@ export function getHomeBookmarkExploreState(
 ): CompoundQueryResult<Partial<ExploreState> | null> {
   return getCompoundQuery(
     [
-      getBookmarks(projectId, exploreName),
+      getBookmarks(projectId, ResourceKind.Explore, exploreName),
       useExploreValidSpec(instanceId, exploreName),
       createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
     ],
@@ -172,36 +122,4 @@ export function exploreBookmarkDataTransformer(
   );
 
   return "?" + searchParams.toString();
-}
-
-// These are the only parameters that are stored in a filter-only bookmark
-const filterOnlyParams = new Set([
-  ExploreStateURLParams.Filters,
-  ExploreStateURLParams.TimeRange,
-  ExploreStateURLParams.TimeGrain,
-]) as Set<string>;
-
-function isFilterOnlyBookmark(
-  bookmarkState: Partial<ExploreState>,
-  metricsViewSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-  rillDefaultExploreURLParams: URLSearchParams,
-): boolean {
-  // We need to remove defaults like time grain and timezone otherwise we will have extra fields here
-  const searchParams = getCleanedUrlParamsForGoto(
-    exploreSpec,
-    bookmarkState as ExploreState,
-    getTimeControlState(
-      metricsViewSpec,
-      exploreSpec,
-      timeRangeSummary,
-      bookmarkState as ExploreState,
-    ),
-    rillDefaultExploreURLParams,
-  );
-
-  // Check if all the bookmark's search params are in the allowed list
-  const urlParams = Array.from(searchParams.keys());
-  return urlParams.every((param) => filterOnlyParams.has(param));
 }

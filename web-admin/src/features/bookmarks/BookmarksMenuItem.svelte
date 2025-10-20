@@ -1,9 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import {
-    type BookmarkEntry,
-    isBookmarkActive,
-  } from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
+  import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/form-utils.ts";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
   import BookmarkFilled from "@rilldata/web-common/components/icons/BookmarkFilled.svelte";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
@@ -65,8 +61,7 @@
     : bookmark.filtersOnly
       ? IconsByType.filter
       : IconsByType.complete;
-  $: isActive = isBookmarkActive(bookmark, $page.url);
-  $: icon = isActive ? icons.active : icons.inactive;
+  $: icon = bookmark.isActive ? icons.active : icons.inactive;
 </script>
 
 <DropdownMenuItem class="py-2">
@@ -79,7 +74,7 @@
     aria-label={`${bookmark.resource.displayName ?? ""} Bookmark Entry`}
   >
     <a
-      href={bookmark.url}
+      href={bookmark.fullUrl}
       class="flex flex-row gap-x-2 w-full min-h-7"
       on:click={onClick}
     >

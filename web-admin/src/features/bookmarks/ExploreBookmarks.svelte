@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import {
     categorizeBookmarks,
@@ -62,23 +63,25 @@
 
   $: exploreState = useExploreState(exploreName);
   $: filtersState = <FiltersState>{
-    whereFilter: $exploreState.whereFilter,
-    dimensionsWithInlistFilter: $exploreState.dimensionsWithInlistFilter,
-    dimensionThresholdFilters: $exploreState.dimensionThresholdFilters,
-    dimensionFilterExcludeMode: $exploreState.dimensionFilterExcludeMode,
+    whereFilter: $exploreState?.whereFilter,
+    dimensionsWithInlistFilter: $exploreState?.dimensionsWithInlistFilter,
+    dimensionThresholdFilters: $exploreState?.dimensionThresholdFilters,
+    dimensionFilterExcludeMode: $exploreState?.dimensionFilterExcludeMode,
   };
-  $: exploreTimeControlState = getTimeControlState(
-    metricsViewSpec,
-    exploreSpec,
-    timeRangeSummary,
-    $exploreState,
-  );
+  $: exploreTimeControlState = $exploreState
+    ? getTimeControlState(
+        metricsViewSpec,
+        exploreSpec,
+        timeRangeSummary,
+        $exploreState,
+      )
+    : undefined;
   $: timeControlState = <TimeControlState>{
-    selectedTimeRange: exploreTimeControlState.selectedTimeRange,
+    selectedTimeRange: exploreTimeControlState?.selectedTimeRange,
     selectedComparisonTimeRange:
-      exploreTimeControlState.selectedComparisonTimeRange,
-    showTimeComparison: exploreTimeControlState.showTimeComparison,
-    selectedTimezone: $exploreState.selectedTimezone,
+      exploreTimeControlState?.selectedComparisonTimeRange,
+    showTimeComparison: exploreTimeControlState?.showTimeComparison,
+    selectedTimezone: $exploreState?.selectedTimezone,
   };
 
   $: bookmarks = getBookmarks(
@@ -88,10 +91,13 @@
   );
   $: parsedBookmarks = parseBookmarks(
     $bookmarks.data?.bookmarks ?? [],
-    (data) => {
+    $page.url.searchParams,
+    rillDefaultExploreURLParams,
+    (data, rawData) => {
       if (data.startsWith("?")) return data; // New format that has the params directly, start with '?'.
+      // Old format where we had base64 encoded proto. So use rawData for this.
       return exploreBookmarkDataTransformer(
-        data,
+        rawData,
         metricsViewSpec,
         exploreSpec,
         schema,
