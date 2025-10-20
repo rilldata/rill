@@ -4687,6 +4687,13 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
    */
   superuserForceAccess = false;
 
+  /**
+   * Optional search pattern to filter users by email or display name
+   *
+   * @generated from field: string search_pattern = 7;
+   */
+  searchPattern = "";
+
   constructor(data?: PartialMessage<ListOrganizationMemberUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4701,6 +4708,7 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "search_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationMemberUsersRequest {

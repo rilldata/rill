@@ -5,11 +5,11 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import SettingsSlider from "@rilldata/web-common/components/icons/SettingsSlider.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
+  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import type {
     ChartLegend,
     FieldConfig,
-  } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
+  } from "@rilldata/web-common/features/components/charts/types";
   import SortConfig from "./SortConfig.svelte";
 
   export let fieldConfig: FieldConfig;

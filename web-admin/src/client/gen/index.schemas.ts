@@ -1684,6 +1684,10 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
   superuserForceAccess?: boolean;
+  /**
+   * Optional search pattern to filter users by email or display name
+   */
+  searchPattern?: string;
 };
 
 export type AdminServiceAddOrganizationMemberUserBody = {

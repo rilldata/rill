@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -364,23 +365,23 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
 	}
 
-	instancePermissions := []runtimeauth.Permission{
-		runtimeauth.ReadObjects,
-		runtimeauth.ReadMetrics,
-		runtimeauth.ReadAPI,
-		runtimeauth.UseAI,
+	instancePermissions := []runtime.Permission{
+		runtime.ReadObjects,
+		runtime.ReadMetrics,
+		runtime.ReadAPI,
+		runtime.UseAI,
 	}
 	if permissions.ManageProject {
-		instancePermissions = append(instancePermissions, runtimeauth.EditTrigger, runtimeauth.ReadResolvers)
+		instancePermissions = append(instancePermissions, runtime.EditTrigger, runtime.ReadResolvers)
 	}
 
-	var systemPermissions []runtimeauth.Permission
+	var systemPermissions []runtime.Permission
 	if req.IssueSuperuserToken {
 		if !claims.Superuser(ctx) {
 			return nil, status.Error(codes.PermissionDenied, "only superusers can issue superuser tokens")
 		}
 		// NOTE: The ManageInstances permission is currently used by the runtime to skip access checks.
-		systemPermissions = append(systemPermissions, runtimeauth.ManageInstances)
+		systemPermissions = append(systemPermissions, runtime.ManageInstances)
 	}
 
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
@@ -388,7 +389,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		Subject:           claims.OwnerID(),
 		TTL:               ttlDuration,
 		SystemPermissions: systemPermissions,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			depl.RuntimeInstanceID: instancePermissions,
 		},
 		Attributes:    attr,

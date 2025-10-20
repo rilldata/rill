@@ -1,5 +1,4 @@
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import {
   canEnablePivotComparison,
@@ -17,6 +16,7 @@ import {
   type PivotTimeConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type {
   V1Expression,

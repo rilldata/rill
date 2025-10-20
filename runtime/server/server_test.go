@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
@@ -22,5 +23,5 @@ func getTestServer(t *testing.T) (*server.Server, string) {
 }
 
 func testCtx() context.Context {
-	return auth.WithClaims(context.Background(), auth.NewOpenClaims())
+	return auth.WithClaims(context.Background(), &runtime.SecurityClaims{SkipChecks: true})
 }

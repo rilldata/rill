@@ -146,9 +146,9 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 			if err != nil {
 				return "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
 			}
-			reg, err := conn.BucketRegion(ctx, uri.Host)
+			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host)
 			if err != nil {
-				return "", fmt.Errorf("failed to get bucket region (set `region` in s3.yaml): %w", err)
+				return "", err
 			}
 			sb.WriteString(", REGION ")
 			sb.WriteString(safeSQLString(reg))
@@ -158,13 +158,12 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 	case "gcs":
 		// GCS works via S3 compatibility mode.
 		// This means we that gcsConfig.KeyID and gcsConfig.Secret should be set instead of gcsConfig.SecretJSON.
-		conn, ok := handle.(*gcs.Connection)
-		if !ok {
-			return "", fmt.Errorf("internal error: expected gcs connector handle")
-		}
-		gcsConfig := conn.ParsedConfig()
-		err := mapstructure.WeakDecode(optionalAdditionalConfig, gcsConfig)
+		gcsConnectorProp := handle.Config()
+		gcsConfig, err := gcs.NewConfigProperties(gcsConnectorProp)
 		if err != nil {
+			return "", fmt.Errorf("failed to load gcs base config: %w", err)
+		}
+		if err := mapstructure.WeakDecode(optionalAdditionalConfig, gcsConfig); err != nil {
 			return "", fmt.Errorf("failed to parse gcs config properties: %w", err)
 		}
 		// If no credentials are provided we assume that the user wants to use the native credentials

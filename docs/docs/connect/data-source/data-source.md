@@ -15,9 +15,6 @@ Don't forget to [create a managed ClickHouse server](/connect/olap/clickhouse#ri
 
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 
 driver: clickhouse

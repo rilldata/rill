@@ -318,12 +318,12 @@ func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.L
 		roleID = role.ID
 	}
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, roleID, req.IncludeCounts, token.Val, pageSize)
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, roleID, req.IncludeCounts, token.Val, pageSize, req.SearchPattern)
 	if err != nil {
 		return nil, err
 	}
 
-	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID)
+	count, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, roleID, req.SearchPattern)
 	if err != nil {
 		return nil, err
 	}

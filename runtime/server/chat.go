@@ -24,11 +24,10 @@ import (
 
 // ListConversations returns a list of conversations for an instance.
 func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConversationsRequest) (*runtimev1.ListConversationsResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.UseAI) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
-
-	ownerID := auth.GetClaims(ctx).Subject()
 
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
 	if err != nil {
@@ -36,7 +35,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 	}
 	defer release()
 
-	catalogConversations, err := catalog.FindConversations(ctx, ownerID)
+	catalogConversations, err := catalog.FindConversations(ctx, claims.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +53,8 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 
 // GetConversation returns a conversation and its messages.
 func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversationRequest) (*runtimev1.GetConversationResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.UseAI) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
 
@@ -70,7 +70,7 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}
 
 	// For now, we only allow users to access their own conversations.
-	if catalogConversation.OwnerID != auth.GetClaims(ctx).Subject() {
+	if catalogConversation.OwnerID != claims.UserID {
 		return nil, status.Error(codes.NotFound, "conversation not found")
 	}
 
@@ -122,7 +122,8 @@ func (s *serverToolService) ExecuteTool(ctx context.Context, toolName string, to
 
 // Complete runs a conversational AI completion with tool calling support.
 func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, err error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.UseAI) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
 
@@ -130,8 +131,6 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	if len(req.Messages) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "messages cannot be empty")
 	}
-
-	ownerID := auth.GetClaims(ctx).Subject()
 
 	// Handle conversation ID: nil or empty string means create new conversation
 	var conversationID string
@@ -144,7 +143,7 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 
 	// Delegate to runtime business logic
 	result, err := s.runtime.CompleteWithTools(ctx, &runtime.CompleteWithToolsOptions{
-		OwnerID:        ownerID,
+		OwnerID:        claims.UserID,
 		InstanceID:     req.InstanceId,
 		ConversationID: conversationID,
 		AppContext:     req.AppContext,
@@ -165,7 +164,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 // CompleteStreaming implements RuntimeService
 func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stream runtimev1.RuntimeService_CompleteStreamingServer) error {
 	// Access check
-	if !auth.GetClaims(stream.Context()).CanInstance(req.InstanceId, auth.UseAI) {
+	claims := auth.GetClaims(stream.Context(), req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
 		return ErrForbidden
 	}
 
@@ -179,7 +179,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 
 	// Delegate to runtime business logic
 	_, err := s.runtime.CompleteWithTools(stream.Context(), &runtime.CompleteWithToolsOptions{
-		OwnerID:        auth.GetClaims(stream.Context()).Subject(),
+		OwnerID:        claims.UserID,
 		InstanceID:     req.InstanceId,
 		ConversationID: req.ConversationId,
 		Messages: []*runtimev1.Message{{Role: "user", Content: []*aiv1.ContentBlock{{
@@ -222,8 +222,8 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
 
-	// Add timeout matching the completionTimeout from runtime/completion.go
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
+	// Add timeout for AI completion
+	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 
 	// Replace request context with the timed context
@@ -234,7 +234,7 @@ func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Reque
 	)
 
 	// Access check
-	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.UseAI) {
+	if !auth.GetClaims(ctx, instanceID).Can(runtime.UseAI) {
 		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}
