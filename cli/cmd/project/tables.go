@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
@@ -95,7 +94,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 				queryRes, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
 					InstanceId:         instanceID,
 					Resolver:           "sql",
-					ResolverProperties: &structpb.Struct{Fields: map[string]*structpb.Value{"sql": {Kind: &structpb.Value_StringValue{StringValue: countQuery}}}},
+					ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": countQuery})),
 				})
 				if err != nil {
 					rowCount = "error"
@@ -103,7 +102,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 					// Extract the count value from the first row, first column (should be only one column from COUNT(*))
 					for _, countValue := range queryRes.Data[0].Fields {
 						if countValue != nil {
-							rowCount = printer.FormatValue(countValue.AsInterface())
+							rowCount = fmt.Sprint(countValue.AsInterface())
 						} else {
 							rowCount = "unknown"
 						}
@@ -132,4 +131,11 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 	tablesCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")
 
 	return tablesCmd
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
