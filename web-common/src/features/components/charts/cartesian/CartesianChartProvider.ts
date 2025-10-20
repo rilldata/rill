@@ -161,7 +161,6 @@ export class CartesianChartProvider {
         const enabled =
           !!timeRange?.start &&
           !!timeRange?.end &&
-          hasColorDimension &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
           !!dimensionName;

@@ -295,8 +295,8 @@ export function calculateTimeRangePartial(
   } else if (currentSelectedTimeRange?.name) {
     try {
       parsed = parseRillTime(currentSelectedTimeRange.name);
-    } catch (e) {
-      console.error("Error parsing rill time", e);
+    } catch {
+      //no-op
     }
   }
 

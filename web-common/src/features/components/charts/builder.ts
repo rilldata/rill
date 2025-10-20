@@ -18,6 +18,7 @@ import {
   isFieldConfig,
   mergedVlConfig,
   resolveColor,
+  sanitizeSortFieldForVega,
 } from "@rilldata/web-common/features/components/charts/util";
 import {
   BarHighlightColorDark,
@@ -73,7 +74,11 @@ export function createPositionEncoding(
     type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     ...(field.sort &&
-      field.type !== "temporal" && { sort: data.domainValues?.[field.field] }),
+      field.type !== "temporal" && {
+        sort:
+          data.domainValues?.[field.field] ??
+          sanitizeSortFieldForVega(field.sort),
+      }),
     ...(field.type === "quantitative" && {
       scale: {
         ...(field.zeroBasedOrigin !== true && { zero: false }),
