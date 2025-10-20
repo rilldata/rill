@@ -5192,9 +5192,9 @@ export class SetOrganizationMemberUserRoleResponse extends Message<SetOrganizati
 }
 
 /**
- * @generated from message rill.admin.v1.GetOrganizationMemberUserAttributesRequest
+ * @generated from message rill.admin.v1.GetOrganizationMemberUserRequest
  */
-export class GetOrganizationMemberUserAttributesRequest extends Message<GetOrganizationMemberUserAttributesRequest> {
+export class GetOrganizationMemberUserRequest extends Message<GetOrganizationMemberUserRequest> {
   /**
    * @generated from field: string org = 1;
    */
@@ -5205,69 +5205,69 @@ export class GetOrganizationMemberUserAttributesRequest extends Message<GetOrgan
    */
   email = "";
 
-  constructor(data?: PartialMessage<GetOrganizationMemberUserAttributesRequest>) {
+  constructor(data?: PartialMessage<GetOrganizationMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetOrganizationMemberUserAttributesRequest";
+  static readonly typeName = "rill.admin.v1.GetOrganizationMemberUserRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationMemberUserAttributesRequest {
-    return new GetOrganizationMemberUserAttributesRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationMemberUserRequest {
+    return new GetOrganizationMemberUserRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationMemberUserAttributesRequest {
-    return new GetOrganizationMemberUserAttributesRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationMemberUserRequest {
+    return new GetOrganizationMemberUserRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationMemberUserAttributesRequest {
-    return new GetOrganizationMemberUserAttributesRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationMemberUserRequest {
+    return new GetOrganizationMemberUserRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetOrganizationMemberUserAttributesRequest | PlainMessage<GetOrganizationMemberUserAttributesRequest> | undefined, b: GetOrganizationMemberUserAttributesRequest | PlainMessage<GetOrganizationMemberUserAttributesRequest> | undefined): boolean {
-    return proto3.util.equals(GetOrganizationMemberUserAttributesRequest, a, b);
+  static equals(a: GetOrganizationMemberUserRequest | PlainMessage<GetOrganizationMemberUserRequest> | undefined, b: GetOrganizationMemberUserRequest | PlainMessage<GetOrganizationMemberUserRequest> | undefined): boolean {
+    return proto3.util.equals(GetOrganizationMemberUserRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.GetOrganizationMemberUserAttributesResponse
+ * @generated from message rill.admin.v1.GetOrganizationMemberUserResponse
  */
-export class GetOrganizationMemberUserAttributesResponse extends Message<GetOrganizationMemberUserAttributesResponse> {
+export class GetOrganizationMemberUserResponse extends Message<GetOrganizationMemberUserResponse> {
   /**
-   * @generated from field: google.protobuf.Struct attributes = 1;
+   * @generated from field: rill.admin.v1.OrganizationMemberUser member = 1;
    */
-  attributes?: Struct;
+  member?: OrganizationMemberUser;
 
-  constructor(data?: PartialMessage<GetOrganizationMemberUserAttributesResponse>) {
+  constructor(data?: PartialMessage<GetOrganizationMemberUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetOrganizationMemberUserAttributesResponse";
+  static readonly typeName = "rill.admin.v1.GetOrganizationMemberUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "attributes", kind: "message", T: Struct },
+    { no: 1, name: "member", kind: "message", T: OrganizationMemberUser },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationMemberUserAttributesResponse {
-    return new GetOrganizationMemberUserAttributesResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationMemberUserResponse {
+    return new GetOrganizationMemberUserResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationMemberUserAttributesResponse {
-    return new GetOrganizationMemberUserAttributesResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationMemberUserResponse {
+    return new GetOrganizationMemberUserResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationMemberUserAttributesResponse {
-    return new GetOrganizationMemberUserAttributesResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationMemberUserResponse {
+    return new GetOrganizationMemberUserResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetOrganizationMemberUserAttributesResponse | PlainMessage<GetOrganizationMemberUserAttributesResponse> | undefined, b: GetOrganizationMemberUserAttributesResponse | PlainMessage<GetOrganizationMemberUserAttributesResponse> | undefined): boolean {
-    return proto3.util.equals(GetOrganizationMemberUserAttributesResponse, a, b);
+  static equals(a: GetOrganizationMemberUserResponse | PlainMessage<GetOrganizationMemberUserResponse> | undefined, b: GetOrganizationMemberUserResponse | PlainMessage<GetOrganizationMemberUserResponse> | undefined): boolean {
+    return proto3.util.equals(GetOrganizationMemberUserResponse, a, b);
   }
 }
 
@@ -15560,6 +15560,11 @@ export class OrganizationMemberUser extends Message<OrganizationMemberUser> {
   usergroupsCount = 0;
 
   /**
+   * @generated from field: google.protobuf.Struct attributes = 10;
+   */
+  attributes?: Struct;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -15568,11 +15573,6 @@ export class OrganizationMemberUser extends Message<OrganizationMemberUser> {
    * @generated from field: google.protobuf.Timestamp updated_on = 6;
    */
   updatedOn?: Timestamp;
-
-  /**
-   * @generated from field: google.protobuf.Struct attributes = 10;
-   */
-  attributes?: Struct;
 
   constructor(data?: PartialMessage<OrganizationMemberUser>) {
     super();
@@ -15589,9 +15589,9 @@ export class OrganizationMemberUser extends Message<OrganizationMemberUser> {
     { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "projects_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 9, name: "usergroups_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 10, name: "attributes", kind: "message", T: Struct },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
-    { no: 10, name: "attributes", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationMemberUser {

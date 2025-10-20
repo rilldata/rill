@@ -550,12 +550,8 @@ export interface V1GetIFrameResponse {
   ttlSeconds?: number;
 }
 
-export type V1GetOrganizationMemberUserAttributesResponseAttributes = {
-  [key: string]: unknown;
-};
-
-export interface V1GetOrganizationMemberUserAttributesResponse {
-  attributes?: V1GetOrganizationMemberUserAttributesResponseAttributes;
+export interface V1GetOrganizationMemberUserResponse {
+  member?: V1OrganizationMemberUser;
 }
 
 export interface V1GetOrganizationNameForDomainResponse {
@@ -905,9 +901,9 @@ export interface V1OrganizationMemberUser {
   roleName?: string;
   projectsCount?: number;
   usergroupsCount?: number;
+  attributes?: V1OrganizationMemberUserAttributes;
   createdOn?: string;
   updatedOn?: string;
-  attributes?: V1OrganizationMemberUserAttributes;
 }
 
 export interface V1OrganizationPermissions {

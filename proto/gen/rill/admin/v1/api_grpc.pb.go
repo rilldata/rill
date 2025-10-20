@@ -58,7 +58,7 @@ const (
 	AdminService_RemoveOrganizationMemberUser_FullMethodName           = "/rill.admin.v1.AdminService/RemoveOrganizationMemberUser"
 	AdminService_LeaveOrganization_FullMethodName                      = "/rill.admin.v1.AdminService/LeaveOrganization"
 	AdminService_SetOrganizationMemberUserRole_FullMethodName          = "/rill.admin.v1.AdminService/SetOrganizationMemberUserRole"
-	AdminService_GetOrganizationMemberUserAttributes_FullMethodName    = "/rill.admin.v1.AdminService/GetOrganizationMemberUserAttributes"
+	AdminService_GetOrganizationMemberUser_FullMethodName              = "/rill.admin.v1.AdminService/GetOrganizationMemberUser"
 	AdminService_UpdateOrganizationMemberUserAttributes_FullMethodName = "/rill.admin.v1.AdminService/UpdateOrganizationMemberUserAttributes"
 	AdminService_ListProjectMemberUsers_FullMethodName                 = "/rill.admin.v1.AdminService/ListProjectMemberUsers"
 	AdminService_ListProjectInvites_FullMethodName                     = "/rill.admin.v1.AdminService/ListProjectInvites"
@@ -264,8 +264,8 @@ type AdminServiceClient interface {
 	LeaveOrganization(ctx context.Context, in *LeaveOrganizationRequest, opts ...grpc.CallOption) (*LeaveOrganizationResponse, error)
 	// SetOrganizationMemberUserRole sets the role for the member
 	SetOrganizationMemberUserRole(ctx context.Context, in *SetOrganizationMemberUserRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUserRoleResponse, error)
-	// GetOrganizationMemberUserAttributes gets the attributes for a member
-	GetOrganizationMemberUserAttributes(ctx context.Context, in *GetOrganizationMemberUserAttributesRequest, opts ...grpc.CallOption) (*GetOrganizationMemberUserAttributesResponse, error)
+	// GetOrganizationMemberUser gets the member details including attributes
+	GetOrganizationMemberUser(ctx context.Context, in *GetOrganizationMemberUserRequest, opts ...grpc.CallOption) (*GetOrganizationMemberUserResponse, error)
 	// UpdateOrganizationMemberUserAttributes updates the attributes for a member
 	UpdateOrganizationMemberUserAttributes(ctx context.Context, in *UpdateOrganizationMemberUserAttributesRequest, opts ...grpc.CallOption) (*UpdateOrganizationMemberUserAttributesResponse, error)
 	// ListProjectMemberUsers lists all the project members
@@ -895,10 +895,10 @@ func (c *adminServiceClient) SetOrganizationMemberUserRole(ctx context.Context, 
 	return out, nil
 }
 
-func (c *adminServiceClient) GetOrganizationMemberUserAttributes(ctx context.Context, in *GetOrganizationMemberUserAttributesRequest, opts ...grpc.CallOption) (*GetOrganizationMemberUserAttributesResponse, error) {
+func (c *adminServiceClient) GetOrganizationMemberUser(ctx context.Context, in *GetOrganizationMemberUserRequest, opts ...grpc.CallOption) (*GetOrganizationMemberUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetOrganizationMemberUserAttributesResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetOrganizationMemberUserAttributes_FullMethodName, in, out, cOpts...)
+	out := new(GetOrganizationMemberUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetOrganizationMemberUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2107,8 +2107,8 @@ type AdminServiceServer interface {
 	LeaveOrganization(context.Context, *LeaveOrganizationRequest) (*LeaveOrganizationResponse, error)
 	// SetOrganizationMemberUserRole sets the role for the member
 	SetOrganizationMemberUserRole(context.Context, *SetOrganizationMemberUserRoleRequest) (*SetOrganizationMemberUserRoleResponse, error)
-	// GetOrganizationMemberUserAttributes gets the attributes for a member
-	GetOrganizationMemberUserAttributes(context.Context, *GetOrganizationMemberUserAttributesRequest) (*GetOrganizationMemberUserAttributesResponse, error)
+	// GetOrganizationMemberUser gets the member details including attributes
+	GetOrganizationMemberUser(context.Context, *GetOrganizationMemberUserRequest) (*GetOrganizationMemberUserResponse, error)
 	// UpdateOrganizationMemberUserAttributes updates the attributes for a member
 	UpdateOrganizationMemberUserAttributes(context.Context, *UpdateOrganizationMemberUserAttributesRequest) (*UpdateOrganizationMemberUserAttributesResponse, error)
 	// ListProjectMemberUsers lists all the project members
@@ -2465,8 +2465,8 @@ func (UnimplementedAdminServiceServer) LeaveOrganization(context.Context, *Leave
 func (UnimplementedAdminServiceServer) SetOrganizationMemberUserRole(context.Context, *SetOrganizationMemberUserRoleRequest) (*SetOrganizationMemberUserRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberUserRole not implemented")
 }
-func (UnimplementedAdminServiceServer) GetOrganizationMemberUserAttributes(context.Context, *GetOrganizationMemberUserAttributesRequest) (*GetOrganizationMemberUserAttributesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationMemberUserAttributes not implemented")
+func (UnimplementedAdminServiceServer) GetOrganizationMemberUser(context.Context, *GetOrganizationMemberUserRequest) (*GetOrganizationMemberUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationMemberUser not implemented")
 }
 func (UnimplementedAdminServiceServer) UpdateOrganizationMemberUserAttributes(context.Context, *UpdateOrganizationMemberUserAttributesRequest) (*UpdateOrganizationMemberUserAttributesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganizationMemberUserAttributes not implemented")
@@ -3524,20 +3524,20 @@ func _AdminService_SetOrganizationMemberUserRole_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetOrganizationMemberUserAttributes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetOrganizationMemberUserAttributesRequest)
+func _AdminService_GetOrganizationMemberUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOrganizationMemberUserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).GetOrganizationMemberUserAttributes(ctx, in)
+		return srv.(AdminServiceServer).GetOrganizationMemberUser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_GetOrganizationMemberUserAttributes_FullMethodName,
+		FullMethod: AdminService_GetOrganizationMemberUser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetOrganizationMemberUserAttributes(ctx, req.(*GetOrganizationMemberUserAttributesRequest))
+		return srv.(AdminServiceServer).GetOrganizationMemberUser(ctx, req.(*GetOrganizationMemberUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5704,8 +5704,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SetOrganizationMemberUserRole_Handler,
 		},
 		{
-			MethodName: "GetOrganizationMemberUserAttributes",
-			Handler:    _AdminService_GetOrganizationMemberUserAttributes_Handler,
+			MethodName: "GetOrganizationMemberUser",
+			Handler:    _AdminService_GetOrganizationMemberUser_Handler,
 		},
 		{
 			MethodName: "UpdateOrganizationMemberUserAttributes",

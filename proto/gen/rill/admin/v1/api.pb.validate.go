@@ -13742,24 +13742,23 @@ var _ interface {
 	ErrorName() string
 } = SetOrganizationMemberUserRoleResponseValidationError{}
 
-// Validate checks the field values on
-// GetOrganizationMemberUserAttributesRequest with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *GetOrganizationMemberUserAttributesRequest) Validate() error {
+// Validate checks the field values on GetOrganizationMemberUserRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *GetOrganizationMemberUserRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on
-// GetOrganizationMemberUserAttributesRequest with the rules defined in the
-// proto definition for this message. If any rules are violated, the result is
-// a list of violation errors wrapped in
-// GetOrganizationMemberUserAttributesRequestMultiError, or nil if none found.
-func (m *GetOrganizationMemberUserAttributesRequest) ValidateAll() error {
+// ValidateAll checks the field values on GetOrganizationMemberUserRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetOrganizationMemberUserRequestMultiError, or nil if none found.
+func (m *GetOrganizationMemberUserRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetOrganizationMemberUserAttributesRequest) validate(all bool) error {
+func (m *GetOrganizationMemberUserRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -13767,7 +13766,7 @@ func (m *GetOrganizationMemberUserAttributesRequest) validate(all bool) error {
 	var errors []error
 
 	if utf8.RuneCountInString(m.GetOrg()) < 1 {
-		err := GetOrganizationMemberUserAttributesRequestValidationError{
+		err := GetOrganizationMemberUserRequestValidationError{
 			field:  "Org",
 			reason: "value length must be at least 1 runes",
 		}
@@ -13778,7 +13777,7 @@ func (m *GetOrganizationMemberUserAttributesRequest) validate(all bool) error {
 	}
 
 	if err := m._validateEmail(m.GetEmail()); err != nil {
-		err = GetOrganizationMemberUserAttributesRequestValidationError{
+		err = GetOrganizationMemberUserRequestValidationError{
 			field:  "Email",
 			reason: "value must be a valid email address",
 			cause:  err,
@@ -13790,13 +13789,13 @@ func (m *GetOrganizationMemberUserAttributesRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetOrganizationMemberUserAttributesRequestMultiError(errors)
+		return GetOrganizationMemberUserRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-func (m *GetOrganizationMemberUserAttributesRequest) _validateHostname(host string) error {
+func (m *GetOrganizationMemberUserRequest) _validateHostname(host string) error {
 	s := strings.ToLower(strings.TrimSuffix(host, "."))
 
 	if len(host) > 253 {
@@ -13826,7 +13825,7 @@ func (m *GetOrganizationMemberUserAttributesRequest) _validateHostname(host stri
 	return nil
 }
 
-func (m *GetOrganizationMemberUserAttributesRequest) _validateEmail(addr string) error {
+func (m *GetOrganizationMemberUserRequest) _validateEmail(addr string) error {
 	a, err := mail.ParseAddress(addr)
 	if err != nil {
 		return err
@@ -13846,14 +13845,14 @@ func (m *GetOrganizationMemberUserAttributesRequest) _validateEmail(addr string)
 	return m._validateHostname(parts[1])
 }
 
-// GetOrganizationMemberUserAttributesRequestMultiError is an error wrapping
-// multiple validation errors returned by
-// GetOrganizationMemberUserAttributesRequest.ValidateAll() if the designated
+// GetOrganizationMemberUserRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// GetOrganizationMemberUserRequest.ValidateAll() if the designated
 // constraints aren't met.
-type GetOrganizationMemberUserAttributesRequestMultiError []error
+type GetOrganizationMemberUserRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetOrganizationMemberUserAttributesRequestMultiError) Error() string {
+func (m GetOrganizationMemberUserRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -13862,12 +13861,12 @@ func (m GetOrganizationMemberUserAttributesRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetOrganizationMemberUserAttributesRequestMultiError) AllErrors() []error { return m }
+func (m GetOrganizationMemberUserRequestMultiError) AllErrors() []error { return m }
 
-// GetOrganizationMemberUserAttributesRequestValidationError is the validation
-// error returned by GetOrganizationMemberUserAttributesRequest.Validate if
-// the designated constraints aren't met.
-type GetOrganizationMemberUserAttributesRequestValidationError struct {
+// GetOrganizationMemberUserRequestValidationError is the validation error
+// returned by GetOrganizationMemberUserRequest.Validate if the designated
+// constraints aren't met.
+type GetOrganizationMemberUserRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -13875,24 +13874,24 @@ type GetOrganizationMemberUserAttributesRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetOrganizationMemberUserAttributesRequestValidationError) Field() string { return e.field }
+func (e GetOrganizationMemberUserRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetOrganizationMemberUserAttributesRequestValidationError) Reason() string { return e.reason }
+func (e GetOrganizationMemberUserRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetOrganizationMemberUserAttributesRequestValidationError) Cause() error { return e.cause }
+func (e GetOrganizationMemberUserRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetOrganizationMemberUserAttributesRequestValidationError) Key() bool { return e.key }
+func (e GetOrganizationMemberUserRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetOrganizationMemberUserAttributesRequestValidationError) ErrorName() string {
-	return "GetOrganizationMemberUserAttributesRequestValidationError"
+func (e GetOrganizationMemberUserRequestValidationError) ErrorName() string {
+	return "GetOrganizationMemberUserRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetOrganizationMemberUserAttributesRequestValidationError) Error() string {
+func (e GetOrganizationMemberUserRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -13904,14 +13903,14 @@ func (e GetOrganizationMemberUserAttributesRequestValidationError) Error() strin
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetOrganizationMemberUserAttributesRequest.%s: %s%s",
+		"invalid %sGetOrganizationMemberUserRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetOrganizationMemberUserAttributesRequestValidationError{}
+var _ error = GetOrganizationMemberUserRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -13919,26 +13918,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetOrganizationMemberUserAttributesRequestValidationError{}
+} = GetOrganizationMemberUserRequestValidationError{}
 
-// Validate checks the field values on
-// GetOrganizationMemberUserAttributesResponse with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *GetOrganizationMemberUserAttributesResponse) Validate() error {
+// Validate checks the field values on GetOrganizationMemberUserResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *GetOrganizationMemberUserResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on
-// GetOrganizationMemberUserAttributesResponse with the rules defined in the
-// proto definition for this message. If any rules are violated, the result is
-// a list of violation errors wrapped in
-// GetOrganizationMemberUserAttributesResponseMultiError, or nil if none found.
-func (m *GetOrganizationMemberUserAttributesResponse) ValidateAll() error {
+// ValidateAll checks the field values on GetOrganizationMemberUserResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// GetOrganizationMemberUserResponseMultiError, or nil if none found.
+func (m *GetOrganizationMemberUserResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetOrganizationMemberUserAttributesResponse) validate(all bool) error {
+func (m *GetOrganizationMemberUserResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -13946,28 +13944,28 @@ func (m *GetOrganizationMemberUserAttributesResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetAttributes()).(type) {
+		switch v := interface{}(m.GetMember()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetOrganizationMemberUserAttributesResponseValidationError{
-					field:  "Attributes",
+				errors = append(errors, GetOrganizationMemberUserResponseValidationError{
+					field:  "Member",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, GetOrganizationMemberUserAttributesResponseValidationError{
-					field:  "Attributes",
+				errors = append(errors, GetOrganizationMemberUserResponseValidationError{
+					field:  "Member",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetMember()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return GetOrganizationMemberUserAttributesResponseValidationError{
-				field:  "Attributes",
+			return GetOrganizationMemberUserResponseValidationError{
+				field:  "Member",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -13975,20 +13973,20 @@ func (m *GetOrganizationMemberUserAttributesResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetOrganizationMemberUserAttributesResponseMultiError(errors)
+		return GetOrganizationMemberUserResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetOrganizationMemberUserAttributesResponseMultiError is an error wrapping
-// multiple validation errors returned by
-// GetOrganizationMemberUserAttributesResponse.ValidateAll() if the designated
+// GetOrganizationMemberUserResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// GetOrganizationMemberUserResponse.ValidateAll() if the designated
 // constraints aren't met.
-type GetOrganizationMemberUserAttributesResponseMultiError []error
+type GetOrganizationMemberUserResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetOrganizationMemberUserAttributesResponseMultiError) Error() string {
+func (m GetOrganizationMemberUserResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -13997,12 +13995,12 @@ func (m GetOrganizationMemberUserAttributesResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetOrganizationMemberUserAttributesResponseMultiError) AllErrors() []error { return m }
+func (m GetOrganizationMemberUserResponseMultiError) AllErrors() []error { return m }
 
-// GetOrganizationMemberUserAttributesResponseValidationError is the validation
-// error returned by GetOrganizationMemberUserAttributesResponse.Validate if
-// the designated constraints aren't met.
-type GetOrganizationMemberUserAttributesResponseValidationError struct {
+// GetOrganizationMemberUserResponseValidationError is the validation error
+// returned by GetOrganizationMemberUserResponse.Validate if the designated
+// constraints aren't met.
+type GetOrganizationMemberUserResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -14010,24 +14008,24 @@ type GetOrganizationMemberUserAttributesResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetOrganizationMemberUserAttributesResponseValidationError) Field() string { return e.field }
+func (e GetOrganizationMemberUserResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetOrganizationMemberUserAttributesResponseValidationError) Reason() string { return e.reason }
+func (e GetOrganizationMemberUserResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetOrganizationMemberUserAttributesResponseValidationError) Cause() error { return e.cause }
+func (e GetOrganizationMemberUserResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetOrganizationMemberUserAttributesResponseValidationError) Key() bool { return e.key }
+func (e GetOrganizationMemberUserResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetOrganizationMemberUserAttributesResponseValidationError) ErrorName() string {
-	return "GetOrganizationMemberUserAttributesResponseValidationError"
+func (e GetOrganizationMemberUserResponseValidationError) ErrorName() string {
+	return "GetOrganizationMemberUserResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetOrganizationMemberUserAttributesResponseValidationError) Error() string {
+func (e GetOrganizationMemberUserResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -14039,14 +14037,14 @@ func (e GetOrganizationMemberUserAttributesResponseValidationError) Error() stri
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetOrganizationMemberUserAttributesResponse.%s: %s%s",
+		"invalid %sGetOrganizationMemberUserResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetOrganizationMemberUserAttributesResponseValidationError{}
+var _ error = GetOrganizationMemberUserResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -14054,7 +14052,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetOrganizationMemberUserAttributesResponseValidationError{}
+} = GetOrganizationMemberUserResponseValidationError{}
 
 // Validate checks the field values on
 // UpdateOrganizationMemberUserAttributesRequest with the rules defined in the
@@ -42118,6 +42116,35 @@ func (m *OrganizationMemberUser) validate(all bool) error {
 	// no validation rules for UsergroupsCount
 
 	if all {
+		switch v := interface{}(m.GetAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrganizationMemberUserValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrganizationMemberUserValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrganizationMemberUserValidationError{
+				field:  "Attributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
@@ -42169,35 +42196,6 @@ func (m *OrganizationMemberUser) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return OrganizationMemberUserValidationError{
 				field:  "UpdatedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetAttributes()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, OrganizationMemberUserValidationError{
-					field:  "Attributes",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, OrganizationMemberUserValidationError{
-					field:  "Attributes",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return OrganizationMemberUserValidationError{
-				field:  "Attributes",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

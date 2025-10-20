@@ -308,9 +308,9 @@ service AdminService {
     };
   }
 
-  // GetOrganizationMemberUserAttributes gets the attributes for a member
-  rpc GetOrganizationMemberUserAttributes(GetOrganizationMemberUserAttributesRequest) returns (GetOrganizationMemberUserAttributesResponse) {
-    option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}/attributes"};
+  // GetOrganizationMemberUser gets the member details
+  rpc GetOrganizationMemberUser(GetOrganizationMemberUserRequest) returns (GetOrganizationMemberUserResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}"};
   }
 
   // UpdateOrganizationMemberUserAttributes updates the attributes for a member
@@ -1682,13 +1682,13 @@ message SetOrganizationMemberUserRoleRequest {
 
 message SetOrganizationMemberUserRoleResponse {}
 
-message GetOrganizationMemberUserAttributesRequest {
+message GetOrganizationMemberUserRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
 }
 
-message GetOrganizationMemberUserAttributesResponse {
-  google.protobuf.Struct attributes = 1;
+message GetOrganizationMemberUserResponse {
+  OrganizationMemberUser member = 1;
 }
 
 message UpdateOrganizationMemberUserAttributesRequest {

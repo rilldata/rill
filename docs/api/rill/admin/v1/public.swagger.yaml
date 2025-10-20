@@ -784,6 +784,27 @@ paths:
               superuserForceAccess:
                 type: boolean
   /v1/orgs/{org}/members/{email}:
+    get:
+      summary: GetOrganizationMemberUser gets the member details including attributes
+      operationId: AdminService_GetOrganizationMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
     delete:
       summary: RemoveOrganizationMemberUser removes member from the organization
       operationId: AdminService_RemoveOrganizationMemberUser
@@ -837,27 +858,6 @@ paths:
               superuserForceAccess:
                 type: boolean
   /v1/orgs/{org}/members/{email}/attributes:
-    get:
-      summary: GetOrganizationMemberUserAttributes gets the attributes for a member
-      operationId: AdminService_GetOrganizationMemberUserAttributes
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetOrganizationMemberUserAttributesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: org
-          in: path
-          required: true
-          type: string
-        - name: email
-          in: path
-          required: true
-          type: string
     put:
       summary: UpdateOrganizationMemberUserAttributes updates the attributes for a member
       operationId: AdminService_UpdateOrganizationMemberUserAttributes
@@ -4862,11 +4862,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
-  v1GetOrganizationMemberUserAttributesResponse:
+  v1GetOrganizationMemberUserResponse:
     type: object
     properties:
-      attributes:
-        type: object
+      member:
+        $ref: '#/definitions/v1OrganizationMemberUser'
   v1GetOrganizationNameForDomainResponse:
     type: object
     properties:
@@ -5457,14 +5457,14 @@ definitions:
       usergroupsCount:
         type: integer
         format: int64
+      attributes:
+        type: object
       createdOn:
         type: string
         format: date-time
       updatedOn:
         type: string
         format: date-time
-      attributes:
-        type: object
   v1OrganizationPermissions:
     type: object
     properties:

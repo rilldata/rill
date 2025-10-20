@@ -951,11 +951,11 @@ type OrganizationMemberUser struct {
 	DisplayName     string         `db:"display_name"`
 	PhotoURL        string         `db:"photo_url"`
 	RoleName        string         `db:"role_name"`
+	Attributes      map[string]any `db:"attributes"`
 	ProjectsCount   int            `db:"projects_count"`
 	UsergroupsCount int            `db:"usergroups_count"`
 	CreatedOn       time.Time      `db:"created_on"`
 	UpdatedOn       time.Time      `db:"updated_on"`
-	Attributes      map[string]any `db:"attributes"`
 }
 
 // ProjectMemberUser is a convenience type used for display-friendly representation of a project member

@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -643,7 +642,7 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 }
 
-func (s *Server) GetOrganizationMemberUserAttributes(ctx context.Context, req *adminv1.GetOrganizationMemberUserAttributesRequest) (*adminv1.GetOrganizationMemberUserAttributesResponse, error) {
+func (s *Server) GetOrganizationMemberUser(ctx context.Context, req *adminv1.GetOrganizationMemberUserRequest) (*adminv1.GetOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
 		attribute.String("args.email", req.Email),
@@ -656,7 +655,7 @@ func (s *Server) GetOrganizationMemberUserAttributes(ctx context.Context, req *a
 
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to read org member attributes")
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org member")
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -664,7 +663,7 @@ func (s *Server) GetOrganizationMemberUserAttributes(ctx context.Context, req *a
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Find the organization member to get attributes
+	// Find the organization member
 	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, "", true, user.Email, 1)
 	if err != nil {
 		return nil, err
@@ -674,15 +673,9 @@ func (s *Server) GetOrganizationMemberUserAttributes(ctx context.Context, req *a
 	}
 
 	member := members[0]
-	var attributes *structpb.Struct
-	if len(member.Attributes) > 0 {
-		if s, err := structpb.NewStruct(member.Attributes); err == nil {
-			attributes = s
-		}
-	}
 
-	return &adminv1.GetOrganizationMemberUserAttributesResponse{
-		Attributes: attributes,
+	return &adminv1.GetOrganizationMemberUserResponse{
+		Member: orgMemberUserToPB(member),
 	}, nil
 }
 
