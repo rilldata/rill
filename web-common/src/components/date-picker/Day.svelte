@@ -1,7 +1,12 @@
 <script lang="ts">
   import { DateTime, Interval } from "luxon";
 
-  type OverlapType = "in-range" | "start" | "end" | "full-interval";
+  enum OverlapType {
+    IN_RANGE = "in-range",
+    START = "start",
+    END = "end",
+    FULL_INTERVAL = "full-interval",
+  }
 
   export let date: DateTime<true>;
   export let interval: Interval<true>;
@@ -14,7 +19,7 @@
   export let onSelectDay: (date: DateTime<true>) => void;
   export let onHoverDay: (date: DateTime<true>) => void;
 
-  $: overlapType = determineClassTypes(date, potentialInterval, interval);
+  $: overlapClass = getOverlapClass(date, potentialInterval, interval);
 
   function getOrderedInterval(
     date1: DateTime<true>,
@@ -34,7 +39,7 @@
     }
   }
 
-  function determineClassTypes(
+  function getOverlapClass(
     date: DateTime<true>,
     potentialInterval: Interval<true> | undefined,
     interval: Interval<true>,
@@ -43,16 +48,16 @@
 
     if (areSameDay(evaluatedInterval.start, date)) {
       if (areSameDay(evaluatedInterval.end.minus({ millisecond: 1 }), date))
-        return "full-interval";
-      return "start";
+        return OverlapType.FULL_INTERVAL;
+      return OverlapType.START;
     }
 
     if (areSameDay(evaluatedInterval.end.minus({ millisecond: 1 }), date)) {
-      return "end";
+      return OverlapType.END;
     }
 
     if (evaluatedInterval.contains(date)) {
-      return "in-range";
+      return OverlapType.IN_RANGE;
     }
 
     return undefined;
@@ -86,7 +91,7 @@
   }}
 >
   <div
-    class="day {overlapType}"
+    class="day {overlapClass}"
     class:text-gray-400={outOfMonth}
     class:potential={!!potentialInterval}
     class:anchor={areSameDay(anchorDay, date)}

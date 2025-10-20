@@ -162,6 +162,8 @@
       allTimeRange={$allTimeRange}
       {selectedTimeRange}
       {selectedComparisonTimeRange}
+      {activeTimeZone}
+      minTimeGrain={$minTimeGrain}
       showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
         false}
       onDisplayTimeComparison={set.comparison}
@@ -173,7 +175,6 @@
           set.comparison(range.name);
         }
       }}
-      {activeTimeZone}
     />
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">

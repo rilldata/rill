@@ -32,6 +32,11 @@
 
   const formats = [...formatsWithoutYear, ...formatsWithYear];
 
+  enum ErrorType {
+    INVALID = "invalid",
+    OUT_OF_RANGE = "out-of-range",
+  }
+
   export let date: DateTime;
   export let zone: string;
   export let boundary: "start" | "end";
@@ -44,7 +49,7 @@
   ) => void;
   export let onFocus: () => void;
 
-  let errorType: "invalid" | "out-of-range" | null = null;
+  let errorType: ErrorType | null = null;
   let inputIsFocused = false;
   let dateString = date.toLocaleString({
     month: "short",
@@ -65,9 +70,9 @@
 
   $: if (
     (minDate && date < minDate.startOf("day")) ||
-    (maxDate && !(date < maxDate))
+    (maxDate && date >= maxDate)
   ) {
-    errorType = "out-of-range";
+    errorType = ErrorType.OUT_OF_RANGE;
   } else {
     errorType = null;
   }
@@ -114,8 +119,18 @@
 
       onValidDateInput(potentialDate, boundary);
     } else {
-      errorType = "invalid";
+      errorType = ErrorType.INVALID;
       return;
+    }
+  }
+
+  function resetDate() {
+    if (boundary === "start") {
+      date = minDate ?? DateTime.now().startOf("day");
+      onValidDateInput(date, boundary);
+    } else {
+      date = maxDate ?? DateTime.now().plus({ day: 1 }).startOf("day");
+      onValidDateInput(date, boundary);
     }
   }
 </script>
@@ -125,7 +140,7 @@
     {label}
   </label>
 
-  <div class="input-wrapper" class:error={errorType === "invalid"}>
+  <div class="input-wrapper" class:error={errorType === ErrorType.INVALID}>
     <input
       tabindex="0"
       {id}
@@ -142,25 +157,12 @@
         inputIsFocused = false;
       }}
     />
-    {#if errorType === "out-of-range" || (errorType && !inputIsFocused)}
+    {#if errorType === ErrorType.OUT_OF_RANGE || (errorType && !inputIsFocused)}
       <Tooltip.Root portal="body">
         <Tooltip.Trigger asChild let:builder>
-          <button
-            use:builder.action
-            {...builder}
-            on:click={() => {
-              if (boundary === "start") {
-                date = minDate ?? DateTime.now().startOf("day");
-                onValidDateInput(date, boundary);
-              } else {
-                date =
-                  maxDate ?? DateTime.now().plus({ day: 1 }).startOf("day");
-                onValidDateInput(date, boundary);
-              }
-            }}
-          >
+          <button use:builder.action {...builder} on:click={resetDate}>
             <AlertTriangle
-              className="size-4 text-{errorType === 'invalid'
+              className="size-4 text-{errorType === ErrorType.INVALID
                 ? 'red'
                 : 'yellow'}-500"
             />
@@ -171,7 +173,7 @@
           sideOffset={10}
           class="bg-gray-700 text-surface shadow-md"
         >
-          {#if errorType === "out-of-range"}
+          {#if errorType === ErrorType.OUT_OF_RANGE}
             Date is out of range. Click to reset.
           {:else}
             Date is invalid. Click to reset.

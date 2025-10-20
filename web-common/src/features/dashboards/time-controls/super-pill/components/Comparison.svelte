@@ -10,6 +10,8 @@
   import { DateTime, Interval } from "luxon";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
   import RangeDisplay from "./RangeDisplay.svelte";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
   type Option = {
     name: TimeComparisonOption;
@@ -33,6 +35,7 @@
     end: Date,
   ) => void;
   export let allowCustomTimeRange: boolean = true;
+  export let minTimeGrain: V1TimeGrain | undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   let open = false;
@@ -167,6 +170,9 @@
         <div class="bg-slate-50 flex flex-col w-60 p-3">
           {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
+              minTimeGrain={V1TimeGrainToDateTimeUnit[
+                minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
+              ]}
               {maxDate}
               {minDate}
               {interval}
