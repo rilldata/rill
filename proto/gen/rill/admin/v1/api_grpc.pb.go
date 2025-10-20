@@ -264,7 +264,7 @@ type AdminServiceClient interface {
 	LeaveOrganization(ctx context.Context, in *LeaveOrganizationRequest, opts ...grpc.CallOption) (*LeaveOrganizationResponse, error)
 	// SetOrganizationMemberUserRole sets the role for the member
 	SetOrganizationMemberUserRole(ctx context.Context, in *SetOrganizationMemberUserRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUserRoleResponse, error)
-	// GetOrganizationMemberUser gets the member details including attributes
+	// GetOrganizationMemberUser gets the member details
 	GetOrganizationMemberUser(ctx context.Context, in *GetOrganizationMemberUserRequest, opts ...grpc.CallOption) (*GetOrganizationMemberUserResponse, error)
 	// UpdateOrganizationMemberUserAttributes updates the attributes for a member
 	UpdateOrganizationMemberUserAttributes(ctx context.Context, in *UpdateOrganizationMemberUserAttributesRequest, opts ...grpc.CallOption) (*UpdateOrganizationMemberUserAttributesResponse, error)
@@ -2107,7 +2107,7 @@ type AdminServiceServer interface {
 	LeaveOrganization(context.Context, *LeaveOrganizationRequest) (*LeaveOrganizationResponse, error)
 	// SetOrganizationMemberUserRole sets the role for the member
 	SetOrganizationMemberUserRole(context.Context, *SetOrganizationMemberUserRoleRequest) (*SetOrganizationMemberUserRoleResponse, error)
-	// GetOrganizationMemberUser gets the member details including attributes
+	// GetOrganizationMemberUser gets the member details
 	GetOrganizationMemberUser(context.Context, *GetOrganizationMemberUserRequest) (*GetOrganizationMemberUserResponse, error)
 	// UpdateOrganizationMemberUserAttributes updates the attributes for a member
 	UpdateOrganizationMemberUserAttributes(context.Context, *UpdateOrganizationMemberUserAttributesRequest) (*UpdateOrganizationMemberUserAttributesResponse, error)

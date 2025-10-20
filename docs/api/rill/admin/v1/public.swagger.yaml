@@ -790,7 +790,7 @@ paths:
                 type: boolean
   /v1/orgs/{org}/members/{email}:
     get:
-      summary: GetOrganizationMemberUser gets the member details including attributes
+      summary: GetOrganizationMemberUser gets the member details
       operationId: AdminService_GetOrganizationMemberUser
       responses:
         "200":

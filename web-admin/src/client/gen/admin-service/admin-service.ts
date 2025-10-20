@@ -3309,7 +3309,7 @@ export const createAdminServiceAddOrganizationMemberUser = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary GetOrganizationMemberUser gets the member details including attributes
+ * @summary GetOrganizationMemberUser gets the member details
  */
 export const adminServiceGetOrganizationMemberUser = (
   org: string,
@@ -3374,7 +3374,7 @@ export type AdminServiceGetOrganizationMemberUserQueryResult = NonNullable<
 export type AdminServiceGetOrganizationMemberUserQueryError = RpcStatus;
 
 /**
- * @summary GetOrganizationMemberUser gets the member details including attributes
+ * @summary GetOrganizationMemberUser gets the member details
  */
 
 export function createAdminServiceGetOrganizationMemberUser<
