@@ -77,6 +77,11 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		return nil, fmt.Errorf("invalid mode '%s': must be 'read' or 'readwrite'", cfg.Mode)
 	}
 
+	// Validate that managed cannot be combined with path or attach
+	if cfg.Managed && (cfg.Path != "" || cfg.Attach != "") {
+		return nil, fmt.Errorf("'managed: true' cannot be combined with 'path' or 'attach' fields")
+	}
+
 	// Set the mode for the connection
 	if cfg.Mode == "" {
 		// The default mode depends on the connection type:

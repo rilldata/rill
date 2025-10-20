@@ -123,7 +123,7 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 
 			// For DuckDB with managed: true, we don't need admin provisioning.
 			// Skip admin provisioning to avoid errors in cloud environments where the admin service doesn't have a DuckDB provisioner.
-			skipAdminProvisioning := cfg.driver == "duckdb"
+			skipAdminProvisioning := cfg.driver == "duckdb" && cfg.config["managed"] == true
 
 			// Provisioning has been requested, but the instance does not have an admin connector.
 			if inst.AdminConnector == "" || skipAdminProvisioning {

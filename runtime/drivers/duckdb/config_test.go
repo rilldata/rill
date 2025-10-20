@@ -102,17 +102,6 @@ func TestConfigManaged(t *testing.T) {
 		expectedAttach string
 	}{
 		{
-			name: "managed true should take precedence over path and attach, set readwrite mode",
-			configMap: map[string]any{
-				"managed": true,
-				"path":    "/tmp/test.db",
-				"attach":  "'test.db' AS test",
-			},
-			expectedMode:   modeReadWrite,
-			expectedPath:   "/tmp/test.db",
-			expectedAttach: "'test.db' AS test",
-		},
-		{
 			name: "managed false should preserve path and set read mode",
 			configMap: map[string]any{
 				"managed": false,
@@ -176,6 +165,62 @@ func TestConfigManaged(t *testing.T) {
 			require.Equal(t, tt.expectedMode, cfg.Mode)
 			require.Equal(t, tt.expectedPath, cfg.Path)
 			require.Equal(t, tt.expectedAttach, cfg.Attach)
+		})
+	}
+}
+
+func TestConfigManagedValidation(t *testing.T) {
+	tests := []struct {
+		name      string
+		configMap map[string]any
+		errorMsg  string
+	}{
+		{
+			name: "managed true with path should error",
+			configMap: map[string]any{
+				"managed": true,
+				"path":    "/tmp/test.db",
+			},
+			errorMsg: "'managed: true' cannot be combined with 'path' or 'attach' fields",
+		},
+		{
+			name: "managed true with attach should error",
+			configMap: map[string]any{
+				"managed": true,
+				"attach":  "'test.db' AS test",
+			},
+			errorMsg: "'managed: true' cannot be combined with 'path' or 'attach' fields",
+		},
+		{
+			name: "managed true with both path and attach should error",
+			configMap: map[string]any{
+				"managed": true,
+				"path":    "/tmp/test.db",
+				"attach":  "'test.db' AS test",
+			},
+			errorMsg: "'managed: true' cannot be combined with 'path' or 'attach' fields",
+		},
+		{
+			name: "managed false with path should be valid",
+			configMap: map[string]any{
+				"managed": false,
+				"path":    "/tmp/test.db",
+			},
+			errorMsg: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := newConfig(tt.configMap)
+			if tt.errorMsg != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errorMsg)
+				require.Nil(t, cfg)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, cfg)
+			}
 		})
 	}
 }
