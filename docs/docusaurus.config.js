@@ -63,24 +63,24 @@ const config = {
         },
       }),
     ],
-    // [
-    //   'redocusaurus',
-    //   {
-    //     config: path.join(__dirname, 'redocly.yaml'),
-    //     specs: [
-    //       {
-    //         id: 'admin-api',
-    //         spec: 'api/rill/admin/v1/public.swagger.yaml',
-    //         route: '/api/admin/',
-    //         layout: {
-    //           title: "Rill Public API",
-    //           description: "Public Rill API documentation",
-    //         },
-    //       },
-    //     ],
-    //     theme: {},
-    //   },
-    // ]
+    [
+      'redocusaurus',
+      {
+        config: path.join(__dirname, 'redocly.yaml'),
+        specs: [
+          {
+            id: 'admin-api',
+            spec: 'api/rill/admin/v1/public.swagger.yaml',
+            route: '/api/admin/',
+            layout: {
+              title: "Rill Public API",
+              description: "Public Rill API documentation",
+            },
+          },
+        ],
+        theme: {},
+      },
+    ]
   ],
 
   themeConfig:
@@ -143,11 +143,11 @@ const config = {
             label: "Reference",
           },
 
-          // {
-          //   to: "/api/admin/",
-          //   position: "left",
-          //   label: "API",
-          // },
+          {
+            to: "/api/admin/",
+            position: "left",
+            label: "API",
+          },
 
           {
             type: "docSidebar",

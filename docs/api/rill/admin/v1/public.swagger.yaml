@@ -1,15 +1,7 @@
 swagger: "2.0"
 info:
-  title: Rill API
-  description: It is used to manage organizations, projects, deployments, users, and roles.
-  version: v1
-  contact:
-    name: Rill Data
-    url: https://rilldata.com
-  license:
-    name: Apache 2.0
-    url: https://github.com/rilldata/rill/blob/main/LICENSE.md
-host: api.rilldata.com
+  title: rill/admin/v1/ai.proto
+  version: version not set
 consumes:
   - application/json
 produces:
@@ -4148,23 +4140,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
-  runtimev1Operation:
-    type: string
-    enum:
-      - OPERATION_UNSPECIFIED
-      - OPERATION_EQ
-      - OPERATION_NEQ
-      - OPERATION_LT
-      - OPERATION_LTE
-      - OPERATION_GT
-      - OPERATION_GTE
-      - OPERATION_OR
-      - OPERATION_AND
-      - OPERATION_IN
-      - OPERATION_NIN
-      - OPERATION_LIKE
-      - OPERATION_NLIKE
-    default: OPERATION_UNSPECIFIED
   v1AddOrganizationMemberUserResponse:
     type: object
     properties:
@@ -4447,7 +4422,7 @@ definitions:
     type: object
     properties:
       op:
-        $ref: '#/definitions/runtimev1Operation'
+        $ref: '#/definitions/v1Operation'
       exprs:
         type: array
         items:
@@ -5314,6 +5289,23 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1Operation:
+    type: string
+    enum:
+      - OPERATION_UNSPECIFIED
+      - OPERATION_EQ
+      - OPERATION_NEQ
+      - OPERATION_LT
+      - OPERATION_LTE
+      - OPERATION_GT
+      - OPERATION_GTE
+      - OPERATION_OR
+      - OPERATION_AND
+      - OPERATION_IN
+      - OPERATION_NIN
+      - OPERATION_LIKE
+      - OPERATION_NLIKE
+    default: OPERATION_UNSPECIFIED
   v1Organization:
     type: object
     properties:
@@ -6326,6 +6318,3 @@ definitions:
         type: string
       role:
         type: string
-externalDocs:
-  description: Rill API Reference
-  url: https://docs.rilldata.com/api/admin
