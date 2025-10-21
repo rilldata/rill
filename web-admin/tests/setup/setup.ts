@@ -212,7 +212,7 @@ setup.describe("global setup", () => {
     // Expect to land on the project home page
     await adminPage.waitForURL(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
     await expect(
-      adminPage.getByText(`Welcome back to ${RILL_PROJECT_NAME}`),
+      adminPage.getByText(`Welcome to ${RILL_PROJECT_NAME}`),
     ).toBeVisible();
 
     // Navigate to the dashboards page to validate the deployment

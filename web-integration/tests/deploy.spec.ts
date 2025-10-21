@@ -228,7 +228,7 @@ async function assertAndSkipInvite(page: Page) {
 
 async function ensureProjectRedeployed(page: Page) {
   // Project homepage is opened on a re-deploy. This can take a while, so it has increased timeout.
-  await expect(page.getByText("Welcome back to")).toBeVisible({
+  await expect(page.getByText("Welcome to")).toBeVisible({
     timeout: 120_000,
   });
 }

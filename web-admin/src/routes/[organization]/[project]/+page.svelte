@@ -19,7 +19,7 @@
     <div class="flex flex-col gap-y-8">
       <div class="flex flex-col gap-y-4">
         <h1 class="text-4xl font-semibold text-gray-900">
-          Welcome back to <span class="text-primary-600">{project}</span>
+          Welcome to <span class="text-primary-600">{project}</span>
         </h1>
         <p class="text-lg text-gray-600">
           Ask questions about your data, or explore your dashboards below
