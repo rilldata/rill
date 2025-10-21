@@ -952,6 +952,7 @@ message CompleteStreamingRequest {
   string instance_id = 1;
   string conversation_id = 2; // If not provided, creates a new conversation
   string prompt = 3;
+  rill.ai.v1.CompletionMessageContext context = 4;
 }
 
 // Response message for RuntimeService.CompleteStreaming

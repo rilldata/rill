@@ -247,6 +247,11 @@ export class CompletionMessage extends Message<CompletionMessage> {
    */
   content: ContentBlock[] = [];
 
+  /**
+   * @generated from field: rill.ai.v1.CompletionMessageContext context = 4;
+   */
+  context?: CompletionMessageContext;
+
   constructor(data?: PartialMessage<CompletionMessage>) {
     super();
     proto3.util.initPartial(data, this);
@@ -258,6 +263,7 @@ export class CompletionMessage extends Message<CompletionMessage> {
     { no: 1, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "content", kind: "message", T: ContentBlock, repeated: true },
+    { no: 4, name: "context", kind: "message", T: CompletionMessageContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompletionMessage {
@@ -274,6 +280,73 @@ export class CompletionMessage extends Message<CompletionMessage> {
 
   static equals(a: CompletionMessage | PlainMessage<CompletionMessage> | undefined, b: CompletionMessage | PlainMessage<CompletionMessage> | undefined): boolean {
     return proto3.util.equals(CompletionMessage, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.CompletionMessageContext
+ */
+export class CompletionMessageContext extends Message<CompletionMessageContext> {
+  /**
+   * @generated from field: string explore = 1;
+   */
+  explore = "";
+
+  /**
+   * @generated from field: string metrics_view = 2;
+   */
+  metricsView = "";
+
+  /**
+   * @generated from field: string time_range = 3;
+   */
+  timeRange = "";
+
+  /**
+   * @generated from field: string filters = 4;
+   */
+  filters = "";
+
+  /**
+   * @generated from field: repeated string measures = 5;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: repeated string dimensions = 6;
+   */
+  dimensions: string[] = [];
+
+  constructor(data?: PartialMessage<CompletionMessageContext>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.CompletionMessageContext";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "filters", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompletionMessageContext {
+    return new CompletionMessageContext().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompletionMessageContext {
+    return new CompletionMessageContext().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompletionMessageContext {
+    return new CompletionMessageContext().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompletionMessageContext | PlainMessage<CompletionMessageContext> | undefined, b: CompletionMessageContext | PlainMessage<CompletionMessageContext> | undefined): boolean {
+    return proto3.util.equals(CompletionMessageContext, a, b);
   }
 }
 

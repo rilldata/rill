@@ -20,9 +20,10 @@ type RouterAgent struct {
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
-	Prompt  string `json:"prompt"`
-	Agent   string `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
-	Explore string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Prompt  string         `json:"prompt"`
+	Agent   string         `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
+	Explore string         `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Context MessageContext `json:"context,omitempty" jsonschema:"Optional context for explorations."`
 }
 
 type RouterAgentResult struct {
@@ -114,7 +115,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	// We always pass "explore" for context, but some agents may not use it.
 	var response *AnalystAgentResult
 	_, err := session.CallTool(ctx, RoleSystem, args.Agent, &response, map[string]any{
-		"explore": args.Explore,
+		"context": args.Context,
 	})
 	if err != nil {
 		return nil, err

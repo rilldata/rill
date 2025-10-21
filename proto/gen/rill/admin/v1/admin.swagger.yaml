@@ -4751,7 +4751,28 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ContentBlock'
+      context:
+        $ref: '#/definitions/v1CompletionMessageContext'
     title: Completion message for AI API calls
+  v1CompletionMessageContext:
+    type: object
+    properties:
+      explore:
+        type: string
+      metricsView:
+        type: string
+      timeRange:
+        type: string
+      filters:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      dimensions:
+        type: array
+        items:
+          type: string
   v1Condition:
     type: object
     properties:

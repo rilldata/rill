@@ -235,10 +235,19 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
+	var mc ai.MessageContext
+	if req.Context != nil {
+		mc.Explore = req.Context.Explore
+		mc.MetricsView = req.Context.MetricsView
+		mc.TimeRange = req.Context.TimeRange
+		mc.Filters = req.Context.Filters
+	}
+
 	// Make the call
 	var res *ai.RouterAgentResult
 	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt: req.Prompt,
+		Prompt:  req.Prompt,
+		Context: mc,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) {
 		return err

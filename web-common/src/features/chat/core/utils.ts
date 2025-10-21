@@ -4,11 +4,17 @@
  * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in error handling, ID generation, and cache management.
  */
+import { useMetricsViewTimeRangeFromExplore } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import {
   V1AppContextType,
   type V1AppContext,
 } from "@rilldata/web-common/runtime-client";
 import type { Page } from "@sveltejs/kit";
+import { derived, readable } from "svelte/store";
 
 // =============================================================================
 // ID GENERATION
@@ -85,4 +91,53 @@ export function detectAppContext(page: Page): V1AppContext | null {
     default:
       return null;
   }
+}
+
+export function getDashboardContext(
+  instanceId: string,
+  page: Page,
+): Readable<V1CompletionMessageContext | undefined> {
+  const exploreName = page.params.name;
+  if (!exploreName) return readable(undefined);
+
+  return derived(
+    [
+      useExploreValidSpec(instanceId, exploreName),
+      useMetricsViewTimeRangeFromExplore(instanceId, exploreName),
+      useExploreState(exploreName),
+    ],
+    ([validSpecResp, timeRangeResp, exploreState]) => {
+      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      const exploreSpec = validSpecResp.data?.explore ?? {};
+
+      const metricsViewName = exploreSpec.metricsView;
+      if (!metricsViewName || !exploreState) return undefined;
+
+      const timeControlState = getTimeControlState(
+        metricsViewSpec,
+        exploreSpec,
+        timeRangeResp.data?.timeRangeSummary,
+        exploreState,
+      );
+      let timeRange = "";
+      if (
+        timeControlState?.selectedTimeRange?.start &&
+        timeControlState?.selectedTimeRange?.end
+      ) {
+        timeRange = `${timeControlState.selectedTimeRange.start.toISOString()} to ${timeControlState.selectedTimeRange.end.toISOString()}`;
+      }
+
+      let filters = "";
+      if (exploreState.whereFilter.cond?.exprs?.length > 0) {
+        filters = convertExpressionToFilterParam(exploreState.whereFilter);
+      }
+
+      return <V1CompletionMessageContext>{
+        metricsView: metricsViewName,
+        explore: exploreName,
+        timeRange,
+        filters,
+      };
+    },
+  );
 }

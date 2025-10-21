@@ -16,8 +16,8 @@ type AnalystAgent struct {
 var _ Tool[*AnalystAgentArgs, *AnalystAgentResult] = (*AnalystAgent)(nil)
 
 type AnalystAgentArgs struct {
-	Prompt  string `json:"prompt"`
-	Explore string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Prompt  string         `json:"prompt"`
+	Context MessageContext `json:"context,omitempty" jsonschema:"Optional context for explorations."`
 }
 
 type AnalystAgentResult struct {
@@ -41,21 +41,27 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
 	var metricsViewName string
-	if args.Explore != "" {
-		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
+	if args.Context.MetricsView != "" {
+		metricsViewName = args.Context.MetricsView
+	} else if args.Context.Explore != "" {
+		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Context.Explore)
 		if err != nil {
 			return nil, err
 		}
 		metricsViewName = metricsView.Meta.Name.Name
+	}
 
-		_, err = session.CallTool(ctx, RoleAssistant, "query_metrics_view_time_range", nil, &QueryMetricsViewTimeRangeArgs{
-			MetricsView: metricsViewName,
-		})
-		if err != nil {
-			return nil, err
+	if metricsViewName != "" {
+		if args.Context.TimeRange == "" {
+			_, err := session.CallTool(ctx, RoleAssistant, "query_metrics_view_time_range", nil, &QueryMetricsViewTimeRangeArgs{
+				MetricsView: metricsViewName,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		_, err = session.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
+		_, err := session.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
@@ -64,7 +70,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if args.Explore == "" {
+	if args.Context.Explore == "" {
 		var listRes *ListMetricsViewsResult
 		_, err := session.CallTool(ctx, RoleAssistant, "list_metrics_views", &listRes, &ListMetricsViewsArgs{})
 		if err != nil {
@@ -73,7 +79,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// Add the analyst agent system prompt, optionally tailored for the current explore.
-	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Explore)
+	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Context)
 	if err != nil {
 		return nil, err
 	}
@@ -82,11 +88,12 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		Type:        MessageTypePrompt,
 		ContentType: MessageContentTypeText,
 		Content:     systemPrompt,
+		Context:     args.Context,
 	})
 
 	// Determine tools that can be used
 	tools := []string{}
-	if args.Explore == "" {
+	if args.Context.Explore == "" {
 		tools = append(tools, "list_metrics_views", "get_metrics_view")
 	}
 	tools = append(tools, "query_metrics_view_time_range", "query_metrics_view")
@@ -106,14 +113,18 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	return &AnalystAgentResult{Response: response}, nil
 }
 
-func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsView, explore string) (string, error) {
+func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsView string, context MessageContext) (string, error) {
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
 	data := map[string]any{
 		"ai_instructions": session.ProjectInstructions(),
 		"metrics_view":    metricsView,
-		"explore":         explore,
+		"explore":         context.Explore,
+		"time_range":      context.TimeRange,
+		"filters":         context.Filters,
+		"measures":        context.Measures,
+		"dimensions":      context.Dimensions,
 	}
 
 	// Generate the system prompt
@@ -132,7 +143,12 @@ You systematically explore data using available metrics tools, then apply analyt
 **Phase 1: discovery (setup)**
 {{ if .explore }}
 Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_view }}".
-The metrics view's definition and time range of available data has been provided in your tool calls. You should:
+The metrics view's definition and time range of available data has been provided in your tool calls.
+{{ if .time_range }}Use time range: "{{ .time_range }}"{{ end }}
+{{ if .filters }}Use filters: "{{ .filters }}"{{ end }}
+{{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
+{{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
+You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
 {{ else }}

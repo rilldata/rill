@@ -635,6 +635,15 @@ export interface V1CompleteStreamingResponse {
   message?: V1Message;
 }
 
+export interface V1CompletionMessageContext {
+  explore?: string;
+  metricsView?: string;
+  timeRange?: string;
+  filters?: string;
+  measures?: string[];
+  dimensions?: string[];
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -2542,6 +2551,7 @@ export type RuntimeServiceCompleteBody = {
 export type RuntimeServiceCompleteStreamingBody = {
   conversationId?: string;
   prompt?: string;
+  context?: V1CompletionMessageContext;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

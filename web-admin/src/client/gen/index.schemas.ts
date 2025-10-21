@@ -254,6 +254,16 @@ export interface V1CompletionMessage {
   role?: string;
   data?: string;
   content?: V1ContentBlock[];
+  context?: V1CompletionMessageContext;
+}
+
+export interface V1CompletionMessageContext {
+  explore?: string;
+  metricsView?: string;
+  timeRange?: string;
+  filters?: string;
+  measures?: string[];
+  dimensions?: string[];
 }
 
 export interface V1Condition {
