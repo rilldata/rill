@@ -246,9 +246,6 @@ const connectorSubmissions = new Map<
   }
 >();
 
-// Track generated names to ensure consistency across concurrent operations
-const generatedNames = new Map<string, string>();
-
 // Handle Save Anyway logic immediately without reconciliation
 async function handleSaveAnywayImmediate(
   queryClient: QueryClient,
@@ -308,33 +305,26 @@ export async function submitAddConnectorForm(
   await beforeSubmitForm(instanceId, connector);
 
   // Create a unique key for this connector submission
-  const mutexKey = `${instanceId}:${connector.name}`;
+  const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
 
-  // Generate or reuse connector name to ensure both operations use the same name
-  const nameKey = `${instanceId}:${connector.name}`;
-  let newConnectorName = generatedNames.get(nameKey);
-
-  if (!newConnectorName) {
-    newConnectorName = getName(
-      connector.name as string,
-      fileArtifacts.getNamesForKind(ResourceKind.Connector),
-    );
-    generatedNames.set(nameKey, newConnectorName);
-  }
+  const newConnectorName = getName(
+    connector.name as string,
+    fileArtifacts.getNamesForKind(ResourceKind.Connector),
+  );
 
   // Check if there's already an ongoing submission for this connector
-  const existingSubmission = connectorSubmissions.get(mutexKey);
+  const existingSubmission = connectorSubmissions.get(
+    uniqueConnectorSubmissionKey,
+  );
+
   if (existingSubmission) {
     if (saveAnyway) {
       // If Save Anyway is clicked while Test and Connect is running,
       // cancel the ongoing Test and Connect operation
-      console.log(
-        "Save Anyway clicked while Test and Connect is running - cancelling Test and Connect",
-      );
       existingSubmission.abortController.abort();
 
       // Clean up the cancelled submission
-      connectorSubmissions.delete(mutexKey);
+      connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
       // Use the same connector name from the cancelled operation
       const newConnectorName = existingSubmission.connectorName;
@@ -379,26 +369,16 @@ export async function submitAddConnectorForm(
        */
 
       // Make a new `<connector>.yaml` file
-
       if (saveAnyway) {
         // For Save Anyway, check if file already exists to avoid duplicates
-        try {
-          await runtimeServicePutFile(instanceId, {
-            path: newConnectorFilePath,
-            blob: compileConnectorYAML(connector, formValues, {
-              connectorInstanceName: newConnectorName,
-            }),
-            create: true,
-            createOnly: true,
-          });
-        } catch (error) {
-          // If file already exists, that's fine - it means Test and Connect already created it
-          if (error?.response?.data?.message?.includes("already exists")) {
-            console.log("Connector file already exists, skipping creation");
-          } else {
-            throw error;
-          }
-        }
+        await runtimeServicePutFile(instanceId, {
+          path: newConnectorFilePath,
+          blob: compileConnectorYAML(connector, formValues, {
+            connectorInstanceName: newConnectorName,
+          }),
+          create: true,
+          createOnly: true,
+        });
       } else {
         // For Test and Connect, create file normally with abort signal
         await runtimeServicePutFile(
@@ -499,28 +479,20 @@ export async function submitAddConnectorForm(
       // Go to the new connector file
       await goto(`/files/${newConnectorFilePath}`);
     } catch (error) {
-      // If the operation was aborted, clean up the created file
+      // If the operation was aborted, don't treat it as an error
       if (abortController.signal.aborted) {
-        console.log("Operation was cancelled - cleaning up created file");
-        try {
-          await runtimeServiceDeleteFile(instanceId, {
-            path: newConnectorFilePath,
-          });
-        } catch (deleteError) {
-          console.log("Failed to delete connector file:", deleteError);
-        }
+        console.log("Operation was cancelled");
         return;
       }
       throw error;
     } finally {
-      // Clean up the submission and generated name
-      connectorSubmissions.delete(mutexKey);
-      generatedNames.delete(nameKey);
+      // Clean up the submission
+      connectorSubmissions.delete(uniqueConnectorSubmissionKey);
     }
   })();
 
   // Store the submission promise and abort controller
-  connectorSubmissions.set(mutexKey, {
+  connectorSubmissions.set(uniqueConnectorSubmissionKey, {
     promise: submissionPromise,
     abortController,
     connectorName: newConnectorName,
