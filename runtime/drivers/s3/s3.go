@@ -12,9 +12,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
@@ -270,6 +273,94 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
+}
+
+func RequiresAnonymousS3Access(ctx context.Context, confProp *ConfigProperties, bucketURL *globutil.URL) (bool, error) {
+	bucket := bucketURL.Host
+	key := bucketURL.Path
+	// Case 1: Non-glob path
+	if !fileutil.IsGlob(key) {
+		return checkObjectAccess(ctx, confProp, bucket, key)
+	}
+
+	// Case 2: Glob path
+	prefix, _ := doublestar.SplitPattern(key)
+
+	// Signed client
+	signedClient, err := getS3Client(ctx, confProp, bucket)
+	if err != nil {
+		return false, fmt.Errorf("failed to create S3 client: %w", err)
+	}
+
+	listSigned, errSigned := signedClient.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+		Bucket:  aws.String(bucket),
+		Prefix:  aws.String(prefix),
+		MaxKeys: aws.Int32(1),
+	})
+	if errSigned != nil {
+		// Signed list failed → try anonymous list
+		anonClient, err := getAnonymousS3Client(ctx, confProp, bucket)
+		if err != nil {
+			return false, fmt.Errorf("failed to create client: %w", err)
+		}
+		listAnon, errAnon := anonClient.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+			Bucket:  aws.String(bucket),
+			Prefix:  aws.String(prefix),
+			MaxKeys: aws.Int32(1),
+		})
+		if errAnon != nil {
+			return false, fmt.Errorf("failed to list signed err: %w, anon err: %w", errSigned, errAnon)
+		}
+		if len(listAnon.Contents) == 0 {
+			return false, fmt.Errorf("no objects found for glob: %s", bucketURL.Path)
+		}
+		// Anonymous list succeeded → objects are public
+		return true, nil
+	}
+
+	if len(listSigned.Contents) == 0 {
+		return false, fmt.Errorf("no objects found for glob: %s", bucketURL.Path)
+	}
+
+	// List succeeded with signed → check object access
+	sampleKey := *listSigned.Contents[0].Key
+	return checkObjectAccess(ctx, confProp, bucket, sampleKey)
+}
+
+// checkObjectAccess tries HeadObject first with signed credentials, then anonymously if needed.
+func checkObjectAccess(ctx context.Context, confProp *ConfigProperties, bucket, key string) (bool, error) {
+	// Signed client
+	client, err := getS3Client(ctx, confProp, bucket)
+	if err != nil {
+		return false, fmt.Errorf("failed to create signed S3 client: %w", err)
+	}
+
+	_, errSigned := client.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	if errSigned == nil {
+		// Signed access works → no anonymous access required
+		return false, nil
+	}
+
+	// Anonymous client
+	anonClient, err := getAnonymousS3Client(ctx, confProp, bucket)
+	if err != nil {
+		return false, fmt.Errorf("failed to create anonymous S3 client: %w", err)
+	}
+
+	_, errAnon := anonClient.HeadObject(ctx, &s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	if errAnon == nil {
+		// Anonymous access works → required
+		return true, nil
+	}
+
+	// Both failed → return signed error for debugging
+	return false, fmt.Errorf("access failed signed err: %w, anon err: %w", errSigned, errAnon)
 }
 
 // BucketRegion returns the region to use for the given bucket.
