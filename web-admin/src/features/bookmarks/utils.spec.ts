@@ -203,16 +203,15 @@ describe("getBookmarkData and parseBookmarks", () => {
           // Parse both new and old formats together
           const [parsedBookmark, parsedProtoBookmark] = parseBookmarks(
             [
-              { data: bookmarkUrlData, displayName: "new" },
+              { urlSearch: bookmarkUrlData, displayName: "new" },
               { data: bookmarkProtoData, displayName: "old" },
             ],
             new URLSearchParams(curUrlSearch),
             AD_BIDS_RILL_DEFAULT_EXPLORE_URL_PARAMS,
-            (data, rawData) =>
+            (data) =>
               // Use the explore transformer to match the ExploreBookmarks components and to parse legacy proto state
               exploreBookmarkDataTransformer({
                 data,
-                rawData,
                 metricsViewSpec:
                   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
                 exploreSpec: AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,

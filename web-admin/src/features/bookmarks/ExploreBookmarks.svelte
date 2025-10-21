@@ -19,7 +19,6 @@
   import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
@@ -39,8 +38,6 @@
   $: metricsViewTimeRange = useMetricsViewTimeRange(
     instanceId,
     metricsViewName,
-    {},
-    queryClient,
   );
   $: timeRangeSummary = $metricsViewTimeRange.data?.timeRangeSummary;
 
@@ -93,10 +90,9 @@
     $bookmarks.data?.bookmarks ?? [],
     $page.url.searchParams,
     rillDefaultExploreURLParams,
-    (data, rawData) =>
+    (data) =>
       exploreBookmarkDataTransformer({
         data,
-        rawData,
         metricsViewSpec,
         exploreSpec,
         schema,

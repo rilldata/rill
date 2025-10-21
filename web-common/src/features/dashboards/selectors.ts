@@ -108,22 +108,26 @@ export function useMetricsViewTimeRange(
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   const { query: queryOptions } = options ?? {};
 
-  return derived(
-    [useMetricsViewValidSpec(instanceId, metricsViewName)],
-    ([metricsView], set) =>
-      createQueryServiceMetricsViewTimeRange(
+  const fullTimeRangeQueryOptionsStore = derived(
+    useMetricsViewValidSpec(instanceId, metricsViewName),
+    (validSpecResp) => {
+      const metricsViewSpec = validSpecResp.data ?? {};
+
+      return getQueryServiceMetricsViewTimeRangeQueryOptions(
         instanceId,
         metricsViewName,
         {},
         {
           query: {
             ...queryOptions,
-            enabled: !!metricsView.data?.timeDimension && queryOptions?.enabled,
+            enabled: Boolean(metricsViewSpec.timeDimension),
           },
         },
-        queryClient,
-      ).subscribe(set),
+      );
+    },
   );
+
+  return createQuery(fullTimeRangeQueryOptionsStore, queryClient);
 }
 
 export function hasValidMetricsViewTimeRange(

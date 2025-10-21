@@ -94,10 +94,10 @@ export function getBookmarkData({
       if (bookmarkParam) filterOnlyUrlParams.set(param, bookmarkParam);
     });
 
-    return btoa("?" + filterOnlyUrlParams.toString());
+    return "?" + filterOnlyUrlParams.toString();
   }
 
-  return btoa("?" + bookmarkUrlParams.toString());
+  return "?" + bookmarkUrlParams.toString();
 }
 
 export function formatTimeRange(
@@ -119,14 +119,14 @@ export function parseBookmarks(
   bookmarkResp: V1Bookmark[],
   curUrlParams: URLSearchParams,
   defaultUrlParams: URLSearchParams | undefined,
-  dataTransformer: (data: string, rawData: string) => string = (data) => data,
+  dataTransformer: (data: string) => string = (data) => data,
 ) {
   return bookmarkResp.map((bookmarkResource) => {
-    const rawData = bookmarkResource.data ?? "";
+    const bookmarkUrlSearch =
+      bookmarkResource.urlSearch ??
+      dataTransformer(bookmarkResource.data ?? "");
 
-    const bookmarkUrlParams = new URLSearchParams(
-      dataTransformer(atob(rawData), rawData),
-    );
+    const bookmarkUrlParams = new URLSearchParams(bookmarkUrlSearch);
 
     const cleanedUrlParams = defaultUrlParams
       ? cleanUrlParams(bookmarkUrlParams, defaultUrlParams)

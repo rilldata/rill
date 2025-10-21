@@ -75,34 +75,29 @@ export function getHomeBookmarkExploreState(
       const metricsViewSpec = exploreSpecResp?.metricsView ?? {};
       const exploreSpec = exploreSpecResp?.explore ?? {};
 
-      const bookmarkRawData = homeBookmark?.data ?? "";
-      const bookmarkData = atob(bookmarkRawData);
-
-      // New format that has the params directly, starts with '?'.
-      if (bookmarkData.startsWith("?")) {
-        const explorePreset = getDefaultExplorePreset(
-          exploreSpec,
+      if (homeBookmark.data) {
+        const exploreStateFromLegacyProto = getDashboardStateFromUrl(
+          homeBookmark.data,
           metricsViewSpec,
-          timeRangeResp?.timeRangeSummary,
+          exploreSpec,
+          schemaResp?.schema ?? {},
         );
-
-        const { partialExploreState: exploreStateFromHomeBookmark } =
-          convertURLSearchParamsToExploreState(
-            new URLSearchParams(bookmarkData),
-            metricsViewSpec,
-            exploreSpec,
-            explorePreset,
-          );
-        return exploreStateFromHomeBookmark;
+        return exploreStateFromLegacyProto;
       }
 
-      // Old format where we had base64 encoded proto. So use rawData for this.
-      const exploreStateFromHomeBookmark = getDashboardStateFromUrl(
-        bookmarkRawData,
-        metricsViewSpec,
+      const explorePreset = getDefaultExplorePreset(
         exploreSpec,
-        schemaResp?.schema ?? {},
+        metricsViewSpec,
+        timeRangeResp?.timeRangeSummary,
       );
+
+      const { partialExploreState: exploreStateFromHomeBookmark } =
+        convertURLSearchParamsToExploreState(
+          new URLSearchParams(homeBookmark.urlSearch ?? ""),
+          metricsViewSpec,
+          exploreSpec,
+          explorePreset,
+        );
       return exploreStateFromHomeBookmark;
     },
   );
@@ -110,24 +105,19 @@ export function getHomeBookmarkExploreState(
 
 export function exploreBookmarkDataTransformer({
   data,
-  rawData,
   metricsViewSpec,
   exploreSpec,
   schema,
   timeRangeSummary,
 }: {
   data: string;
-  rawData: string;
   metricsViewSpec: V1MetricsViewSpec;
   exploreSpec: V1ExploreSpec;
   schema: V1StructType;
   timeRangeSummary: V1TimeRangeSummary | undefined;
 }) {
-  if (data.startsWith("?")) return data; // New format that has the params directly, starts with '?'.
-
-  // Old format where we had base64 encoded proto. So use rawData for this.
   const exploreStateFromBookmark = getDashboardStateFromUrl(
-    rawData,
+    data,
     metricsViewSpec,
     exploreSpec,
     schema,

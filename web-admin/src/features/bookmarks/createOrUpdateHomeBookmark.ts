@@ -15,7 +15,7 @@ export function createHomeBookmarkModifier(
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
 
-  return (data: string, projectId: string, bookmarks: V1Bookmark[]) => {
+  return (urlSearch: string, projectId: string, bookmarks: V1Bookmark[]) => {
     const homeBookmark = bookmarks.find(isHomeBookmark);
 
     if (homeBookmark) {
@@ -26,7 +26,7 @@ export function createHomeBookmarkModifier(
           description: "",
           shared: true,
           default: true,
-          data,
+          urlSearch,
         },
       });
     } else {
@@ -39,7 +39,7 @@ export function createHomeBookmarkModifier(
           resourceName,
           shared: true,
           default: true,
-          data,
+          urlSearch,
         },
       });
     }

@@ -98,7 +98,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
               displayName: values.displayName,
               description: values.description,
               shared: values.shared === "true",
-              data: bookmarkData,
+              urlSearch: bookmarkData,
             },
           });
         } else {
@@ -110,7 +110,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
               resourceKind,
               resourceName,
               shared: values.shared === "true",
-              data: bookmarkData,
+              urlSearch: bookmarkData,
             },
           });
           handleReset();
