@@ -236,6 +236,68 @@ export async function submitAddSourceForm(
   await goto(`/files/${newSourceFilePath}`);
 }
 
+// Track ongoing connector submissions with abort controllers
+const connectorSubmissions = new Map<
+  string,
+  {
+    promise: Promise<void>;
+    abortController: AbortController;
+    connectorName: string;
+  }
+>();
+
+// Track generated names to ensure consistency across concurrent operations
+const generatedNames = new Map<string, string>();
+
+// Handle Save Anyway logic immediately without reconciliation
+async function handleSaveAnywayImmediate(
+  queryClient: QueryClient,
+  connector: V1ConnectorDriver,
+  formValues: AddDataFormValues,
+  newConnectorName: string,
+  instanceId: string,
+): Promise<void> {
+  // Create connector file
+  const newConnectorFilePath = getFileAPIPathFromNameAndType(
+    newConnectorName,
+    EntityType.Connector,
+  );
+
+  // Always create the file - don't skip if it exists
+  // This ensures Save Anyway always creates the file immediately
+  await runtimeServicePutFile(instanceId, {
+    path: newConnectorFilePath,
+    blob: compileConnectorYAML(connector, formValues, {
+      connectorInstanceName: newConnectorName,
+    }),
+    create: true,
+    createOnly: false, // Allow overwriting to ensure file is created
+  });
+
+  // Update .env file with secrets
+  const newEnvBlob = await updateDotEnvWithSecrets(
+    queryClient,
+    connector,
+    formValues,
+    "connector",
+    newConnectorName,
+  );
+
+  await runtimeServicePutFile(instanceId, {
+    path: ".env",
+    blob: newEnvBlob,
+    create: true,
+    createOnly: false,
+  });
+
+  if (OLAP_ENGINES.includes(connector.name as string)) {
+    await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);
+  }
+
+  // Go to the new connector file
+  await goto(`/files/${newConnectorFilePath}`);
+}
+
 export async function submitAddConnectorForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -245,100 +307,225 @@ export async function submitAddConnectorForm(
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
 
-  const newConnectorName = getName(
-    connector.name as string,
-    fileArtifacts.getNamesForKind(ResourceKind.Connector),
-  );
+  // Create a unique key for this connector submission
+  const mutexKey = `${instanceId}:${connector.name}`;
 
-  /**
-   * Optimistic updates:
-   * 1. Make a new `<connector>.yaml` file
-   * 2. Create/update the `.env` file with connector secrets
-   */
+  // Generate or reuse connector name to ensure both operations use the same name
+  const nameKey = `${instanceId}:${connector.name}`;
+  let newConnectorName = generatedNames.get(nameKey);
 
-  // Make a new `<connector>.yaml` file
-  const newConnectorFilePath = getFileAPIPathFromNameAndType(
-    newConnectorName,
-    EntityType.Connector,
-  );
-  await runtimeServicePutFile(instanceId, {
-    path: newConnectorFilePath,
-    blob: compileConnectorYAML(connector, formValues, {
-      connectorInstanceName: newConnectorName,
-    }),
-    create: true,
-    createOnly: false,
+  if (!newConnectorName) {
+    newConnectorName = getName(
+      connector.name as string,
+      fileArtifacts.getNamesForKind(ResourceKind.Connector),
+    );
+    generatedNames.set(nameKey, newConnectorName);
+  }
+
+  // Check if there's already an ongoing submission for this connector
+  const existingSubmission = connectorSubmissions.get(mutexKey);
+  if (existingSubmission) {
+    if (saveAnyway) {
+      // If Save Anyway is clicked while Test and Connect is running,
+      // cancel the ongoing Test and Connect operation
+      console.log(
+        "Save Anyway clicked while Test and Connect is running - cancelling Test and Connect",
+      );
+      existingSubmission.abortController.abort();
+
+      // Clean up the cancelled submission
+      connectorSubmissions.delete(mutexKey);
+
+      // Use the same connector name from the cancelled operation
+      const newConnectorName = existingSubmission.connectorName;
+
+      // Proceed immediately with Save Anyway logic
+      await handleSaveAnywayImmediate(
+        queryClient,
+        connector,
+        formValues,
+        newConnectorName,
+        instanceId,
+      );
+      return;
+    } else {
+      // If Test and Connect is clicked while another operation is running,
+      // wait for it to complete
+      await existingSubmission.promise;
+      return;
+    }
+  }
+
+  // Create abort controller for this submission
+  const abortController = new AbortController();
+
+  // Create a new submission promise
+  const submissionPromise = (async () => {
+    // Create connector file path outside try block for cleanup
+    const newConnectorFilePath = getFileAPIPathFromNameAndType(
+      newConnectorName,
+      EntityType.Connector,
+    );
+
+    try {
+      // Check if operation was aborted
+      if (abortController.signal.aborted) {
+        throw new Error("Operation cancelled");
+      }
+      /**
+       * Optimistic updates:
+       * 1. Make a new `<connector>.yaml` file
+       * 2. Create/update the `.env` file with connector secrets
+       */
+
+      // Make a new `<connector>.yaml` file
+
+      if (saveAnyway) {
+        // For Save Anyway, check if file already exists to avoid duplicates
+        try {
+          await runtimeServicePutFile(instanceId, {
+            path: newConnectorFilePath,
+            blob: compileConnectorYAML(connector, formValues, {
+              connectorInstanceName: newConnectorName,
+            }),
+            create: true,
+            createOnly: true,
+          });
+        } catch (error) {
+          // If file already exists, that's fine - it means Test and Connect already created it
+          if (error?.response?.data?.message?.includes("already exists")) {
+            console.log("Connector file already exists, skipping creation");
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        // For Test and Connect, create file normally with abort signal
+        await runtimeServicePutFile(
+          instanceId,
+          {
+            path: newConnectorFilePath,
+            blob: compileConnectorYAML(connector, formValues, {
+              connectorInstanceName: newConnectorName,
+            }),
+            create: true,
+            createOnly: false,
+          },
+          abortController.signal,
+        );
+      }
+
+      const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
+
+      // Create or update the `.env` file
+      const newEnvBlob = await updateDotEnvWithSecrets(
+        queryClient,
+        connector,
+        formValues,
+        "connector",
+        newConnectorName,
+      );
+
+      if (saveAnyway) {
+        // When saving anyway, just create the .env file without waiting for reconciliation
+        await runtimeServicePutFile(instanceId, {
+          path: ".env",
+          blob: newEnvBlob,
+          create: true,
+          createOnly: false,
+        });
+        // Skip reconciliation and error checking - just save the files
+      } else {
+        // Make sure the file has reconciled before testing the connection
+        await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+          path: ".env",
+          blob: newEnvBlob,
+          create: true,
+          createOnly: false,
+        });
+
+        // Wait for connector resource-level reconciliation
+        // This must happen after .env reconciliation since connectors depend on secrets
+        try {
+          await waitForResourceReconciliation(
+            instanceId,
+            newConnectorName,
+            ResourceKind.Connector,
+            connector.name as string,
+          );
+        } catch (error) {
+          // The connector file was already created, so we need to delete it
+          await rollbackChanges(
+            instanceId,
+            newConnectorFilePath,
+            originalEnvBlob,
+          );
+          const errorDetails = (error as any).details;
+
+          throw {
+            message: error.message || "Unable to establish a connection",
+            details:
+              errorDetails && errorDetails !== error.message
+                ? errorDetails
+                : undefined,
+          };
+        }
+
+        // Check for file errors
+        // If the connector file has errors, rollback the changes
+        const errorMessage = await fileArtifacts.checkFileErrors(
+          queryClient,
+          instanceId,
+          newConnectorFilePath,
+        );
+        if (errorMessage) {
+          await rollbackChanges(
+            instanceId,
+            newConnectorFilePath,
+            originalEnvBlob,
+          );
+          throw new Error(errorMessage);
+        }
+      }
+
+      if (OLAP_ENGINES.includes(connector.name as string)) {
+        await setOlapConnectorInRillYAML(
+          queryClient,
+          instanceId,
+          newConnectorName,
+        );
+      }
+
+      // Go to the new connector file
+      await goto(`/files/${newConnectorFilePath}`);
+    } catch (error) {
+      // If the operation was aborted, clean up the created file
+      if (abortController.signal.aborted) {
+        console.log("Operation was cancelled - cleaning up created file");
+        try {
+          await runtimeServiceDeleteFile(instanceId, {
+            path: newConnectorFilePath,
+          });
+        } catch (deleteError) {
+          console.log("Failed to delete connector file:", deleteError);
+        }
+        return;
+      }
+      throw error;
+    } finally {
+      // Clean up the submission and generated name
+      connectorSubmissions.delete(mutexKey);
+      generatedNames.delete(nameKey);
+    }
+  })();
+
+  // Store the submission promise and abort controller
+  connectorSubmissions.set(mutexKey, {
+    promise: submissionPromise,
+    abortController,
+    connectorName: newConnectorName,
   });
 
-  const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
-
-  // Create or update the `.env` file
-  const newEnvBlob = await updateDotEnvWithSecrets(
-    queryClient,
-    connector,
-    formValues,
-    "connector",
-    newConnectorName,
-  );
-
-  if (saveAnyway) {
-    // When saving anyway, just create the .env file without waiting for reconciliation
-    await runtimeServicePutFile(instanceId, {
-      path: ".env",
-      blob: newEnvBlob,
-      create: true,
-      createOnly: false,
-    });
-    // Skip reconciliation and error checking - just save the files
-  } else {
-    // Make sure the file has reconciled before testing the connection
-    await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
-      path: ".env",
-      blob: newEnvBlob,
-      create: true,
-      createOnly: false,
-    });
-
-    // Wait for connector resource-level reconciliation
-    // This must happen after .env reconciliation since connectors depend on secrets
-    try {
-      await waitForResourceReconciliation(
-        instanceId,
-        newConnectorName,
-        ResourceKind.Connector,
-        connector.name as string,
-      );
-    } catch (error) {
-      // The connector file was already created, so we need to delete it
-      await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
-      const errorDetails = (error as any).details;
-
-      throw {
-        message: error.message || "Unable to establish a connection",
-        details:
-          errorDetails && errorDetails !== error.message
-            ? errorDetails
-            : undefined,
-      };
-    }
-
-    // Check for file errors
-    // If the connector file has errors, rollback the changes
-    const errorMessage = await fileArtifacts.checkFileErrors(
-      queryClient,
-      instanceId,
-      newConnectorFilePath,
-    );
-    if (errorMessage) {
-      await rollbackChanges(instanceId, newConnectorFilePath, originalEnvBlob);
-      throw new Error(errorMessage);
-    }
-  }
-
-  if (OLAP_ENGINES.includes(connector.name as string)) {
-    await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);
-  }
-
-  // Go to the new connector file
-  await goto(`/files/${newConnectorFilePath}`);
+  // Wait for the submission to complete
+  await submissionPromise;
 }
