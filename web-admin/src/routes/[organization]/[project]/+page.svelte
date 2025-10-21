@@ -3,6 +3,9 @@
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import InlineChat from "@rilldata/web-common/features/chat/layouts/inline/InlineChat.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+
+  const { chat } = featureFlags;
 
   $: ({
     params: { project },
@@ -22,14 +25,20 @@
           Welcome to <span class="text-primary-600">{project}</span>
         </h1>
         <p class="text-lg text-gray-600">
-          Ask questions about your data, or explore your dashboards below
+          {#if $chat}
+            Ask questions about your data, or explore your dashboards below
+          {:else}
+            Explore your dashboards below
+          {/if}
         </p>
       </div>
 
       <!-- Chat Input -->
-      <div class="w-full">
-        <InlineChat noMargin />
-      </div>
+      {#if $chat}
+        <div class="w-full">
+          <InlineChat noMargin />
+        </div>
+      {/if}
     </div>
 
     <!-- Dashboards Section -->
