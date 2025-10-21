@@ -12,6 +12,7 @@ import type { Config } from "vega-lite";
 import type {
   ChartDataResult,
   ChartDomainValues,
+  ChartSortDirection,
   ChartSpec,
   ChartType,
   ColorMapping,
@@ -215,4 +216,11 @@ export function getColorMappingForChart(
   }
 
   return colorMapping;
+}
+
+export function sanitizeSortFieldForVega(sort: ChartSortDirection) {
+  if (sort === "measure" || sort === "-measure") {
+    return undefined;
+  }
+  return sort;
 }

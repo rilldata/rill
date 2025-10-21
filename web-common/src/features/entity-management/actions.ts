@@ -82,9 +82,7 @@ export async function waitForResourceReconciliation(
       }
 
       // Last attempt and still not idle
-      throw new Error(
-        `Resource reconciliation timeout. Current status: ${reconcileStatus || "unknown"}`,
-      );
+      throw new Error(`Resource reconciliation timeout. Please try again.`);
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
       if (error?.status === 404 || error?.response?.status === 404) {

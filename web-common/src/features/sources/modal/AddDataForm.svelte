@@ -42,6 +42,7 @@
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -167,6 +168,8 @@
         if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
+
+          // Normal validation for all properties
           if (isEmpty(value) || $paramsErrors[key]?.length) return true;
         }
       }
@@ -408,6 +411,9 @@
     const values = event.form.data;
 
     try {
+      // Use values as-is
+      let processedValues = values;
+
       if (formType === "source") {
         await submitAddSourceForm(queryClient, connector, values, saveAnyway);
       } else {
@@ -460,6 +466,36 @@
       // Reset saveAnyway state after submission completes
       saveAnyway = false;
       isSavingAnyway = false;
+    }
+  }
+
+  // Handle file upload for credential files
+  async function handleFileUpload(file: File): Promise<string> {
+    try {
+      const content = await file.text();
+
+      // Parse and re-stringify JSON to sanitize whitespace
+      const parsedJson = JSON.parse(content);
+      const sanitizedJson = JSON.stringify(parsedJson);
+
+      // For BigQuery, try to extract project_id from the credentials JSON
+      if (connector.name === "bigquery" && parsedJson.project_id) {
+        // Update the project_id field in the form
+        paramsForm.update(
+          ($form) => {
+            $form.project_id = parsedJson.project_id;
+            return $form;
+          },
+          { taint: false },
+        );
+      }
+
+      return sanitizedJson;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(`Invalid JSON file: ${error.message}`);
+      }
+      throw new Error(`Failed to read file: ${error.message}`);
     }
   }
 </script>
@@ -634,6 +670,16 @@
                   description={property.description}
                   hint={property.hint}
                   href={property.docsUrl}
+                />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                  bind:value={$paramsForm[propertyKey]}
+                  uploadFile={handleFileUpload}
+                  accept=".json"
                 />
               {/if}
             </div>

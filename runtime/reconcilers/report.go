@@ -200,12 +200,6 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		if err != nil {
 			return nil, err
 		}
-		// if there is field access rule, add "explore" and "canvas" to condition kinds just to prevent field name leakages from there
-		for _, r := range inferred {
-			if rfa := r.GetFieldAccess(); rfa != nil {
-				conditionKinds = append(conditionKinds, runtime.ResourceKindExplore, runtime.ResourceKindCanvas)
-			}
-		}
 
 		rules = append(rules, inferred...)
 
@@ -244,11 +238,24 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 			}
 		}
 
+		// add explore and canvas to access and field access rule's condition resources
 		if explore != "" {
-			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore})
+			exp := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+			conditionRes = append(conditionRes, exp)
+			for _, r := range rules {
+				if rfa := r.GetFieldAccess(); rfa != nil {
+					rfa.ConditionResources = append(rfa.ConditionResources, exp)
+				}
+			}
 		}
 		if canvas != "" {
-			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas})
+			c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
+			conditionRes = append(conditionRes, c)
+			for _, r := range rules {
+				if rfa := r.GetFieldAccess(); rfa != nil {
+					rfa.ConditionResources = append(rfa.ConditionResources, c)
+				}
+			}
 		}
 	}
 
@@ -509,7 +516,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
 		webOpenMode = w
 		if webOpenMode == "" { // backwards compatibility
-			webOpenMode = "recipient"
+			webOpenMode = "creator"
 		}
 	}
 

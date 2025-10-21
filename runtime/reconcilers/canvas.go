@@ -596,7 +596,7 @@ func (r *rendererRefs) metricsViewRowFilter(mv, filter any) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse dimension_filters SQL expression %q: %w", f, err)
 	}
-	dimFilterFields := extractFieldsFromExpression(ex)
+	dimFilterFields := metricsview.AnalyzeExpressionFields(ex)
 	if r.mvFields[metricsView] == nil {
 		r.mvFields[metricsView] = make(map[string]bool)
 	}
@@ -604,46 +604,4 @@ func (r *rendererRefs) metricsViewRowFilter(mv, filter any) error {
 		r.mvFields[metricsView][extractDimension(f)] = true
 	}
 	return nil
-}
-
-func extractFieldsFromExpression(expr *metricsview.Expression) []string {
-	fieldsMap := make(map[string]bool)
-	extractFieldsFromExpressionWalk(expr, fieldsMap)
-
-	var fields []string
-	for f := range fieldsMap {
-		fields = append(fields, f)
-	}
-	return fields
-}
-
-func extractFieldsFromExpressionWalk(expr *metricsview.Expression, fields map[string]bool) {
-	if expr == nil {
-		return
-	}
-
-	if expr.Name != "" {
-		fields[expr.Name] = true
-	}
-
-	if expr.Condition != nil {
-		for _, ex := range expr.Condition.Expressions {
-			extractFieldsFromExpressionWalk(ex, fields)
-		}
-	}
-
-	if expr.Subquery != nil {
-		if expr.Subquery.Dimension.Name != "" {
-			fields[expr.Subquery.Dimension.Name] = true
-		}
-		if len(expr.Subquery.Measures) > 0 {
-			for _, m := range expr.Subquery.Measures {
-				if m.Name != "" {
-					fields[m.Name] = true
-				}
-			}
-		}
-		extractFieldsFromExpressionWalk(expr.Subquery.Where, fields)
-		extractFieldsFromExpressionWalk(expr.Subquery.Having, fields)
-	}
 }
