@@ -399,8 +399,10 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		return nil, err
 	}
 
-	if len(member) > 0 && len(member[0].Attributes) > 0 {
-		attr["user"] = member[0].Attributes
+	if len(member) > 0 {
+		for k, v := range member[0].Attributes {
+			attr[k] = v
+		}
 	}
 
 	return attr, nil

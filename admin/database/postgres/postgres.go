@@ -1885,12 +1885,13 @@ func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, 
 }
 
 func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]interface{}, ifNotExists bool) (bool, error) {
-	if err := c.validateAttributes(attributes); err != nil {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
 		return false, err
 	}
 
 	if !ifNotExists {
-		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4)", userID, orgID, roleID, attributes)
+		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4)", userID, orgID, roleID, attrs)
 		if err != nil {
 			return false, parseErr("org member", err)
 		}
@@ -1933,7 +1934,8 @@ func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID
 }
 
 func (c *connection) UpdateOrganizationMemberUserAttributes(ctx context.Context, orgID, userID string, attributes map[string]any) (bool, error) {
-	if err := c.validateAttributes(attributes); err != nil {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
 		return false, err
 	}
 
@@ -1941,7 +1943,7 @@ func (c *connection) UpdateOrganizationMemberUserAttributes(ctx context.Context,
 		UPDATE users_orgs_roles
 		SET attributes = $1
 		WHERE user_id = $2 AND org_id = $3
-	`, attributes, userID, orgID)
+	`, attrs, userID, orgID)
 	if err != nil {
 		return false, parseErr("org member attributes", err)
 	}
@@ -3555,24 +3557,28 @@ func decrypt(ciphertext, key []byte) ([]byte, error) {
 	return d, nil
 }
 
-// validateAttributes validates keys and values of an attributes map
-func (c *connection) validateAttributes(attributes map[string]any) error {
+// validateAttributes validates keys and values of an attributes map, handling nil input
+func (c *connection) validateAttributes(attributes map[string]any) (map[string]any, error) {
+	if attributes == nil {
+		return make(map[string]any), nil
+	}
+
 	if len(attributes) > 50 {
-		return fmt.Errorf("too many attributes: maximum 50 allowed, got %d", len(attributes))
+		return nil, fmt.Errorf("too many attributes: maximum 50 allowed, got %d", len(attributes))
 	}
 
 	for key, value := range attributes {
 		// Validate key format
 		if !isValidAttributeKey(key) {
-			return fmt.Errorf("invalid attribute key '%s': must contain only alphanumeric characters and underscores", key)
+			return nil, fmt.Errorf("invalid attribute key '%s': must contain only alphanumeric characters and underscores", key)
 		}
 
 		// Validate value length
 		if str, ok := value.(string); ok && len(str) > 256 {
-			return fmt.Errorf("attribute value for key '%s' too long: maximum 256 characters, got %d", key, len(str))
+			return nil, fmt.Errorf("attribute value for key '%s' too long: maximum 256 characters, got %d", key, len(str))
 		}
 	}
-	return nil
+	return attributes, nil
 }
 
 // isValidAttributeKey checks if an attribute key contains only alphanumeric characters and underscores

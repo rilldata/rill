@@ -976,7 +976,7 @@ func TestValidateAttributesUnit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := c.validateAttributes(tt.attributes)
+			_, err := c.validateAttributes(tt.attributes)
 			if tt.expectError {
 				require.Error(t, err)
 				if tt.errorMsg != "" {
