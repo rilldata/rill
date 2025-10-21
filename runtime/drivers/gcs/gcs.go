@@ -44,6 +44,7 @@ var spec = drivers.Spec{
 			DisplayName: "Access Key ID",
 			Description: "HMAC access key ID for S3-compatible authentication",
 			Hint:        "Optional S3-compatible Key ID when used in compatibility mode",
+			Secret:      true,
 		},
 		{
 			Key:         "secret",
