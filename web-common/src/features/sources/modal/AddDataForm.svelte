@@ -578,27 +578,6 @@
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
-          <!-- Render name and path first -->
-          {#each filteredParamsProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            {#if propertyKey === "name" || propertyKey === "path"}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              </div>
-            {/if}
-          {/each}
-
           <!-- Authentication method selection -->
           <div class="py-1.5 first:pt-0 last:pb-0">
             <div class="text-sm font-medium mb-4">Authentication method</div>
