@@ -14,6 +14,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (p *Printer) PrintOrgs(orgs []*adminv1.Organization, defaultOrg string) {
@@ -132,10 +133,31 @@ func (p *Printer) PrintOrganizationMemberUsers(members []*adminv1.OrganizationMe
 
 	allMembers := make([]*memberUserWithRole, 0, len(members))
 	for _, m := range members {
+		memberAttrs := ""
+		if m.Attributes != nil && len(m.Attributes.Fields) > 0 {
+			var attrs []string
+			for key, value := range m.Attributes.Fields {
+				var valueStr string
+				switch v := value.Kind.(type) {
+				case *structpb.Value_StringValue:
+					valueStr = v.StringValue
+				case *structpb.Value_NumberValue:
+					valueStr = strconv.FormatFloat(v.NumberValue, 'f', -1, 64)
+				case *structpb.Value_BoolValue:
+					valueStr = strconv.FormatBool(v.BoolValue)
+				default:
+					valueStr = value.String()
+				}
+				attrs = append(attrs, fmt.Sprintf("%s=%s", key, valueStr))
+			}
+			memberAttrs = strings.Join(attrs, ", ")
+		}
+
 		allMembers = append(allMembers, &memberUserWithRole{
-			Email:    m.UserEmail,
-			Name:     m.UserName,
-			RoleName: m.RoleName,
+			Email:      m.UserEmail,
+			Name:       m.UserName,
+			RoleName:   m.RoleName,
+			Attributes: memberAttrs,
 		})
 	}
 
@@ -231,9 +253,10 @@ type memberUser struct {
 }
 
 type memberUserWithRole struct {
-	Email    string `header:"email" json:"email"`
-	Name     string `header:"name" json:"display_name"`
-	RoleName string `header:"role" json:"role_name"`
+	Email      string `header:"email" json:"email"`
+	Name       string `header:"name" json:"display_name"`
+	RoleName   string `header:"role" json:"role_name"`
+	Attributes string `header:"attributes" json:"attributes"`
 }
 
 type orgMemberService struct {
