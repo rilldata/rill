@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: rill/admin/v1/ai.proto
+  title: Rill Admin API
   description: Public API endpoints for Rill Admin Service
-  version: version not set
+  version: 1.0.0
 servers:
   - url: https://admin.rilldata.com
     description: Rill Cloud API
