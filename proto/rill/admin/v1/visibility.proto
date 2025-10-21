@@ -7,9 +7,9 @@ option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
 import "google/protobuf/descriptor.proto";
 
 enum Visibility {
-  UNSPECIFIED = 0; // Unspecified visibility is treated as PRIVATE.
-  PRIVATE = 1;
-  PUBLIC = 2;
+  VISIBILITY_UNSPECIFIED = 0; // Unspecified visibility is treated as PRIVATE.
+  VISIBILITY_PRIVATE = 1;
+  VISIBILITY_PUBLIC = 2;
 }
 
 extend google.protobuf.ServiceOptions { Visibility service_visibility = 50001; }

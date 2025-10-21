@@ -12,25 +12,25 @@ export enum Visibility {
   /**
    * Unspecified visibility is treated as PRIVATE.
    *
-   * @generated from enum value: UNSPECIFIED = 0;
+   * @generated from enum value: VISIBILITY_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: PRIVATE = 1;
+   * @generated from enum value: VISIBILITY_PRIVATE = 1;
    */
   PRIVATE = 1,
 
   /**
-   * @generated from enum value: PUBLIC = 2;
+   * @generated from enum value: VISIBILITY_PUBLIC = 2;
    */
   PUBLIC = 2,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Visibility)
 proto3.util.setEnumType(Visibility, "rill.admin.v1.Visibility", [
-  { no: 0, name: "UNSPECIFIED" },
-  { no: 1, name: "PRIVATE" },
-  { no: 2, name: "PUBLIC" },
+  { no: 0, name: "VISIBILITY_UNSPECIFIED" },
+  { no: 1, name: "VISIBILITY_PRIVATE" },
+  { no: 2, name: "VISIBILITY_PUBLIC" },
 ]);
 
 /**

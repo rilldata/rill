@@ -1,6 +1,8 @@
 syntax = "proto3";
 package rill.admin.v1;
 
+option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
+
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
@@ -17,13 +19,13 @@ service AdminService {
 
   // ListOrganizations lists all the organizations currently managed by the admin
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {get: "/v1/orgs"};
   }
 
   // GetOrganization returns information about a specific organization
   rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {get: "/v1/orgs/{org}"};
   }
 
@@ -36,7 +38,7 @@ service AdminService {
 
   // CreateOrganization creates a new organization
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {
       post: "/v1/orgs",
       body: "*"
@@ -45,13 +47,13 @@ service AdminService {
 
   // DeleteOrganization deletes an organization
   rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {delete: "/v1/orgs/{org}"};
   }
 
   // UpdateOrganization deletes an organizations
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {
       patch: "/v1/orgs/{org}",
       body: "*"
@@ -60,7 +62,7 @@ service AdminService {
 
   // ListProjectsForOrganization lists all the projects currently available for given organizations.
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {get: "/v1/orgs/{org}/projects"};
   }
 
@@ -78,7 +80,7 @@ service AdminService {
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}"};
   }
 
@@ -99,7 +101,7 @@ service AdminService {
 
   // CreateProject creates a new project
   rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects",
       body: "*"
@@ -108,13 +110,13 @@ service AdminService {
 
   // DeleteProject deletes an project
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}"};
   }
 
   // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {
       patch: "/v1/orgs/{org}/projects/{project}",
       body: "*"
@@ -123,13 +125,13 @@ service AdminService {
 
   // GetProjectVariables returns project variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/variables"};
   }
 
   // UpdateProjectVariables updates variables for a project.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {
       put: "/v1/orgs/{org}/projects/{project}/variables",
       body: "*"
@@ -245,19 +247,19 @@ service AdminService {
 
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {get: "/v1/orgs/{org}/members"};
   }
 
   // ListOrganizationInvites lists all the org invites
   rpc ListOrganizationInvites(ListOrganizationInvitesRequest) returns (ListOrganizationInvitesResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {get: "/v1/orgs/{org}/invites"};
   }
 
   // AddOrganizationMemberUser adds a user to the organization
   rpc AddOrganizationMemberUser(AddOrganizationMemberUserRequest) returns (AddOrganizationMemberUserResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {
       post: "/v1/orgs/{org}/members",
       body: "*"
@@ -266,7 +268,7 @@ service AdminService {
 
   // RemoveOrganizationMemberUser removes member from the organization
   rpc RemoveOrganizationMemberUser(RemoveOrganizationMemberUserRequest) returns (RemoveOrganizationMemberUserResponse) {
-    option (rill.admin.v1.method_visibility) = PUBLIC;
+    option (rill.admin.v1.method_visibility) = VISIBILITY_PUBLIC;
     option (google.api.http) = {delete: "/v1/orgs/{org}/members/{email}"};
   }
 
