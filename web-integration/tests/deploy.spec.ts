@@ -1,11 +1,11 @@
+import { expect, type Page } from "@playwright/test";
+import { isOrgDeleted } from "@rilldata/web-common/tests/utils/is-org-deleted";
 import { makeTempDir } from "@rilldata/web-common/tests/utils/make-temp-dir";
 import { execAsync } from "@rilldata/web-common/tests/utils/spawn";
 import { RILL_DEV_STORAGE_STATE } from "@rilldata/web-integration/tests/constants.ts";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "./setup/base";
-import { expect, type Page } from "@playwright/test";
-import { isOrgDeleted } from "@rilldata/web-common/tests/utils/is-org-deleted";
 
 test.describe("Deploy journey", () => {
   const cliHomeDir = makeTempDir("deploy_home");
@@ -227,11 +227,10 @@ async function assertAndSkipInvite(page: Page) {
 }
 
 async function ensureProjectRedeployed(page: Page) {
-  // Dashboard listing page is opened on a re-deploy. This can take a while, so it has increased timeout.
-  await expect(page.getByLabel("Container title")).toHaveText(
-    "Project dashboards",
-    { timeout: 120_000 },
-  );
+  // Project homepage is opened on a re-deploy. This can take a while, so it has increased timeout.
+  await expect(page.getByText("Welcome back to")).toBeVisible({
+    timeout: 120_000,
+  });
 }
 
 async function ensureDashboardTitle(page: Page, title: string) {

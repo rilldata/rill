@@ -5,7 +5,7 @@
   import InlineChat from "@rilldata/web-common/features/chat/layouts/inline/InlineChat.svelte";
 
   $: ({
-    params: { organization, project },
+    params: { project },
   } = $page);
 </script>
 
