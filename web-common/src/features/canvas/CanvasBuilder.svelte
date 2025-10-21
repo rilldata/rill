@@ -486,10 +486,17 @@
 
         openSidebarAfterSelection = true;
 
-        dragTimeout = setTimeout(() => {
-          openSidebarAfterSelection = false;
-          handleDragStart(component);
-        }, 150);
+        // Check if the mousedown is on a no-drag element (like map canvas)
+        const target = event.target;
+        const isNoDrag =
+          target instanceof Element && target.closest('[data-no-drag="true"]');
+
+        if (!isNoDrag) {
+          dragTimeout = setTimeout(() => {
+            openSidebarAfterSelection = false;
+            handleDragStart(component);
+          }, 150);
+        }
       }}
     />
   {:else}

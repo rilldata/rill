@@ -7,6 +7,7 @@ import type { KPISpec } from "./kpi";
 import type { LeaderboardSpec } from "./leaderboard";
 import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
+import type { MapSpec } from "./map";
 
 export type ComponentWithMetricsView =
   | CartesianCanvasChartSpec
@@ -15,7 +16,8 @@ export type ComponentWithMetricsView =
   | TableSpec
   | KPISpec
   | KPIGridSpec
-  | LeaderboardSpec;
+  | LeaderboardSpec
+  | MapSpec;
 
 export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
 
@@ -53,7 +55,8 @@ export type CanvasComponentType =
   | "image"
   | "pivot"
   | "table"
-  | "leaderboard";
+  | "leaderboard"
+  | "map";
 
 interface LineChart {
   line_chart: CartesianCanvasChartSpec;
@@ -85,10 +88,15 @@ export interface TableTemplateT {
   table: TableSpec;
 }
 
+export interface MapTemplateT {
+  map: MapSpec;
+}
+
 export type TemplateSpec =
   | ChartTemplates
   | KPITemplateT
   | PivotTemplateT
   | MarkdownTemplateT
   | ImageTemplateT
-  | TableTemplateT;
+  | TableTemplateT
+  | MapTemplateT;

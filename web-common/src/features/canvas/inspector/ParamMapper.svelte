@@ -44,6 +44,14 @@
     AllKeys<ComponentSpec>,
     ComponentInputParam,
   ][];
+
+  // Filter entries based on showIf function
+  $: visibleEntries = entries.filter(([key, config]) => {
+    if (config.meta?.showIf && typeof config.meta.showIf === "function") {
+      return config.meta.showIf(localParamValues);
+    }
+    return true;
+  });
 </script>
 
 {#if component instanceof BaseChart}
@@ -55,7 +63,7 @@
 {/if}
 
 <div>
-  {#each entries as [key, config] (`${component.id}-${key}`)}
+  {#each visibleEntries as [key, config] (`${component.id}-${key}`)}
     {#if config.showInUI !== false}
       <div class="component-param">
         <!-- TEXT, NUMBER, RILL_TIME -->

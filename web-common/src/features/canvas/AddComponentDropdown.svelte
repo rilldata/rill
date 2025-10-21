@@ -8,6 +8,7 @@
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";
   import LeaderboardIcon from "./icons/LeaderboardIcon.svelte";
+  import MapIcon from "./icons/MapIcon.svelte";
   import TableIcon from "./icons/TableIcon.svelte";
   import TextIcon from "./icons/TextIcon.svelte";
   type MenuItem = {
@@ -32,6 +33,7 @@
     { id: "markdown", label: "Text", icon: TextIcon },
     { id: "kpi_grid", label: "KPI", icon: BigNumberIcon },
     { id: "leaderboard", label: "Leaderboard", icon: LeaderboardIcon },
+    { id: "map", label: "Map", icon: MapIcon },
     { id: "image", label: "Image", icon: ChartIcon },
   ];
 

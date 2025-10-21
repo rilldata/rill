@@ -65,7 +65,13 @@
         },
         "type": {
           "type": "string",
-          "enum": ["quantitative", "ordinal", "nominal", "temporal", "geojson"]
+          "enum": [
+            "quantitative",
+            "ordinal",
+            "nominal",
+            "temporal",
+            "geojson"
+          ]
         },
         "timeUnit": {
           "type": "string"
@@ -184,6 +190,68 @@
       },
       "required": [
         "markdown"
+      ],
+      "type": "object"
+    },
+    "MapProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "metrics_view": {
+          "type": "string"
+        },
+        "dimension": {
+          "type": "string"
+        },
+        "measure": {
+          "type": "string"
+        },
+        "geometry_type": {
+          "type": "string",
+          "enum": [
+            "h3",
+            "geojson"
+          ]
+        },
+        "resolution": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "size_measure": {
+          "type": "string"
+        },
+        "label_dimension": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "time_filters": {
+          "type": "string"
+        },
+        "dimension_filters": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "metrics_view",
+        "dimension",
+        "measure"
+      ],
+      "type": "object"
+    },
+    "MapTemplateT": {
+      "additionalProperties": false,
+      "properties": {
+        "map": {
+          "$ref": "#/definitions/MapProperties"
+        }
+      },
+      "required": [
+        "map"
       ],
       "type": "object"
     },
@@ -373,6 +441,9 @@
         },
         {
           "$ref": "#/definitions/MarkdownTemplateT"
+        },
+        {
+          "$ref": "#/definitions/MapTemplateT"
         },
         {
           "$ref": "#/definitions/ImageTemplateT"
