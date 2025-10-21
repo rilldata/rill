@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package rill.admin.v1;
+
+option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
+
+import "google/protobuf/descriptor.proto";
+
+enum Visibility {
+  UNSPECIFIED = 0; // Unspecified visibility is treated as PRIVATE.
+  PRIVATE = 1;
+  PUBLIC = 2;
+}
+
+extend google.protobuf.ServiceOptions { Visibility service_visibility = 50001; }
+extend google.protobuf.MethodOptions { Visibility method_visibility = 50002; }
+extend google.protobuf.MessageOptions { Visibility message_visibility = 50003; }
+extend google.protobuf.FieldOptions { Visibility field_visibility = 50004; }
+extend google.protobuf.EnumOptions { Visibility enum_visibility = 50005; }
+extend google.protobuf.EnumValueOptions { Visibility enum_value_visibility = 50006; }
