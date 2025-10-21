@@ -23,6 +23,7 @@
     metrics_view: kpiGridProperties.metrics_view,
     measure,
     sparkline: kpiGridProperties.sparkline,
+    hide_time_range: kpiGridProperties.hide_time_range,
     comparison: kpiGridProperties.comparison,
     dimension_filters: kpiGridProperties.dimension_filters,
     time_filters: kpiGridProperties.time_filters,

@@ -232,13 +232,19 @@ func (s *Server) mcpQueryMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	description := `
 Perform an arbitrary aggregation on a metrics view.
 
-Parameter notes:
-• The 'time_range' parameter is inclusive of the start time and exclusive of the end time
-• 'time_dimension' is optional under 'time_range' to specify which time column to use (defaults to the metrics view's default time column)
+The JSON schema defines all available parameters. Key considerations:
 
-Best practices:
-• Use 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets
-• For comparison queries: ensure 'time_range' and 'comparison_time_range' are non-overlapping and similar in duration (~20% tolerance) to ensure valid period-over-period comparisons
+Request:
+• 'time_range' is inclusive of start time, exclusive of end time
+• 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
+• Include 'sort' and 'limit' parameters to optimize query performance and avoid unbounded result sets
+• For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
+
+Response:
+• Returns aggregated data matching your query parameters
+• Includes 'open_url' field with a shareable link to view results in the Rill UI
+• Always cite the source of quantitative claims by including 'open_url' as a markdown link
+• When presenting insights from multiple queries, cite each query's 'open_url' inline; when presenting multiple insights from the same query, cite once at the end
 
 Example: Get the total revenue by country and product category for 2024:
     {

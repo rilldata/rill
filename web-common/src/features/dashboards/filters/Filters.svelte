@@ -391,6 +391,7 @@
           {onPan}
         />
         <ComparisonPill
+          {minTimeGrain}
           {allTimeRange}
           {selectedTimeRange}
           showTimeComparison={!!showTimeComparison}

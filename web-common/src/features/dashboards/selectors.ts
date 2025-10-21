@@ -126,6 +126,39 @@ export function useMetricsViewTimeRange(
   );
 }
 
+export function useMetricsViewTimeRangeFromExplore(
+  instanceId: string,
+  exploreName: string,
+  options?: {
+    query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
+  const { query: queryOptions } = options ?? {};
+
+  return derived(
+    [useExploreValidSpec(instanceId, exploreName)],
+    ([validSpecResp], set) => {
+      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewName = exploreSpec.metricsView ?? "";
+
+      createQueryServiceMetricsViewTimeRange(
+        instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            ...queryOptions,
+            enabled: !!metricsViewSpec.timeDimension && queryOptions?.enabled,
+          },
+        },
+        queryClient,
+      ).subscribe(set);
+    },
+  );
+}
+
 export function hasValidMetricsViewTimeRange(
   instanceId: string,
   exploreName: string,

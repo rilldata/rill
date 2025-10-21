@@ -165,6 +165,8 @@
         if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
+
+          // Normal validation for all properties
           if (isEmpty(value) || $paramsErrors[key]?.length) return true;
         }
       }
@@ -337,7 +339,7 @@
     const values = event.form.data;
 
     try {
-      // For GCS, modify the form data based on authentication method
+      // Use values as-is
       let processedValues = values;
 
       if (formType === "source") {
@@ -394,6 +396,18 @@
       // Parse and re-stringify JSON to sanitize whitespace
       const parsedJson = JSON.parse(content);
       const sanitizedJson = JSON.stringify(parsedJson);
+
+      // For BigQuery, try to extract project_id from the credentials JSON
+      if (connector.name === "bigquery" && parsedJson.project_id) {
+        // Update the project_id field in the form
+        paramsForm.update(
+          ($form) => {
+            $form.project_id = parsedJson.project_id;
+            return $form;
+          },
+          { taint: false },
+        );
+      }
 
       return sanitizedJson;
     } catch (error) {
