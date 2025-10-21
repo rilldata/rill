@@ -1,15 +1,21 @@
 import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 
-const VALID_GCS_PATH =
-  "gs://rilldata-public/github-analytics/Clickhouse/2025/06/commits_2025_06.parquet";
-const INVALID_GCS_PATH =
-  "gs://rilldata-public/github-analytics/Clickhouse/2025/06/commits_2020.parquet";
-
 test.describe("Test Connection", () => {
   test.use({ project: "Blank" });
 
-  test("GCS connector - successful connection test", async ({ page }) => {
+  test("GCS connector - HMAC", async ({ page }) => {
+    // Skip test if environment variables are not set
+    if (
+      !process.env.RILL_RUNTIME_GCS_TEST_HMAC_KEY ||
+      !process.env.RILL_RUNTIME_GCS_TEST_HMAC_SECRET
+    ) {
+      test.skip(
+        true,
+        "RILL_RUNTIME_GCS_TEST_HMAC_KEY or RILL_RUNTIME_GCS_TEST_HMAC_SECRET environment variable is not set",
+      );
+    }
+
     // Open the Add Data modal
     await page.getByRole("button", { name: "Add Asset" }).click();
     await page.getByRole("menuitem", { name: "Add Data" }).click();
@@ -20,37 +26,21 @@ test.describe("Test Connection", () => {
     // Wait for the form to load
     await page.waitForSelector('form[id*="gcs"]');
 
-    // Fill in the valid GCS path
-    await page.getByRole("textbox", { name: "GS URI" }).fill(VALID_GCS_PATH);
+    // Select HMAC keys authentication method
+    await page.getByRole("radio", { name: "HMAC keys" }).click();
 
-    // Click the "Add data" button to test the connection
+    // Fill in invalid HMAC credentials
+    await page
+      .getByRole("textbox", { name: "Access Key ID" })
+      .fill("invalid-key-id");
+    await page
+      .getByRole("textbox", { name: "Secret Access Key" })
+      .fill("invalid-secret");
+
+    // Click the "Test and Connect" button to test the connection
     await page
       .getByRole("dialog")
-      .getByRole("button", { name: "Test and Add data" })
-      .click();
-
-    // Wait for success message
-    await expect(page.getByText("Source imported successfully")).toBeVisible();
-  });
-
-  test("GCS connector - failed connection test", async ({ page }) => {
-    // Open the Add Data modal
-    await page.getByRole("button", { name: "Add Asset" }).click();
-    await page.getByRole("menuitem", { name: "Add Data" }).click();
-
-    // Select GCS connector
-    await page.locator("#gcs").click();
-
-    // Wait for the form to load
-    await page.waitForSelector('form[id*="gcs"]');
-
-    // Fill in the invalid GCS path (file doesn't exist)
-    await page.getByRole("textbox", { name: "GS URI" }).fill(INVALID_GCS_PATH);
-
-    // Click the "Add data" button to test the connection
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Test and Add data" })
+      .getByRole("button", { name: "Test and Connect" })
       .click();
 
     // Wait for error container to appear
