@@ -115,3 +115,11 @@ export function getConnectorIconKeyForMotherDuck(
   // Default: use the driver name
   return connector.driver?.name || "duckdb";
 }
+
+/**
+ * Determines the driver name for a connector.
+ * Special case: MotherDuck connectors use "duckdb" as the driver name.
+ */
+export function getDriverNameForConnector(connectorName: string): string {
+  return connectorName === "motherduck" ? "duckdb" : connectorName;
+}
