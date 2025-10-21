@@ -236,12 +236,10 @@ export async function submitAddSourceForm(
   await goto(`/files/${newSourceFilePath}`);
 }
 
-// Track ongoing connector submissions with abort controllers
 const connectorSubmissions = new Map<
   string,
   {
     promise: Promise<void>;
-    abortController: AbortController;
     connectorName: string;
   }
 >();
@@ -320,13 +318,11 @@ export async function submitAddConnectorForm(
   if (existingSubmission) {
     if (saveAnyway) {
       // If Save Anyway is clicked while Test and Connect is running,
-      // cancel the ongoing Test and Connect operation
-      existingSubmission.abortController.abort();
-
-      // Clean up the cancelled submission
+      // proceed immediately without waiting for the ongoing operation
+      // Clean up the existing submission
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
-      // Use the same connector name from the cancelled operation
+      // Use the same connector name from the ongoing operation
       const newConnectorName = existingSubmission.connectorName;
 
       // Proceed immediately with Save Anyway logic
@@ -491,10 +487,9 @@ export async function submitAddConnectorForm(
     }
   })();
 
-  // Store the submission promise and abort controller
+  // Store the submission promise
   connectorSubmissions.set(uniqueConnectorSubmissionKey, {
     promise: submissionPromise,
-    abortController,
     connectorName: newConnectorName,
   });
 
