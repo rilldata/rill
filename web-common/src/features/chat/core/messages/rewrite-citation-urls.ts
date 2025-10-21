@@ -8,7 +8,15 @@ import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtim
 import { marked } from "marked";
 import { derived, type Readable } from "svelte/store";
 
-export function getCitationUrlConverter(
+const CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
+
+/**
+ * Creates a rewriter that adds hooks to the ` marked ` library to rewrite citation urls to directly apply the url params.
+ * A citation url will be of the form `.../-/open-query?query...`
+ *
+ * @param mapper
+ */
+export function getCitationUrlRewriter(
   mapper: MetricsResolverQueryToUrlParamsMapper,
 ) {
   return (text: string): string | Promise<string> => {
@@ -16,9 +24,15 @@ export function getCitationUrlConverter(
       renderer: {
         link: (tokens) => {
           const url = new URL(tokens.href);
+          // If the url is not a citation url, do not change the link.
+          if (CITATION_URL_PATHNAME_REGEX.test(url.pathname)) return false;
+
           const queryJSON = url.searchParams.get("query");
+          // If the url does not have a query arg, do not change the link.
           if (!queryJSON) return false;
+
           const [isValid, urlParams] = mapper(queryJSON);
+          // Mapping failed for some reason, do not change the link.
           if (!isValid) return false;
 
           return `<a href="?${urlParams.toString()}">${tokens.text}</a>`;
@@ -36,7 +50,7 @@ type MetricsResolverQueryToUrlParamsMapper = (
 ) => [boolean, URLSearchParams];
 
 /**
- * Creates a store that contains a metrics resolver query to url params mapper.
+ * Creates a store that contains a mapper function that maps a metrics resolver query to url params.
  * Calls {@link mapMetricsResolverQueryToDashboard} to get partial explore state from a metrics resolver query.
  * Then calls {@link convertPartialExploreStateToUrlParams} to convert the partial explore to url params.
  *
