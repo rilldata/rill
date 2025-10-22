@@ -246,7 +246,7 @@
           </p>
           <div class="flex flex-row gap-1 mt-2">
             <ExploreFilterChipsReadOnly
-              metricsViewName={$metricsViewName}
+              metricsViewNames={[$metricsViewName]}
               filters={$dashboardStore.whereFilter}
               dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
               dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}

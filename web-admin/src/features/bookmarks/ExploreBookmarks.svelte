@@ -90,7 +90,7 @@
 <Bookmarks
   {organization}
   {project}
-  {metricsViewName}
+  metricsViewNames={[metricsViewName]}
   resourceKind={ResourceKind.Explore}
   resourceName={exploreName}
   bookmarksResp={$bookmarks.data?.bookmarks ?? []}

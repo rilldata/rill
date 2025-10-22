@@ -41,7 +41,7 @@
 
   export let organization: string;
   export let project: string;
-  export let metricsViewName: string;
+  export let metricsViewNames: string[];
   export let resourceKind: ResourceKind;
   export let resourceName: string;
   export let bookmarksResp: V1Bookmark[];
@@ -234,7 +234,7 @@
 {#if showDialog}
   <BookmarksFormBookmarksFormDialog
     {bookmark}
-    {metricsViewName}
+    {metricsViewNames}
     {resourceKind}
     {resourceName}
     {defaultUrlParams}

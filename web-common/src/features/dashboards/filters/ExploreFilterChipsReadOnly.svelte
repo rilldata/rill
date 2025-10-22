@@ -1,14 +1,14 @@
 <script lang="ts">
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
-  import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+  import { getCombinedMeasuresAndDimensions } from "@rilldata/web-common/features/metrics-views/get-combined-measures-and-dimensions.ts";
   import type {
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
+  import { writable } from "svelte/store";
 
-  export let metricsViewName: string;
+  export let metricsViewNames: string[];
   export let filters: V1Expression | undefined;
   export let dimensionsWithInlistFilter: string[];
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
@@ -19,16 +19,17 @@
   export let queryTimeStart: string | undefined = undefined;
   export let queryTimeEnd: string | undefined = undefined;
 
-  $: ({ instanceId } = $runtime);
+  const metricsViewNamesStore = writable([] as string[]);
+  $: metricsViewNamesStore.set(metricsViewNames);
 
-  $: metricsViewSpec = useMetricsViewValidSpec(instanceId, metricsViewName);
-
-  $: dimensions = $metricsViewSpec.data?.dimensions ?? [];
-  $: measures = $metricsViewSpec.data?.measures ?? [];
+  const combinedMeasuresAndDimensions = getCombinedMeasuresAndDimensions(
+    metricsViewNamesStore,
+  );
+  $: ({ measures, dimensions } = $combinedMeasuresAndDimensions);
 </script>
 
 <FilterChipsReadOnly
-  {metricsViewName}
+  {metricsViewNames}
   {dimensions}
   {measures}
   {dimensionThresholdFilters}

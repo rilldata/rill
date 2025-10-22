@@ -32,7 +32,7 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
 
-  export let metricsViewName: string;
+  export let metricsViewNames: string[];
   export let resourceKind: ResourceKind;
   export let resourceName: string;
   export let bookmark: BookmarkEntry | null = null;
@@ -175,7 +175,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           dimensionThresholdFilters={filtersState.dimensionThresholdFilters}
           dimensionsWithInlistFilter={filtersState.dimensionsWithInlistFilter}
           filters={filtersState.whereFilter}
-          {metricsViewName}
+          {metricsViewNames}
           displayTimeRange={timeRange}
           queryTimeStart={start}
           queryTimeEnd={end}
