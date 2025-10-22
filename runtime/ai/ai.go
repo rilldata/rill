@@ -258,7 +258,6 @@ const (
 type MessageType string
 
 const (
-	MessageTypePrompt   MessageType = "prompt"
 	MessageTypeCall     MessageType = "call"
 	MessageTypeProgress MessageType = "progress"
 	MessageTypeResult   MessageType = "result"
@@ -322,12 +321,6 @@ func (m *Message) ToProto() (*aiv1.CompletionMessage, error) {
 
 	var block *aiv1.ContentBlock
 	switch m.Type {
-	case MessageTypePrompt:
-		block = &aiv1.ContentBlock{
-			BlockType: &aiv1.ContentBlock_Text{
-				Text: m.Content,
-			},
-		}
 	case MessageTypeCall:
 		var args map[string]any
 		if m.ContentType == MessageContentTypeJSON && m.Content != "" {
