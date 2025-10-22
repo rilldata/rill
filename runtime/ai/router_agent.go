@@ -34,6 +34,10 @@ func (t *RouterAgent) Spec() *mcp.Tool {
 		Name:        "router_agent",
 		Title:       "Router Agent",
 		Description: "Agent that routes messages to the appropriate handler agent.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Routing prompt…",
+			"openai/toolInvocation/invoked":  "Prompt completed",
+		},
 	}
 }
 

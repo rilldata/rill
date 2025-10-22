@@ -141,6 +141,10 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		Title:       "Query Metrics View",
 		Description: description,
 		InputSchema: inputSchema,
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Querying metrics…",
+			"openai/toolInvocation/invoked":  "Completed metrics query",
+		},
 	}
 }
 

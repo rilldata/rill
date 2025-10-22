@@ -28,6 +28,10 @@ func (t *ListMetricsViews) Spec() *mcp.Tool {
 		Name:        "list_metrics_views",
 		Title:       "List Metrics Views",
 		Description: "List all metrics views in the current project",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Listing metrics…",
+			"openai/toolInvocation/invoked":  "Listed metrics",
+		},
 	}
 }
 

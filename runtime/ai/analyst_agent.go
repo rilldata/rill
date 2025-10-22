@@ -29,6 +29,10 @@ func (t *AnalystAgent) Spec() *mcp.Tool {
 		Name:        "analyst_agent",
 		Title:       "Analyst Agent",
 		Description: "Agent that assists with data analysis tasks.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Analyzing…",
+			"openai/toolInvocation/invoked":  "Completed analysis",
+		},
 	}
 }
 
