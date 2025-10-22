@@ -35,17 +35,16 @@
   export let submitting: boolean;
   export let isSubmitDisabled: boolean;
   export let connectorType: ClickHouseConnectorType = "self-hosted";
+  export let connectionTab: ConnectorType = "parameters";
+  export let isSavingAnyway: boolean = false;
+  export let showSaveAnyway: boolean = false;
   export let onClose: () => void;
   export let setError: (
     error: string | null,
     details?: string,
   ) => void = () => {};
-  export let connectionTab: ConnectorType = "parameters";
-  export { paramsForm, dsnForm };
-  export let isSavingAnyway: boolean = false;
-  export let showSaveAnyway: boolean = false;
 
-  // Export the handleSaveAnyway function for parent component
+  export { paramsForm, dsnForm };
   export { handleSaveAnyway };
 
   const dispatch = createEventDispatcher();
