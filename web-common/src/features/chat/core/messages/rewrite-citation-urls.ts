@@ -1,10 +1,10 @@
-import { useMetricsViewTimeRangeFromExplore } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import { getMetricsViewTimeRangeOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
 import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
+import { getExploreValidSpecOptions } from "@rilldata/web-common/features/explores/selectors.ts";
 import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import { createQuery } from "@tanstack/svelte-query";
 import { marked } from "marked";
 import { derived, type Readable } from "svelte/store";
 
@@ -25,7 +25,7 @@ export function getCitationUrlRewriter(
         link: (tokens) => {
           const url = new URL(tokens.href);
           // If the url is not a citation url, do not change the link.
-          if (CITATION_URL_PATHNAME_REGEX.test(url.pathname)) return false;
+          if (!CITATION_URL_PATHNAME_REGEX.test(url.pathname)) return false;
 
           const queryJSON = url.searchParams.get("query");
           // If the url does not have a query arg, do not change the link.
@@ -53,28 +53,23 @@ type MetricsResolverQueryToUrlParamsMapper = (
  * Creates a store that contains a mapper function that maps a metrics resolver query to url params.
  * Calls {@link mapMetricsResolverQueryToDashboard} to get partial explore state from a metrics resolver query.
  * Then calls {@link convertPartialExploreStateToUrlParams} to convert the partial explore to url params.
- *
- * @param instanceId
- * @param exploreName
  */
 export function getMetricsResolverQueryToUrlParamsMapperStore(
-  instanceId: string,
-  exploreName: string,
+  exploreNameStore: Readable<string>,
 ): Readable<{
   error?: Error;
   isLoading: boolean;
   data?: MetricsResolverQueryToUrlParamsMapper;
 }> {
+  const validSpecQuery = createQuery(
+    getExploreValidSpecOptions(exploreNameStore),
+  );
+  const timeRangeQuery = createQuery(
+    getMetricsViewTimeRangeOptions(exploreNameStore),
+  );
+
   return derived(
-    [
-      useExploreValidSpec(instanceId, exploreName, undefined, queryClient),
-      useMetricsViewTimeRangeFromExplore(
-        instanceId,
-        exploreName,
-        {},
-        queryClient,
-      ),
-    ],
+    [validSpecQuery, timeRangeQuery],
     ([validSpecResp, timeRangeResp]) => {
       const error = (validSpecResp.error || timeRangeResp.error) as
         | Error

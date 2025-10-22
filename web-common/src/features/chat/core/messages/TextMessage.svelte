@@ -4,22 +4,21 @@
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
   } from "@rilldata/web-common/features/chat/core/messages/rewrite-citation-urls.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { derived } from "svelte/store";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
 
   export let message: V1Message;
   export let content: string;
 
-  $: ({ instanceId } = $runtime);
-
-  $: exploreName = $page.params.dashboard ?? $page.params.name ?? "";
-  $: renderedInExplore = !!exploreName;
-
-  $: mapperStore = getMetricsResolverQueryToUrlParamsMapperStore(
-    instanceId,
-    exploreName,
+  const exploreNameStore = derived(
+    page,
+    (pageState) => pageState.params.dashboard ?? pageState.params.name ?? "",
   );
+  $: renderedInExplore = !!$exploreNameStore;
+
+  const mapperStore =
+    getMetricsResolverQueryToUrlParamsMapperStore(exploreNameStore);
   $: hasMapper = !!$mapperStore.data;
   $: convertCitationUrls =
     renderedInExplore && hasMapper
