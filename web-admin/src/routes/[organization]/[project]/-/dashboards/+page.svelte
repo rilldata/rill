@@ -6,7 +6,6 @@
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
   import { useDeployingDashboards } from "@rilldata/web-admin/features/dashboards/listing/deploying-dashboards.ts";
-  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
 
@@ -17,8 +16,6 @@
     params: { organization, project },
   } = $page);
   $: ({ instanceId } = $runtime);
-
-  $: query = useDashboards(instanceId);
 
   $: deployingDashboards = useDeployingDashboards(
     instanceId,
