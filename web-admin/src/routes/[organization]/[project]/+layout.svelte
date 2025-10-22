@@ -37,6 +37,7 @@
   } from "@rilldata/web-admin/client";
   import {
     isProjectPage,
+    isPublicAlertPage,
     isPublicReportPage,
     isPublicURLPage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -63,7 +64,9 @@
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: if ($page.url.searchParams.has("token") && isPublicReportPage($page)) {
+  $: onPublicReportOrAlertPage =
+    isPublicReportPage($page) || isPublicAlertPage($page);
+  $: if ($page.url.searchParams.has("token") && onPublicReportOrAlertPage) {
     token = $page.url.searchParams.get("token");
   }
 
