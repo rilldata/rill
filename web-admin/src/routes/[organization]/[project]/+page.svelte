@@ -17,7 +17,7 @@
 </svelte:head>
 
 <ContentContainer maxWidth={900}>
-  <div class="flex flex-col gap-y-16 py-12">
+  <div class="flex flex-col gap-y-8 py-12">
     <!-- Welcome Section with Chat Input -->
     <div class="flex flex-col gap-y-8">
       <div class="flex flex-col gap-y-4">
