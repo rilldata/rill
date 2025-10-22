@@ -767,7 +767,7 @@ Example Specification
     "measure": {
       "field": "number_of_commits",
       "type": "quantitative",
-			"showTotal": true
+      "showTotal": true
     }
   }
 }
@@ -786,7 +786,7 @@ Example Specification with 1 dimension and 1 measure breakdown
       "start": "2024-01-01T00:00:00Z",
       "end": "2024-12-31T23:59:59Z"
     },
-	"breakdownMode": "dimension",
+    "breakdownMode": "dimension",
     "color": "stage",
     "measure": {
       "field": "total_users_measure",
@@ -825,7 +825,8 @@ Example Specification with multiple measures breakdown
     "metrics_view": "bids",
     "mode": "width"
   }
-	` + "```" + `
+}
+` + "```" + `
 
 ### 8. Heat Map (` + "`heatmap`" + `)
 **Use for:** Visualizing data density using color intensity across two dimensions
@@ -911,7 +912,7 @@ Example Specification
 
 ### Data Types
 - **nominal**: Categorical data (e.g., categories, names, labels), use for dimensions
-- **temporal**: Time-based data (dates, timestamps), use for time dimensions and timstamps
+- **temporal**: Time-based data (dates, timestamps), use for time dimensions and timestamps
 - **quantitative**: Numerical data (counts, amounts, measurements), use for measures
 - **value**: Special type for multiple measures (used in color field)
 
@@ -938,7 +939,7 @@ Example Specification
 Colors can be specified in three ways depending on the chart type and requirements:
 
 ### 1. Single Color String
-For bar_chart, stacked_bar, line_chart, and area_chart types in single measure mode and only 1 dimensions is involved:
+For bar_chart, stacked_bar, line_chart, and area_chart types in single measure mode and only 1 dimensions is involved. That is, there is no color dimension, only the X-axis dimension is present:
 - Named colors: "primary" or "secondary"
 - CSS color values: "#FF5733", "rgb(255, 87, 51)", "hsl(12, 100%, 60%)"
 - **Note**: If no color field object is provided, a color string MUST be included for the mentioned chart types
@@ -959,7 +960,7 @@ For dynamic coloring based on data dimensions:
 {
   "field": "dimension_name|rill_measures",      // The data field to base colors on
   "type": "nominal|value", // Data type, use value only when field in "rill_measures"
-  "limit": 10,                     // Maximum number of color categories
+  "limit": 10,                     // Limit denotes the maximum number of color categories
   "legendOrientation": "top|bottom|left|right" // Legend position (optional)
 }
 ` + "```" + `
@@ -1001,13 +1002,13 @@ Choose the appropriate chart type based on your data and analysis goals:
 - Time range ` + "`start`" + ` is inclusive, ` + "`end`" + ` is exclusive
 - Use ` + "`time_grain`" + ` to control temporal aggregation granularity (defaults to "TIME_GRAIN_DAY")
 - Use ` + "`where`" + ` to filter data displayed in charts - this applies the same filtering as query_metrics_view
-- You do not always have to include color field object for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
+- You do not always have to include a color field object for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
 - Ensure the metrics_view name matches exactly with available views
 - Field names must match the exact field names in the metrics view
 - When using ` + "`__time`" + ` field, set type to ` + "`\"temporal\"`" + `
 - For multiple measures, use the ` + "`fields`" + ` array in the y-axis configuration`
 
-	tool := mcp.NewToolWithRawSchema("create_chart", description, json.RawMessage(ChartsJSONSchema))
+	tool := mcp.NewToolWithRawSchema("create_chart", description, json.RawMessage(metricsview.ChartsJSONSchema))
 
 	handler := func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		instanceID := mcpInstanceIDFromContext(ctx)

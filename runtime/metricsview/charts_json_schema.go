@@ -1,5 +1,7 @@
-package server
+package metricsview
 
+// ChartsJSONSchema defines the JSON schema for chart specifications,
+// Used by the MCP create_chart tool to validate chart configurations.
 const ChartsJSONSchema = `{
   "type": "object",
   "required": ["chart_type", "spec"],
