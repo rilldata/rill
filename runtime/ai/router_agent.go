@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 )
 
@@ -49,31 +50,23 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	// TODO: Handle if previous call is still open or awaiting human input
 
 	// Handle title
-	session := GetSession(ctx)
-	if session.Title() == "" {
-		err := session.UpdateTitle(ctx, promptToTitle(args.Prompt))
+	s := GetSession(ctx)
+	if s.Title() == "" {
+		err := s.UpdateTitle(ctx, promptToTitle(args.Prompt))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// Add prompt to session
-	session.AddMessage(&AddMessageOptions{
-		Role:        RoleUser,
-		Type:        MessageTypePrompt,
-		ContentType: MessageContentTypeText,
-		Content:     args.Prompt,
-	})
-
 	// Create a list of candidate agents that the user has access to.
 	candidates := []string{"analyst_agent"}
 	candidates = slices.DeleteFunc(candidates, func(agent string) bool {
-		tool, ok := session.runner.Tools[agent]
+		tool, ok := s.runner.Tools[agent]
 		if !ok {
 			panic(fmt.Errorf("unknown tool %q", agent))
 		}
 		if tool.checkAccess != nil {
-			return !tool.checkAccess(session.Claims())
+			return !tool.checkAccess(s.Claims())
 		}
 		return false
 	})
@@ -93,21 +86,24 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		args.Agent = candidates[0]
 	// Multiple candidates available; choose an agent using the LLM
 	default:
-		session.AddMessage(&AddMessageOptions{
-			Role:        RoleSystem,
-			Type:        MessageTypePrompt,
-			ContentType: MessageContentTypeText,
-			Content:     t.systemPrompt(candidates),
-		})
+		// Build completion messages for agent choice
+		messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, t.systemPrompt(candidates))}
+		messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
+		messages = append(messages, NewTextCompletionMessage(RoleUser, args.Prompt))
+
+		// Run agent choice
 		var agentChoice struct {
 			Agent string `json:"agent"`
 		}
-		err := session.Complete(ctx, "Agent choice", &agentChoice, &CompleteOptions{
-			Messages: session.DefaultCompletionMessages(),
+		err := s.Complete(ctx, "Agent choice", &agentChoice, &CompleteOptions{
+			Messages: messages,
 		})
 		if err != nil {
 			return nil, err
 		}
+
+		// Validate the selected agent.
+		// NOTE: If we start seeing hallucinations, we may need to add a retry loop with feedback here.
 		if !slices.Contains(candidates, agentChoice.Agent) {
 			return nil, fmt.Errorf("agent %q not found", agentChoice.Agent)
 		}
@@ -116,8 +112,8 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 
 	// Call the selected agent.
 	// We always pass "explore" for context, but some agents may not use it.
-	var response *AnalystAgentResult
-	_, err := session.CallTool(ctx, RoleSystem, args.Agent, &response, map[string]any{
+	var response *AnalystAgentResult // TODO: Don't hard-code to a single agent
+	_, err := s.CallTool(ctx, RoleSystem, args.Agent, &response, map[string]any{
 		"explore": args.Explore,
 	})
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	goruntime "runtime"
+	"slices"
 	"sync"
 	"time"
 
@@ -530,108 +531,99 @@ func (s *BaseSession) NextIndex() int {
 	return len(s.messages)
 }
 
-func (s *BaseSession) Messages() []*Message {
-	return s.messages
+func (s *BaseSession) Messages(predicates ...Predicate) []*Message {
+	if len(predicates) == 0 {
+		return s.messages
+	}
+
+	var res []*Message
+	for _, msg := range s.messages {
+		match := true
+		for _, p := range predicates {
+			if !p(msg) {
+				match = false
+				break
+			}
+		}
+		if match {
+			res = append(res, msg)
+		}
+	}
+	return res
 }
 
-func (s *BaseSession) MessageByID(id string) (*Message, bool) {
+func (s *BaseSession) MessagesWithCallResults(msgs []*Message) []*Message {
+	var res []*Message
+	for _, msg := range msgs {
+		var resMsg *Message
+		if msg.Type == MessageTypeCall {
+			msg, ok := s.Message(FilterByParent(msg.ID), FilterByType(MessageTypeResult))
+			if !ok {
+				// Skip the call if there isn't a corresponding result.
+				continue
+			}
+			resMsg = msg
+		}
+		res = append(res, msg, resMsg)
+	}
+	return res
+}
+
+func (s *BaseSession) Message(predicates ...Predicate) (*Message, bool) {
 	for _, msg := range s.messages {
-		if msg.ID == id {
+		match := true
+		for _, p := range predicates {
+			if !p(msg) {
+				match = false
+				break
+			}
+		}
+		if match {
 			return msg, true
 		}
 	}
 	return nil, false
 }
 
-func (s *BaseSession) MessagesByCall(id string, nested bool) []*Message {
-	var res []*Message
-	var callBegun bool
-	for _, msg := range s.messages {
-		if msg.ID == id {
-			callBegun = true
-		}
-		if !callBegun {
-			continue
-		}
-		if msg.ID != id && msg.ParentID == "" {
-			// Next call starts here
-			break
-		}
-
-		if nested {
-			res = append(res, msg)
-		} else if msg.ID == id || msg.ParentID == id {
-			res = append(res, msg)
-		}
-	}
-
-	return res
-}
-
-func (s *BaseSession) Calls() []*Message {
-	var calls []*Message
-	for _, msg := range s.messages {
-		if msg.ParentID == "" {
-			calls = append(calls, msg)
-		}
-	}
-	return calls
-}
-
-func (s *BaseSession) LatestCall() *Message {
-	calls := s.Calls()
+func (s *BaseSession) LatestRootCall() *Message {
+	calls := s.Messages(FilterByRoot())
 	if len(calls) == 0 {
 		return nil
 	}
 	return calls[len(calls)-1]
 }
 
-func (s *BaseSession) FilterMessages() []*Message {
-	// TODO: Implement predicates (filter by type, tool, actor, union or intersection, latest system message)
-	return s.messages
+type Predicate func(*Message) bool
+
+func FilterByID(id string) Predicate {
+	return func(m *Message) bool {
+		return m.ID == id
+	}
 }
 
-// type Predicate func(*Message) bool
+func FilterByParent(parentID string) Predicate {
+	return func(m *Message) bool {
+		return m.ParentID == parentID
+	}
+}
 
-// func TypeFilter(t MessageType) Predicate {
-// 	return func(m *Message) bool {
-// 		return m.Type == t
-// 	}
-// }
+func FilterByRoot() Predicate {
+	return func(m *Message) bool {
+		return m.ParentID == ""
+	}
+}
 
-// func ToolFilter(tool string) Predicate {
-// 	return func(m *Message) bool {
-// 		return m.Tool == tool
-// 	}
-// }
+func FilterByType(typ MessageType) Predicate {
+	return func(m *Message) bool {
+		return m.Type == typ
+	}
+}
 
-// func ActorFilter(actor string) Predicate {
-// 	return func(m *Message) bool {
-// 		return m.Role == actor
-// 	}
-// }
-
-// func OrFilter(predicates ...Predicate) Predicate {
-// 	return func(m *Message) bool {
-// 		for _, p := range predicates {
-// 			if p(m) {
-// 				return true
-// 			}
-// 		}
-// 		return false
-// 	}
-// }
-
-// func AndFilter(predicates ...Predicate) Predicate {
-// 	return func(m *Message) bool {
-// 		for _, p := range predicates {
-// 			if !p(m) {
-// 				return false
-// 			}
-// 		}
-// 		return true
-// 	}
-// }
+func FilterByTool(tool string) Predicate {
+	return func(m *Message) bool {
+		return m.Tool == tool
+	}
+}
 
 // Session wraps a BaseSession with a reference to the current call's parent message.
 type Session struct {
@@ -681,7 +673,7 @@ func (s *Session) RootID() string {
 		panic("no parent ID set")
 	}
 	for range 100 { // Fail-safe, not expected to reach the limit
-		msg, ok := s.MessageByID(root)
+		msg, ok := s.Message(FilterByID(root))
 		if !ok {
 			panic(fmt.Errorf("failed to find referenced message with ID %q", root))
 		}
@@ -691,70 +683,6 @@ func (s *Session) RootID() string {
 		root = msg.ParentID
 	}
 	return root
-}
-
-func (s *Session) DefaultCompletionMessages() []*Message {
-	if s.ParentID == "" {
-		return nil
-	}
-
-	// Identify the current call and root call
-	currentCall := s.ParentID
-	rootCall := s.RootID()
-
-	// Find the previous root calls, and their user messages and responses
-	var previousRootCalls []*Message
-	var callID string
-	for _, msg := range s.messages {
-		if msg.ID == rootCall {
-			break
-		}
-		if msg.ParentID == "" {
-			callID = msg.ID
-		} else if msg.Type == MessageTypePrompt && msg.Role == RoleUser {
-			previousRootCalls = append(previousRootCalls, msg)
-		} else if msg.ParentID == callID && msg.Type == MessageTypeResult {
-			previousRootCalls = append(previousRootCalls, msg)
-		}
-	}
-
-	// Find relevant messages in the current call stack
-	rootCallMessages := s.MessagesByCall(rootCall, true)
-
-	// Find the latest system prompt
-	var systemPrompt *Message
-	for _, msg := range rootCallMessages {
-		if msg.Role == RoleSystem && msg.Type == MessageTypePrompt {
-			systemPrompt = msg
-		}
-	}
-
-	// Find all user messages in the root call stack
-	var userMessages []*Message
-	for _, msg := range rootCallMessages {
-		if msg.Role == RoleUser && msg.Type == MessageTypePrompt {
-			userMessages = append(userMessages, msg)
-		}
-	}
-
-	// Find all calls in the current call
-	var currentCallMessages []*Message
-	callID = ""
-	for _, msg := range rootCallMessages {
-		if msg.ParentID == currentCall && msg.Type == MessageTypeCall {
-			callID = msg.ID
-			currentCallMessages = append(currentCallMessages, msg)
-		} else if callID != "" && msg.ParentID == callID && msg.Type == MessageTypeResult {
-			currentCallMessages = append(currentCallMessages, msg)
-		}
-	}
-
-	// Build the final message list
-	res := []*Message{systemPrompt}
-	res = append(res, previousRootCalls...)
-	res = append(res, userMessages...)
-	res = append(res, currentCallMessages...)
-	return res
 }
 
 // CallResult contains the messages created during a tool call.
@@ -878,7 +806,7 @@ func (s *Session) call(ctx context.Context, role Role, name string, out, args an
 
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {
-	Messages      []*Message
+	Messages      []*aiv1.CompletionMessage
 	Tools         []string
 	MaxIterations int
 	UnwrapCall    bool
@@ -962,14 +890,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		defer release()
 
 		// Setup input messages.
-		messages := make([]*aiv1.CompletionMessage, 0, len(opts.Messages))
-		for _, msg := range opts.Messages {
-			aimsg, err := msg.ToProto()
-			if err != nil {
-				return nil, err
-			}
-			messages = append(messages, aimsg)
-		}
+		messages := slices.Clone(opts.Messages)
 
 		// TODO: For durable execution, add messages from current scope.
 
@@ -981,11 +902,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				tools = nil
 			}
 
-			// Filter out messages if there are too many
-			messages = maybeTruncateMessages(messages)
-
 			// Call the LLM to complete the messages.
-			res, err := llm.Complete(ctx, messages, tools, outputSchema)
+			res, err := llm.Complete(ctx, maybeTruncateMessages(messages), tools, outputSchema)
 			if err != nil {
 				return nil, fmt.Errorf("completion failed: %w", err)
 			}
@@ -1100,6 +1018,34 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	}
 
 	return nil
+}
+
+// NewTextCompletionMessage is a utility function for creating a text completion message.
+func NewTextCompletionMessage(role Role, content string) *aiv1.CompletionMessage {
+	return &aiv1.CompletionMessage{
+		Role: string(role),
+		Content: []*aiv1.ContentBlock{
+			{
+				BlockType: &aiv1.ContentBlock_Text{
+					Text: content,
+				},
+			},
+		},
+	}
+}
+
+// NewCompletionMessages is a utility function for creating a list of completion messages from a list of session messages.
+// NOTE: To support chaining, it panics on serialization errors. TODO: Move to a better chaining setup that enables error propagation.
+func NewCompletionMessages(msgs []*Message) []*aiv1.CompletionMessage {
+	var res []*aiv1.CompletionMessage
+	for _, msg := range msgs {
+		pm, err := msg.ToProto()
+		if err != nil {
+			panic(err)
+		}
+		res = append(res, pm)
+	}
+	return res
 }
 
 // maybeTruncateMessages keeps recent messages and a few early ones for context.

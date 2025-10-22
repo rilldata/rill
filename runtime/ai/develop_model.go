@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
@@ -62,29 +63,20 @@ func (t *DevelopModel) Handler(ctx context.Context, args *DevelopModelArgs) (*De
 	if err != nil {
 		return nil, err
 	}
-	systemMsg := session.AddMessage(&AddMessageOptions{
-		Role:        RoleSystem,
-		Type:        MessageTypePrompt,
-		ContentType: MessageContentTypeText,
-		Content:     systemPrompt,
-	})
 
 	// Add the user prompt
 	userPrompt, err := t.userPrompt(ctx, args)
 	if err != nil {
 		return nil, err
 	}
-	userMsg := session.AddMessage(&AddMessageOptions{
-		Role:        RoleUser,
-		Type:        MessageTypePrompt,
-		ContentType: MessageContentTypeText,
-		Content:     userPrompt,
-	})
 
 	// Run an LLM tool call loop
 	var response string
 	err = session.Complete(ctx, "Model developer loop", &response, &CompleteOptions{
-		Messages:      []*Message{systemMsg, userMsg},
+		Messages: []*aiv1.CompletionMessage{
+			NewTextCompletionMessage(RoleSystem, systemPrompt),
+			NewTextCompletionMessage(RoleUser, userPrompt),
+		},
 		Tools:         []string{"read_file", "write_file"},
 		MaxIterations: 10,
 		UnwrapCall:    true,

@@ -33,14 +33,22 @@ driver: duckdb
 	require.NoError(t, err)
 
 	// Verify it routed to the developer agent
-	requireHasOne(t, s.MessagesByCall(s.LatestCall().ID, true), func(msg *ai.Message) bool {
-		return msg.Tool == "Agent choice" && msg.Type == ai.MessageTypeResult && msg.Content == `{"agent":"developer_agent"}`
-	})
+	msg, ok := s.Message(
+		ai.FilterByParent(s.LatestRootCall().ID),
+		ai.FilterByTool("Agent choice"),
+		ai.FilterByType(ai.MessageTypeResult),
+	)
+	require.True(t, ok)
+	require.Equal(t, `{"agent":"developer_agent"}`, msg.Content)
 
 	// Verify it created a Shopify orders model
-	requireHasOne(t, s.MessagesByCall(s.LatestCall().ID, true), func(msg *ai.Message) bool {
-		return msg.Tool == "develop_model" && msg.Type == ai.MessageTypeResult && msg.Content == `{"model_name":"shopify_orders"}`
-	})
+	msg, ok = s.Message(
+		ai.FilterByParent(s.LatestRootCall().ID),
+		ai.FilterByTool("develop_model"),
+		ai.FilterByType(ai.MessageTypeResult),
+	)
+	require.True(t, ok)
+	require.Equal(t, `{"model_name":"shopify_orders"}`, msg.Content)
 
 	// Check that it added three new resources without errors (model, metrics view, explore)
 	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)

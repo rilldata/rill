@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -187,27 +188,13 @@ type generateMetricsViewYAMLWithres struct {
 // generateMetricsViewYAMLWithAI attempts to generate a metrics view YAML definition from a table schema using AI.
 // It validates that the result is a valid metrics view. Due to the unpredictable nature of AI (and chance of downtime), this function may error non-deterministically.
 func (t *DevelopMetricsView) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, dialect, connector string, tbl *drivers.OlapTable, isDefaultConnector, isModel bool) (*generateMetricsViewYAMLWithres, error) {
-	// Add system prompt
-	s := GetSession(ctx)
-	systemMsg := s.AddMessage(&AddMessageOptions{
-		Role:        RoleSystem,
-		Type:        MessageTypePrompt,
-		ContentType: MessageContentTypeText,
-		Content:     metricsViewYAMLSystemPrompt(),
-	})
-
-	// Add user prompt
-	userMsg := s.AddMessage(&AddMessageOptions{
-		Role:        RoleUser,
-		Type:        MessageTypePrompt,
-		ContentType: MessageContentTypeText,
-		Content:     metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema),
-	})
-
 	// Call AI service to infer a metrics view YAML
 	var responseText string
 	err := GetSession(ctx).Complete(ctx, "Generate metrics view", &responseText, &CompleteOptions{
-		Messages: []*Message{systemMsg, userMsg},
+		Messages: []*aiv1.CompletionMessage{
+			NewTextCompletionMessage(RoleSystem, metricsViewYAMLSystemPrompt()),
+			NewTextCompletionMessage(RoleUser, metricsViewYAMLUserPrompt(dialect, tbl.Name, tbl.Schema)),
+		},
 	})
 	if err != nil {
 		return nil, err

@@ -49,9 +49,13 @@ measures:
 	require.NoError(t, err)
 
 	// Verify it routed to the "analyst" agent
-	requireHasOne(t, s.MessagesByCall(s.LatestCall().ID, true), func(msg *ai.Message) bool {
-		return msg.Tool == "Agent choice" && msg.Type == ai.MessageTypeResult && msg.Content == `{"agent":"analyst_agent"}`
-	})
+	msg, ok := s.Message(
+		ai.FilterByParent(s.LatestRootCall().ID),
+		ai.FilterByTool("Agent choice"),
+		ai.FilterByType(ai.MessageTypeResult),
+	)
+	require.True(t, ok)
+	require.Equal(t, `{"agent":"analyst_agent"}`, msg.Content)
 
 	// Verify the response
 	require.Equal(t, "United States", res.Response)
@@ -63,9 +67,13 @@ measures:
 	require.NoError(t, err)
 
 	// Verify it routed to the "analyst" agent
-	requireHasOne(t, s.MessagesByCall(s.LatestCall().ID, true), func(msg *ai.Message) bool {
-		return msg.Tool == "Agent choice" && msg.Type == ai.MessageTypeResult && msg.Content == `{"agent":"analyst_agent"}`
-	})
+	msg, ok = s.Message(
+		ai.FilterByParent(s.LatestRootCall().ID),
+		ai.FilterByTool("Agent choice"),
+		ai.FilterByType(ai.MessageTypeResult),
+	)
+	require.True(t, ok)
+	require.Equal(t, `{"agent":"analyst_agent"}`, msg.Content)
 
 	// Verify the response
 	require.Equal(t, "United States", res.Response)

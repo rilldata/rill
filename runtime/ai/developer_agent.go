@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 )
 
@@ -37,8 +38,8 @@ func (t *DeveloperAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
 
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
 	// Pre-invoke file listing
-	session := GetSession(ctx)
-	_, err := session.CallTool(ctx, RoleAssistant, "list_files", nil, &ListFilesArgs{})
+	s := GetSession(ctx)
+	_, err := s.CallTool(ctx, RoleAssistant, "list_files", nil, &ListFilesArgs{})
 	if err != nil {
 		return nil, err
 	}
@@ -48,17 +49,17 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	if err != nil {
 		return nil, err
 	}
-	session.AddMessage(&AddMessageOptions{
-		Role:        RoleSystem,
-		Type:        MessageTypePrompt,
-		ContentType: MessageContentTypeText,
-		Content:     systemPrompt,
-	})
+
+	// Build initial completion messages
+	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
+	messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
+	messages = append(messages, NewTextCompletionMessage(RoleUser, args.Prompt))
+	messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByParent(s.ParentID))))...)
 
 	// Run an LLM tool call loop
 	var response string
-	err = session.Complete(ctx, "Developer loop", &response, &CompleteOptions{
-		Messages:      session.DefaultCompletionMessages(),
+	err = s.Complete(ctx, "Developer loop", &response, &CompleteOptions{
+		Messages:      messages,
 		Tools:         []string{"list_files", "read_file", "develop_model", "develop_metrics_view"},
 		MaxIterations: 10,
 		UnwrapCall:    true,

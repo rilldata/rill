@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 )
@@ -41,7 +42,7 @@ func (t *AnalystAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
 }
 
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {
-	session := GetSession(ctx)
+	s := GetSession(ctx)
 
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
 	var metricsViewName string
@@ -52,14 +53,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 		metricsViewName = metricsView.Meta.Name.Name
 
-		_, err = session.CallTool(ctx, RoleAssistant, "query_metrics_view_time_range", nil, &QueryMetricsViewTimeRangeArgs{
+		_, err = s.CallTool(ctx, RoleAssistant, "query_metrics_view_time_range", nil, &QueryMetricsViewTimeRangeArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = session.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
+		_, err = s.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
@@ -70,7 +71,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
 	if args.Explore == "" {
 		var listRes *ListMetricsViewsResult
-		_, err := session.CallTool(ctx, RoleAssistant, "list_metrics_views", &listRes, &ListMetricsViewsArgs{})
+		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", &listRes, &ListMetricsViewsArgs{})
 		if err != nil {
 			return nil, err
 		}
@@ -81,12 +82,6 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if err != nil {
 		return nil, err
 	}
-	session.AddMessage(&AddMessageOptions{
-		Role:        RoleSystem,
-		Type:        MessageTypePrompt,
-		ContentType: MessageContentTypeText,
-		Content:     systemPrompt,
-	})
 
 	// Determine tools that can be used
 	tools := []string{}
@@ -95,10 +90,16 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 	tools = append(tools, "query_metrics_view_time_range", "query_metrics_view")
 
+	// Build completion messages
+	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
+	messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
+	messages = append(messages, NewTextCompletionMessage(RoleUser, args.Prompt))
+	messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByParent(s.ParentID))))...)
+
 	// Run an LLM tool call loop
 	var response string
-	err = session.Complete(ctx, "Analyst loop", &response, &CompleteOptions{
-		Messages:      session.DefaultCompletionMessages(),
+	err = s.Complete(ctx, "Analyst loop", &response, &CompleteOptions{
+		Messages:      messages,
 		Tools:         tools,
 		MaxIterations: 15,
 		UnwrapCall:    true,
