@@ -61,6 +61,36 @@
   let connectionTab: ConnectorType = "parameters";
   let gcsAuthMethod: GCSAuthMethod = "credentials";
 
+  // GCS step management
+  let gcsStep: "connector" | "source" = "connector";
+  let gcsConnectorConfig: Record<string, unknown> | null = null;
+
+  // Reactive properties for GCS step 2
+  $: gcsStep2Properties =
+    connector.name === "gcs" && gcsStep === "source"
+      ? (connector.sourceProperties ?? [])
+      : properties;
+
+  // Update form when transitioning to step 2
+  $: if (
+    connector.name === "gcs" &&
+    gcsStep === "source" &&
+    gcsConnectorConfig
+  ) {
+    // Initialize form with source properties and default values
+    const sourceProperties = connector.sourceProperties ?? [];
+    const initialValues = getInitialFormValuesFromProperties(sourceProperties);
+
+    // Merge with stored connector config
+    const combinedValues = { ...gcsConnectorConfig, ...initialValues };
+
+    paramsForm.update(() => combinedValues, { taint: false });
+  }
+
+  // Determine effective form type for GCS
+  $: effectiveFormType =
+    connector.name === "gcs" && gcsStep === "source" ? "source" : formType;
+
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const properties =
@@ -161,7 +191,13 @@
       return false;
     } else {
       // Parameters form: check required properties
-      for (const property of properties) {
+      // Use gcsStep2Properties for GCS step 2, otherwise use properties
+      const propertiesToCheck =
+        connector.name === "gcs" && gcsStep === "source"
+          ? gcsStep2Properties
+          : properties;
+
+      for (const property of propertiesToCheck) {
         if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
@@ -287,6 +323,18 @@
       return getClickHouseYamlPreview(values, clickhouseConnectorType);
     }
 
+    // GCS special case - show different preview based on step
+    if (connector.name === "gcs") {
+      if (gcsStep === "connector") {
+        // Step 1: Show connector preview
+        return getConnectorYamlPreview($paramsForm);
+      } else {
+        // Step 2: Show source preview with stored connector config
+        const combinedValues = { ...gcsConnectorConfig, ...$paramsForm };
+        return getSourceYamlPreview(combinedValues);
+      }
+    }
+
     const values =
       hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
@@ -339,15 +387,23 @@
     const values = event.form.data;
 
     try {
-      // Use values as-is
       let processedValues = values;
 
-      if (formType === "source") {
+      if (effectiveFormType === "source") {
         await submitAddSourceForm(queryClient, connector, processedValues);
+        onClose();
       } else {
         await submitAddConnectorForm(queryClient, connector, processedValues);
+
+        // For GCS connector, transition to step 2 (source form)
+        if (connector.name === "gcs") {
+          gcsConnectorConfig = processedValues;
+          gcsStep = "source";
+          return; // Don't close the modal, just transition to step 2
+        }
+
+        onClose();
       }
-      onClose();
     } catch (e) {
       let error: string;
       let details: string | undefined = undefined;
@@ -585,65 +641,110 @@
           {/each}
         </form>
       {:else if connector.name === "gcs"}
-        <!-- GCS with Radio UI for authentication methods -->
-        <form
-          id={paramsFormId}
-          class="pb-5 flex-grow overflow-y-auto"
-          use:paramsEnhance
-          on:submit|preventDefault={paramsSubmit}
-        >
-          <!-- Authentication method selection -->
-          <div class="py-1.5 first:pt-0 last:pb-0">
-            <div class="text-sm font-medium mb-4">Authentication method</div>
-            <Radio
-              bind:value={gcsAuthMethod}
-              options={GCS_AUTH_OPTIONS}
-              name="gcs-auth-method"
-            >
-              <svelte:fragment slot="custom-content" let:option>
-                {#if option.value === "credentials"}
-                  <CredentialsInput
-                    id="google_application_credentials"
-                    hint="Upload a JSON key file for a service account with GCS access."
-                    optional={false}
-                    bind:value={$paramsForm.google_application_credentials}
-                    uploadFile={handleFileUpload}
-                    accept=".json"
-                  />
-                {:else if option.value === "hmac"}
-                  <div class="space-y-3">
-                    <Input
-                      id="key_id"
-                      label="Access Key ID"
-                      placeholder="Enter your HMAC access key ID"
+        {#if gcsStep === "connector"}
+          <!-- GCS Step 1: Connector configuration -->
+          <form
+            id={paramsFormId}
+            class="pb-5 flex-grow overflow-y-auto"
+            use:paramsEnhance
+            on:submit|preventDefault={paramsSubmit}
+          >
+            <!-- Authentication method selection -->
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              <div class="text-sm font-medium mb-4">Authentication method</div>
+              <Radio
+                bind:value={gcsAuthMethod}
+                options={GCS_AUTH_OPTIONS}
+                name="gcs-auth-method"
+              >
+                <svelte:fragment slot="custom-content" let:option>
+                  {#if option.value === "credentials"}
+                    <CredentialsInput
+                      id="google_application_credentials"
+                      hint="Upload a JSON key file for a service account with GCS access."
                       optional={false}
-                      secret={false}
-                      hint="HMAC access key ID for S3-compatible authentication"
-                      errors={normalizeErrors($paramsErrors.key_id)}
-                      bind:value={$paramsForm.key_id}
-                      alwaysShowError
+                      bind:value={$paramsForm.google_application_credentials}
+                      uploadFile={handleFileUpload}
+                      accept=".json"
                     />
-                    <Input
-                      id="secret"
-                      label="Secret Access Key"
-                      placeholder="Enter your HMAC secret access key"
-                      optional={false}
-                      secret={true}
-                      hint="HMAC secret access key for S3-compatible authentication"
-                      errors={normalizeErrors($paramsErrors.secret)}
-                      bind:value={$paramsForm.secret}
-                      alwaysShowError
-                    />
-                  </div>
-                {/if}
-              </svelte:fragment>
-            </Radio>
-          </div>
+                  {:else if option.value === "hmac"}
+                    <div class="space-y-3">
+                      <Input
+                        id="key_id"
+                        label="Access Key ID"
+                        placeholder="Enter your HMAC access key ID"
+                        optional={false}
+                        secret={false}
+                        hint="HMAC access key ID for S3-compatible authentication"
+                        errors={normalizeErrors($paramsErrors.key_id)}
+                        bind:value={$paramsForm.key_id}
+                        alwaysShowError
+                      />
+                      <Input
+                        id="secret"
+                        label="Secret Access Key"
+                        placeholder="Enter your HMAC secret access key"
+                        optional={false}
+                        secret={true}
+                        hint="HMAC secret access key for S3-compatible authentication"
+                        errors={normalizeErrors($paramsErrors.secret)}
+                        bind:value={$paramsForm.secret}
+                        alwaysShowError
+                      />
+                    </div>
+                  {/if}
+                </svelte:fragment>
+              </Radio>
+            </div>
 
-          <!-- Render other properties (excluding path and auth fields) -->
-          {#each filteredParamsProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            {#if propertyKey !== "path" && propertyKey !== "google_application_credentials" && propertyKey !== "key_id" && propertyKey !== "secret"}
+            <!-- Render other connector properties (excluding path and auth fields) -->
+            {#each filteredParamsProperties as property (property.key)}
+              {@const propertyKey = property.key ?? ""}
+              {#if propertyKey !== "path" && propertyKey !== "google_application_credentials" && propertyKey !== "key_id" && propertyKey !== "secret"}
+                <div class="py-1.5 first:pt-0 last:pb-0">
+                  {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                    <Input
+                      id={propertyKey}
+                      label={property.displayName}
+                      placeholder={property.placeholder}
+                      optional={!property.required}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={normalizeErrors($paramsErrors[propertyKey])}
+                      bind:value={$paramsForm[propertyKey]}
+                      onInput={(_, e) => onStringInputChange(e)}
+                      alwaysShowError
+                    />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                    <Checkbox
+                      id={propertyKey}
+                      bind:checked={$paramsForm[propertyKey]}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                    />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                    <InformationalField
+                      description={property.description}
+                      hint={property.hint}
+                      href={property.docsUrl}
+                    />
+                  {/if}
+                </div>
+              {/if}
+            {/each}
+          </form>
+        {:else}
+          <!-- GCS Step 2: Source configuration -->
+          <form
+            id={paramsFormId}
+            class="pb-5 flex-grow overflow-y-auto"
+            use:paramsEnhance
+            on:submit|preventDefault={paramsSubmit}
+          >
+            <!-- Only show source-specific fields -->
+            {#each gcsStep2Properties as property (property.key)}
+              {@const propertyKey = property.key ?? ""}
               <div class="py-1.5 first:pt-0 last:pb-0">
                 {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
                   <Input
@@ -674,9 +775,9 @@
                   />
                 {/if}
               </div>
-            {/if}
-          {/each}
-        </form>
+            {/each}
+          </form>
+        {/if}
       {:else}
         <form
           id={paramsFormId}
@@ -735,7 +836,13 @@
     <div
       class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      <Button onClick={onBack} type="secondary">Back</Button>
+      {#if connector.name === "gcs" && gcsStep === "source"}
+        <Button onClick={() => (gcsStep = "connector")} type="secondary"
+          >Back</Button
+        >
+      {:else}
+        <Button onClick={onBack} type="secondary">Back</Button>
+      {/if}
 
       <Button
         disabled={connector.name === "clickhouse"
@@ -764,7 +871,19 @@
             Test and Connect
           {/if}
         {:else if isConnectorForm}
-          {#if submitting}
+          {#if connector.name === "gcs" && gcsStep === "connector"}
+            {#if submitting}
+              Testing connection...
+            {:else}
+              Test and Connect
+            {/if}
+          {:else if connector.name === "gcs" && gcsStep === "source"}
+            {#if submitting}
+              Creating model...
+            {:else}
+              Test and Add data
+            {/if}
+          {:else if submitting}
             Testing connection...
           {:else}
             Test and Connect
@@ -795,7 +914,11 @@
 
     <div>
       <div class="text-sm leading-none font-medium mb-4">
-        {isSourceForm ? "Model preview" : "Connector preview"}
+        {#if connector.name === "gcs"}
+          {gcsStep === "connector" ? "Connector preview" : "Model preview"}
+        {:else}
+          {isSourceForm ? "Model preview" : "Connector preview"}
+        {/if}
       </div>
       <div class="relative">
         <button
