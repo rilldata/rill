@@ -2,16 +2,22 @@ import {
   type CompoundQueryResult,
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
+import { getMetricsViewTimeRangeOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import {
+  getExploreValidSpecOptions,
+  useExploreValidSpec,
+} from "@rilldata/web-common/features/explores/selectors";
 import {
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import { createQuery } from "@tanstack/svelte-query";
+import { derived, type Readable } from "svelte/store";
 
 export function getRillDefaultExploreUrlParams(
   metricsViewSpec: V1MetricsViewSpec,
@@ -60,6 +66,48 @@ export function createRillDefaultExploreUrlParams(
         metricsViewSpec,
         exploreSpec,
         metricsViewTimeRangeResp?.timeRangeSummary,
+      );
+    },
+  );
+}
+
+/**
+ * Version of createRillDefaultExploreUrlParams that is meant to have a stable non-reactive query object.
+ * All reactivity will instead be in the query options.
+ *
+ * Uses {@link getExploreValidSpecOptions} and {@link getMetricsViewTimeRangeOptions} for reactive query options.
+ * TODO: replace {@link createRillDefaultExploreUrlParams} with this
+ */
+export function createRillDefaultExploreUrlParamsV2(
+  exploreNameStore: Readable<string>,
+) {
+  const validSpecQuery = createQuery(
+    getExploreValidSpecOptions(exploreNameStore),
+  );
+  const timeRangeQuery = createQuery(
+    getMetricsViewTimeRangeOptions(exploreNameStore),
+  );
+
+  return derived(
+    [validSpecQuery, timeRangeQuery],
+    ([validSpecResp, timeRangeResp]) => {
+      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const timeRangeSummary = timeRangeResp.data?.timeRangeSummary;
+
+      if (
+        !metricsViewSpec ||
+        !exploreSpec ||
+        // safeguard to make sure time range summary is loaded for metrics view with time dimension
+        (metricsViewSpec.timeDimension && !timeRangeSummary)
+      ) {
+        return undefined;
+      }
+
+      return getRillDefaultExploreUrlParams(
+        metricsViewSpec,
+        exploreSpec,
+        timeRangeSummary,
       );
     },
   );

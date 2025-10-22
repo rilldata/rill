@@ -1,3 +1,4 @@
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import type {
   CreateQueryOptions,
   QueryFunction,
@@ -12,9 +13,11 @@ import {
   type V1ExploreSpec,
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
+  getRuntimeServiceGetExploreQueryOptions,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
+import { derived, type Readable } from "svelte/store";
 
 export function useExplore(
   instanceId: string,
@@ -70,6 +73,27 @@ export function useExploreValidSpec(
       },
     },
     queryClient,
+  );
+}
+
+export function getExploreValidSpecOptions(exploreNameStore: Readable<string>) {
+  return derived([runtime, exploreNameStore], ([{ instanceId }, exploreName]) =>
+    getRuntimeServiceGetExploreQueryOptions(
+      instanceId,
+      {
+        name: exploreName,
+      },
+      {
+        query: {
+          select: (data) =>
+            <ExploreValidSpecResponse>{
+              explore: data.explore?.explore?.state?.validSpec,
+              metricsView: data.metricsView?.metricsView?.state?.validSpec,
+            },
+          enabled: !!exploreName,
+        },
+      },
+    ),
   );
 }
 

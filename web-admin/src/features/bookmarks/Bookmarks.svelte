@@ -1,13 +1,15 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceCreateBookmark,
     createAdminServiceRemoveBookmark,
+    createAdminServiceUpdateBookmark,
     getAdminServiceListBookmarksQueryKey,
     type V1Bookmark,
   } from "@rilldata/web-admin/client";
   import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
   import BookmarksFormBookmarksFormDialog from "@rilldata/web-admin/features/bookmarks/BookmarksFormDialog.svelte";
-  import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark.ts";
+  import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     type BookmarkEntry,
     type Bookmarks,
@@ -63,21 +65,43 @@
   $: manageProject = $projectPermissions.data?.manageProject;
 
   const queryClient = useQueryClient();
-  $: homeBookmarkModifier = createHomeBookmarkModifier(
-    resourceKind,
-    resourceName,
-  );
+  const bookmarkCreator = createAdminServiceCreateBookmark();
+  const bookmarkUpdater = createAdminServiceUpdateBookmark();
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   async function createHomeBookmark() {
-    await homeBookmarkModifier(
-      getBookmarkData({
-        curUrlParams,
-        defaultUrlParams,
-      }),
-      $projectId.data,
-      bookmarksResp,
-    );
+    const homeBookmarkUrlSearch = getBookmarkData({
+      curUrlParams,
+      defaultUrlParams,
+    });
+    const homeBookmark = bookmarksResp.find(isHomeBookmark);
+
+    if (homeBookmark) {
+      await $bookmarkUpdater.mutateAsync({
+        data: {
+          bookmarkId: homeBookmark.id,
+          displayName: "Go to Home",
+          description: "",
+          shared: true,
+          default: true,
+          urlSearch: homeBookmarkUrlSearch,
+        },
+      });
+    } else {
+      await $bookmarkCreator.mutateAsync({
+        data: {
+          displayName: "Go to Home",
+          description: "",
+          projectId: $projectId.data,
+          resourceKind,
+          resourceName,
+          shared: true,
+          default: true,
+          urlSearch: homeBookmarkUrlSearch,
+        },
+      });
+    }
+
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });

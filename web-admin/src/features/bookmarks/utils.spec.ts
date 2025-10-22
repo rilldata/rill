@@ -1,4 +1,4 @@
-import { exploreBookmarkDataTransformer } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
+import { exploreBookmarkDataTransformer } from "@rilldata/web-admin/features/bookmarks/explore-bookmark-legacy-data-transformer.ts";
 import {
   getBookmarkData,
   parseBookmarks,

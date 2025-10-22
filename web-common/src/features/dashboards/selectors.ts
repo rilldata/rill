@@ -8,8 +8,12 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import {
+  getExploreValidSpecOptions,
+  useExploreValidSpec,
+} from "@rilldata/web-common/features/explores/selectors.ts";
+import {
+  getQueryServiceMetricsViewSchemaQueryOptions,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
   type RpcStatus,
   type V1Expression,
@@ -28,10 +32,11 @@ import {
   type CreateQueryResult,
   type QueryClient,
 } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
 import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
 export function useMetricsView(
   instanceId: string,
@@ -130,6 +135,34 @@ export function useMetricsViewTimeRange(
   return createQuery(fullTimeRangeQueryOptionsStore, queryClient);
 }
 
+export function getMetricsViewTimeRangeOptions(
+  exploreNameStore: Readable<string>,
+) {
+  const validSpecQuery = createQuery(
+    getExploreValidSpecOptions(exploreNameStore),
+  );
+
+  return derived(
+    [runtime, validSpecQuery],
+    ([{ instanceId }, validSpecResp]) => {
+      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewName = exploreSpec.metricsView ?? "";
+
+      return getQueryServiceMetricsViewTimeRangeQueryOptions(
+        instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            enabled: !!metricsViewSpec.timeDimension,
+          },
+        },
+      );
+    },
+  );
+}
+
 export function hasValidMetricsViewTimeRange(
   instanceId: string,
   exploreName: string,
@@ -147,7 +180,7 @@ export function hasValidMetricsViewTimeRange(
         {},
         {
           query: {
-            enabled: Boolean(metricsViewSpec.timeDimension),
+            enabled: Boolean(metricsViewName && metricsViewSpec.timeDimension),
           },
         },
       );
@@ -161,6 +194,33 @@ export function hasValidMetricsViewTimeRange(
   return derived(
     fullTimeRangeQuery,
     (fullTimeRange) => !fullTimeRange.isPending && !fullTimeRange.isError,
+  );
+}
+
+export function getMetricsViewSchemaOptions(
+  exploreNameStore: Readable<string>,
+) {
+  const validSpecQuery = createQuery(
+    getExploreValidSpecOptions(exploreNameStore),
+  );
+
+  return derived(
+    [runtime, validSpecQuery],
+    ([{ instanceId }, validSpecResp]) => {
+      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewName = exploreSpec.metricsView ?? "";
+
+      return getQueryServiceMetricsViewSchemaQueryOptions(
+        instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            enabled: Boolean(metricsViewName),
+          },
+        },
+      );
+    },
   );
 }
 
