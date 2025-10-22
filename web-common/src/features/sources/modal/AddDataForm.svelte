@@ -229,6 +229,11 @@
   $: dispatch("submitting", { submitting });
 
   async function handleSaveAnyway() {
+    // Save Anyway should only work for connector forms
+    if (!isConnectorForm) {
+      return;
+    }
+
     // For ClickHouse, delegate to the child component's handleSaveAnyway function
     if (connector.name === "clickhouse") {
       await clickhouseHandleSaveAnyway();
@@ -246,21 +251,13 @@
     const processedValues = applyClickHouseCloudRequirements(values);
 
     try {
-      if (formType === "source") {
-        await submitAddSourceForm(
-          queryClient,
-          connector,
-          processedValues,
-          true,
-        );
-      } else {
-        await submitAddConnectorForm(
-          queryClient,
-          connector,
-          processedValues,
-          true,
-        );
-      }
+      // Only call submitAddConnectorForm since Save Anyway is connector-only
+      await submitAddConnectorForm(
+        queryClient,
+        connector,
+        processedValues,
+        true,
+      );
       onClose();
     } catch (e) {
       let error: string;
@@ -425,8 +422,10 @@
     cancel: () => void;
     result: Extract<ActionResult, { type: "success" | "failure" }>;
   }) {
-    // Show Save Anyway button as soon as form submission starts
-    showSaveAnyway = true;
+    // Show Save Anyway button as soon as form submission starts - only for connector forms
+    if (isConnectorForm) {
+      showSaveAnyway = true;
+    }
 
     if (!event.form.valid && !saveAnyway) return;
 
@@ -437,12 +436,7 @@
       let processedValues = applyClickHouseCloudRequirements(values);
 
       if (formType === "source") {
-        await submitAddSourceForm(
-          queryClient,
-          connector,
-          processedValues,
-          saveAnyway,
-        );
+        await submitAddSourceForm(queryClient, connector, processedValues);
       } else {
         await submitAddConnectorForm(
           queryClient,
@@ -721,8 +715,8 @@
       <Button onClick={onBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
-        <!-- Show Save Anyway button when form submission has started -->
-        {#if showSaveAnyway || clickhouseShowSaveAnyway}
+        <!-- Show Save Anyway button when form submission has started - only for connector forms -->
+        {#if isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway)}
           <Button
             disabled={false}
             loading={connector.name === "clickhouse"

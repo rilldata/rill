@@ -145,7 +145,6 @@ export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
-  saveAnyway: boolean = false,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
@@ -179,58 +178,47 @@ export async function submitAddSourceForm(
     "source",
   );
 
-  if (saveAnyway) {
-    // When saving anyway, just create the .env file without waiting for reconciliation
-    await runtimeServicePutFile(instanceId, {
-      path: ".env",
-      blob: newEnvBlob,
-      create: true,
-      createOnly: false,
-    });
-    // Skip reconciliation and error checking - just save the files
-  } else {
-    // Make sure the file has reconciled before testing the connection
-    await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
-      path: ".env",
-      blob: newEnvBlob,
-      create: true,
-      createOnly: false,
-    });
+  // Make sure the file has reconciled before testing the connection
+  await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
+    path: ".env",
+    blob: newEnvBlob,
+    create: true,
+    createOnly: false,
+  });
 
-    // Wait for source resource-level reconciliation
-    // This must happen after .env reconciliation since sources depend on secrets
-    try {
-      await waitForResourceReconciliation(
-        instanceId,
-        newSourceName,
-        ResourceKind.Model,
-        connector.name as string,
-      );
-    } catch (error) {
-      // The source file was already created, so we need to delete it
-      await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-      const errorDetails = (error as any).details;
-
-      throw {
-        message: error.message || "Unable to establish a connection",
-        details:
-          errorDetails && errorDetails !== error.message
-            ? errorDetails
-            : undefined,
-      };
-    }
-
-    // Check for file errors
-    // If the model file has errors, rollback the changes
-    const errorMessage = await fileArtifacts.checkFileErrors(
-      queryClient,
+  // Wait for source resource-level reconciliation
+  // This must happen after .env reconciliation since sources depend on secrets
+  try {
+    await waitForResourceReconciliation(
       instanceId,
-      newSourceFilePath,
+      newSourceName,
+      ResourceKind.Model,
+      connector.name as string,
     );
-    if (errorMessage) {
-      await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
-      throw new Error(errorMessage);
-    }
+  } catch (error) {
+    // The source file was already created, so we need to delete it
+    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    const errorDetails = (error as any).details;
+
+    throw {
+      message: error.message || "Unable to establish a connection",
+      details:
+        errorDetails && errorDetails !== error.message
+          ? errorDetails
+          : undefined,
+    };
+  }
+
+  // Check for file errors
+  // If the model file has errors, rollback the changes
+  const errorMessage = await fileArtifacts.checkFileErrors(
+    queryClient,
+    instanceId,
+    newSourceFilePath,
+  );
+  if (errorMessage) {
+    await rollbackChanges(instanceId, newSourceFilePath, originalEnvBlob);
+    throw new Error(errorMessage);
   }
 
   await goto(`/files/${newSourceFilePath}`);
