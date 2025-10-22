@@ -78,7 +78,13 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 
 	// Handle email recipients - create magic tokens for all recipients
 	recipientURLs := make(map[string]*adminv1.GetAlertMetaResponse_URLs)
-	for _, email := range req.EmailRecipients {
+	var recipients []string
+	recipients = append(recipients, req.EmailRecipients...)
+	if req.AnonRecipients {
+		// add empty email for slack and other notifiers token
+		recipients = append(recipients, "")
+	}
+	for _, email := range recipients {
 		recipientURLs[email] = &adminv1.GetAlertMetaResponse_URLs{
 			OpenUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert, ""),
 			EditUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, req.Alert),

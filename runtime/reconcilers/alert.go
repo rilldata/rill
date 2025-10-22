@@ -891,7 +891,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					// Set recipient-specific URLs if available from admin metadata
 					if adminMeta != nil && adminMeta.RecipientURLs != nil {
 						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok {
-							// Use recipient-specific URLs (with magic token)
+							// Use recipient-specific URLs
 							openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
 							if err != nil {
 								return fmt.Errorf("failed to build recipient open url: %w", err)
@@ -923,6 +923,15 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					n, err := conn.AsNotifier(notifier.Properties.AsMap())
 					if err != nil {
 						return err
+					}
+					if recipientURLs, ok := adminMeta.RecipientURLs[""]; ok {
+						// Use anoo recipient URLs
+						openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
+						if err != nil {
+							return fmt.Errorf("failed to build recipient open url: %w", err)
+						}
+						msg.OpenLink = openLink
+						msg.EditLink = recipientURLs.EditURL
 					}
 					start := time.Now()
 					defer func() {
