@@ -47,6 +47,11 @@
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import { MULTI_STEP_CONNECTORS } from "./constants";
+  import {
+    connectorStepStore,
+    setStep,
+    setConnectorConfig,
+  } from "./connectorStepStore";
 
   const dispatch = createEventDispatcher();
 
@@ -66,30 +71,33 @@
   const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
     connector.name ?? "",
   );
-  let currentStep: "connector" | "source" = "connector";
-  let connectorConfig: Record<string, unknown> | null = null;
+  $: stepState = $connectorStepStore;
 
   // Reactive properties based on current step
   $: stepProperties =
-    isMultiStepConnector && currentStep === "source"
+    isMultiStepConnector && stepState.step === "source"
       ? (connector.sourceProperties ?? [])
       : properties;
 
   // Update form when transitioning to step 2
-  $: if (isMultiStepConnector && currentStep === "source" && connectorConfig) {
+  $: if (
+    isMultiStepConnector &&
+    stepState.step === "source" &&
+    stepState.connectorConfig
+  ) {
     // Initialize form with source properties and default values
     const sourceProperties = connector.sourceProperties ?? [];
     const initialValues = getInitialFormValuesFromProperties(sourceProperties);
 
     // Merge with stored connector config
-    const combinedValues = { ...connectorConfig, ...initialValues };
+    const combinedValues = { ...stepState.connectorConfig, ...initialValues };
 
     paramsForm.update(() => combinedValues, { taint: false });
   }
 
   // Determine effective form type
   $: effectiveFormType =
-    isMultiStepConnector && currentStep === "source" ? "source" : formType;
+    isMultiStepConnector && stepState.step === "source" ? "source" : formType;
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -324,12 +332,12 @@
 
     // Multi-step connector special case - show different preview based on step
     if (isMultiStepConnector) {
-      if (currentStep === "connector") {
+      if (stepState.step === "connector") {
         // Step 1: Show connector preview
         return getConnectorYamlPreview($paramsForm);
       } else {
         // Step 2: Show source preview with stored connector config
-        const combinedValues = { ...connectorConfig, ...$paramsForm };
+        const combinedValues = { ...stepState.connectorConfig, ...$paramsForm };
         return getSourceYamlPreview(combinedValues);
       }
     }
@@ -388,19 +396,23 @@
     try {
       let processedValues = values;
 
-      if (effectiveFormType === "source") {
+      if (isMultiStepConnector && stepState.step === "source") {
+        // Step 2: Create source with stored connector config
+        await submitAddSourceForm(queryClient, connector, processedValues);
+        onClose();
+      } else if (isMultiStepConnector && stepState.step === "connector") {
+        // Step 1: Create connector and transition to step 2
+        await submitAddConnectorForm(queryClient, connector, processedValues);
+        setConnectorConfig(processedValues);
+        setStep("source");
+        return; // Don't close the modal, just transition to step 2
+      } else if (effectiveFormType === "source") {
+        // Regular source form
         await submitAddSourceForm(queryClient, connector, processedValues);
         onClose();
       } else {
+        // Regular connector form
         await submitAddConnectorForm(queryClient, connector, processedValues);
-
-        // For multi-step connectors, transition to step 2 (source form)
-        if (isMultiStepConnector) {
-          connectorConfig = processedValues;
-          currentStep = "source";
-          return; // Don't close the modal, just transition to step 2
-        }
-
         onClose();
       }
     } catch (e) {
@@ -640,7 +652,7 @@
           {/each}
         </form>
       {:else if isMultiStepConnector}
-        {#if currentStep === "connector"}
+        {#if stepState.step === "connector"}
           <!-- GCS Step 1: Connector configuration -->
           <form
             id={paramsFormId}
@@ -835,8 +847,8 @@
     <div
       class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      {#if isMultiStepConnector && currentStep === "source"}
-        <Button onClick={() => (currentStep = "connector")} type="secondary"
+      {#if isMultiStepConnector && stepState.step === "source"}
+        <Button onClick={() => setStep("connector")} type="secondary"
           >Back</Button
         >
       {:else}
@@ -870,13 +882,13 @@
             Test and Connect
           {/if}
         {:else if isConnectorForm}
-          {#if isMultiStepConnector && currentStep === "connector"}
+          {#if isMultiStepConnector && stepState.step === "connector"}
             {#if submitting}
               Testing connection...
             {:else}
               Test and Connect
             {/if}
-          {:else if isMultiStepConnector && currentStep === "source"}
+          {:else if isMultiStepConnector && stepState.step === "source"}
             {#if submitting}
               Creating model...
             {:else}
@@ -914,7 +926,9 @@
     <div>
       <div class="text-sm leading-none font-medium mb-4">
         {#if isMultiStepConnector}
-          {currentStep === "connector" ? "Connector preview" : "Model preview"}
+          {stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"}
         {:else}
           {isSourceForm ? "Model preview" : "Connector preview"}
         {/if}
