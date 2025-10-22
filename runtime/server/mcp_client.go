@@ -42,10 +42,20 @@ func (s *Server) newMCPClient(mcpServer *server.MCPServer) (*client.Client, erro
 }
 
 func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]*aiv1.Tool, error) {
+	mcpServer, err := s.newMCPServer(ctx, instanceID, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MCP server: %w", err)
+	}
+	mcpClient, err := s.newMCPClient(mcpServer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MCP client: %w", err)
+	}
+	defer mcpClient.Close()
+
 	// Add instance ID to context for internal MCP server tools
 	ctxWithInstance := context.WithValue(ctx, mcpInstanceIDKey{}, instanceID)
 
-	tools, err := s.mcpClient.ListTools(ctxWithInstance, mcp.ListToolsRequest{})
+	tools, err := mcpClient.ListTools(ctxWithInstance, mcp.ListToolsRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +80,20 @@ func (s *Server) mcpListTools(ctx context.Context, instanceID string) ([]*aiv1.T
 }
 
 func (s *Server) mcpExecuteTool(ctx context.Context, instanceID, toolName string, toolArgs map[string]any) (string, error) {
+	mcpServer, err := s.newMCPServer(ctx, instanceID, false)
+	if err != nil {
+		return "", fmt.Errorf("failed to create MCP server: %w", err)
+	}
+	mcpClient, err := s.newMCPClient(mcpServer)
+	if err != nil {
+		return "", fmt.Errorf("failed to create MCP client: %w", err)
+	}
+	defer mcpClient.Close()
+
 	// Add instance ID to context for internal MCP server tools
 	ctxWithInstance := context.WithValue(ctx, mcpInstanceIDKey{}, instanceID)
 
-	resp, err := s.mcpClient.CallTool(ctxWithInstance, mcp.CallToolRequest{
+	resp, err := mcpClient.CallTool(ctxWithInstance, mcp.CallToolRequest{
 		Params: struct {
 			Name      string    `json:"name"`
 			Arguments any       `json:"arguments,omitempty"`

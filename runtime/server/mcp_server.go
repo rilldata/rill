@@ -38,7 +38,7 @@ In the workflow, do not proceed with the next step until the previous step has b
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 `
 
-func (s *Server) newMCPServer(external bool) *server.MCPServer {
+func (s *Server) newMCPServer(ctx context.Context, instanceID string, external bool) (*server.MCPServer, error) {
 	version := s.runtime.Version().Number
 	if version == "" {
 		version = "0.0.1"
@@ -66,24 +66,39 @@ func (s *Server) newMCPServer(external bool) *server.MCPServer {
 	mcpServer.AddTool(s.mcpQueryMetricsView())
 	mcpServer.AddTool(s.mcpQueryMetricsViewSummary())
 	if !external {
-		mcpServer.AddTool(s.mcpCreateChart())
+		ff, err := s.runtime.FeatureFlags(ctx, instanceID, auth.GetClaims(ctx, instanceID))
+		if err != nil {
+			return nil, fmt.Errorf("failed to get feature flags: %w", err)
+		}
+
+		if ff["chat_charts"] {
+			mcpServer.AddTool(s.mcpCreateChart())
+		}
 	}
 
-	return mcpServer
+	return mcpServer, nil
 }
 
 func (s *Server) newMCPHTTPHandler() http.Handler {
-	mcpServer := s.newMCPServer(true)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := s.mcpHTTPContextFunc(r.Context(), r)
+		instanceID := mcpInstanceIDFromContext(ctx)
 
-	httpServer := server.NewStreamableHTTPServer(
-		mcpServer,
-		server.WithHeartbeatInterval(30*time.Second),
-		server.WithHTTPContextFunc(s.mcpHTTPContextFunc),
-		server.WithStateLess(true), // NOTE: Need to change if we start using notifications.
-		server.WithLogger(mcpLogger{s.logger}),
-	)
+		mcpServer, err := s.newMCPServer(ctx, instanceID, true)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to create MCP server: %v", err), http.StatusInternalServerError)
+			return
+		}
 
-	return httpServer
+		httpServer := server.NewStreamableHTTPServer(
+			mcpServer,
+			server.WithHeartbeatInterval(30*time.Second),
+			server.WithStateLess(true), // NOTE: Need to change if we start using notifications.
+			server.WithLogger(mcpLogger{s.logger}),
+		)
+
+		httpServer.ServeHTTP(w, r)
+	})
 }
 
 type mcpLogger struct {
@@ -1108,7 +1123,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 	return tool, handler
 }
 
-// mcpHTTPContextFunc is an MCP server middleware that adds the current instance ID to the context.
+// mcpHTTPContextFunc attempts to discover the instance ID from the provided request and add it to the context.
 func (s *Server) mcpHTTPContextFunc(ctx context.Context, r *http.Request) context.Context {
 	// Extract instance ID from the request path
 	instanceID := r.PathValue("instance_id")

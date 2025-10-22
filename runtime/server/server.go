@@ -12,8 +12,6 @@ import (
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/mark3labs/mcp-go/client"
-	"github.com/mark3labs/mcp-go/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -62,9 +60,6 @@ type Server struct {
 	codec    *securetoken.Codec
 	limiter  ratelimit.Limiter
 	activity *activity.Client
-	// MCP server and client for tool calling and API functionality
-	mcpServer *server.MCPServer
-	mcpClient *client.Client
 }
 
 var (
@@ -102,14 +97,6 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		srv.aud = aud
 	}
 
-	// Initialize MCP server and client for shared use across the runtime
-	srv.mcpServer = srv.newMCPServer(false)
-	mcpClient, err := srv.newMCPClient(srv.mcpServer)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create MCP client: %w", err)
-	}
-	srv.mcpClient = mcpClient
-
 	return srv, nil
 }
 
@@ -119,10 +106,6 @@ func (s *Server) Close() error {
 
 	if s.aud != nil {
 		s.aud.Close()
-	}
-
-	if s.mcpClient != nil {
-		s.mcpClient.Close()
 	}
 
 	return nil

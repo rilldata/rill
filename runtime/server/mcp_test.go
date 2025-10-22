@@ -22,7 +22,11 @@ func testCtx() context.Context {
 func newMCPTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
-			"rill.yaml": ``,
+			"rill.yaml": `
+features:
+  chat_charts:
+    enabled: true
+`,
 			// Create a simple model
 			"test_data.sql": `SELECT 'US' AS country, 100 AS revenue, NOW() AS timestamp`,
 			// Create a metrics view
