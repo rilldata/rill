@@ -99,6 +99,12 @@
   $: effectiveFormType =
     isMultiStepConnector && stepState.step === "source" ? "source" : formType;
 
+  $: formHeight = ["clickhouse", "snowflake", "salesforce"].includes(
+    connector.name ?? "",
+  )
+    ? "max-h-[38.5rem] min-h-[38.5rem]"
+    : "max-h-[34.5rem] min-h-[34.5rem]";
+
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const properties =
@@ -491,15 +497,7 @@
   <div
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
-    <div
-      class="flex flex-col flex-grow {[
-        'clickhouse',
-        'snowflake',
-        'salesforce',
-      ].includes(connector.name ?? '')
-        ? 'max-h-[38.5rem] min-h-[38.5rem]'
-        : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
-    >
+    <div class="flex flex-col flex-grow {formHeight} overflow-y-auto p-6">
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
