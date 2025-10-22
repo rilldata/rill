@@ -55,6 +55,25 @@ var spec = drivers.Spec{
 			Secret:      true,
 		},
 	},
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "GS URI",
+			Description: "Path to file on the disk.",
+			Placeholder: "gs://bucket-name/path/to/file.csv",
+			Required:    true,
+			Hint:        "Glob patterns are supported",
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+	},
 	ImplementsObjectStore: true,
 }
 
