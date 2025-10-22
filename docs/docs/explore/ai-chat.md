@@ -9,7 +9,9 @@ sidebar_position: 00
 
 AI Chat in Rill Cloud allows you to have natural language conversations with your data directly in your browser. Instead of building queries or navigating through dashboards, simply ask questions in plain English and get instant insights backed by your metrics views—complete with **interactive visualizations** and **direct links** to your existing dashboards for deeper exploration.
 
-AI Chat is powered by [Rill's Model Context Protocol (MCP)](/explore/mcp) integration, which ensures that responses are accurate, governed, and consistent with the metrics displayed in your dashboards. By querying data with **predefined measures and dimensions**, you can trust that the answers you receive are as reliable as the data in your Rill dashboards. Plus, responses include canvas dashboard components that visualize your data and automatically link back to the relevant dashboards with filters pre-applied.
+AI Chat is powered by [Rill's Model Context Protocol (MCP)](/explore/mcp) integration, which ensures that responses are accurate, governed, and consistent with the metrics displayed in your dashboards. By querying data with **predefined measures and dimensions**, you can trust that the answers you receive are as reliable as the data in your Rill dashboards. 
+
+**What makes AI Chat different?** Every response includes direct links to your Explore dashboards with filters pre-applied, so you can always **verify where the numbers came from**. No black box—just transparent, trustworthy analytics.
 
 <img src='/img/explore/chat/project-chat.png' class='rounded-gif'/>
 <br />
@@ -73,17 +75,6 @@ AI Chat provides rich, multi-layered responses to help you understand your data 
 4. **Dashboard Links** - Direct links to your existing [Explore dashboards](/explore/dashboard-101) with filters and time ranges pre-applied based on your question
 5. **Suggested Next Steps** - Follow-up questions or areas to investigate further
 
-### Linking Back to Dashboards
-
-One of the most powerful features of AI Chat is how it seamlessly connects back to your existing Rill dashboards. When the AI answers your question, it automatically generates links that:
-
-- **Pre-apply relevant filters** - The dashboard opens with filters matching your question context
-- **Set appropriate time ranges** - Time periods from your question are automatically selected
-- **Select relevant metrics** - The measures and dimensions discussed in the chat are highlighted
-- **Enable comparison periods** - When you ask about changes, comparison views are activated
-
-This means you can **start with a quick AI answer**, then **click through to the full dashboard** for deeper, interactive exploration - all without manually setting up filters or searching for the right view.
-
 ### Visual Components
 
 Unlike text-only AI assistants, AI Chat in Rill Cloud can render actual dashboard components directly in the chat interface. These visualizations are built using the same [canvas dashboard](/build/dashboards/canvas-widgets) technology used throughout Rill, ensuring:
@@ -93,9 +84,18 @@ Unlike text-only AI assistants, AI Chat in Rill Cloud can render actual dashboar
 - **Accuracy** - Charts are generated from the same data sources as your dashboards
 - **Clarity** - Complex data patterns become immediately visible
 
-:::tip From Chat to Dashboard
-Think of AI Chat as your starting point for data exploration. Use it to quickly answer questions and spot trends, then leverage the dashboard links to dive deeper with full filtering, comparison, and export capabilities.
-:::
+### Linking Back to Dashboards
+
+**Trust the numbers.** The most powerful feature of AI Chat is its transparency. When the AI answers your question, it automatically generates links to your Explore dashboards, allowing you to **see exactly where the numbers came from**. 
+
+Every AI response includes dashboard links that:
+
+- **Pre-apply relevant filters** - The dashboard opens with filters matching your question context
+- **Set appropriate time ranges** - Time periods from your question are automatically selected
+- **Enable comparison periods** - When you ask about changes, comparison views are activated
+
+This means you can **verify every answer** by clicking through to the full dashboard. No black box—just transparent, trustworthy analytics. Start with a quick AI summary, then explore the underlying data with full confidence in its accuracy.
+
 
 ## Improving AI Chat with Instructions
 
@@ -119,28 +119,9 @@ For detailed examples and best practices on writing effective AI instructions, s
 
 ## Use in Your Favorite AI Client
 
-Want to chat with your Rill data in Claude Desktop, ChatGPT, or other AI assistants? The **Rill MCP Server** lets you connect your Rill projects to external AI clients, giving you the same powerful, governed analytics experience outside of Rill Cloud.
+Prefer to chat with your data in Claude Desktop, ChatGPT, or another AI assistant? You can connect your Rill projects to external AI clients using the **[Rill MCP Server](/explore/mcp)**. 
 
-### Why Use an External Client?
-
-Using the Rill MCP Server with external AI assistants is ideal for:
-- **Integration with workflows** - Combine Rill data queries with other tools and capabilities in your AI client
-- **Power users** - Data teams and analysts who want full control over their AI environment
-
-### Getting Started with Rill MCP Server
-
-To connect your Rill projects to external AI clients like Claude Desktop:
-
-1. **Check the prerequisites** - You'll need Node.js and an MCP-compatible client
-2. **Create a personal access token** - Generate a token for authentication (for Rill Cloud projects)
-3. **Configure your client** - Add the Rill MCP server configuration to your AI client
-4. **Start chatting** - Ask questions about your data using the same predefined metrics
-
-For detailed setup instructions, configuration examples, and troubleshooting, see the **[Rill MCP Server documentation](/explore/mcp)**.
-
-:::info Same Technology, Different Interface
-Both AI Chat and the Rill MCP Server use the same underlying technology, ensuring equally accurate and consistent results based on your metrics views. Choose AI Chat for quick, browser-based queries or MCP Server for integration with your preferred AI assistant.
-:::
+This gives you the same governed, accurate analytics experience—powered by your predefined metrics—but integrated into your preferred AI workflow. Perfect for data teams who want deep analysis sessions, local development access, or integration with other tools. See the **[Rill MCP Server documentation](/explore/mcp)** to learn more.
 
 <!-- 
 ### Start Broad, Then Narrow
