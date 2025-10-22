@@ -148,6 +148,18 @@
     );
   }
 
+  // Helper function to apply ClickHouse Cloud specific requirements
+  function applyClickHouseCloudRequirements(values: Record<string, unknown>) {
+    if (
+      connector.name === "clickhouse" &&
+      clickhouseConnectorType === "clickhouse-cloud"
+    ) {
+      (values as any).ssl = true;
+      (values as any).port = "8443";
+    }
+    return values;
+  }
+
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
     if (hasOnlyDsn() || connectionTab === "dsn") {
@@ -230,11 +242,24 @@
     const values =
       hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
+    // Apply ClickHouse Cloud requirements if needed
+    const processedValues = applyClickHouseCloudRequirements(values);
+
     try {
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values, true);
+        await submitAddSourceForm(
+          queryClient,
+          connector,
+          processedValues,
+          true,
+        );
       } else {
-        await submitAddConnectorForm(queryClient, connector, values, true);
+        await submitAddConnectorForm(
+          queryClient,
+          connector,
+          processedValues,
+          true,
+        );
       }
       onClose();
     } catch (e) {
@@ -408,7 +433,8 @@
     const values = event.form.data;
 
     try {
-      let processedValues = values;
+      // Apply ClickHouse Cloud requirements if needed
+      let processedValues = applyClickHouseCloudRequirements(values);
 
       if (formType === "source") {
         await submitAddSourceForm(

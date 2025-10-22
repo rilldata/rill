@@ -206,16 +206,6 @@
     // The parent will handle all the logic including form validation bypass
     const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
-    // Ensure ClickHouse Cloud specific requirements are met
-    // Only apply these when using parameters tab, not DSN tab
-    if (
-      connectorType === "clickhouse-cloud" &&
-      connectionTab === "parameters"
-    ) {
-      (values as any).ssl = true;
-      (values as any).port = "8443";
-    }
-
     try {
       await submitAddConnectorForm(
         queryClient,
@@ -223,42 +213,11 @@
         values,
         true, // saveAnyway = true
       );
+
       onClose();
     } catch (e) {
-      let error: string;
-      let details: string | undefined = undefined;
-      if (e instanceof Error) {
-        error = e.message;
-        details = undefined;
-      } else if (e?.message && e?.details) {
-        error = e.message;
-        details = e.details !== e.message ? e.details : undefined;
-      } else if (e?.response?.data) {
-        const originalMessage = e.response.data.message;
-        const humanReadable = humanReadableErrorMessage(
-          connector.name,
-          e.response.data.code,
-          originalMessage,
-        );
-        error = humanReadable;
-        details =
-          humanReadable !== originalMessage ? originalMessage : undefined;
-      } else if (e?.message) {
-        error = e.message;
-        details = undefined;
-      } else {
-        error = "Unknown error";
-        details = undefined;
-      }
-      if (connectionTab === "parameters") {
-        paramsError = error;
-        paramsErrorDetails = details;
-        setError(paramsError, paramsErrorDetails);
-      } else if (connectionTab === "dsn") {
-        dsnError = error;
-        dsnErrorDetails = details;
-        setError(dsnError, dsnErrorDetails);
-      }
+      // Delegate error handling to parent component
+      setError(e?.message || "Unknown error", e?.details);
     }
   }
 
