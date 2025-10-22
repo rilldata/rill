@@ -36,7 +36,6 @@
   export let isSubmitDisabled: boolean;
   export let connectorType: ClickHouseConnectorType = "self-hosted";
   export let connectionTab: ConnectorType = "parameters";
-  export let isSavingAnyway: boolean = false;
   export let showSaveAnyway: boolean = false;
   export let onClose: () => void;
   export let setError: (
@@ -203,9 +202,8 @@
   }
 
   async function handleSaveAnyway() {
-    isSavingAnyway = true;
-
-    // Get the current form values based on the active tab
+    // Delegate to parent component's handleSaveAnyway function
+    // The parent will handle all the logic including form validation bypass
     const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
     // Ensure ClickHouse Cloud specific requirements are met
@@ -261,9 +259,6 @@
         dsnErrorDetails = details;
         setError(dsnError, dsnErrorDetails);
       }
-    } finally {
-      // Reset isSavingAnyway state after submission completes
-      isSavingAnyway = false;
     }
   }
 
@@ -282,8 +277,8 @@
     // Show Save Anyway button as soon as form submission starts
     showSaveAnyway = true;
 
-    // Form is invalid and isSavingAnyway is false, returning early
-    if (!event.form.valid && !isSavingAnyway) {
+    // Form validation is handled by the parent component
+    if (!event.form.valid) {
       return;
     }
     const values = { ...event.form.data };
@@ -303,7 +298,7 @@
         queryClient,
         connector,
         values,
-        isSavingAnyway,
+        false, // Normal submission, not saveAnyway
       );
       onClose();
     } catch (e) {
@@ -341,9 +336,6 @@
         dsnErrorDetails = details;
         setError(dsnError, dsnErrorDetails);
       }
-    } finally {
-      // Reset isSavingAnyway state after submission completes
-      isSavingAnyway = false;
     }
   }
 

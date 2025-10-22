@@ -52,7 +52,6 @@
   export let onClose: () => void;
 
   let saveAnyway = false;
-  let isSavingAnyway = false;
   let showSaveAnyway = false;
 
   const isSourceForm = formType === "source";
@@ -137,7 +136,6 @@
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
   let clickhouseParamsForm;
   let clickhouseDsnForm;
-  let clickhouseIsSavingAnyway: boolean;
   let clickhouseShowSaveAnyway: boolean = false;
   let clickhouseHandleSaveAnyway: () => Promise<void>;
 
@@ -227,7 +225,6 @@
 
     // For other connectors, use the original logic
     saveAnyway = true;
-    isSavingAnyway = true;
 
     // Get the current form values based on the active form
     const values =
@@ -280,7 +277,6 @@
     } finally {
       // Reset saveAnyway state after submission completes
       saveAnyway = false;
-      isSavingAnyway = false;
     }
   }
 
@@ -471,7 +467,6 @@
     } finally {
       // Reset saveAnyway state after submission completes
       saveAnyway = false;
-      isSavingAnyway = false;
     }
   }
 
@@ -535,7 +530,6 @@
           bind:connectionTab
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
-          bind:isSavingAnyway={clickhouseIsSavingAnyway}
           bind:showSaveAnyway={clickhouseShowSaveAnyway}
           bind:handleSaveAnyway={clickhouseHandleSaveAnyway}
           on:submitting
@@ -706,8 +700,8 @@
           <Button
             disabled={false}
             loading={connector.name === "clickhouse"
-              ? clickhouseSubmitting && clickhouseIsSavingAnyway
-              : submitting && isSavingAnyway}
+              ? clickhouseSubmitting && saveAnyway
+              : submitting && saveAnyway}
             loadingCopy="Saving..."
             onClick={handleSaveAnyway}
             type="secondary"
@@ -718,16 +712,13 @@
 
         <Button
           disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting ||
-              clickhouseIsSubmitDisabled ||
-              isSavingAnyway ||
-              clickhouseIsSavingAnyway
-            : submitting || isSubmitDisabled || isSavingAnyway}
+            ? clickhouseSubmitting || clickhouseIsSubmitDisabled || saveAnyway
+            : submitting || isSubmitDisabled || saveAnyway}
           loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting && !clickhouseIsSavingAnyway
-            : submitting && !isSavingAnyway}
+            ? clickhouseSubmitting && !saveAnyway
+            : submitting && !saveAnyway}
           loadingCopy={connector.name === "clickhouse"
-            ? clickhouseIsSavingAnyway
+            ? saveAnyway
               ? "Saving..."
               : "Connecting..."
             : "Testing connection..."}
@@ -737,27 +728,27 @@
         >
           {#if connector.name === "clickhouse"}
             {#if clickhouseConnectorType === "rill-managed"}
-              {#if clickhouseSubmitting && clickhouseIsSavingAnyway}
+              {#if clickhouseSubmitting && saveAnyway}
                 Saving...
-              {:else if clickhouseSubmitting && !clickhouseIsSavingAnyway}
+              {:else if clickhouseSubmitting && !saveAnyway}
                 Connecting...
               {:else}
                 Connect
               {/if}
-            {:else if clickhouseSubmitting && clickhouseIsSavingAnyway}
+            {:else if clickhouseSubmitting && saveAnyway}
               Saving...
-            {:else if clickhouseSubmitting && !clickhouseIsSavingAnyway}
+            {:else if clickhouseSubmitting && !saveAnyway}
               Testing connection...
             {:else}
               Test and Connect
             {/if}
           {:else if isConnectorForm}
-            {#if submitting && !isSavingAnyway}
+            {#if submitting && !saveAnyway}
               Testing connection...
             {:else}
               Test and Connect
             {/if}
-          {:else if submitting && !isSavingAnyway}
+          {:else if submitting && !saveAnyway}
             Testing connection...
           {:else}
             Test and Add data
