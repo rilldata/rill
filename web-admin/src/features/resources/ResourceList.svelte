@@ -67,7 +67,6 @@
 
   // Check if we're in a filtered state (search is active)
   $: isFiltered = $table.getState().globalFilter?.length > 0;
-  $: hasData = data.length > 0;
 </script>
 
 {#if toolbar}

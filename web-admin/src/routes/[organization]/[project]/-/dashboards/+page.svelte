@@ -19,7 +19,6 @@
   $: ({ instanceId } = $runtime);
 
   $: query = useDashboards(instanceId);
-  $: ({ data: dashboards } = $query);
 
   $: deployingDashboards = useDeployingDashboards(
     instanceId,

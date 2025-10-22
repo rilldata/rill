@@ -11,7 +11,7 @@
     queryKey: QueryKey;
   };
 
-  $: ({ data, isLoading, isError, isSuccess, error } = $query);
+  $: ({ isLoading, isError, isSuccess, error } = $query);
 </script>
 
 <ContentContainer title="Project {kind}s">
