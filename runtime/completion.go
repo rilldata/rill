@@ -222,8 +222,14 @@ func (r *Runtime) processProjectChatContext(ctx context.Context, instanceID stri
 		aiInstructions = instance.AIInstructions
 	}
 
+	// Find the feature flags. NOTE: We don't need to support user-specific flags here.
+	ff, err := r.FeatureFlags(ctx, instanceID, &SecurityClaims{UserAttributes: map[string]any{}})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feature flags: %w", err)
+	}
+
 	// Build the system prompt
-	systemPrompt := buildProjectChatSystemPrompt(aiInstructions)
+	systemPrompt := buildProjectChatSystemPrompt(aiInstructions, ff)
 
 	return []*runtimev1.Message{{
 		Role: "system",
@@ -288,8 +294,14 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 		aiInstructions = instance.AIInstructions
 	}
 
+	// Find the feature flags. NOTE: We don't need to support user-specific flags here.
+	ff, err := r.FeatureFlags(ctx, instanceID, &SecurityClaims{UserAttributes: map[string]any{}})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feature flags: %w", err)
+	}
+
 	// Build the system prompt
-	systemPrompt := buildExploreDashboardSystemPrompt(dashboardName, metricsViewName, metricsViewSpec, timeRangeSummary, aiInstructions)
+	systemPrompt := buildExploreDashboardSystemPrompt(dashboardName, metricsViewName, metricsViewSpec, timeRangeSummary, aiInstructions, ff)
 
 	return []*runtimev1.Message{{
 		Role: "system",
@@ -720,7 +732,7 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 }
 
 // buildProjectChatSystemPrompt constructs the system prompt for the project chat context
-func buildProjectChatSystemPrompt(aiInstructions string) string {
+func buildProjectChatSystemPrompt(aiInstructions string, featureFlags map[string]bool) string {
 	// TODO: call 'list_metrics_views' and seed the result in the system prompt
 	currentTime := time.Now()
 	basePrompt := fmt.Sprintf(`<role>
@@ -833,7 +845,7 @@ Based on the data analysis, here are the key insights:
 }
 
 // buildExploreDashboardSystemPrompt constructs the system prompt for explore dashboard context
-func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, metricsViewSpec, timeRangeSummary any, aiInstructions string) string {
+func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, metricsViewSpec, timeRangeSummary any, aiInstructions string, featureFlags map[string]bool) string {
 	var prompt strings.Builder
 
 	// 1. WHO: Establish the AI's role and purpose
@@ -861,11 +873,13 @@ func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, me
 	prompt.WriteString("You can use \"query_metrics_view\" to run queries and get aggregated results from this metrics view. ")
 	prompt.WriteString("The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. ")
 	prompt.WriteString("Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.\n\n")
-	prompt.WriteString("You can also use \"create_chart\" to generate interactive visualizations when appropriate. ")
+	if featureFlags["chat_charts"] {
+		prompt.WriteString("You can also use \"create_chart\" to generate interactive visualizations when appropriate. ")
+	}
 	prompt.WriteString("Charts are helpful for showing trends, comparisons, and patterns in the data. ")
 	prompt.WriteString("Choose the appropriate chart type based on the data and insight you want to communicate. ")
 
-	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" and \"create_chart\" tools must include \"metrics_view\": %q in the spec/payload.**\n\n", metricsViewName))
+	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" and \"create_chart\" tools (if available) must include \"metrics_view\": %q in the spec/payload.**\n\n", metricsViewName))
 
 	// 5. CUSTOMIZE: Provide user-specific instructions
 	if aiInstructions != "" {
