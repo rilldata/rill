@@ -26,9 +26,22 @@
   export let submit: () => void;
   export let enhance;
 
-  const RUN_AS_TOOLTIP = `Choose how the report is run as.
-For Recipient, the report will be run using recipient's security policy.
-For Creator, the report will be run using creator's security policy.`;
+  const RUN_AS_OPTIONS = [
+    {
+      value: ReportRunAs.Creator,
+      label: "Creator",
+      description:
+        "Works for any recipient, including external recipient. It does NOT grant access beyond the report’s filters and dashboard.",
+    },
+    {
+      value: ReportRunAs.Recipient,
+      label: "Recipient",
+      description: "Does NOT work for non-project members.",
+    },
+  ];
+  $: selectedRunAsOption = RUN_AS_OPTIONS.find(
+    (o) => o.value === $data["webOpenMode"],
+  );
 
   $: ({ instanceId } = $runtime);
 
@@ -75,12 +88,14 @@ For Creator, the report will be run using creator's security policy.`;
       bind:value={$data["webOpenMode"]}
       id="webOpenMode"
       label="Run as"
-      options={[
-        { value: ReportRunAs.Recipient, label: "Recipient" },
-        { value: ReportRunAs.Creator, label: "Creator" },
-      ]}
-      tooltip={RUN_AS_TOOLTIP}
+      options={RUN_AS_OPTIONS}
+      dropdownWidth="w-[400px]"
     />
+    {#if selectedRunAsOption}
+      <div>
+        {selectedRunAsOption.description}
+      </div>
+    {/if}
     <ScheduleForm {data} />
     <Select
       bind:value={$data["exportFormat"]}

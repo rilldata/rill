@@ -25,7 +25,7 @@
     timeRangeStateStore,
     comparisonRangeStateStore,
     selectedTimezone,
-    minTimeGrain,
+    minTimeGrain: _minTimeGrain,
     set,
     searchParamsStore,
     clearAll,
@@ -44,6 +44,7 @@
   $: timeRanges = $spec?.timeRanges ?? [];
 
   $: activeTimeZone = $selectedTimezone;
+  $: minTimeGrain = $_minTimeGrain;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -91,7 +92,7 @@
         allTimeRange={$allTimeRange}
         {selectedRangeAlias}
         showPivot={!showGrain}
-        minTimeGrain={$minTimeGrain}
+        {minTimeGrain}
         {defaultTimeRange}
         availableTimeZones={[]}
         {timeRanges}
@@ -117,6 +118,7 @@
 
       {#if showComparison}
         <CanvasComparisonPill
+          {minTimeGrain}
           allTimeRange={$allTimeRange}
           {selectedTimeRange}
           showFullRange={false}

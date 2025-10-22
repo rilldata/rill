@@ -33,6 +33,7 @@
   export let tooltip: string = "";
   export let width: number | null = null;
   export let minWidth: number | null = null;
+  export let dropdownWidth: string | null = null;
   export let disabled = false;
   export let selectElement: HTMLButtonElement | undefined = undefined;
   export let full = false;
@@ -131,7 +132,7 @@
     <Select.Content
       {sameWidth}
       align="start"
-      class="max-h-80 overflow-y-auto"
+      class="max-h-80 overflow-y-auto {dropdownWidth ? dropdownWidth : ''}"
       strategy="fixed"
     >
       {#if enableSearch}
