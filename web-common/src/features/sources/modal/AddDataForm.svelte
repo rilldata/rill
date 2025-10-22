@@ -312,9 +312,26 @@
   }
 
   function getSourceYamlPreview(values: Record<string, unknown>) {
+    // For multi-step connectors in step 2, filter out connector properties
+    let filteredValues = values;
+    if (isMultiStepConnector && stepState.step === "source") {
+      // Get connector property keys to filter out
+      const connectorPropertyKeys = new Set(
+        connector.configProperties?.map((prop) => prop.key).filter(Boolean) ||
+          [],
+      );
+
+      // Filter out connector properties, keeping only source properties and other necessary fields
+      filteredValues = Object.fromEntries(
+        Object.entries(values).filter(
+          ([key]) => !connectorPropertyKeys.has(key),
+        ),
+      );
+    }
+
     const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
       connector,
-      values,
+      filteredValues,
     );
 
     // Check if the connector was rewritten to DuckDB
