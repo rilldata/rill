@@ -60,7 +60,7 @@ For detailed guide on security policies, review our [data access policies](/buil
 
 ### Dashboard Security Policy
 
-Similar to metrics views, you can set [security for a dashboard](/build/dashboards/#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
+Similar to metrics views, you can set [security for a dashboard](/build/dashboards/customization#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
 
 ```yaml
 explores:
