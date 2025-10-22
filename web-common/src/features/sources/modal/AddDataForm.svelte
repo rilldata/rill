@@ -46,6 +46,7 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
+  import { MULTI_STEP_CONNECTORS } from "./constants";
 
   const dispatch = createEventDispatcher();
 
@@ -61,35 +62,34 @@
   let connectionTab: ConnectorType = "parameters";
   let gcsAuthMethod: GCSAuthMethod = "credentials";
 
-  // GCS step management
-  let gcsStep: "connector" | "source" = "connector";
-  let gcsConnectorConfig: Record<string, unknown> | null = null;
+  // Simple multi-step state management
+  const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
+    connector.name ?? "",
+  );
+  let currentStep: "connector" | "source" = "connector";
+  let connectorConfig: Record<string, unknown> | null = null;
 
-  // Reactive properties for GCS step 2
-  $: gcsStep2Properties =
-    connector.name === "gcs" && gcsStep === "source"
+  // Reactive properties based on current step
+  $: stepProperties =
+    isMultiStepConnector && currentStep === "source"
       ? (connector.sourceProperties ?? [])
       : properties;
 
   // Update form when transitioning to step 2
-  $: if (
-    connector.name === "gcs" &&
-    gcsStep === "source" &&
-    gcsConnectorConfig
-  ) {
+  $: if (isMultiStepConnector && currentStep === "source" && connectorConfig) {
     // Initialize form with source properties and default values
     const sourceProperties = connector.sourceProperties ?? [];
     const initialValues = getInitialFormValuesFromProperties(sourceProperties);
 
     // Merge with stored connector config
-    const combinedValues = { ...gcsConnectorConfig, ...initialValues };
+    const combinedValues = { ...connectorConfig, ...initialValues };
 
     paramsForm.update(() => combinedValues, { taint: false });
   }
 
-  // Determine effective form type for GCS
+  // Determine effective form type
   $: effectiveFormType =
-    connector.name === "gcs" && gcsStep === "source" ? "source" : formType;
+    isMultiStepConnector && currentStep === "source" ? "source" : formType;
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -191,11 +191,10 @@
       return false;
     } else {
       // Parameters form: check required properties
-      // Use gcsStep2Properties for GCS step 2, otherwise use properties
-      const propertiesToCheck =
-        connector.name === "gcs" && gcsStep === "source"
-          ? gcsStep2Properties
-          : properties;
+      // Use stepProperties for multi-step connectors, otherwise use properties
+      const propertiesToCheck = isMultiStepConnector
+        ? stepProperties
+        : properties;
 
       for (const property of propertiesToCheck) {
         if (property.required) {
@@ -323,14 +322,14 @@
       return getClickHouseYamlPreview(values, clickhouseConnectorType);
     }
 
-    // GCS special case - show different preview based on step
-    if (connector.name === "gcs") {
-      if (gcsStep === "connector") {
+    // Multi-step connector special case - show different preview based on step
+    if (isMultiStepConnector) {
+      if (currentStep === "connector") {
         // Step 1: Show connector preview
         return getConnectorYamlPreview($paramsForm);
       } else {
         // Step 2: Show source preview with stored connector config
-        const combinedValues = { ...gcsConnectorConfig, ...$paramsForm };
+        const combinedValues = { ...connectorConfig, ...$paramsForm };
         return getSourceYamlPreview(combinedValues);
       }
     }
@@ -395,10 +394,10 @@
       } else {
         await submitAddConnectorForm(queryClient, connector, processedValues);
 
-        // For GCS connector, transition to step 2 (source form)
-        if (connector.name === "gcs") {
-          gcsConnectorConfig = processedValues;
-          gcsStep = "source";
+        // For multi-step connectors, transition to step 2 (source form)
+        if (isMultiStepConnector) {
+          connectorConfig = processedValues;
+          currentStep = "source";
           return; // Don't close the modal, just transition to step 2
         }
 
@@ -640,8 +639,8 @@
             </div>
           {/each}
         </form>
-      {:else if connector.name === "gcs"}
-        {#if gcsStep === "connector"}
+      {:else if isMultiStepConnector}
+        {#if currentStep === "connector"}
           <!-- GCS Step 1: Connector configuration -->
           <form
             id={paramsFormId}
@@ -743,7 +742,7 @@
             on:submit|preventDefault={paramsSubmit}
           >
             <!-- Only show source-specific fields -->
-            {#each gcsStep2Properties as property (property.key)}
+            {#each stepProperties as property (property.key)}
               {@const propertyKey = property.key ?? ""}
               <div class="py-1.5 first:pt-0 last:pb-0">
                 {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
@@ -836,8 +835,8 @@
     <div
       class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      {#if connector.name === "gcs" && gcsStep === "source"}
-        <Button onClick={() => (gcsStep = "connector")} type="secondary"
+      {#if isMultiStepConnector && currentStep === "source"}
+        <Button onClick={() => (currentStep = "connector")} type="secondary"
           >Back</Button
         >
       {:else}
@@ -871,13 +870,13 @@
             Test and Connect
           {/if}
         {:else if isConnectorForm}
-          {#if connector.name === "gcs" && gcsStep === "connector"}
+          {#if isMultiStepConnector && currentStep === "connector"}
             {#if submitting}
               Testing connection...
             {:else}
               Test and Connect
             {/if}
-          {:else if connector.name === "gcs" && gcsStep === "source"}
+          {:else if isMultiStepConnector && currentStep === "source"}
             {#if submitting}
               Creating model...
             {:else}
@@ -914,8 +913,8 @@
 
     <div>
       <div class="text-sm leading-none font-medium mb-4">
-        {#if connector.name === "gcs"}
-          {gcsStep === "connector" ? "Connector preview" : "Model preview"}
+        {#if isMultiStepConnector}
+          {currentStep === "connector" ? "Connector preview" : "Model preview"}
         {:else}
           {isSourceForm ? "Model preview" : "Connector preview"}
         {/if}
