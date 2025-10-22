@@ -116,9 +116,10 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert, token),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertUnsubscribe(org.Name, proj.Name, req.Alert, token),
 			}
-			// For the owner, provide plain edit link without token
+			// For the owner, provide plain edit link without token and no unsubscribe link
 			if email == ownerEmail {
 				recipientURLs[email].EditUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, req.Alert)
+				recipientURLs[email].UnsubscribeUrl = ""
 			}
 		}
 	}
