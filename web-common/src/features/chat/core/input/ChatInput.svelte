@@ -8,6 +8,7 @@
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
   export let noMargin = false;
+  export let height: string | undefined = undefined;
 
   let textarea: HTMLTextAreaElement;
   let placeholder = "Ask about your data...";
@@ -61,7 +62,7 @@
   }
 
   function autoResize() {
-    if (textarea) {
+    if (textarea && !height) {
       textarea.style.height = "auto";
       textarea.style.height = textarea.scrollHeight + "px";
     }
@@ -95,6 +96,8 @@
     bind:this={textarea}
     {value}
     class="chat-input"
+    class:fixed-height={!!height}
+    style:height
     {placeholder}
     rows="1"
     on:keydown={handleKeydown}
@@ -151,6 +154,11 @@
     padding: 0.25rem;
     font-family: inherit;
     overflow-y: auto;
+  }
+
+  .chat-input.fixed-height {
+    min-height: unset;
+    max-height: unset;
   }
 
   .chat-input::placeholder {

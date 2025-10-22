@@ -8,6 +8,7 @@
   import ChatInput from "../../core/input/ChatInput.svelte";
 
   export let noMargin = false;
+  export let height: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
 
@@ -26,4 +27,4 @@
   });
 </script>
 
-<ChatInput {conversationManager} {noMargin} />
+<ChatInput {conversationManager} {noMargin} {height} />

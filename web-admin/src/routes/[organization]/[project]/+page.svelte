@@ -36,7 +36,7 @@
       <!-- Chat Input -->
       {#if $chat}
         <div class="w-full">
-          <InlineChat noMargin />
+          <InlineChat noMargin height="110px" />
         </div>
       {/if}
     </div>
