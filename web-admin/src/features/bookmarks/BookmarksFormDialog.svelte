@@ -39,6 +39,7 @@
   export let defaultUrlParams: URLSearchParams | undefined = undefined;
   export let filtersState: FiltersState;
   export let timeControlState: TimeControlState;
+  export let disableFiltersOnly: boolean;
   export let onClose = () => {};
 
   $: ({
@@ -194,27 +195,33 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           tooltip={CategoryTooltip}
         />
       </ProjectAccessControls>
-      <div class="flex items-center space-x-2">
-        <Switch
-          bind:checked={$form["filtersOnly"]}
-          id="filtersOnly"
-          label="Filters only"
-        />
-        <Label class="font-normal flex gap-x-1 items-center" for="filtersOnly">
-          <span>Save filters only</span>
-          <Tooltip distance={8}>
-            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
-            <TooltipContent
-              class="whitespace-pre-line"
-              maxWidth="600px"
-              slot="tooltip-content"
-            >
-              Toggling this on will only save the filter set above, not the full
-              dashboard layout and state.
-            </TooltipContent>
-          </Tooltip>
-        </Label>
-      </div>
+      {#if !disableFiltersOnly}
+        <div class="flex items-center space-x-2">
+          <Switch
+            bind:checked={$form["filtersOnly"]}
+            id="filtersOnly"
+            label="Filters only"
+          />
+
+          <Label
+            class="font-normal flex gap-x-1 items-center"
+            for="filtersOnly"
+          >
+            <span>Save filters only</span>
+            <Tooltip distance={8}>
+              <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+              <TooltipContent
+                class="whitespace-pre-line"
+                maxWidth="600px"
+                slot="tooltip-content"
+              >
+                Toggling this on will only save the filter set above, not the
+                full dashboard layout and state.
+              </TooltipContent>
+            </Tooltip>
+          </Label>
+        </div>
+      {/if}
       <div class="flex items-center space-x-2">
         <Switch
           bind:checked={$form["absoluteTimeRange"]}
