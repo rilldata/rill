@@ -754,7 +754,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
 		conn, err := net.DialTimeout("tcp", target, 5*time.Second)
 		if err != nil {
-			return nil, fmt.Errorf("Error: %w - please check that the host and port are correct %s", err, target)
+			return nil, fmt.Errorf("please check that the host and port are correct %s: %w - ", target, err)
 		}
 		conn.Close()
 	}
@@ -764,8 +764,10 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	err := db.Ping()
 	if err != nil {
 		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
-		if strings.Contains(err.Error(), "EOF") || strings.Contains(err.Error(), "[handshake] unexpected packet [21]") {
-			return nil, fmt.Errorf("Error: %w — this usually happens due to SSL/TLS mismatch", err)
+		if strings.Contains(err.Error(), "EOF") ||
+			strings.Contains(err.Error(), "[handshake] unexpected packet [21]") ||
+			(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+			return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
 		}
 		// Return immediately without retrying in the following cases:
 		//   1. The error is not a known transient native-protocol failure:
@@ -789,7 +791,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
 			if strings.Contains(err.Error(), "EOF") ||
 				(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
-				return nil, fmt.Errorf("Error: %w — this usually happens due to SSL/TLS mismatch", err)
+				return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
 			}
 			return nil, err
 		}
