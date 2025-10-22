@@ -1,4 +1,4 @@
-import { EmbedStore } from "@rilldata/web-admin/features/embeds/embed-store.ts";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import { removeEmbedParams } from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { redirect } from "@sveltejs/kit";
