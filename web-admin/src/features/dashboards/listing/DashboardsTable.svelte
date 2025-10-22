@@ -1,14 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
-  import TableEmptyState from "@rilldata/web-admin/components/table/TableEmptyState.svelte";
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
-  import Table from "../../../components/table/Table.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards } from "./selectors";
 
@@ -123,24 +122,21 @@
   <ResourceError kind="dashboard" {error} />
 {:else if isSuccess}
   <div class="flex flex-col gap-y-3 w-full">
-    <Table
+    <ResourceList
       kind="dashboard"
       data={displayData}
       {columns}
       {columnVisibility}
       toolbar={!isPreview}
     >
-      {#if isPreview}
-        <ResourceHeader kind="dashboard" icon={ExploreIcon} slot="header" />
-      {/if}
-      <TableEmptyState
+      <ResourceListEmptyState
         slot="empty"
         icon={ExploreIcon}
         iconColor="#cbd5e1"
         message="You don't have any dashboards yet"
         action="Learn how to deploy a dashboard in our docs"
       />
-    </Table>
+    </ResourceList>
     {#if hasMoreDashboards}
       <div class="pl-4 py-1">
         <a

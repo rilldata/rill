@@ -1,9 +1,9 @@
 <script lang="ts">
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import type { V1ReportExecution } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
-  import Table from "../../../components/table/Table.svelte";
   import { useReport } from "../selectors";
   import NoRunsYet from "./NoRunsYet.svelte";
   import ReportHistoryTableCompositeCell from "./ReportHistoryTableCompositeCell.svelte";
@@ -48,7 +48,7 @@
   {:else if !$reportQuery.data?.resource.report.state.executionHistory.length}
     <NoRunsYet />
   {:else}
-    <Table
+    <ResourceList
       kind="report"
       {columns}
       data={$reportQuery.data?.resource.report.state.executionHistory}

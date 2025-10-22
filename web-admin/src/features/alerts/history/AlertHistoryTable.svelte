@@ -2,11 +2,11 @@
   import AlertHistoryTableCompositeCell from "@rilldata/web-admin/features/alerts/history/AlertHistoryTableCompositeCell.svelte";
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
-  import Table from "../../../components/table/Table.svelte";
 
   export let alert: string;
 
@@ -49,7 +49,7 @@
   {:else if !$alertQuery.data?.resource.alert.state.executionHistory.length}
     <NoAlertRunsYet />
   {:else}
-    <Table
+    <ResourceList
       kind="alert"
       {columns}
       data={$alertQuery.data?.resource.alert.state.executionHistory}

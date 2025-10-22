@@ -1,18 +1,16 @@
 <script lang="ts">
-  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
-  import TableEmptyState from "@rilldata/web-admin/components/table/TableEmptyState.svelte";
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
-  import Table from "../../../components/table/Table.svelte";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
 
   export let data: V1Resource[];
   export let organization: string;
   export let project: string;
-  export let showHeader: boolean = false;
 
   const alertColor = resourceColorMapping[ResourceKind.Alert];
 
@@ -70,15 +68,12 @@
   };
 </script>
 
-<Table {columns} {data} {columnVisibility} kind="alert">
-  {#if showHeader}
-    <ResourceHeader kind="alert" icon={AlertIcon} slot="header" />
-  {/if}
-  <TableEmptyState
+<ResourceList {columns} {data} {columnVisibility} kind="alert">
+  <ResourceListEmptyState
     slot="empty"
     icon={AlertIcon}
     iconColor={alertColor}
     message="You don't have any alerts yet"
     action="To create an alert, click the Create alert button in a dashboard."
   />
-</Table>
+</ResourceList>
