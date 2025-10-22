@@ -72,7 +72,7 @@
     if (autogroup) {
       // Remove the autogroup:members user group
       await $removeProjectMemberUsergroup.mutateAsync({
-        organization,
+        org: organization,
         project,
         usergroup: autogroup.groupName,
       });
@@ -100,7 +100,7 @@
     // Add the autogroup:members user group back with the viewer role
     // This is the default role for autogroup:members as seen in the tests
     await $addProjectMemberUsergroup.mutateAsync({
-      organization,
+      org: organization,
       project,
       usergroup: "autogroup:members",
       data: {

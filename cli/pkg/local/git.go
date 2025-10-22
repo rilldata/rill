@@ -21,7 +21,16 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 
 	// if there is a origin set, try with native git configurations
 	remote, err := gitutil.ExtractGitRemote(gitPath, "origin", false)
-	if err == nil && remote.URL != "" {
+	var remoteURL string
+	if err == nil {
+		remoteURL, _ = remote.Github()
+	}
+	if remoteURL == "" {
+		// ignore subpath since git remote is non github and we can not use that
+		subPath = ""
+	}
+
+	if err == nil && remoteURL != "" {
 		err = gitutil.GitFetch(ctx, gitPath, nil)
 		if err == nil {
 			// if native git fetch succeeds, return the status
@@ -31,7 +40,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 			}
 			return connect.NewResponse(&localv1.GitStatusResponse{
 				Branch:        gs.Branch,
-				GithubUrl:     gs.RemoteURL,
+				GithubUrl:     remoteURL,
 				Subpath:       subPath,
 				LocalChanges:  gs.LocalChanges,
 				LocalCommits:  gs.LocalCommits,
@@ -52,7 +61,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		}
 		return connect.NewResponse(&localv1.GitStatusResponse{
 			Branch:    gs.Branch,
-			GithubUrl: gs.RemoteURL,
+			GithubUrl: remoteURL,
 			Subpath:   subPath,
 		}), nil
 	}
@@ -70,7 +79,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		}
 		return connect.NewResponse(&localv1.GitStatusResponse{
 			Branch:    gs.Branch,
-			GithubUrl: gs.RemoteURL,
+			GithubUrl: remoteURL,
 			Subpath:   subPath,
 		}), nil
 	}
@@ -97,7 +106,7 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 	}
 	return connect.NewResponse(&localv1.GitStatusResponse{
 		Branch:        gs.Branch,
-		GithubUrl:     gs.RemoteURL,
+		GithubUrl:     remoteURL,
 		Subpath:       subPath,
 		ManagedGit:    config.ManagedRepo,
 		LocalChanges:  gs.LocalChanges,

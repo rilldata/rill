@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
@@ -194,4 +195,28 @@ func (p *Printer) FormatNumber(num int64) string {
 		return fmt.Sprintf("%.1fM", float64(num)/1000000)
 	}
 	return fmt.Sprintf("%.1fB", float64(num)/1000000000)
+}
+
+// FormatValue formats a value for display, avoiding scientific notation for numbers
+func (p *Printer) FormatValue(val interface{}) string {
+	if val == nil {
+		return "null"
+	}
+
+	switch v := val.(type) {
+	case float64:
+		if v == float64(int64(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case float32:
+		if v == float32(int32(v)) {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(float64(v), 'f', -1, 32)
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }

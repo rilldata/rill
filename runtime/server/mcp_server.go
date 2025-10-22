@@ -199,8 +199,8 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 			return nil, err
 		}
 
-		claims := auth.GetClaims(ctx)
-		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+		claims := auth.GetClaims(ctx, instanceID)
+		if !claims.Can(runtime.ReadMetrics) {
 			return nil, ErrForbidden
 		}
 
@@ -210,7 +210,7 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 			ResolverProperties: map[string]any{
 				"metrics_view": metricsViewName,
 			},
-			Claims: claims.SecurityClaims(),
+			Claims: claims,
 		})
 		if err != nil {
 			return nil, err
@@ -231,9 +231,20 @@ func (s *Server) mcpQueryMetricsViewSummary() (mcp.Tool, server.ToolHandlerFunc)
 func (s *Server) mcpQueryMetricsView() (mcp.Tool, server.ToolHandlerFunc) {
 	description := `
 Perform an arbitrary aggregation on a metrics view.
-Tip: Use the 'sort' and 'limit' parameters for best results and to avoid large, unbounded result sets.
-Important note: The 'time_range' parameter is inclusive of the start time and exclusive of the end time.
-Note: 'time_dimension' is an optional parameter under "time_range" that can be used to specify the time dimension to use for the time range. If not provided, the default time column of the metrics view will be used.
+
+The JSON schema defines all available parameters. Key considerations:
+
+Request:
+• 'time_range' is inclusive of start time, exclusive of end time
+• 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
+• Include 'sort' and 'limit' parameters to optimize query performance and avoid unbounded result sets
+• For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
+
+Response:
+• Returns aggregated data matching your query parameters
+• Includes 'open_url' field with a shareable link to view results in the Rill UI
+• Always cite the source of quantitative claims by including 'open_url' as a markdown link
+• When presenting insights from multiple queries, cite each query's 'open_url' inline; when presenting multiple insights from the same query, cite once at the end
 
 Example: Get the total revenue by country and product category for 2024:
     {
@@ -341,8 +352,8 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 			return nil, errors.New("invalid arguments: expected an object")
 		}
 
-		claims := auth.GetClaims(ctx)
-		if !claims.CanInstance(instanceID, auth.ReadMetrics) {
+		claims := auth.GetClaims(ctx, instanceID)
+		if !claims.Can(runtime.ReadMetrics) {
 			return nil, ErrForbidden
 		}
 
@@ -350,7 +361,7 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 			InstanceID:         instanceID,
 			Resolver:           "metrics",
 			ResolverProperties: metricsProps,
-			Claims:             claims.SecurityClaims(),
+			Claims:             claims,
 		})
 		if err != nil {
 			return nil, err

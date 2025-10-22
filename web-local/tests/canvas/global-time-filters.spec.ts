@@ -29,7 +29,7 @@ test.describe("canvas global time filters", () => {
     await expect(page.getByText("Total records 3,435")).toBeVisible();
 
     const timeGrainSelector = page.getByRole("button", {
-      name: "Select a time grain",
+      name: "Select reference time and grain",
     });
     await timeGrainSelector.click();
     await page.getByRole("menuitem", { name: "day" }).click();

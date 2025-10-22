@@ -71,6 +71,10 @@ _[string]_ - Refers to a SQL query that is run after the main query, available f
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
+### `secrets`
+
+_[string]_ - Comma-separated list of connector names to create temporary duckdb secrets for, available for DuckDB-based models. (optional). 
+
 ### `retry`
 
 _[object]_ - Refers to the retry configuration for the model. (optional) 

@@ -8,15 +8,81 @@ sidebar_position: 15
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 ## Overview
-[Google Cloud Storage (GCS)](https://cloud.google.com/storage/docs/introduction) is a scalable, fully managed, and highly reliable object storage service offered by Google Cloud, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common data storage formats such as CSV and Parquet. Rill supports natively connecting to GCS using the provided [Google Cloud Storage URI](https://cloud.google.com/bigquery/docs/cloud-storage-transfer-overview#google-cloud-storage-uri) of your bucket to retrieve and read files.
+[Google Cloud Storage (GCS)](https://cloud.google.com/storage/docs/introduction) is a scalable, fully managed, and highly reliable object storage service offered by Google Cloud, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including common data storage formats such as CSV and Parquet. You can connect to GCS using the provided [Google Cloud Storage URI](https://cloud.google.com/bigquery/docs/cloud-storage-transfer-overview#google-cloud-storage-uri) of your bucket to retrieve and read files.
 
-<img src='/img/reference/connectors/gcs/gcs.png' class='centered' />
-<br />
 
-## Rill Developer (Local credentials)
-When using Rill Developer on your local machine (i.e., `rill start`), Rill will use either the credentials configured in your local environment using the Google Cloud CLI (`gcloud`) or an [explicitly defined connector YAML](/reference/project-files/connectors#gcs). 
+## Connect to GCS
 
-ollow these steps to configure your local environmental credentials:
+To connect to Google Cloud Storage, you need to provide authentication credentials. You have three options:
+
+1. **Use Service Account JSON** (recommended for cloud deployment)
+2. **Use HMAC Keys** (alternative authentication method)
+3. **Use Local Google Cloud CLI credentials** (local development only - not recommended for production)
+
+Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON or HMAC Keys. Local Google Cloud CLI credentials only work for local development and will cause deployment failures. 
+
+### Service Account JSON 
+
+We recommend using Service Account JSON for authentication as it makes deployment to Rill Cloud easier. The `google_application_credentials` environment variable tells Google Cloud SDK which service account key file to use for authentication.
+
+Create your Service Account JSON with the following command:
+
+```bash
+gcloud iam service-accounts keys create ~/key.json \
+  --iam-account=my-service-account@PROJECT_ID.iam.gserviceaccount.com
+```
+
+:::note Permission denied?
+You'll need to contact your internal cloud admin to create your Service Account JSONs for you.
+:::
+
+Then, create a connector via the Add Data UI and it will automatically create the `gcs.yaml` file in your `connectors` directory and populate the `.env` file with `connector.gcs.google_application_credentials`.
+
+```yaml
+type: connector
+
+driver: gcs
+
+google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"
+bucket: "gs://bucket"
+```
+
+:::tip Cloud Credentials Management
+If your project has already been deployed to Rill Cloud with configured credentials, you can use `rill env pull` to [retrieve and sync these cloud credentials](/connect/credentials/#rill-env-pull) to your local `.env` file. Note that this operation will overwrite any existing local credentials for this source.
+:::
+
+### HMAC Keys
+
+An alternative authentication method for GCP data access is using HMAC keys. This approach generates a key and secret pair (similar to AWS S3 credentials) that can be used for authentication.
+
+Generate HMAC credentials using the following command:
+
+```bash
+gcloud storage hmac create \
+  --project=PROJECT_ID \
+  --service-account=SERVICE_ACCOUNT_EMAIL
+```
+
+
+
+To use these credentials, configure the `key_id` and `secret` parameters in your [GCS connector](/reference/project-files/connectors#gcs).
+```yaml
+type: connector
+
+driver: gcs
+
+key_id: "{{ .env.connector.gcs.key_id }}"
+secret: "{{ .env.connector.gcs.secret }}"
+bucket: "*"
+```
+
+### Local Google Cloud CLI Credentials (Local Development Only)
+
+:::warning Not recommended for production
+Local Google Cloud CLI credentials only work for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Use one of the methods above for production deployments.
+:::
+
+Follow these steps to configure your CLI credentials:
 
 :::note Prerequisites
 To use the Google Cloud CLI, you will need to [install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). If you are unsure if this has been done, you can run the following command from the command line to see if it returns your authenticated user.
@@ -37,26 +103,14 @@ gcloud auth activate-service-account --key-file=path_to_json_key_file
 ```
 :::
 
-You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
+You have now configured Google Cloud access from your local environment. Rill will automatically detect and use these credentials when you connect to GCS sources.
 
-:::tip Did you know?
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
-:::
+## Deploy to Rill Cloud
 
-## Separating Dev and Prod Environments
+When deploying your project to Rill Cloud, you must provide a JSON key file for a Google Cloud service account with appropriate read access/permissions to the buckets used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically. If you're using inferred credentials only, you'll need to configure explicit credentials to avoid deployment failures.
 
-When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
-
-For more details, see our [Dev/Prod setup docs](/connect/templating).
-
-## Rill Cloud Deployment
-
-When deploying a project to Rill Cloud, Rill requires a JSON key file to be explicitly provided for a Google Cloud service account with appropriate read access/permissions to the buckets used in your project.
-
-When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
-
-If you subsequently add sources that require new credentials (or if you enter the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
-```
+To manually configure your environment variables, run:
+```bash
 rill env configure
 ```
 

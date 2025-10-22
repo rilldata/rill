@@ -8,7 +8,10 @@
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
-  import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils";
+  import {
+    ReportRunAs,
+    type ReportValues,
+  } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -28,6 +31,23 @@
   export let exploreName: string;
   export let filters: Filters;
   export let timeControls: TimeControls;
+
+  const RUN_AS_OPTIONS = [
+    {
+      value: ReportRunAs.Creator,
+      label: "Creator",
+      description:
+        "Works for any recipient, including external recipient. It does NOT grant access beyond the report’s filters and dashboard.",
+    },
+    {
+      value: ReportRunAs.Recipient,
+      label: "Recipient",
+      description: "Does NOT work for non-project members.",
+    },
+  ];
+  $: selectedRunAsOption = RUN_AS_OPTIONS.find(
+    (o) => o.value === $data["webOpenMode"],
+  );
 
   $: ({ instanceId } = $runtime);
 
@@ -50,6 +70,18 @@
       label="Report title"
       placeholder="My report"
     />
+    <Select
+      bind:value={$data["webOpenMode"]}
+      id="webOpenMode"
+      label="Run as"
+      options={RUN_AS_OPTIONS}
+      dropdownWidth="w-[400px]"
+    />
+    {#if selectedRunAsOption}
+      <div>
+        {selectedRunAsOption.description}
+      </div>
+    {/if}
     <ScheduleForm {data} {exploreName} />
     <Select
       bind:value={$data["exportFormat"]}
@@ -94,7 +126,7 @@
 
     <div class="flex flex-col gap-y-3">
       <InputLabel label="Filters" id="filters" capitalize={false} />
-      <FiltersForm {filters} {timeControls} maxWidth={750} side="top" />
+      <FiltersForm {filters} {timeControls} side="top" />
     </div>
 
     <RowsAndColumnsForm

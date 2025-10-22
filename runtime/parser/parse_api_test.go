@@ -85,8 +85,8 @@ security:
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "true",
-						Allow:     true,
+						ConditionExpression: "true",
+						Allow:               true,
 					}}},
 				},
 			},
@@ -99,8 +99,8 @@ security:
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "{{ .user.admin }}",
-						Allow:     true,
+						ConditionExpression: "{{ .user.admin }}",
+						Allow:               true,
 					}}},
 				},
 			},
@@ -113,8 +113,8 @@ security:
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
-						Condition: "{{ .user.admin }}",
-						Allow:     true,
+						ConditionExpression: "{{ .user.admin }}",
+						Allow:               true,
 					}}},
 				},
 				SkipNestedSecurity: true,

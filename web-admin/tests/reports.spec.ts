@@ -34,7 +34,7 @@ test.describe.serial("Reports", () => {
 
     // Select "Last 14 Days" as time range
     await interactWithTimeRangeMenu(reportForm, async () => {
-      await reportForm.getByRole("menuitem", { name: "Last 14 Days" }).click();
+      await reportForm.getByRole("menuitem", { name: "Last 14 days" }).click();
     });
     // Enable time comparison
     await reportForm.getByLabel("Toggle time comparison").click();
@@ -50,7 +50,7 @@ test.describe.serial("Reports", () => {
     await adminPage
       .getByLabel("Columns field list")
       .getByRole("menuitem", { name: "App Site Name" })
-      .click();
+      .click({ force: true });
     // Assert columns
     await expect(reportForm.getByLabel("Columns field list")).toHaveText(
       /Requests\s*Avg Bid Floor\s*1D QPS\s*App Site Name/,
@@ -124,7 +124,7 @@ test.describe.serial("Reports", () => {
 
     // Select "Last 4 Weeks" as time range
     await interactWithTimeRangeMenu(reportForm, async () => {
-      await reportForm.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+      await reportForm.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
     // Change rows/columns
@@ -143,17 +143,17 @@ test.describe.serial("Reports", () => {
       .getByLabel("Remove")
       .click();
     // Add "App Site Domain" row
-    await reportForm.getByLabel("Add Rows fields").click();
+    await reportForm.getByLabel("Add Rows fields").click({ force: true });
     await adminPage
       .getByLabel("Rows field list")
       .getByRole("menuitem", { name: "App Site Domain" })
-      .click();
+      .click({ force: true });
     // Add "Time month" column
     await reportForm.getByLabel("Add Columns fields").click();
     await adminPage
       .getByLabel("Columns field list")
       .getByRole("menuitem", { name: "Time month" })
-      .click();
+      .click({ force: true });
     // Assert rows and columns
     await expect(reportForm.getByLabel("Rows field list")).toHaveText(
       /App Site Domain/,

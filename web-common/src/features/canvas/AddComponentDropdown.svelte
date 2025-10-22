@@ -1,9 +1,9 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { CHART_TYPES } from "@rilldata/web-common/features/components/charts/config";
   import { Plus, PlusCircle } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
-  import { CHART_TYPES } from "./components/charts";
-  import type { ChartType } from "./components/charts/types";
+  import type { ChartType } from "../components/charts/types";
   import type { CanvasComponentType } from "./components/types";
   import BigNumberIcon from "./icons/BigNumberIcon.svelte";
   import ChartIcon from "./icons/ChartIcon.svelte";

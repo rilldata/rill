@@ -146,7 +146,8 @@
   }
 
   function handleDrop() {
-    if (zoneStartedDrag) $controllerStore?.abort();
+    if (zoneStartedDrag)
+      $controllerStore?.abort("Drag cancelled - item dropped");
 
     if (isValidDropZone) {
       if (dragChip && ghostIndex !== null) {

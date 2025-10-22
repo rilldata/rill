@@ -10,7 +10,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { derived, get, type Readable, type Writable } from "svelte/store";
 import { sessionStorageStore } from "../../../lib/store-utils/session-storage";
-import { NEW_CONVERSATION_ID } from "./chat-utils";
+import { NEW_CONVERSATION_ID } from "./utils";
 
 // =============================================================================
 // CORE INTERFACE
@@ -74,7 +74,7 @@ export class URLConversationSelector implements ConversationSelector {
     const currentPage = get(page);
     const organization = currentPage.params.organization;
     const project = currentPage.params.project;
-    await goto(`/${organization}/${project}/-/chat/${id}`, {
+    await goto(`/${organization}/${project}/-/ai/${id}`, {
       replaceState: true,
     });
   }
@@ -83,7 +83,7 @@ export class URLConversationSelector implements ConversationSelector {
     const currentPage = get(page);
     const organization = currentPage.params.organization;
     const project = currentPage.params.project;
-    await goto(`/${organization}/${project}/-/chat`, {
+    await goto(`/${organization}/${project}/-/ai`, {
       replaceState: true,
     });
   }

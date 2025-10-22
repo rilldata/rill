@@ -3,7 +3,6 @@ package resolvers
 import (
 	"context"
 	"crypto/rand"
-	databasesql "database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -215,6 +214,10 @@ func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *run
 	return errors.New("not implemented")
 }
 
+func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	return nil, errors.New("security rule inference not implemented")
+}
+
 // buildUnpartitioned builds a result consisting of one row per file.
 // Each row is a map with the keys "uri", "path", and "updated_on".
 func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []map[string]any {
@@ -325,7 +328,7 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 	defer os.Remove(jsonFile)
 
 	var result []map[string]any
-	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context, _ *databasesql.Conn) error {
+	err = olap.WithConnection(ctx, 0, func(wrappedCtx context.Context, ensuredCtx context.Context) error {
 		// Load the JSON file into a temporary table
 		err = olap.Exec(wrappedCtx, &drivers.Statement{
 			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (SELECT * FROM read_ndjson_auto(%s))", olap.Dialect().EscapeIdentifier(r.tmpTableName), olap.Dialect().EscapeStringValue(jsonFile)),

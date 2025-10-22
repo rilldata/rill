@@ -6,6 +6,7 @@ import { getValidComparisonOption } from "@rilldata/web-common/features/dashboar
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getComparionRangeForScrub,
   getComparisonRange,
@@ -18,6 +19,10 @@ import {
   getAllowedTimeGrains,
   getDefaultTimeGrain,
 } from "@rilldata/web-common/lib/time/grains";
+import {
+  GrainAliasToV1TimeGrain,
+  V1TimeGrainToDateTimeUnit,
+} from "@rilldata/web-common/lib/time/new-grains";
 import {
   convertTimeRangePreset,
   getAdjustedFetchTime,
@@ -33,17 +38,19 @@ import {
 import {
   type V1ExploreSpec,
   type V1ExploreTimeRange,
+  type V1Expression,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
+  type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import { parseRillTime } from "../url-state/time-ranges/parser";
+import type { RillTime } from "../url-state/time-ranges/RillTime";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -64,6 +71,17 @@ export type ComparisonTimeRangeState = {
   comparisonTimeEnd?: string;
   comparisonAdjustedEnd?: string;
 };
+
+export interface TimeAndFilterStore {
+  timeRange: V1TimeRange;
+  comparisonTimeRange: V1TimeRange | undefined;
+  where: V1Expression | undefined;
+  timeGrain: V1TimeGrain | undefined;
+  showTimeComparison: boolean;
+  timeRangeState: TimeRangeState | undefined;
+  comparisonTimeRangeState: ComparisonTimeRangeState | undefined;
+  hasTimeSeries: boolean | undefined;
+}
 
 export type TimeControlState = {
   isFetching: boolean;
@@ -270,6 +288,22 @@ export function calculateTimeRangePartial(
   );
   if (!selectedTimeRange) return undefined;
 
+  let parsed: RillTime | undefined;
+
+  if (currentSelectedTimeRange.name === TimeRangePreset.CUSTOM) {
+    parsed = undefined;
+  } else if (currentSelectedTimeRange?.name) {
+    try {
+      parsed = parseRillTime(currentSelectedTimeRange.name);
+    } catch {
+      //no-op
+    }
+  }
+
+  const rillTimeGrain: V1TimeGrain | undefined = parsed?.asOfLabel?.snap
+    ? GrainAliasToV1TimeGrain[parsed?.asOfLabel.snap]
+    : parsed?.interval.getGrain();
+
   // Temporary for the new rill-time UX to work.
   // We can select grains that are outside allowed grains in controls behind the "rillTime" flag.
   const skipGrainValidation = get(featureFlags.rillTime);
@@ -277,7 +311,8 @@ export function calculateTimeRangePartial(
     !skipGrainValidation ||
     !currentSelectedTimeRange.interval ||
     currentSelectedTimeRange.interval === V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-      ? getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
+      ? rillTimeGrain ||
+        getTimeGrain(currentSelectedTimeRange, selectedTimeRange, minTimeGrain)
       : currentSelectedTimeRange.interval;
 
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
