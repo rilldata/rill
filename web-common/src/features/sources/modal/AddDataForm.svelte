@@ -408,22 +408,28 @@
     showSaveAnyway = true;
 
     if (!event.form.valid && !saveAnyway) return;
+
     const values = event.form.data;
 
     try {
-      // Use values as-is
       let processedValues = values;
 
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values, saveAnyway);
+        await submitAddSourceForm(
+          queryClient,
+          connector,
+          processedValues,
+          saveAnyway,
+        );
       } else {
         await submitAddConnectorForm(
           queryClient,
           connector,
-          values,
+          processedValues,
           saveAnyway,
         );
       }
+
       onClose();
     } catch (e) {
       let error: string;
