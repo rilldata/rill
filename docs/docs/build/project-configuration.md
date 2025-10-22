@@ -1,45 +1,15 @@
 ---
-title: "Rill Project"
-description: Introduction to a Rill project file
-sidebar_label: "Rill Project"
-sidebar_position: 00
+title: "Project Configuration"
+description: "Complete guide to configuring your Rill project with rill.yaml and other project files"
+sidebar_label: "Project Configuration"
+sidebar_position: 40
 ---
 
-A Rill project consists of several data assets that work together to create a dashboard. The data pipeline begins with [connecting](/connect) to your data sources, transforms raw data through [models](/build/models), defines metrics and dimensions in [metrics views](/build/metrics-view), and results in interactive [dashboards](/build/dashboards) for data analysis.
+# Project Configuration
 
-When you [deploy to Rill Cloud for the first time](/deploy/deploy-dashboard), Rill automatically creates a Cloud project from your Rill Developer project. Updates to your local project via GitHub merge flows or pressing the Deploy button in the UI will automatically update the Rill Cloud deployment. Users can [clone the Rill Cloud project](/guides/clone-a-project) locally and also push changes back to the cloud instance. This allows for users to work on a single project async.
-
-
-## Rill Project Files
-
-When you create a new Rill project, the following files are automatically generated:
-
-- **`rill.yaml`** - Central configuration hub for your entire project
-- **`connectors/<connector>.yaml`** - Connector configuration files (e.g., `duckdb.yaml`, `clickhouse.yaml`)
-- **`.env`** - Environment variables and sensitive configuration data
-- **`.gitignore`** - Git ignore rules for the project
-
-### `rill.yaml`
-The `rill.yaml` file serves as the central configuration hub for your entire project. While often overlooked, this powerful file enables you to set project-wide defaults, configure environment variables, define connector settings, create test users, and establish security policies across all your metrics views and dashboards.
-
-Let's walk through the key capabilities of `rill.yaml`, including setting up [`mock_users`](/build/metrics-view/security#testing-policies-in-rill-developer) to test row access policies, configuring default [security settings](#metrics-views-security-policy) for your metrics views and explore dashboards, establishing [refresh schedules](#model-refresh-schedule), defining MCP [`ai_instructions`](#ai_instructions), setting the [default OLAP connector](#olap-connector) and more.
-
-For a list of all supported settings, see our [project YAML reference page](/reference/project-files/rill-yaml).
-
-### `.env`
-
-The `.env` file stores environment variables and sensitive configuration data for your Rill project. This includes database connection strings, API keys, and other credentials that should not be committed to version control. Use this file to securely manage [connection credentials](/connect/credentials) and environment-specific settings. For more information about credential management, see our [credentials documentation](/connect/credentials).
-
-### `<connector>.yaml`
-
-The `<connector>.yaml` file in the `connectors/` directory depends on which OLAP engine you initialized your project with (DuckDB, ClickHouse, Druid, or Pinot) and serves as the default OLAP engine for your project. When starting a blank project, this always defaults to `duckdb.yaml`.
-
-### `.gitignore`
-
-The `.gitignore` file specifies which files and directories should be ignored by Git version control. Rill automatically generates this file with appropriate rules to exclude sensitive files like `.env`, temporary files, and build artifacts from being committed to your repository.
-
-
+This guide covers all aspects of configuring your Rill project, from basic settings to advanced security and testing configurations.
 ## OLAP Connector
+
 When you add an OLAP connector to your project, Rill automatically updates the `olap_connector` field in `rill.yaml` with the new connector (e.g., `ClickHouse`, `Druid`). If you create multiple connectors, Rill will append "_#" to the file name and use this as the default connector.
 
 ```yaml
@@ -48,15 +18,18 @@ olap_connector: clickhouse
 
 The default OLAP connector is used as the default `output` for all of your models unless otherwise specified.
 
-## Project Defaults
+## Default Settings
 
 ### Model Refresh Schedule
+
 Set up your project's model refresh schedule. You can override this in the model's YAML file if needed.
+
 ```yaml
 models:
     refresh:
         cron: '0 * * * *'
 ```
+
 ### Metrics Views Time Modifiers
 
 Set default time modifiers for all metrics views, such as `first_day_of_week` or `smallest_time_grain` as shown below. For more parameters, see the [metrics view reference page](/reference/project-files/metrics-views).
@@ -68,6 +41,7 @@ metrics_views:
 ```
 
 ### Metrics Views Security Policy
+
 By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like a metrics_view, you can define the security as shown below. For more information, read our [data access documentation](/build/metrics-view/security#examples).
 
 ```yaml
@@ -77,7 +51,6 @@ metrics_views:
     row_filter: "domain = '{{ .user.domain }}'"
 ```
 
-
 :::tip Security Policy Rules
 
 Rill YAML settings < (Metrics View YAML AND Dashboard YAML)
@@ -85,8 +58,8 @@ Rill YAML settings < (Metrics View YAML AND Dashboard YAML)
 For detailed guide on security policies, review our [data access policies](/build/metrics-view/security) doc.
 :::
 
-
 ### Dashboard Security Policy
+
 Similar to metrics views, you can set [security for a dashboard](/build/dashboards/#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
 
 ```yaml
@@ -113,6 +86,7 @@ Time ranges use [ISO 8601 duration format](https://en.wikipedia.org/wiki/ISO_860
 - `P3M` = 3 months
 - `P24M` = 24 months
 :::
+
 ```yaml
 explores:
     defaults:
@@ -124,8 +98,8 @@ explores:
         - P7D
         - P14D
         - P3M
-
 ```
+
 #### Canvas Defaults
 
 Similarly, you can configure defaults for canvas dashboards:
@@ -143,7 +117,6 @@ canvases:
         - P3M
 ```
 
-
 :::tip Why dont I see the YAML view?
 
 In Rill Cloud, we save a user's last state on the explore dashboard. Therefore, your users will not see the defined view above but the view they last left on. 
@@ -158,6 +131,7 @@ Rill YAML settings < Explore Dashboard YAML < Bookmarks in Rill Cloud < User Las
 Rill comes with default `dev` and `prod` properties defined, corresponding to Rill Developer and Rill Cloud, unless otherwise specified in the `rill start --environment (dev/prod)` command for Rill Developer. You can use these keys to set environment-specific YAML overrides or SQL logic.
 
 For example, the following `rill.yaml` file explicitly sets the default materialization setting for models to `false` in development and `true` in production:
+
 ```yaml
 dev:
   models:
@@ -178,7 +152,10 @@ rill start --environment prod
 
 :::
 
-## `ai_instructions`
+## AI Configuration
+
+### `ai_instructions`
+
 Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the agent deliver more relevant and actionable insights tailored to your specific needs.
 
 **What to include:**
@@ -211,7 +188,10 @@ ai_instructions: |
 For metric-level specific instructions, `ai_instructions` can also be applied there. 
 :::
 
-## Test Access Policies in Rill Developer
+## Testing Security
+
+### Test Access Policies in Rill Developer
+
 Access to your environment is a crucial step in creating your project in Rill Developer. By doing so, you can confidently push your dashboard changes to Rill Cloud. This is done via the `mock_users` in the project file. You can create pseudo-users with specific domains, or admin and non-admin users or user groups, to ensure that access is correct. 
 
 Let's assume that the following security policy is applied to the metrics view.
@@ -244,12 +224,14 @@ See our embedded example, [here](https://rill-embedding-example.netlify.app/rowa
 Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code.
 
 To test embedded dashboards locally with custom attributes, add them to `mock_users`:
+
 ```yaml
 - email: embed@rilldata.com
   name: embed
   custom_variable_1: Value_1 #this is passed at embed creation
   custom_variable_2: Value_2 #this is passed at embed creation
 ```
+
 See our [Custom Attributes Embedded Dashboard](https://rill-embedding-example.netlify.app/rowaccesspolicy/custom) live!
 
 Let's assume a similar setup to the above example. Within the metrics view, we define:
@@ -277,9 +259,9 @@ You can create a test mock user to ensure that this dashboard is working as desi
   app_site_name: 'Sling' 
   pub_name: 'MobilityWare'
 ```
+
 <img src = '/img/tutorials/admin/custom-attribute-mock-user.png' class='rounded-gif' />
 <br />
-
 
 ## Feature Flags
 
@@ -315,9 +297,10 @@ features:
 
 For a complete list of available feature flags and their current status, see our [feature flags reference](https://github.com/rilldata/rill/blob/main/web-common/src/features/feature-flags.ts#L36) in the codebase.
 
-## Example
+## Complete Example
 
 Here is an example YAML that uses many of our features.
+
 ```yaml
 compiler: rillv1
 
@@ -368,19 +351,6 @@ canvases:
       - P3M
       - P6M
       - P12M
-        
-ai_instructions: |
-  Greet the user and remind them that not all AI answers should be used to make decisions without checking the underlying dashboard first.
-  When you run queries with rill, you will include corresponding Rill Explore URLs in your answer. All URLs should start with the BASE_URL, which is defined below. 
-  The full URL should include the time range (tr) used in the report, the timezone (tz), and any measures or dimensions that are relevant to the report. See the examples below.
-  # Example
-  URL for an explore with multiple metrics and dimensions
-  ## Description
-  A link to an online dashboard from Rill. Contains all selected metrics in the report, all dimensions used in the report, and up to 1-3 additional dimensions. Time range includes the range used as the focus of the report, plus a comparison period for enriched visualization. It is in markdown format, and has a link that describes the purpose of the link.
-  ## Format 
-  Markdown
-  ## Link
-  [https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/bids_explore?tr=2025-05-17T23%3A00%3A00.000Z%2C2025-05-19T23%3A00%3A00.000Z&tz=Europe%2FLondon&compare_tr=rill-PP&measures=overall_spend%2Ctotal_bids%2Cwin_rate%2Cvideo_completes%2Cavg_bid_floor&dims=advertiser_name%2Csites_domain%2Capp_site_name%2Cdevice_type%2Ccreative_type%2Cpub_name](Explore change in advertising bids due to composition of advertisers)
 
 # These are example mock users to test your security policies.
 # Learn more: https://docs.rilldata.com/manage/security
