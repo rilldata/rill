@@ -57,11 +57,7 @@
 {:else if showSpinner}
   <DashboardBuilding multipleDashboards />
 {:else}
-  <ContentContainer
-    maxWidth={800}
-    title="Project dashboards"
-    showTitle={dashboards?.length > 0}
-  >
+  <ContentContainer maxWidth={800} title="Project dashboards">
     <div class="flex flex-col items-center gap-y-4">
       <DashboardsTable />
     </div>

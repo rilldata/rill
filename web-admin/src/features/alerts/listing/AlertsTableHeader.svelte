@@ -1,6 +1,6 @@
 <script lang="ts">
+  import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
   import type { Table } from "@tanstack/svelte-table";
-  import { BellIcon } from "lucide-svelte";
   import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
 
@@ -13,7 +13,7 @@
 <thead>
   <tr>
     <td>
-      <BellIcon size={"14px"} />
+      <AlertIcon size={"14px"} />
       {numAlerts} alert{numAlerts !== 1 ? "s" : ""}
     </td>
   </tr>

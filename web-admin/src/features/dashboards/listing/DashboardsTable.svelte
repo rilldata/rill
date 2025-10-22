@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
-  import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
+  import TableEmptyState from "@rilldata/web-admin/components/table/TableEmptyState.svelte";
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -122,34 +122,34 @@
 {:else if isError}
   <ResourceError kind="dashboard" {error} />
 {:else if isSuccess}
-  {#if !dashboardsData.length}
-    <NoResourceCTA kind="dashboard">
-      <svelte:fragment>
-        Learn how to deploy a dashboard in our
-        <a href="https://docs.rilldata.com/" target="_blank">docs</a>
-      </svelte:fragment>
-    </NoResourceCTA>
-  {:else}
-    <div class="flex flex-col gap-y-3 w-full">
-      <Table
-        kind="dashboard"
-        data={displayData}
-        {columns}
-        {columnVisibility}
-        toolbar={!isPreview}
-      >
+  <div class="flex flex-col gap-y-3 w-full">
+    <Table
+      kind="dashboard"
+      data={displayData}
+      {columns}
+      {columnVisibility}
+      toolbar={!isPreview}
+    >
+      {#if isPreview}
         <ResourceHeader kind="dashboard" icon={ExploreIcon} slot="header" />
-      </Table>
-      {#if hasMoreDashboards}
-        <div class="pl-4 py-1">
-          <a
-            href={`/${organization}/${project}/-/dashboards`}
-            class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
-          >
-            See all dashboards →
-          </a>
-        </div>
       {/if}
-    </div>
-  {/if}
+      <TableEmptyState
+        slot="empty"
+        icon={ExploreIcon}
+        iconColor="#cbd5e1"
+        message="You don't have any dashboards yet"
+        action="Learn how to deploy a dashboard in our docs"
+      />
+    </Table>
+    {#if hasMoreDashboards}
+      <div class="pl-4 py-1">
+        <a
+          href={`/${organization}/${project}/-/dashboards`}
+          class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors inline-block"
+        >
+          See all dashboards →
+        </a>
+      </div>
+    {/if}
+  </div>
 {/if}

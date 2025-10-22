@@ -64,6 +64,10 @@
 
   // Whenever the input data changes, rerender the table
   $: data && rerender();
+
+  // Check if we're in a filtered state (search is active)
+  $: isFiltered = $table.getState().globalFilter?.length > 0;
+  $: hasData = data.length > 0;
 </script>
 
 {#if toolbar}
@@ -87,8 +91,23 @@
       </tr>
     {:else}
       <tr>
-        <td class="text-center py-4">
-          <span class="text-gray-500"> No {kind}s found. </span>
+        <td class="text-center py-16">
+          {#if isFiltered}
+            <!-- Filtered empty state: no results match search -->
+            <div class="flex flex-col gap-y-2 items-center text-sm">
+              <div class="text-gray-600 font-semibold">
+                No {kind}s match your search
+              </div>
+              <div class="text-gray-500">Try adjusting your search terms</div>
+            </div>
+          {:else}
+            <!-- Custom empty state via slot, or fallback -->
+            <slot name="empty">
+              <div class="text-gray-600 text-sm font-semibold">
+                You don't have any {kind}s yet
+              </div>
+            </slot>
+          {/if}
         </td>
       </tr>
     {/each}
@@ -112,6 +131,15 @@ Rounded table corners are tricky:
   }
   tbody td:last-child {
     @apply border-r;
+  }
+  tbody tr:first-child td {
+    @apply border-t;
+  }
+  tbody tr:first-child td:first-child {
+    @apply rounded-tl-lg;
+  }
+  tbody tr:first-child td:last-child {
+    @apply rounded-tr-lg;
   }
   tbody tr:last-child td:first-child {
     @apply rounded-bl-lg;
