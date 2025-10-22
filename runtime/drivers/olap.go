@@ -202,6 +202,7 @@ const (
 	// Below dialects are not fully supported dialects.
 	DialectBigQuery
 	DialectSnowflake
+	DialectAthena
 )
 
 func (d Dialect) String() string {
@@ -220,6 +221,8 @@ func (d Dialect) String() string {
 		return "bigquery"
 	case DialectSnowflake:
 		return "snowflake"
+	case DialectAthena:
+		return "athena"
 	default:
 		panic("not implemented")
 	}

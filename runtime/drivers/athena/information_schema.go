@@ -85,7 +85,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		return nil, "", err
 	}
 
-	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
+	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to execute table listing query: %w", err)
 	}
@@ -129,7 +129,7 @@ ORDER BY ordinal_position
 		return nil, err
 	}
 
-	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
+	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute columns query: %w", err)
 	}
@@ -203,7 +203,7 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 	}
 
 	// Execute the query
-	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
+	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute schema listing query: %w", err)
 	}

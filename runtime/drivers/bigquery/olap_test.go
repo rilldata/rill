@@ -139,6 +139,55 @@ func TestEmptyRows(t *testing.T) {
 
 }
 
+func TestScan(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	_, olap := acquireTestBigQuery(t)
+
+	rows, err := olap.Query(t.Context(), &drivers.Statement{
+		Query: "SELECT 42 AS num, 'test' AS str, true AS flag",
+	})
+	require.NoError(t, err)
+	defer rows.Close()
+
+	require.True(t, rows.Next())
+
+	var num int64
+	var str string
+	var flag bool
+	err = rows.Scan(&num, &str, &flag)
+	require.NoError(t, err)
+	require.Equal(t, int64(42), num)
+	require.Equal(t, "test", str)
+	require.Equal(t, true, flag)
+
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Err())
+
+	// scan nil values
+	rows, err = olap.Query(t.Context(), &drivers.Statement{
+		Query: "SELECT NULL AS num, NULL AS str, NULL AS flag",
+	})
+	require.NoError(t, err)
+	defer rows.Close()
+
+	require.True(t, rows.Next())
+
+	var nnum *int64
+	var nstr *string
+	var nflag *bool
+	err = rows.Scan(&nnum, &nstr, &nflag)
+	require.NoError(t, err)
+	require.Nil(t, nnum)
+	require.Nil(t, nstr)
+	require.Nil(t, nflag)
+
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Err())
+}
+
 func TestExec(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode")
