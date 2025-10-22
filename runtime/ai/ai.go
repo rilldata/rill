@@ -15,15 +15,18 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Runner tracks available tools and manages the lifecycle of AI sessions.
 type Runner struct {
-	Runtime *runtime.Runtime
-	Tools   map[string]*wrappedTool
+	Runtime  *runtime.Runtime
+	Activity *activity.Client
+	Tools    map[string]*wrappedTool
 }
 
 // NewRunner creates a new Runner.
@@ -64,7 +67,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	// Setup logger
 	logger := r.Runtime.Logger.Named("ai").With(
 		zap.String("instance_id", opts.InstanceID),
-		zap.String("session_id", opts.SessionID),
+		zap.String("ai_session_id", opts.SessionID),
 		zap.String("user_id", opts.Claims.UserID),
 	)
 
@@ -73,6 +76,17 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance %q: %w", opts.InstanceID, err)
 	}
+
+	// Setup scoped activity client
+	attrs := []attribute.KeyValue{
+		attribute.String("instance_id", instance.ID),
+		attribute.String("ai_session_id", opts.SessionID),
+		attribute.String(activity.AttrKeyUserID, opts.Claims.UserID),
+	}
+	for k, v := range instance.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+	activityClient := r.Activity.With(attrs...)
 
 	// Open catalog
 	catalog, release, err := r.Runtime.Catalog(ctx, opts.InstanceID)
@@ -133,6 +147,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 
 		runner:              r,
 		logger:              logger,
+		activity:            activityClient,
 		projectInstructions: instance.AIInstructions,
 		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
 			return r.Runtime.AI(ctx, opts.InstanceID)
@@ -376,6 +391,7 @@ type BaseSession struct {
 
 	runner              *Runner
 	logger              *zap.Logger
+	activity            *activity.Client
 	projectInstructions string
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
@@ -394,7 +410,7 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	defer cancel()
 
 	// Exit early if nothing to flush
-	if !s.dtoDirty && s.messagesDirty {
+	if !s.dtoDirty && !s.messagesDirty {
 		return nil
 	}
 
@@ -411,6 +427,7 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		s.dtoDirty = false
 	}
 
 	// Flush messages
@@ -435,7 +452,17 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			s.activity.Record(ctx, activity.EventTypeLog, "ai_message",
+				attribute.String("message_id", msg.ID),
+				attribute.String("parent_message_id", msg.ParentID),
+				attribute.String("user_agent", s.dto.UserAgent),
+				attribute.String("role", string(msg.Role)),
+				attribute.String("message_type", string(msg.Type)),
+				attribute.String("tool", msg.Tool),
+				attribute.String("content_type", string(msg.ContentType)),
+			)
 		}
+		s.messagesDirty = false
 	}
 
 	return nil
@@ -634,6 +661,7 @@ func (s *Session) AddMessage(opts *AddMessageOptions) *Message {
 		Tool:        opts.Tool,
 		ContentType: opts.ContentType,
 		Content:     opts.Content,
+		dirty:       true,
 	}
 
 	s.mu.Lock()
@@ -961,6 +989,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			if err != nil {
 				return nil, fmt.Errorf("completion failed: %w", err)
 			}
+
+			// TODO: Emit `llm_completion` metric messages_count, input_text_length, output_text_length, input_tokens, output_tokens
 
 			// Break the tool call loop if no tool calls were requested.
 			var hasCall bool

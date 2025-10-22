@@ -63,9 +63,9 @@ func (s *Session) MCPServer() *mcp.Server {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 			ctx = WithSession(ctx, s)
 			res, err := next(ctx, method, req)
-			err = s.Flush(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("failed to flush session: %w", err)
+			flushErr := s.Flush(ctx)
+			if flushErr != nil {
+				return nil, errors.Join(err, fmt.Errorf("failed to flush session: %w", flushErr))
 			}
 			return res, err
 		}
