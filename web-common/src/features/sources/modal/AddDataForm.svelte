@@ -863,9 +863,8 @@
       class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
     >
       {#if isMultiStepConnector && stepState.step === "source"}
-        <Button onClick={() => setStep("connector")} type="secondary"
-          >Back</Button
-        >
+        <!-- Empty div to maintain right alignment of submit button -->
+        <div></div>
       {:else}
         <Button onClick={onBack} type="secondary">Back</Button>
       {/if}
