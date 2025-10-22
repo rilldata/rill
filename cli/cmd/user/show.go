@@ -51,9 +51,12 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 					case *structpb.Value_BoolValue:
 						valueStr = fmt.Sprintf("%t", v.BoolValue)
 					default:
-						// For complex types, marshal to JSON
-						jsonBytes, _ := json.Marshal(value)
-						valueStr = string(jsonBytes)
+						jsonBytes, err := json.Marshal(value.AsInterface())
+						if err != nil {
+							valueStr = fmt.Sprintf("<error marshaling attribute: %v>", err)
+						} else {
+							valueStr = string(jsonBytes)
+						}
 					}
 					ch.PrintfSuccess("  %s: %s\n", key, valueStr)
 				}
