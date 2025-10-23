@@ -11,6 +11,7 @@
     defaultSecondaryColors,
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
+  import { themeControl } from "../themes/theme-control";
 
   const DEFAULT_PRIMARY = `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`;
   const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
@@ -46,19 +47,29 @@
       ? useTheme(instanceId, theme)
       : undefined;
 
-  $: fetchedTheme = $themeQuery?.data?.theme?.spec as V1ThemeSpec | undefined;
+  $: fetchedTheme = $themeQuery?.data?.theme?.spec;
 
   $: currentThemeSpec = embeddedTheme || fetchedTheme;
 
+  // Determine if we're in dark mode
+  $: isDarkMode = $themeControl === "dark";
+
+  // Extract colors from the appropriate theme section (light or dark)
+  $: themePrimary = isDarkMode
+    ? currentThemeSpec?.dark?.primary || currentThemeSpec?.primaryColorRaw
+    : currentThemeSpec?.light?.primary || currentThemeSpec?.primaryColorRaw;
+
+  $: themeSecondary = isDarkMode
+    ? currentThemeSpec?.dark?.secondary || currentThemeSpec?.secondaryColorRaw
+    : currentThemeSpec?.light?.secondary || currentThemeSpec?.secondaryColorRaw;
+
   $: effectivePrimary = isPresetMode
-    ? currentThemeSpec?.primaryColorRaw || DEFAULT_PRIMARY
-    : customPrimary || currentThemeSpec?.primaryColorRaw || FALLBACK_PRIMARY;
+    ? themePrimary || DEFAULT_PRIMARY
+    : customPrimary || themePrimary || FALLBACK_PRIMARY;
 
   $: effectiveSecondary = isPresetMode
-    ? currentThemeSpec?.secondaryColorRaw || DEFAULT_SECONDARY
-    : customSecondary ||
-      currentThemeSpec?.secondaryColorRaw ||
-      FALLBACK_SECONDARY;
+    ? themeSecondary || DEFAULT_SECONDARY
+    : customSecondary || themeSecondary || FALLBACK_SECONDARY;
 
   $: currentSelectValue = isPresetMode
     ? typeof theme === "string"
@@ -69,14 +80,13 @@
   function handleModeSwitch(mode: string) {
     if (mode === "Custom") {
       if (!customPrimary) {
-        customPrimary = currentThemeSpec?.primaryColorRaw || FALLBACK_PRIMARY;
+        customPrimary = themePrimary || FALLBACK_PRIMARY;
       }
       if (!customSecondary) {
-        customSecondary =
-          currentThemeSpec?.secondaryColorRaw || FALLBACK_SECONDARY;
+        customSecondary = themeSecondary || FALLBACK_SECONDARY;
       }
-      // TODO: Support dark mode - currently always sets light mode
-      onColorChange(customPrimary, customSecondary, false);
+      // Pass the current theme mode (light/dark)
+      onColorChange(customPrimary, customSecondary, isDarkMode);
     } else {
       onThemeChange(lastPresetTheme);
     }
@@ -95,12 +105,12 @@
   function handleColorChange(color: string, isPrimary: boolean) {
     if (isPrimary) {
       customPrimary = color;
-      // TODO: Support dark mode - currently always sets light mode
-      onColorChange(customPrimary, effectiveSecondary, false);
+      // Pass the current theme mode (light/dark)
+      onColorChange(customPrimary, effectiveSecondary, isDarkMode);
     } else {
       customSecondary = color;
-      // TODO: Support dark mode - currently always sets light mode
-      onColorChange(effectivePrimary, customSecondary, false);
+      // Pass the current theme mode (light/dark)
+      onColorChange(effectivePrimary, customSecondary, isDarkMode);
     }
   }
 </script>
@@ -119,6 +129,7 @@
     fields={["Presets", "Custom"]}
     selected={isPresetMode ? 0 : 1}
     onClick={(_, field) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       handleModeSwitch(field);
     }}
   />
@@ -146,7 +157,10 @@
       labelFirst
       disabled={isPresetMode}
       allowLightnessControl={$darkMode}
-      onChange={(color) => handleColorChange(color, true)}
+      onChange={(color) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        handleColorChange(color, true);
+      }}
     />
 
     <ColorInput
@@ -156,7 +170,10 @@
       labelFirst
       disabled={isPresetMode}
       allowLightnessControl={$darkMode}
-      onChange={(color) => handleColorChange(color, false)}
+      onChange={(color) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        handleColorChange(color, false);
+      }}
     />
   </div>
 </div>
