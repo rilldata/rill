@@ -59,7 +59,6 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/go-version v1.7.0
 	github.com/hashicorp/golang-lru v0.6.0
-	github.com/iancoleman/strcase v0.3.0
 	github.com/itlightning/dateparse v0.2.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.3
@@ -164,6 +163,7 @@ require (
 	github.com/aws/aws-sdk-go v1.49.0 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
+	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
 	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
