@@ -6,7 +6,13 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { type FieldConfig } from "@rilldata/web-common/features/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
+  import {
+    defaultPrimaryColors,
+    defaultSecondaryColors,
+  } from "@rilldata/web-common/features/themes/color-config";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import chroma from "chroma-js";
   import ColorPaletteSelector from "./field-config/ColorPaletteSelector.svelte";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
   import SingleColorSelector from "./field-config/SingleColorSelector.svelte";
@@ -20,8 +26,41 @@
 
   $: ({ instanceId } = $runtime);
   $: ({
-    canvasEntity: { selectedComponent, theme },
+    canvasEntity: { selectedComponent, themeSpec },
   } = getCanvasStore(canvasName, instanceId));
+
+  // Resolve theme colors based on current theme mode
+  $: isThemeModeDark = $themeControl === "dark";
+  $: resolvedTheme = (() => {
+    const spec = $themeSpec;
+    const modeTheme = isThemeModeDark
+      ? (spec?.dark as
+          | {
+              primary?: string;
+              secondary?: string;
+              variables?: Record<string, string>;
+            }
+          | undefined)
+      : (spec?.light as
+          | {
+              primary?: string;
+              secondary?: string;
+              variables?: Record<string, string>;
+            }
+          | undefined);
+
+    const primaryColor = modeTheme?.primary || spec?.primaryColorRaw;
+    const secondaryColor = modeTheme?.secondary || spec?.secondaryColorRaw;
+
+    return {
+      primary: primaryColor
+        ? chroma(primaryColor)
+        : chroma(`hsl(${defaultPrimaryColors[500]})`),
+      secondary: secondaryColor
+        ? chroma(secondaryColor)
+        : chroma(`hsl(${defaultSecondaryColors[500]})`),
+    };
+  })();
 
   $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
 
@@ -99,14 +138,16 @@
   </div>
 {:else if selected === 0}
   <div class="pt-2">
-    <SingleColorSelector
-      small
-      theme={$theme}
-      markConfig={typeof markConfig === "string" ? markConfig : "primary"}
-      onChange={(newColor) => {
-        onChange(newColor);
-      }}
-    />
+    {#key `${isThemeModeDark}-${resolvedTheme.primary.hex()}-${resolvedTheme.secondary.hex()}`}
+      <SingleColorSelector
+        small
+        theme={resolvedTheme}
+        markConfig={typeof markConfig === "string" ? markConfig : "primary"}
+        onChange={(newColor) => {
+          onChange(newColor);
+        }}
+      />
+    {/key}
   </div>
 {:else if selected === 1}
   <SingleFieldInput

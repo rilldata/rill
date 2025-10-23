@@ -225,42 +225,18 @@
           await updateProperties({ theme: value });
         }
       }}
-      onColorChange={async (primary, secondary) => {
-        // Check if current theme has CSS - if so, update CSS variables instead
-        const currentTheme = typeof theme === "object" ? theme : undefined;
-
-        if (currentTheme?.css) {
-          // Update user-facing --primary and --secondary variables in existing CSS
-          let updatedCss = currentTheme.css;
-
-          // Replace existing --primary and --secondary values
-          updatedCss = updatedCss.replace(
-            /(:root\s*\{[^}]*--primary:\s*)([^;]+)(;)/s,
-            `$1${primary}$3`,
-          );
-          updatedCss = updatedCss.replace(
-            /(:root\s*\{[^}]*--secondary:\s*)([^;]+)(;)/s,
-            `$1${secondary}$3`,
-          );
-
-          await updateProperties({
-            theme: {
-              css: updatedCss,
+      onColorChange={async (primary, secondary, isDarkMode) => {
+        // TODO: Update to support dark mode - currently always sets light mode
+        // Use new theme structure: theme.light or theme.dark
+        const modeKey = isDarkMode ? "dark" : "light";
+        await updateProperties({
+          theme: {
+            [modeKey]: {
+              primary,
+              secondary,
             },
-          });
-        } else {
-          // Create new CSS theme instead of using legacy properties
-          const newCss = `:root {
-  --primary: ${primary};
-  --secondary: ${secondary};
-}`;
-
-          await updateProperties({
-            theme: {
-              css: newCss,
-            },
-          });
-        }
+          },
+        });
       }}
     />
   </div>

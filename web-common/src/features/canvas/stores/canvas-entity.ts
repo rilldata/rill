@@ -330,7 +330,9 @@ export class CanvasEntity {
 
     this.themeSpec.set(themeSpec);
 
-    // Extract colors from theme (new structure: theme.light.primary, or legacy: theme.primaryColorRaw)
+    // Note: This theme store now only holds default/fallback colors
+    // Actual theme mode-aware colors should be resolved at render time
+    // based on current light/dark mode (see CanvasChart.svelte)
     const primaryColor =
       themeSpec?.light?.primary || themeSpec?.primaryColorRaw;
     const secondaryColor =

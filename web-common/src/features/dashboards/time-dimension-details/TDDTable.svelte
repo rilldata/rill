@@ -82,7 +82,7 @@
     const classesToAdd = ["text-right"];
     const classesToRemove = [
       "border-b",
-      "bg-surface",
+      "bg-card",
       "bg-gray-100",
       "bg-gray-200",
       "bg-primary-50",
@@ -238,7 +238,7 @@
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
-    data.element.classList.add("bg-surface", "z-10");
+    data.element.classList.add("bg-card", "z-10");
     if (data.x === 0) {
       const pinIcon = getPinIcon();
       return `

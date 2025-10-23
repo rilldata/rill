@@ -1,4 +1,5 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import chroma from "chroma-js";
 import type { Config } from "vega-lite";
 
 /**
@@ -69,36 +70,46 @@ const colors = {
   light: {
     grid: "#e5e7eb", // gray-200
     axisLabel: "#6b7280", // gray-600
-    surface: "white",
   },
   dark: {
     grid: "#374151", // gray-700
     axisLabel: "#d1d5db", // gray-300
-    surface: "oklch(0.153 0.007 264.364)", // gray-50
   },
 };
 
 export const getRillTheme: (
   isCanvasDashboard: boolean,
   isDarkMode?: boolean,
-) => Config = (isCanvasDashboard, isDarkMode = false) => {
+  theme?: Record<string, string>,
+) => Config = (isCanvasDashboard, isDarkMode = false, theme) => {
   const gridColor = isDarkMode ? colors.dark.grid : colors.light.grid;
   const axisLabelColor = isDarkMode
     ? colors.dark.axisLabel
     : colors.light.axisLabel;
-  const surfaceColor = isDarkMode ? colors.dark.surface : colors.light.surface;
   
-  // Resolve colors at render time for canvas rendering, passing isDarkMode for light/dark variant resolution
-  const lineColor = resolveCSSVariable("var(--color-theme-600)", isDarkMode, "var(--color-primary-600)");
-  const barColor = resolveCSSVariable("var(--color-theme-400)", isDarkMode, "var(--color-primary-400)");
-  const areaGradientLight = resolveCSSVariable("var(--color-theme-50)", isDarkMode, "var(--color-primary-50)");
-  const areaGradientDark = resolveCSSVariable("var(--color-theme-300)", isDarkMode, "var(--color-primary-300)");
+  // Use provided theme if available, otherwise resolve from CSS variables
+  let lineColor, barColor, areaGradientLight, areaGradientDark;
+  
+  if (theme?.primary) {
+    // Use theme's primary color directly
+    const primary = chroma(theme.primary);
+    lineColor = primary.darken(0.2).css();
+    barColor = primary.css();
+    areaGradientLight = primary.brighten(2).css();
+    areaGradientDark = primary.darken(0.5).css();
+  } else {
+    // Fallback: resolve from CSS variables (for standalone charts without theme context)
+    lineColor = resolveCSSVariable("var(--color-theme-600)", isDarkMode, "var(--color-primary-600)");
+    barColor = resolveCSSVariable("var(--color-theme-400)", isDarkMode, "var(--color-primary-400)");
+    areaGradientLight = resolveCSSVariable("var(--color-theme-50)", isDarkMode, "var(--color-primary-50)");
+    areaGradientDark = resolveCSSVariable("var(--color-theme-300)", isDarkMode, "var(--color-primary-300)");
+  }
 
   return {
     autosize: {
       type: "fit-x",
     },
-    background: surfaceColor,
+    background: "transparent",
     mark: {
       tooltip: isCanvasDashboard,
     },
@@ -192,21 +203,60 @@ export const getRillTheme: (
     },
     range: {
       // Resolve qualitative palette colors for categorical data
-      category: COMPARIONS_COLORS.map((color) => 
-        color.startsWith("var(") ? resolveCSSVariable(color, isDarkMode) : color
-      ),
+      category: theme
+        ? [
+            theme["color-qualitative-1"],
+            theme["color-qualitative-2"],
+            theme["color-qualitative-3"],
+            theme["color-qualitative-4"],
+            theme["color-qualitative-5"],
+            theme["color-qualitative-6"],
+            theme["color-qualitative-7"],
+            theme["color-qualitative-8"],
+            theme["color-qualitative-9"],
+            theme["color-qualitative-10"],
+            theme["color-qualitative-11"],
+            theme["color-qualitative-12"],
+            theme["color-qualitative-13"],
+            theme["color-qualitative-14"],
+            theme["color-qualitative-15"],
+            theme["color-qualitative-16"],
+            theme["color-qualitative-17"],
+            theme["color-qualitative-18"],
+            theme["color-qualitative-19"],
+            theme["color-qualitative-20"],
+            theme["color-qualitative-21"],
+            theme["color-qualitative-22"],
+            theme["color-qualitative-23"],
+            theme["color-qualitative-24"],
+          ].filter(Boolean)
+        : COMPARIONS_COLORS.map((color) => 
+            color.startsWith("var(") ? resolveCSSVariable(color, isDarkMode) : color
+          ),
       // Resolve sequential palette colors for heatmaps
-      heatmap: [
-        resolveCSSVariable("var(--color-sequential-1)", isDarkMode),
-        resolveCSSVariable("var(--color-sequential-2)", isDarkMode),
-        resolveCSSVariable("var(--color-sequential-3)", isDarkMode),
-        resolveCSSVariable("var(--color-sequential-4)", isDarkMode),
-        resolveCSSVariable("var(--color-sequential-5)", isDarkMode),
-        resolveCSSVariable("var(--color-sequential-6)", isDarkMode),
-        resolveCSSVariable("var(--color-sequential-7)", isDarkMode),
-        resolveCSSVariable("var(--color-sequential-8)", isDarkMode),
-        resolveCSSVariable("var(--color-sequential-9)", isDarkMode),
-      ],
+      heatmap: theme
+        ? [
+            theme["color-sequential-1"],
+            theme["color-sequential-2"],
+            theme["color-sequential-3"],
+            theme["color-sequential-4"],
+            theme["color-sequential-5"],
+            theme["color-sequential-6"],
+            theme["color-sequential-7"],
+            theme["color-sequential-8"],
+            theme["color-sequential-9"],
+          ].filter(Boolean)
+        : [
+            resolveCSSVariable("var(--color-sequential-1)", isDarkMode),
+            resolveCSSVariable("var(--color-sequential-2)", isDarkMode),
+            resolveCSSVariable("var(--color-sequential-3)", isDarkMode),
+            resolveCSSVariable("var(--color-sequential-4)", isDarkMode),
+            resolveCSSVariable("var(--color-sequential-5)", isDarkMode),
+            resolveCSSVariable("var(--color-sequential-6)", isDarkMode),
+            resolveCSSVariable("var(--color-sequential-7)", isDarkMode),
+            resolveCSSVariable("var(--color-sequential-8)", isDarkMode),
+            resolveCSSVariable("var(--color-sequential-9)", isDarkMode),
+          ],
     },
     numberFormat: "s",
     tooltipFormat: {

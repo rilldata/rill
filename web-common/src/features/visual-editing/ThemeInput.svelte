@@ -11,6 +11,7 @@
     defaultSecondaryColors,
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
+  import { themeControl } from "../themes/theme-control";
 
   const DEFAULT_PRIMARY = `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`;
   const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
@@ -23,7 +24,11 @@
   export let theme: string | V1ThemeSpec | undefined;
   export let small = false;
   export let onThemeChange: (themeName: string | undefined) => void;
-  export let onColorChange: (primary: string, secondary: string) => void;
+  export let onColorChange: (
+    primary: string,
+    secondary: string,
+    isDarkMode: boolean,
+  ) => void;
 
   let customPrimary = "";
   let customSecondary = "";
@@ -46,7 +51,10 @@
 
   $: currentThemeSpec = embeddedTheme || fetchedTheme;
 
-  $: themeColors = $darkMode
+  // Use themeControl to determine actual current theme mode (light vs dark)
+  $: isThemeModeDark = $themeControl === "dark";
+
+  $: themeColors = isThemeModeDark
     ? (currentThemeSpec?.dark as
         | { primary?: string; secondary?: string }
         | undefined)
@@ -81,7 +89,8 @@
       if (!customSecondary) {
         customSecondary = secondaryFromTheme || FALLBACK_SECONDARY;
       }
-      onColorChange(customPrimary, customSecondary);
+      // TODO: Update to support dark mode - currently always sets light mode colors
+      onColorChange(customPrimary, customSecondary, false);
     } else {
       onThemeChange(lastPresetTheme);
     }
@@ -100,10 +109,12 @@
   function handleColorChange(color: string, isPrimary: boolean) {
     if (isPrimary) {
       customPrimary = color;
-      onColorChange(customPrimary, effectiveSecondary);
+      // TODO: Update to support dark mode - currently always sets light mode colors
+      onColorChange(customPrimary, effectiveSecondary, false);
     } else {
       customSecondary = color;
-      onColorChange(effectivePrimary, customSecondary);
+      // TODO: Update to support dark mode - currently always sets light mode colors
+      onColorChange(effectivePrimary, customSecondary, false);
     }
   }
 </script>
@@ -142,24 +153,28 @@
       />
     {/if}
 
-    <ColorInput
-      {small}
-      stringColor={effectivePrimary}
-      label="Primary"
-      labelFirst
-      disabled={isPresetMode}
-      allowLightnessControl={$darkMode}
-      onChange={(color) => handleColorChange(color, true)}
-    />
+    {#key `${effectivePrimary}-${isThemeModeDark}`}
+      <ColorInput
+        {small}
+        stringColor={effectivePrimary}
+        label="Primary"
+        labelFirst
+        disabled={isPresetMode}
+        allowLightnessControl={$darkMode}
+        onChange={(color) => handleColorChange(color, true)}
+      />
+    {/key}
 
-    <ColorInput
-      {small}
-      stringColor={effectiveSecondary}
-      label="Secondary"
-      labelFirst
-      disabled={isPresetMode}
-      allowLightnessControl={$darkMode}
-      onChange={(color) => handleColorChange(color, false)}
-    />
+    {#key `${effectiveSecondary}-${isThemeModeDark}`}
+      <ColorInput
+        {small}
+        stringColor={effectiveSecondary}
+        label="Secondary"
+        labelFirst
+        disabled={isPresetMode}
+        allowLightnessControl={$darkMode}
+        onChange={(color) => handleColorChange(color, false)}
+      />
+    {/key}
   </div>
 </div>

@@ -7,6 +7,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
   import type { BaseChart } from "./BaseChart";
   import { getChartDataForCanvas } from "./selector";
@@ -14,14 +15,18 @@
 
   export let component: BaseChart<CanvasChartSpec>;
 
-  $: themePreference = $themeControl;
-  $: isDarkMode = themePreference === "dark";
+  // Theme mode (light/dark) - separate from which theme is selected
+  $: currentThemeMode = $themeControl;
+  $: isThemeModeDark = currentThemeMode === "dark";
+
+  // Create a reactive store from theme mode for chart data dependency
+  $: themeModeStore = derived([], () => isThemeModeDark);
 
   $: ({ instanceId } = $runtime);
 
   $: ({
     specStore,
-    parent: { name: canvasName },
+    parent: { name: canvasName, themeSpec },
     timeAndFilterStore,
     chartType: type,
   } = component);
@@ -47,12 +52,54 @@
 
   $: measures = getMeasuresForMetricView(metrics_view);
 
+  // Get the appropriate theme object (light or dark) based on current mode
+  // This includes all CSS variables defined in the theme
+  $: currentTheme = (() => {
+    const spec = $themeSpec;
+
+    // Get the ThemeColors object for current mode (has primary, secondary, and variables)
+    const modeTheme = isThemeModeDark
+      ? (spec?.dark as
+          | {
+              primary?: string;
+              secondary?: string;
+              variables?: Record<string, string>;
+            }
+          | undefined)
+      : (spec?.light as
+          | {
+              primary?: string;
+              secondary?: string;
+              variables?: Record<string, string>;
+            }
+          | undefined);
+
+    if (modeTheme) {
+      // Merge primary, secondary, and all variables into a flat object
+      const merged: Record<string, string> = { ...modeTheme.variables };
+      if (modeTheme.primary) merged.primary = modeTheme.primary;
+      if (modeTheme.secondary) merged.secondary = modeTheme.secondary;
+      return merged;
+    }
+
+    // For legacy themes, construct a theme object with just primary/secondary
+    if (spec?.primaryColorRaw || spec?.secondaryColorRaw) {
+      const legacyTheme: Record<string, string> = {};
+      if (spec.primaryColorRaw) legacyTheme.primary = spec.primaryColorRaw;
+      if (spec.secondaryColorRaw)
+        legacyTheme.secondary = spec.secondaryColorRaw;
+      return legacyTheme;
+    }
+
+    return undefined;
+  })();
+
   $: chartData = getChartDataForCanvas(
     store,
     component,
     chartSpec,
     timeAndFilterStore,
-    isDarkMode,
+    themeModeStore,
   );
 
   $: ({ isFetching, error } = $chartData);
@@ -85,7 +132,8 @@
         {chartData}
         measures={$measures}
         isCanvas
-        theme={isDarkMode ? "dark" : "light"}
+        themeMode={isThemeModeDark ? "dark" : "light"}
+        theme={currentTheme}
       />
     {/if}
   {:else}

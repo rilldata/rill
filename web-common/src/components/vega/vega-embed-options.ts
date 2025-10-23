@@ -13,7 +13,7 @@ export interface CreateEmbedOptionsParams {
   height: number;
   config?: Config;
   renderer?: "canvas" | "svg";
-  theme?: "light" | "dark";
+  themeMode?: "light" | "dark";
   expressionFunctions?: ExpressionFunction;
   useExpressionInterpreter?: boolean;
   colorMapping: ColorMapping;
@@ -25,7 +25,7 @@ export function createEmbedOptions({
   height,
   config,
   renderer = "canvas",
-  theme = "light",
+  themeMode = "light",
   expressionFunctions = {},
   useExpressionInterpreter = true,
   colorMapping,
@@ -33,10 +33,10 @@ export function createEmbedOptions({
   const jwt = get(runtime).jwt;
 
   return {
-    config: config || getRillTheme(canvasDashboard, theme === "dark"),
+    config: config || getRillTheme(canvasDashboard, themeMode === "dark"),
     renderer,
     tooltip: {
-      theme: theme,
+      theme: themeMode,
       ...(colorMapping?.length
         ? { formatTooltip: getTooltipFormatter(colorMapping) }
         : {}),

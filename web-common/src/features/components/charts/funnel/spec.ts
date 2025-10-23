@@ -125,6 +125,8 @@ export function generateVLFunnelChartSpec(
   const spec = createMultiLayerBaseSpec();
   spec.height = 500;
 
+  const textColor = data.isDarkMode ? "#eeeeee" : "#353535";
+
   const isMultiMeasure = config.breakdownMode === "measures";
 
   const measureDisplayNames: Record<string, string> = {};
@@ -269,6 +271,7 @@ export function generateVLFunnelChartSpec(
       },
       align: "left",
       fontWeight: 600,
+      color: textColor,
     },
     encoding: {
       x: {
@@ -321,6 +324,7 @@ export function generateVLFunnelChartSpec(
       },
       align: "right",
       limit: 200,
+      color: textColor,
     },
     encoding: {
       x: {
