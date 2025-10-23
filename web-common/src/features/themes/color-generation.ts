@@ -1,6 +1,6 @@
 /**
  * Color Palette Generation
- * 
+ *
  * Functions for generating color palettes for light and dark modes
  * using the OKLab color space for perceptually uniform colors.
  */
@@ -148,4 +148,3 @@ function findContrast(
 
   return color;
 }
-

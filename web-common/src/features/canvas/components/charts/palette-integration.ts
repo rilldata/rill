@@ -1,15 +1,15 @@
 /**
  * Palette Integration for Canvas Charts
- * 
+ *
  * This file provides utilities and documentation for using color palettes
  * in Canvas charts.
  */
 
 /**
  * Available palette schemes for quantitative color encodings
- * 
+ *
  * Use these scheme names in your chart's colorRange configuration:
- * 
+ *
  * @example
  * ```typescript
  * {
@@ -41,7 +41,7 @@ export const CHART_PALETTE_RECOMMENDATIONS = {
       "Performance scores",
     ],
   },
-  
+
   // Diverging palette: for data with a critical midpoint
   diverging: {
     chartTypes: ["heatmap"],
@@ -53,7 +53,7 @@ export const CHART_PALETTE_RECOMMENDATIONS = {
       "Sentiment analysis",
     ],
   },
-  
+
   // Qualitative palette: for categorical data (automatically used)
   qualitative: {
     chartTypes: ["bar", "line", "pie", "donut", "funnel", "combo"],
@@ -142,12 +142,11 @@ export function getRecommendedColorScheme(
     // Otherwise use sequential for ordered data
     return "sequential";
   }
-  
+
   // For categorical data (nominal/ordinal), use qualitative
   if (dataType === "nominal" || dataType === "ordinal") {
     return "qualitative";
   }
-  
+
   return null;
 }
-

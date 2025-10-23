@@ -79,10 +79,17 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
   });
 
   // Use themeModeStore if provided (canvas context), otherwise create a static store from the flag
-  const modeStore = themeModeStore || derived([], () => staticThemeModeDark ?? false);
+  const modeStore =
+    themeModeStore || derived([], () => staticThemeModeDark ?? false);
 
   return derived(
-    [chartDataQuery, timeAndFilterStore, themeStore, modeStore, ...fieldReadableMap],
+    [
+      chartDataQuery,
+      timeAndFilterStore,
+      themeStore,
+      modeStore,
+      ...fieldReadableMap,
+    ],
     ([chartData, $timeAndFilterStore, theme, isThemeModeDark, ...fieldMap]) => {
       const fieldSpecMap = allFields.reduce(
         (acc, field, index) => {

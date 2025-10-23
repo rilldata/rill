@@ -1,18 +1,24 @@
 /**
  * Theme Actions
- * 
+ *
  * Main functions for updating theme variables from the new theme structure
  * and legacy color-based themes.
  */
 
 import { TailwindColorSpacing } from "./color-config.ts";
-import type { V1ThemeSpec as RuntimeV1ThemeSpec } from "../../../../web-common/src/runtime-client/index.ts";
-import type { ThemeModeColors } from "./theme-types";
+import type {
+  V1ThemeSpec,
+  V1ThemeColors,
+} from "@rilldata/web-common/runtime-client";
 import chroma, { type Color } from "chroma-js";
 import { generateColorPalette } from "./palette-generator.ts";
 import { featureFlags } from "../feature-flags.ts";
 import { get } from "svelte/store";
-import { generatePalette, DEFAULT_STEP_COUNT, DEFAULT_GAMMA } from "./color-generation.ts";
+import {
+  generatePalette,
+  DEFAULT_STEP_COUNT,
+  DEFAULT_GAMMA,
+} from "./color-generation.ts";
 import { sanitizeThemeVariables } from "./css-sanitizer.ts";
 
 const CUSTOM_THEME_STYLE_ID = "rill-custom-theme";
@@ -51,10 +57,7 @@ export function setVariables(
  * Sets intermediate CSS variables that fall back to light/dark mode variants
  * This allows variables like --color-theme-600 to work in scoped contexts
  */
-function setIntermediateVariables(
-  root: HTMLElement,
-  type: string,
-): void {
+function setIntermediateVariables(root: HTMLElement, type: string): void {
   TailwindColorSpacing.forEach((spacing) => {
     // Set intermediate variable with fallback logic:
     // In light mode: uses light variant, in dark mode: uses dark variant
@@ -72,7 +75,7 @@ function setIntermediateVariables(
  * @param scopeElement - Optional element to scope the theme to (defaults to document root)
  */
 export function updateThemeVariables(
-  theme: RuntimeV1ThemeSpec | undefined,
+  theme: V1ThemeSpec | undefined,
   scopeElement?: HTMLElement | null,
 ): void {
   const root = scopeElement || document.documentElement;
@@ -80,14 +83,16 @@ export function updateThemeVariables(
   const allowNewPalette = get(darkMode);
   const isDarkMode = document.documentElement.classList.contains("dark");
 
-  const themeLight = theme?.light as ThemeModeColors | undefined;
-  const themeDark = theme?.dark as ThemeModeColors | undefined;
-  
-  const currentModeTheme = isDarkMode ? themeDark : themeLight;
+  if (!theme) {
+    clearThemeVariables(root);
+    return;
+  }
+
+  const currentModeTheme = isDarkMode ? theme.dark : theme.light;
   const hasCurrentModeTheme = Boolean(
     currentModeTheme?.variables ||
-    currentModeTheme?.primary ||
-    currentModeTheme?.secondary
+      currentModeTheme?.primary ||
+      currentModeTheme?.secondary,
   );
 
   clearThemeVariables(root);
@@ -104,7 +109,7 @@ export function updateThemeVariables(
 
 function clearThemeVariables(root: HTMLElement): void {
   removeExistingCustomCSS();
-  
+
   if (root !== document.documentElement) {
     setVariables(root, "theme", "light");
     setVariables(root, "theme", "dark");
@@ -118,18 +123,20 @@ function clearThemeVariables(root: HTMLElement): void {
 }
 
 function injectCurrentModeThemeVariables(
-  currentModeTheme: ThemeModeColors,
+  currentModeTheme: V1ThemeColors,
   scopeElement: HTMLElement,
 ): void {
-  if (!currentModeTheme.variables) return;
-  
-  const variables = sanitizeThemeVariables(currentModeTheme.variables);
+  const vars = currentModeTheme.variables;
+  if (!vars || typeof vars !== "object") return;
+
+  const variables = sanitizeThemeVariables(vars);
   if (Object.keys(variables).length === 0) return;
 
-  const scopeSelector = scopeElement === document.documentElement 
-    ? undefined 
-    : ".dashboard-theme-boundary";
-  
+  const scopeSelector =
+    scopeElement === document.documentElement
+      ? undefined
+      : ".dashboard-theme-boundary";
+
   let css = "";
   const selector = scopeSelector || ":root";
   css += `${selector} {\n`;
@@ -137,58 +144,60 @@ function injectCurrentModeThemeVariables(
     css += `  ${name}: ${value};\n`;
   }
   css += "}\n";
-  
+
   createAndInjectStyle(css);
 }
 
 function handleCurrentModePrimarySecondary(
-  currentModeTheme: ThemeModeColors,
+  currentModeTheme: V1ThemeColors,
   root: HTMLElement,
 ): void {
   const isDarkMode = document.documentElement.classList.contains("dark");
   const mode = isDarkMode ? "dark" : "light";
 
-  if (currentModeTheme.primary) {
+  const primaryColor = currentModeTheme.primary;
+  if (primaryColor && typeof primaryColor === "string") {
     try {
       const palette = generatePalette(
-        chroma(currentModeTheme.primary),
+        chroma(primaryColor),
         false,
         DEFAULT_STEP_COUNT,
-        DEFAULT_GAMMA
+        DEFAULT_GAMMA,
       );
       const colors = isDarkMode ? palette.dark : palette.light;
-      
+
       setVariables(root, "theme", mode, colors);
       setVariables(root, "primary", mode, colors);
       setIntermediateVariables(root, "theme");
       setIntermediateVariables(root, "primary");
     } catch (error) {
-      console.error('Failed to generate palette from primary color:', error);
+      console.error("Failed to generate palette from primary color:", error);
     }
   }
 
-  if (currentModeTheme.secondary) {
+  const secondaryColor = currentModeTheme.secondary;
+  if (secondaryColor && typeof secondaryColor === "string") {
     try {
       const palette = generatePalette(
-        chroma(currentModeTheme.secondary),
+        chroma(secondaryColor),
         false,
         DEFAULT_STEP_COUNT,
-        DEFAULT_GAMMA
+        DEFAULT_GAMMA,
       );
       const colors = isDarkMode ? palette.dark : palette.light;
-      
+
       setVariables(root, "theme-secondary", mode, colors);
       setVariables(root, "secondary", mode, colors);
       setIntermediateVariables(root, "theme-secondary");
       setIntermediateVariables(root, "secondary");
     } catch (error) {
-      console.error('Failed to generate palette from secondary color:', error);
+      console.error("Failed to generate palette from secondary color:", error);
     }
   }
 }
 
 function updatePrimaryColor(
-  theme: RuntimeV1ThemeSpec | undefined,
+  theme: V1ThemeSpec | undefined,
   root: HTMLElement,
   allowNewPalette: boolean,
 ): void {
@@ -218,7 +227,7 @@ function updatePrimaryColor(
 }
 
 function updateSecondaryColor(
-  theme: RuntimeV1ThemeSpec | undefined,
+  theme: V1ThemeSpec | undefined,
   root: HTMLElement,
   allowNewPalette: boolean,
 ): void {
@@ -260,7 +269,7 @@ function removeExistingCustomCSS(): void {
  * Creates and injects new style element
  */
 function createAndInjectStyle(css: string): void {
-  const style = document.createElement('style');
+  const style = document.createElement("style");
   style.id = CUSTOM_THEME_STYLE_ID;
   style.textContent = css;
   document.head.appendChild(style);

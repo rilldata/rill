@@ -216,7 +216,11 @@ export function getColorMappingForChart(
     const fieldKey = colorField.field;
     const colorValues = domainValues[fieldKey];
     if (isDomainStringArray(colorValues)) {
-      colorMapping = getColorForValues(colorValues, colorField.colorMapping, isDarkMode);
+      colorMapping = getColorForValues(
+        colorValues,
+        colorField.colorMapping,
+        isDarkMode,
+      );
     }
   }
 
@@ -229,7 +233,10 @@ export function getColorMappingForChart(
  * Checks scoped theme boundary first, then falls back to document root
  * For palette variables, explicitly resolves to light/dark variant based on current theme
  */
-export function resolveCSSVariable(cssVar: string, isDarkMode?: boolean): string {
+export function resolveCSSVariable(
+  cssVar: string,
+  isDarkMode?: boolean,
+): string {
   if (typeof window === "undefined" || !cssVar.startsWith("var("))
     return cssVar;
 
@@ -240,28 +247,36 @@ export function resolveCSSVariable(cssVar: string, isDarkMode?: boolean): string
     .trim();
 
   // Determine dark mode if not explicitly provided
-  const darkMode = isDarkMode ?? document.documentElement.classList.contains('dark');
+  const darkMode =
+    isDarkMode ?? document.documentElement.classList.contains("dark");
 
-  // For theme palette variables (--color-theme-600, --color-primary-500, etc), 
+  // For theme palette variables (--color-theme-600, --color-primary-500, etc),
   // these use light-dark() CSS function, so resolve to explicit light/dark variant
-  const palettePattern = /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
+  const palettePattern =
+    /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
   const match = varName.match(palettePattern);
-  
+
   if (match) {
     const [, colorType, shade] = match;
-    const modeVariant = darkMode ? `--color-${colorType}-dark-${shade}` : `--color-${colorType}-light-${shade}`;
-    
+    const modeVariant = darkMode
+      ? `--color-${colorType}-dark-${shade}`
+      : `--color-${colorType}-light-${shade}`;
+
     // Try scoped theme boundary first
     const themeBoundary = document.querySelector(".dashboard-theme-boundary");
     if (themeBoundary) {
-      const scopedValue = getComputedStyle(themeBoundary as HTMLElement).getPropertyValue(modeVariant);
+      const scopedValue = getComputedStyle(
+        themeBoundary as HTMLElement,
+      ).getPropertyValue(modeVariant);
       if (scopedValue && scopedValue.trim()) {
         return scopedValue.trim();
       }
     }
-    
+
     // Fall back to document root
-    const computed = getComputedStyle(document.documentElement).getPropertyValue(modeVariant);
+    const computed = getComputedStyle(
+      document.documentElement,
+    ).getPropertyValue(modeVariant);
     if (computed && computed.trim()) {
       return computed.trim();
     }
@@ -291,7 +306,10 @@ export function resolveCSSVariable(cssVar: string, isDarkMode?: boolean): string
  * Converts a resolved color back to its CSS variable reference if it matches a palette color
  * This allows YAML to store variable references instead of hardcoded values
  */
-export function colorToVariableReference(resolvedColor: string, isDarkMode?: boolean): string {
+export function colorToVariableReference(
+  resolvedColor: string,
+  isDarkMode?: boolean,
+): string {
   if (!resolvedColor || typeof window === "undefined") return resolvedColor;
 
   // Check all comparison colors (qualitative palette)

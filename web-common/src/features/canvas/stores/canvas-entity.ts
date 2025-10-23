@@ -6,7 +6,6 @@ import {
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
-import type { V1ThemeSpec } from "@rilldata/web-common/features/themes/theme-types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetResource,
@@ -14,6 +13,7 @@ import {
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
+  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import {
@@ -142,14 +142,11 @@ export class CanvasEntity {
     );
     this.filters = new Filters(this.metricsView, searchParamsStore);
 
-    const themeName = derived(
-      [page, this.specStore],
-      ([$page, $specStore]) => {
-        const themeFromUrl = $page.url.searchParams.get("theme");
-        const themeFromSpec = $specStore.data?.canvas?.theme;
-        return themeFromUrl || themeFromSpec;
-      }
-    );
+    const themeName = derived([page, this.specStore], ([$page, $specStore]) => {
+      const themeFromUrl = $page.url.searchParams.get("theme");
+      const themeFromSpec = $specStore.data?.canvas?.theme;
+      return themeFromUrl || themeFromSpec;
+    });
 
     this.themeSpec = derived<
       [Readable<string | undefined>, typeof this.specStore],
@@ -178,7 +175,7 @@ export class CanvasEntity {
           this.updateThemeColors(embeddedTheme);
         }
       },
-      undefined as V1ThemeSpec | undefined
+      undefined as V1ThemeSpec | undefined,
     );
 
     this.unsubscriber = this.specStore.subscribe((spec) => {

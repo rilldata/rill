@@ -3,18 +3,20 @@ import {
   defaultSecondaryColors,
 } from "@rilldata/web-common/features/themes/color-config";
 import chroma, { type Color } from "chroma-js";
-import type { V1ThemeSpec as RuntimeV1ThemeSpec } from "@rilldata/web-common/runtime-client";
-import type { ThemeModeColors, V1ThemeSpec } from "./theme-types";
+import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
 
 export function resolveThemeColors(
-  themeSpec: RuntimeV1ThemeSpec | V1ThemeSpec | undefined,
+  themeSpec: V1ThemeSpec | undefined,
   isThemeModeDark: boolean,
 ): { primary: Color; secondary: Color } {
-  const spec = themeSpec as V1ThemeSpec | undefined;
-  const modeTheme = isThemeModeDark
-    ? (spec?.dark as ThemeModeColors | undefined)
-    : (spec?.light as ThemeModeColors | undefined);
+  if (!themeSpec) {
+    return {
+      primary: chroma(`hsl(${defaultPrimaryColors[500]})`),
+      secondary: chroma(`hsl(${defaultSecondaryColors[500]})`),
+    };
+  }
 
+  const modeTheme = isThemeModeDark ? themeSpec.dark : themeSpec.light;
   const primaryColor = modeTheme?.primary;
   const secondaryColor = modeTheme?.secondary;
 
@@ -29,21 +31,27 @@ export function resolveThemeColors(
 }
 
 export function resolveThemeObject(
-  themeSpec: RuntimeV1ThemeSpec | V1ThemeSpec | undefined,
+  themeSpec: V1ThemeSpec | undefined,
   isThemeModeDark: boolean,
 ): Record<string, string> | undefined {
-  const spec = themeSpec as V1ThemeSpec | undefined;
-  const modeTheme = isThemeModeDark
-    ? (spec?.dark as ThemeModeColors | undefined)
-    : (spec?.light as ThemeModeColors | undefined);
+  if (!themeSpec) return undefined;
 
-  if (modeTheme) {
-    const merged: Record<string, string> = { ...modeTheme.variables };
-    if (modeTheme.primary) merged.primary = modeTheme.primary;
-    if (modeTheme.secondary) merged.secondary = modeTheme.secondary;
-    return merged;
+  const modeTheme = isThemeModeDark ? themeSpec.dark : themeSpec.light;
+  if (!modeTheme) return undefined;
+
+  const merged: Record<string, string> = {};
+
+  if (modeTheme.variables) {
+    Object.assign(merged, modeTheme.variables);
   }
 
-  return undefined;
-}
+  if (modeTheme.primary) {
+    merged.primary = modeTheme.primary;
+  }
 
+  if (modeTheme.secondary) {
+    merged.secondary = modeTheme.secondary;
+  }
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}

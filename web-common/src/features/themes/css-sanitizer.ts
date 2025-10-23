@@ -1,6 +1,6 @@
 /**
  * CSS Sanitizer for Theme System
- * 
+ *
  * Sanitizes CSS variable values from theme definitions to prevent XSS attacks.
  * The backend controls which CSS variable names are allowed, so the frontend
  * only needs to validate the values for safety.
@@ -12,7 +12,7 @@
  * @returns Sanitized object with only safe variable values
  */
 export function sanitizeThemeVariables(
-  variables: Record<string, string> | undefined
+  variables: Record<string, string> | undefined,
 ): Record<string, string> {
   if (!variables) return {};
 
@@ -21,10 +21,12 @@ export function sanitizeThemeVariables(
   for (const [name, value] of Object.entries(variables)) {
     // Ensure variable name starts with -- (normalize if needed)
     const normalizedName = name.startsWith("--") ? name : `--${name}`;
-    
+
     // Validate that value is safe (no dangerous patterns)
     if (!isSafeVariableValue(value)) {
-      console.warn(`Skipping potentially unsafe CSS variable value for ${normalizedName}: ${value}`);
+      console.warn(
+        `Skipping potentially unsafe CSS variable value for ${normalizedName}: ${value}`,
+      );
       continue;
     }
 
@@ -44,7 +46,7 @@ export function sanitizeThemeVariables(
 export function themeVariablesToCSS(
   lightVariables: Record<string, string>,
   darkVariables: Record<string, string>,
-  scopeSelector?: string
+  scopeSelector?: string,
 ): string | null {
   const hasLight = Object.keys(lightVariables).length > 0;
   const hasDark = Object.keys(darkVariables).length > 0;
@@ -54,7 +56,7 @@ export function themeVariablesToCSS(
   let css = "";
 
   if (hasLight) {
-    const lightSelector = scopeSelector 
+    const lightSelector = scopeSelector
       ? `${scopeSelector}:not(.dark), :not(.dark) ${scopeSelector}`
       : ":root:not(.dark)";
     css += `${lightSelector} {\n`;
@@ -65,7 +67,7 @@ export function themeVariablesToCSS(
   }
 
   if (hasDark) {
-    const darkSelector = scopeSelector 
+    const darkSelector = scopeSelector
       ? `${scopeSelector}.dark, .dark ${scopeSelector}`
       : ":root.dark";
     css += `${darkSelector} {\n`;
@@ -84,7 +86,7 @@ export function themeVariablesToCSS(
  */
 function isSafeVariableValue(value: string): boolean {
   const lowerValue = value.toLowerCase();
-  
+
   // Block dangerous URL schemes
   const dangerousSchemes = [
     "javascript:",
@@ -93,29 +95,29 @@ function isSafeVariableValue(value: string): boolean {
     "file:",
     "about:",
   ];
-  
+
   for (const scheme of dangerousSchemes) {
     if (lowerValue.includes(scheme)) {
       return false;
     }
   }
-  
+
   // Block expression() and behavior() (old IE CSS expressions)
   if (lowerValue.includes("expression(") || lowerValue.includes("behavior(")) {
     return false;
   }
-  
+
   // Block @import statements
   if (lowerValue.includes("@import")) {
     return false;
   }
-  
+
   // Block external URLs in url()
   if (lowerValue.includes("url(")) {
     // Allow only relative URLs, data URIs for fonts/images are blocked above
     const urlPattern = /url\s*\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
     const urls = [...value.matchAll(urlPattern)];
-    
+
     for (const urlMatch of urls) {
       const url = urlMatch[1].trim();
       // Block absolute URLs (http://, https://, //)
@@ -124,11 +126,11 @@ function isSafeVariableValue(value: string): boolean {
       }
     }
   }
-  
+
   // Block HTML/XML content
   if (lowerValue.includes("<") || lowerValue.includes(">")) {
     return false;
   }
-  
+
   return true;
 }

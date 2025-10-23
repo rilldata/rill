@@ -5,63 +5,82 @@ import type { Config } from "vega-lite";
 /**
  * Resolves a CSS variable to its computed value for canvas rendering
  * This is necessary because canvas rendering requires concrete color values, not CSS variables
- * 
+ *
  * For palette variables (--color-theme-600), explicitly resolves to light/dark variant
  * For theme variables (--color-sequential-1), reads the computed value considering dark mode
  */
-function resolveCSSVariable(cssVar: string, isDarkMode: boolean, fallback?: string): string {
+function resolveCSSVariable(
+  cssVar: string,
+  isDarkMode: boolean,
+  fallback?: string,
+): string {
   if (typeof window === "undefined") return fallback || cssVar;
-  
+
   // Extract the variable name from var() syntax
-  const varName = cssVar.replace("var(", "").replace(")", "").split(",")[0].trim();
-  
-  // For theme palette variables (--color-theme-600, --color-primary-500, etc), 
+  const varName = cssVar
+    .replace("var(", "")
+    .replace(")", "")
+    .split(",")[0]
+    .trim();
+
+  // For theme palette variables (--color-theme-600, --color-primary-500, etc),
   // these use light-dark() CSS function, so resolve to explicit light/dark variant
-  const palettePattern = /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
+  const palettePattern =
+    /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
   const match = varName.match(palettePattern);
-  
+
   if (match) {
     const [, colorType, shade] = match;
-    const modeVariant = isDarkMode ? `--color-${colorType}-dark-${shade}` : `--color-${colorType}-light-${shade}`;
-    
+    const modeVariant = isDarkMode
+      ? `--color-${colorType}-dark-${shade}`
+      : `--color-${colorType}-light-${shade}`;
+
     // Try scoped theme boundary first
     const themeBoundary = document.querySelector(".dashboard-theme-boundary");
     if (themeBoundary) {
-      const scopedValue = getComputedStyle(themeBoundary as HTMLElement).getPropertyValue(modeVariant);
+      const scopedValue = getComputedStyle(
+        themeBoundary as HTMLElement,
+      ).getPropertyValue(modeVariant);
       if (scopedValue && scopedValue.trim()) {
         return scopedValue.trim();
       }
     }
-    
+
     // Fall back to document root
-    const computed = getComputedStyle(document.documentElement).getPropertyValue(modeVariant);
+    const computed = getComputedStyle(
+      document.documentElement,
+    ).getPropertyValue(modeVariant);
     if (computed && computed.trim()) {
       return computed.trim();
     }
   }
-  
+
   // For other variables (--color-sequential-1, --primary, custom vars from theme),
   // read directly - the CSS rules handle light/dark switching via :root vs :root.dark selectors
   // We just need to ensure we're reading when the .dark class state matches isDarkMode
   const themeBoundary = document.querySelector(".dashboard-theme-boundary");
   if (themeBoundary) {
-    const scopedValue = getComputedStyle(themeBoundary as HTMLElement).getPropertyValue(varName);
+    const scopedValue = getComputedStyle(
+      themeBoundary as HTMLElement,
+    ).getPropertyValue(varName);
     if (scopedValue && scopedValue.trim()) {
       return scopedValue.trim();
     }
   }
-  
+
   // Fall back to document root
-  const computed = getComputedStyle(document.documentElement).getPropertyValue(varName);
+  const computed = getComputedStyle(document.documentElement).getPropertyValue(
+    varName,
+  );
   if (computed && computed.trim()) {
     return computed.trim();
   }
-  
+
   // If fallback is provided and is also a CSS variable, resolve it
   if (fallback && fallback.startsWith("var(")) {
     return resolveCSSVariable(fallback, isDarkMode);
   }
-  
+
   return fallback || cssVar;
 }
 
@@ -86,10 +105,10 @@ export const getRillTheme: (
   const axisLabelColor = isDarkMode
     ? colors.dark.axisLabel
     : colors.light.axisLabel;
-  
+
   // Use provided theme if available, otherwise resolve from CSS variables
   let lineColor, barColor, areaGradientLight, areaGradientDark;
-  
+
   if (theme?.primary) {
     // Use theme's primary color directly
     const primary = chroma(theme.primary);
@@ -99,10 +118,26 @@ export const getRillTheme: (
     areaGradientDark = primary.darken(0.5).css();
   } else {
     // Fallback: resolve from CSS variables (for standalone charts without theme context)
-    lineColor = resolveCSSVariable("var(--color-theme-600)", isDarkMode, "var(--color-primary-600)");
-    barColor = resolveCSSVariable("var(--color-theme-400)", isDarkMode, "var(--color-primary-400)");
-    areaGradientLight = resolveCSSVariable("var(--color-theme-50)", isDarkMode, "var(--color-primary-50)");
-    areaGradientDark = resolveCSSVariable("var(--color-theme-300)", isDarkMode, "var(--color-primary-300)");
+    lineColor = resolveCSSVariable(
+      "var(--color-theme-600)",
+      isDarkMode,
+      "var(--color-primary-600)",
+    );
+    barColor = resolveCSSVariable(
+      "var(--color-theme-400)",
+      isDarkMode,
+      "var(--color-primary-400)",
+    );
+    areaGradientLight = resolveCSSVariable(
+      "var(--color-theme-50)",
+      isDarkMode,
+      "var(--color-primary-50)",
+    );
+    areaGradientDark = resolveCSSVariable(
+      "var(--color-theme-300)",
+      isDarkMode,
+      "var(--color-primary-300)",
+    );
   }
 
   return {
@@ -203,12 +238,14 @@ export const getRillTheme: (
     },
     range: {
       category: (() => {
-        const defaultColors = COMPARIONS_COLORS.map((color) => 
-          color.startsWith("var(") ? resolveCSSVariable(color, isDarkMode) : color
+        const defaultColors = COMPARIONS_COLORS.map((color) =>
+          color.startsWith("var(")
+            ? resolveCSSVariable(color, isDarkMode)
+            : color,
         );
-        
+
         if (!theme) return defaultColors;
-        
+
         const themeColors = [
           theme["color-qualitative-1"],
           theme["color-qualitative-2"],
@@ -235,7 +272,7 @@ export const getRillTheme: (
           theme["color-qualitative-23"],
           theme["color-qualitative-24"],
         ].filter(Boolean);
-        
+
         return themeColors.length > 0 ? themeColors : defaultColors;
       })(),
       heatmap: (() => {
@@ -250,9 +287,9 @@ export const getRillTheme: (
           resolveCSSVariable("var(--color-sequential-8)", isDarkMode),
           resolveCSSVariable("var(--color-sequential-9)", isDarkMode),
         ];
-        
+
         if (!theme) return defaultColors;
-        
+
         const themeColors = [
           theme["color-sequential-1"],
           theme["color-sequential-2"],
@@ -264,7 +301,7 @@ export const getRillTheme: (
           theme["color-sequential-8"],
           theme["color-sequential-9"],
         ].filter(Boolean);
-        
+
         return themeColors.length > 0 ? themeColors : defaultColors;
       })(),
     },
