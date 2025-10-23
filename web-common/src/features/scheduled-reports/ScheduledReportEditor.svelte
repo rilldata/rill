@@ -33,6 +33,7 @@
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
@@ -51,6 +52,10 @@
 
   const FORM_ID = "scheduled-report-form";
   const AGGREGATION_QUERY_NAME = "MetricsViewAggregation";
+  const MIN_SIDEBAR_WIDTH = 500;
+  const MAX_SIDEBAR_WIDTH = 1000;
+  const SIDEBAR_WIDTH = 750;
+  let width = SIDEBAR_WIDTH;
 
   $: reportName = props.mode === "create" ? "" : props.reportName;
   let exploreName = "";
@@ -225,35 +230,54 @@
       );
     }
   }
+
+  function updateSidebarWidth(newWidth: number): void {
+    console.log("updateSidebarWidth", newWidth);
+    width = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, newWidth));
+  }
 </script>
 
-<SidebarWrapper title="Scheduled reports">
-  <BaseScheduledReportForm
-    formId={FORM_ID}
-    data={form}
-    {errors}
-    {submit}
-    {enhance}
-    {handleExploreChange}
+<div
+  class="flex flex-col border-l"
+  style="width: {width}px; position: relative;"
+>
+  <Resizer
+    min={MIN_SIDEBAR_WIDTH}
+    max={MAX_SIDEBAR_WIDTH}
+    basis={SIDEBAR_WIDTH}
+    dimension={width}
+    direction="EW"
+    side="left"
+    onUpdate={updateSidebarWidth}
   />
+  <SidebarWrapper title="Scheduled reports">
+    <BaseScheduledReportForm
+      formId={FORM_ID}
+      data={form}
+      {errors}
+      {submit}
+      {enhance}
+      {handleExploreChange}
+    />
 
-  {#if generalErrors}
-    <div class="text-red-500">{generalErrors}</div>
-  {/if}
+    {#if generalErrors}
+      <div class="text-red-500">{generalErrors}</div>
+    {/if}
 
-  <footer
-    class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3"
-    slot="footer"
-  >
-    <Button onClick={handleCancel}>Cancel</Button>
-    <Button
-      disabled={$submitting}
-      form={FORM_ID}
-      submitForm
-      type="primary"
-      label={props.mode === "create" ? "Create report" : "Save report"}
+    <footer
+      class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3"
+      slot="footer"
     >
-      {props.mode === "create" ? "Create" : "Save"}
-    </Button>
-  </footer>
-</SidebarWrapper>
+      <Button onClick={handleCancel}>Cancel</Button>
+      <Button
+        disabled={$submitting}
+        form={FORM_ID}
+        submitForm
+        type="primary"
+        label={props.mode === "create" ? "Create report" : "Save report"}
+      >
+        {props.mode === "create" ? "Create" : "Save"}
+      </Button>
+    </footer>
+  </SidebarWrapper>
+</div>

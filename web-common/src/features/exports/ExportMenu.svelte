@@ -53,7 +53,7 @@
   $: metricsViewSpec = $exploreSpecQuery.data?.metricsView ?? {};
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
   $: exploreState = useExploreState(exploreName ?? "");
-  $: timeControlsStore = createTimeControlStoreFromName(
+  $: timeControlStore = createTimeControlStoreFromName(
     instanceId,
     exploreSpec.metricsView ?? "",
     exploreName ?? "",

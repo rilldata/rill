@@ -6,19 +6,17 @@
   const { report, organization, project, reportName } = data;
 </script>
 
-<div class="flex flex-row w-screen">
+<div class="flex flex-row w-screen h-full">
   <div class="w-full">
     <slot />
   </div>
-  <div class="w-[500px]">
-    <ScheduledReportEditor
-      {organization}
-      {project}
-      props={{
-        mode: "edit",
-        reportName,
-        reportSpec: report.report?.spec ?? {},
-      }}
-    />
-  </div>
+  <ScheduledReportEditor
+    {organization}
+    {project}
+    props={{
+      mode: "edit",
+      reportName,
+      reportSpec: report.report?.spec ?? {},
+    }}
+  />
 </div>
