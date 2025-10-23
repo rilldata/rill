@@ -24,12 +24,12 @@ func DotenvCmd(ch *cmdutil.Helper) *cobra.Command {
 
 func DotenvRefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "refresh {cloud|e2e|other}",
+		Use:   "refresh {cloud|e2e}",
 		Short: "Refresh .env file from shared storage",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			preset := args[0]
-			if preset != "cloud" && preset != "e2e" && preset != "other" {
+			if preset != "cloud" && preset != "e2e" {
 				return fmt.Errorf(".env not used for preset %q", preset)
 			}
 
@@ -52,12 +52,12 @@ func DotenvRefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 
 func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "upload {cloud|e2e|other}",
+		Use:   "upload {cloud|e2e}",
 		Short: "Distribute your current .env file to the team",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			preset := args[0]
-			if preset != "cloud" && preset != "e2e" && preset != "other" {
+			if preset != "cloud" && preset != "e2e" {
 				return fmt.Errorf(".env not used for preset %q", preset)
 			}
 
@@ -96,7 +96,6 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 var dotenvURLs = map[string]string{
 	"cloud": "gs://rill-devtool/dotenv/cloud-dev.env",
 	"e2e":   "gs://rill-devtool/dotenv/cloud-e2e.env",
-	"other": "gs://rill-devtool/dotenv/other.env",
 }
 
 func checkDotenv() error {

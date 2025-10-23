@@ -41,7 +41,7 @@ var (
 	logInfo = color.New(color.FgHiGreen)
 )
 
-var presets = []string{"cloud", "local", "e2e", "other"}
+var presets = []string{"cloud", "local", "e2e"}
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var verbose, reset, refreshDotenv, full bool
@@ -96,7 +96,7 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv, ful
 	switch preset {
 	case "cloud":
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, preset, full, services)
-	case "e2e", "other":
+	case "e2e":
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", false, services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
@@ -241,9 +241,9 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	switch preset {
 	case "cloud":
 		if full {
-			profiles = []string{"cloud", "full"}
+			profiles = []string{"core", "extras"}
 		} else {
-			profiles = []string{"cloud"}
+			profiles = []string{"core"}
 		}
 	case "e2e":
 		profiles = []string{"e2e"}
