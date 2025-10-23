@@ -118,6 +118,18 @@ const qualitativeStore = writable<QualitativeColors>({
   qualitative10: "",
   qualitative11: "",
   qualitative12: "",
+  qualitative13: "",
+  qualitative14: "",
+  qualitative15: "",
+  qualitative16: "",
+  qualitative17: "",
+  qualitative18: "",
+  qualitative19: "",
+  qualitative20: "",
+  qualitative21: "",
+  qualitative22: "",
+  qualitative23: "",
+  qualitative24: "",
 });
 
 /**
@@ -307,7 +319,7 @@ export const divergingColorsArray: Readable<string[]> = derived(
 );
 
 /**
- * Reactive store for qualitative colors (12 colors for categorical data)
+ * Reactive store for qualitative colors (24 colors for categorical data)
  * Qualitative palettes are designed for categorical data without inherent ordering
  */
 export const qualitativeColors: Readable<QualitativeColors> =
@@ -331,6 +343,18 @@ export const qualitativeColorsArray: Readable<string[]> = derived(
     $colors.qualitative10,
     $colors.qualitative11,
     $colors.qualitative12,
+    $colors.qualitative13,
+    $colors.qualitative14,
+    $colors.qualitative15,
+    $colors.qualitative16,
+    $colors.qualitative17,
+    $colors.qualitative18,
+    $colors.qualitative19,
+    $colors.qualitative20,
+    $colors.qualitative21,
+    $colors.qualitative22,
+    $colors.qualitative23,
+    $colors.qualitative24,
   ],
 );
 
@@ -361,11 +385,11 @@ export function getDivergingColor(index: number): Readable<string> {
 }
 
 /**
- * Get a specific qualitative color by index (1-12)
+ * Get a specific qualitative color by index (1-24)
  */
 export function getQualitativeColor(index: number): Readable<string> {
-  if (index < 1 || index > 12) {
-    throw new Error("Qualitative color index must be between 1 and 12");
+  if (index < 1 || index > 24) {
+    throw new Error("Qualitative color index must be between 1 and 24");
   }
   return derived(qualitativeColors, ($colors) => {
     const key = `qualitative${index}` as keyof QualitativeColors;
