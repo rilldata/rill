@@ -4,6 +4,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy, onMount } from "svelte";
   import { updateThemeVariables } from "../themes/actions";
+  import { themeControl } from "../themes/theme-control";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
 
@@ -31,8 +32,8 @@
 
   $: ({ width: clientWidth } = contentRect);
 
-  // Apply theme scoped to the canvas boundary element (once it's bound)
   $: if (themeBoundary) {
+    $themeControl;
     updateThemeVariables($themeSpec, themeBoundary);
   }
 

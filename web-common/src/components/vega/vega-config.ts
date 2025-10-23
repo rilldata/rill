@@ -202,61 +202,71 @@ export const getRillTheme: (
       strokeWidth: 0,
     },
     range: {
-      // Resolve qualitative palette colors for categorical data
-      category: theme
-        ? [
-            theme["color-qualitative-1"],
-            theme["color-qualitative-2"],
-            theme["color-qualitative-3"],
-            theme["color-qualitative-4"],
-            theme["color-qualitative-5"],
-            theme["color-qualitative-6"],
-            theme["color-qualitative-7"],
-            theme["color-qualitative-8"],
-            theme["color-qualitative-9"],
-            theme["color-qualitative-10"],
-            theme["color-qualitative-11"],
-            theme["color-qualitative-12"],
-            theme["color-qualitative-13"],
-            theme["color-qualitative-14"],
-            theme["color-qualitative-15"],
-            theme["color-qualitative-16"],
-            theme["color-qualitative-17"],
-            theme["color-qualitative-18"],
-            theme["color-qualitative-19"],
-            theme["color-qualitative-20"],
-            theme["color-qualitative-21"],
-            theme["color-qualitative-22"],
-            theme["color-qualitative-23"],
-            theme["color-qualitative-24"],
-          ].filter(Boolean)
-        : COMPARIONS_COLORS.map((color) => 
-            color.startsWith("var(") ? resolveCSSVariable(color, isDarkMode) : color
-          ),
-      // Resolve sequential palette colors for heatmaps
-      heatmap: theme
-        ? [
-            theme["color-sequential-1"],
-            theme["color-sequential-2"],
-            theme["color-sequential-3"],
-            theme["color-sequential-4"],
-            theme["color-sequential-5"],
-            theme["color-sequential-6"],
-            theme["color-sequential-7"],
-            theme["color-sequential-8"],
-            theme["color-sequential-9"],
-          ].filter(Boolean)
-        : [
-            resolveCSSVariable("var(--color-sequential-1)", isDarkMode),
-            resolveCSSVariable("var(--color-sequential-2)", isDarkMode),
-            resolveCSSVariable("var(--color-sequential-3)", isDarkMode),
-            resolveCSSVariable("var(--color-sequential-4)", isDarkMode),
-            resolveCSSVariable("var(--color-sequential-5)", isDarkMode),
-            resolveCSSVariable("var(--color-sequential-6)", isDarkMode),
-            resolveCSSVariable("var(--color-sequential-7)", isDarkMode),
-            resolveCSSVariable("var(--color-sequential-8)", isDarkMode),
-            resolveCSSVariable("var(--color-sequential-9)", isDarkMode),
-          ],
+      category: (() => {
+        const defaultColors = COMPARIONS_COLORS.map((color) => 
+          color.startsWith("var(") ? resolveCSSVariable(color, isDarkMode) : color
+        );
+        
+        if (!theme) return defaultColors;
+        
+        const themeColors = [
+          theme["color-qualitative-1"],
+          theme["color-qualitative-2"],
+          theme["color-qualitative-3"],
+          theme["color-qualitative-4"],
+          theme["color-qualitative-5"],
+          theme["color-qualitative-6"],
+          theme["color-qualitative-7"],
+          theme["color-qualitative-8"],
+          theme["color-qualitative-9"],
+          theme["color-qualitative-10"],
+          theme["color-qualitative-11"],
+          theme["color-qualitative-12"],
+          theme["color-qualitative-13"],
+          theme["color-qualitative-14"],
+          theme["color-qualitative-15"],
+          theme["color-qualitative-16"],
+          theme["color-qualitative-17"],
+          theme["color-qualitative-18"],
+          theme["color-qualitative-19"],
+          theme["color-qualitative-20"],
+          theme["color-qualitative-21"],
+          theme["color-qualitative-22"],
+          theme["color-qualitative-23"],
+          theme["color-qualitative-24"],
+        ].filter(Boolean);
+        
+        return themeColors.length > 0 ? themeColors : defaultColors;
+      })(),
+      heatmap: (() => {
+        const defaultColors = [
+          resolveCSSVariable("var(--color-sequential-1)", isDarkMode),
+          resolveCSSVariable("var(--color-sequential-2)", isDarkMode),
+          resolveCSSVariable("var(--color-sequential-3)", isDarkMode),
+          resolveCSSVariable("var(--color-sequential-4)", isDarkMode),
+          resolveCSSVariable("var(--color-sequential-5)", isDarkMode),
+          resolveCSSVariable("var(--color-sequential-6)", isDarkMode),
+          resolveCSSVariable("var(--color-sequential-7)", isDarkMode),
+          resolveCSSVariable("var(--color-sequential-8)", isDarkMode),
+          resolveCSSVariable("var(--color-sequential-9)", isDarkMode),
+        ];
+        
+        if (!theme) return defaultColors;
+        
+        const themeColors = [
+          theme["color-sequential-1"],
+          theme["color-sequential-2"],
+          theme["color-sequential-3"],
+          theme["color-sequential-4"],
+          theme["color-sequential-5"],
+          theme["color-sequential-6"],
+          theme["color-sequential-7"],
+          theme["color-sequential-8"],
+          theme["color-sequential-9"],
+        ].filter(Boolean);
+        
+        return themeColors.length > 0 ? themeColors : defaultColors;
+      })(),
     },
     numberFormat: "s",
     tooltipFormat: {

@@ -5,10 +5,8 @@ import {
   type CanvasResponse,
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import {
-  defaultPrimaryColors,
-  defaultSecondaryColors,
-} from "@rilldata/web-common/features/themes/color-config";
+import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
+import type { V1ThemeSpec } from "@rilldata/web-common/features/themes/theme-types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetResource,
@@ -16,9 +14,8 @@ import {
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
-  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import chroma, { type Color } from "chroma-js";
+import type { Color } from "chroma-js";
 import {
   derived,
   get,
@@ -332,19 +329,7 @@ export class CanvasEntity {
   };
 
   private updateThemeColors = (themeSpec: V1ThemeSpec | undefined) => {
-    const primaryColor =
-      themeSpec?.light?.primary || themeSpec?.primaryColorRaw;
-    const secondaryColor =
-      themeSpec?.light?.secondary || themeSpec?.secondaryColorRaw;
-
-    this.theme.set({
-      primary: primaryColor
-        ? chroma(primaryColor)
-        : chroma(`hsl(${defaultPrimaryColors[500]})`),
-      secondary: secondaryColor
-        ? chroma(secondaryColor)
-        : chroma(`hsl(${defaultSecondaryColors[500]})`),
-    });
+    this.theme.set(resolveThemeColors(themeSpec, false));
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {

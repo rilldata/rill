@@ -6,6 +6,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { resolveThemeObject } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
@@ -52,47 +53,7 @@
 
   $: measures = getMeasuresForMetricView(metrics_view);
 
-  // Get the appropriate theme object (light or dark) based on current mode
-  // This includes all CSS variables defined in the theme
-  $: currentTheme = (() => {
-    const spec = $themeSpec;
-
-    // Get the ThemeColors object for current mode (has primary, secondary, and variables)
-    const modeTheme = isThemeModeDark
-      ? (spec?.dark as
-          | {
-              primary?: string;
-              secondary?: string;
-              variables?: Record<string, string>;
-            }
-          | undefined)
-      : (spec?.light as
-          | {
-              primary?: string;
-              secondary?: string;
-              variables?: Record<string, string>;
-            }
-          | undefined);
-
-    if (modeTheme) {
-      // Merge primary, secondary, and all variables into a flat object
-      const merged: Record<string, string> = { ...modeTheme.variables };
-      if (modeTheme.primary) merged.primary = modeTheme.primary;
-      if (modeTheme.secondary) merged.secondary = modeTheme.secondary;
-      return merged;
-    }
-
-    // For legacy themes, construct a theme object with just primary/secondary
-    if (spec?.primaryColorRaw || spec?.secondaryColorRaw) {
-      const legacyTheme: Record<string, string> = {};
-      if (spec.primaryColorRaw) legacyTheme.primary = spec.primaryColorRaw;
-      if (spec.secondaryColorRaw)
-        legacyTheme.secondary = spec.secondaryColorRaw;
-      return legacyTheme;
-    }
-
-    return undefined;
-  })();
+  $: currentTheme = resolveThemeObject($themeSpec, isThemeModeDark);
 
   $: chartData = getChartDataForCanvas(
     store,

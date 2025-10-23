@@ -6,36 +6,16 @@
  */
 
 import { TailwindColorSpacing } from "./color-config.ts";
-import type { V1ThemeSpec } from "../../../../web-common/src/runtime-client/index.ts";
+import type { V1ThemeSpec as RuntimeV1ThemeSpec } from "../../../../web-common/src/runtime-client/index.ts";
+import type { ThemeModeColors } from "./theme-types";
 import chroma, { type Color } from "chroma-js";
 import { generateColorPalette } from "./palette-generator.ts";
 import { featureFlags } from "../feature-flags.ts";
 import { get } from "svelte/store";
-import { generatePalette, DEFAULT_STEP_COUNT, DEFAULT_GAMMA, createDarkVariation as createDarkVariationFn } from "./color-generation.ts";
-import { 
-  sanitizeThemeVariables, 
-  themeVariablesToCSS 
-} from "./css-sanitizer.ts";
-import { defaultPrimaryPalette, defaultSecondaryPalette } from "./colors.ts";
+import { generatePalette, DEFAULT_STEP_COUNT, DEFAULT_GAMMA } from "./color-generation.ts";
+import { sanitizeThemeVariables } from "./css-sanitizer.ts";
 
-// Cache default dark palettes (computed once on module load)
-const defaultPrimaryDarkPalette = createDarkVariationFn(defaultPrimaryPalette);
-const defaultSecondaryDarkPalette = createDarkVariationFn(defaultSecondaryPalette);
-
-// Constants
 const CUSTOM_THEME_STYLE_ID = "rill-custom-theme";
-
-// Type definitions
-type ColorPalette = {
-  light: Color[];
-  dark: Color[];
-};
-
-type ThemeColors = {
-  variables?: Record<string, string>;
-  primary?: string;
-  secondary?: string;
-};
 
 /**
  * Sets CSS variables for a color type (theme, theme-secondary, etc.)
@@ -92,118 +72,123 @@ function setIntermediateVariables(
  * @param scopeElement - Optional element to scope the theme to (defaults to document root)
  */
 export function updateThemeVariables(
-  theme: V1ThemeSpec | undefined,
+  theme: RuntimeV1ThemeSpec | undefined,
   scopeElement?: HTMLElement | null,
 ): void {
-  // Use provided scope element or fall back to document root
   const root = scopeElement || document.documentElement;
   const { darkMode } = featureFlags;
   const allowNewPalette = get(darkMode);
+  const isDarkMode = document.documentElement.classList.contains("dark");
 
-  // Priority 1: New structure - theme.light.variables / theme.dark.variables
-  // Check if new theme structure is being used (has light or dark with variables, primary, or secondary)
-  const themeLight = theme?.light as ThemeColors | undefined;
-  const themeDark = theme?.dark as ThemeColors | undefined;
+  const themeLight = theme?.light as ThemeModeColors | undefined;
+  const themeDark = theme?.dark as ThemeModeColors | undefined;
   
-  const hasNewStructure = Boolean(
-    themeLight?.variables || themeDark?.variables ||
-    themeLight?.primary || themeDark?.primary ||
-    themeLight?.secondary || themeDark?.secondary
+  const currentModeTheme = isDarkMode ? themeDark : themeLight;
+  const hasCurrentModeTheme = Boolean(
+    currentModeTheme?.variables ||
+    currentModeTheme?.primary ||
+    currentModeTheme?.secondary
   );
 
-  if (hasNewStructure && theme) {
-    injectThemeVariables(theme, root);
-    // Also handle legacy primary/secondary within the new structure
-    handleLegacyPrimarySecondaryInNewStructure(theme, root);
+  clearThemeVariables(root);
+
+  if (hasCurrentModeTheme && theme && currentModeTheme) {
+    injectCurrentModeThemeVariables(currentModeTheme, root);
+    handleCurrentModePrimarySecondary(currentModeTheme, root);
     return;
   }
 
-  // If no theme or no modern properties, remove any existing custom CSS
-  removeExistingCustomCSS();
-
-  // Priority 2: Legacy color properties (primaryColor, secondaryColor)
   updatePrimaryColor(theme, root, allowNewPalette);
   updateSecondaryColor(theme, root, allowNewPalette);
 }
 
-/**
- * Injects theme variables from the new theme.light.variables / theme.dark.variables structure
- * This is the main handler for the new backend theme format
- */
-function injectThemeVariables(
-  theme: V1ThemeSpec,
+function clearThemeVariables(root: HTMLElement): void {
+  removeExistingCustomCSS();
+  
+  if (root !== document.documentElement) {
+    setVariables(root, "theme", "light");
+    setVariables(root, "theme", "dark");
+    setVariables(root, "primary", "light");
+    setVariables(root, "primary", "dark");
+    setVariables(root, "theme-secondary", "light");
+    setVariables(root, "theme-secondary", "dark");
+    setVariables(root, "secondary", "light");
+    setVariables(root, "secondary", "dark");
+  }
+}
+
+function injectCurrentModeThemeVariables(
+  currentModeTheme: ThemeModeColors,
   scopeElement: HTMLElement,
 ): void {
-  removeExistingCustomCSS();
-
-  // Sanitize light and dark variables
-  const themeLight = theme.light as ThemeColors | undefined;
-  const themeDark = theme.dark as ThemeColors | undefined;
+  if (!currentModeTheme.variables) return;
   
-  const lightVariables = sanitizeThemeVariables(themeLight?.variables);
-  const darkVariables = sanitizeThemeVariables(themeDark?.variables);
+  const variables = sanitizeThemeVariables(currentModeTheme.variables);
+  if (Object.keys(variables).length === 0) return;
 
-  // Convert to CSS and inject
   const scopeSelector = scopeElement === document.documentElement 
     ? undefined 
     : ".dashboard-theme-boundary";
   
-  const css = themeVariablesToCSS(lightVariables, darkVariables, scopeSelector);
-  
-  if (css) {
-    createAndInjectStyle(css);
+  let css = "";
+  const selector = scopeSelector || ":root";
+  css += `${selector} {\n`;
+  for (const [name, value] of Object.entries(variables)) {
+    css += `  ${name}: ${value};\n`;
   }
+  css += "}\n";
+  
+  createAndInjectStyle(css);
 }
 
-/**
- * Handles legacy primary/secondary color properties within the new theme structure
- * (theme.light.primary, theme.light.secondary, theme.dark.primary, theme.dark.secondary)
- */
-function handleLegacyPrimarySecondaryInNewStructure(
-  theme: V1ThemeSpec,
+function handleCurrentModePrimarySecondary(
+  currentModeTheme: ThemeModeColors,
   root: HTMLElement,
 ): void {
-  const themeLight = theme.light as ThemeColors | undefined;
-  const themeDark = theme.dark as ThemeColors | undefined;
+  const isDarkMode = document.documentElement.classList.contains("dark");
+  const mode = isDarkMode ? "dark" : "light";
 
-  // Handle primary colors
-  if (themeLight?.primary || themeDark?.primary) {
+  if (currentModeTheme.primary) {
     try {
-      const palettes = generatePalettesFromColorStrings(
-        themeLight?.primary,
-        themeDark?.primary,
-        defaultPrimaryPalette,
-        defaultPrimaryDarkPalette
+      const palette = generatePalette(
+        chroma(currentModeTheme.primary),
+        false,
+        DEFAULT_STEP_COUNT,
+        DEFAULT_GAMMA
       );
-      applyPaletteToVariables(root, "theme", palettes);
-      applyPaletteToVariables(root, "primary", palettes);
+      const colors = isDarkMode ? palette.dark : palette.light;
+      
+      setVariables(root, "theme", mode, colors);
+      setVariables(root, "primary", mode, colors);
+      setIntermediateVariables(root, "theme");
+      setIntermediateVariables(root, "primary");
     } catch (error) {
-      console.error('Failed to generate palette from primary colors in new structure:', error);
+      console.error('Failed to generate palette from primary color:', error);
     }
   }
 
-  // Handle secondary colors
-  if (themeLight?.secondary || themeDark?.secondary) {
+  if (currentModeTheme.secondary) {
     try {
-      const palettes = generatePalettesFromColorStrings(
-        themeLight?.secondary,
-        themeDark?.secondary,
-        defaultSecondaryPalette,
-        defaultSecondaryDarkPalette
+      const palette = generatePalette(
+        chroma(currentModeTheme.secondary),
+        false,
+        DEFAULT_STEP_COUNT,
+        DEFAULT_GAMMA
       );
-      applyPaletteToVariables(root, "theme-secondary", palettes);
-      applyPaletteToVariables(root, "secondary", palettes);
+      const colors = isDarkMode ? palette.dark : palette.light;
+      
+      setVariables(root, "theme-secondary", mode, colors);
+      setVariables(root, "secondary", mode, colors);
+      setIntermediateVariables(root, "theme-secondary");
+      setIntermediateVariables(root, "secondary");
     } catch (error) {
-      console.error('Failed to generate palette from secondary colors in new structure:', error);
+      console.error('Failed to generate palette from secondary color:', error);
     }
   }
 }
 
-/**
- * Updates primary color variables
- */
 function updatePrimaryColor(
-  theme: V1ThemeSpec | undefined,
+  theme: RuntimeV1ThemeSpec | undefined,
   root: HTMLElement,
   allowNewPalette: boolean,
 ): void {
@@ -232,11 +217,8 @@ function updatePrimaryColor(
   }
 }
 
-/**
- * Updates secondary color variables
- */
 function updateSecondaryColor(
-  theme: V1ThemeSpec | undefined,
+  theme: RuntimeV1ThemeSpec | undefined,
   root: HTMLElement,
   allowNewPalette: boolean,
 ): void {
@@ -282,42 +264,4 @@ function createAndInjectStyle(css: string): void {
   style.id = CUSTOM_THEME_STYLE_ID;
   style.textContent = css;
   document.head.appendChild(style);
-}
-
-/**
- * Generates palettes from light and dark color strings (for new theme structure)
- */
-function generatePalettesFromColorStrings(
-  lightColor: string | undefined,
-  darkColor: string | undefined,
-  defaultLightPalette: Color[],
-  defaultDarkPalette: Color[],
-): ColorPalette {
-  // Generate palette from lightColor if provided
-  const generatedPalette = lightColor 
-    ? generatePalette(chroma(lightColor), false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA)
-    : null;
-  
-  const lightPalette = generatedPalette?.light ?? defaultLightPalette;
-  
-  // Handle dark palette
-  const darkPalette = darkColor
-    ? generatePalette(chroma(darkColor), false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA).dark
-    : generatedPalette?.dark ?? defaultDarkPalette;
-  
-  return { light: lightPalette, dark: darkPalette };
-}
-
-/**
- * Applies a palette to CSS variables
- */
-function applyPaletteToVariables(
-  root: HTMLElement,
-  type: string,
-  palettes: ColorPalette,
-): void {
-  setVariables(root, type, "light", palettes.light);
-  setVariables(root, type, "dark", palettes.dark);
-  // Set intermediate variables that automatically switch between light/dark
-  setIntermediateVariables(root, type);
 }

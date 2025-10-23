@@ -53,9 +53,10 @@ export function themeVariablesToCSS(
 
   let css = "";
 
-  // Light mode variables
   if (hasLight) {
-    const lightSelector = scopeSelector || ":root";
+    const lightSelector = scopeSelector 
+      ? `${scopeSelector}:not(.dark), :not(.dark) ${scopeSelector}`
+      : ":root:not(.dark)";
     css += `${lightSelector} {\n`;
     for (const [name, value] of Object.entries(lightVariables)) {
       css += `  ${name}: ${value};\n`;
@@ -63,7 +64,6 @@ export function themeVariablesToCSS(
     css += "}\n\n";
   }
 
-  // Dark mode variables
   if (hasDark) {
     const darkSelector = scopeSelector 
       ? `${scopeSelector}.dark, .dark ${scopeSelector}`

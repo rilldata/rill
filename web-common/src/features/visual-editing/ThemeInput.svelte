@@ -3,7 +3,7 @@
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
+  import type { V1ThemeSpec as RuntimeV1ThemeSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { featureFlags } from "../feature-flags";
   import {
@@ -12,6 +12,7 @@
   } from "../themes/color-config";
   import { useTheme } from "../themes/selectors";
   import { themeControl } from "../themes/theme-control";
+  import type { V1ThemeSpec, ThemeModeColors } from "../themes/theme-types";
 
   const DEFAULT_PRIMARY = `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`;
   const DEFAULT_SECONDARY = `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`;
@@ -21,7 +22,7 @@
   const { darkMode } = featureFlags;
 
   export let themeNames: string[];
-  export let theme: string | V1ThemeSpec | undefined;
+  export let theme: string | RuntimeV1ThemeSpec | undefined;
   export let small = false;
   export let onThemeChange: (themeName: string | undefined) => void;
   export let onColorChange: (
@@ -51,21 +52,14 @@
 
   $: currentThemeSpec = embeddedTheme || fetchedTheme;
 
-  // Use themeControl to determine actual current theme mode (light vs dark)
   $: isThemeModeDark = $themeControl === "dark";
 
   $: themeColors = isThemeModeDark
-    ? (currentThemeSpec?.dark as
-        | { primary?: string; secondary?: string }
-        | undefined)
-    : (currentThemeSpec?.light as
-        | { primary?: string; secondary?: string }
-        | undefined);
+    ? (currentThemeSpec?.dark as ThemeModeColors | undefined)
+    : (currentThemeSpec?.light as ThemeModeColors | undefined);
 
-  $: primaryFromTheme =
-    themeColors?.primary || currentThemeSpec?.primaryColorRaw;
-  $: secondaryFromTheme =
-    themeColors?.secondary || currentThemeSpec?.secondaryColorRaw;
+  $: primaryFromTheme = themeColors?.primary;
+  $: secondaryFromTheme = themeColors?.secondary;
 
   $: effectivePrimary = isPresetMode
     ? primaryFromTheme || DEFAULT_PRIMARY

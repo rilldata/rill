@@ -19,8 +19,8 @@
     defaultSecondaryColors,
   } from "@rilldata/web-common/features/themes/color-config";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import chroma from "chroma-js";
   import { slide } from "svelte/transition";
   import type { ColorScheme } from "vega-typings";
 
@@ -54,38 +54,8 @@
     canvasEntity: { themeSpec },
   } = getCanvasStore(canvasName, instanceId));
 
-  // Resolve theme colors based on current theme mode
   $: isThemeModeDark = $themeControl === "dark";
-  $: resolvedTheme = (() => {
-    const spec = $themeSpec;
-    const modeTheme = isThemeModeDark
-      ? (spec?.dark as
-          | {
-              primary?: string;
-              secondary?: string;
-              variables?: Record<string, string>;
-            }
-          | undefined)
-      : (spec?.light as
-          | {
-              primary?: string;
-              secondary?: string;
-              variables?: Record<string, string>;
-            }
-          | undefined);
-
-    const primaryColor = modeTheme?.primary || spec?.primaryColorRaw;
-    const secondaryColor = modeTheme?.secondary || spec?.secondaryColorRaw;
-
-    return {
-      primary: primaryColor
-        ? chroma(primaryColor)
-        : chroma(`hsl(${defaultPrimaryColors[500]})`),
-      secondary: secondaryColor
-        ? chroma(secondaryColor)
-        : chroma(`hsl(${defaultSecondaryColors[500]})`),
-    };
-  })();
+  $: resolvedTheme = resolveThemeColors($themeSpec, isThemeModeDark);
 
   $: currentColorRange =
     colorRange ||

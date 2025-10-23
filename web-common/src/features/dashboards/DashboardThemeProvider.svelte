@@ -3,6 +3,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { updateThemeVariables } from "@rilldata/web-common/features/themes/actions";
   import { useTheme } from "@rilldata/web-common/features/themes/selectors";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   const { validSpecStore } = getStateManagers();
@@ -24,16 +25,14 @@
     }
   }
 
-  // Update theme variables, explicitly passing undefined when no theme to reset colors
-  // Scope to the dashboard boundary element to avoid affecting the surrounding chrome
   $: {
     const themeSpec = theme
       ? ($theme?.data?.theme?.spec ??
         $validSpecStore?.data?.explore?.embeddedTheme)
       : undefined;
 
-    // Only apply theme once we have the boundary element reference
     if (themeBoundary) {
+      $themeControl;
       updateThemeVariables(themeSpec, themeBoundary);
     }
   }
