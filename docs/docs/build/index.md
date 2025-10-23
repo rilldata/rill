@@ -38,7 +38,7 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 - [**Custom API**](/build/custom-apis) - Create custom API endpoints to retrieve data outside of Rill
 
 ### Project Settings
-
+- [**Project Configuration**](/build/project-configuration) - Configure your Rill Project and set default behavior
 - [**Structure your Project**](/build/structure) - Structure folder architecture in Rill
 - [**Use your favorite IDE**](/build/ide) - Utilize your favorite IDE to build Rill projects
 - [**Debugging Rill Developer**](/build/debugging/trace-viewer) - Troubleshoot dashboard access, trace your reconciled resources, and understand project logs  

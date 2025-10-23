@@ -2,7 +2,7 @@
 title: "Project Configuration"
 description: "Complete guide to configuring your Rill project with rill.yaml and other project files"
 sidebar_label: "Project Configuration"
-sidebar_position: 40
+sidebar_position: 50
 ---
 
 # Project Configuration
