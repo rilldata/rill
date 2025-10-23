@@ -30,7 +30,6 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon } from "lucide-svelte";
@@ -60,10 +59,6 @@
     {},
     queryClient,
   );
-  $: schemaResp = createQueryServiceMetricsViewSchema(
-    instanceId,
-    metricsViewName,
-  );
 
   $: urlForExploreYAMLDefaultState = createUrlForExploreYAMLDefaultState(
     validExploreSpec,
@@ -74,7 +69,6 @@
     $bookamrksResp.data?.bookmarks ?? [],
     metricsViewSpec,
     exploreSpec,
-    $schemaResp.data?.schema ?? {},
     $exploreState,
     $metricsViewTimeRange.data?.timeRangeSummary,
   );
