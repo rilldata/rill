@@ -17,3 +17,10 @@ export function setStep(step: ConnectorStep) {
 export function setConnectorConfig(config: Record<string, unknown>) {
   connectorStepStore.update((state) => ({ ...state, connectorConfig: config }));
 }
+
+export function resetConnectorStep() {
+  connectorStepStore.set({
+    step: "connector",
+    connectorConfig: null,
+  });
+}

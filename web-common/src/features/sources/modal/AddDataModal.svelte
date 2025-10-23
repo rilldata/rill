@@ -23,6 +23,7 @@
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
   import { ICONS } from "./icons";
+  import { resetConnectorStep } from "./connectorStepStore";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -104,6 +105,7 @@
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
+    resetConnectorStep();
   }
 
   async function onCancelDialog() {
