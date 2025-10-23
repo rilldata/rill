@@ -18,21 +18,21 @@
   $: email = $page.url.searchParams.get("email");
   $: slackUser = $page.url.searchParams.get("slack_user");
 
-  // using this instead of reportUnsubscriber to avoid a flicker before reportUnsubscriber is triggered
+  // using this instead of alertUnsubscriber to avoid a flicker before alertUnsubscriber is triggered
   let loading = true;
 
-  const reportUnsubscriber = createAdminServiceUnsubscribeAlertUsingToken();
+  const alertUnsubscriber = createAdminServiceUnsubscribeAlertUsingToken();
 
   $: error =
-    ($reportUnsubscriber.error as unknown as AxiosError<RpcStatus>)?.response
-      ?.data?.message ?? $reportUnsubscriber.error?.message;
+    ($alertUnsubscriber.error as unknown as AxiosError<RpcStatus>)?.response
+      ?.data?.message ?? $alertUnsubscriber.error?.message;
 
   async function unsubscribe() {
     const data: AdminServiceUnsubscribeAlertBodyBody = {};
     if (email) data.email = email;
     if (slackUser) data.slackUser = slackUser;
 
-    await $reportUnsubscriber.mutateAsync({
+    await $alertUnsubscriber.mutateAsync({
       organization,
       project,
       name: alert,

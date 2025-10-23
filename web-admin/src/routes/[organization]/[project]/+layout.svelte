@@ -66,7 +66,7 @@
   $: onPublicURLPage = isPublicURLPage($page);
   $: onPublicReportOrAlertPage =
     isPublicReportPage($page) || isPublicAlertPage($page);
-  $: if ($page.url.searchParams.has("token") && onPublicReportOrAlertPage) {
+  $: if (onPublicReportOrAlertPage) {
     token = $page.url.searchParams.get("token");
   }
 
