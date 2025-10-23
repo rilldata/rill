@@ -139,5 +139,9 @@ export function patchSpecForTDD(
     );
   }
 
+  // Ensure transparent background for TDD charts
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  sanitizedSpec.background = "transparent";
+
   return sanitizedSpec;
 }
