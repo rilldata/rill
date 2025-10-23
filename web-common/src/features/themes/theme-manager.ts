@@ -134,7 +134,9 @@ class ThemeManager {
       };
     }
 
-    const modeTheme = isThemeModeDark ? themeSpec.dark : themeSpec.light;
+    const modeTheme: V1ThemeColors | undefined = isThemeModeDark
+      ? themeSpec.dark
+      : themeSpec.light;
     const primaryColor = modeTheme?.primary;
     const secondaryColor = modeTheme?.secondary;
 
@@ -154,7 +156,9 @@ class ThemeManager {
   ): Record<string, string> | undefined {
     if (!themeSpec) return undefined;
 
-    const modeTheme = isThemeModeDark ? themeSpec.dark : themeSpec.light;
+    const modeTheme: V1ThemeColors | undefined = isThemeModeDark
+      ? themeSpec.dark
+      : themeSpec.light;
     if (!modeTheme) return undefined;
 
     const merged: Record<string, string> = {};
@@ -241,7 +245,7 @@ class ThemeManager {
     currentModeTheme: V1ThemeColors,
     root: HTMLElement,
   ): void {
-    const primaryColor = currentModeTheme.primary;
+    const primaryColor: string | undefined = currentModeTheme.primary;
     if (primaryColor && typeof primaryColor === "string") {
       try {
         const palette = generatePalette(
@@ -262,7 +266,7 @@ class ThemeManager {
       }
     }
 
-    const secondaryColor = currentModeTheme.secondary;
+    const secondaryColor: string | undefined = currentModeTheme.secondary;
     if (secondaryColor && typeof secondaryColor === "string") {
       try {
         const palette = generatePalette(
@@ -338,6 +342,7 @@ class ThemeManager {
 export const themeManager = new ThemeManager();
 
 if (typeof window !== "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
   (window as any).__clearRillCSSCache = () =>
     themeManager.clearCSSVariableCache();
 }

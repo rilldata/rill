@@ -32,13 +32,7 @@
 
   let viewVL: View;
 
-  $: ({
-    data,
-    domainValues,
-    isFetching,
-    error,
-    isDarkMode: chartDataIsDarkMode,
-  } = $chartData);
+  $: ({ data, domainValues, isFetching, error } = $chartData);
 
   $: hasNoData = !isFetching && data.length === 0;
 
@@ -66,22 +60,28 @@
       [sanitizeFieldName(measure.name || "measure")]:
         createMeasureValueFormatter<null | undefined>(measure),
     }),
-    {},
+    {} as Record<string, (value: number | null | undefined) => string>,
   );
 
   $: expressionFunctions = {
     humanize: {
-      fn: (val) => humanizeDataType(val, FormatPreset.HUMANIZE, "table"),
+      fn: (val: number) =>
+        humanizeDataType(val, FormatPreset.HUMANIZE, "table"),
     },
     ...measures.reduce(
       (acc, measure) => {
         const fieldName = sanitizeFieldName(measure.name || "measure");
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const formatter = measureFormatters[fieldName];
         return {
           ...acc,
-          [fieldName]: { fn: (val) => measureFormatters[fieldName](val) },
+          [fieldName]: {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+            fn: (val: number) => (formatter ? formatter(val) : String(val)),
+          },
         };
       },
-      {} as Record<string, { fn: (val: any) => string }>,
+      {} as Record<string, { fn: (val: number) => string }>,
     ),
   };
 

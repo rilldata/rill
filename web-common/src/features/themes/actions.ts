@@ -6,7 +6,10 @@
  */
 
 import { TailwindColorSpacing } from "./color-config.ts";
-import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ThemeSpec,
+  V1ThemeColors,
+} from "@rilldata/web-common/runtime-client";
 import chroma, { type Color } from "chroma-js";
 import { generateColorPalette } from "./palette-generator.ts";
 import { featureFlags } from "../feature-flags.ts";
@@ -79,7 +82,9 @@ export function updateThemeVariables(
     return;
   }
 
-  const currentModeTheme = isDarkMode ? theme.dark : theme.light;
+  const currentModeTheme: V1ThemeColors | undefined = isDarkMode
+    ? theme.dark
+    : theme.light;
 
   themeManager.clearTheme(root);
   themeManager.applyTheme(theme, currentModeTheme, root);
