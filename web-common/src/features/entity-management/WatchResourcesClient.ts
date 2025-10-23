@@ -261,17 +261,6 @@ export class WatchResourcesClient {
             return;
           }
 
-          case ResourceKind.Theme: {
-            // Invalidate the specific theme query so canvas dashboards refetch it
-            void queryClient.invalidateQueries({
-              queryKey: getRuntimeServiceGetResourceQueryKey(this.instanceId, {
-                "name.kind": ResourceKind.Theme,
-                "name.name": res.name.name,
-              }),
-            });
-            return;
-          }
-
           case ResourceKind.Component: {
             const failed = !!res.resource.meta?.reconcileError;
             void invalidateComponentData(queryClient, res.name.name, failed);

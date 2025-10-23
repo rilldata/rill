@@ -70,7 +70,7 @@
     width,
     height,
     renderer,
-    theme,
+    themeMode: theme,
     colorMapping: [],
     expressionFunctions,
     useExpressionInterpreter: false,

@@ -11,8 +11,7 @@ import {
 } from "@rilldata/web-common/features/themes/color-config";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetResourceQueryKey,
-  runtimeServiceGetResource,
+  createRuntimeServiceGetResource,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
@@ -78,7 +77,7 @@ export class CanvasEntity {
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
   theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
-  themeSpec: Writable<V1ThemeSpec | undefined> = writable(undefined);
+  themeSpec: Readable<V1ThemeSpec | undefined>;
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
@@ -146,19 +145,47 @@ export class CanvasEntity {
     );
     this.filters = new Filters(this.metricsView, searchParamsStore);
 
-    searchParamsStore.subscribe((searchParams) => {
-      const themeFromUrl = searchParams.get("theme");
-      if (themeFromUrl) {
-        this.processTheme(themeFromUrl, undefined).catch(console.error);
+    const themeName = derived(
+      [page, this.specStore],
+      ([$page, $specStore]) => {
+        const themeFromUrl = $page.url.searchParams.get("theme");
+        const themeFromSpec = $specStore.data?.canvas?.theme;
+        return themeFromUrl || themeFromSpec;
       }
-    });
+    );
+
+    this.themeSpec = derived<
+      [Readable<string | undefined>, typeof this.specStore],
+      V1ThemeSpec | undefined
+    >(
+      [themeName, this.specStore],
+      ([$themeName, $specStore], set) => {
+        if ($themeName) {
+          const themeQuery = createRuntimeServiceGetResource(
+            instanceId,
+            {
+              "name.kind": ResourceKind.Theme,
+              "name.name": $themeName,
+            },
+            {},
+            queryClient,
+          );
+          return themeQuery.subscribe(($themeQuery) => {
+            const themeSpec = $themeQuery.data?.resource?.theme?.spec;
+            set(themeSpec);
+            this.updateThemeColors(themeSpec);
+          });
+        } else {
+          const embeddedTheme = $specStore.data?.canvas?.embeddedTheme;
+          set(embeddedTheme);
+          this.updateThemeColors(embeddedTheme);
+        }
+      },
+      undefined as V1ThemeSpec | undefined
+    );
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
-      const theme = spec.data?.canvas?.theme;
-      const embeddedTheme = spec.data?.canvas?.embeddedTheme;
-
-      this.processTheme(theme, embeddedTheme).catch(console.error);
 
       if (!filePath) {
         return;
@@ -304,35 +331,7 @@ export class CanvasEntity {
     this.firstLoad = false;
   };
 
-  processTheme = async (
-    themeName: string | undefined,
-    embeddedTheme: V1ThemeSpec | undefined,
-  ) => {
-    let themeSpec: V1ThemeSpec | undefined;
-
-    if (themeName) {
-      const response = await queryClient.fetchQuery({
-        queryKey: getRuntimeServiceGetResourceQueryKey(this.instanceId, {
-          "name.kind": ResourceKind.Theme,
-          "name.name": themeName,
-        }),
-        queryFn: () =>
-          runtimeServiceGetResource(this.instanceId, {
-            "name.kind": ResourceKind.Theme,
-            "name.name": themeName,
-          }),
-      });
-
-      themeSpec = response.resource?.theme?.spec;
-    } else if (embeddedTheme) {
-      themeSpec = embeddedTheme;
-    }
-
-    this.themeSpec.set(themeSpec);
-
-    // Note: This theme store now only holds default/fallback colors
-    // Actual theme mode-aware colors should be resolved at render time
-    // based on current light/dark mode (see CanvasChart.svelte)
+  private updateThemeColors = (themeSpec: V1ThemeSpec | undefined) => {
     const primaryColor =
       themeSpec?.light?.primary || themeSpec?.primaryColorRaw;
     const secondaryColor =
