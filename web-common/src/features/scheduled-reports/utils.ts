@@ -47,6 +47,7 @@ export function getQueryNameFromQuery(query: V1Query) {
 export function getNewReportInitialFormValues(
   userEmail: string | undefined,
   exploreName: string,
+  aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
   return {
     title: "",
@@ -57,12 +58,14 @@ export function getNewReportInitialFormValues(
     exportLimit: "",
     exportIncludeHeader: false,
     ...extractNotification(undefined, userEmail, false),
+    ...extractRowsAndColumns(aggregationRequest),
   };
 }
 
 export function getExistingReportInitialFormValues(
   reportSpec: V1ReportSpec,
   userEmail: string | undefined,
+  aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
   const exploreName =
     reportSpec.annotations?.["explore"] ??
@@ -79,6 +82,7 @@ export function getExistingReportInitialFormValues(
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
     exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
     ...extractNotification(reportSpec.notifiers, userEmail, true),
+    ...extractRowsAndColumns(aggregationRequest),
   };
 }
 

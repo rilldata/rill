@@ -15,8 +15,10 @@
     V1ExportFormat,
     type V1Query,
   } from "@rilldata/web-common/runtime-client";
+  import { onMount } from "svelte";
   import { get } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
+  import type TScheduledReportDialog from "../scheduled-reports/ScheduledReportDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   export let disabled: boolean = false;
@@ -26,6 +28,9 @@
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
 
+  const { fullPageReportEditor } = featureFlags;
+
+  let showScheduledReportDialog = false;
   let open = false;
 
   let exportQuery: V1Query | undefined;
@@ -68,16 +73,34 @@
     window.open(downloadUrl, "_self");
   }
 
+  // Only import the Scheduled Report dialog if in the Cloud context.
+  // This ensures Rill Developer doesn't try and fail to import the admin-client.
+  let ScheduledReportDialog: typeof TScheduledReportDialog;
+  onMount(async () => {
+    if (includeScheduledReport) {
+      ({ default: ScheduledReportDialog } = await import(
+        "../scheduled-reports/ScheduledReportDialog.svelte"
+      ));
+    }
+  });
+
   function createScheduledReport() {
+    if (!$fullPageReportEditor) {
+      showScheduledReportDialog = true;
+      return;
+    }
+
+    if (!exploreName) return;
+
     const pageState = get(page);
     const { organization, project } = pageState.params;
     const searchParams = getPivotExploreParams(
       pageState.url.searchParams,
       exploreSpec,
     );
-    if (exploreName) searchParams.set("explore", exploreName);
+    searchParams.set("explore", exploreName);
     void goto(
-      `/${organization}/${project}/-/reports/create?${searchParams.toString()}`,
+      `/${organization}/${project}/-/reports/-/create/explore/${exploreName}?${searchParams.toString()}`,
     );
   }
 </script>
@@ -160,3 +183,15 @@
     {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+{#if includeScheduledReport && ScheduledReportDialog && showScheduledReportDialog && scheduledReportQuery && exploreName}
+  <svelte:component
+    this={ScheduledReportDialog}
+    bind:open={showScheduledReportDialog}
+    props={{
+      mode: "create",
+      query: scheduledReportQuery,
+      exploreName,
+    }}
+  />
+{/if}

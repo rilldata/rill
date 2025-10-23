@@ -178,6 +178,7 @@ export class DashboardStateSync {
       );
     }
 
+    log("INIT", redirectUrl);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -275,6 +276,7 @@ export class DashboardStateSync {
       );
     }
 
+    log("URL", redirectUrl);
     this.updating = false;
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
@@ -330,6 +332,7 @@ export class DashboardStateSync {
       );
     }
 
+    log("GOTO", newUrl);
     this.updating = false;
     // If the state didnt result in a new url then skip goto.
     // This avoids adding redundant urls to the history.
@@ -339,5 +342,15 @@ export class DashboardStateSync {
 
     // dashboard changed so we should update the url
     return goto(newUrl);
+  }
+}
+
+function log(label: string, toUrl: URL) {
+  const fromSearch = get(page).url.search;
+  const toSearch = toUrl.search;
+  if (fromSearch === toSearch) {
+    console.log(`${label}: NC ${fromSearch}`);
+  } else {
+    console.log(`${label}: ${fromSearch} ==> ${toSearch}`);
   }
 }

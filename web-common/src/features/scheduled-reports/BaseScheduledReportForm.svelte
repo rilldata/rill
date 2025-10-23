@@ -1,9 +1,14 @@
 <script lang="ts">
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors.ts";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
+  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import {
     ReportRunAs,
@@ -24,6 +29,10 @@
   export let data: Readable<ReportValues>;
   export let errors: SuperFormErrors<ReportValues>;
   export let submit: () => void;
+  export let handleExploreChange: ((exploreName: string) => void) | undefined =
+    undefined;
+  export let filters: Filters | undefined = undefined;
+  export let timeControls: TimeControls | undefined = undefined;
   export let enhance;
 
   const RUN_AS_OPTIONS = [
@@ -45,6 +54,8 @@
 
   $: ({ instanceId } = $runtime);
 
+  const { fullPageReportEditor } = featureFlags;
+
   $: explores = useValidExplores(instanceId);
   $: exploreOptions =
     $explores.data?.map((res) => {
@@ -56,10 +67,6 @@
     }) ?? [];
 
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
-
-  function handleExploreChange(exploreName: string) {
-    metricsExplorerStore.remove(exploreName);
-  }
 </script>
 
 <form
@@ -77,13 +84,15 @@
       label="Report title"
       placeholder="My report"
     />
-    <Select
-      bind:value={$data["exploreName"]}
-      id="exploreName"
-      label="Explore"
-      options={exploreOptions}
-      onChange={handleExploreChange}
-    />
+    {#if $fullPageReportEditor}
+      <Select
+        bind:value={$data["exploreName"]}
+        id="exploreName"
+        label="Explore"
+        options={exploreOptions}
+        onChange={handleExploreChange}
+      />
+    {/if}
     <Select
       bind:value={$data["webOpenMode"]}
       id="webOpenMode"
@@ -137,6 +146,21 @@
         </TooltipContent>
       </Tooltip>
     </div>
+
+    {#if !$fullPageReportEditor && filters && timeControls}
+      <div class="flex flex-col gap-y-3">
+        <InputLabel label="Filters" id="filters" capitalize={false} />
+        <FiltersForm {filters} {timeControls} side="top" />
+      </div>
+
+      <RowsAndColumnsForm
+        bind:rows={$data["rows"]}
+        bind:columns={$data["columns"]}
+        columnErrors={$errors["columns"]}
+        {instanceId}
+        exploreName={$data["exploreName"]}
+      />
+    {/if}
 
     <MultiInput
       id="emailRecipients"

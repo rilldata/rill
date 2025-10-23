@@ -1,9 +1,9 @@
-export async function load({ parent, params, url }) {
+export async function load({ parent, params }) {
   await parent();
 
   const organization = params.organization;
   const project = params.project;
-  const exploreName = url.searchParams.get("explore") ?? "";
+  const exploreName = params.name;
 
   return {
     organization,

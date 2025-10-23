@@ -21,12 +21,11 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { getPivotQueryFromExploreState } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
-  import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
-  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-  import PivotOnlyDashboard from "@rilldata/web-common/features/dashboards/workspace/PivotOnlyDashboard.svelte";
+  import {
+    metricsExplorerStore,
+    useExploreState,
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import BaseScheduledReportForm from "@rilldata/web-common/features/scheduled-reports/BaseScheduledReportForm.svelte";
@@ -64,7 +63,6 @@
   $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
   $: metricsViewSpec = $exploreSpecQuery.data?.metricsView ?? {};
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
-  $: metricsViewName = exploreSpec.metricsView ?? "";
   $: exploreStore = useExploreState(exploreName);
 
   const user = createAdminServiceGetCurrentUser();
@@ -79,10 +77,12 @@
       ? getNewReportInitialFormValues(
           $user.data?.user?.email,
           props.exploreName,
+          {},
         )
       : getExistingReportInitialFormValues(
           props.reportSpec,
           $user.data?.user?.email,
+          {},
         );
 
   const schema = yup(
@@ -194,15 +194,14 @@
         queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
       });
 
+      if (props.mode === "create") {
+        void goto(`/${organization}/${project}/-/reports`);
+      } else {
+        void goto(`/${organization}/${project}/-/reports/${reportName}`);
+      }
+
       eventBus.emit("notification", {
         message: `Report ${props.mode === "create" ? "created" : "edited"}`,
-        link:
-          props.mode === "create"
-            ? {
-                href: `/${organization}/${project}/-/reports`,
-                text: "Go to scheduled reports",
-              }
-            : undefined,
         type: "success",
       });
     } catch {
@@ -217,55 +216,47 @@
       return goto(`/${organization}/${project}/-/reports/${reportName}`);
     }
   }
+
+  function handleExploreChange(exploreName: string) {
+    if (props.mode === "create") {
+      void goto(
+        `/${organization}/${project}/-/reports/-/create/explore/${exploreName}`,
+      );
+    } else {
+      void goto(
+        `/${organization}/${project}/-/reports/${reportName}/edit/explore/${exploreName}`,
+      );
+    }
+  }
 </script>
 
-<div class="flex flex-row w-screen">
-  <div class="w-full">
-    {#if exploreName}
-      {#key exploreName}
-        <StateManagersProvider {metricsViewName} {exploreName}>
-          <DashboardStateManager
-            {exploreName}
-            disableSessionStorage
-            disableMostRecentDashboardState
-          >
-            <DashboardThemeProvider>
-              <PivotOnlyDashboard {metricsViewName} {exploreName} />
-            </DashboardThemeProvider>
-          </DashboardStateManager>
-        </StateManagersProvider>
-      {/key}
-    {/if}
-  </div>
-  <div class="w-[500px]">
-    <SidebarWrapper title="Scheduled reports">
-      <BaseScheduledReportForm
-        formId={FORM_ID}
-        data={form}
-        {errors}
-        {submit}
-        {enhance}
-      />
+<SidebarWrapper title="Scheduled reports">
+  <BaseScheduledReportForm
+    formId={FORM_ID}
+    data={form}
+    {errors}
+    {submit}
+    {enhance}
+    {handleExploreChange}
+  />
 
-      {#if generalErrors}
-        <div class="text-red-500">{generalErrors}</div>
-      {/if}
+  {#if generalErrors}
+    <div class="text-red-500">{generalErrors}</div>
+  {/if}
 
-      <footer
-        class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3"
-        slot="footer"
-      >
-        <Button onClick={handleCancel}>Cancel</Button>
-        <Button
-          disabled={$submitting}
-          form={FORM_ID}
-          submitForm
-          type="primary"
-          label={props.mode === "create" ? "Create report" : "Save report"}
-        >
-          {props.mode === "create" ? "Create" : "Save"}
-        </Button>
-      </footer>
-    </SidebarWrapper>
-  </div>
-</div>
+  <footer
+    class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3"
+    slot="footer"
+  >
+    <Button onClick={handleCancel}>Cancel</Button>
+    <Button
+      disabled={$submitting}
+      form={FORM_ID}
+      submitForm
+      type="primary"
+      label={props.mode === "create" ? "Create report" : "Save report"}
+    >
+      {props.mode === "create" ? "Create" : "Save"}
+    </Button>
+  </footer>
+</SidebarWrapper>

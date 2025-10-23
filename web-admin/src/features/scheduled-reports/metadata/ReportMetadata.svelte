@@ -11,6 +11,8 @@
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -36,6 +38,8 @@
   export let report: string;
 
   $: ({ instanceId } = $runtime);
+
+  const { fullPageReportEditor } = featureFlags;
 
   $: reportQuery = useReport(instanceId, report);
   $: isReportCreatedByCode = useIsReportCreatedByCode(instanceId, report);
@@ -83,8 +87,16 @@
   const queryClient = useQueryClient();
   const deleteReport = createAdminServiceDeleteReport();
 
+  let showEditReportDialog = false;
+
   function handleEditReport() {
-    void goto(`/${organization}/${project}/-/reports/${report}/edit`);
+    if ($fullPageReportEditor) {
+      const url = new URL($exploreUrl);
+      url.pathname = `/${organization}/${project}/-/reports/${report}/edit/explore/${$exploreName.data}`;
+      void goto(url.toString());
+    } else {
+      showEditReportDialog = true;
+    }
   }
 
   async function handleDeleteReport() {
@@ -218,4 +230,14 @@
       <MetadataList data={emailNotifier.recipients} label="Email recipients" />
     {/if}
   </div>
+{/if}
+
+{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending && showEditReportDialog}
+  <ScheduledReportDialog
+    bind:open={showEditReportDialog}
+    props={{
+      mode: "edit",
+      reportSpec,
+    }}
+  />
 {/if}
