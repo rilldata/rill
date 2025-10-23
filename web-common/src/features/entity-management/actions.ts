@@ -46,14 +46,11 @@ export async function waitForResourceReconciliation(
   instanceId: string,
   resourceName: string,
   resourceKind: ResourceKind,
-  connectorType?: string,
 ) {
-  // Use longer timeout for OLAP connectors since they take longer to establish connections
-  const isOLAP =
-    connectorType &&
-    ["clickhouse", "motherduck", "druid", "pinot"].includes(connectorType);
-  const maxAttempts = isOLAP ? 30 : 10; // 60 seconds for OLAP, 20 seconds for others
   const pollInterval = 2000; // 2 seconds
+  // Match server timeout: 59 minutes = 59 * 60 * 1000 / 2000 = 1770 attempts
+  // This handles ClickHouse scale-to-zero scenarios and other long-running operations
+  const maxAttempts = 1770; // 59 minutes worth of 2-second intervals
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -81,8 +78,10 @@ export async function waitForResourceReconciliation(
         continue;
       }
 
-      // Last attempt and still not idle
-      throw new Error(`Resource reconciliation timeout. Please try again.`);
+      // Server should have timed out by now, but if not, throw timeout
+      throw new Error(
+        `Resource reconciliation timeout after 59 minutes. Please try again.`,
+      );
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
       if (error?.status === 404 || error?.response?.status === 404) {
@@ -96,6 +95,16 @@ export async function waitForResourceReconciliation(
         // Wait and try again
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
+      }
+
+      // Handle server timeouts (504 Gateway Timeout, etc.)
+      if (
+        error?.response?.status === 504 ||
+        error?.message?.includes("timeout")
+      ) {
+        throw new Error(
+          "Server timeout: Operation took longer than expected. Please try again.",
+        );
       }
 
       // Re-throw other errors
