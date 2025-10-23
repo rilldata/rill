@@ -70,7 +70,7 @@
     width,
     height,
     renderer,
-    theme,
+    themeMode: theme,
     colorMapping: [],
     expressionFunctions,
     useExpressionInterpreter: false,
@@ -104,7 +104,6 @@
 <div
   bind:contentRect
   role="presentation"
-  class:bg-surface={canvasDashboard}
   class:px-4={canvasDashboard}
   class:pb-2={canvasDashboard}
   class="rill-vega-container overflow-hidden size-full flex flex-col items-center justify-center"

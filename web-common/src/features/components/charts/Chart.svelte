@@ -12,6 +12,7 @@
   } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import chroma from "chroma-js";
   import type { Readable } from "svelte/store";
   import type { View } from "vega-typings";
   import type { ChartDataResult, ChartType } from "./types";
@@ -21,16 +22,42 @@
   export let chartSpec: CanvasChartSpec;
   export let chartData: Readable<ChartDataResult>;
   export let measures: MetricsViewSpecMeasure[];
-  export let theme: "light" | "dark" = "light";
+  export let themeMode: "light" | "dark" = "light";
+  /**
+   * Full theme object with all CSS variables (primary, secondary, background, etc.)
+   * If provided, chart uses these directly. If not, falls back to defaults.
+   */
+  export let theme: Record<string, string> | undefined = undefined;
   export let isCanvas: boolean;
 
   let viewVL: View;
 
-  $: ({ data, domainValues, isFetching, error } = $chartData);
+  $: ({
+    data,
+    domainValues,
+    isFetching,
+    error,
+    isDarkMode: chartDataIsDarkMode,
+  } = $chartData);
 
   $: hasNoData = !isFetching && data.length === 0;
 
-  $: spec = generateSpec(chartType, chartSpec, $chartData);
+  // Override chartData theme with mode-aware colors if theme prop is provided
+  $: chartDataWithTheme = theme
+    ? {
+        ...$chartData,
+        theme: {
+          primary: theme.primary
+            ? chroma(theme.primary)
+            : $chartData.theme.primary,
+          secondary: theme.secondary
+            ? chroma(theme.secondary)
+            : $chartData.theme.secondary,
+        },
+      }
+    : $chartData;
+
+  $: spec = generateSpec(chartType, chartSpec, chartDataWithTheme);
 
   // TODO: Move this to a central cached store
   $: measureFormatters = measures.reduce(
@@ -58,7 +85,14 @@
     ),
   };
 
-  $: colorMapping = getColorMappingForChart(chartSpec, domainValues);
+  // Color mapping needs to be reactive to theme mode changes (light/dark)
+  // because colors are resolved differently for each mode
+  $: isThemeModeDark = themeMode === "dark";
+  $: colorMapping = getColorMappingForChart(
+    chartSpec,
+    domainValues,
+    isThemeModeDark,
+  );
 </script>
 
 {#if isFetching}
@@ -78,11 +112,11 @@
     bind:viewVL
     canvasDashboard={isCanvas}
     data={{ "metrics-view": data }}
-    {theme}
+    {themeMode}
     {spec}
     {colorMapping}
     renderer="canvas"
     {expressionFunctions}
-    config={getRillTheme(true, theme === "dark")}
+    config={getRillTheme(true, isThemeModeDark, theme)}
   />
 {/if}

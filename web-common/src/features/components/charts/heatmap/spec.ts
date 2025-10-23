@@ -91,7 +91,8 @@ export function generateVLHeatmapSpec(
         fontWeight: "normal",
         opacity: 0.9,
         color: {
-          expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(config.color?.field ?? "")}'] ) ) > 0.45 ? '#111827' : '#e5e7eb'`,
+          // Use theme-aware colors: dark text on light backgrounds, light text on dark backgrounds
+          expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(config.color?.field ?? "")}'] ) ) > 0.45 ? 'var(--color-gray-900)' : 'var(--color-gray-50)'`,
         },
       },
       encoding: {

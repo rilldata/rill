@@ -18,6 +18,8 @@
     defaultPrimaryColors,
     defaultSecondaryColors,
   } from "@rilldata/web-common/features/themes/color-config";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import type { ColorScheme } from "vega-typings";
@@ -49,8 +51,11 @@
 
   $: ({ instanceId } = $runtime);
   $: ({
-    canvasEntity: { theme },
+    canvasEntity: { themeSpec },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: isThemeModeDark = $themeControl === "dark";
+  $: resolvedTheme = resolveThemeColors($themeSpec, isThemeModeDark);
 
   $: currentColorRange =
     colorRange ||
@@ -67,12 +72,15 @@
     return colorRange.mode === "gradient";
   }
 
-  const resolveColor = (color: string): string => {
+  $: resolveColor = (color: string): string => {
     if (color === "primary") {
-      return $theme.primary?.css("hsl") || `hsl(${defaultPrimaryColors[500]})`;
+      return (
+        resolvedTheme.primary?.css("hsl") || `hsl(${defaultPrimaryColors[500]})`
+      );
     } else if (color === "secondary") {
       return (
-        $theme.secondary?.css("hsl") || `hsl(${defaultSecondaryColors[500]})`
+        resolvedTheme.secondary?.css("hsl") ||
+        `hsl(${defaultSecondaryColors[500]})`
       );
     }
     return color;
@@ -169,31 +177,35 @@
         />
       {:else}
         <!-- Custom Graident Selectors -->
-        <ColorInput
-          small
-          stringColor={resolveColor(
-            isGradientMode(currentColorRange)
-              ? currentColorRange.start
-              : "primary",
-          )}
-          labelFirst
-          allowLightnessControl
-          label="Start color"
-          onChange={handleStartColorChange}
-        />
+        {#key `${isThemeModeDark}-${resolvedTheme.primary.hex()}`}
+          <ColorInput
+            small
+            stringColor={resolveColor(
+              isGradientMode(currentColorRange)
+                ? currentColorRange.start
+                : "primary",
+            )}
+            labelFirst
+            allowLightnessControl
+            label="Start color"
+            onChange={handleStartColorChange}
+          />
+        {/key}
 
-        <ColorInput
-          small
-          stringColor={resolveColor(
-            isGradientMode(currentColorRange)
-              ? currentColorRange.end
-              : "secondary",
-          )}
-          labelFirst
-          allowLightnessControl
-          label="End color"
-          onChange={handleEndColorChange}
-        />
+        {#key `${isThemeModeDark}-${resolvedTheme.secondary.hex()}`}
+          <ColorInput
+            small
+            stringColor={resolveColor(
+              isGradientMode(currentColorRange)
+                ? currentColorRange.end
+                : "secondary",
+            )}
+            labelFirst
+            allowLightnessControl
+            label="End color"
+            onChange={handleEndColorChange}
+          />
+        {/key}
       {/if}
 
       <div class="px-1 flex items-center justify-end">

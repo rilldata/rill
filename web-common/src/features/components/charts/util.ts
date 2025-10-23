@@ -7,6 +7,7 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
+import chroma from "chroma-js";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import type {
@@ -181,6 +182,7 @@ export function getColorForValues(
   colorValues: string[] | undefined,
   // if provided, use the colors for mentioned values
   overrideColorMapping: ColorMapping | undefined,
+  isDarkMode?: boolean,
 ): ColorMapping | undefined {
   if (!colorValues || colorValues.length === 0) return undefined;
 
@@ -188,11 +190,14 @@ export function getColorForValues(
     const overrideColor = overrideColorMapping?.find(
       (mapping) => mapping.value === value,
     );
+    const colorVar =
+      overrideColor?.color ||
+      COMPARIONS_COLORS[index % COMPARIONS_COLORS.length];
+
     return {
       value,
-      color:
-        overrideColor?.color ||
-        COMPARIONS_COLORS[index % COMPARIONS_COLORS.length],
+      // Resolve CSS variables for canvas rendering and tooltips, considering dark mode
+      color: resolveCSSVariable(colorVar, isDarkMode),
     };
   });
 
@@ -202,6 +207,7 @@ export function getColorForValues(
 export function getColorMappingForChart(
   chartSpec: ChartSpec,
   domainValues: ChartDomainValues | undefined,
+  isDarkMode?: boolean,
 ): ColorMapping | undefined {
   if (!("color" in chartSpec) || !domainValues) return undefined;
   const colorField = chartSpec.color;
@@ -211,11 +217,123 @@ export function getColorMappingForChart(
     const fieldKey = colorField.field;
     const colorValues = domainValues[fieldKey];
     if (isDomainStringArray(colorValues)) {
-      colorMapping = getColorForValues(colorValues, colorField.colorMapping);
+      colorMapping = getColorForValues(
+        colorValues,
+        colorField.colorMapping,
+        isDarkMode,
+      );
     }
   }
 
   return colorMapping;
+}
+
+/**
+ * Resolves a CSS variable to its computed value
+ * Necessary for canvas rendering where CSS variables must be resolved
+ * Checks scoped theme boundary first, then falls back to document root
+ * For palette variables, explicitly resolves to light/dark variant based on current theme
+ */
+export function resolveCSSVariable(
+  cssVar: string,
+  isDarkMode?: boolean,
+): string {
+  if (typeof window === "undefined" || !cssVar.startsWith("var("))
+    return cssVar;
+
+  const varName = cssVar
+    .replace("var(", "")
+    .replace(")", "")
+    .split(",")[0]
+    .trim();
+
+  // Determine dark mode if not explicitly provided
+  const darkMode =
+    isDarkMode ?? document.documentElement.classList.contains("dark");
+
+  // For theme palette variables (--color-theme-600, --color-primary-500, etc),
+  // these use light-dark() CSS function, so resolve to explicit light/dark variant
+  const palettePattern =
+    /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
+  const match = varName.match(palettePattern);
+
+  if (match) {
+    const [, colorType, shade] = match;
+    const modeVariant = darkMode
+      ? `--color-${colorType}-dark-${shade}`
+      : `--color-${colorType}-light-${shade}`;
+
+    // Try scoped theme boundary first
+    const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+    if (themeBoundary) {
+      const scopedValue = getComputedStyle(
+        themeBoundary as HTMLElement,
+      ).getPropertyValue(modeVariant);
+      if (scopedValue && scopedValue.trim()) {
+        return scopedValue.trim();
+      }
+    }
+
+    // Fall back to document root
+    const computed = getComputedStyle(
+      document.documentElement,
+    ).getPropertyValue(modeVariant);
+    if (computed && computed.trim()) {
+      return computed.trim();
+    }
+  }
+
+  // For other variables, read directly from the appropriate context
+  // First check if there's a dashboard-theme-boundary element (scoped themes)
+  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+  if (themeBoundary) {
+    const scopedValue = getComputedStyle(
+      themeBoundary as HTMLElement,
+    ).getPropertyValue(varName);
+    if (scopedValue && scopedValue.trim()) {
+      return scopedValue.trim();
+    }
+  }
+
+  // Fall back to document root for global variables
+  const computed = getComputedStyle(document.documentElement).getPropertyValue(
+    varName,
+  );
+
+  return computed && computed.trim() ? computed.trim() : cssVar;
+}
+
+/**
+ * Converts a resolved color back to its CSS variable reference if it matches a palette color
+ * This allows YAML to store variable references instead of hardcoded values
+ */
+export function colorToVariableReference(
+  resolvedColor: string,
+  isDarkMode?: boolean,
+): string {
+  if (!resolvedColor || typeof window === "undefined") return resolvedColor;
+
+  // Check all comparison colors (qualitative palette)
+  for (let i = 0; i < COMPARIONS_COLORS.length; i++) {
+    const varRef = COMPARIONS_COLORS[i];
+    const resolved = resolveCSSVariable(varRef, isDarkMode);
+
+    // Compare colors (normalize by converting both to chroma and back)
+    try {
+      const inputChroma = chroma(resolvedColor);
+      const paletteChroma = chroma(resolved);
+
+      // Check if colors are the same (with small tolerance for rounding)
+      if (chroma.deltaE(inputChroma, paletteChroma) < 1) {
+        return varRef; // Return the CSS variable reference
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }
+
+  // Not a palette color, return as-is
+  return resolvedColor;
 }
 
 export function sanitizeSortFieldForVega(sort: ChartSortDirection) {

@@ -18,6 +18,7 @@ import {
   isFieldConfig,
   mergedVlConfig,
   resolveColor,
+  resolveCSSVariable,
   sanitizeSortFieldForVega,
 } from "@rilldata/web-common/features/components/charts/util";
 import {
@@ -127,7 +128,10 @@ export function createColorEncoding(
 
     if (colorMapping?.length) {
       const domain = colorMapping.map((mapping) => mapping.value);
-      const range = colorMapping.map((mapping) => mapping.color);
+      // Resolve CSS variables for canvas rendering
+      const range = colorMapping.map((mapping) =>
+        resolveCSSVariable(mapping.color),
+      );
 
       baseEncoding.scale = {
         domain,
@@ -140,9 +144,45 @@ export function createColorEncoding(
       const colorRange = colorField.colorRange;
 
       if (colorRange.mode === "scheme") {
-        baseEncoding.scale = {
-          scheme: colorRange.scheme,
-        };
+        // Support palette scheme names
+        if (colorRange.scheme === "sequential") {
+          // Use our sequential palette (9 colors) - resolve for canvas rendering
+          baseEncoding.scale = {
+            range: [
+              resolveCSSVariable("var(--color-sequential-1)"),
+              resolveCSSVariable("var(--color-sequential-2)"),
+              resolveCSSVariable("var(--color-sequential-3)"),
+              resolveCSSVariable("var(--color-sequential-4)"),
+              resolveCSSVariable("var(--color-sequential-5)"),
+              resolveCSSVariable("var(--color-sequential-6)"),
+              resolveCSSVariable("var(--color-sequential-7)"),
+              resolveCSSVariable("var(--color-sequential-8)"),
+              resolveCSSVariable("var(--color-sequential-9)"),
+            ],
+          };
+        } else if (colorRange.scheme === "diverging") {
+          // Use our diverging palette (11 colors) - resolve for canvas rendering
+          baseEncoding.scale = {
+            range: [
+              resolveCSSVariable("var(--color-diverging-1)"),
+              resolveCSSVariable("var(--color-diverging-2)"),
+              resolveCSSVariable("var(--color-diverging-3)"),
+              resolveCSSVariable("var(--color-diverging-4)"),
+              resolveCSSVariable("var(--color-diverging-5)"),
+              resolveCSSVariable("var(--color-diverging-6)"),
+              resolveCSSVariable("var(--color-diverging-7)"),
+              resolveCSSVariable("var(--color-diverging-8)"),
+              resolveCSSVariable("var(--color-diverging-9)"),
+              resolveCSSVariable("var(--color-diverging-10)"),
+              resolveCSSVariable("var(--color-diverging-11)"),
+            ],
+          };
+        } else {
+          // Use Vega's built-in color schemes
+          baseEncoding.scale = {
+            scheme: colorRange.scheme,
+          };
+        }
       } else if (colorRange.mode === "gradient") {
         baseEncoding.scale = {
           range: [
