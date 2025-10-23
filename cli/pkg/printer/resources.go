@@ -14,7 +14,6 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (p *Printer) PrintOrgs(orgs []*adminv1.Organization, defaultOrg string) {
@@ -135,20 +134,10 @@ func (p *Printer) PrintOrganizationMemberUsers(members []*adminv1.OrganizationMe
 	for _, m := range members {
 		memberAttrs := ""
 		if m.Attributes != nil && len(m.Attributes.Fields) > 0 {
+			attrMap := m.Attributes.AsMap()
 			var attrs []string
-			for key, value := range m.Attributes.Fields {
-				var valueStr string
-				switch v := value.Kind.(type) {
-				case *structpb.Value_StringValue:
-					valueStr = v.StringValue
-				case *structpb.Value_NumberValue:
-					valueStr = strconv.FormatFloat(v.NumberValue, 'f', -1, 64)
-				case *structpb.Value_BoolValue:
-					valueStr = strconv.FormatBool(v.BoolValue)
-				default:
-					valueStr = value.String()
-				}
-				attrs = append(attrs, fmt.Sprintf("%s=%s", key, valueStr))
+			for key, value := range attrMap {
+				attrs = append(attrs, fmt.Sprintf("%s=%v", key, value))
 			}
 			memberAttrs = strings.Join(attrs, ", ")
 		}
@@ -170,9 +159,9 @@ func (p *Printer) PrintProjectMemberUsers(members []*adminv1.ProjectMemberUser) 
 		return
 	}
 
-	allMembers := make([]*memberUserWithRole, 0, len(members))
+	allMembers := make([]*projectMemberUserWithRole, 0, len(members))
 	for _, m := range members {
-		allMembers = append(allMembers, &memberUserWithRole{
+		allMembers = append(allMembers, &projectMemberUserWithRole{
 			Email:    m.UserEmail,
 			Name:     m.UserName,
 			RoleName: m.RoleName,
@@ -257,6 +246,12 @@ type memberUserWithRole struct {
 	Name       string `header:"name" json:"display_name"`
 	RoleName   string `header:"role" json:"role_name"`
 	Attributes string `header:"attributes" json:"attributes"`
+}
+
+type projectMemberUserWithRole struct {
+	Email    string `header:"email" json:"email"`
+	Name     string `header:"name" json:"display_name"`
+	RoleName string `header:"role" json:"role_name"`
 }
 
 type orgMemberService struct {
