@@ -68,7 +68,8 @@ export function isPublicURLPage(page: Page): boolean {
 
   return (
     page.route.id.startsWith("/[organization]/[project]/-/share/[token]") ||
-    isPublicReportPage(page)
+    isPublicReportPage(page) ||
+    isPublicAlertPage(page)
   );
 }
 
@@ -77,6 +78,13 @@ export function isPublicReportPage(page: Page): boolean {
     !!page.route.id?.startsWith(
       "/[organization]/[project]/-/reports/[report]",
     ) && page.url.searchParams.has("token")
+  );
+}
+
+export function isPublicAlertPage(page: Page): boolean {
+  return (
+    !!page.route.id?.startsWith("/[organization]/[project]/-/alerts/[alert]") &&
+    page.url.searchParams.has("token")
   );
 }
 
