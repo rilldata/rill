@@ -20,7 +20,7 @@ x-postgres: &postgres
 services:
   postgres:
     <<: *postgres
-    profiles: ["cloud"]
+    profiles: ["cloud", "full"]
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
