@@ -2591,9 +2591,34 @@ definitions:
     description: | 
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
-      To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+      To apply that theme to a dashboard, add `theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
+
+      :::tip Modern Theming with Light and Dark Modes
+      The new theming system supports separate `light` and `dark` mode customization with extensive CSS variable control. This allows you to define distinct color palettes for each mode and customize UI components, borders, backgrounds, and chart colors.
+      :::
     examples: 
-      - # Example: You can copy this directly into your <theme_name>.yaml file
+      - # Example: Modern theme with light and dark modes
+        type: theme
+        
+        light:
+          primary: "#3b82f6"
+          secondary: "#8b5cf6"
+          background: "#ffffff"
+          foreground: "#0f172a"
+          color-sequential-1: "#dbeafe"
+          color-sequential-5: "#3b82f6"
+          color-sequential-9: "#1e3a8a"
+        
+        dark:
+          primary: "#60a5fa"
+          secondary: "#a78bfa"
+          background: "#0f172a"
+          foreground: "#f8fafc"
+          color-sequential-1: "#1e3a8a"
+          color-sequential-5: "#3b82f6"
+          color-sequential-9: "#dbeafe"
+      
+      - # Example: Legacy theme (deprecated, use light/dark instead)
         type: theme
         
         colors:
@@ -2609,19 +2634,317 @@ definitions:
             description: Refers to the resource type and must be `theme`
           colors:
             type: object
-            description: Color palette for the theme
+            description: "**DEPRECATED**: Use `light` and `dark` properties instead. Legacy color palette for the theme. Cannot be used together with `light` or `dark` properties."
+            deprecated: true
             properties:
               primary:
                 type: string
-                description: Primary color
+                description: Primary color (hex, named color, or hsl format)
               secondary:
                 type: string
-                description: Secondary color
-            additionalProperties: true
+                description: Secondary color (hex, named color, or hsl format)
+            additionalProperties: false
+          light:
+            type: object
+            description: Color customization for light mode. Supports CSS color values (hex, named colors, hsl, etc.)
+            properties:
+              primary:
+                type: string
+                description: Primary theme color
+              secondary:
+                type: string
+                description: Secondary theme color
+              surface:
+                type: string
+                description: Surface color
+              background:
+                type: string
+                description: Background color
+              color-sequential-1:
+                type: string
+                description: Sequential palette color 1 (lightest)
+              color-sequential-2:
+                type: string
+                description: Sequential palette color 2
+              color-sequential-3:
+                type: string
+                description: Sequential palette color 3
+              color-sequential-4:
+                type: string
+                description: Sequential palette color 4
+              color-sequential-5:
+                type: string
+                description: Sequential palette color 5 (medium)
+              color-sequential-6:
+                type: string
+                description: Sequential palette color 6
+              color-sequential-7:
+                type: string
+                description: Sequential palette color 7
+              color-sequential-8:
+                type: string
+                description: Sequential palette color 8
+              color-sequential-9:
+                type: string
+                description: Sequential palette color 9 (darkest)
+              color-diverging-1:
+                type: string
+                description: Diverging palette color 1
+              color-diverging-2:
+                type: string
+                description: Diverging palette color 2
+              color-diverging-3:
+                type: string
+                description: Diverging palette color 3
+              color-diverging-4:
+                type: string
+                description: Diverging palette color 4
+              color-diverging-5:
+                type: string
+                description: Diverging palette color 5
+              color-diverging-6:
+                type: string
+                description: Diverging palette color 6 (neutral)
+              color-diverging-7:
+                type: string
+                description: Diverging palette color 7
+              color-diverging-8:
+                type: string
+                description: Diverging palette color 8
+              color-diverging-9:
+                type: string
+                description: Diverging palette color 9
+              color-diverging-10:
+                type: string
+                description: Diverging palette color 10
+              color-diverging-11:
+                type: string
+                description: Diverging palette color 11
+              color-qualitative-1:
+                type: string
+                description: Qualitative palette color 1
+              color-qualitative-2:
+                type: string
+                description: Qualitative palette color 2
+              color-qualitative-3:
+                type: string
+                description: Qualitative palette color 3
+              color-qualitative-4:
+                type: string
+                description: Qualitative palette color 4
+              color-qualitative-5:
+                type: string
+                description: Qualitative palette color 5
+              color-qualitative-6:
+                type: string
+                description: Qualitative palette color 6
+              color-qualitative-7:
+                type: string
+                description: Qualitative palette color 7
+              color-qualitative-8:
+                type: string
+                description: Qualitative palette color 8
+              color-qualitative-9:
+                type: string
+                description: Qualitative palette color 9
+              color-qualitative-10:
+                type: string
+                description: Qualitative palette color 10
+              color-qualitative-11:
+                type: string
+                description: Qualitative palette color 11
+              color-qualitative-12:
+                type: string
+                description: Qualitative palette color 12
+              color-qualitative-13:
+                type: string
+                description: Qualitative palette color 13
+              color-qualitative-14:
+                type: string
+                description: Qualitative palette color 14
+              color-qualitative-15:
+                type: string
+                description: Qualitative palette color 15
+              color-qualitative-16:
+                type: string
+                description: Qualitative palette color 16
+              color-qualitative-17:
+                type: string
+                description: Qualitative palette color 17
+              color-qualitative-18:
+                type: string
+                description: Qualitative palette color 18
+              color-qualitative-19:
+                type: string
+                description: Qualitative palette color 19
+              color-qualitative-20:
+                type: string
+                description: Qualitative palette color 20
+              color-qualitative-21:
+                type: string
+                description: Qualitative palette color 21
+              color-qualitative-22:
+                type: string
+                description: Qualitative palette color 22
+              color-qualitative-23:
+                type: string
+                description: Qualitative palette color 23
+              color-qualitative-24:
+                type: string
+                description: Qualitative palette color 24
+            additionalProperties: false
+          dark:
+            type: object
+            description: Color customization for dark mode. Supports CSS color values (hex, named colors, hsl, etc.)
+            properties:
+              primary:
+                type: string
+                description: Primary theme color
+              secondary:
+                type: string
+                description: Secondary theme color
+              surface:
+                type: string
+                description: Surface color
+              background:
+                type: string
+                description: Background color
+              color-sequential-1:
+                type: string
+                description: Sequential palette color 1 (lightest)
+              color-sequential-2:
+                type: string
+                description: Sequential palette color 2
+              color-sequential-3:
+                type: string
+                description: Sequential palette color 3
+              color-sequential-4:
+                type: string
+                description: Sequential palette color 4
+              color-sequential-5:
+                type: string
+                description: Sequential palette color 5 (medium)
+              color-sequential-6:
+                type: string
+                description: Sequential palette color 6
+              color-sequential-7:
+                type: string
+                description: Sequential palette color 7
+              color-sequential-8:
+                type: string
+                description: Sequential palette color 8
+              color-sequential-9:
+                type: string
+                description: Sequential palette color 9 (darkest)
+              color-diverging-1:
+                type: string
+                description: Diverging palette color 1
+              color-diverging-2:
+                type: string
+                description: Diverging palette color 2
+              color-diverging-3:
+                type: string
+                description: Diverging palette color 3
+              color-diverging-4:
+                type: string
+                description: Diverging palette color 4
+              color-diverging-5:
+                type: string
+                description: Diverging palette color 5
+              color-diverging-6:
+                type: string
+                description: Diverging palette color 6 (neutral)
+              color-diverging-7:
+                type: string
+                description: Diverging palette color 7
+              color-diverging-8:
+                type: string
+                description: Diverging palette color 8
+              color-diverging-9:
+                type: string
+                description: Diverging palette color 9
+              color-diverging-10:
+                type: string
+                description: Diverging palette color 10
+              color-diverging-11:
+                type: string
+                description: Diverging palette color 11
+              color-qualitative-1:
+                type: string
+                description: Qualitative palette color 1
+              color-qualitative-2:
+                type: string
+                description: Qualitative palette color 2
+              color-qualitative-3:
+                type: string
+                description: Qualitative palette color 3
+              color-qualitative-4:
+                type: string
+                description: Qualitative palette color 4
+              color-qualitative-5:
+                type: string
+                description: Qualitative palette color 5
+              color-qualitative-6:
+                type: string
+                description: Qualitative palette color 6
+              color-qualitative-7:
+                type: string
+                description: Qualitative palette color 7
+              color-qualitative-8:
+                type: string
+                description: Qualitative palette color 8
+              color-qualitative-9:
+                type: string
+                description: Qualitative palette color 9
+              color-qualitative-10:
+                type: string
+                description: Qualitative palette color 10
+              color-qualitative-11:
+                type: string
+                description: Qualitative palette color 11
+              color-qualitative-12:
+                type: string
+                description: Qualitative palette color 12
+              color-qualitative-13:
+                type: string
+                description: Qualitative palette color 13
+              color-qualitative-14:
+                type: string
+                description: Qualitative palette color 14
+              color-qualitative-15:
+                type: string
+                description: Qualitative palette color 15
+              color-qualitative-16:
+                type: string
+                description: Qualitative palette color 16
+              color-qualitative-17:
+                type: string
+                description: Qualitative palette color 17
+              color-qualitative-18:
+                type: string
+                description: Qualitative palette color 18
+              color-qualitative-19:
+                type: string
+                description: Qualitative palette color 19
+              color-qualitative-20:
+                type: string
+                description: Qualitative palette color 20
+              color-qualitative-21:
+                type: string
+                description: Qualitative palette color 21
+              color-qualitative-22:
+                type: string
+                description: Qualitative palette color 22
+              color-qualitative-23:
+                type: string
+                description: Qualitative palette color 23
+              color-qualitative-24:
+                type: string
+                description: Qualitative palette color 24
+            additionalProperties: false
       
         required:
           - type
-          - display_name
       - $ref: '#/definitions/common_properties'
 
   # Components
@@ -2905,19 +3228,318 @@ definitions:
     properties:
       colors:
         type: object
-        description: Used to override the dashboard colors. Either primary or secondary color must be provided.
+        description: "**DEPRECATED**: Use `light` and `dark` properties instead. Legacy color override for dashboards. Cannot be used together with `light` or `dark` properties."
+        deprecated: true
         properties:
           primary:
             type: string
-            description: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
+            description: "**DEPRECATED**: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats."
           secondary:
             type: string
-            description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+            description: "**DEPRECATED**: Overrides the secondary color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats."
         anyOf:
           - required:
               - primary
           - required:
               - secondary
+      light:
+        type: object
+        description: Color customization for light mode. Supports CSS color values (hex, named colors, hsl, etc.). All properties are optional.
+        properties:
+          primary:
+            type: string
+            description: Primary theme color
+          secondary:
+            type: string
+            description: Secondary theme color
+          surface:
+            type: string
+            description: Surface color
+          background:
+            type: string
+            description: Background color
+          color-sequential-1:
+            type: string
+            description: Sequential palette color 1 (lightest)
+          color-sequential-2:
+            type: string
+            description: Sequential palette color 2
+          color-sequential-3:
+            type: string
+            description: Sequential palette color 3
+          color-sequential-4:
+            type: string
+            description: Sequential palette color 4
+          color-sequential-5:
+            type: string
+            description: Sequential palette color 5 (medium)
+          color-sequential-6:
+            type: string
+            description: Sequential palette color 6
+          color-sequential-7:
+            type: string
+            description: Sequential palette color 7
+          color-sequential-8:
+            type: string
+            description: Sequential palette color 8
+          color-sequential-9:
+            type: string
+            description: Sequential palette color 9 (darkest)
+          color-diverging-1:
+            type: string
+            description: Diverging palette color 1
+          color-diverging-2:
+            type: string
+            description: Diverging palette color 2
+          color-diverging-3:
+            type: string
+            description: Diverging palette color 3
+          color-diverging-4:
+            type: string
+            description: Diverging palette color 4
+          color-diverging-5:
+            type: string
+            description: Diverging palette color 5
+          color-diverging-6:
+            type: string
+            description: Diverging palette color 6 (neutral)
+          color-diverging-7:
+            type: string
+            description: Diverging palette color 7
+          color-diverging-8:
+            type: string
+            description: Diverging palette color 8
+          color-diverging-9:
+            type: string
+            description: Diverging palette color 9
+          color-diverging-10:
+            type: string
+            description: Diverging palette color 10
+          color-diverging-11:
+            type: string
+            description: Diverging palette color 11
+          color-qualitative-1:
+            type: string
+            description: Qualitative palette color 1
+          color-qualitative-2:
+            type: string
+            description: Qualitative palette color 2
+          color-qualitative-3:
+            type: string
+            description: Qualitative palette color 3
+          color-qualitative-4:
+            type: string
+            description: Qualitative palette color 4
+          color-qualitative-5:
+            type: string
+            description: Qualitative palette color 5
+          color-qualitative-6:
+            type: string
+            description: Qualitative palette color 6
+          color-qualitative-7:
+            type: string
+            description: Qualitative palette color 7
+          color-qualitative-8:
+            type: string
+            description: Qualitative palette color 8
+          color-qualitative-9:
+            type: string
+            description: Qualitative palette color 9
+          color-qualitative-10:
+            type: string
+            description: Qualitative palette color 10
+          color-qualitative-11:
+            type: string
+            description: Qualitative palette color 11
+          color-qualitative-12:
+            type: string
+            description: Qualitative palette color 12
+          color-qualitative-13:
+            type: string
+            description: Qualitative palette color 13
+          color-qualitative-14:
+            type: string
+            description: Qualitative palette color 14
+          color-qualitative-15:
+            type: string
+            description: Qualitative palette color 15
+          color-qualitative-16:
+            type: string
+            description: Qualitative palette color 16
+          color-qualitative-17:
+            type: string
+            description: Qualitative palette color 17
+          color-qualitative-18:
+            type: string
+            description: Qualitative palette color 18
+          color-qualitative-19:
+            type: string
+            description: Qualitative palette color 19
+          color-qualitative-20:
+            type: string
+            description: Qualitative palette color 20
+          color-qualitative-21:
+            type: string
+            description: Qualitative palette color 21
+          color-qualitative-22:
+            type: string
+            description: Qualitative palette color 22
+          color-qualitative-23:
+            type: string
+            description: Qualitative palette color 23
+          color-qualitative-24:
+            type: string
+            description: Qualitative palette color 24
+        additionalProperties: false
+      dark:
+        type: object
+        description: Color customization for dark mode. Supports CSS color values (hex, named colors, hsl, etc.). All properties are optional.
+        properties:
+          primary:
+            type: string
+            description: Primary theme color
+          secondary:
+            type: string
+            description: Secondary theme color
+          surface:
+            type: string
+            description: Surface color
+          background:
+            type: string
+            description: Background color
+          color-sequential-1:
+            type: string
+            description: Sequential palette color 1 (lightest)
+          color-sequential-2:
+            type: string
+            description: Sequential palette color 2
+          color-sequential-3:
+            type: string
+            description: Sequential palette color 3
+          color-sequential-4:
+            type: string
+            description: Sequential palette color 4
+          color-sequential-5:
+            type: string
+            description: Sequential palette color 5 (medium)
+          color-sequential-6:
+            type: string
+            description: Sequential palette color 6
+          color-sequential-7:
+            type: string
+            description: Sequential palette color 7
+          color-sequential-8:
+            type: string
+            description: Sequential palette color 8
+          color-sequential-9:
+            type: string
+            description: Sequential palette color 9 (darkest)
+          color-diverging-1:
+            type: string
+            description: Diverging palette color 1
+          color-diverging-2:
+            type: string
+            description: Diverging palette color 2
+          color-diverging-3:
+            type: string
+            description: Diverging palette color 3
+          color-diverging-4:
+            type: string
+            description: Diverging palette color 4
+          color-diverging-5:
+            type: string
+            description: Diverging palette color 5
+          color-diverging-6:
+            type: string
+            description: Diverging palette color 6 (neutral)
+          color-diverging-7:
+            type: string
+            description: Diverging palette color 7
+          color-diverging-8:
+            type: string
+            description: Diverging palette color 8
+          color-diverging-9:
+            type: string
+            description: Diverging palette color 9
+          color-diverging-10:
+            type: string
+            description: Diverging palette color 10
+          color-diverging-11:
+            type: string
+            description: Diverging palette color 11
+          color-qualitative-1:
+            type: string
+            description: Qualitative palette color 1
+          color-qualitative-2:
+            type: string
+            description: Qualitative palette color 2
+          color-qualitative-3:
+            type: string
+            description: Qualitative palette color 3
+          color-qualitative-4:
+            type: string
+            description: Qualitative palette color 4
+          color-qualitative-5:
+            type: string
+            description: Qualitative palette color 5
+          color-qualitative-6:
+            type: string
+            description: Qualitative palette color 6
+          color-qualitative-7:
+            type: string
+            description: Qualitative palette color 7
+          color-qualitative-8:
+            type: string
+            description: Qualitative palette color 8
+          color-qualitative-9:
+            type: string
+            description: Qualitative palette color 9
+          color-qualitative-10:
+            type: string
+            description: Qualitative palette color 10
+          color-qualitative-11:
+            type: string
+            description: Qualitative palette color 11
+          color-qualitative-12:
+            type: string
+            description: Qualitative palette color 12
+          color-qualitative-13:
+            type: string
+            description: Qualitative palette color 13
+          color-qualitative-14:
+            type: string
+            description: Qualitative palette color 14
+          color-qualitative-15:
+            type: string
+            description: Qualitative palette color 15
+          color-qualitative-16:
+            type: string
+            description: Qualitative palette color 16
+          color-qualitative-17:
+            type: string
+            description: Qualitative palette color 17
+          color-qualitative-18:
+            type: string
+            description: Qualitative palette color 18
+          color-qualitative-19:
+            type: string
+            description: Qualitative palette color 19
+          color-qualitative-20:
+            type: string
+            description: Qualitative palette color 20
+          color-qualitative-21:
+            type: string
+            description: Qualitative palette color 21
+          color-qualitative-22:
+            type: string
+            description: Qualitative palette color 22
+          color-qualitative-23:
+            type: string
+            description: Qualitative palette color 23
+          color-qualitative-24:
+            type: string
+            description: Qualitative palette color 24
+        additionalProperties: false
   api_data_properties:
     oneOf:
       - title: SQL Query

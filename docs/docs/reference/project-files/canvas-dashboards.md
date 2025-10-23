@@ -186,11 +186,207 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
   - **option 2** - _[object]_ - Inline theme configuration.
 
-    - **`colors`** - _[object]_ - Used to override the dashboard colors. Either primary or secondary color must be provided. 
+    - **`colors`** - _[object]_ - **DEPRECATED**: Use `light` and `dark` properties instead. Legacy color override for dashboards. Cannot be used together with `light` or `dark` properties. 
 
-      - **`primary`** - _[string]_ - Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors). 
+      - **`primary`** - _[string]_ - **DEPRECATED**: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
-      - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+      - **`secondary`** - _[string]_ - **DEPRECATED**: Overrides the secondary color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+    - **`light`** - _[object]_ - Color customization for light mode. Supports CSS color values (hex, named colors, hsl, etc.). All properties are optional. 
+
+      - **`primary`** - _[string]_ - Primary theme color 
+
+      - **`secondary`** - _[string]_ - Secondary theme color 
+
+      - **`surface`** - _[string]_ - Surface color 
+
+      - **`background`** - _[string]_ - Background color 
+
+      - **`color-sequential-1`** - _[string]_ - Sequential palette color 1 (lightest) 
+
+      - **`color-sequential-2`** - _[string]_ - Sequential palette color 2 
+
+      - **`color-sequential-3`** - _[string]_ - Sequential palette color 3 
+
+      - **`color-sequential-4`** - _[string]_ - Sequential palette color 4 
+
+      - **`color-sequential-5`** - _[string]_ - Sequential palette color 5 (medium) 
+
+      - **`color-sequential-6`** - _[string]_ - Sequential palette color 6 
+
+      - **`color-sequential-7`** - _[string]_ - Sequential palette color 7 
+
+      - **`color-sequential-8`** - _[string]_ - Sequential palette color 8 
+
+      - **`color-sequential-9`** - _[string]_ - Sequential palette color 9 (darkest) 
+
+      - **`color-diverging-1`** - _[string]_ - Diverging palette color 1 
+
+      - **`color-diverging-2`** - _[string]_ - Diverging palette color 2 
+
+      - **`color-diverging-3`** - _[string]_ - Diverging palette color 3 
+
+      - **`color-diverging-4`** - _[string]_ - Diverging palette color 4 
+
+      - **`color-diverging-5`** - _[string]_ - Diverging palette color 5 
+
+      - **`color-diverging-6`** - _[string]_ - Diverging palette color 6 (neutral) 
+
+      - **`color-diverging-7`** - _[string]_ - Diverging palette color 7 
+
+      - **`color-diverging-8`** - _[string]_ - Diverging palette color 8 
+
+      - **`color-diverging-9`** - _[string]_ - Diverging palette color 9 
+
+      - **`color-diverging-10`** - _[string]_ - Diverging palette color 10 
+
+      - **`color-diverging-11`** - _[string]_ - Diverging palette color 11 
+
+      - **`color-qualitative-1`** - _[string]_ - Qualitative palette color 1 
+
+      - **`color-qualitative-2`** - _[string]_ - Qualitative palette color 2 
+
+      - **`color-qualitative-3`** - _[string]_ - Qualitative palette color 3 
+
+      - **`color-qualitative-4`** - _[string]_ - Qualitative palette color 4 
+
+      - **`color-qualitative-5`** - _[string]_ - Qualitative palette color 5 
+
+      - **`color-qualitative-6`** - _[string]_ - Qualitative palette color 6 
+
+      - **`color-qualitative-7`** - _[string]_ - Qualitative palette color 7 
+
+      - **`color-qualitative-8`** - _[string]_ - Qualitative palette color 8 
+
+      - **`color-qualitative-9`** - _[string]_ - Qualitative palette color 9 
+
+      - **`color-qualitative-10`** - _[string]_ - Qualitative palette color 10 
+
+      - **`color-qualitative-11`** - _[string]_ - Qualitative palette color 11 
+
+      - **`color-qualitative-12`** - _[string]_ - Qualitative palette color 12 
+
+      - **`color-qualitative-13`** - _[string]_ - Qualitative palette color 13 
+
+      - **`color-qualitative-14`** - _[string]_ - Qualitative palette color 14 
+
+      - **`color-qualitative-15`** - _[string]_ - Qualitative palette color 15 
+
+      - **`color-qualitative-16`** - _[string]_ - Qualitative palette color 16 
+
+      - **`color-qualitative-17`** - _[string]_ - Qualitative palette color 17 
+
+      - **`color-qualitative-18`** - _[string]_ - Qualitative palette color 18 
+
+      - **`color-qualitative-19`** - _[string]_ - Qualitative palette color 19 
+
+      - **`color-qualitative-20`** - _[string]_ - Qualitative palette color 20 
+
+      - **`color-qualitative-21`** - _[string]_ - Qualitative palette color 21 
+
+      - **`color-qualitative-22`** - _[string]_ - Qualitative palette color 22 
+
+      - **`color-qualitative-23`** - _[string]_ - Qualitative palette color 23 
+
+      - **`color-qualitative-24`** - _[string]_ - Qualitative palette color 24 
+
+    - **`dark`** - _[object]_ - Color customization for dark mode. Supports CSS color values (hex, named colors, hsl, etc.). All properties are optional. 
+
+      - **`primary`** - _[string]_ - Primary theme color 
+
+      - **`secondary`** - _[string]_ - Secondary theme color 
+
+      - **`surface`** - _[string]_ - Surface color 
+
+      - **`background`** - _[string]_ - Background color 
+
+      - **`color-sequential-1`** - _[string]_ - Sequential palette color 1 (lightest) 
+
+      - **`color-sequential-2`** - _[string]_ - Sequential palette color 2 
+
+      - **`color-sequential-3`** - _[string]_ - Sequential palette color 3 
+
+      - **`color-sequential-4`** - _[string]_ - Sequential palette color 4 
+
+      - **`color-sequential-5`** - _[string]_ - Sequential palette color 5 (medium) 
+
+      - **`color-sequential-6`** - _[string]_ - Sequential palette color 6 
+
+      - **`color-sequential-7`** - _[string]_ - Sequential palette color 7 
+
+      - **`color-sequential-8`** - _[string]_ - Sequential palette color 8 
+
+      - **`color-sequential-9`** - _[string]_ - Sequential palette color 9 (darkest) 
+
+      - **`color-diverging-1`** - _[string]_ - Diverging palette color 1 
+
+      - **`color-diverging-2`** - _[string]_ - Diverging palette color 2 
+
+      - **`color-diverging-3`** - _[string]_ - Diverging palette color 3 
+
+      - **`color-diverging-4`** - _[string]_ - Diverging palette color 4 
+
+      - **`color-diverging-5`** - _[string]_ - Diverging palette color 5 
+
+      - **`color-diverging-6`** - _[string]_ - Diverging palette color 6 (neutral) 
+
+      - **`color-diverging-7`** - _[string]_ - Diverging palette color 7 
+
+      - **`color-diverging-8`** - _[string]_ - Diverging palette color 8 
+
+      - **`color-diverging-9`** - _[string]_ - Diverging palette color 9 
+
+      - **`color-diverging-10`** - _[string]_ - Diverging palette color 10 
+
+      - **`color-diverging-11`** - _[string]_ - Diverging palette color 11 
+
+      - **`color-qualitative-1`** - _[string]_ - Qualitative palette color 1 
+
+      - **`color-qualitative-2`** - _[string]_ - Qualitative palette color 2 
+
+      - **`color-qualitative-3`** - _[string]_ - Qualitative palette color 3 
+
+      - **`color-qualitative-4`** - _[string]_ - Qualitative palette color 4 
+
+      - **`color-qualitative-5`** - _[string]_ - Qualitative palette color 5 
+
+      - **`color-qualitative-6`** - _[string]_ - Qualitative palette color 6 
+
+      - **`color-qualitative-7`** - _[string]_ - Qualitative palette color 7 
+
+      - **`color-qualitative-8`** - _[string]_ - Qualitative palette color 8 
+
+      - **`color-qualitative-9`** - _[string]_ - Qualitative palette color 9 
+
+      - **`color-qualitative-10`** - _[string]_ - Qualitative palette color 10 
+
+      - **`color-qualitative-11`** - _[string]_ - Qualitative palette color 11 
+
+      - **`color-qualitative-12`** - _[string]_ - Qualitative palette color 12 
+
+      - **`color-qualitative-13`** - _[string]_ - Qualitative palette color 13 
+
+      - **`color-qualitative-14`** - _[string]_ - Qualitative palette color 14 
+
+      - **`color-qualitative-15`** - _[string]_ - Qualitative palette color 15 
+
+      - **`color-qualitative-16`** - _[string]_ - Qualitative palette color 16 
+
+      - **`color-qualitative-17`** - _[string]_ - Qualitative palette color 17 
+
+      - **`color-qualitative-18`** - _[string]_ - Qualitative palette color 18 
+
+      - **`color-qualitative-19`** - _[string]_ - Qualitative palette color 19 
+
+      - **`color-qualitative-20`** - _[string]_ - Qualitative palette color 20 
+
+      - **`color-qualitative-21`** - _[string]_ - Qualitative palette color 21 
+
+      - **`color-qualitative-22`** - _[string]_ - Qualitative palette color 22 
+
+      - **`color-qualitative-23`** - _[string]_ - Qualitative palette color 23 
+
+      - **`color-qualitative-24`** - _[string]_ - Qualitative palette color 24 
 
 ### `security`
 
