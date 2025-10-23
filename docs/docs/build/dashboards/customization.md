@@ -106,13 +106,13 @@ time_zones:
 
 ## Changing Themes & Colors
 
-In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard.
+In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard. You can change all color palettes, background colors and much more!
 
 First, create the YAML file as below. In this example, the charts and hover in Rill will change to Plum while spinners will change to Violet.
 
 ```yaml
 type: theme
-colors:
+light:
   primary: plum
   secondary: violet 
 ```

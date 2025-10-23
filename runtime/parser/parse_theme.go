@@ -81,7 +81,7 @@ var allowedCSSVariables = map[string]bool{
 	"color-diverging-10": true,
 	"color-diverging-11": true,
 
-	// Qualitative palette (24 colors) - inspired by ColorBrewer categorical schemes
+	// Qualitative palette (24 colors)
 	"color-qualitative-1":  true,
 	"color-qualitative-2":  true,
 	"color-qualitative-3":  true,
@@ -138,7 +138,7 @@ func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 	hasCSSProperties := tmp.Light != nil || tmp.Dark != nil
 
 	if hasLegacyColors && hasCSSProperties {
-		return nil, fmt.Errorf("cannot use both legacy color properties (primary, secondary) and the new CSS property simultaneously")
+		return nil, fmt.Errorf("cannot use both legacy color properties (primary, secondary) and the new theming properties simultaneously")
 	}
 
 	if hasLegacyColors {
