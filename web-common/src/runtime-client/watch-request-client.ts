@@ -134,7 +134,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
   private cancel() {
     // Clean up fetch stream
-    this.controller?.abort();
+    this.controller?.abort("Watch request cancelled");
     this.stream = this.controller = undefined;
 
     // Clean up SSE connection

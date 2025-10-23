@@ -41,6 +41,7 @@
   export let manageProjectMembers: boolean;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readProjects: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
@@ -83,7 +84,7 @@
     },
     {
       query: {
-        enabled: !!organization,
+        enabled: !!organization && readProjects,
         retry: 2,
         refetchOnMount: true,
       },
