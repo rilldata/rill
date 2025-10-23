@@ -117,7 +117,7 @@ var motherduckSpec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Schema name",
-			Placeholder: "your_schema_name",
+			Placeholder: "main",
 			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},
