@@ -31,6 +31,12 @@ type ColorPalette = {
   dark: Color[];
 };
 
+type ThemeColors = {
+  variables?: Record<string, string>;
+  primary?: string;
+  secondary?: string;
+};
+
 /**
  * Sets CSS variables for a color type (theme, theme-secondary, etc.)
  */
@@ -96,10 +102,13 @@ export function updateThemeVariables(
 
   // Priority 1: New structure - theme.light.variables / theme.dark.variables
   // Check if new theme structure is being used (has light or dark with variables, primary, or secondary)
+  const themeLight = theme?.light as ThemeColors | undefined;
+  const themeDark = theme?.dark as ThemeColors | undefined;
+  
   const hasNewStructure = Boolean(
-    theme?.light?.variables || theme?.dark?.variables ||
-    theme?.light?.primary || theme?.dark?.primary ||
-    theme?.light?.secondary || theme?.dark?.secondary
+    themeLight?.variables || themeDark?.variables ||
+    themeLight?.primary || themeDark?.primary ||
+    themeLight?.secondary || themeDark?.secondary
   );
 
   if (hasNewStructure && theme) {
@@ -113,7 +122,8 @@ export function updateThemeVariables(
   removeExistingCustomCSS();
 
   // Priority 2: Legacy color properties (primaryColor, secondaryColor)
-  updateLegacyColors(theme, root, allowNewPalette);
+  updatePrimaryColor(theme, root, allowNewPalette);
+  updateSecondaryColor(theme, root, allowNewPalette);
 }
 
 /**
@@ -127,8 +137,11 @@ function injectThemeVariables(
   removeExistingCustomCSS();
 
   // Sanitize light and dark variables
-  const lightVariables = sanitizeThemeVariables(theme.light?.variables);
-  const darkVariables = sanitizeThemeVariables(theme.dark?.variables);
+  const themeLight = theme.light as ThemeColors | undefined;
+  const themeDark = theme.dark as ThemeColors | undefined;
+  
+  const lightVariables = sanitizeThemeVariables(themeLight?.variables);
+  const darkVariables = sanitizeThemeVariables(themeDark?.variables);
 
   // Convert to CSS and inject
   const scopeSelector = scopeElement === document.documentElement 
@@ -150,54 +163,40 @@ function handleLegacyPrimarySecondaryInNewStructure(
   theme: V1ThemeSpec,
   root: HTMLElement,
 ): void {
-  const lightPrimary = theme.light?.primary;
-  const darkPrimary = theme.dark?.primary;
-  const lightSecondary = theme.light?.secondary;
-  const darkSecondary = theme.dark?.secondary;
+  const themeLight = theme.light as ThemeColors | undefined;
+  const themeDark = theme.dark as ThemeColors | undefined;
 
   // Handle primary colors
-  if (lightPrimary || darkPrimary) {
+  if (themeLight?.primary || themeDark?.primary) {
     try {
       const palettes = generatePalettesFromColorStrings(
-        lightPrimary,
-        darkPrimary,
+        themeLight?.primary,
+        themeDark?.primary,
         defaultPrimaryPalette,
         defaultPrimaryDarkPalette
       );
       applyPaletteToVariables(root, "theme", palettes);
       applyPaletteToVariables(root, "primary", palettes);
     } catch (error) {
-      console.error('Failed to generate palette from primary colors in new structure:', { lightPrimary, darkPrimary }, error);
+      console.error('Failed to generate palette from primary colors in new structure:', error);
     }
   }
 
   // Handle secondary colors
-  if (lightSecondary || darkSecondary) {
+  if (themeLight?.secondary || themeDark?.secondary) {
     try {
       const palettes = generatePalettesFromColorStrings(
-        lightSecondary,
-        darkSecondary,
+        themeLight?.secondary,
+        themeDark?.secondary,
         defaultSecondaryPalette,
         defaultSecondaryDarkPalette
       );
       applyPaletteToVariables(root, "theme-secondary", palettes);
       applyPaletteToVariables(root, "secondary", palettes);
     } catch (error) {
-      console.error('Failed to generate palette from secondary colors in new structure:', { lightSecondary, darkSecondary }, error);
+      console.error('Failed to generate palette from secondary colors in new structure:', error);
     }
   }
-}
-
-/**
- * Updates legacy color properties (primary and secondary)
- */
-function updateLegacyColors(
-  theme: V1ThemeSpec | undefined,
-  root: HTMLElement,
-  allowNewPalette: boolean,
-): void {
-  updatePrimaryColor(theme, root, allowNewPalette);
-  updateSecondaryColor(theme, root, allowNewPalette);
 }
 
 /**
@@ -294,32 +293,17 @@ function generatePalettesFromColorStrings(
   defaultLightPalette: Color[],
   defaultDarkPalette: Color[],
 ): ColorPalette {
-  let lightPalette: Color[];
-  let darkPalette: Color[];
-  
   // Generate palette from lightColor if provided
-  let generatedPalette: { light: Color[]; dark: Color[] } | null = null;
-  if (lightColor) {
-    const color = chroma(lightColor);
-    generatedPalette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
-    lightPalette = generatedPalette.light;
-  } else {
-    // Use default light palette when not defined
-    lightPalette = defaultLightPalette;
-  }
+  const generatedPalette = lightColor 
+    ? generatePalette(chroma(lightColor), false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA)
+    : null;
+  
+  const lightPalette = generatedPalette?.light ?? defaultLightPalette;
   
   // Handle dark palette
-  if (darkColor) {
-    const color = chroma(darkColor);
-    const palette = generatePalette(color, false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA);
-    darkPalette = palette.dark;
-  } else if (generatedPalette) {
-    // If light was generated but dark wasn't specified, reuse the generated dark variant
-    darkPalette = generatedPalette.dark;
-  } else {
-    // Use default dark palette when neither is defined
-    darkPalette = defaultDarkPalette;
-  }
+  const darkPalette = darkColor
+    ? generatePalette(chroma(darkColor), false, DEFAULT_STEP_COUNT, DEFAULT_GAMMA).dark
+    : generatedPalette?.dark ?? defaultDarkPalette;
   
   return { light: lightPalette, dark: darkPalette };
 }
