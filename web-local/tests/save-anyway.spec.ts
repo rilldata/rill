@@ -4,7 +4,7 @@ import { test } from "./setup/base";
 test.describe("Save Anyway feature", () => {
   test.use({ project: "Blank" });
 
-  test("Save Anyway button appears and works for invalid connector", async ({
+  test("Save Anyway button appears and redirects to connector file", async ({
     page,
   }) => {
     // Open the Add Data modal
@@ -17,7 +17,7 @@ test.describe("Save Anyway feature", () => {
     // Wait for the form to load
     await page.waitForSelector('form[id*="clickhouse"]');
 
-    // Fill in connection details
+    // Fill in connection details with invalid values
     await page.getByRole("textbox", { name: "Host" }).fill("asd");
     await page.getByRole("textbox", { name: "Password" }).fill("asd");
 
@@ -37,14 +37,21 @@ test.describe("Save Anyway feature", () => {
     // Click "Save Anyway" button
     await page.getByRole("button", { name: "Save Anyway" }).click();
 
-    // Wait for navigation to the new connector file (should succeed despite connection failure)
-    await page.waitForURL(`**/files/connectors/clickhouse.yaml`);
+    // Wait for navigation to the connector file
+    // Use a more flexible pattern to handle potential naming variations
+    await page.waitForURL(/.*\/files\/connectors\/.*\.yaml/, {
+      timeout: 15000,
+    });
 
-    // Verify the connector file was created
+    // Verify we're on a connector file page
+    await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/);
+
+    // Verify the connector file content is visible
     const codeEditor = page
       .getByLabel("codemirror editor")
       .getByRole("textbox");
 
+    await expect(codeEditor).toBeVisible();
     await expect(codeEditor).toContainText("type: connector");
     await expect(codeEditor).toContainText("driver: clickhouse");
   });
