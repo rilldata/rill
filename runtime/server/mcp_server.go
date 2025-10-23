@@ -93,6 +93,7 @@ func (s *Server) newMCPHTTPHandler() http.Handler {
 		httpServer := server.NewStreamableHTTPServer(
 			mcpServer,
 			server.WithHeartbeatInterval(30*time.Second),
+			server.WithHTTPContextFunc(s.mcpHTTPContextFunc),
 			server.WithStateLess(true), // NOTE: Need to change if we start using notifications.
 			server.WithLogger(mcpLogger{s.logger}),
 		)
