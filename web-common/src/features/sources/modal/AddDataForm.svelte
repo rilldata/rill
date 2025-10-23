@@ -42,6 +42,7 @@
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -160,6 +161,8 @@
         if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
+
+          // Normal validation for all properties
           if (isEmpty(value) || $paramsErrors[key]?.length) return true;
         }
       }
@@ -332,10 +335,13 @@
     const values = event.form.data;
 
     try {
+      // Use values as-is
+      let processedValues = values;
+
       if (formType === "source") {
-        await submitAddSourceForm(queryClient, connector, values);
+        await submitAddSourceForm(queryClient, connector, processedValues);
       } else {
-        await submitAddConnectorForm(queryClient, connector, values);
+        await submitAddConnectorForm(queryClient, connector, processedValues);
       }
       onClose();
     } catch (e) {
@@ -377,6 +383,36 @@
       }
     }
   }
+
+  // Handle file upload for credential files
+  async function handleFileUpload(file: File): Promise<string> {
+    try {
+      const content = await file.text();
+
+      // Parse and re-stringify JSON to sanitize whitespace
+      const parsedJson = JSON.parse(content);
+      const sanitizedJson = JSON.stringify(parsedJson);
+
+      // For BigQuery, try to extract project_id from the credentials JSON
+      if (connector.name === "bigquery" && parsedJson.project_id) {
+        // Update the project_id field in the form
+        paramsForm.update(
+          ($form) => {
+            $form.project_id = parsedJson.project_id;
+            return $form;
+          },
+          { taint: false },
+        );
+      }
+
+      return sanitizedJson;
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(`Invalid JSON file: ${error.message}`);
+      }
+      throw new Error(`Failed to read file: ${error.message}`);
+    }
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -385,7 +421,11 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow {connector.name === 'clickhouse'
+      class="flex flex-col flex-grow {[
+        'clickhouse',
+        'snowflake',
+        'salesforce',
+      ].includes(connector.name ?? '')
         ? 'max-h-[38.5rem] min-h-[38.5rem]'
         : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
     >
@@ -543,6 +583,16 @@
                   hint={property.hint}
                   href={property.docsUrl}
                 />
+              {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                  bind:value={$paramsForm[propertyKey]}
+                  uploadFile={handleFileUpload}
+                  accept=".json"
+                />
               {/if}
             </div>
           {/each}
@@ -613,7 +663,9 @@
     {/if}
 
     <div>
-      <div class="text-sm leading-none font-medium mb-4">Connector preview</div>
+      <div class="text-sm leading-none font-medium mb-4">
+        {isSourceForm ? "Model preview" : "Connector preview"}
+      </div>
       <div class="relative">
         <button
           class="absolute top-2 right-2 p-1 rounded"

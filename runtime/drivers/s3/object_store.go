@@ -3,11 +3,9 @@ package s3
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
@@ -54,25 +52,8 @@ func (c *Connection) DownloadFiles(ctx context.Context, path string) (drivers.Fi
 	})
 }
 
-// BucketRegion returns the region to use for the given bucket.
-func (c *Connection) BucketRegion(ctx context.Context, bucket string) (string, error) {
-	creds, err := c.newCredentials()
-	if err != nil {
-		return "", err
-	}
-
-	sess, err := c.newSessionForBucket(ctx, bucket, c.config.Endpoint, c.config.Region, creds)
-	if err != nil {
-		return "", err
-	}
-
-	if sess.Config.Region != nil {
-		return *sess.Config.Region, nil
-	}
-	return "", fmt.Errorf("unable to get region")
-}
-
 func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
+	path = c.rewriteToS3Path(path)
 	url, err := globutil.ParseBucketURL(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
@@ -84,23 +65,22 @@ func (c *Connection) parseBucketURL(path string) (*globutil.URL, error) {
 }
 
 func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bool) (*blob.Bucket, error) {
-	var creds *credentials.Credentials
+	var s3client *s3.Client
+	var err error
 	if anonymous {
-		creds = credentials.AnonymousCredentials
+		s3client, err = getAnonymousS3Client(ctx, c.config, bucket)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		var err error
-		creds, err = c.newCredentials()
+		s3client, err = getS3Client(ctx, c.config, bucket)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create AWS credentials: %w", err)
+			return nil, err
 		}
 	}
 
-	sess, err := c.newSessionForBucket(ctx, bucket, c.config.Endpoint, c.config.Region, creds)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
-	}
-
-	s3Bucket, err := s3blob.OpenBucket(ctx, sess, bucket, nil)
+	s3Bucket, err := s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %q: %w", bucket, err)
 	}
@@ -108,62 +88,17 @@ func (c *Connection) openBucket(ctx context.Context, bucket string, anonymous bo
 	return blob.NewBucket(s3Bucket, c.logger)
 }
 
-func (c *Connection) newSessionForBucket(ctx context.Context, bucket, endpoint, region string, creds *credentials.Credentials) (*session.Session, error) {
-	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
-	if endpoint != "" {
-		if region == "" {
-			// Set the default region for bwd compatibility reasons
-			// cloudflare and minio ignore if us-east-1 is set, not tested for others
-			region = "us-east-1"
+func (c *Connection) rewriteToS3Path(s string) string {
+	switch c.config.Endpoint {
+	case "storage.googleapis.com":
+		if after, ok := strings.CutPrefix(s, "gs://"); ok {
+			return "s3://" + after
 		}
-		return session.NewSession(&aws.Config{
-			Region:           aws.String(region),
-			Endpoint:         &endpoint,
-			S3ForcePathStyle: aws.Bool(true),
-			Credentials:      creds,
-		})
+		if after, ok := strings.CutPrefix(s, "gcs://"); ok {
+			return "s3://" + after
+		}
+		return s
+	default:
+		return s
 	}
-	// The logic below is AWS-specific, so we ignore it when conf.S3Endpoint is set
-	// The complexity below relates to AWS being pretty strict about regions (probably to avoid unexpected cross-region traffic).
-
-	// If the user explicitly set a region, we use that
-	if region != "" {
-		return session.NewSession(&aws.Config{
-			Region:      aws.String(region),
-			Credentials: creds,
-		})
-	}
-
-	sharedConfigState := session.SharedConfigDisable
-	if c.config.AllowHostAccess {
-		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
-	}
-
-	// Create a session that tries to infer the region from the environment
-	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: sharedConfigState,
-		Config: aws.Config{
-			Credentials: creds,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// If no region was found, we default to us-east-1 (which will be used to resolve the lookup in the next step)
-	if sess.Config.Region == nil || *sess.Config.Region == "" {
-		sess = sess.Copy(&aws.Config{Region: aws.String("us-east-1")})
-	}
-
-	// Bucket names are globally unique, but requests will fail if their region doesn't match the one configured in the session.
-	// So we do a lookup for the bucket's region and configure the session to use that.
-	reg, err := s3manager.GetBucketRegion(ctx, sess, bucket, "")
-	if err != nil {
-		return nil, err
-	}
-	if reg != "" {
-		sess = sess.Copy(&aws.Config{Region: aws.String(reg)})
-	}
-
-	return sess, nil
 }

@@ -33,6 +33,7 @@
   export let leaderboardSortByMeasureName: string | null;
   export let isValidPercentOfTotal: (measureName: string) => boolean;
   export let dimensionColumnWidth: number;
+  export let maxValues: Record<string, number> = {};
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -99,11 +100,16 @@
       ? "var(--color-theme-200)"
       : "var(--color-theme-100)";
 
+  // Calculate bar width excluding dimension column
+  $: barWidth = leaderboardMeasureNames.length > 1 ? $valueColumn : tableWidth;
+  // Calculate bar lengths based on max value. For percent-of-total measure, this will be the total.
   $: barLengths = Object.fromEntries(
-    Object.entries(pctOfTotals).map(([name, pct]) => [
-      name,
-      pct ? tableWidth * pct : 0,
-    ]),
+    Object.entries(values).map(([name, value]) => {
+      const maxValue = maxValues[name];
+      if (!value || !maxValue || maxValue <= 0) return [name, 0];
+      // Calculate relative magnitude: current value / max value * available bar width
+      return [name, (Math.abs(value) / maxValue) * barWidth];
+    }),
   );
 
   $: totalBarLength = Object.values(barLengths).reduce(
@@ -114,7 +120,7 @@
   $: showZigZags = Object.fromEntries(
     Object.entries(barLengths).map(([name, length]) => [
       name,
-      length > tableWidth,
+      length > barWidth,
     ]),
   );
 

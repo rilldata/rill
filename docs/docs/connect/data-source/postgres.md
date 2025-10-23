@@ -9,7 +9,7 @@ sidebar_position: 50
 
 ## Overview
 
-[PostgreSQL](https://www.postgresql.org/docs/current/intro-whatis.html) is an open-source object-relational database system known for its reliability, feature robustness, and performance. With support for advanced data types, full ACID compliance for transactional integrity, and an extensible architecture, PostgreSQL provides a highly scalable environment for managing diverse datasets, ranging from small applications to large-scale data warehouses. Its extensive SQL compliance, support for various programming languages, and strong community backing make it a versatile choice for a wide range of business intelligence and analytical applications. Rill supports natively connecting to and reading from PostgreSQL as a source by using either a [supported connection string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) or [connection URI syntax](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS).
+[PostgreSQL](https://www.postgresql.org/docs/current/intro-whatis.html) is an open-source object-relational database system known for its reliability, feature robustness, and performance. With support for advanced data types, full ACID compliance for transactional integrity, and an extensible architecture, PostgreSQL provides a highly scalable environment for managing diverse datasets, ranging from small applications to large-scale data warehouses. Its extensive SQL compliance, support for various programming languages, and strong community backing make it a versatile choice for a wide range of business intelligence and analytical applications. You can connect to and read from PostgreSQL databases using either a [supported connection string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) or [connection URI syntax](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS).
 
 As an example of a connection string:
 ```bash
@@ -21,23 +21,24 @@ Using the same example, this would be an equivalent connection URI:
 postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
-<img src='/img/reference/connectors/postgres/postgresql.png' class='centered' />
-<br />
 
-## Local credentials
+## Connect to PostgreSQL
 
-When using Rill Developer on your local machine, you will need to provide your credentials via a connector file. We would recommend not using plain text to create your file and instead use the `.env` file. For more details on your connector, see [connector YAML](/reference/project-files/connectors/#postgres) for more details.
+Create a connector with your credentials to connect to PostgreSQL. Here's an example connector configuration file you can copy into your `connectors` directory to get started:
 
-:::tip Updating the project environmental variable
+```yaml
+type: connector
 
-If you've already deployed to Rill Cloud, you can either [push/pull the credential](/manage/project-management/variables-and-credentials#pushing-and-pulling-credentials-to--from-rill-cloud-via-the-cli) from the CLI with:
+driver: postgres
+host: "localhost"
+port: "5432"
+user: "postgres"
+password: "{{ .env.connector.postgres.password }}"
+dbname: "postgres"
 ```
-rill env push
-rill env pull
-```
 
-Or, if its your first deployment, Rill will automatically deploy the .env into your Rill project.
-
+:::tip Using the Add Data Form
+You can also use the Add Data form in Rill Developer, which will automatically create the `postgres.yaml` file and populate the `.env` file with `connector.postgres.*` parameters based on the parameters or connection string you provide.
 :::
 
 ## Separating Dev and Prod Environments
@@ -46,10 +47,11 @@ When ingesting data locally, consider setting parameters in your connector file 
 
 For more details, see our [Dev/Prod setup docs](/connect/templating).
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
-Once a project with a PostgreSQL source has been deployed, Rill requires you to explicitly provide the connection string using the following command:
+When deploying your project to Rill Cloud, you must explicitly provide the PostgreSQL connection string. If these credentials exist in your `.env` file, they'll be pushed with your project automatically.
 
-```
+To manually configure your environment variables, run:
+```bash
 rill env configure
 ```

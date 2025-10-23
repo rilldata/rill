@@ -58,6 +58,12 @@ driver: duckdb
 driver: clickhouse
 managed: true
 `
+	default:
+		connectorYAML = fmt.Sprintf(`type: connector
+driver: %s
+
+# TODO: Configure the connection.
+`, olap)
 	}
 
 	err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", olap), strings.NewReader(connectorYAML))

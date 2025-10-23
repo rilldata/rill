@@ -32,7 +32,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**S3**](#s3) - Amazon S3 storage
 
 ### _Other_
-- [**DuckDB as a source**](#duckdb-as-a-source) - DuckDB as a source
+- [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
 - [**HTTPS**](#https) - Public files via HTTP/HTTPS
 - [**OpenAI**](#openai) - OpenAI data
 - [**Salesforce**](#salesforce) - Salesforce data
@@ -137,15 +137,15 @@ _[string]_ - Refers to the driver type and must be driver `azure` _(required)_
 
 ### `azure_storage_account`
 
-_[string]_ - Azure storage account name 
+_[string]_ - Azure storage account name _(required)_
 
 ### `azure_storage_key`
 
-_[string]_ - Azure storage access key 
+_[string]_ - Azure storage access key _(required)_
 
 ### `azure_storage_bucket`
 
-_[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) _(required)_
+_[string]_ - Name of the Azure Blob Storage container (equivalent to an S3 bucket) 
 
 ### `azure_storage_sas_token`
 
@@ -163,12 +163,9 @@ _[boolean]_ - Allow access to host environment configuration
 # Example: Azure connector configuration
 type: connector # Must be `connector` (required)
 driver: azure # Must be `azure` _(required)_
-azure_storage_account: "mystorageaccount" # Azure storage account name  
-azure_storage_key: "credentialjsonstring" # Azure storage access key  
-azure_storage_sas_token: "optionaltoken" # Optional SAS token for authentication  
-azure_storage_connection_string: "optionalconnectionstring" # Optional connection string  
-azure_storage_bucket: "mycontainer" # Azure Blob Storage container name _(required)_  
-allow_host_access: true # Allow host environment access
+azure_storage_account: "mystorageaccount" # Azure storage account name   _(required)_
+azure_storage_key: "credentialstring" # Azure storage access key   _(required)_
+azure_storage_bucket: "azure://..." # Azure Blob Storage container name  
 ```
 
 ## BigQuery
@@ -364,15 +361,23 @@ ssl: true # Enable SSL for secure connection
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
+_[string]_ - Must be "duckdb" _(required)_
+
+### `mode`
+
+_[string]_ - Connection mode 
+
+### `path`
+
+_[string]_ - Path to external DuckDB database 
+
+### `attach`
+
+_[string]_ - Full ATTACH statement to attach a DuckDB database 
 
 ### `pool_size`
 
 _[integer]_ - Number of concurrent connections and queries allowed 
-
-### `allow_host_access`
-
-_[boolean]_ - Whether access to the local environment and file system is allowed 
 
 ### `cpu`
 
@@ -384,23 +389,43 @@ _[integer]_ - Amount of memory in GB available to the database
 
 ### `read_write_ratio`
 
-_[number]_ - Ratio of resources allocated to the read database; used to divide CPU and memory 
+_[number]_ - Ratio of resources allocated to read vs write operations 
+
+### `allow_host_access`
+
+_[boolean]_ - Whether access to local environment and file system is allowed 
 
 ### `init_sql`
 
-_[string]_ - is executed during database initialization. 
+_[string]_ - SQL executed during database initialization 
 
-### `secrets`
+### `conn_init_sql`
 
-_[string]_ - Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model. 
+_[string]_ - SQL executed when a new connection is initialized 
+
+### `boot_queries`
+
+_[string]_ - Deprecated - Use init_sql instead 
 
 ### `log_queries`
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
+### `secrets`
+
+_[string]_ - Comma-separated list of connector names to create temporary secrets for 
+
+### `database_name`
+
+_[string]_ - Name of the attached DuckDB database (auto-detected if not set) 
+
+### `schema_name`
+
+_[string]_ - Default schema used by the DuckDB database 
+
 ### `mode`
 
-_[string]_ - Set the mode for the DuckDB connection. 
+_[no type]_ - Set the mode for the DuckDB connection. 
 
 ```yaml
 # Example: DuckDB connector configuration
@@ -410,28 +435,32 @@ mode: "readwrite" # Set the mode for the DuckDB connection.
 allow_host_access: true # Whether access to the local environment and file system is allowed  
 cpu: 4 # Number of CPU cores available to the database  
 memory_limit_gb: 16 # Amount of memory in GB available to the database
+pool_size: 5 # Number of concurrent connections and queries allowed
+read_write_ratio: 0.7 # Ratio of resources allocated to read vs write operations
+init_sql: "INSTALL httpfs; LOAD httpfs;" # SQL executed during database initialization
+log_queries: true # Whether to log raw SQL queries executed through OLAP
 ```
 
-## DuckDB as a source
+## External DuckDB
 
 ### `driver`
 
 _[string]_ - Refers to the driver type and must be driver `duckdb` _(required)_
 
-### `db`
+### `path`
 
-_[string]_ - Name of the DuckDB database _(required)_
+_[string]_ - Path to the DuckDB database 
 
-### `sql`
+### `mode`
 
-_[string]_ - SQL to execute _(required)_
+_[string]_ - Set the mode for the DuckDB connection. 
 
 ```yaml
 # Example: DuckDB as a source connector configuration
 type: connector # Must be `connector` (required)
 driver: duckdb # Must be `duckdb` _(required)_
-db: "/path/to/my-duckdb-database.db" # Name of the DuckDB database  
-sql: "select * from my-table" # SQL to execute  
+path: "/path/to/my-duckdb-database.db" # Name of the DuckDB database  
+mode: "read" # Set the mode for the DuckDB connection. 
 ```
 
 ## GCS
@@ -495,7 +524,7 @@ headers:
 
 ### `driver`
 
-_[string]_ - Refers to the driver type and must be driver `motherduck` _(required)_
+_[string]_ - Refers to the driver type and must be driver `duckdb`. _(required)_
 
 ### `path`
 
@@ -520,7 +549,7 @@ _[string]_ - Set the mode for the MotherDuck connection. By default, it is set t
 ```yaml
 # Example: MotherDuck connector configuration
 type: connector # Must be `connector` (required)
-driver: motherduck # Must be `motherduck` _(required)_
+driver: duckdb # Must be `duckdb` _(required)_
 token: '{{ .env.connector.motherduck.token }}' # Set the MotherDuck token from your .env file _(required)_
 path: "md:my_database" # Path to your MD database  
 schema_name: "my_schema" # Define your schema if not main, uses main by default  
@@ -539,7 +568,7 @@ The DSN must follow the standard MySQL URI scheme:
 ```text
 mysql://user:password@host:3306/my-db
 ```
-Rules for special characters:
+Rules for special characters in password:
 - The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
 - All other special characters must be percent-encoded (`%XX` format).
 ```text

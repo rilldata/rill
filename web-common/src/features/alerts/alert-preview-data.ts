@@ -87,13 +87,14 @@ function getAlertPreviewQueryRequest(
     timeControlArgs,
     exploreSpec,
   );
+
   req.limit = "50"; // arbitrary limit to make sure we do not pull too much of data
   if (!timeControlArgs.selectedTimeRange?.end) return req;
 
   if (req.timeRange && !req.timeRange.expression) {
     req.timeRange.end = timeControlArgs.selectedTimeRange.end.toISOString();
   }
-  if (req.comparisonTimeRange) {
+  if (req.comparisonTimeRange && !req.comparisonTimeRange.expression) {
     req.comparisonTimeRange.end =
       timeControlArgs.selectedTimeRange.end.toISOString();
   }

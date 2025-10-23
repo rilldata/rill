@@ -9,20 +9,51 @@ sidebar_position: 55
 
 ## Overview
 
-[Amazon Redshift](https://docs.aws.amazon.com/redshift/) is a fully managed, petabyte-scale data warehouse service in the cloud, offering fast query and I/O performance for data analysis applications. It enables users to run complex analytical queries against structured data using SQL, ETL processes, and BI tools, leveraging massively parallel processing (MPP) to efficiently handle large volumes of data. Redshift's architecture is designed for high performance on large datasets, supporting data warehousing and analytics of all sizes, making it a pivotal component in a modern data-driven decision-making ecosystem. By leveraging the AWS SDK for Go and utilizing intermediary Parquet files in S3 (to ensure performance), Rill is able to connect to and read from Redshift as a source.
+[Amazon Redshift](https://docs.aws.amazon.com/redshift/) is a fully managed, petabyte-scale data warehouse service in the cloud, offering fast query and I/O performance for data analysis applications. It enables users to run complex analytical queries against structured data using SQL, ETL processes, and BI tools, leveraging massively parallel processing (MPP) to efficiently handle large volumes of data. Redshift's architecture is designed for high performance on large datasets, supporting data warehousing and analytics of all sizes, making it a pivotal component in a modern data-driven decision-making ecosystem. By leveraging the AWS SDK for Go and utilizing intermediary Parquet files in S3 (to ensure performance), you can connect to and read from Redshift data warehouses.
 
-<img src='/img/reference/connectors/redshift/redshift.png' class='centered' />
-<br />
 
-## Local credentials
+## Connect to Redshift
 
-When using Rill Developer on your local machine (i.e., `rill start`), Rill will either use  the credentials configured in your local environment using the AWS CLI or an [explicitly defined connector YAML](/reference/project-files/connectors#redshift) file.
+To connect to Amazon Redshift, you need to provide authentication credentials. You have two options:
+
+1. **Use Access Key/Secret Key** (recommended for cloud deployment)
+2. **Use Local AWS credentials** (local development only - not recommended for production)
+
+Choose the method that best fits your setup. For production deployments to Rill Cloud, use Access Key/Secret Key. Local AWS credentials only work for local development and will cause deployment failures.
+
+### Access Key and Secret Key
+
+
+Create a connector with your credentials to connect to Redshift. Here's an example connector configuration file you can copy into your `connectors` directory to get started:
+
+
+
+```yaml
+type: connector
+
+driver: redshift
+aws_access_key_id: "{{ .env.connector.redshift.aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.connector.redshift.aws_secret_access_key }}"
+database: "dev"
+```
+
+:::tip Using the Add Data Form
+You can also use the Add Data form in Rill Developer, which will automatically create the `redshift.yaml` file and populate the `.env` file with `connector.redshift.aws_access_key_id` and `connector.redshift.aws_secret_access_key`.
+:::
+
+### Local AWS Credentials (Local Development Only)
+
+:::warning Not recommended for production
+Local AWS credentials only work for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Use Method 1 above for production deployments.
+:::
+
+When using Rill Developer on your local machine, you can use credentials configured in your local environment using the AWS CLI instead of explicit credentials in the connector.
 
 To check if you already have the AWS CLI installed and authenticated, open a terminal window and run:
 ```bash
 aws iam get-user --no-cli-pager
 ```
-If it prints information about your user, there is nothing more to do. Rill will be able to connect to any existing Redshift databases that your user has privileges to access.
+If it prints information about your user, there is nothing more to do. You'll be able to connect to any existing Redshift databases that your user has privileges to access.
 
 If you do not have the AWS CLI installed and authenticated, follow these steps:
 
@@ -41,24 +72,18 @@ If you do not have the AWS CLI installed and authenticated, follow these steps:
 
 You have now configured AWS access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
 
-:::tip Did you know?
-
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
-
-:::
-
 ## Separating Dev and Prod Environments
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
 For more details, see our [Dev/Prod setup docs](/connect/templating).
 
-## Cloud deployment
+## Deploy to Rill Cloud
 
-When deploying a project to Rill Cloud, Rill requires you to explicitly provide an access key and secret for an AWS service account with access to the Redshift database used in your project.
+When deploying your project to Rill Cloud, you must explicitly provide an access key and secret for an AWS service account with access to the Redshift database used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically.
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication. If you subsequently add sources that require new credentials (or if you simply entered the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
-```
+```bash
 rill env configure
 ```
 

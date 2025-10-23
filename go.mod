@@ -21,7 +21,6 @@ require (
 	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/apache/arrow-go/v18 v18.3.0
-	github.com/aws/aws-sdk-go v1.49.0
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.28.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.48
@@ -43,7 +42,6 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/getkin/kin-openapi v0.132.0
-	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/go-git/go-git/v5 v5.13.2
 	github.com/go-jose/go-jose/v3 v3.0.4
 	github.com/go-logr/zapr v1.2.4
@@ -61,6 +59,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/go-version v1.7.0
 	github.com/hashicorp/golang-lru v0.6.0
+	github.com/iancoleman/strcase v0.3.0
 	github.com/itlightning/dateparse v0.2.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.3
@@ -86,7 +85,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.11.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
-	github.com/sashabaranov/go-openai v1.24.0
+	github.com/sashabaranov/go-openai v1.41.2
 	github.com/slack-go/slack v0.12.5
 	github.com/snowflakedb/gosnowflake v1.15.0
 	github.com/spf13/cobra v1.9.1
@@ -135,7 +134,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.120.0 // indirect
+	cloud.google.com/go v0.120.0
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	cloud.google.com/go/iam v1.5.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
@@ -162,6 +161,8 @@ require (
 require (
 	github.com/ForceCLI/inflect v0.0.0-20130829110746-cc00b5ad7a6a // indirect
 	github.com/ViViDboarder/gotifier v0.0.0-20140619195515-0f19f3d7c54c // indirect
+	github.com/aws/aws-sdk-go v1.49.0 // indirect
+	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
@@ -196,7 +197,7 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.22 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.44 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.44
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1 // indirect

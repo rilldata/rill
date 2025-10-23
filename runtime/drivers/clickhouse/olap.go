@@ -55,7 +55,7 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 	// Call fn with connection embedded in context
 	wrappedCtx := c.sessionAwareContext(contextWithConn(ctx, conn))
 	ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn))
-	return fn(wrappedCtx, ensuredCtx, conn.Conn)
+	return fn(wrappedCtx, ensuredCtx)
 }
 
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {

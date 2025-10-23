@@ -1,6 +1,7 @@
 import { splitDimensionsAndMeasuresAsRowsAndColumns } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
   mapExprToMeasureFilter,
@@ -9,6 +10,9 @@ import {
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  COMPARISON_VALUE,
   type PivotChipData,
   PivotChipType,
   type PivotState,
@@ -56,18 +60,18 @@ export async function getDashboardFromAggregationRequest({
   executionTime,
   metricsView,
   explore,
-  annotations,
+  exploreProtoState,
   forceOpenPivot,
 }: TransformerArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
-  if (annotations["web_open_state"]) {
+  if (exploreProtoState) {
     await mergeDashboardFromUrlState(
       queryClient,
       instanceId,
       dashboard,
       metricsView,
       explore,
-      annotations["web_open_state"],
+      exploreProtoState,
     );
     loadedFromState = true;
   }
@@ -207,12 +211,16 @@ async function mergeDashboardFromUrlState(
   exploreSpec: V1ExploreSpec,
   urlState: string,
 ) {
+  if (!exploreSpec.metricsView) return;
+
   const schemaResp = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewSchemaQueryKey(
       instanceId,
-      exploreState.name,
+      exploreSpec.metricsView,
     ),
-    queryFn: () => queryServiceMetricsViewSchema(instanceId, exploreState.name),
+    // This seems like an edge case with linter where the undefined check is not honored. Perhaps because it is a callback.
+    queryFn: () =>
+      queryServiceMetricsViewSchema(instanceId, exploreSpec.metricsView!),
   });
   if (!schemaResp.schema) return;
 
@@ -270,7 +278,10 @@ function getPivotStateFromRequest(
   const tableMode = isFlat ? "flat" : "nest";
 
   const sorting: SortingState =
-    req.sort?.map((s) => ({ id: s.name!, desc: !!s.desc })) ?? [];
+    req.sort?.map((s) => ({
+      id: convertComparisonMeasureToPivotMeasures(s.name!),
+      desc: !!s.desc,
+    })) ?? [];
 
   return {
     rows: rowChips,
@@ -283,4 +294,24 @@ function getPivotStateFromRequest(
     activeCell: null,
     tableMode,
   };
+}
+
+// We use a different suffix in pivot vs rest of the app. So map them correctly to not break pivot.
+// TODO: Unify the suffix to avoid this confusion
+function convertComparisonMeasureToPivotMeasures(measure: string) {
+  switch (true) {
+    case measure.endsWith(ComparisonDeltaPreviousSuffix):
+      return measure.replace(ComparisonDeltaPreviousSuffix, COMPARISON_VALUE);
+
+    case measure.endsWith(ComparisonDeltaAbsoluteSuffix):
+      return measure.replace(ComparisonDeltaAbsoluteSuffix, COMPARISON_DELTA);
+
+    case measure.endsWith(ComparisonDeltaRelativeSuffix):
+      return measure.replace(ComparisonDeltaRelativeSuffix, COMPARISON_PERCENT);
+
+    case measure.endsWith(ComparisonPercentOfTotal):
+      return measure.replace(ComparisonPercentOfTotal, "");
+  }
+
+  return measure;
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -308,7 +309,15 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName {
-		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
+		return time.Minute * 5
+	}
+
+	if fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
+		return time.Minute * 5
+	}
+
+	if fullMethodName == runtimev1.RuntimeService_Health_FullMethodName || fullMethodName == runtimev1.RuntimeService_InstanceHealth_FullMethodName {
+		return time.Minute * 3 // Match the default interactive query timeout
 	}
 
 	return time.Second * 30
@@ -347,6 +356,9 @@ func mapGRPCError(err error) error {
 	if errors.Is(err, runtime.ErrForbidden) {
 		return ErrForbidden
 	}
+	if errors.Is(err, metricsview.ErrForbidden) {
+		return ErrForbidden
+	}
 	return err
 }
 
@@ -354,7 +366,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	// Any request type might be limited separately as it is part of Metadata
 	// Any request type might be excluded from this limit check and limited later,
 	// e.g. in the corresponding request handler by calling s.limiter.Limit(ctx, "limitKey", redis_rate.PerMinute(100))
-	if auth.GetClaims(ctx).Subject() == "" {
+	if auth.GetClaims(ctx, "").UserID == "" {
 		method, ok := grpc.Method(ctx)
 		if !ok {
 			return ctx, fmt.Errorf("server context does not have a method")
