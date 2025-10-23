@@ -46,11 +46,18 @@
 
   $: currentThemeSpec = embeddedTheme || fetchedTheme;
 
-  // Extract colors from theme (new structure: theme.light.primary, or legacy: theme.primaryColorRaw)
+  $: themeColors = $darkMode
+    ? (currentThemeSpec?.dark as
+        | { primary?: string; secondary?: string }
+        | undefined)
+    : (currentThemeSpec?.light as
+        | { primary?: string; secondary?: string }
+        | undefined);
+
   $: primaryFromTheme =
-    currentThemeSpec?.light?.primary || currentThemeSpec?.primaryColorRaw;
+    themeColors?.primary || currentThemeSpec?.primaryColorRaw;
   $: secondaryFromTheme =
-    currentThemeSpec?.light?.secondary || currentThemeSpec?.secondaryColorRaw;
+    themeColors?.secondary || currentThemeSpec?.secondaryColorRaw;
 
   $: effectivePrimary = isPresetMode
     ? primaryFromTheme || DEFAULT_PRIMARY
