@@ -300,6 +300,10 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     let endOffset = this.end.offset.toObject();
     const parentOffset = offset.toObject();
 
+    if (this.start?.parts?.[0]?.point instanceof RillAbsoluteTime) {
+      return ["Custom", true];
+    }
+
     if (
       Object.keys(startOffset).length > 1 ||
       Object.keys(endOffset).length > 1 ||

@@ -22,8 +22,7 @@ import (
 
 // Constants for AI completion
 const (
-	completionTimeout     = 120 * time.Second // Overall timeout for entire AI completion
-	aiRequestTimeout      = 30 * time.Second  // Timeout for individual AI API calls
+	aiRequestTimeout      = 60 * time.Second // Timeout for individual AI API calls (needs to be generous for tool calling)
 	maxToolCallIterations = 20
 )
 
@@ -353,10 +352,6 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID, conversat
 		return nil, err
 	}
 	defer release()
-
-	// Apply timeout
-	ctx, cancel := context.WithTimeout(ctx, completionTimeout)
-	defer cancel()
 
 	// Get available tools
 	tools, err := toolService.ListTools(ctx)
