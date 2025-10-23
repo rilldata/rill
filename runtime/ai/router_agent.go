@@ -59,23 +59,23 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	}
 
 	// Create a list of candidate agents that the user has access to.
-	candidates := []string{"analyst_agent"}
-	candidates = slices.DeleteFunc(candidates, func(agent string) bool {
-		tool, ok := s.runner.Tools[agent]
-		if !ok {
-			panic(fmt.Errorf("unknown tool %q", agent))
-		}
-		if tool.checkAccess != nil {
-			return !tool.checkAccess(s.Claims())
-		}
-		return false
+	candidates := []*CompiledTool{
+		must(s.Tool("analyst_agent")),
+		// must(s.Tool("developer_agent")), // Temporarily disabled
+	}
+	candidates = slices.DeleteFunc(candidates, func(agent *CompiledTool) bool {
+		return !agent.CheckAccess(s.Claims())
 	})
 
 	// Find agent to invoke
 	switch {
 	// Specific agent requested
 	case args.Agent != "":
-		if !slices.Contains(candidates, args.Agent) {
+		// Check it exists
+		found := slices.ContainsFunc(candidates, func(agent *CompiledTool) bool {
+			return agent.Name == args.Agent
+		})
+		if !found {
 			return nil, fmt.Errorf("agent %q not found", args.Agent)
 		}
 	// No candidates available
@@ -83,7 +83,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		return nil, fmt.Errorf("no agents available")
 	// Only one candidate available
 	case len(candidates) == 1:
-		args.Agent = candidates[0]
+		args.Agent = candidates[0].Name
 	// Multiple candidates available; choose an agent using the LLM
 	default:
 		// Build completion messages for agent choice
@@ -104,25 +104,43 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 
 		// Validate the selected agent.
 		// NOTE: If we start seeing hallucinations, we may need to add a retry loop with feedback here.
-		if !slices.Contains(candidates, agentChoice.Agent) {
+		found := slices.ContainsFunc(candidates, func(agent *CompiledTool) bool {
+			return agent.Name == agentChoice.Agent
+		})
+		if !found {
 			return nil, fmt.Errorf("agent %q not found", agentChoice.Agent)
 		}
 		args.Agent = agentChoice.Agent
 	}
 
 	// Call the selected agent.
-	// We always pass "explore" for context, but some agents may not use it.
-	var response *AnalystAgentResult // TODO: Don't hard-code to a single agent
-	_, err := s.CallTool(ctx, RoleSystem, args.Agent, &response, map[string]any{
-		"explore": args.Explore,
-	})
-	if err != nil {
-		return nil, err
+	switch args.Agent {
+	case "analyst_agent":
+		var response *AnalystAgentResult
+		_, err := s.CallTool(ctx, RoleSystem, args.Agent, &response, &AnalystAgentArgs{
+			Prompt:  args.Prompt,
+			Explore: args.Explore,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &RouterAgentResult{Response: response.Response}, nil
+
+	case "developer_agent":
+		var response *DeveloperAgentResult
+		_, err := s.CallTool(ctx, RoleSystem, args.Agent, &response, &DeveloperAgentArgs{
+			Prompt: args.Prompt,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &RouterAgentResult{Response: response.Response}, nil
 	}
-	return &RouterAgentResult{Response: response.Response}, nil
+
+	return nil, fmt.Errorf("agent %q not implemented", args.Agent)
 }
 
-func (t *RouterAgent) systemPrompt(candidates []string) string {
+func (t *RouterAgent) systemPrompt(candidates []*CompiledTool) string {
 	return mustExecuteTemplate(`
 You are a routing agent that determines which specialized agent should handle a user's request.
 You operate in the context of a business intelligence tool that supports data modeling and data exploration, and more.
@@ -131,9 +149,9 @@ Routing guidelines:
 - If the user's question relates to developing or changing the data model or dashboards, you should route to the developer.
 - If the user's question relates to retrieving specific business metrics, you should route to the analyst.
 - If the user asks a general question, you should route to the analyst.
-You must answer with a single agent choice and no further explanation. Pick only from this list of available agents:
+You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
 {{- range .candidates }}
-- {{ . }}
+- {{ .Name }} ({{ .Spec.Description }})
 {{- end }}
 `, map[string]any{
 		"candidates": candidates,
@@ -152,4 +170,11 @@ func promptToTitle(message string) string {
 		return "New Conversation"
 	}
 	return title
+}
+
+func must[T any](t T, ok bool) T {
+	if !ok {
+		panic("expected value to be present")
+	}
+	return t
 }

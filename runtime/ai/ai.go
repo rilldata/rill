@@ -27,14 +27,14 @@ import (
 type Runner struct {
 	Runtime  *runtime.Runtime
 	Activity *activity.Client
-	Tools    map[string]*wrappedTool
+	Tools    map[string]*CompiledTool
 }
 
 // NewRunner creates a new Runner.
 func NewRunner(rt *runtime.Runtime) *Runner {
 	r := &Runner{
 		Runtime: rt,
-		Tools:   make(map[string]*wrappedTool),
+		Tools:   make(map[string]*CompiledTool),
 	}
 
 	RegisterTool(r, &RouterAgent{Runtime: rt})
@@ -173,12 +173,13 @@ type Tool[In, Out any] interface {
 	Handler(ctx context.Context, args In) (Out, error)
 }
 
-// wrappedTool is the internal representation of a registered tool.
-type wrappedTool struct {
-	spec                  *mcp.Tool
-	checkAccess           func(claims *runtime.SecurityClaims) bool
-	jsonHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
-	registerWithMCPServer func(srv *mcp.Server)
+// CompiledTool is the internal representation of a registered tool.
+type CompiledTool struct {
+	Name                  string
+	Spec                  *mcp.Tool
+	CheckAccess           func(claims *runtime.SecurityClaims) bool
+	JSONHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
+	RegisterWithMCPServer func(srv *mcp.Server)
 }
 
 // RegisterTool registers a new tool with the Runner.
@@ -191,10 +192,11 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 		spec.OutputSchema, _ = schemaFor[Out](true)
 	}
 
-	s.Tools[spec.Name] = &wrappedTool{
-		spec:        spec,
-		checkAccess: t.CheckAccess,
-		jsonHandler: func(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	s.Tools[spec.Name] = &CompiledTool{
+		Name:        spec.Name,
+		Spec:        spec,
+		CheckAccess: t.CheckAccess,
+		JSONHandler: func(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
 			var args In
 			if err := json.Unmarshal(input, &args); err != nil {
 				return nil, err
@@ -209,7 +211,7 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 			}
 			return data, nil
 		},
-		registerWithMCPServer: func(srv *mcp.Server) {
+		RegisterWithMCPServer: func(srv *mcp.Server) {
 			mcp.AddTool(srv, spec, func(ctx context.Context, req *mcp.CallToolRequest, args In) (*mcp.CallToolResult, Out, error) {
 				s := GetSession(ctx)
 				var res Out
@@ -678,6 +680,11 @@ func (s *Session) RootID() string {
 	return root
 }
 
+func (s *Session) Tool(toolName string) (*CompiledTool, bool) {
+	t, ok := s.runner.Tools[toolName]
+	return t, ok
+}
+
 // CallResult contains the messages created during a tool call.
 type CallResult struct {
 	Call   *Message
@@ -700,10 +707,10 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 		if !ok {
 			return nil, fmt.Errorf("unknown tool %q", toolName)
 		}
-		if tool.checkAccess != nil && !tool.checkAccess(s.claims) {
+		if tool.CheckAccess != nil && !tool.CheckAccess(s.claims) {
 			return nil, fmt.Errorf("access denied to tool %q", toolName)
 		}
-		return tool.jsonHandler(ctx, argsJSON)
+		return tool.JSONHandler(ctx, argsJSON)
 	})
 }
 
@@ -827,8 +834,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
 		var inputSchema string
-		if tool.spec.InputSchema != nil {
-			inputSchemaBytes, err := json.Marshal(tool.spec.InputSchema)
+		if tool.Spec.InputSchema != nil {
+			inputSchemaBytes, err := json.Marshal(tool.Spec.InputSchema)
 			if err != nil {
 				return fmt.Errorf("failed to marshal input schema for tool %q: %w", toolName, err)
 			}
@@ -836,13 +843,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 			// OpenAI currently does not accept object schemas without explicit properties.
 			// So for now, we skip such schemas.
-			if s, ok := tool.spec.InputSchema.(*jsonschema.Schema); ok && s.Properties == nil {
+			if s, ok := tool.Spec.InputSchema.(*jsonschema.Schema); ok && s.Properties == nil {
 				inputSchema = ""
 			}
 		}
 		tools = append(tools, &aiv1.Tool{
-			Name:        tool.spec.Name,
-			Description: tool.spec.Description,
+			Name:        tool.Spec.Name,
+			Description: tool.Spec.Description,
 			InputSchema: inputSchema,
 		})
 	}

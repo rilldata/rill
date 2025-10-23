@@ -73,10 +73,10 @@ func (s *Session) MCPServer() *mcp.Server {
 
 	// Add only the tools that the user has access to
 	for _, t := range s.runner.Tools {
-		if t.checkAccess != nil && !t.checkAccess(s.claims) {
+		if !t.CheckAccess(s.claims) {
 			continue
 		}
-		t.registerWithMCPServer(srv)
+		t.RegisterWithMCPServer(srv)
 	}
 
 	return srv
