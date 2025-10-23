@@ -125,6 +125,8 @@ export function generateVLFunnelChartSpec(
   const spec = createMultiLayerBaseSpec();
   spec.height = 500;
 
+  const textColor = data.isDarkMode ? "#eeeeee" : "#353535";
+
   const isMultiMeasure = config.breakdownMode === "measures";
 
   const measureDisplayNames: Record<string, string> = {};
@@ -269,6 +271,7 @@ export function generateVLFunnelChartSpec(
       },
       align: "left",
       fontWeight: 600,
+      color: textColor,
     },
     encoding: {
       x: {
@@ -291,7 +294,8 @@ export function generateVLFunnelChartSpec(
         expr: `-(scale('x', datum['funnel_width']) / 2)`,
       },
       color: {
-        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(colorField ?? "")}'] ) ) > 0.45 ? '#222' : '#efefef'`,
+        // Use theme-aware colors: dark text on light backgrounds, light text on dark backgrounds
+        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(colorField ?? "")}'] ) ) > 0.45 ? 'var(--color-gray-900)' : 'var(--color-gray-50)'`,
       },
     },
     encoding: {
@@ -320,6 +324,7 @@ export function generateVLFunnelChartSpec(
       },
       align: "right",
       limit: 200,
+      color: textColor,
     },
     encoding: {
       x: {

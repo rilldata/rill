@@ -99,7 +99,8 @@
     color: var(--color-gray-900);
 
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
-    --surface: oklch(100% 0 0);
+    --surface: hsl(0deg 0% 100%);
+    /* white */
 
     /* SHADCN VARIABLES */
     --background: var(--color-gray-50);
@@ -212,6 +213,57 @@
       --color-theme-secondary-light-950,
       var(--color-secondary-light-950)
     );
+
+    /* SEQUENTIAL PALETTE - For ordered data that progresses from low to high */
+    --color-sequential-1: hsl(211deg 79% 94%);
+    --color-sequential-2: hsl(211deg 63% 86%);
+    --color-sequential-3: hsl(211deg 75% 77%);
+    --color-sequential-4: hsl(210deg 73% 64%);
+    --color-sequential-5: hsl(208deg 76% 51%);
+    --color-sequential-6: hsl(210deg 100% 43%);
+    --color-sequential-7: hsl(212deg 100% 36%);
+    --color-sequential-8: hsl(214deg 100% 29%);
+    --color-sequential-9: hsl(217deg 100% 22%);
+
+    /* DIVERGING PALETTE - For data that diverges from a critical midpoint */
+    --color-diverging-1: hsl(353deg 87% 48%);
+    --color-diverging-2: hsl(12deg 100% 62%);
+    --color-diverging-3: hsl(27deg 100% 70%);
+    --color-diverging-4: hsl(40deg 96% 82%);
+    --color-diverging-5: hsl(59deg 48% 94%);
+    --color-diverging-6: hsl(194deg 100% 86%);
+    --color-diverging-7: hsl(199deg 91% 73%);
+    --color-diverging-8: hsl(202deg 83% 57%);
+    --color-diverging-9: hsl(207deg 100% 44%);
+    --color-diverging-10: hsl(217deg 100% 39%);
+    --color-diverging-11: hsl(237deg 69% 34%);
+
+    /* QUALITATIVE PALETTE - For categorical data without inherent ordering */
+    /* Based on ColorBrewer Paired + Set3, extended to 24 colors */
+    --color-qualitative-1: hsl(156deg 56% 52%);
+    --color-qualitative-2: hsl(27deg 100% 65%);
+    --color-qualitative-3: hsl(195deg 100% 46%);
+    --color-qualitative-4: hsl(289deg 61% 76%);
+    --color-qualitative-5: hsl(109deg 56% 64%);
+    --color-qualitative-6: hsl(41deg 83% 69%);
+    --color-qualitative-7: hsl(349deg 76% 71%);
+    --color-qualitative-8: hsl(217deg 49% 61%);
+    --color-qualitative-9: hsl(165deg 100% 36%);
+    --color-qualitative-10: hsl(16deg 95% 70%);
+    --color-qualitative-11: hsl(236deg 65% 74%);
+    --color-qualitative-12: hsl(75deg 43% 66%);
+    --color-qualitative-13: hsl(330deg 70% 60%);
+    --color-qualitative-14: hsl(55deg 85% 58%);
+    --color-qualitative-15: hsl(180deg 85% 42%);
+    --color-qualitative-16: hsl(270deg 55% 65%);
+    --color-qualitative-17: hsl(140deg 60% 50%);
+    --color-qualitative-18: hsl(30deg 90% 62%);
+    --color-qualitative-19: hsl(355deg 80% 65%);
+    --color-qualitative-20: hsl(210deg 60% 55%);
+    --color-qualitative-21: hsl(170deg 70% 45%);
+    --color-qualitative-22: hsl(45deg 75% 60%);
+    --color-qualitative-23: hsl(250deg 60% 68%);
+    --color-qualitative-24: hsl(95deg 50% 58%);
 
     --editor-selection: #b0daffb3;
     --line-highlight: #ededed5b;
@@ -330,6 +382,56 @@
       --color-theme-secondary-dark-950,
       var(--color-secondary-dark-950)
     );
+
+    /* SEQUENTIAL PALETTE - Dark mode (brighter for visibility) */
+    --color-sequential-1: hsl(210deg 20% 25%);
+    --color-sequential-2: hsl(210deg 25% 30%);
+    --color-sequential-3: hsl(210deg 30% 35%);
+    --color-sequential-4: hsl(210deg 35% 40%);
+    --color-sequential-5: hsl(210deg 40% 45%);
+    --color-sequential-6: hsl(210deg 45% 50%);
+    --color-sequential-7: hsl(210deg 50% 55%);
+    --color-sequential-8: hsl(210deg 55% 60%);
+    --color-sequential-9: hsl(210deg 60% 65%);
+
+    /* DIVERGING PALETTE - Dark mode (adjusted for dark backgrounds) */
+    --color-diverging-1: hsl(270deg 40% 30%);
+    --color-diverging-2: hsl(260deg 45% 35%);
+    --color-diverging-3: hsl(250deg 50% 40%);
+    --color-diverging-4: hsl(240deg 45% 45%);
+    --color-diverging-5: hsl(230deg 40% 50%);
+    --color-diverging-6: hsl(220deg 35% 55%);
+    --color-diverging-7: hsl(85deg 40% 50%);
+    --color-diverging-8: hsl(55deg 45% 45%);
+    --color-diverging-9: hsl(35deg 50% 40%);
+    --color-diverging-10: hsl(25deg 45% 35%);
+    --color-diverging-11: hsl(15deg 40% 30%);
+
+    /* QUALITATIVE PALETTE - Dark mode (saturated for distinction) */
+    --color-qualitative-1: hsl(163deg 50% 45%);
+    --color-qualitative-2: hsl(50deg 60% 50%);
+    --color-qualitative-3: hsl(230deg 55% 45%);
+    --color-qualitative-4: hsl(320deg 50% 50%);
+    --color-qualitative-5: hsl(140deg 55% 50%);
+    --color-qualitative-6: hsl(85deg 50% 55%);
+    --color-qualitative-7: hsl(10deg 55% 45%);
+    --color-qualitative-8: hsl(260deg 50% 45%);
+    --color-qualitative-9: hsl(170deg 55% 45%);
+    --color-qualitative-10: hsl(40deg 55% 50%);
+    --color-qualitative-11: hsl(280deg 50% 50%);
+    --color-qualitative-12: hsl(120deg 45% 55%);
+    --color-qualitative-13: hsl(340deg 60% 55%);
+    --color-qualitative-14: hsl(65deg 70% 55%);
+    --color-qualitative-15: hsl(190deg 70% 50%);
+    --color-qualitative-16: hsl(285deg 55% 60%);
+    --color-qualitative-17: hsl(150deg 60% 55%);
+    --color-qualitative-18: hsl(35deg 75% 58%);
+    --color-qualitative-19: hsl(5deg 70% 60%);
+    --color-qualitative-20: hsl(220deg 60% 60%);
+    --color-qualitative-21: hsl(175deg 65% 50%);
+    --color-qualitative-22: hsl(55deg 65% 55%);
+    --color-qualitative-23: hsl(265deg 55% 65%);
+    --color-qualitative-24: hsl(110deg 55% 60%);
 
     --editor-selection: #304e75;
     --line-highlight: #26262659;

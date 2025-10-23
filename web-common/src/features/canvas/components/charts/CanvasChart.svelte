@@ -6,7 +6,9 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { resolveThemeObject } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
   import type { BaseChart } from "./BaseChart";
   import { getChartDataForCanvas } from "./selector";
@@ -14,14 +16,18 @@
 
   export let component: BaseChart<CanvasChartSpec>;
 
-  $: themePreference = $themeControl;
-  $: isDarkMode = themePreference === "dark";
+  // Theme mode (light/dark) - separate from which theme is selected
+  $: currentThemeMode = $themeControl;
+  $: isThemeModeDark = currentThemeMode === "dark";
+
+  // Create a reactive store from theme mode for chart data dependency
+  $: themeModeStore = derived([], () => isThemeModeDark);
 
   $: ({ instanceId } = $runtime);
 
   $: ({
     specStore,
-    parent: { name: canvasName },
+    parent: { name: canvasName, themeSpec },
     timeAndFilterStore,
     chartType: type,
   } = component);
@@ -47,12 +53,14 @@
 
   $: measures = getMeasuresForMetricView(metrics_view);
 
+  $: currentTheme = resolveThemeObject($themeSpec, isThemeModeDark);
+
   $: chartData = getChartDataForCanvas(
     store,
     component,
     chartSpec,
     timeAndFilterStore,
-    isDarkMode,
+    themeModeStore,
   );
 
   $: ({ isFetching, error } = $chartData);
@@ -85,7 +93,8 @@
         {chartData}
         measures={$measures}
         isCanvas
-        theme={isDarkMode ? "dark" : "light"}
+        themeMode={isThemeModeDark ? "dark" : "light"}
+        theme={currentTheme}
       />
     {/if}
   {:else}
