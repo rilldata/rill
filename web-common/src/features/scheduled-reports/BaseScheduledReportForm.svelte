@@ -105,7 +105,7 @@
         {selectedRunAsOption.description}
       </div>
     {/if}
-    <ScheduleForm {data} />
+    <ScheduleForm {data} exploreName={$data["exploreName"]} />
     <Select
       bind:value={$data["exportFormat"]}
       id="exportFormat"
