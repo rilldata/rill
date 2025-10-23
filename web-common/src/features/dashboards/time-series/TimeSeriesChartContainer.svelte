@@ -15,7 +15,7 @@ A container GraphicContext for the time series in a metrics dashboard.
   const paddingForSplitView = 30;
 </script>
 
-<div class="max-w-full h-fit flex flex-col max-h-full pr-2 bg-card">
+<div class="max-w-full h-fit flex flex-col max-h-full pr-2 bg-surface">
   <GraphicContext
     bottom={4}
     height={enableFullWidth
