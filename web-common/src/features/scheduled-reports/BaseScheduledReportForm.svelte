@@ -28,12 +28,12 @@
   export let formId: string;
   export let data: Readable<ReportValues>;
   export let errors: SuperFormErrors<ReportValues>;
+  export let enhance;
+  export let filters: Filters | undefined = undefined;
+  export let timeControls: TimeControls | undefined = undefined;
   export let submit: () => void;
   export let handleExploreChange: ((exploreName: string) => void) | undefined =
     undefined;
-  export let filters: Filters | undefined = undefined;
-  export let timeControls: TimeControls | undefined = undefined;
-  export let enhance;
 
   const RUN_AS_OPTIONS = [
     {

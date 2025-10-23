@@ -159,7 +159,7 @@ export class DashboardStateSync {
     // Get the updated url params. If we merged state other than the url we would need to navigate to it.
     const redirectUrl = this.getUrlForExploreState(initExploreState);
 
-    if (this.dataLoader.disableSessionStorage) {
+    if (!this.dataLoader.disableSessionStorage) {
       // Update session storage with the initial state
       updateExploreSessionStore(
         this.exploreName,
@@ -258,7 +258,7 @@ export class DashboardStateSync {
     // Get the full updated state and save to session storage
     const updatedExploreState =
       get(metricsExplorerStore).entities[this.exploreName];
-    if (this.dataLoader.disableSessionStorage) {
+    if (!this.dataLoader.disableSessionStorage) {
       updateExploreSessionStore(
         this.exploreName,
         this.extraPrefix,
@@ -312,7 +312,7 @@ export class DashboardStateSync {
     // Get the new url params for the updated state
     const newUrl = this.getUrlForExploreState(exploreState);
 
-    if (this.dataLoader.disableSessionStorage) {
+    if (!this.dataLoader.disableSessionStorage) {
       // Update the session storage with the new explore state.
       updateExploreSessionStore(
         this.exploreName,

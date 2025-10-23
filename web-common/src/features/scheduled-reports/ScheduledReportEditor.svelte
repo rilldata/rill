@@ -22,10 +22,7 @@
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import { getPivotQueryFromExploreState } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
-  import {
-    metricsExplorerStore,
-    useExploreState,
-  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import BaseScheduledReportForm from "@rilldata/web-common/features/scheduled-reports/BaseScheduledReportForm.svelte";
