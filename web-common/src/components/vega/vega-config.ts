@@ -1,111 +1,16 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import chroma from "chroma-js";
 import type { Config } from "vega-lite";
 
-const cssVarCache = new Map<string, string>();
-
-export function clearCSSVariableCache(): void {
-  cssVarCache.clear();
-}
-
-if (typeof window !== "undefined") {
-  (window as any).__clearRillCSSCache = clearCSSVariableCache;
-}
+export const clearCSSVariableCache = () => themeManager.clearCSSVariableCache();
 
 function resolveCSSVariable(
   cssVar: string,
   isDarkMode: boolean,
   fallback?: string,
 ): string {
-  const cacheKey = `${cssVar}-${isDarkMode}`;
-
-  if (cssVarCache.has(cacheKey)) {
-    return cssVarCache.get(cacheKey)!;
-  }
-
-  const resolvedValue = resolveCSSVariableUncached(
-    cssVar,
-    isDarkMode,
-    fallback,
-  );
-  cssVarCache.set(cacheKey, resolvedValue);
-
-  return resolvedValue;
-}
-
-function resolveCSSVariableUncached(
-  cssVar: string,
-  isDarkMode: boolean,
-  fallback?: string,
-): string {
-  if (typeof window === "undefined") return fallback || cssVar;
-
-  // Extract the variable name from var() syntax
-  const varName = cssVar
-    .replace("var(", "")
-    .replace(")", "")
-    .split(",")[0]
-    .trim();
-
-  // For theme palette variables (--color-theme-600, --color-primary-500, etc),
-  // these use light-dark() CSS function, so resolve to explicit light/dark variant
-  const palettePattern =
-    /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
-  const match = varName.match(palettePattern);
-
-  if (match) {
-    const [, colorType, shade] = match;
-    const modeVariant = isDarkMode
-      ? `--color-${colorType}-dark-${shade}`
-      : `--color-${colorType}-light-${shade}`;
-
-    // Try scoped theme boundary first
-    const themeBoundary = document.querySelector(".dashboard-theme-boundary");
-    if (themeBoundary) {
-      const scopedValue = getComputedStyle(
-        themeBoundary as HTMLElement,
-      ).getPropertyValue(modeVariant);
-      if (scopedValue && scopedValue.trim()) {
-        return scopedValue.trim();
-      }
-    }
-
-    // Fall back to document root
-    const computed = getComputedStyle(
-      document.documentElement,
-    ).getPropertyValue(modeVariant);
-    if (computed && computed.trim()) {
-      return computed.trim();
-    }
-  }
-
-  // For other variables (--color-sequential-1, --primary, custom vars from theme),
-  // read directly - the CSS rules handle light/dark switching via :root vs :root.dark selectors
-  // We just need to ensure we're reading when the .dark class state matches isDarkMode
-  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
-  if (themeBoundary) {
-    const scopedValue = getComputedStyle(
-      themeBoundary as HTMLElement,
-    ).getPropertyValue(varName);
-    if (scopedValue && scopedValue.trim()) {
-      return scopedValue.trim();
-    }
-  }
-
-  // Fall back to document root
-  const computed = getComputedStyle(document.documentElement).getPropertyValue(
-    varName,
-  );
-  if (computed && computed.trim()) {
-    return computed.trim();
-  }
-
-  // If fallback is provided and is also a CSS variable, resolve it
-  if (fallback && fallback.startsWith("var(")) {
-    return resolveCSSVariable(fallback, isDarkMode);
-  }
-
-  return fallback || cssVar;
+  return themeManager.resolveCSSVariable(cssVar, isDarkMode, fallback);
 }
 
 // Light and dark mode color values for canvas compatibility
