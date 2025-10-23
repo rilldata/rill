@@ -13,6 +13,7 @@ import type { Config } from "vega-lite";
 import type {
   ChartDataResult,
   ChartDomainValues,
+  ChartSortDirection,
   ChartSpec,
   ChartType,
   ColorMapping,
@@ -333,4 +334,11 @@ export function colorToVariableReference(
 
   // Not a palette color, return as-is
   return resolvedColor;
+}
+
+export function sanitizeSortFieldForVega(sort: ChartSortDirection) {
+  if (sort === "measure" || sort === "-measure") {
+    return undefined;
+  }
+  return sort;
 }
