@@ -241,12 +241,12 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	switch preset {
 	case "cloud":
 		if full {
-			profiles = []string{"full"}
+			profiles = []string{"cloud", "full"}
 		} else {
 			profiles = []string{"cloud"}
 		}
-	case "e2e", "other":
-		profiles = []string{"e2e", "full"}
+	case "e2e":
+		profiles = []string{"e2e"}
 	}
 
 	// Validate the .env file is well-formed.

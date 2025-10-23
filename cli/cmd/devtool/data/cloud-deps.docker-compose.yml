@@ -20,7 +20,7 @@ x-postgres: &postgres
 services:
   postgres:
     <<: *postgres
-    profiles: ["cloud", "full"]
+    profiles: ["cloud"]
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
@@ -33,7 +33,7 @@ services:
     image: redis
     ports:
       - '6379:6379'
-    profiles: ["cloud", "full"]
+    profiles: ["cloud", "full", "e2e"]
   zipkin:
     <<: *service
     container_name: zipkin
@@ -104,7 +104,7 @@ services:
     ports:
       - '9000:9000' # Native port
       - '8123:8123' # HTTP port
-    profiles: ["cloud", "full"]
+    profiles: ["cloud", "full", "e2e"]
   pgweb:
     <<: *service
     image: sosedoff/pgweb
