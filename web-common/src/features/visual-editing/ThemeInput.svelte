@@ -23,7 +23,11 @@
   export let theme: string | V1ThemeSpec | undefined;
   export let small = false;
   export let onThemeChange: (themeName: string | undefined) => void;
-  export let onColorChange: (primary: string, secondary: string) => void;
+  export let onColorChange: (
+    primary: string,
+    secondary: string,
+    isDarkMode: boolean,
+  ) => void;
 
   let customPrimary = "";
   let customSecondary = "";
@@ -71,7 +75,8 @@
         customSecondary =
           currentThemeSpec?.secondaryColorRaw || FALLBACK_SECONDARY;
       }
-      onColorChange(customPrimary, customSecondary);
+      // TODO: Support dark mode - currently always sets light mode
+      onColorChange(customPrimary, customSecondary, false);
     } else {
       onThemeChange(lastPresetTheme);
     }
@@ -90,10 +95,12 @@
   function handleColorChange(color: string, isPrimary: boolean) {
     if (isPrimary) {
       customPrimary = color;
-      onColorChange(customPrimary, effectiveSecondary);
+      // TODO: Support dark mode - currently always sets light mode
+      onColorChange(customPrimary, effectiveSecondary, false);
     } else {
       customSecondary = color;
-      onColorChange(effectivePrimary, customSecondary);
+      // TODO: Support dark mode - currently always sets light mode
+      onColorChange(effectivePrimary, customSecondary, false);
     }
   }
 </script>
