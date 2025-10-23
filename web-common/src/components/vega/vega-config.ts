@@ -2,14 +2,38 @@ import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/conf
 import chroma from "chroma-js";
 import type { Config } from "vega-lite";
 
-/**
- * Resolves a CSS variable to its computed value for canvas rendering
- * This is necessary because canvas rendering requires concrete color values, not CSS variables
- *
- * For palette variables (--color-theme-600), explicitly resolves to light/dark variant
- * For theme variables (--color-sequential-1), reads the computed value considering dark mode
- */
+const cssVarCache = new Map<string, string>();
+
+export function clearCSSVariableCache(): void {
+  cssVarCache.clear();
+}
+
+if (typeof window !== "undefined") {
+  (window as any).__clearRillCSSCache = clearCSSVariableCache;
+}
+
 function resolveCSSVariable(
+  cssVar: string,
+  isDarkMode: boolean,
+  fallback?: string,
+): string {
+  const cacheKey = `${cssVar}-${isDarkMode}`;
+
+  if (cssVarCache.has(cacheKey)) {
+    return cssVarCache.get(cacheKey)!;
+  }
+
+  const resolvedValue = resolveCSSVariableUncached(
+    cssVar,
+    isDarkMode,
+    fallback,
+  );
+  cssVarCache.set(cacheKey, resolvedValue);
+
+  return resolvedValue;
+}
+
+function resolveCSSVariableUncached(
   cssVar: string,
   isDarkMode: boolean,
   fallback?: string,

@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { featureFlags } from "../feature-flags";
+import { clearCSSVariableCache } from "@rilldata/web-common/components/vega/vega-config";
 
 type Theme = "light" | "dark" | "system";
 
@@ -64,11 +65,13 @@ class ThemeControl {
   private setDark() {
     this.current.set("dark");
     document.documentElement.classList.add("dark");
+    clearCSSVariableCache();
   }
 
   private removeDark() {
     this.current.set("light");
     document.documentElement.classList.remove("dark");
+    clearCSSVariableCache();
   }
 }
 

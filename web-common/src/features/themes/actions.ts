@@ -20,6 +20,7 @@ import {
   DEFAULT_GAMMA,
 } from "./color-generation.ts";
 import { sanitizeThemeVariables } from "./css-sanitizer.ts";
+import { clearCSSVariableCache } from "@rilldata/web-common/components/vega/vega-config";
 
 const CUSTOM_THEME_STYLE_ID = "rill-custom-theme";
 
@@ -109,6 +110,7 @@ export function updateThemeVariables(
 
 function clearThemeVariables(root: HTMLElement): void {
   removeExistingCustomCSS();
+  clearCSSVariableCache();
 
   if (root !== document.documentElement) {
     setVariables(root, "theme", "light");
