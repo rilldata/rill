@@ -507,6 +507,15 @@
       throw new Error(`Failed to read file: ${error.message}`);
     }
   }
+
+  // Handle skip button for multi-step connectors
+  function handleSkip() {
+    if (!isMultiStepConnector || stepState.step !== "connector") return;
+
+    // Store current form values and transition to step 2
+    setConnectorConfig($paramsForm);
+    setStep("source");
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -869,54 +878,60 @@
         <Button onClick={onBack} type="secondary">Back</Button>
       {/if}
 
-      <Button
-        disabled={connector.name === "clickhouse"
-          ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-          : submitting || isSubmitDisabled}
-        loading={connector.name === "clickhouse"
-          ? clickhouseSubmitting
-          : submitting}
-        loadingCopy={connector.name === "clickhouse"
-          ? "Connecting..."
-          : "Testing connection..."}
-        form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-        submitForm
-        type="primary"
-      >
-        {#if connector.name === "clickhouse"}
-          {#if clickhouseConnectorType === "rill-managed"}
-            {#if clickhouseSubmitting}
-              Connecting...
-            {:else}
-              Connect
-            {/if}
-          {:else if clickhouseSubmitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else if isConnectorForm}
-          {#if isMultiStepConnector && stepState.step === "connector"}
-            {#if submitting}
+      <div class="flex gap-2">
+        {#if isMultiStepConnector && stepState.step === "connector"}
+          <Button onClick={handleSkip} type="secondary">Skip</Button>
+        {/if}
+
+        <Button
+          disabled={connector.name === "clickhouse"
+            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+            : submitting || isSubmitDisabled}
+          loading={connector.name === "clickhouse"
+            ? clickhouseSubmitting
+            : submitting}
+          loadingCopy={connector.name === "clickhouse"
+            ? "Connecting..."
+            : "Testing connection..."}
+          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+          submitForm
+          type="primary"
+        >
+          {#if connector.name === "clickhouse"}
+            {#if clickhouseConnectorType === "rill-managed"}
+              {#if clickhouseSubmitting}
+                Connecting...
+              {:else}
+                Connect
+              {/if}
+            {:else if clickhouseSubmitting}
               Testing connection...
             {:else}
               Test and Connect
             {/if}
-          {:else if isMultiStepConnector && stepState.step === "source"}
-            {#if submitting}
-              Creating model...
+          {:else if isConnectorForm}
+            {#if isMultiStepConnector && stepState.step === "connector"}
+              {#if submitting}
+                Testing connection...
+              {:else}
+                Test and Connect
+              {/if}
+            {:else if isMultiStepConnector && stepState.step === "source"}
+              {#if submitting}
+                Creating model...
+              {:else}
+                Test and Add data
+              {/if}
+            {:else if submitting}
+              Testing connection...
             {:else}
-              Test and Add data
+              Test and Connect
             {/if}
-          {:else if submitting}
-            Testing connection...
           {:else}
-            Test and Connect
+            Test and Add data
           {/if}
-        {:else}
-          Test and Add data
-        {/if}
-      </Button>
+        </Button>
+      </div>
     </div>
   </div>
 
