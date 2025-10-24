@@ -39,7 +39,7 @@ setup.describe("global setup", () => {
     // This will block until the services are ready
     await spawnAndMatch(
       "rill",
-      ["devtool", "start", "other", "--reset", "--only", "deps"],
+      ["devtool", "start", "e2e", "--reset", "--only", "deps"],
       /All services ready/,
       {
         cwd: repoRoot,
@@ -73,7 +73,7 @@ setup.describe("global setup", () => {
     // However, we need to be sure to clean-up the processes manually in the teardown project.
     const child = spawn(
       "rill",
-      ["devtool", "start", "other", "--only", "admin,runtime"],
+      ["devtool", "start", "e2e", "--only", "admin,runtime"],
       {
         detached: true,
         stdio: ["ignore", logFd, logFd],

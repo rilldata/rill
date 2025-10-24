@@ -44,7 +44,7 @@ var (
 var presets = []string{"cloud", "local", "e2e"}
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
-	var verbose, reset, refreshDotenv, full bool
+	var verbose, reset, refreshDotenv, devtools bool
 	services := &servicesCfg{}
 
 	cmd := &cobra.Command{
@@ -67,20 +67,20 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to parse services: %w", err)
 			}
 
-			return start(ch, preset, verbose, reset, refreshDotenv, full, services)
+			return start(ch, preset, verbose, reset, refreshDotenv, devtools, services)
 		},
 	}
 
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Set log level to debug")
 	cmd.Flags().BoolVar(&reset, "reset", false, "Reset local development state")
 	cmd.Flags().BoolVar(&refreshDotenv, "refresh-dotenv", true, "Refresh .env file from shared storage")
-	cmd.Flags().BoolVar(&full, "full", false, "Start all services instead of minimal set (cloud preset only)")
+	cmd.Flags().BoolVar(&devtools, "devtools", false, "Start all services instead of minimal set (cloud preset only)")
 	services.addFlags(cmd)
 
 	return cmd
 }
 
-func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv, full bool, services *servicesCfg) error {
+func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv, devtools bool, services *servicesCfg) error {
 	ctx := graceful.WithCancelOnTerminate(context.Background())
 
 	err := errors.Join(
@@ -95,7 +95,7 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv, ful
 
 	switch preset {
 	case "cloud":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, preset, full, services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, preset, devtools, services)
 	case "e2e":
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", false, services)
 	case "local":
@@ -228,7 +228,7 @@ func (s *servicesCfg) parse() error {
 
 type cloud struct{}
 
-func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, full bool, services *servicesCfg) error {
+func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, devtools bool, services *servicesCfg) error {
 	if refreshDotenv {
 		err := downloadDotenv(ctx, preset)
 		if err != nil {
@@ -240,8 +240,8 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	profiles := []string{preset}
 	switch preset {
 	case "cloud":
-		if full {
-			profiles = []string{"core", "extras"}
+		if devtools {
+			profiles = []string{"core", "devtools"}
 		} else {
 			profiles = []string{"core"}
 		}
@@ -259,7 +259,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		return fmt.Errorf("error parsing .env: %w", err)
 	}
 
-	if !full {
+	if !devtools {
 		os.Setenv("RILL_ADMIN_METRICS_EXPORTER", "prometheus")
 		os.Setenv("RILL_ADMIN_TRACES_EXPORTER", "")
 		os.Setenv("RILL_RUNTIME_METRICS_EXPORTER", "prometheus")

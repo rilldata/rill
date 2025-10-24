@@ -14,13 +14,13 @@ x-postgres: &postgres
 
 # Profiles
 # - core: Core services needed for cloud development
-# - extras: Additional services for cloud development
+# - devtools: Additional services for cloud development
 # - e2e: Services needed for end-to-end tests
 
 services:
   postgres:
     <<: *postgres
-    profiles: ["core", "extras"]
+    profiles: ["core", "devtools"]
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
@@ -33,14 +33,14 @@ services:
     image: redis
     ports:
       - '6379:6379'
-    profiles: ["core", "extras", "e2e"]
+    profiles: ["core", "devtools", "e2e"]
   zipkin:
     <<: *service
     container_name: zipkin
     image: openzipkin/zipkin:3
     ports:
       - "9411:9411"
-    profiles: ["extras"]
+    profiles: ["devtools"]
   mailpit:
     <<: *service
     container_name: mailpit
@@ -52,7 +52,7 @@ services:
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
       MP_UI_BIND_ADDR: 0.0.0.0:8025
       MP_SMTP_AUTH: "user:passwd"
-    profiles: ["extras"]
+    profiles: ["devtools"]
   prometheus:
     <<: *service
     container_name: prometheus
@@ -61,7 +61,7 @@ services:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9412:9090"
-    profiles: ["extras"]
+    profiles: ["devtools"]
   riverui:
     <<: *service
     container_name: riverui
@@ -70,7 +70,7 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
     ports:
       - 7070:8080
-    profiles: ["extras"]
+    profiles: ["devtools"]
   otel-collector:
     <<: *service
     container_name: otel-collector
@@ -86,14 +86,14 @@ services:
       - "55679:55679" # zpages extension
     depends_on:
       - zipkin
-    profiles: ["extras"]
+    profiles: ["devtools"]
   stripe-cli:
     <<: *service
     image: stripe/stripe-cli:v1.21.11
     command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/stripe-config.toml:/etc/stripe-config.toml
-    profiles: ["extras"]
+    profiles: ["devtools"]
   clickhouse:
     <<: *service
     image: 'clickhouse/clickhouse-server:24.11.1.2557'
@@ -104,7 +104,7 @@ services:
     ports:
       - '9000:9000' # Native port
       - '8123:8123' # HTTP port
-    profiles: ["core", "extras", "e2e"]
+    profiles: ["core", "devtools", "e2e"]
   pgweb:
     <<: *service
     image: sosedoff/pgweb
@@ -114,4 +114,4 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable
     depends_on:
       - postgres
-    profiles: ["extras"]
+    profiles: ["devtools"]
