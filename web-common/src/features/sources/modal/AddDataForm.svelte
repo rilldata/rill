@@ -709,7 +709,7 @@
                         label="Access Key ID"
                         placeholder="Enter your HMAC access key ID"
                         optional={false}
-                        secret={false}
+                        secret={true}
                         hint="HMAC access key ID for S3-compatible authentication"
                         errors={normalizeErrors($paramsErrors.key_id)}
                         bind:value={$paramsForm.key_id}
