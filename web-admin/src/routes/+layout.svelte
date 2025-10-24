@@ -144,6 +144,7 @@
         manageProjectAdmins={projectPermissions?.manageProjectAdmins}
         manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
         manageOrgMembers={organizationPermissions?.manageOrgMembers}
+        readProjects={organizationPermissions?.readProjects}
         {organizationLogoUrl}
         {planDisplayName}
       />
