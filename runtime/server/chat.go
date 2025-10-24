@@ -4,10 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
 
+	"github.com/mark3labs/mcp-go/client"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/r3labs/sse/v2"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -104,22 +108,6 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}, nil
 }
 
-// serverToolService implements runtime.ToolService using the server's MCP functionality
-type serverToolService struct {
-	server     *Server
-	instanceID string
-}
-
-// ListTools implements runtime.ToolService
-func (s *serverToolService) ListTools(ctx context.Context) ([]*aiv1.Tool, error) {
-	return s.server.mcpListTools(ctx, s.instanceID)
-}
-
-// ExecuteTool implements runtime.ToolService
-func (s *serverToolService) ExecuteTool(ctx context.Context, toolName string, toolArgs map[string]any) (any, error) {
-	return s.server.mcpExecuteTool(ctx, s.instanceID, toolName, toolArgs)
-}
-
 // Complete runs a conversational AI completion with tool calling support.
 func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, err error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
@@ -139,7 +127,16 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	}
 
 	// Create tool service for this server
-	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
+	mcpServer, err := s.newMCPServer(ctx, req.InstanceId, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MCP server: %w", err)
+	}
+	mcpClient, err := newMCPClient(mcpServer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MCP client: %w", err)
+	}
+	defer mcpClient.Close()
+	toolService := &serverToolService{instanceID: req.InstanceId, mcpClient: mcpClient}
 
 	// Delegate to runtime business logic
 	result, err := s.runtime.CompleteWithTools(ctx, &runtime.CompleteWithToolsOptions{
@@ -175,10 +172,19 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	}
 
 	// Create tool service for this server
-	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
+	mcpServer, err := s.newMCPServer(stream.Context(), req.InstanceId, false)
+	if err != nil {
+		return fmt.Errorf("failed to create MCP server: %w", err)
+	}
+	mcpClient, err := newMCPClient(mcpServer)
+	if err != nil {
+		return fmt.Errorf("failed to create MCP client: %w", err)
+	}
+	defer mcpClient.Close()
+	toolService := &serverToolService{instanceID: req.InstanceId, mcpClient: mcpClient}
 
 	// Delegate to runtime business logic
-	_, err := s.runtime.CompleteWithTools(stream.Context(), &runtime.CompleteWithToolsOptions{
+	_, err = s.runtime.CompleteWithTools(stream.Context(), &runtime.CompleteWithToolsOptions{
 		OwnerID:        claims.UserID,
 		InstanceID:     req.InstanceId,
 		ConversationID: req.ConversationId,
@@ -336,4 +342,102 @@ func (ss *completeStreamingServerShim) SendMsg(m any) error {
 
 func (ss *completeStreamingServerShim) RecvMsg(m any) error {
 	return errors.New("not implemented")
+}
+
+// serverToolService implements runtime.ToolService with the provided MCP client.
+type serverToolService struct {
+	instanceID string
+	mcpClient  *client.Client
+}
+
+// ListTools implements runtime.ToolService
+func (s *serverToolService) ListTools(ctx context.Context) ([]*aiv1.Tool, error) {
+	// Add instance ID to context for internal MCP server tools
+	ctxWithInstance := context.WithValue(ctx, mcpInstanceIDKey{}, s.instanceID)
+
+	tools, err := s.mcpClient.ListTools(ctxWithInstance, mcp.ListToolsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	aiTools := make([]*aiv1.Tool, len(tools.Tools))
+	for i := range tools.Tools {
+		tool := &tools.Tools[i]
+		aiTool := &aiv1.Tool{
+			Name:        tool.Name,
+			Description: tool.Description,
+		}
+
+		// Convert InputSchema to JSON string if present
+		if schemaBytes, err := json.Marshal(tool.InputSchema); err == nil && string(schemaBytes) != "{}" && string(schemaBytes) != "null" {
+			aiTool.InputSchema = string(schemaBytes)
+		}
+
+		aiTools[i] = aiTool
+	}
+
+	return aiTools, nil
+}
+
+// ExecuteTool implements runtime.ToolService
+func (s *serverToolService) ExecuteTool(ctx context.Context, toolName string, toolArgs map[string]any) (any, error) {
+	// Add instance ID to context for internal MCP server tools
+	ctxWithInstance := context.WithValue(ctx, mcpInstanceIDKey{}, s.instanceID)
+
+	resp, err := s.mcpClient.CallTool(ctxWithInstance, mcp.CallToolRequest{
+		Params: struct {
+			Name      string    `json:"name"`
+			Arguments any       `json:"arguments,omitempty"`
+			Meta      *mcp.Meta `json:"_meta,omitempty"`
+		}{
+			Name:      toolName,
+			Arguments: toolArgs,
+		},
+	})
+
+	// Handle errors
+	if err != nil {
+		return "", err
+	} else if len(resp.Content) == 0 {
+		return "", nil
+	} else if len(resp.Content) > 1 {
+		return "", fmt.Errorf("multiple content items not supported, got %d items", len(resp.Content))
+	}
+
+	// Extract text content from MCP response
+	switch content := resp.Content[0].(type) {
+	case mcp.TextContent:
+		return content.Text, nil
+	default:
+		return "", fmt.Errorf("unsupported content type: %T", content) // Future work: support other content types
+	}
+}
+
+func newMCPClient(mcpServer *server.MCPServer) (*client.Client, error) {
+	client, err := client.NewInProcessClient(mcpServer)
+	if err != nil {
+		return nil, err
+	}
+
+	// Start the client with a timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := client.Start(ctx); err != nil {
+		return nil, fmt.Errorf("failed to start MCP client: %w", err)
+	}
+
+	// Try to initialize the client
+	initRequest := mcp.InitializeRequest{}
+	initRequest.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+	initRequest.Params.ClientInfo = mcp.Implementation{
+		Name:    "rill",
+		Version: "0.0.1",
+	}
+
+	if _, err := client.Initialize(ctx, initRequest); err != nil {
+		return nil, fmt.Errorf("failed to initialize MCP client: %w", err)
+	}
+
+	return client, nil
 }
