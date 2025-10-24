@@ -224,7 +224,7 @@ WHERE status = '{{ .env.string_var }}'
 
 ### `ai_instructions`
 
-Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs. For more information on AI features in Rill, see our [AI documentation](/explore/ai).
+Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs. For more information on AI features in Rill, see our [AI documentation](/explore/mcp#adding-ai-instructions-to-your-model).
 
 **What to include:**
 - Guidance on which metrics views are most important or should be prioritized for your project
