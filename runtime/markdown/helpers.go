@@ -69,9 +69,9 @@ func extractMetricsView(sql string) string {
 }
 
 // formatToken creates a format token for the frontend to parse
-// Format: __RILL_FORMAT__metricsview_measure_value__END__
+// Format: __RILL_FORMAT__metricsview::measure::value__END__
 func formatToken(metricsView, measureOrDim string, value any) string {
-	return fmt.Sprintf("__RILL_FORMAT__%s_%s_%v__END__", metricsView, measureOrDim, value)
+	return fmt.Sprintf("__RILL_FORMAT__%s::%s::%v__END__", metricsView, measureOrDim, value)
 }
 
 // isNumeric checks if a value is numeric

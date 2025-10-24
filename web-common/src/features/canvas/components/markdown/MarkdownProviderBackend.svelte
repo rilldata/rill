@@ -58,7 +58,7 @@
   }
 
   function formatRenderedMarkdown(markdown: string): string {
-    const tokenRegex = /__RILL_FORMAT__([^_]+)_([^_]+)_([^_]+)__END__/g;
+    const tokenRegex = /__RILL_FORMAT__([^:]+)::([^:]+)::(.+?)__END__/g;
 
     return markdown.replace(
       tokenRegex,
@@ -71,10 +71,7 @@
           const measureSpec = get(measureStore);
 
           if (measureSpec) {
-            const formatter = createMeasureValueFormatter(
-              measureSpec,
-              "unabridged",
-            );
+            const formatter = createMeasureValueFormatter(measureSpec);
             const numValue = parseFloat(rawValue);
             if (!isNaN(numValue)) {
               return formatter(numValue);

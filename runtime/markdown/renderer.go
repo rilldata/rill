@@ -73,9 +73,9 @@ func (r *Renderer) Render(ctx context.Context, tmplStr string, renderCtx RenderC
 
 // stripFormatTokens removes format tokens and returns just the raw values
 func stripFormatTokens(markdown string) string {
-	// Pattern: __RILL_FORMAT__metricsview_measure_value__END__
+	// Pattern: __RILL_FORMAT__metricsview::measure::value__END__
 	// Replace with just the value (3rd capture group)
-	re := regexp.MustCompile(`__RILL_FORMAT__[^_]+_[^_]+_([^_]+)__END__`)
+	re := regexp.MustCompile(`__RILL_FORMAT__[^:]+::[^:]+::(.+?)__END__`)
 	return re.ReplaceAllString(markdown, "$1")
 }
 
