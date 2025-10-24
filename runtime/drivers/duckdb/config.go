@@ -62,7 +62,6 @@ type config struct {
 func newConfig(cfgMap map[string]any) (*config, error) {
 	cfg := &config{
 		ReadWriteRatio: 0.5,
-		Secrets:        "*",
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
@@ -112,6 +111,17 @@ func (c *config) writeSettings() map[string]string {
 	// useful for motherduck but safe to pass at initial connect
 	writeSettings["custom_user_agent"] = "rill"
 	return writeSettings
+}
+
+func (c *config) secretConnectors() []string {
+	if c.Secrets == "" {
+		return nil
+	}
+	res := strings.Split(c.Secrets, ",")
+	for i, s := range res {
+		res[i] = strings.TrimSpace(s)
+	}
+	return res
 }
 
 // isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
