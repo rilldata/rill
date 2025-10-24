@@ -72,13 +72,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
 
 Write **markdown** with _formatting_ and access to data from metrics.
 
-💰 Total Revenue: **{{ metrics_sql "select revenue from my_metrics" }}**
-
-{{ $products := metrics_sql "select product_name, revenue from my_metrics order by revenue desc limit 5" }}
-### 🏆 Top Products
-{{ range $products }}
-- {{ .product_name }}: {{ .revenue }}
-{{ end }}`;
+Use Go templates with the \`metrics_sql\` function to query your data.`;
 
     return {
       content: defaultContent,
