@@ -70,7 +70,7 @@ services:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
     ports:
       - 7070:8080
-    profiles: ["extras"]
+    profiles: ["core"]
   otel-collector:
     <<: *service
     container_name: otel-collector
@@ -104,7 +104,7 @@ services:
     ports:
       - '9000:9000' # Native port
       - '8123:8123' # HTTP port
-    profiles: ["core", "e2e"]
+    profiles: ["extras"]
   pgweb:
     <<: *service
     image: sosedoff/pgweb
