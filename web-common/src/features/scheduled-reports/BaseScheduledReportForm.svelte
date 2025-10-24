@@ -91,6 +91,7 @@
         label="Explore"
         options={exploreOptions}
         onChange={handleExploreChange}
+        placeholder="Select an explore"
       />
     {/if}
     <Select

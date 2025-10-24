@@ -1,6 +1,9 @@
 <script lang="ts">
   import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
@@ -9,6 +12,8 @@
   export let data: V1Resource[];
   export let organization: string;
   export let project: string;
+
+  const { fullPageReportEditor } = featureFlags;
 
   /**
    * Table column definitions.
@@ -67,5 +72,16 @@
 </script>
 
 <Table {columns} {data} {columnVisibility} kind="report">
+  <div slot="toolbar" class="flex flex-row items-center w-full gap-x-2">
+    <Toolbar />
+    {#if $fullPageReportEditor}
+      <Button
+        type="primary"
+        href="/{organization}/{project}/-/reports/-/create"
+      >
+        Create Report
+      </Button>
+    {/if}
+  </div>
   <ResourceHeader kind="report" icon={ReportIcon} slot="header" />
 </Table>
