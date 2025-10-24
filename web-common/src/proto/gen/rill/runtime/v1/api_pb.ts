@@ -6,6 +6,8 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
+import { Expression } from "./expression_pb.js";
+import { TimeRange } from "./queries_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { ContentBlock } from "../../ai/v1/ai_pb.js";
 
@@ -2593,6 +2595,126 @@ export class QueryResolverResponse extends Message$1<QueryResolverResponse> {
 
   static equals(a: QueryResolverResponse | PlainMessage<QueryResolverResponse> | undefined, b: QueryResolverResponse | PlainMessage<QueryResolverResponse> | undefined): boolean {
     return proto3.util.equals(QueryResolverResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.RenderMarkdownRequest
+ */
+export class RenderMarkdownRequest extends Message$1<RenderMarkdownRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * The markdown template with Go template syntax and Metrics SQL queries
+   *
+   * @generated from field: string template = 2;
+   */
+  template = "";
+
+  /**
+   * Optional: Named queries to make available in template as variables
+   *
+   * @generated from field: map<string, string> queries = 3;
+   */
+  queries: { [key: string]: string } = {};
+
+  /**
+   * Filters to apply to all queries
+   *
+   * @generated from field: rill.runtime.v1.Expression where = 4;
+   */
+  where?: Expression;
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeRange time_range = 5;
+   */
+  timeRange?: TimeRange;
+
+  /**
+   * @generated from field: string time_zone = 6;
+   */
+  timeZone = "";
+
+  constructor(data?: PartialMessage<RenderMarkdownRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RenderMarkdownRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "template", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "queries", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "where", kind: "message", T: Expression },
+    { no: 5, name: "time_range", kind: "message", T: TimeRange },
+    { no: 6, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RenderMarkdownRequest {
+    return new RenderMarkdownRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RenderMarkdownRequest {
+    return new RenderMarkdownRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RenderMarkdownRequest {
+    return new RenderMarkdownRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RenderMarkdownRequest | PlainMessage<RenderMarkdownRequest> | undefined, b: RenderMarkdownRequest | PlainMessage<RenderMarkdownRequest> | undefined): boolean {
+    return proto3.util.equals(RenderMarkdownRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.RenderMarkdownResponse
+ */
+export class RenderMarkdownResponse extends Message$1<RenderMarkdownResponse> {
+  /**
+   * The rendered markdown with format tokens for Rill frontend
+   *
+   * @generated from field: string rendered_markdown = 1;
+   */
+  renderedMarkdown = "";
+
+  /**
+   * The rendered markdown with raw values only (for external clients)
+   *
+   * @generated from field: string raw_markdown = 2;
+   */
+  rawMarkdown = "";
+
+  constructor(data?: PartialMessage<RenderMarkdownResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.RenderMarkdownResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "rendered_markdown", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "raw_markdown", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RenderMarkdownResponse {
+    return new RenderMarkdownResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RenderMarkdownResponse {
+    return new RenderMarkdownResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RenderMarkdownResponse {
+    return new RenderMarkdownResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RenderMarkdownResponse | PlainMessage<RenderMarkdownResponse> | undefined, b: RenderMarkdownResponse | PlainMessage<RenderMarkdownResponse> | undefined): boolean {
+    return proto3.util.equals(RenderMarkdownResponse, a, b);
   }
 }
 

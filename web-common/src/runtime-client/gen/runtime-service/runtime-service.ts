@@ -50,6 +50,7 @@ import type {
   RuntimeServicePutFileBody,
   RuntimeServiceQueryResolverBody,
   RuntimeServiceRenameFileBody,
+  RuntimeServiceRenderMarkdownBody,
   RuntimeServiceUnpackEmptyBody,
   RuntimeServiceUnpackExampleBody,
   RuntimeServiceWatchFiles200,
@@ -93,6 +94,7 @@ import type {
   V1PutFileResponse,
   V1QueryResolverResponse,
   V1RenameFileResponse,
+  V1RenderMarkdownResponse,
   V1UnpackEmptyResponse,
   V1UnpackExampleResponse,
 } from "../index.schemas";
@@ -2917,6 +2919,94 @@ export function createRuntimeServiceWatchLogs<
   return query;
 }
 
+/**
+ * @summary RenderMarkdown renders a markdown template with embedded Metrics SQL queries
+ */
+export const runtimeServiceRenderMarkdown = (
+  instanceId: string,
+  runtimeServiceRenderMarkdownBody: RuntimeServiceRenderMarkdownBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1RenderMarkdownResponse>({
+    url: `/v1/instances/${instanceId}/markdown/render`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceRenderMarkdownBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceRenderMarkdownMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceRenderMarkdown>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceRenderMarkdownBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceRenderMarkdown>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceRenderMarkdownBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceRenderMarkdown"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceRenderMarkdown>>,
+    { instanceId: string; data: RuntimeServiceRenderMarkdownBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceRenderMarkdown(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceRenderMarkdownMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceRenderMarkdown>>
+>;
+export type RuntimeServiceRenderMarkdownMutationBody =
+  RuntimeServiceRenderMarkdownBody;
+export type RuntimeServiceRenderMarkdownMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary RenderMarkdown renders a markdown template with embedded Metrics SQL queries
+ */
+export const createRuntimeServiceRenderMarkdown = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceRenderMarkdown>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceRenderMarkdownBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceRenderMarkdown>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceRenderMarkdownBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceRenderMarkdownMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary GetModelPartitions returns the partitions of a model
  */

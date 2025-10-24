@@ -2008,6 +2008,11 @@ export interface V1RenameFileResponse {
   [key: string]: unknown;
 }
 
+export interface V1RenderMarkdownResponse {
+  renderedMarkdown?: string;
+  rawMarkdown?: string;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -2700,6 +2705,16 @@ export const RuntimeServiceWatchLogsLevel = {
 export type RuntimeServiceWatchLogs200 = {
   result?: V1WatchLogsResponse;
   error?: RpcStatus;
+};
+
+export type RuntimeServiceRenderMarkdownBodyQueries = { [key: string]: string };
+
+export type RuntimeServiceRenderMarkdownBody = {
+  template?: string;
+  queries?: RuntimeServiceRenderMarkdownBodyQueries;
+  where?: V1Expression;
+  timeRange?: V1TimeRange;
+  timeZone?: string;
 };
 
 export type RuntimeServiceGetModelPartitionsParams = {

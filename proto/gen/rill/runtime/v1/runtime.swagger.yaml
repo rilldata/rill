@@ -3,9 +3,9 @@ info:
   title: rill/runtime/v1/schema.proto
   version: version not set
 tags:
+  - name: QueryService
   - name: RuntimeService
   - name: ConnectorService
-  - name: QueryService
 consumes:
   - application/json
 produces:
@@ -1228,6 +1228,47 @@ paths:
             - LOG_LEVEL_ERROR
             - LOG_LEVEL_FATAL
           default: LOG_LEVEL_UNSPECIFIED
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/markdown/render:
+    post:
+      summary: RenderMarkdown renders a markdown template with embedded Metrics SQL queries
+      operationId: RuntimeService_RenderMarkdown
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenderMarkdownResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              template:
+                type: string
+                title: The markdown template with Go template syntax and Metrics SQL queries
+              queries:
+                type: object
+                additionalProperties:
+                  type: string
+                title: 'Optional: Named queries to make available in template as variables'
+              where:
+                $ref: '#/definitions/v1Expression'
+                title: Filters to apply to all queries
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+              timeZone:
+                type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/models/{model}/partitions:
@@ -6654,6 +6695,15 @@ definitions:
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
+  v1RenderMarkdownResponse:
+    type: object
+    properties:
+      renderedMarkdown:
+        type: string
+        title: The rendered markdown with format tokens for Rill frontend
+      rawMarkdown:
+        type: string
+        title: The rendered markdown with raw values only (for external clients)
   v1Report:
     type: object
     properties:

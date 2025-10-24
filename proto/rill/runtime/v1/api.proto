@@ -7,6 +7,8 @@ import "google/protobuf/struct.proto";
 import "rill/ai/v1/ai.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
+import "rill/runtime/v1/expression.proto";
+import "rill/runtime/v1/queries.proto";
 import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
@@ -159,6 +161,14 @@ service RuntimeService {
   rpc QueryResolver(QueryResolverRequest) returns (QueryResolverResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/query/resolver",
+      body: "*"
+    };
+  }
+
+  // RenderMarkdown renders a markdown template with embedded Metrics SQL queries
+  rpc RenderMarkdown(RenderMarkdownRequest) returns (RenderMarkdownResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/markdown/render",
       body: "*"
     };
   }
@@ -634,6 +644,25 @@ message QueryResolverResponse {
   google.protobuf.Struct meta = 3;
   StructType schema = 1;
   repeated google.protobuf.Struct data = 2;
+}
+
+message RenderMarkdownRequest {
+  string instance_id = 1;
+  // The markdown template with Go template syntax and Metrics SQL queries
+  string template = 2;
+  // Optional: Named queries to make available in template as variables
+  map<string, string> queries = 3;
+  // Filters to apply to all queries
+  Expression where = 4;
+  TimeRange time_range = 5;
+  string time_zone = 6;
+}
+
+message RenderMarkdownResponse {
+  // The rendered markdown with format tokens for Rill frontend
+  string rendered_markdown = 1;
+  // The rendered markdown with raw values only (for external clients)
+  string raw_markdown = 2;
 }
 
 // **********

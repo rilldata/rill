@@ -29,3 +29,10 @@ export function getPositionClasses(alignment: ComponentAlignment | undefined) {
 
   return classString;
 }
+
+/**
+ * Check if content contains Go template expressions
+ */
+export function hasGoTemplateExpressions(content: string): boolean {
+  return /\{\{[\s\S]*?\}\}/.test(content);
+}

@@ -6279,6 +6279,280 @@ var _ interface {
 	ErrorName() string
 } = QueryResolverResponseValidationError{}
 
+// Validate checks the field values on RenderMarkdownRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RenderMarkdownRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RenderMarkdownRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RenderMarkdownRequestMultiError, or nil if none found.
+func (m *RenderMarkdownRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RenderMarkdownRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Template
+
+	// no validation rules for Queries
+
+	if all {
+		switch v := interface{}(m.GetWhere()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, RenderMarkdownRequestValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, RenderMarkdownRequestValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return RenderMarkdownRequestValidationError{
+				field:  "Where",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, RenderMarkdownRequestValidationError{
+					field:  "TimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, RenderMarkdownRequestValidationError{
+					field:  "TimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return RenderMarkdownRequestValidationError{
+				field:  "TimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for TimeZone
+
+	if len(errors) > 0 {
+		return RenderMarkdownRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RenderMarkdownRequestMultiError is an error wrapping multiple validation
+// errors returned by RenderMarkdownRequest.ValidateAll() if the designated
+// constraints aren't met.
+type RenderMarkdownRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RenderMarkdownRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RenderMarkdownRequestMultiError) AllErrors() []error { return m }
+
+// RenderMarkdownRequestValidationError is the validation error returned by
+// RenderMarkdownRequest.Validate if the designated constraints aren't met.
+type RenderMarkdownRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RenderMarkdownRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RenderMarkdownRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RenderMarkdownRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RenderMarkdownRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RenderMarkdownRequestValidationError) ErrorName() string {
+	return "RenderMarkdownRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RenderMarkdownRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRenderMarkdownRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RenderMarkdownRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RenderMarkdownRequestValidationError{}
+
+// Validate checks the field values on RenderMarkdownResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RenderMarkdownResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RenderMarkdownResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RenderMarkdownResponseMultiError, or nil if none found.
+func (m *RenderMarkdownResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RenderMarkdownResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for RenderedMarkdown
+
+	// no validation rules for RawMarkdown
+
+	if len(errors) > 0 {
+		return RenderMarkdownResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RenderMarkdownResponseMultiError is an error wrapping multiple validation
+// errors returned by RenderMarkdownResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RenderMarkdownResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RenderMarkdownResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RenderMarkdownResponseMultiError) AllErrors() []error { return m }
+
+// RenderMarkdownResponseValidationError is the validation error returned by
+// RenderMarkdownResponse.Validate if the designated constraints aren't met.
+type RenderMarkdownResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RenderMarkdownResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RenderMarkdownResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RenderMarkdownResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RenderMarkdownResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RenderMarkdownResponseValidationError) ErrorName() string {
+	return "RenderMarkdownResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RenderMarkdownResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRenderMarkdownResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RenderMarkdownResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RenderMarkdownResponseValidationError{}
+
 // Validate checks the field values on Log with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
 // encountered is returned, or nil if there are no violations.

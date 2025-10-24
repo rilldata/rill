@@ -4,10 +4,12 @@ import {
   type CanvasComponentType,
   type ComponentAlignment,
   type ComponentCommonProperties,
+  type ComponentFilterProperties,
 } from "../types";
+import { getFilterOptions } from "../util";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
-import Markdown from "./Markdown.svelte";
+import MarkdownCanvas from "./MarkdownCanvas.svelte";
 
 export { default as Markdown } from "./Markdown.svelte";
 
@@ -16,7 +18,9 @@ export const defaultMarkdownAlignment: ComponentAlignment = {
   horizontal: "left",
 };
 
-export interface MarkdownSpec extends ComponentCommonProperties {
+export interface MarkdownSpec
+  extends ComponentCommonProperties,
+    ComponentFilterProperties {
   content: string;
   alignment?: ComponentAlignment;
 }
@@ -26,7 +30,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   defaultSize = { width: 3, height: 2 };
   resetParams = [];
   type: CanvasComponentType = "markdown";
-  component = Markdown;
+  component = MarkdownCanvas;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const defaultSpec: MarkdownSpec = {
@@ -48,7 +52,8 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
         content: {
           type: "textArea",
           label: "Markdown",
-          description: "Write text using the markdown syntax",
+          description:
+            'Write markdown with Go templates. Use {{ metrics_sql "select..." }} to query metrics. Supports Sprig functions for data transformation.',
         },
         alignment: {
           type: "alignment",
@@ -58,23 +63,22 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           },
         },
       },
-      filter: {},
+      filter: getFilterOptions(false, false),
     };
   }
 
   static newComponentSpec(): MarkdownSpec {
-    const defaultContent = `# H1 Markdown Text
-## H2 Markdown text
-### H3 Markdown text
-#### H4 markdown text
-Normal text paragraph with **bold** and _italics_
+    const defaultContent = String.raw`# 📊 My Dashboard
 
-| Column 1 | Column 2 | Column 3 |
-|----------|----------|----------|
-| Data 1   | Data 2   | Data 3   |
-| Data 4   | Data 5   | Data 6   |
+Write **markdown** with _formatting_ and access to data from metrics.
 
-Start writing in **Markdown** and see your text beautifully formatted! 🚀`;
+💰 Total Revenue: **{{ metrics_sql "select revenue from my_metrics" }}**
+
+{{ $products := metrics_sql "select product_name, revenue from my_metrics order by revenue desc limit 5" }}
+### 🏆 Top Products
+{{ range $products }}
+- {{ .product_name }}: {{ .revenue }}
+{{ end }}`;
 
     return {
       content: defaultContent,

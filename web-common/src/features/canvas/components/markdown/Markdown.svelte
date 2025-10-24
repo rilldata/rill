@@ -1,13 +1,10 @@
 <script lang="ts">
   import DOMPurify from "dompurify";
   import { marked } from "marked";
-  import type { MarkdownCanvasComponent } from "./";
+  import type { MarkdownSpec } from "./";
   import { getPositionClasses } from "./util";
 
-  export let component: MarkdownCanvasComponent;
-
-  $: ({ specStore } = component);
-  $: markdownProperties = $specStore;
+  export let markdownProperties: Pick<MarkdownSpec, "content" | "alignment">;
 
   $: positionClasses = getPositionClasses(markdownProperties.alignment);
 </script>

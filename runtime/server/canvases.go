@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -96,16 +97,20 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 			}
 
 			// Resolve the renderer properties in the valid_spec.
+			// TODO: This can probably be removed, we don't utilize it anymore in canvas.
 			validSpec := cmp.GetComponent().State.ValidSpec
 			if validSpec != nil && validSpec.RendererProperties != nil {
-				v, err := parser.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), templateData, false)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "component %q: failed to resolve templating: %s", item.Component, err.Error())
-				}
+				props := validSpec.RendererProperties.AsMap()
 
-				props, ok := v.(map[string]any)
-				if !ok {
-					return nil, status.Errorf(codes.Internal, "component %q: failed to convert resolved renderer properties to map: %v", item.Component, v)
+				for key, value := range props {
+					if key == "content" {
+						continue
+					}
+					resolved, err := parser.ResolveTemplateRecursively(value, templateData, false)
+					if err != nil {
+						return nil, status.Errorf(codes.InvalidArgument, "component %q (field=%q): failed to resolve templating: %s", item.Component, key, err.Error())
+					}
+					props[key] = resolved
 				}
 
 				propsPB, err := structpb.NewStruct(props)
@@ -136,8 +141,42 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 				if name := v.GetStringValue(); name != "" {
 					metricsViews[name] = true
 				}
+			case "content":
+				if validSpec.Renderer == "markdown" {
+					if content := v.GetStringValue(); content != "" {
+						if msqlParser == nil {
+							msqlParser = metricssql.New(&metricssql.CompilerOptions{
+								GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+									mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+									if err != nil {
+										return nil, err
+									}
+									sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
+									if err != nil {
+										return nil, err
+									}
+									if !sec.CanAccess() {
+										return nil, runtime.ErrForbidden
+									}
+									return mv, nil
+								},
+							})
+						}
+
+						re := regexp.MustCompile(`metrics_sql\s+"([^"]+)"`)
+						matches := re.FindAllStringSubmatch(content, -1)
+						for _, match := range matches {
+							if len(match) >= 2 {
+								sql := match[1]
+								q, err := msqlParser.Parse(ctx, sql)
+								if err == nil && q.MetricsView != "" {
+									metricsViews[q.MetricsView] = true
+								}
+							}
+						}
+					}
+				}
 			case "metrics_sql":
-				// Instantiate a metrics SQL parser
 				if msqlParser == nil {
 					msqlParser = metricssql.New(&metricssql.CompilerOptions{
 						GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
@@ -157,7 +196,6 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 					})
 				}
 
-				// Create list of queries to analyze
 				var queries []string
 				if s := v.GetStringValue(); s != "" {
 					queries = append(queries, s)
@@ -169,7 +207,6 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 					}
 				}
 
-				// Analyze each query
 				for _, sql := range queries {
 					q, err := msqlParser.Parse(ctx, sql)
 					if err == nil && q.MetricsView != "" {
@@ -269,16 +306,20 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Resolve templating in the renderer properties
 	var rendererProps *structpb.Struct
 	if spec.RendererProperties != nil {
-		v, err := parser.ResolveTemplateRecursively(spec.RendererProperties.AsMap(), td, false)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
+		props := spec.RendererProperties.AsMap()
+
+		for key, value := range props {
+			if key == "content" {
+				continue
+			}
+			resolved, err := parser.ResolveTemplateRecursively(value, td, false)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to resolve templating for field %q: %s", key, err.Error())
+			}
+			props[key] = resolved
 		}
 
-		props, ok := v.(map[string]any)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "failed to convert resolved renderer properties to map: %v", v)
-		}
-
+		var err error
 		rendererProps, err = structpb.NewStruct(props)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert renderer properties to struct: %s", err.Error())
