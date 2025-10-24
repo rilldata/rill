@@ -5,13 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"maps"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/iancoleman/strcase"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
@@ -149,49 +146,6 @@ func (r *Runtime) DataDir(instanceID string, elem ...string) (string, error) {
 // Storage usage in the returned directory will be reported in the instance's heartbeat events.
 func (r *Runtime) TempDir(instanceID string, elem ...string) (string, error) {
 	return r.storage.WithPrefix(instanceID).TempDir(elem...)
-}
-
-// ResolveFeatureFlags resolves the feature flag templates for the given instance and a request's security claims.
-func ResolveFeatureFlags(inst *drivers.Instance, claims *SecurityClaims) (map[string]bool, error) {
-	vars := inst.ResolveVariables(false)
-	attrs := claims.UserAttributes
-	if attrs == nil {
-		attrs = make(map[string]any)
-	}
-
-	templateData := parser.TemplateData{
-		Environment: inst.Environment,
-		User:        attrs,
-		Variables:   vars,
-	}
-
-	mergedFeatureFlags := maps.Clone(drivers.DefaultFeatureFlags)
-	maps.Copy(mergedFeatureFlags, inst.FeatureFlags)
-
-	featureFlags := make(map[string]bool)
-	for f, v := range mergedFeatureFlags {
-		rv, err := parser.ResolveTemplate(v, templateData, false)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve feature flag %q with template %q: %w", f, v, err)
-		}
-
-		var bv bool
-		rv = strings.TrimSpace(rv)
-		if rv == "" || rv == "<no value>" {
-			bv = false
-		} else {
-			bv, err = parser.EvaluateBoolExpression(rv)
-			if err != nil {
-				return nil, fmt.Errorf("failed to evaluate feature flag %q with template %q: %w", f, v, err)
-			}
-		}
-
-		// Return as camelCase since UI expects in that format
-		cf := strcase.ToLowerCamel(f)
-		featureFlags[cf] = bv
-	}
-
-	return featureFlags, nil
 }
 
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
