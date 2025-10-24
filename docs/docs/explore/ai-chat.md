@@ -70,7 +70,7 @@ AI Chat provides rich, multi-layered responses to help you understand your data 
    - Time series charts showing trends over time
    - Bar charts comparing dimensions or categories
    - Tables with formatted data
-   - and more!
+  
 3. **Detailed Results** - Tables or lists with specific numbers and breakdowns
 4. **Dashboard Links** - Direct links to your existing [Explore dashboards](/explore/dashboard-101) with filters and time ranges pre-applied based on your question
 5. **Suggested Next Steps** - Follow-up questions or areas to investigate further
@@ -119,9 +119,7 @@ For detailed examples and best practices on writing effective AI instructions, s
 
 ## Use in Your Favorite AI Client
 
-Prefer to chat with your data in Claude Desktop, ChatGPT, or another AI assistant? You can connect your Rill projects to external AI clients using the **[Rill MCP Server](/explore/mcp)**. 
-
-This gives you the same governed, accurate analytics experience—powered by your predefined metrics—but integrated into your preferred AI workflow. Perfect for data teams who want deep analysis sessions, local development access, or integration with other tools. See the **[Rill MCP Server documentation](/explore/mcp)** to learn more.
+Prefer to chat with your data in Claude Desktop, ChatGPT, or another AI assistant? You can connect your Rill projects to external AI clients using the **[Rill MCP Server](/explore/mcp)**. This gives you the same governed, accurate analytics experience—powered by your predefined metrics—but integrated into your preferred AI workflow. Perfect for data teams who want deep analysis sessions, local development access, or integration with other tools. See the **[Rill MCP Server documentation](/explore/mcp)** to learn more.
 
 <!-- 
 ### Start Broad, Then Narrow
