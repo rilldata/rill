@@ -179,6 +179,8 @@ type CompiledTool struct {
 	Name                  string
 	Spec                  *mcp.Tool
 	CheckAccess           func(claims *runtime.SecurityClaims) bool
+	UnmarshalArgs         func(content string) (any, error)
+	UnmarshalResult       func(content string) (any, error)
 	JSONHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
 	RegisterWithMCPServer func(srv *mcp.Server)
 }
@@ -197,6 +199,20 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 		Name:        spec.Name,
 		Spec:        spec,
 		CheckAccess: t.CheckAccess,
+		UnmarshalArgs: func(content string) (any, error) {
+			var args In
+			if err := json.Unmarshal([]byte(content), &args); err != nil {
+				return nil, err
+			}
+			return &args, nil
+		},
+		UnmarshalResult: func(content string) (any, error) {
+			var result Out
+			if err := json.Unmarshal([]byte(content), &result); err != nil {
+				return nil, err
+			}
+			return &result, nil
+		},
 		JSONHandler: func(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
 			var args In
 			if err := json.Unmarshal(input, &args); err != nil {
@@ -998,6 +1014,12 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	return err
 }
 
+// LLMMarshaler is an interface for tool args and results types that want to customize their serialization to LLM content blocks.
+// It is not used for tool calls/results invoked by the assistant, only for user-invoked calls/results.
+type LLMMarshaler interface {
+	ToLLM() *aiv1.ContentBlock
+}
+
 // NewCompletionMessage converts the message to an aiv1.CompletionMessage
 func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, error) {
 	role := RoleAssistant
@@ -1013,6 +1035,17 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 		// Any other calls are serialized as user messages.
 		if m.Role != RoleAssistant {
 			role = RoleUser
+
+			// If the tool args have a custom marshaler, use it.
+			if t, ok := s.Tool(m.Tool); ok {
+				args, err := t.UnmarshalArgs(m.Content)
+				if err != nil {
+					return nil, fmt.Errorf("failed to unmarshal args %q for tool %q: %w", m.Content, m.Tool, err)
+				}
+				if args.(LLMMarshaler) != nil {
+					block = args.(LLMMarshaler).ToLLM()
+				}
+			}
 		} else {
 			var args map[string]any
 			err := json.Unmarshal([]byte(m.Content), &args)
@@ -1040,6 +1073,17 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 		// Any other results are serialized as assistant messages.
 		if m.Role != RoleAssistant {
 			role = RoleAssistant
+
+			// If the tool result has a custom marshaler, use it.
+			if t, ok := s.Tool(m.Tool); ok {
+				result, err := t.UnmarshalResult(m.Content)
+				if err != nil {
+					return nil, fmt.Errorf("failed to unmarshal result %q for tool %q: %w", m.Content, m.Tool, err)
+				}
+				if result.(LLMMarshaler) != nil {
+					block = result.(LLMMarshaler).ToLLM()
+				}
+			}
 		} else {
 			role = RoleTool
 			block = &aiv1.ContentBlock{

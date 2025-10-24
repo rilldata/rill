@@ -23,8 +23,24 @@ type AnalystAgentArgs struct {
 	Explore string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
 }
 
+func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
+	return &aiv1.ContentBlock{
+		BlockType: &aiv1.ContentBlock_Text{
+			Text: a.Prompt,
+		},
+	}
+}
+
 type AnalystAgentResult struct {
 	Response string `json:"response"`
+}
+
+func (r *AnalystAgentResult) ToLLM() *aiv1.ContentBlock {
+	return &aiv1.ContentBlock{
+		BlockType: &aiv1.ContentBlock_Text{
+			Text: r.Response,
+		},
+	}
 }
 
 func (t *AnalystAgent) Spec() *mcp.Tool {
