@@ -33,6 +33,7 @@
   export let tooltip: string = "";
   export let width: number | null = null;
   export let minWidth: number | null = null;
+  export let dropdownWidth: string | null = null;
   export let disabled = false;
   export let selectElement: HTMLButtonElement | undefined = undefined;
   export let full = false;
@@ -81,7 +82,9 @@
             <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
           </Tooltip.Trigger>
           <Tooltip.Content side="right">
-            {tooltip}
+            {#each tooltip.split(/\n/gm) as line (line)}
+              <div>{line}</div>
+            {/each}
           </Tooltip.Content>
         </Tooltip.Root>
       {/if}
@@ -129,7 +132,7 @@
     <Select.Content
       {sameWidth}
       align="start"
-      class="max-h-80 overflow-y-auto"
+      class="max-h-80 overflow-y-auto {dropdownWidth ? dropdownWidth : ''}"
       strategy="fixed"
     >
       {#if enableSearch}

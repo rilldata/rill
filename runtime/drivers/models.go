@@ -3,8 +3,6 @@ package drivers
 import (
 	"context"
 	"time"
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // ModelExecutor executes models.
@@ -90,7 +88,6 @@ type ModelEnv struct {
 	RepoRoot           string
 	StageChanges       bool
 	DefaultMaterialize bool
-	Connectors         []*runtimev1.Connector
 	AcquireConnector   func(ctx context.Context, name string) (Handle, func(), error)
 }
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { V1Message } from "../../../../runtime-client";
-  import ChatTextMessage from "./ChatTextMessage.svelte";
-  import ChatToolMessage from "./ChatToolMessage.svelte";
+  import TextMessage from "./TextMessage.svelte";
+  import ToolMessage from "./ToolMessage.svelte";
 
   export let message: V1Message;
 
@@ -27,7 +27,7 @@
 </script>
 
 {#if isTextOnly}
-  <ChatTextMessage {message} content={textContent} />
+  <TextMessage {message} content={textContent} />
 {:else}
-  <ChatToolMessage {message} />
+  <ToolMessage {message} />
 {/if}

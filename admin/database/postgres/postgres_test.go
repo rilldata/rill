@@ -426,10 +426,10 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
-	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test1@rilldata.com"})
+	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test1@rilldata.com", DisplayName: "John Admin"})
 	require.NoError(t, err)
 
-	viewerUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test2@rilldata.com"})
+	viewerUser, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test2@rilldata.com", DisplayName: "Jane Viewer"})
 	require.NoError(t, err)
 
 	admin, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
@@ -447,16 +447,51 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.NoError(t, db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{Email: "test3@rilldata.com", InviterID: adminUser.ID, OrgID: org.ID, RoleID: viewer.ID}))
 
 	// fetch members without name filter
-	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1)
+	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, "")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
 	// fetch members with name filter
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, users[0].Email, 1)
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, users[0].Email, 1, "")
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)
+
+	// test search pattern functionality
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test1%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test1@rilldata.com", users[0].Email)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test2%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test2@rilldata.com", users[0].Email)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "test%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 2)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%nonexistent%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 0)
+
+	// test display name search functionality
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "John%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test1@rilldata.com", users[0].Email)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%Jane%")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test2@rilldata.com", users[0].Email)
+
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 10, "%Admin")
+	require.NoError(t, err)
+	require.Equal(t, len(users), 1)
+	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
 	// fetch invites without name filter
 	invites, err := db.FindOrganizationInvites(ctx, org.ID, "", 1)

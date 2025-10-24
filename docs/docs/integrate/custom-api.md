@@ -63,9 +63,9 @@ You can use a service token to issue a short-lived, ephemeral access token with 
 
 The primary use case for these tokens is to have your backend issue a short-lived token that represents your current user, which your frontend can use to make direct calls to APIs in Rill. This is the same feature that powers Rill's embedded dashboards.
 
-To get an ephemeral user token, you need to use a service token to perform a handshake with Rill's credentials API at `https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/credentials`. For example:
+To get an ephemeral user token, you need to use a service token to perform a handshake with Rill's credentials API at `https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/credentials`. For example:
 ```bash
-curl -X POST https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/credentials \
+curl -X POST https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/credentials \
   -H "Authorization: Bearer <service-account-token>" \
   --data-raw '{ "user_email":"<user-email>" }'
 ``` 

@@ -15,6 +15,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/sqlconvert"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 )
@@ -249,7 +250,11 @@ func (r *rows) Scan(dest ...any) error {
 	}
 
 	for i := range dest {
-		dest[i], err = convertValue(r.ri.Schema[i], row[i])
+		v, err := convertValue(r.ri.Schema[i], row[i])
+		if err != nil {
+			return err
+		}
+		err = sqlconvert.ConvertAssign(dest[i], v)
 		if err != nil {
 			return err
 		}
@@ -329,7 +334,7 @@ func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	return t, nil
 }
 
-func convertValue(field *bigquery.FieldSchema, value bigquery.Value) (sqldriver.Value, error) {
+func convertValue(field *bigquery.FieldSchema, value bigquery.Value) (any, error) {
 	val, err := convertValueHelper(field, value)
 	if err != nil {
 		return nil, err

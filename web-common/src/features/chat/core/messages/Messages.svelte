@@ -2,16 +2,16 @@
   import { afterUpdate } from "svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
-  import type { Chat } from "../chat";
-  import ChatError from "./ChatError.svelte";
-  import ChatMessage from "./ChatMessage.svelte";
+  import type { ConversationManager } from "../conversation-manager";
+  import Error from "./Error.svelte";
+  import Message from "./Message.svelte";
 
-  export let chat: Chat;
+  export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
 
   let messagesContainer: HTMLDivElement;
 
-  $: currentConversationStore = chat.getCurrentConversation();
+  $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
 
@@ -55,7 +55,7 @@
       <DelayedSpinner isLoading={isConversationLoading} size="24px" />
     </div>
   {:else if hasConversationLoadError}
-    <ChatError
+    <Error
       headline="Unable to load conversation"
       error={$conversationQueryError}
     />
@@ -67,7 +67,7 @@
     </div>
   {:else}
     {#each messages as msg (msg.id)}
-      <ChatMessage message={msg} />
+      <Message message={msg} />
     {/each}
   {/if}
   {#if isStreaming}
@@ -76,10 +76,7 @@
       Thinking...
     </div>
   {:else if hasStreamError}
-    <ChatError
-      headline="Failed to generate response"
-      error={$streamErrorStore}
-    />
+    <Error headline="Failed to generate response" error={$streamErrorStore} />
   {/if}
 </div>
 

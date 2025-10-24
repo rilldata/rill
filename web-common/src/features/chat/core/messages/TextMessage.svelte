@@ -1,9 +1,29 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import {
+    getCitationUrlRewriter,
+    getMetricsResolverQueryToUrlParamsMapperStore,
+  } from "@rilldata/web-common/features/chat/core/messages/rewrite-citation-urls.ts";
+  import { derived } from "svelte/store";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
 
   export let message: V1Message;
   export let content: string;
+
+  const exploreNameStore = derived(
+    page,
+    (pageState) => pageState.params.dashboard ?? pageState.params.name ?? "",
+  );
+  $: renderedInExplore = !!$exploreNameStore;
+
+  const mapperStore =
+    getMetricsResolverQueryToUrlParamsMapperStore(exploreNameStore);
+  $: hasMapper = !!$mapperStore.data;
+  $: convertCitationUrls =
+    renderedInExplore && hasMapper
+      ? getCitationUrlRewriter($mapperStore.data!)
+      : undefined;
 
   $: role = message.role;
 </script>
@@ -11,7 +31,7 @@
 <div class="chat-message chat-message--{role}">
   <div class="chat-message-content">
     {#if role === "assistant"}
-      <Markdown {content} />
+      <Markdown {content} converter={convertCitationUrls} />
     {:else}
       {content}
     {/if}

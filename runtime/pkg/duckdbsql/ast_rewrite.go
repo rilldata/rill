@@ -185,37 +185,40 @@ func createExpressionStatement(exprNode astNode) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(`
-{
-  "error": false,
-  "statements": [{
-    "node": {
-      "type": "SELECT_NODE",
-      "modifiers": [],
-      "cte_map": {
-        "map": []
-      },
-      "select_list": [%s],
-      "from_table": {
-        "type": "BASE_TABLE",
-        "alias": "",
-        "sample": null,
-        "schema_name": "",
-        "table_name": "Dummy",
-        "column_name_alias": [],
-        "catalog_name": ""
-      },
-      "where_clause": null,
-      "group_expressions": [],
-      "group_sets": [],
-      "aggregate_handling": "STANDARD_HANDLING",
-      "having": null,
-      "sample": null,
-      "qualify": null
-    }
-  }],
-}
-`, jsonNode), nil
+	baseJSON := map[string]interface{}{
+		"error": false,
+		"statements": []map[string]interface{}{
+			{
+				"node": map[string]interface{}{
+					"type":        "SELECT_NODE",
+					"modifiers":   []interface{}{},
+					"cte_map":     map[string]interface{}{"map": []interface{}{}},
+					"select_list": []json.RawMessage{jsonNode},
+					"from_table": map[string]interface{}{
+						"type":              "BASE_TABLE",
+						"alias":             "",
+						"sample":            nil,
+						"schema_name":       "",
+						"table_name":        "Dummy",
+						"column_name_alias": []interface{}{},
+						"catalog_name":      "",
+					},
+					"where_clause":       nil,
+					"group_expressions":  []interface{}{},
+					"group_sets":         []interface{}{},
+					"aggregate_handling": "STANDARD_HANDLING",
+					"having":             nil,
+					"sample":             nil,
+					"qualify":            nil,
+				},
+			},
+		},
+	}
+	finalJSON, err := json.Marshal(baseJSON)
+	if err != nil {
+		return "", err
+	}
+	return string(finalJSON), nil
 }
 
 // createKeyedFunctionArg creates an arg with a key.

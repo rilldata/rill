@@ -4236,6 +4236,16 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   secondaryColorRaw = "";
 
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeColors light = 5;
+   */
+  light?: ThemeColors;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeColors dark = 6;
+   */
+  dark?: ThemeColors;
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4248,6 +4258,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
     { no: 3, name: "primary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "light", kind: "message", T: ThemeColors, opt: true },
+    { no: 6, name: "dark", kind: "message", T: ThemeColors, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
@@ -4295,6 +4307,55 @@ export class ThemeState extends Message<ThemeState> {
 
   static equals(a: ThemeState | PlainMessage<ThemeState> | undefined, b: ThemeState | PlainMessage<ThemeState> | undefined): boolean {
     return proto3.util.equals(ThemeState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeColors
+ */
+export class ThemeColors extends Message<ThemeColors> {
+  /**
+   * @generated from field: string primary = 1;
+   */
+  primary = "";
+
+  /**
+   * @generated from field: string secondary = 2;
+   */
+  secondary = "";
+
+  /**
+   * @generated from field: map<string, string> variables = 3;
+   */
+  variables: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<ThemeColors>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeColors";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "primary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "secondary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeColors {
+    return new ThemeColors().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeColors {
+    return new ThemeColors().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeColors {
+    return new ThemeColors().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeColors | PlainMessage<ThemeColors> | undefined, b: ThemeColors | PlainMessage<ThemeColors> | undefined): boolean {
+    return proto3.util.equals(ThemeColors, a, b);
   }
 }
 
