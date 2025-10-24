@@ -10,7 +10,14 @@ sidebar_position: 50
 This guide covers all aspects of configuring your Rill project, from basic settings to advanced security and testing configurations.
 ## OLAP Connector
 
-When you add an OLAP connector to your project, Rill automatically updates the `olap_connector` field in `rill.yaml` with the new connector (e.g., `ClickHouse`, `Druid`). If you create multiple connectors, Rill will append "_#" to the file name and use this as the default connector.
+When you add an OLAP connector to your project, Rill automatically updates the `olap_connector` field in `rill.yaml` with the new connector name (e.g., `clickhouse`, `druid`). 
+
+If you create multiple connectors of the same type, Rill will number them sequentially. For example, if you create three ClickHouse connectors, they will be named:
+- `clickhouse` (first connector)
+- `clickhouse_2` (second connector)  
+- `clickhouse_3` (third connector)
+
+The most recently created connector becomes the default and is referenced in `rill.yaml`.
 
 ```yaml
 olap_connector: clickhouse
@@ -20,7 +27,11 @@ The default OLAP connector is used as the default `output` for all of your model
 
 ## Default Settings
 
-### Model Refresh Schedule
+### Model Defaults
+
+Configure default behaviors for all models in your project. These settings control refresh schedules and materialization behavior that apply across all models unless overridden in individual model files.
+
+#### Model Refresh Schedule
 
 Set up your project's model refresh schedule. You can override this in the model's YAML file if needed.
 
@@ -30,7 +41,35 @@ models:
         cron: '0 * * * *'
 ```
 
-### Metrics Views Time Modifiers
+For more information on configuring model refreshes, see the [models documentation](/build/models) and [model refresh reference](/reference/project-files/models#refresh).
+
+#### Model Materialization
+
+By default, models in Rill are created as views rather than materialized tables. While views enable a dynamic keystroke-by-keystroke modeling experience, materializing models as tables can significantly improve performance for complex queries and large datasets.
+
+You can set a default materialization behavior for all models in your project:
+
+```yaml
+models:
+  materialize: true
+```
+
+This is particularly useful in production environments where performance is prioritized over the interactive modeling experience. Individual models can still override this setting using `-- @materialize: false` in their SQL file, or `materialize: false` in the YAML file.
+
+:::tip When to materialize
+- **Recommended:** Final models that power dashboards should be materialized for better performance
+- **Consider:** Complex intermediate models with large datasets
+- **Avoid:** Models with cross joins or when you need real-time keystroke-by-keystroke updates
+
+For more details, see our [model performance guide](/build/models/performance#materialization).
+:::
+
+### Metrics Views Defaults
+
+Configure default settings for all metrics views in your project. These settings control time-related behavior and security policies that apply across all metrics views unless overridden in individual metrics view files. For comprehensive information on metrics views, see the [metrics view documentation](/build/metrics-view).
+
+
+#### Metrics Views Time Modifiers
 
 Set default time modifiers for all metrics views, such as `first_day_of_week` or `smallest_time_grain` as shown below. For more parameters, see the [metrics view reference page](/reference/project-files/metrics-views).
 
@@ -40,9 +79,9 @@ metrics_views:
     smallest_time_grain: month
 ```
 
-### Metrics Views Security Policy
+#### Metrics Views Security Policy
 
-By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like a metrics_view, you can define the security as shown below. For more information, read our [data access documentation](/build/metrics-view/security#examples).
+By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like in a metrics view file, you can define the security as shown below. For more information, read our [data access documentation](/build/metrics-view/security#examples).
 
 ```yaml
 metrics_views:
@@ -58,7 +97,12 @@ Rill YAML settings < (Metrics View YAML AND Dashboard YAML)
 For detailed guide on security policies, review our [data access policies](/build/metrics-view/security) doc.
 :::
 
-### Dashboard Security Policy
+
+### Dashboard Defaults
+
+Rill supports two types of dashboards: **Explores** (metrics-focused dashboards) and **Canvases** (custom visualization dashboards). You can set default configurations for each type. Learn more about creating and customizing dashboards in our [dashboard documentation](/build/dashboards).
+
+#### Dashboard Security Policy
 
 Similar to metrics views, you can set [security for a dashboard](/build/dashboards/customization#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
 
@@ -70,10 +114,6 @@ canvases:
   security:
     access:  '{{ has "dev" .user.groups }}'
 ```
-
-### Dashboard Defaults
-
-Rill supports two types of dashboards: **Explores** (metrics-focused dashboards) and **Canvases** (custom visualization dashboards). You can set default configurations for each type.
 
 #### Explore Defaults
 
@@ -117,11 +157,14 @@ canvases:
         - P3M
 ```
 
-:::tip Why dont I see the YAML view?
+:::tip Understanding Dashboard Default Behavior
 
-In Rill Cloud, we save a user's last state on the explore dashboard. Therefore, your users will not see the defined view above but the view they last left on. 
+When setting dashboard defaults, keep in mind that Rill Cloud saves each user's last state on dashboards. This means users will see the view they last used rather than the defaults configured above.
 
-Rill YAML settings < Explore Dashboard YAML < Bookmarks in Rill Cloud < User Last State
+**Settings precedence (lowest to highest):**  
+Rill YAML settings < Dashboard YAML < Bookmarks in Rill Cloud < User Last State
+
+Defaults are most useful for new users accessing a dashboard for the first time or when viewing in Rill Developer.
 :::
 
 ## Environment Configuration
@@ -152,11 +195,36 @@ rill start --environment prod
 
 :::
 
+## Variable Management
+
+Variables in Rill enable dynamic templating throughout your project files. They can be used in SQL queries, YAML configurations, and security policies to make your project more flexible and maintainable.
+
+### Setting Variables
+
+Variables are defined in your `rill.yaml` file using the `env` key. This allows you to set variables that will be available in your Rill Cloud deployments while maintaining the ability to use different values locally during development.
+
+```yaml
+env:
+  numeric_var: 10
+  string_var: "string_value"
+  api_endpoint: "https://api.example.com"
+```
+
+Once defined, these variables can be referenced in your project files using template syntax: `{{ .env.variable_name }}`
+
+**Example usage in a model:**
+```sql
+SELECT *
+FROM users
+WHERE status = '{{ .env.string_var }}'
+  AND score > {{ .env.numeric_var }}
+```
+
 ## AI Configuration
 
 ### `ai_instructions`
 
-Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the agent deliver more relevant and actionable insights tailored to your specific needs.
+Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs. For more information on AI features in Rill, see our [AI documentation](/explore/ai).
 
 **What to include:**
 - Guidance on which metrics views are most important or should be prioritized for your project
@@ -192,7 +260,7 @@ For metric-level specific instructions, `ai_instructions` can also be applied th
 
 ### Test Access Policies in Rill Developer
 
-Access to your environment is a crucial step in creating your project in Rill Developer. By doing so, you can confidently push your dashboard changes to Rill Cloud. This is done via the `mock_users` in the project file. You can create pseudo-users with specific domains, or admin and non-admin users or user groups, to ensure that access is correct. 
+Testing access policies in your local environment is a crucial step before deploying to Rill Cloud. This is done via the `mock_users` in the project file. You can create pseudo-users with specific domains, admin/non-admin roles, or user groups to ensure that access policies work as intended. For comprehensive information on security policies, see our [data access policies documentation](/build/metrics-view/security). 
 
 Let's assume that the following security policy is applied to the metrics view.
 
@@ -221,7 +289,7 @@ See our embedded example, [here](https://rill-embedding-example.netlify.app/rowa
 
 ### Custom Attributes
 
-Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code.
+Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code. For more information on embedding dashboards, see our [embedding documentation](/integrate/embedding).
 
 To test embedded dashboards locally with custom attributes, add them to `mock_users`:
 
@@ -310,7 +378,12 @@ display_name: Rill Project Dev
 # Learn more: https://docs.rilldata.com/reference/olap-engines
 olap_connector: duckdb
 
-#Project Defaults
+# Project variables for templating
+env:
+  numeric_var: 10
+  string_var: "string_value"
+
+# Project Defaults
 models:
     refresh:
         cron: '0 * * * *'

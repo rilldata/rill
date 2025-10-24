@@ -160,7 +160,7 @@ Note: Rill requires users to confirm their email address before letting them int
 In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
 
 :::tip Test policies in Rill Developer
-Use mock_users in rill.yaml to test your security policies before deploying.
+Use `mock_users` in rill.yaml to test your security policies before deploying.
 [Learn more about testing security →](/build/project-configuration#testing-security)
 :::
 

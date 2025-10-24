@@ -16,13 +16,15 @@ A Rill project consists of several data assets that work together to create a da
 When you create a new Rill project, the following files are automatically generated:
 
 - **`rill.yaml`** - Central configuration hub for your entire project
-- **`connectors/<connector>.yaml`** - Connector configuration files for default OLAP engine (e.g., `duckdb.yaml`, `clickhouse.yaml`)
+- **`connectors/<connector>.yaml`** - Connector configuration files for the project's default OLAP engine (e.g., `duckdb.yaml`, `clickhouse.yaml`)
 - **`.gitignore`** - Git ignore rules for the project
 
-## Project Files Overview
+## Initial Project Files
+
+These are the foundational files that Rill creates for you. As you build your project, you'll add many more files including sources, models, metrics views, and dashboards.
 
 ### `rill.yaml`
-The central configuration file that controls project-wide settings. You rarely need to modify `rill.yaml` when starting out - the defaults work great! This file enables you to set project-wide defaults, configure environment variables, define connector settings, create test users, and establish security policies.
+The central configuration file that controls project-wide settings. You rarely need to modify `rill.yaml` when starting out - the defaults work great! This file enables you to set [project-wide defaults](/build/project-configuration#default-settings), [configure variables](/build/project-configuration#variable-management), define [connector settings](/build/project-configuration#olap-connector), create [test users](/build/project-configuration#testing-security), and establish [security policies](/build/project-configuration#metrics-views-security-policy).
 
 ### `connectors/<connector>.yaml`
 Configuration for your default OLAP engine (DuckDB, ClickHouse, Druid, or Pinot). When starting a blank project, this always defaults to `duckdb.yaml`. This file defines how Rill connects to your analytical database.
