@@ -52,6 +52,7 @@ docs.generate:
 	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-project docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 	cd proto && buf generate --template buf.gen.docusaurus-openapi.yaml --path rill/admin
+	node scripts/filter-public-api.cjs
 
 .PHONY: proto.generate
 proto.generate:

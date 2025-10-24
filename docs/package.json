@@ -6,7 +6,8 @@
     "dev": "npm install && docusaurus start --port 4002",
     "build": "docusaurus build --out-dir dist",
     "preview": "docusaurus serve --port 4002 --dir dist",
-    "docusaurus": "docusaurus "
+    "docusaurus": "docusaurus ",
+    "generate-api": "cd ../proto && buf generate --template buf.gen.docusaurus-openapi.yaml && cd ../scripts && node filter-public-api.cjs"
   },
   "devDependencies": {
     "@docusaurus/core": "^3.8.1",
@@ -27,7 +28,8 @@
     "redocusaurus": "^2.5.0",
     "sass": "^1.88.0",
     "sass-loader": "^16.0.5",
-    "tailwindcss": "^3.4.13"
+    "tailwindcss": "^3.4.13",
+    "js-yaml": "^4.1.0"
   },
   "engines": {
     "node": ">=18.0"

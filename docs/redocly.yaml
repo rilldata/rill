@@ -5,9 +5,6 @@ extends:
 
 decorators:
   remove-unused-components: on
-  filter-in:
-    property: tags
-    values: ["rill.admin.v1.AdminService"]
 
 theme:
   # See https://redocly.com/docs/redoc/config/
@@ -22,3 +19,8 @@ theme:
 openapi:
   schemasExpansionLevel: 2
   showExtensions: true
+
+# Point to the filtered public API spec
+apis:
+  public-api:
+    root: api/rill/admin/v1/public.swagger.yaml

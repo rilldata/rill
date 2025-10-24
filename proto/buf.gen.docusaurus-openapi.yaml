@@ -13,5 +13,4 @@ plugins:
       - allow_merge=true
       - merge_file_name=public
       - include_package_in_tags=true
-      - visibility_restriction_selectors=PUBLIC
       - disable_service_tags=true

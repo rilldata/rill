@@ -2227,7 +2227,7 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 		SELECT uoi.id, uoi.email, ur.name as role_name, u.email as invited_by
 		FROM org_invites uoi
 		JOIN org_roles ur ON uoi.org_role_id = ur.id
-		JOIN users u ON uoi.invited_by_user_id = u.id
+		LEFT JOIN users u ON uoi.invited_by_user_id = u.id
 		WHERE uoi.org_id = $1 AND lower(uoi.email) > lower($2)
 		ORDER BY lower(uoi.email) LIMIT $3
 	`, orgID, afterEmail, limit)
@@ -2277,7 +2277,14 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return err
 	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.OrgID, opts.RoleID)
+	var inviterID interface{}
+	if opts.InviterID == "" {
+		inviterID = nil
+	} else {
+		inviterID = opts.InviterID
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, inviterID, opts.OrgID, opts.RoleID)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
@@ -2321,7 +2328,7 @@ func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEma
 		SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by
 		FROM project_invites upi
 		JOIN project_roles upr ON upi.project_role_id = upr.id
-		JOIN users u ON upi.invited_by_user_id = u.id
+		LEFT JOIN users u ON upi.invited_by_user_id = u.id
 		LEFT JOIN org_invites uoi ON upi.org_invite_id = uoi.id
 		LEFT JOIN org_roles uor ON uoi.org_role_id = uor.id
 		WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
@@ -2356,9 +2363,16 @@ func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.Ins
 		return err
 	}
 
+	var inviterID interface{}
+	if opts.InviterID == "" {
+		inviterID = nil
+	} else {
+		inviterID = opts.InviterID
+	}
+
 	_, err := c.getDB(ctx).ExecContext(ctx,
 		`INSERT INTO project_invites (email, org_invite_id, project_id, project_role_id, invited_by_user_id) VALUES ($1, $2, $3, $4, $5)`,
-		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, opts.InviterID)
+		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, inviterID)
 	if err != nil {
 		return parseErr("project invite", err)
 	}
