@@ -2,8 +2,8 @@
   import { page } from "$app/stores";
   import AlertsTable from "@rilldata/web-admin/features/alerts/listing/AlertsTable.svelte";
   import { useAlerts } from "@rilldata/web-admin/features/alerts/selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ProjectPage from "@rilldata/web-admin/features/projects/ProjectPage.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: ({ instanceId } = $runtime);
 
@@ -20,7 +20,4 @@
 
 <ProjectPage {query} kind="alert">
   <AlertsTable {organization} {project} data={alerts} slot="table" />
-  <svelte:fragment slot="action">
-    To create an alert, click the "Create alert" button in a dashboard.
-  </svelte:fragment>
 </ProjectPage>

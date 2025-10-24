@@ -19,7 +19,7 @@
 <ContentContainer maxWidth={900}>
   <div class="flex flex-col gap-y-8 py-12">
     <!-- Welcome Section with Chat Input -->
-    <div class="flex flex-col gap-y-8">
+    <div class="flex flex-col gap-y-6">
       <div class="flex flex-col gap-y-4">
         <h1 class="text-4xl font-semibold text-gray-900">
           Welcome to <span class="text-primary-600">{project}</span>
@@ -41,7 +41,15 @@
       {/if}
     </div>
 
+    <!-- Visual separator -->
+    {#if $chat}
+      <div class="border-t border-gray-200"></div>
+    {/if}
+
     <!-- Dashboards Section -->
-    <DashboardsTable isPreview />
+    <div class="flex flex-col gap-y-4">
+      <h2 class="text-xl font-semibold text-gray-900">Dashboards</h2>
+      <DashboardsTable isPreview />
+    </div>
   </div>
 </ContentContainer>

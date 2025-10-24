@@ -1,5 +1,5 @@
 import ApiIcon from "@rilldata/web-common/components/icons/APIIcon.svelte";
-import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
 import CanvasIcon from "@rilldata/web-common/components/icons/CanvasIcon.svelte";
 import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
 import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
@@ -22,7 +22,7 @@ export const resourceIconMapping = {
   [ResourceKind.Canvas]: CanvasIcon,
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,
-  [ResourceKind.Alert]: AlertCircleOutline,
+  [ResourceKind.Alert]: AlertIcon,
 };
 
 export const resourceColorMapping = {
@@ -35,8 +35,20 @@ export const resourceColorMapping = {
   [ResourceKind.Component]: "#65A30D",
   [ResourceKind.Canvas]: "#008FD4",
   [ResourceKind.Theme]: "#DB2777",
+  [ResourceKind.Report]: "#0284C7",
+  [ResourceKind.Alert]: "#F59E0B",
+};
 
-  // To follow up later
-  [ResourceKind.Report]: "black",
-  [ResourceKind.Alert]: "black",
+export const resourceLabelMapping = {
+  [ResourceKind.Source]: "Source",
+  [ResourceKind.Connector]: "Connector",
+  [ResourceKind.Model]: "Model",
+  [ResourceKind.MetricsView]: "Metrics View",
+  [ResourceKind.Explore]: "Explore",
+  [ResourceKind.API]: "API",
+  [ResourceKind.Component]: "Component",
+  [ResourceKind.Canvas]: "Canvas",
+  [ResourceKind.Theme]: "Theme",
+  [ResourceKind.Report]: "Report",
+  [ResourceKind.Alert]: "Alert",
 };

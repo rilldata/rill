@@ -9,7 +9,7 @@
   } from "@tanstack/svelte-table";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
-  import Toolbar from "./Toolbar.svelte";
+  import ResourceListToolbar from "./ResourceListToolbar.svelte";
 
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
@@ -64,59 +64,81 @@
 
   // Whenever the input data changes, rerender the table
   $: data && rerender();
+
+  // Check if we're in a filtered state (search is active)
+  $: isFiltered = $table.getState().globalFilter?.length > 0;
 </script>
 
 {#if toolbar}
   <slot name="toolbar">
-    <Toolbar />
+    <ResourceListToolbar />
   </slot>
 {/if}
 
-<table class="w-full">
+<div class="w-full">
   <slot name="header" />
-  <tbody>
+  <ul role="list" class="resource-list">
     {#each $table.getRowModel().rows as row (row.id)}
-      <tr>
+      <li class="resource-list-item">
         {#each row.getVisibleCells() as cell (cell.id)}
-          <td class="hover:bg-slate-50">
-            <svelte:component
-              this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-            />
-          </td>
+          <svelte:component
+            this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+          />
         {/each}
-      </tr>
+      </li>
     {:else}
-      <tr>
-        <td class="text-center py-4">
-          <span class="text-gray-500"> No {kind}s found. </span>
-        </td>
-      </tr>
+      <li class="resource-list-item-empty">
+        <div class="text-center py-16">
+          {#if isFiltered}
+            <!-- Filtered empty state: no results match search -->
+            <div class="flex flex-col gap-y-2 items-center text-sm">
+              <div class="text-gray-600 font-semibold">
+                No {kind}s match your search
+              </div>
+              <div class="text-gray-500">Try adjusting your search terms</div>
+            </div>
+          {:else}
+            <!-- Custom empty state via slot, or fallback -->
+            <slot name="empty">
+              <div class="text-gray-600 text-sm font-semibold">
+                You don't have any {kind}s yet
+              </div>
+            </slot>
+          {/if}
+        </div>
+      </li>
     {/each}
-  </tbody>
-</table>
+  </ul>
+</div>
 
-<!-- 
-Rounded table corners are tricky:
-- `border-radius` does not apply to table elements when `border-collapse` is `collapse`.
-- You can only apply `border-radius` to <td>, not <tr> or <table>.
--->
 <style lang="postcss">
-  table {
-    @apply border-separate border-spacing-0;
+  .resource-list {
+    @apply list-none p-0 m-0 w-full;
   }
-  tbody td {
-    @apply border-b;
+
+  .resource-list-item,
+  .resource-list-item-empty {
+    @apply block w-full border border-gray-200;
   }
-  tbody td:first-child {
-    @apply border-l;
+
+  /* Remove top border on non-first items to avoid double borders */
+  .resource-list-item + .resource-list-item {
+    @apply border-t-0;
   }
-  tbody td:last-child {
-    @apply border-r;
+
+  /* Rounded corners on first and last items */
+  .resource-list-item:first-child,
+  .resource-list-item-empty:first-child {
+    @apply rounded-t-lg;
   }
-  tbody tr:last-child td:first-child {
-    @apply rounded-bl-lg;
+
+  .resource-list-item:last-child,
+  .resource-list-item-empty:last-child {
+    @apply rounded-b-lg;
   }
-  tbody tr:last-child td:last-child {
-    @apply rounded-br-lg;
+
+  /* Hover effect on list items */
+  .resource-list-item:hover {
+    @apply bg-slate-50;
   }
 </style>
