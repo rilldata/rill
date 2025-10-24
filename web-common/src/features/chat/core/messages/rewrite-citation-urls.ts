@@ -1,8 +1,8 @@
-import { getMetricsViewTimeRangeOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
 import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
-import { getExploreValidSpecOptions } from "@rilldata/web-common/features/explores/selectors.ts";
+import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors.ts";
 import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import { marked } from "marked";
@@ -62,10 +62,10 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
   data?: MetricsResolverQueryToUrlParamsMapper;
 }> {
   const validSpecQuery = createQuery(
-    getExploreValidSpecOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(exploreNameStore),
   );
   const timeRangeQuery = createQuery(
-    getMetricsViewTimeRangeOptions(exploreNameStore),
+    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
   );
 
   return derived(
@@ -82,8 +82,8 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
         };
       }
 
-      const metricsViewSpec = validSpecResp.data?.metricsView;
-      const exploreSpec = validSpecResp.data?.explore;
+      const metricsViewSpec = validSpecResp.data?.metricsViewSpec;
+      const exploreSpec = validSpecResp.data?.exploreSpec;
       if (!metricsViewSpec || !exploreSpec) {
         return {
           error: new Error("Failed to load metrics view or explore spec"),

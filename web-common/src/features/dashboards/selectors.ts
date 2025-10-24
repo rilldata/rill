@@ -9,7 +9,7 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  getExploreValidSpecOptions,
+  getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors.ts";
 import {
@@ -130,18 +130,18 @@ export function useMetricsViewTimeRange(
   );
 }
 
-export function getMetricsViewTimeRangeOptions(
+export function getMetricsViewTimeRangeFromExploreQueryOptions(
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(exploreNameStore),
   );
 
   return derived(
     [runtime, validSpecQuery],
     ([{ instanceId }, validSpecResp]) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
       const metricsViewName = exploreSpec.metricsView ?? "";
 
       return getQueryServiceMetricsViewTimeRangeQueryOptions(
