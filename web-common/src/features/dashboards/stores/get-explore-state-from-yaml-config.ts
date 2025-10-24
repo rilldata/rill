@@ -1,5 +1,5 @@
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { getMetricsViewTimeRangeOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { getGrainForRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -7,7 +7,7 @@ import { getValidComparisonOption } from "@rilldata/web-common/features/dashboar
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import { FromURLParamTimeGrainMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { getExploreValidSpecOptions } from "@rilldata/web-common/features/explores/selectors";
+import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -41,17 +41,17 @@ export function createUrlForExploreYAMLDefaultState(
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(exploreNameStore),
   );
   const timeRangeQuery = createQuery(
-    getMetricsViewTimeRangeOptions(exploreNameStore),
+    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
   );
 
   return derived(
     [validSpecQuery, timeRangeQuery],
     ([validSpecResp, timeRangeResp]) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
       const timeRangeSummary = timeRangeResp.data?.timeRangeSummary;
 
       const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(

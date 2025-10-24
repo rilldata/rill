@@ -12,7 +12,6 @@
     getBookmarkData,
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
-  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -32,6 +31,9 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
 
+  export let organization: string;
+  export let project: string;
+  export let projectId: string;
   export let metricsViewNames: string[];
   export let resourceKind: ResourceKind;
   export let resourceName: string;
@@ -42,11 +44,7 @@
   export let disableFiltersOnly: boolean;
   export let onClose = () => {};
 
-  $: ({
-    params: { organization, project },
-    url,
-  } = $page);
-  $: projectId = useProjectId(organization, project);
+  $: ({ url } = $page);
   $: curUrlParams = url.searchParams;
 
   $: start = timeControlState?.selectedTimeRange?.start?.toISOString() ?? "";
@@ -107,7 +105,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
             data: {
               displayName: values.displayName,
               description: values.description,
-              projectId: $projectId.data ?? "",
+              projectId,
               resourceKind,
               resourceName,
               shared: values.shared === "true",
@@ -120,7 +118,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
 
         await queryClient.refetchQueries({
           queryKey: getAdminServiceListBookmarksQueryKey({
-            projectId: $projectId.data ?? "",
+            projectId,
             resourceKind,
             resourceName,
           }),

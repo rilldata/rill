@@ -9,7 +9,7 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  getExploreValidSpecOptions,
+  getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors.ts";
 import {
@@ -22,10 +22,7 @@ import {
   type V1MetricsViewTimeRangeResponse,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import {
-  createQueryServiceMetricsViewTimeRange,
-  createRuntimeServiceListResources,
-} from "@rilldata/web-common/runtime-client";
+import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import {
   createQuery,
   type CreateQueryOptions,
@@ -135,18 +132,18 @@ export function useMetricsViewTimeRange(
   return createQuery(fullTimeRangeQueryOptionsStore, queryClient);
 }
 
-export function getMetricsViewTimeRangeOptions(
+export function getMetricsViewTimeRangeFromExploreQueryOptions(
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(exploreNameStore),
   );
 
   return derived(
     [runtime, validSpecQuery],
     ([{ instanceId }, validSpecResp]) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
       const metricsViewName = exploreSpec.metricsView ?? "";
 
       return getQueryServiceMetricsViewTimeRangeQueryOptions(
@@ -159,39 +156,6 @@ export function getMetricsViewTimeRangeOptions(
           },
         },
       );
-    },
-  );
-}
-
-export function useMetricsViewTimeRangeFromExplore(
-  instanceId: string,
-  exploreName: string,
-  options?: {
-    query?: CreateQueryOptions<V1MetricsViewTimeRangeResponse>;
-  },
-  queryClient?: QueryClient,
-): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
-  const { query: queryOptions } = options ?? {};
-
-  return derived(
-    [useExploreValidSpec(instanceId, exploreName)],
-    ([validSpecResp], set) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      const exploreSpec = validSpecResp.data?.explore ?? {};
-      const metricsViewName = exploreSpec.metricsView ?? "";
-
-      createQueryServiceMetricsViewTimeRange(
-        instanceId,
-        metricsViewName,
-        {},
-        {
-          query: {
-            ...queryOptions,
-            enabled: !!metricsViewSpec.timeDimension && queryOptions?.enabled,
-          },
-        },
-        queryClient,
-      ).subscribe(set);
     },
   );
 }
@@ -234,13 +198,13 @@ export function getMetricsViewSchemaOptions(
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(exploreNameStore),
   );
 
   return derived(
     [runtime, validSpecQuery],
     ([{ instanceId }, validSpecResp]) => {
-      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
       const metricsViewName = exploreSpec.metricsView ?? "";
 
       return getQueryServiceMetricsViewSchemaQueryOptions(

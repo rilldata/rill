@@ -76,7 +76,9 @@ export function useExploreValidSpec(
   );
 }
 
-export function getExploreValidSpecOptions(exploreNameStore: Readable<string>) {
+export function getExploreValidSpecQueryOptions(
+  exploreNameStore: Readable<string>,
+) {
   return derived([runtime, exploreNameStore], ([{ instanceId }, exploreName]) =>
     getRuntimeServiceGetExploreQueryOptions(
       instanceId,
@@ -85,11 +87,10 @@ export function getExploreValidSpecOptions(exploreNameStore: Readable<string>) {
       },
       {
         query: {
-          select: (data) =>
-            <ExploreValidSpecResponse>{
-              explore: data.explore?.explore?.state?.validSpec,
-              metricsView: data.metricsView?.metricsView?.state?.validSpec,
-            },
+          select: (data) => ({
+            exploreSpec: data.explore?.explore?.state?.validSpec,
+            metricsViewSpec: data.metricsView?.metricsView?.state?.validSpec,
+          }),
           enabled: !!exploreName,
         },
       },
