@@ -10,6 +10,10 @@ import { getFilterOptions } from "../util";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import MarkdownCanvas from "./MarkdownCanvas.svelte";
+import { derived } from "svelte/store";
+import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 
 export { default as Markdown } from "./Markdown.svelte";
 
@@ -40,6 +44,92 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
       alignment: defaultMarkdownAlignment,
     };
     super(resource, parent, path, defaultSpec);
+  }
+
+  // Override timeAndFilterStore to bypass dimension filter validation
+  // Markdown can query multiple metrics views, so we can't validate against a single set of dimensions
+  get timeAndFilterStore() {
+    return derived(
+      [
+        this.parent.timeControls.timeRangeStateStore,
+        this.localTimeControls.timeRangeStateStore,
+        this.parent.timeControls.comparisonRangeStateStore,
+        this.localTimeControls.comparisonRangeStateStore,
+        this.parent.timeControls.selectedTimezone,
+        this.parent.filters.whereFilter,
+        this.parent.filters.dimensionThresholdFilters,
+        this.parent.specStore,
+        this.parent.timeControls.hasTimeSeries,
+        this.specStore,
+      ],
+      ([
+        globalTimeRangeState,
+        localTimeRangeState,
+        globalComparisonRangeState,
+        localComparisonRangeState,
+        timeZone,
+        whereFilter,
+        dtf,
+        canvasData,
+        hasTimeSeries,
+        componentSpec,
+      ]) => {
+        // Time filters
+        let timeRange = {
+          start: globalTimeRangeState?.timeStart,
+          end: globalTimeRangeState?.timeEnd,
+          timeZone,
+        };
+        let showTimeComparison = !!globalComparisonRangeState?.comparisonTimeStart;
+        let timeGrain = globalTimeRangeState?.selectedTimeRange?.interval;
+        let comparisonTimeRange = {
+          start: globalComparisonRangeState?.comparisonTimeStart,
+          end: globalComparisonRangeState?.comparisonTimeEnd,
+          timeZone,
+        };
+        let timeRangeState = globalTimeRangeState;
+        let comparisonTimeRangeState = globalComparisonRangeState;
+
+        if (componentSpec?.["time_filters"]) {
+          timeRange = {
+            start: localTimeRangeState?.timeStart,
+            end: localTimeRangeState?.timeEnd,
+            timeZone,
+          };
+          comparisonTimeRange = {
+            start: localComparisonRangeState?.comparisonTimeStart,
+            end: localComparisonRangeState?.comparisonTimeEnd,
+            timeZone,
+          };
+          showTimeComparison = !!localComparisonRangeState?.comparisonTimeStart;
+          timeGrain = localTimeRangeState?.selectedTimeRange?.interval;
+          timeRangeState = localTimeRangeState;
+          comparisonTimeRangeState = localComparisonRangeState;
+        }
+
+        // Dimension Filters - SKIP VALIDATION, pass through as-is
+        const globalWhere = whereFilter ?? createAndExpression([]);
+        let where = globalWhere;
+
+        if (componentSpec?.["dimension_filters"]) {
+          const { expr: componentWhere } = getFiltersFromText(
+            componentSpec?.["dimension_filters"],
+          );
+          where = mergeFilters(globalWhere, componentWhere);
+        }
+
+        return {
+          timeRange,
+          showTimeComparison,
+          comparisonTimeRange,
+          where,
+          timeGrain,
+          timeRangeState,
+          comparisonTimeRangeState,
+          hasTimeSeries,
+        };
+      },
+    );
   }
 
   isValid(spec: MarkdownSpec): boolean {

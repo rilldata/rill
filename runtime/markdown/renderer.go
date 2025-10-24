@@ -89,7 +89,6 @@ func (r *Renderer) executeQuery(ctx context.Context, sql string, renderCtx Rende
 		props["time_zone"] = renderCtx.TimeZone
 	}
 	if renderCtx.Where != nil {
-		// Convert proto Expression to metricsview.Expression
 		props["additional_where"] = metricsview.NewExpressionFromProto(renderCtx.Where)
 	}
 	if renderCtx.TimeRange != nil && renderCtx.TimeRange.Start != nil && renderCtx.TimeRange.End != nil {

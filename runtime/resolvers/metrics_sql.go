@@ -109,8 +109,27 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
+	// NOTE: Not happy with silently filtering the additional where clause to only include valid dimensions for this metrics view
+	var validDimensions map[string]bool
+	if props.AdditionalWhere != nil && query.MetricsView != "" {
+		mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: query.MetricsView}, false)
+		if err == nil && mv.GetMetricsView() != nil && mv.GetMetricsView().State != nil && mv.GetMetricsView().State.ValidSpec != nil {
+			validDimensions = make(map[string]bool)
+			for _, dim := range mv.GetMetricsView().State.ValidSpec.Dimensions {
+				if dim.Name != "" {
+					validDimensions[dim.Name] = true
+				} else if dim.Column != "" {
+					validDimensions[dim.Column] = true
+				}
+			}
+		}
+	}
+
+	// Filter the additional where clause to only include valid dimensions for this metrics view
+	filteredWhere := filterWhereByValidDimensions(props.AdditionalWhere, validDimensions)
+
 	// Inject the additional where clause if provided
-	query.Where = applyAdditionalWhere(query.Where, props.AdditionalWhere)
+	query.Where = applyAdditionalWhere(query.Where, filteredWhere)
 
 	// Inject the additional time range if provided
 	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
@@ -134,6 +153,53 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		ForExport:  opts.ForExport,
 	}
 	return newMetrics(ctx, resolverOpts)
+}
+
+// filterWhereByValidDimensions filters a where expression to only include dimensions that exist in the metrics view
+func filterWhereByValidDimensions(expr *metricsview.Expression, validDimensions map[string]bool) *metricsview.Expression {
+	if expr == nil || validDimensions == nil {
+		return expr
+	}
+
+	// If this is a dimension reference, check if it's valid
+	if expr.Name != "" {
+		if !validDimensions[expr.Name] {
+			return nil // Filter out this dimension
+		}
+		return expr
+	}
+
+	// If this is a condition, recursively filter child expressions
+	if expr.Condition != nil {
+		var filteredExprs []*metricsview.Expression
+		for _, childExpr := range expr.Condition.Expressions {
+			filtered := filterWhereByValidDimensions(childExpr, validDimensions)
+			if filtered != nil {
+				filteredExprs = append(filteredExprs, filtered)
+			}
+		}
+
+		// If all expressions were filtered out, return nil
+		if len(filteredExprs) == 0 {
+			return nil
+		}
+
+		// If only one expression remains, return it directly (unwrap)
+		if len(filteredExprs) == 1 && expr.Condition.Operator == metricsview.OperatorAnd {
+			return filteredExprs[0]
+		}
+
+		// Return the condition with filtered expressions
+		return &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator:    expr.Condition.Operator,
+				Expressions: filteredExprs,
+			},
+		}
+	}
+
+	// For value or subquery expressions, pass through as-is
+	return expr
 }
 
 // applyAdditionalWhere combines the existing where clause with the additional where clause

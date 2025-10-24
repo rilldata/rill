@@ -2,15 +2,15 @@
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { createRuntimeServiceRenderMarkdown } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { Readable } from "svelte/store";
+  import { get, type Readable } from "svelte/store";
   import type { MarkdownSpec } from ".";
   import { Markdown } from ".";
   import { getCanvasStore } from "../../state-managers/state-managers";
-  import { get } from "svelte/store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
   export let spec: MarkdownSpec;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   export let canvasName: string;
 
   $: ({ instanceId } = $runtime);
@@ -18,32 +18,30 @@
   $: ({
     metricsView: { getMeasureForMetricView },
   } = ctx.canvasEntity);
-  $: ({ content, alignment } = spec);
-
-  $: ({
-    timeRange: { timeZone, start, end },
-    where,
-  } = $timeAndFilterStore);
 
   // Create mutation once
   const renderMarkdown = createRuntimeServiceRenderMarkdown();
 
-  // Track last request to prevent infinite loops
-  let lastRequest = "";
-
-  // Trigger render when dependencies change
-  $: timeRange = start && end ? { start, end } : undefined;
-  $: requestKey = JSON.stringify({
-    instanceId,
-    content,
-    where,
-    timeRange,
-    timeZone,
-  });
-
+  // Trigger mutation when dependencies change
+  let lastKey = "";
   $: {
-    if (instanceId && content && requestKey !== lastRequest) {
-      lastRequest = requestKey;
+    const {
+      timeRange: { timeZone, start, end },
+      where,
+    } = $timeAndFilterStore;
+    const timeRange = start && end ? { start, end } : undefined;
+    const { content } = spec;
+
+    const key = JSON.stringify({
+      instanceId,
+      content,
+      where,
+      timeRange,
+      timeZone,
+    });
+
+    if (instanceId && content && key !== lastKey) {
+      lastKey = key;
 
       $renderMarkdown.mutate({
         instanceId,
@@ -97,13 +95,13 @@
       return "Loading...";
     }
 
-    const rawMarkdown = result.data?.renderedMarkdown || content;
+    const rawMarkdown = result.data?.renderedMarkdown || spec.content;
     return formatRenderedMarkdown(rawMarkdown);
   })();
 
   $: markdownProperties = {
     content: renderedContent,
-    alignment,
+    alignment: spec.alignment,
   };
 </script>
 
