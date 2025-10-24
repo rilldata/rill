@@ -148,7 +148,7 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 	var qry strings.Builder
 	var args []any
 
-	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_partitions WHERE instance_id=? AND model_id=?")
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms, explicitly_triggered FROM model_partitions WHERE instance_id=? AND model_id=?")
 	args = append(args, c.instanceID, opts.ModelID)
 
 	if opts.WhereErrored {
@@ -157,6 +157,10 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 
 	if opts.WherePending {
 		qry.WriteString(" AND executed_on IS NULL")
+	}
+
+	if opts.WhereExplicitlyTriggered {
+		qry.WriteString(" AND explicitly_triggered = true")
 	}
 
 	if !opts.BeforeExecutedOn.IsZero() || opts.AfterKey != "" {
@@ -181,7 +185,7 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 	for rows.Next() {
 		var elapsedMs int64
 		r := drivers.ModelPartition{}
-		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs, &r.ExplicitlyTriggered)
 		if err != nil {
 			return nil, err
 		}
@@ -200,7 +204,7 @@ func (c *catalogStore) FindModelPartitionsByKeys(ctx context.Context, modelID st
 	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
 	var qry strings.Builder
 	var args []any
-	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_partitions WHERE instance_id=? AND model_id=? AND key IN (")
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms, explicitly_triggered FROM model_partitions WHERE instance_id=? AND model_id=? AND key IN (")
 	args = append(args, c.instanceID, modelID)
 
 	qry.Grow(len(keys)*2 + 14) // Makes room for one ",?" per key plus the ORDER BY clause
@@ -224,7 +228,7 @@ func (c *catalogStore) FindModelPartitionsByKeys(ctx context.Context, modelID st
 	for rows.Next() {
 		var elapsedMs int64
 		r := drivers.ModelPartition{}
-		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs, &r.ExplicitlyTriggered)
 		if err != nil {
 			return nil, err
 		}
@@ -266,7 +270,7 @@ func (c *catalogStore) CheckModelPartitionsHaveErrors(ctx context.Context, model
 func (c *catalogStore) InsertModelPartition(ctx context.Context, modelID string, partition drivers.ModelPartition) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"INSERT INTO model_partitions(instance_id, model_id, key, data_json, idx, watermark, executed_on, error, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO model_partitions(instance_id, model_id, key, data_json, idx, watermark, executed_on, error, elapsed_ms, explicitly_triggered) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		c.instanceID,
 		modelID,
 		partition.Key,
@@ -276,6 +280,7 @@ func (c *catalogStore) InsertModelPartition(ctx context.Context, modelID string,
 		partition.ExecutedOn,
 		partition.Error,
 		partition.Elapsed.Milliseconds(),
+		partition.ExplicitlyTriggered,
 	)
 	if err != nil {
 		return err
@@ -287,13 +292,14 @@ func (c *catalogStore) InsertModelPartition(ctx context.Context, modelID string,
 func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string, partition drivers.ModelPartition) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"UPDATE model_partitions SET data_json=?, idx=?, watermark=?, executed_on=?, error=?, elapsed_ms=? WHERE instance_id=? AND model_id=? AND key=?",
+		"UPDATE model_partitions SET data_json=?, idx=?, watermark=?, executed_on=?, error=?, elapsed_ms=?, explicitly_triggered=? WHERE instance_id=? AND model_id=? AND key=?",
 		partition.DataJSON,
 		partition.Index,
 		partition.Watermark,
 		partition.ExecutedOn,
 		partition.Error,
 		partition.Elapsed.Milliseconds(),
+		partition.ExplicitlyTriggered,
 		c.instanceID,
 		modelID,
 		partition.Key,
@@ -305,28 +311,41 @@ func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string,
 	return nil
 }
 
-func (c *catalogStore) UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
-		c.instanceID,
-		modelID,
-		partitionKey,
-	)
-	if err != nil {
-		return err
+func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error {
+	var qry strings.Builder
+	var args []any
+
+	qry.WriteString("UPDATE model_partitions SET explicitly_triggered=true, executed_on=NULL WHERE instance_id=? AND model_id=?")
+	args = append(args, c.instanceID, modelID)
+
+	// Add conditions based on parameters
+	if whereErrored || len(wherePartitionKeyIn) > 0 {
+		qry.WriteString(" AND (")
+
+		if whereErrored {
+			qry.WriteString("error != ''")
+		}
+
+		if len(wherePartitionKeyIn) > 0 {
+			if whereErrored {
+				qry.WriteString(" OR ")
+			}
+			qry.WriteString("key IN (")
+			for i, k := range wherePartitionKeyIn {
+				if i == 0 {
+					qry.WriteString("?")
+				} else {
+					qry.WriteString(",?")
+				}
+				args = append(args, k)
+			}
+			qry.WriteString(")")
+		}
+
+		qry.WriteString(")")
 	}
 
-	return nil
-}
-
-func (c *catalogStore) UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
-		c.instanceID,
-		modelID,
-	)
+	_, err := c.db.ExecContext(ctx, qry.String(), args...)
 	if err != nil {
 		return err
 	}

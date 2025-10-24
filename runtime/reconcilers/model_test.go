@@ -5,6 +5,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 
@@ -255,4 +256,80 @@ tests:
 		require.Contains(t, props, "sql")
 		require.NotEmpty(t, props["sql"])
 	}
+}
+
+func TestExplicitPartitionRefreshDoesNotProcessNewPartitions(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	ctx := t.Context()
+
+	// Create a model with dynamic partitions using RANDOM() to generate new partitions on each run
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/dynamic_partitions.yaml": `
+type: model
+incremental: true
+partitions:
+  sql: SELECT CAST(RANDOM() * 1000000 AS INTEGER) AS partition_key
+sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Get the model to access partition info
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "dynamic_partitions").GetModel()
+	require.NotNil(t, model)
+
+	// Get the catalog and query for partitions
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	defer release()
+
+	partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID: model.State.PartitionsModelId,
+		Limit:   1,
+	})
+	require.NoError(t, err)
+	require.Len(t, partitions, 1, "Should have exactly one partition after initial reconcile")
+
+	firstPartitionKey := partitions[0].Key
+
+	// Explicitly refresh just the first partition using RefreshModelTrigger
+	ctrl, err := rt.Controller(ctx, instanceID)
+	require.NoError(t, err)
+
+	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: "test-partition-refresh"}
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_RefreshTrigger{
+			RefreshTrigger: &runtimev1.RefreshTrigger{
+				Spec: &runtimev1.RefreshTriggerSpec{
+					Models: []*runtimev1.RefreshModelTrigger{
+						{
+							Model:      "dynamic_partitions",
+							Partitions: []string{firstPartitionKey},
+						},
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	// Wait for refresh to complete
+	err = ctrl.WaitUntilIdle(ctx, false)
+	require.NoError(t, err)
+
+	// After the explicit refresh, check that no new partitions were created
+	catalog2, release2, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	defer release2()
+
+	partitionsAfterRefresh, err := catalog2.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+		ModelID: model.State.PartitionsModelId,
+	})
+	require.NoError(t, err)
+	require.Len(t, partitionsAfterRefresh, 1, "Should still have exactly one partition - no new partitions should be created during explicit refresh")
+
+	// Verify the partition we refreshed is the same one
+	require.Equal(t, firstPartitionKey, partitionsAfterRefresh[0].Key, "The partition key should match the original partition")
 }

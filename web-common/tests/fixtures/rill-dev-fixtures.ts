@@ -117,11 +117,6 @@ export const rillDev = base.extend<MyFixtures>({
 
     await use(page);
 
-    rmSync(TEST_PROJECT_DIRECTORY, {
-      force: true,
-      recursive: true,
-    });
-
     const processExit = new Promise((resolve) => {
       childProcess.on("exit", resolve);
     });
@@ -129,5 +124,10 @@ export const rillDev = base.extend<MyFixtures>({
     if (childProcess.pid) treeKill(childProcess.pid);
 
     await processExit;
+
+    rmSync(TEST_PROJECT_DIRECTORY, {
+      force: true,
+      recursive: true,
+    });
   },
 });
