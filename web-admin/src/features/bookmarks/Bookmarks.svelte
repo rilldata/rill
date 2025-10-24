@@ -51,6 +51,7 @@
   export let defaultHomeBookmarkUrl: string = "";
   export let filtersState: FiltersState;
   export let timeControlState: TimeControlState;
+  export let disableFiltersOnly: boolean = false;
 
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
@@ -249,6 +250,7 @@
     {defaultUrlParams}
     {filtersState}
     {timeControlState}
+    {disableFiltersOnly}
     onClose={() => {
       showDialog = false;
       bookmark = null;

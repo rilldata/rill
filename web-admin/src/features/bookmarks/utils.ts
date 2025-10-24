@@ -118,7 +118,7 @@ export function formatTimeRange(
 export function parseBookmarks(
   bookmarkResp: V1Bookmark[],
   curUrlParams: URLSearchParams,
-  defaultUrlParams: URLSearchParams | undefined,
+  defaultUrlParams: URLSearchParams | undefined = undefined,
   dataTransformer: (data: string) => string = (data) => data,
 ) {
   return bookmarkResp.map((bookmarkResource) => {

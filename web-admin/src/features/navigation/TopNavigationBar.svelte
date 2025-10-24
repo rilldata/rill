@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
   import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
@@ -258,6 +259,7 @@
       {/if}
     {/if}
     {#if onCanvasDashboardPage}
+      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}
     {#if $user.isSuccess}
