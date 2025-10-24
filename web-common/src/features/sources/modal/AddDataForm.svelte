@@ -36,13 +36,22 @@
   import { isEmpty, normalizeErrors } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
+    GCS_AUTH_OPTIONS,
     type ClickHouseConnectorType,
+    type GCSAuthMethod,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { compileConnectorYAML } from "../../connectors/code-utils";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
+  import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
+  import { MULTI_STEP_CONNECTORS } from "./constants";
+  import {
+    connectorStepStore,
+    setStep,
+    setConnectorConfig,
+  } from "./connectorStepStore";
 
   const dispatch = createEventDispatcher();
 
@@ -56,6 +65,45 @@
 
   let copied = false;
   let connectionTab: ConnectorType = "parameters";
+  let gcsAuthMethod: GCSAuthMethod = "credentials";
+
+  // Simple multi-step state management
+  const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
+    connector.name ?? "",
+  );
+  $: stepState = $connectorStepStore;
+
+  // Reactive properties based on current step
+  $: stepProperties =
+    isMultiStepConnector && stepState.step === "source"
+      ? (connector.sourceProperties ?? [])
+      : properties;
+
+  // Update form when transitioning to step 2
+  $: if (
+    isMultiStepConnector &&
+    stepState.step === "source" &&
+    stepState.connectorConfig
+  ) {
+    // Initialize form with source properties and default values
+    const sourceProperties = connector.sourceProperties ?? [];
+    const initialValues = getInitialFormValuesFromProperties(sourceProperties);
+
+    // Merge with stored connector config
+    const combinedValues = { ...stepState.connectorConfig, ...initialValues };
+
+    paramsForm.update(() => combinedValues, { taint: false });
+  }
+
+  // Determine effective form type
+  $: effectiveFormType =
+    isMultiStepConnector && stepState.step === "source" ? "source" : formType;
+
+  $: formHeight = ["clickhouse", "snowflake", "salesforce"].includes(
+    connector.name ?? "",
+  )
+    ? "max-h-[38.5rem] min-h-[38.5rem]"
+    : "max-h-[34.5rem] min-h-[34.5rem]";
 
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
@@ -157,7 +205,12 @@
       return false;
     } else {
       // Parameters form: check required properties
-      for (const property of properties) {
+      // Use stepProperties for multi-step connectors, otherwise use properties
+      const propertiesToCheck = isMultiStepConnector
+        ? stepProperties
+        : properties;
+
+      for (const property of propertiesToCheck) {
         if (property.required) {
           const key = String(property.key);
           const value = $paramsForm[key];
@@ -259,9 +312,26 @@
   }
 
   function getSourceYamlPreview(values: Record<string, unknown>) {
+    // For multi-step connectors in step 2, filter out connector properties
+    let filteredValues = values;
+    if (isMultiStepConnector && stepState.step === "source") {
+      // Get connector property keys to filter out
+      const connectorPropertyKeys = new Set(
+        connector.configProperties?.map((prop) => prop.key).filter(Boolean) ||
+          [],
+      );
+
+      // Filter out connector properties, keeping only source properties and other necessary fields
+      filteredValues = Object.fromEntries(
+        Object.entries(values).filter(
+          ([key]) => !connectorPropertyKeys.has(key),
+        ),
+      );
+    }
+
     const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
       connector,
-      values,
+      filteredValues,
     );
 
     // Check if the connector was rewritten to DuckDB
@@ -281,6 +351,18 @@
       const values =
         connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
       return getClickHouseYamlPreview(values, clickhouseConnectorType);
+    }
+
+    // Multi-step connector special case - show different preview based on step
+    if (isMultiStepConnector) {
+      if (stepState.step === "connector") {
+        // Step 1: Show connector preview
+        return getConnectorYamlPreview($paramsForm);
+      } else {
+        // Step 2: Show source preview with stored connector config
+        const combinedValues = { ...stepState.connectorConfig, ...$paramsForm };
+        return getSourceYamlPreview(combinedValues);
+      }
     }
 
     const values =
@@ -335,15 +417,27 @@
     const values = event.form.data;
 
     try {
-      // Use values as-is
       let processedValues = values;
 
-      if (formType === "source") {
+      if (isMultiStepConnector && stepState.step === "source") {
+        // Step 2: Create source with stored connector config
         await submitAddSourceForm(queryClient, connector, processedValues);
-      } else {
+        onClose();
+      } else if (isMultiStepConnector && stepState.step === "connector") {
+        // Step 1: Create connector and transition to step 2
         await submitAddConnectorForm(queryClient, connector, processedValues);
+        setConnectorConfig(processedValues);
+        setStep("source");
+        return; // Don't close the modal, just transition to step 2
+      } else if (effectiveFormType === "source") {
+        // Regular source form
+        await submitAddSourceForm(queryClient, connector, processedValues);
+        onClose();
+      } else {
+        // Regular connector form
+        await submitAddConnectorForm(queryClient, connector, processedValues);
+        onClose();
       }
-      onClose();
     } catch (e) {
       let error: string;
       let details: string | undefined = undefined;
@@ -413,6 +507,25 @@
       throw new Error(`Failed to read file: ${error.message}`);
     }
   }
+
+  // Handle skip button for multi-step connectors
+  function handleSkip() {
+    if (!isMultiStepConnector || stepState.step !== "connector") return;
+
+    // Store current form values and transition to step 2
+    setConnectorConfig($paramsForm);
+    setStep("source");
+  }
+
+  function handleBack() {
+    if (isMultiStepConnector && stepState.step === "source") {
+      // Go back to step 1 (connector configuration)
+      setStep("connector");
+    } else {
+      // Use the original back behavior for non-multi-step or step 1
+      onBack();
+    }
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -420,15 +533,7 @@
   <div
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
-    <div
-      class="flex flex-col flex-grow {[
-        'clickhouse',
-        'snowflake',
-        'salesforce',
-      ].includes(connector.name ?? '')
-        ? 'max-h-[38.5rem] min-h-[38.5rem]'
-        : 'max-h-[34.5rem] min-h-[34.5rem]'} overflow-y-auto p-6"
-    >
+    <div class="flex flex-col flex-grow {formHeight} overflow-y-auto p-6">
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
@@ -492,6 +597,16 @@
                       hint={property.hint}
                       href={property.docsUrl}
                     />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                    <CredentialsInput
+                      id={propertyKey}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                      bind:value={$paramsForm[propertyKey]}
+                      uploadFile={handleFileUpload}
+                      accept=".json"
+                    />
                   {/if}
                 </div>
               {/each}
@@ -507,16 +622,28 @@
               {#each filteredDsnProperties as property (property.key)}
                 {@const propertyKey = property.key ?? ""}
                 <div class="py-1.5 first:pt-0 last:pb-0">
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={$dsnErrors[propertyKey]}
-                    bind:value={$dsnForm[propertyKey]}
-                    alwaysShowError
-                  />
+                  {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                    <CredentialsInput
+                      id={propertyKey}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                      bind:value={$dsnForm[propertyKey]}
+                      uploadFile={handleFileUpload}
+                      accept=".json"
+                    />
+                  {:else}
+                    <Input
+                      id={propertyKey}
+                      label={property.displayName}
+                      placeholder={property.placeholder}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={$dsnErrors[propertyKey]}
+                      bind:value={$dsnForm[propertyKey]}
+                      alwaysShowError
+                    />
+                  {/if}
                 </div>
               {/each}
             </form>
@@ -533,19 +660,169 @@
           {#each filteredDsnProperties as property (property.key)}
             {@const propertyKey = property.key ?? ""}
             <div class="py-1.5 first:pt-0 last:pb-0">
-              <Input
-                id={propertyKey}
-                label={property.displayName}
-                placeholder={property.placeholder}
-                secret={property.secret}
-                hint={property.hint}
-                errors={$dsnErrors[propertyKey]}
-                bind:value={$dsnForm[propertyKey]}
-                alwaysShowError
-              />
+              {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
+                <CredentialsInput
+                  id={propertyKey}
+                  label={property.displayName}
+                  hint={property.hint}
+                  optional={!property.required}
+                  bind:value={$dsnForm[propertyKey]}
+                  uploadFile={handleFileUpload}
+                  accept=".json"
+                />
+              {:else}
+                <Input
+                  id={propertyKey}
+                  label={property.displayName}
+                  placeholder={property.placeholder}
+                  secret={property.secret}
+                  hint={property.hint}
+                  errors={$dsnErrors[propertyKey]}
+                  bind:value={$dsnForm[propertyKey]}
+                  alwaysShowError
+                />
+              {/if}
             </div>
           {/each}
         </form>
+      {:else if isMultiStepConnector}
+        {#if stepState.step === "connector"}
+          <!-- GCS Step 1: Connector configuration -->
+          <form
+            id={paramsFormId}
+            class="pb-5 flex-grow overflow-y-auto"
+            use:paramsEnhance
+            on:submit|preventDefault={paramsSubmit}
+          >
+            <!-- Authentication method selection -->
+            <div class="py-1.5 first:pt-0 last:pb-0">
+              <div class="text-sm font-medium mb-4">Authentication method</div>
+              <Radio
+                bind:value={gcsAuthMethod}
+                options={GCS_AUTH_OPTIONS}
+                name="gcs-auth-method"
+              >
+                <svelte:fragment slot="custom-content" let:option>
+                  {#if option.value === "credentials"}
+                    <CredentialsInput
+                      id="google_application_credentials"
+                      hint="Upload a JSON key file for a service account with GCS access."
+                      optional={false}
+                      bind:value={$paramsForm.google_application_credentials}
+                      uploadFile={handleFileUpload}
+                      accept=".json"
+                    />
+                  {:else if option.value === "hmac"}
+                    <div class="space-y-3">
+                      <Input
+                        id="key_id"
+                        label="Access Key ID"
+                        placeholder="Enter your HMAC access key ID"
+                        optional={false}
+                        secret={true}
+                        hint="HMAC access key ID for S3-compatible authentication"
+                        errors={normalizeErrors($paramsErrors.key_id)}
+                        bind:value={$paramsForm.key_id}
+                        alwaysShowError
+                      />
+                      <Input
+                        id="secret"
+                        label="Secret Access Key"
+                        placeholder="Enter your HMAC secret access key"
+                        optional={false}
+                        secret={true}
+                        hint="HMAC secret access key for S3-compatible authentication"
+                        errors={normalizeErrors($paramsErrors.secret)}
+                        bind:value={$paramsForm.secret}
+                        alwaysShowError
+                      />
+                    </div>
+                  {/if}
+                </svelte:fragment>
+              </Radio>
+            </div>
+
+            <!-- Render other connector properties (excluding path and auth fields) -->
+            {#each filteredParamsProperties as property (property.key)}
+              {@const propertyKey = property.key ?? ""}
+              {#if propertyKey !== "path" && propertyKey !== "google_application_credentials" && propertyKey !== "key_id" && propertyKey !== "secret"}
+                <div class="py-1.5 first:pt-0 last:pb-0">
+                  {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                    <Input
+                      id={propertyKey}
+                      label={property.displayName}
+                      placeholder={property.placeholder}
+                      optional={!property.required}
+                      secret={property.secret}
+                      hint={property.hint}
+                      errors={normalizeErrors($paramsErrors[propertyKey])}
+                      bind:value={$paramsForm[propertyKey]}
+                      onInput={(_, e) => onStringInputChange(e)}
+                      alwaysShowError
+                    />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                    <Checkbox
+                      id={propertyKey}
+                      bind:checked={$paramsForm[propertyKey]}
+                      label={property.displayName}
+                      hint={property.hint}
+                      optional={!property.required}
+                    />
+                  {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                    <InformationalField
+                      description={property.description}
+                      hint={property.hint}
+                      href={property.docsUrl}
+                    />
+                  {/if}
+                </div>
+              {/if}
+            {/each}
+          </form>
+        {:else}
+          <!-- GCS Step 2: Source configuration -->
+          <form
+            id={paramsFormId}
+            class="pb-5 flex-grow overflow-y-auto"
+            use:paramsEnhance
+            on:submit|preventDefault={paramsSubmit}
+          >
+            <!-- Only show source-specific fields -->
+            {#each stepProperties as property (property.key)}
+              {@const propertyKey = property.key ?? ""}
+              <div class="py-1.5 first:pt-0 last:pb-0">
+                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+                  <Input
+                    id={propertyKey}
+                    label={property.displayName}
+                    placeholder={property.placeholder}
+                    optional={!property.required}
+                    secret={property.secret}
+                    hint={property.hint}
+                    errors={normalizeErrors($paramsErrors[propertyKey])}
+                    bind:value={$paramsForm[propertyKey]}
+                    onInput={(_, e) => onStringInputChange(e)}
+                    alwaysShowError
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+                  <Checkbox
+                    id={propertyKey}
+                    bind:checked={$paramsForm[propertyKey]}
+                    label={property.displayName}
+                    hint={property.hint}
+                    optional={!property.required}
+                  />
+                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+                  <InformationalField
+                    description={property.description}
+                    hint={property.hint}
+                    href={property.docsUrl}
+                  />
+                {/if}
+              </div>
+            {/each}
+          </form>
+        {/if}
       {:else}
         <form
           id={paramsFormId}
@@ -604,44 +881,62 @@
     <div
       class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      <Button onClick={onBack} type="secondary">Back</Button>
+      <Button onClick={handleBack} type="secondary">Back</Button>
 
-      <Button
-        disabled={connector.name === "clickhouse"
-          ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-          : submitting || isSubmitDisabled}
-        loading={connector.name === "clickhouse"
-          ? clickhouseSubmitting
-          : submitting}
-        loadingCopy={connector.name === "clickhouse"
-          ? "Connecting..."
-          : "Testing connection..."}
-        form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-        submitForm
-        type="primary"
-      >
-        {#if connector.name === "clickhouse"}
-          {#if clickhouseConnectorType === "rill-managed"}
-            {#if clickhouseSubmitting}
-              Connecting...
-            {:else}
-              Connect
-            {/if}
-          {:else if clickhouseSubmitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else if isConnectorForm}
-          {#if submitting}
-            Testing connection...
-          {:else}
-            Test and Connect
-          {/if}
-        {:else}
-          Test and Add data
+      <div class="flex gap-2">
+        {#if isMultiStepConnector && stepState.step === "connector"}
+          <Button onClick={handleSkip} type="secondary">Skip</Button>
         {/if}
-      </Button>
+
+        <Button
+          disabled={connector.name === "clickhouse"
+            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+            : submitting || isSubmitDisabled}
+          loading={connector.name === "clickhouse"
+            ? clickhouseSubmitting
+            : submitting}
+          loadingCopy={connector.name === "clickhouse"
+            ? "Connecting..."
+            : "Testing connection..."}
+          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+          submitForm
+          type="primary"
+        >
+          {#if connector.name === "clickhouse"}
+            {#if clickhouseConnectorType === "rill-managed"}
+              {#if clickhouseSubmitting}
+                Connecting...
+              {:else}
+                Connect
+              {/if}
+            {:else if clickhouseSubmitting}
+              Testing connection...
+            {:else}
+              Test and Connect
+            {/if}
+          {:else if isConnectorForm}
+            {#if isMultiStepConnector && stepState.step === "connector"}
+              {#if submitting}
+                Testing connection...
+              {:else}
+                Test and Connect
+              {/if}
+            {:else if isMultiStepConnector && stepState.step === "source"}
+              {#if submitting}
+                Creating model...
+              {:else}
+                Test and Add data
+              {/if}
+            {:else if submitting}
+              Testing connection...
+            {:else}
+              Test and Connect
+            {/if}
+          {:else}
+            Test and Add data
+          {/if}
+        </Button>
+      </div>
     </div>
   </div>
 
@@ -664,7 +959,13 @@
 
     <div>
       <div class="text-sm leading-none font-medium mb-4">
-        {isSourceForm ? "Model preview" : "Connector preview"}
+        {#if isMultiStepConnector}
+          {stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"}
+        {:else}
+          {isSourceForm ? "Model preview" : "Connector preview"}
+        {/if}
       </div>
       <div class="relative">
         <button
