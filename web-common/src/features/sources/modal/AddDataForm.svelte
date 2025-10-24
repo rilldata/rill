@@ -516,6 +516,16 @@
     setConnectorConfig($paramsForm);
     setStep("source");
   }
+
+  function handleBack() {
+    if (isMultiStepConnector && stepState.step === "source") {
+      // Go back to step 1 (connector configuration)
+      setStep("connector");
+    } else {
+      // Use the original back behavior for non-multi-step or step 1
+      onBack();
+    }
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -871,12 +881,7 @@
     <div
       class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      {#if isMultiStepConnector && stepState.step === "source"}
-        <!-- Empty div to maintain right alignment of submit button -->
-        <div></div>
-      {:else}
-        <Button onClick={onBack} type="secondary">Back</Button>
-      {/if}
+      <Button onClick={handleBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
         {#if isMultiStepConnector && stepState.step === "connector"}
