@@ -7,6 +7,7 @@ import (
 	"reflect"
 	goruntime "runtime"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -215,7 +216,12 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 			mcp.AddTool(srv, spec, func(ctx context.Context, req *mcp.CallToolRequest, args In) (*mcp.CallToolResult, Out, error) {
 				s := GetSession(ctx)
 				var res Out
-				_, err := s.CallTool(ctx, RoleAssistant, t.Spec().Name, &res, args)
+				_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
+					Role: RoleAssistant,
+					Tool: spec.Name,
+					Out:  &res,
+					Args: args,
+				})
 				return nil, res, err
 			})
 		},
@@ -305,65 +311,6 @@ type Message struct {
 	Content string `json:"content" yaml:"content"`
 	// dirty is true if the Message has not yet been persisted.
 	dirty bool
-}
-
-// ToProto converts the message to an aiv1.CompletionMessage
-func (m *Message) ToProto() (*aiv1.CompletionMessage, error) {
-	// As an exception, rewrite results from the root tool call to a plain-text assistant message.
-	if m.Tool == "router_agent" { // TODO: Make generic
-		return &aiv1.CompletionMessage{
-			Role: string(RoleAssistant),
-			Content: []*aiv1.ContentBlock{{
-				BlockType: &aiv1.ContentBlock_Text{
-					Text: m.Content,
-				},
-			}},
-		}, nil
-	}
-
-	var block *aiv1.ContentBlock
-	switch m.Type {
-	case MessageTypeCall:
-		var args map[string]any
-		if m.ContentType == MessageContentTypeJSON && m.Content != "" {
-			err := json.Unmarshal([]byte(m.Content), &args)
-			if err != nil {
-				return nil, fmt.Errorf("failed to unmarshal JSON args: %w", err)
-			}
-		} else {
-			args = map[string]any{"content": m.Content}
-		}
-
-		input, err := structpb.NewStruct(args)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert args to structpb: %w", err)
-		}
-
-		block = &aiv1.ContentBlock{
-			BlockType: &aiv1.ContentBlock_ToolCall{
-				ToolCall: &aiv1.ToolCall{
-					Id:    m.ID,
-					Name:  m.Tool,
-					Input: input,
-				},
-			},
-		}
-	case MessageTypeResult:
-		block = &aiv1.ContentBlock{
-			BlockType: &aiv1.ContentBlock_ToolResult{
-				ToolResult: &aiv1.ToolResult{
-					Id:      m.ParentID,
-					Content: m.Content,
-					IsError: m.ContentType == MessageContentTypeError,
-				},
-			},
-		}
-	}
-
-	return &aiv1.CompletionMessage{
-		Role:    string(m.Role),
-		Content: []*aiv1.ContentBlock{block},
-	}, nil
 }
 
 // sessionCtxKey is used for saving a session in a context.
@@ -526,6 +473,22 @@ func (s *BaseSession) NextIndex() int {
 	return len(s.messages)
 }
 
+func (s *BaseSession) Message(predicates ...Predicate) (*Message, bool) {
+	for _, msg := range s.messages {
+		match := true
+		for _, p := range predicates {
+			if !p(msg) {
+				match = false
+				break
+			}
+		}
+		if match {
+			return msg, true
+		}
+	}
+	return nil, false
+}
+
 func (s *BaseSession) Messages(predicates ...Predicate) []*Message {
 	if len(predicates) == 0 {
 		return s.messages
@@ -548,36 +511,28 @@ func (s *BaseSession) Messages(predicates ...Predicate) []*Message {
 }
 
 func (s *BaseSession) MessagesWithCallResults(msgs []*Message) []*Message {
-	var res []*Message
-	for _, msg := range msgs {
-		var resMsg *Message
-		if msg.Type == MessageTypeCall {
-			msg, ok := s.Message(FilterByParent(msg.ID), FilterByType(MessageTypeResult))
-			if !ok {
-				// Skip the call if there isn't a corresponding result.
-				continue
-			}
-			resMsg = msg
+	return s.ExpandMessages(msgs, func(m *Message) []*Message {
+		if m.Type != MessageTypeCall {
+			return []*Message{m}
 		}
-		res = append(res, msg, resMsg)
-	}
-	return res
+
+		resMsgs, ok := s.Message(FilterByParent(m.ID), FilterByType(MessageTypeResult))
+		if !ok {
+			// Skip the call if there isn't a corresponding result.
+			return nil
+		}
+
+		return []*Message{m, resMsgs}
+	})
 }
 
-func (s *BaseSession) Message(predicates ...Predicate) (*Message, bool) {
-	for _, msg := range s.messages {
-		match := true
-		for _, p := range predicates {
-			if !p(msg) {
-				match = false
-				break
-			}
-		}
-		if match {
-			return msg, true
-		}
+func (s *BaseSession) ExpandMessages(msgs []*Message, fn func(m *Message) []*Message) []*Message {
+	var res []*Message
+	for _, msg := range msgs {
+		newMsgs := fn(msg)
+		res = append(res, newMsgs...)
 	}
-	return nil, false
+	return res
 }
 
 func (s *BaseSession) LatestRootCall() *Message {
@@ -691,56 +646,43 @@ type CallResult struct {
 	Result *Message
 }
 
-// CallTool runs a tool call in the current session and adds it, its result, and all messages from nested calls to the session.
-func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out, args any) (*CallResult, error) {
-	var argsJSON json.RawMessage
-	if args != nil {
-		var err error
-		argsJSON, err = json.Marshal(args)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal args: %w", err)
-		}
-	}
-
-	return s.call(ctx, role, toolName, out, argsJSON, func(ctx context.Context) (any, error) {
-		tool, ok := s.runner.Tools[toolName]
-		if !ok {
-			return nil, fmt.Errorf("unknown tool %q", toolName)
-		}
-		if tool.CheckAccess != nil && !tool.CheckAccess(s.claims) {
-			return nil, fmt.Errorf("access denied to tool %q", toolName)
-		}
-		return tool.JSONHandler(ctx, argsJSON)
-	})
+// CallOptions provides options for Session.Call.
+type CallOptions struct {
+	Role    Role
+	Name    string
+	Unwrap  bool
+	Out     any
+	Args    any
+	Handler func(context.Context) (any, error)
 }
 
-// CallLambda runs a function call and adds it, its result, and all messages from nested calls to the session.
-func (s *Session) CallLambda(ctx context.Context, role Role, anonToolName string, out any, fn func(context.Context) (any, error)) (*CallResult, error) {
-	return s.call(ctx, role, anonToolName, out, nil, fn)
-}
-
-// call is the internal implementation for durable execution of tool/function calls.
-// TODO: Implement resume where if there's a matching tool call, return immediately.
-// TODO: Implement awaiting a human input, where it returns ErrAwaitInput.
-func (s *Session) call(ctx context.Context, role Role, name string, out, args any, handler func(context.Context) (any, error)) (*CallResult, error) {
-	var argsJSON json.RawMessage
-	if args != nil {
-		var err error
-		argsJSON, err = json.Marshal(args)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal args: %w", err)
-		}
+// Call is the primary implementation for execution of tool calls.
+// NOTE: This will be the primary implementation site for durable execution.
+func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 
-	callMsg := s.AddMessage(&AddMessageOptions{
-		Role:        role,
-		Type:        MessageTypeCall,
-		Tool:        name,
-		ContentType: MessageContentTypeJSON,
-		Content:     string(argsJSON),
-	})
-	callSession := s.WithParent(callMsg.ID)
-	callCtx := WithSession(ctx, callSession)
+	var argsJSON json.RawMessage
+	argsJSON, err := json.Marshal(opts.Args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal args: %w", err)
+	}
+
+	var callMsg *Message
+	callSession := s
+	callCtx := ctx
+	if !opts.Unwrap {
+		callMsg = s.AddMessage(&AddMessageOptions{
+			Role:        opts.Role,
+			Type:        MessageTypeCall,
+			Tool:        opts.Name,
+			ContentType: MessageContentTypeJSON,
+			Content:     string(argsJSON),
+		})
+		callSession = s.WithParent(callMsg.ID)
+		callCtx = WithSession(ctx, callSession)
+	}
 
 	handlerOut, handlerErr := func() (handlerOut any, handlerErr error) {
 		// Gracefully handle panics in the tool handler
@@ -756,41 +698,40 @@ func (s *Session) call(ctx context.Context, role Role, name string, out, args an
 			}
 		}()
 
-		return handler(callCtx)
+		return opts.Handler(callCtx)
 	}()
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 
-	var outJSON json.RawMessage
-	if handlerOut != nil {
-		var err error
-		outJSON, err = json.Marshal(handlerOut)
-		if err != nil {
-			handlerErr = fmt.Errorf("failed to marshal result: %w (out: %v)", err, handlerOut)
+	outJSON, err := json.Marshal(handlerOut)
+	if err != nil {
+		handlerErr = fmt.Errorf("failed to marshal result: %w (out: %v)", err, handlerOut)
+	}
+
+	var resultMsg *Message
+	if !opts.Unwrap {
+		var resultContentType MessageContentType
+		var resultContent string
+		if handlerErr == nil {
+			resultContentType = MessageContentTypeJSON
+			resultContent = string(outJSON)
+		} else {
+			resultContentType = MessageContentTypeError
+			resultContent = handlerErr.Error()
 		}
+
+		resultMsg = callSession.AddMessage(&AddMessageOptions{
+			Role:        opts.Role,
+			Type:        MessageTypeResult,
+			Tool:        opts.Name,
+			ContentType: resultContentType,
+			Content:     resultContent,
+		})
 	}
 
-	var resultContentType MessageContentType
-	var resultContent string
-	if handlerErr == nil {
-		resultContentType = MessageContentTypeJSON
-		resultContent = string(outJSON)
-	} else {
-		resultContentType = MessageContentTypeError
-		resultContent = handlerErr.Error()
-	}
-
-	resultMsg := callSession.AddMessage(&AddMessageOptions{
-		Role:        RoleTool,
-		Type:        MessageTypeResult,
-		Tool:        name,
-		ContentType: resultContentType,
-		Content:     resultContent,
-	})
-
-	if out != nil && outJSON != nil {
-		err := json.Unmarshal(outJSON, out)
+	if opts.Out != nil {
+		err := json.Unmarshal(outJSON, opts.Out)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal result: %w", err)
 		}
@@ -804,12 +745,61 @@ func (s *Session) call(ctx context.Context, role Role, name string, out, args an
 	return res, handlerErr
 }
 
+// CallToolOptions provides options for Session.CallTool.
+type CallToolOptions struct {
+	Role   Role
+	Tool   string
+	Unwrap bool
+	Out    any
+	Args   any
+}
+
+// CallToolWithOptions runs a tool call in the current session and adds it, its result, and all messages from nested calls to the session.
+func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions) (*CallResult, error) {
+	var err error
+	argsJSON, err := json.Marshal(opts.Args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal args: %w", err)
+	}
+
+	return s.Call(ctx, &CallOptions{
+		Role:   opts.Role,
+		Name:   opts.Tool,
+		Unwrap: opts.Unwrap,
+		Out:    opts.Out,
+		Args:   json.RawMessage(argsJSON), // Prevents double serialization
+		Handler: func(ctx context.Context) (any, error) {
+			t, ok := s.Tool(opts.Tool)
+			if !ok {
+				return nil, fmt.Errorf("unknown tool %q", opts.Tool)
+			}
+			if !t.CheckAccess(s.Claims()) {
+				return nil, fmt.Errorf("access denied to tool %q", opts.Tool)
+			}
+			return t.JSONHandler(ctx, argsJSON)
+		},
+	})
+}
+
+// CallTool is a convenience wrapper around CallToolWithOptions that makes a normal assistant tool call.
+func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out, args any) (*CallResult, error) {
+	return s.CallToolWithOptions(ctx, &CallToolOptions{
+		Role: role,
+		Tool: toolName,
+		Out:  out,
+		Args: args,
+	})
+}
+
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {
 	Messages      []*aiv1.CompletionMessage
 	Tools         []string
 	MaxIterations int
-	UnwrapCall    bool
+	// The complete loop will add intermediate messages for LLM thinking and tool calls to session under the current call.
+	// In some cases, it's desirable to capture these intermediate messages in the parent call's context, in other cases it's better to isolate them and only expose the final result to the parent context.
+	// When UnwrapCall is true, we run the completion loop within the current call, otherwise we wrap the complete loop in a new call to isolate internal messages.
+	UnwrapCall bool
 }
 
 // Complete runs LLM completions.
@@ -936,16 +926,23 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 						Content:     block.Text,
 					})
 				case *aiv1.ContentBlock_ToolCall:
-					toolResult, _ := s.CallTool(ctx, RoleAssistant, block.ToolCall.Name, nil, block.ToolCall.Input.AsMap())
-					// TODO: Err handling?
-					if ctx.Err() != nil {
-						return nil, ctx.Err()
+					toolResult, err := s.CallToolWithOptions(ctx, &CallToolOptions{
+						Role: RoleAssistant,
+						Tool: block.ToolCall.Name,
+						Out:  nil,
+						Args: block.ToolCall.Input.AsMap(),
+					})
+					if err != nil && toolResult.Result == nil {
+						if ctx.Err() != nil {
+							return nil, ctx.Err()
+						}
+						return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
 					}
-					callMessage, err := toolResult.Call.ToProto()
+					callMessage, err := s.NewCompletionMessage(toolResult.Call)
 					if err != nil {
 						return nil, err
 					}
-					resultMsg, err := toolResult.Result.ToProto()
+					resultMsg, err := s.NewCompletionMessage(toolResult.Result)
 					if err != nil {
 						return nil, err
 					}
@@ -990,34 +987,91 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		return outVal, nil
 	}
 
-	// The complete loop will add intermediate messages for LLM thinking and tool calls to session under the current call.
-	// In some cases, it's desirable to capture these intermediate messages in the parent call's context, in other cases it's better to isolate them and only expose the final result to the parent context.
-	// When UnwrapCall is true, we run the completion loop within the current call, otherwise we wrap the complete loop in a new call to isolate internal messages.
-	if opts.UnwrapCall {
-		outVal, err := completeLoop(ctx)
-		if err != nil {
-			return err
+	_, err := s.Call(ctx, &CallOptions{
+		Role:    RoleSystem,
+		Name:    name,
+		Unwrap:  opts.UnwrapCall,
+		Out:     out,
+		Args:    nil,
+		Handler: completeLoop,
+	})
+	return err
+}
+
+// NewCompletionMessage converts the message to an aiv1.CompletionMessage
+func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, error) {
+	role := RoleAssistant
+	block := &aiv1.ContentBlock{
+		BlockType: &aiv1.ContentBlock_Text{
+			Text: m.Content,
+		},
+	}
+
+	switch m.Type {
+	case MessageTypeCall:
+		// Calls made by the assistant are serialized as tool calls.
+		// Any other calls are serialized as user messages.
+		if m.Role != RoleAssistant {
+			role = RoleUser
+		} else {
+			var args map[string]any
+			err := json.Unmarshal([]byte(m.Content), &args)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal JSON args: %w", err)
+			}
+			argsPB, err := structpb.NewStruct(args)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert args to structpb: %w", err)
+			}
+
+			block = &aiv1.ContentBlock{
+				BlockType: &aiv1.ContentBlock_ToolCall{
+					ToolCall: &aiv1.ToolCall{
+						Id:    completionMessageID(m.ID),
+						Name:  m.Tool,
+						Input: argsPB,
+					},
+				},
+			}
 		}
 
-		// Shim to copy `outVal` into `out` in a way consistent with how CallLambda does it.
-		if out != nil {
-			outJSON, err := json.Marshal(outVal)
-			if err != nil {
-				return fmt.Errorf("failed to marshal complete loop result: %w", err)
+	case MessageTypeResult:
+		// Results returned from calls made by the assistant are serialized as tool results.
+		// Any other results are serialized as assistant messages.
+		if m.Role != RoleAssistant {
+			role = RoleAssistant
+		} else {
+			role = RoleTool
+			block = &aiv1.ContentBlock{
+				BlockType: &aiv1.ContentBlock_ToolResult{
+					ToolResult: &aiv1.ToolResult{
+						Id:      completionMessageID(m.ParentID),
+						Content: m.Content,
+						IsError: m.ContentType == MessageContentTypeError,
+					},
+				},
 			}
-			err = json.Unmarshal(outJSON, out)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal complete loop result: %w", err)
-			}
-		}
-	} else {
-		_, err := s.CallLambda(ctx, RoleSystem, name, out, completeLoop)
-		if err != nil {
-			return err
 		}
 	}
 
-	return nil
+	return &aiv1.CompletionMessage{
+		Role:    string(role),
+		Content: []*aiv1.ContentBlock{block},
+	}, nil
+}
+
+// NewCompletionMessages is a utility function for creating a list of completion messages from a list of session messages.
+// NOTE: To support chaining, it panics on serialization errors. TODO: Move to a better chaining setup that enables error propagation.
+func (s *Session) NewCompletionMessages(msgs []*Message) []*aiv1.CompletionMessage {
+	var res []*aiv1.CompletionMessage
+	for _, msg := range msgs {
+		pm, err := s.NewCompletionMessage(msg)
+		if err != nil {
+			panic(err)
+		}
+		res = append(res, pm)
+	}
+	return res
 }
 
 // NewTextCompletionMessage is a utility function for creating a text completion message.
@@ -1032,20 +1086,6 @@ func NewTextCompletionMessage(role Role, content string) *aiv1.CompletionMessage
 			},
 		},
 	}
-}
-
-// NewCompletionMessages is a utility function for creating a list of completion messages from a list of session messages.
-// NOTE: To support chaining, it panics on serialization errors. TODO: Move to a better chaining setup that enables error propagation.
-func NewCompletionMessages(msgs []*Message) []*aiv1.CompletionMessage {
-	var res []*aiv1.CompletionMessage
-	for _, msg := range msgs {
-		pm, err := msg.ToProto()
-		if err != nil {
-			panic(err)
-		}
-		res = append(res, pm)
-	}
-	return res
 }
 
 // maybeTruncateMessages keeps recent messages and a few early ones for context.
@@ -1084,4 +1124,9 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 	result = append(result, messages[start:]...)
 
 	return result
+}
+
+// completionMessageID turns a UUID into a truncated ID suitable for use in completion messages (which don't require IDs to be globally unique).
+func completionMessageID(id string) string {
+	return strings.ReplaceAll(id, "-", "")[0:16]
 }

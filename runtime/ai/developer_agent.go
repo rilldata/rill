@@ -52,9 +52,9 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
-	messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
 	messages = append(messages, NewTextCompletionMessage(RoleUser, args.Prompt))
-	messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByParent(s.ParentID))))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByParent(s.ParentID))))...)
 
 	// Run an LLM tool call loop
 	var response string

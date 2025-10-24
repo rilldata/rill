@@ -47,8 +47,6 @@ func (t *RouterAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
 }
 
 func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*RouterAgentResult, error) {
-	// TODO: Handle if previous call is still open or awaiting human input
-
 	// Handle title
 	s := GetSession(ctx)
 	if s.Title() == "" {
@@ -60,8 +58,8 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 
 	// Create a list of candidate agents that the user has access to.
 	candidates := []*CompiledTool{
-		must(s.Tool("analyst_agent")),
-		// must(s.Tool("developer_agent")), // Temporarily disabled
+		must(s.Tool(AnalystAgentName)),
+		// must(s.Tool(DeveloperAgentName)), // Temporarily disabled
 	}
 	candidates = slices.DeleteFunc(candidates, func(agent *CompiledTool) bool {
 		return !agent.CheckAccess(s.Claims())
@@ -88,7 +86,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	default:
 		// Build completion messages for agent choice
 		messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, t.systemPrompt(candidates))}
-		messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
+		messages = append(messages, s.NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
 		messages = append(messages, NewTextCompletionMessage(RoleUser, args.Prompt))
 
 		// Run agent choice
@@ -116,25 +114,35 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	// Call the selected agent.
 	switch args.Agent {
 	case "analyst_agent":
-		var response *AnalystAgentResult
-		_, err := s.CallTool(ctx, RoleSystem, args.Agent, &response, &AnalystAgentArgs{
-			Prompt:  args.Prompt,
-			Explore: args.Explore,
+		var res *AnalystAgentResult
+		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
+			Role: RoleSystem,
+			Tool: args.Agent,
+			Out:  &res,
+			Args: &AnalystAgentArgs{
+				Prompt:  args.Prompt,
+				Explore: args.Explore,
+			},
 		})
 		if err != nil {
 			return nil, err
 		}
-		return &RouterAgentResult{Response: response.Response}, nil
+		return &RouterAgentResult{Response: res.Response}, nil
 
 	case "developer_agent":
-		var response *DeveloperAgentResult
-		_, err := s.CallTool(ctx, RoleSystem, args.Agent, &response, &DeveloperAgentArgs{
-			Prompt: args.Prompt,
+		var res *DeveloperAgentResult
+		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
+			Role: RoleSystem,
+			Tool: args.Agent,
+			Out:  &res,
+			Args: &DeveloperAgentArgs{
+				Prompt: args.Prompt,
+			},
 		})
 		if err != nil {
 			return nil, err
 		}
-		return &RouterAgentResult{Response: response.Response}, nil
+		return &RouterAgentResult{Response: res.Response}, nil
 	}
 
 	return nil, fmt.Errorf("agent %q not implemented", args.Agent)

@@ -10,6 +10,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
+const AnalystAgentName = "analyst_agent"
+
 type AnalystAgent struct {
 	Runtime *runtime.Runtime
 }
@@ -27,7 +29,7 @@ type AnalystAgentResult struct {
 
 func (t *AnalystAgent) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "analyst_agent",
+		Name:        AnalystAgentName,
 		Title:       "Analyst Agent",
 		Description: "Agent that assists with data analysis tasks.",
 		Meta: map[string]any{
@@ -92,9 +94,18 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// Build completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
-	messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
-	messages = append(messages, NewTextCompletionMessage(RoleUser, args.Prompt))
-	messages = append(messages, NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByParent(s.ParentID))))...)
+	messages = append(messages, s.NewCompletionMessages(s.ExpandMessages(s.Messages(FilterByTool(AnalystAgentName)), func(m *Message) []*Message {
+		// Expand into list of the current message and all its direct children
+		res := append([]*Message{m}, s.Messages(FilterByParent(s.ParentID))...)
+
+		// Return only if it contains a result message. (If it doesn't, it means it was interrupted and may be inconsistent.)
+		for _, rm := range res {
+			if rm.Type == MessageTypeResult {
+				return res
+			}
+		}
+		return nil
+	}))...)
 
 	// Run an LLM tool call loop
 	var response string
