@@ -262,14 +262,6 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		return fmt.Errorf("error parsing .env: %w", err)
 	}
 
-	if !full {
-		os.Setenv("RILL_ADMIN_METRICS_EXPORTER", "prometheus")
-		os.Setenv("RILL_ADMIN_TRACES_EXPORTER", "")
-		os.Setenv("RILL_RUNTIME_METRICS_EXPORTER", "prometheus")
-		os.Setenv("RILL_RUNTIME_TRACES_EXPORTER", "")
-		logInfo.Printf("Minimal mode: Disabled OTEL exporters (using prometheus for metrics, noop for traces)\n")
-	}
-
 	if reset {
 		err := s.resetState(ctx)
 		if err != nil {
