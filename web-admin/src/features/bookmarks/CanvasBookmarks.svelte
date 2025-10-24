@@ -1,24 +1,30 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
-  import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
+  import { getBookmarksQueryOptions } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     categorizeBookmarks,
     parseBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
-  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors.ts";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
   import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { writable } from "svelte/store";
 
   export let organization: string;
   export let project: string;
   export let canvasName: string;
 
   $: ({ instanceId } = $runtime);
-  $: projectId = useProjectId(organization, project);
+
+  const orgAndProjectNameStore = writable({ organization, project });
+  $: orgAndProjectNameStore.set({ organization, project });
+
+  const canvasNameStore = writable(canvasName);
+  $: canvasNameStore.set(canvasName);
 
   $: ({
     canvasEntity: {
@@ -51,11 +57,15 @@
     selectedTimezone: $selectedTimezone,
   };
 
-  $: bookmarks = getBookmarks($projectId.data, ResourceKind.Canvas, canvasName);
-  $: parsedBookmarks = parseBookmarks(
-    $bookmarks.data?.bookmarks ?? [],
-    $page.url.searchParams,
+  const bookmarksQuery = createQuery(
+    getBookmarksQueryOptions(
+      orgAndProjectNameStore,
+      ResourceKind.Canvas,
+      canvasNameStore,
+    ),
   );
+  $: bookmarks = $bookmarksQuery.data?.bookmarks ?? [];
+  $: parsedBookmarks = parseBookmarks(bookmarks, $page.url.searchParams);
   $: categorizedBookmarks = categorizeBookmarks(parsedBookmarks);
 </script>
 
@@ -65,7 +75,7 @@
   metricsViewNames={$metricViewNames}
   resourceKind={ResourceKind.Canvas}
   resourceName={canvasName}
-  bookmarksResp={$bookmarks.data?.bookmarks ?? []}
+  {bookmarks}
   {categorizedBookmarks}
   {filtersState}
   {timeControlState}
