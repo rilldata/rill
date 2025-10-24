@@ -6,17 +6,14 @@
     categorizeBookmarks,
     parseBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
-  import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
-  import { useProjectId } from "@rilldata/web-admin/features/projects/selectors.ts";
-  import { getMetricsViewTimeRangeOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
-  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-  import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
+  import { getBookmarksQueryOptions } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { createUrlForExploreYAMLDefaultState } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
-  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
-  import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+  import {
+    getFilterStateFromNameStore,
+    getTimeControlsStateFromNameStore,
+  } from "@rilldata/web-common/features/dashboards/stores/utils.ts";
   import { createRillDefaultExploreUrlParamsV2 } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { getExploreValidSpecOptions } from "@rilldata/web-common/features/explores/selectors.ts";
   import { createQuery } from "@tanstack/svelte-query";
   import { writable } from "svelte/store";
 
@@ -25,21 +22,11 @@
   export let metricsViewName: string;
   export let exploreName: string;
 
+  const orgAndProjectNameStore = writable({ organization, project });
+  $: orgAndProjectNameStore.set({ organization, project });
+
   const exploreNameStore = writable(exploreName);
   $: exploreNameStore.set(exploreName);
-
-  $: projectId = useProjectId(organization, project);
-  const validSpecQuery = createQuery(
-    getExploreValidSpecOptions(exploreNameStore),
-  );
-
-  $: metricsViewSpec = $validSpecQuery.data?.metricsView ?? {};
-  $: exploreSpec = $validSpecQuery.data?.explore ?? {};
-
-  const metricsViewTimeRangeQuery = createQuery(
-    getMetricsViewTimeRangeOptions(exploreNameStore),
-  );
-  $: timeRangeSummary = $metricsViewTimeRangeQuery.data?.timeRangeSummary;
 
   const urlForExploreYAMLDefaultState =
     createUrlForExploreYAMLDefaultState(exploreNameStore);
@@ -47,39 +34,23 @@
   const rillDefaultExploreURLParams =
     createRillDefaultExploreUrlParamsV2(exploreNameStore);
 
-  $: exploreState = useExploreState(exploreName);
-  $: filtersState = <FiltersState>{
-    whereFilter: $exploreState?.whereFilter,
-    dimensionsWithInlistFilter: $exploreState?.dimensionsWithInlistFilter,
-    dimensionThresholdFilters: $exploreState?.dimensionThresholdFilters,
-    dimensionFilterExcludeMode: $exploreState?.dimensionFilterExcludeMode,
-  };
-  $: exploreTimeControlState = $exploreState
-    ? getTimeControlState(
-        metricsViewSpec,
-        exploreSpec,
-        timeRangeSummary,
-        $exploreState,
-      )
-    : undefined;
-  $: timeControlState = <TimeControlState>{
-    selectedTimeRange: exploreTimeControlState?.selectedTimeRange,
-    selectedComparisonTimeRange:
-      exploreTimeControlState?.selectedComparisonTimeRange,
-    showTimeComparison: exploreTimeControlState?.showTimeComparison,
-    selectedTimezone: $exploreState?.selectedTimezone,
-  };
+  const filtersStore = getFilterStateFromNameStore(exploreNameStore);
+  const timeControlsStore = getTimeControlsStateFromNameStore(exploreNameStore);
 
   const exploreBookmarkDataTransformer =
     createExploreBookmarkLegacyDataTransformer(exploreNameStore);
 
-  $: bookmarks = getBookmarks(
-    $projectId.data,
-    ResourceKind.Explore,
-    exploreName,
+  const bookmarksQuery = createQuery(
+    getBookmarksQueryOptions(
+      orgAndProjectNameStore,
+      ResourceKind.Explore,
+      exploreNameStore,
+    ),
   );
+  $: bookmarks = $bookmarksQuery.data?.bookmarks ?? [];
+
   $: parsedBookmarks = parseBookmarks(
-    $bookmarks.data?.bookmarks ?? [],
+    bookmarks,
     $page.url.searchParams,
     $rillDefaultExploreURLParams,
     $exploreBookmarkDataTransformer,
@@ -93,10 +64,10 @@
   metricsViewNames={[metricsViewName]}
   resourceKind={ResourceKind.Explore}
   resourceName={exploreName}
-  bookmarksResp={$bookmarks.data?.bookmarks ?? []}
+  {bookmarks}
   {categorizedBookmarks}
   defaultUrlParams={$rillDefaultExploreURLParams}
   defaultHomeBookmarkUrl={$urlForExploreYAMLDefaultState}
-  {filtersState}
-  {timeControlState}
+  filtersState={$filtersStore}
+  timeControlState={$timeControlsStore}
 />

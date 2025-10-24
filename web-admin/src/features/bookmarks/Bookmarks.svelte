@@ -18,8 +18,8 @@
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import HomeBookmarkButton from "@rilldata/web-admin/features/bookmarks/HomeBookmarkButton.svelte";
   import {
+    getProjectIdQueryOptions,
     getProjectPermissions,
-    useProjectId,
   } from "@rilldata/web-admin/features/projects/selectors.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -36,15 +36,16 @@
   import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon, BookmarkPlusIcon } from "lucide-svelte";
+  import { writable } from "svelte/store";
 
   export let organization: string;
   export let project: string;
   export let metricsViewNames: string[];
   export let resourceKind: ResourceKind;
   export let resourceName: string;
-  export let bookmarksResp: V1Bookmark[];
+  export let bookmarks: V1Bookmark[];
   export let categorizedBookmarks: Bookmarks;
   export let defaultUrlParams: URLSearchParams | undefined = undefined;
   export let defaultHomeBookmarkUrl: string = "";
@@ -56,13 +57,18 @@
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+  const orgAndProjectNameStore = writable({ organization: "", project: "" });
+  $: orgAndProjectNameStore.set({ organization, project });
 
-  $: curUrlParams = $page.url.searchParams;
-
-  $: projectId = useProjectId(organization, project);
+  const projectIdQuery = createQuery(
+    getProjectIdQueryOptions(orgAndProjectNameStore),
+  );
+  $: projectId = $projectIdQuery.data ?? "";
 
   $: projectPermissions = getProjectPermissions(organization, project);
   $: manageProject = $projectPermissions.data?.manageProject;
+
+  $: curUrlParams = $page.url.searchParams;
 
   const queryClient = useQueryClient();
   const bookmarkCreator = createAdminServiceCreateBookmark();
@@ -74,7 +80,7 @@
       curUrlParams,
       defaultUrlParams,
     });
-    const homeBookmark = bookmarksResp.find(isHomeBookmark);
+    const homeBookmark = bookmarks.find(isHomeBookmark);
 
     if (homeBookmark) {
       await $bookmarkUpdater.mutateAsync({
@@ -92,7 +98,7 @@
         data: {
           displayName: "Go to Home",
           description: "",
-          projectId: $projectId.data,
+          projectId,
           resourceKind,
           resourceName,
           shared: true,
@@ -107,7 +113,7 @@
     });
     return queryClient.refetchQueries({
       queryKey: getAdminServiceListBookmarksQueryKey({
-        projectId: $projectId.data ?? "",
+        projectId,
         resourceKind,
         resourceName,
       }),
@@ -129,7 +135,7 @@
     });
     return queryClient.refetchQueries({
       queryKey: getAdminServiceListBookmarksQueryKey({
-        projectId: $projectId.data ?? "",
+        projectId,
         resourceKind,
         resourceName,
       }),
@@ -233,6 +239,9 @@
 
 {#if showDialog}
   <BookmarksFormBookmarksFormDialog
+    {organization}
+    {project}
+    {projectId}
     {bookmark}
     {metricsViewNames}
     {resourceKind}

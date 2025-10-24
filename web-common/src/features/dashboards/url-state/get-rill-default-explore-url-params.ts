@@ -2,12 +2,12 @@ import {
   type CompoundQueryResult,
   getCompoundQuery,
 } from "@rilldata/web-common/features/compound-query-result";
-import { getMetricsViewTimeRangeOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import {
-  getExploreValidSpecOptions,
+  getExploreValidSpecQueryOptions,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
 import {
@@ -75,24 +75,24 @@ export function createRillDefaultExploreUrlParams(
  * Version of createRillDefaultExploreUrlParams that is meant to have a stable non-reactive query object.
  * All reactivity will instead be in the query options.
  *
- * Uses {@link getExploreValidSpecOptions} and {@link getMetricsViewTimeRangeOptions} for reactive query options.
+ * Uses {@link getExploreValidSpecQueryOptions} and {@link getMetricsViewTimeRangeFromExploreQueryOptions} for reactive query options.
  * TODO: replace {@link createRillDefaultExploreUrlParams} with this
  */
 export function createRillDefaultExploreUrlParamsV2(
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(exploreNameStore),
   );
   const timeRangeQuery = createQuery(
-    getMetricsViewTimeRangeOptions(exploreNameStore),
+    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
   );
 
   return derived(
     [validSpecQuery, timeRangeQuery],
     ([validSpecResp, timeRangeResp]) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
       const timeRangeSummary = timeRangeResp.data?.timeRangeSummary;
 
       if (

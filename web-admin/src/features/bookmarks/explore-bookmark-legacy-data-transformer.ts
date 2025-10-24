@@ -1,11 +1,11 @@
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.ts";
 import {
   getMetricsViewSchemaOptions,
-  getMetricsViewTimeRangeOptions,
+  getMetricsViewTimeRangeFromExploreQueryOptions,
 } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
-import { getExploreValidSpecOptions } from "@rilldata/web-common/features/explores/selectors.ts";
+import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors.ts";
 import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
@@ -19,10 +19,10 @@ export function createExploreBookmarkLegacyDataTransformer(
   exploreNameStore: Readable<string>,
 ) {
   const validSpecQuery = createQuery(
-    getExploreValidSpecOptions(exploreNameStore),
+    getExploreValidSpecQueryOptions(exploreNameStore),
   );
   const timeRangeQuery = createQuery(
-    getMetricsViewTimeRangeOptions(exploreNameStore),
+    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
   );
   const schemaQuery = createQuery(
     getMetricsViewSchemaOptions(exploreNameStore),
@@ -31,8 +31,8 @@ export function createExploreBookmarkLegacyDataTransformer(
   return derived(
     [validSpecQuery, timeRangeQuery, schemaQuery],
     ([validSpecResp, timeRangeResp, schemaResp]) => {
-      const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-      const exploreSpec = validSpecResp.data?.explore ?? {};
+      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
       const timeRangeSummary = timeRangeResp.data?.timeRangeSummary;
       const schema = schemaResp.data?.schema ?? {};
 

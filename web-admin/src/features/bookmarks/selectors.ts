@@ -1,9 +1,14 @@
 import {
   createAdminServiceGetCurrentUser,
   createAdminServiceListBookmarks,
+  getAdminServiceListBookmarksQueryOptions,
   type V1Bookmark,
   type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
+import {
+  getProjectIdQueryOptions,
+  type OrgAndProjectNameStore,
+} from "@rilldata/web-admin/features/projects/selectors.ts";
 import {
   type CompoundQueryResult,
   getCompoundQuery,
@@ -18,8 +23,39 @@ import { useExploreValidSpec } from "@rilldata/web-common/features/explores/sele
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
+import { derived, type Readable } from "svelte/store";
+
+export function getBookmarksQueryOptions(
+  orgAndProjectNameStore: OrgAndProjectNameStore,
+  resourceKind: ResourceKind, // This doesnt change
+  resourceNameStore: Readable<string>,
+) {
+  const projectIdQuery = createQuery(
+    getProjectIdQueryOptions(orgAndProjectNameStore),
+  );
+
+  return derived(
+    [createAdminServiceGetCurrentUser(), projectIdQuery, resourceNameStore],
+    ([userResp, projectIdQueryResp, resourceName]) => {
+      const hasUser = userResp.data?.user;
+      const projectId = projectIdQueryResp.data;
+
+      return getAdminServiceListBookmarksQueryOptions(
+        {
+          projectId,
+          resourceKind,
+          resourceName,
+        },
+        {
+          query: {
+            enabled: hasUser && !!projectId,
+          },
+        },
+      );
+    },
+  );
+}
 
 export function getBookmarks(
   projectId: string,
@@ -53,6 +89,7 @@ export function getHomeBookmarkExploreState(
   metricsViewName: string,
   exploreName: string,
 ): CompoundQueryResult<Partial<ExploreState> | null> {
+  // TODO: refactor to use query options and a stable query.
   return getCompoundQuery(
     [
       getBookmarks(projectId, ResourceKind.Explore, exploreName),
