@@ -3,10 +3,12 @@
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
+  import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
-  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
+  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import {
     ReportRunAs,
@@ -26,11 +28,12 @@
   export let formId: string;
   export let data: Readable<ReportValues>;
   export let errors: SuperFormErrors<ReportValues>;
-  export let submit: () => void;
   export let enhance;
-  export let exploreName: string;
-  export let filters: Filters;
-  export let timeControls: TimeControls;
+  export let filters: Filters | undefined = undefined;
+  export let timeControls: TimeControls | undefined = undefined;
+  export let submit: () => void;
+  export let handleExploreChange: ((exploreName: string) => void) | undefined =
+    undefined;
 
   const RUN_AS_OPTIONS = [
     {
@@ -51,6 +54,18 @@
 
   $: ({ instanceId } = $runtime);
 
+  const { fullPageReportEditor } = featureFlags;
+
+  $: explores = useValidExplores(instanceId);
+  $: exploreOptions =
+    $explores.data?.map((res) => {
+      const name = res.meta!.name!.name!; // name is never null
+      return {
+        value: name,
+        label: res.explore?.state?.validSpec?.displayName ?? name,
+      };
+    }) ?? [];
+
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
 </script>
 
@@ -61,7 +76,6 @@
   on:submit|preventDefault={submit}
   use:enhance
 >
-  <span>Email recurring exports to recipients.</span>
   <div class="flex flex-col gap-y-3 w-full h-[600px] overflow-y-scroll">
     <Input
       bind:value={$data["title"]}
@@ -70,6 +84,16 @@
       label="Report title"
       placeholder="My report"
     />
+    {#if $fullPageReportEditor}
+      <Select
+        bind:value={$data["exploreName"]}
+        id="exploreName"
+        label="Explore"
+        options={exploreOptions}
+        onChange={handleExploreChange}
+        placeholder="Select an explore"
+      />
+    {/if}
     <Select
       bind:value={$data["webOpenMode"]}
       id="webOpenMode"
@@ -82,7 +106,7 @@
         {selectedRunAsOption.description}
       </div>
     {/if}
-    <ScheduleForm {data} {exploreName} />
+    <ScheduleForm {data} exploreName={$data["exploreName"]} />
     <Select
       bind:value={$data["exportFormat"]}
       id="exportFormat"
@@ -124,18 +148,20 @@
       </Tooltip>
     </div>
 
-    <div class="flex flex-col gap-y-3">
-      <InputLabel label="Filters" id="filters" capitalize={false} />
-      <FiltersForm {filters} {timeControls} side="top" />
-    </div>
+    {#if !$fullPageReportEditor && filters && timeControls}
+      <div class="flex flex-col gap-y-3">
+        <InputLabel label="Filters" id="filters" capitalize={false} />
+        <FiltersForm {filters} {timeControls} side="top" />
+      </div>
 
-    <RowsAndColumnsForm
-      bind:rows={$data["rows"]}
-      bind:columns={$data["columns"]}
-      columnErrors={$errors["columns"]}
-      {instanceId}
-      {exploreName}
-    />
+      <RowsAndColumnsForm
+        bind:rows={$data["rows"]}
+        bind:columns={$data["columns"]}
+        columnErrors={$errors["columns"]}
+        {instanceId}
+        exploreName={$data["exploreName"]}
+      />
+    {/if}
 
     <MultiInput
       id="emailRecipients"

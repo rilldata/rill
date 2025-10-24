@@ -46,10 +46,12 @@ export function getQueryNameFromQuery(query: V1Query) {
 
 export function getNewReportInitialFormValues(
   userEmail: string | undefined,
+  exploreName: string,
   aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
   return {
     title: "",
+    exploreName,
     webOpenMode: ReportRunAs.Creator as string,
     ...getInitialScheduleFormValues(),
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
@@ -65,8 +67,13 @@ export function getExistingReportInitialFormValues(
   userEmail: string | undefined,
   aggregationRequest: V1MetricsViewAggregationRequest,
 ) {
+  const exploreName =
+    reportSpec.annotations?.["explore"] ??
+    getExploreName(reportSpec.annotations?.web_open_path ?? "");
+
   return {
     title: reportSpec.displayName ?? "",
+    exploreName,
     webOpenMode:
       reportSpec.annotations?.web_open_mode || (ReportRunAs.Creator as string),
     ...getExistingScheduleFormValues(reportSpec.refreshSchedule),
