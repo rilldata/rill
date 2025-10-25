@@ -30,9 +30,10 @@ func (t *ReadFile) Spec() *mcp.Tool {
 	}
 }
 
-func (t *ReadFile) CheckAccess(claims *runtime.SecurityClaims) bool {
+func (t *ReadFile) CheckAccess(ctx context.Context) bool {
 	// NOTE: Disabled pending further improvements
-	// return claims.Can(runtime.ReadRepo)
+	// s := GetSession(ctx)
+	// return s.Claims().Can(runtime.ReadRepo)
 	return false
 }
 

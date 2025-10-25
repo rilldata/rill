@@ -44,8 +44,9 @@ func (t *RouterAgent) Spec() *mcp.Tool {
 	}
 }
 
-func (t *RouterAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return claims.Can(runtime.UseAI)
+func (t *RouterAgent) CheckAccess(ctx context.Context) bool {
+	s := GetSession(ctx)
+	return s.Claims().Can(runtime.UseAI)
 }
 
 func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*RouterAgentResult, error) {
@@ -64,7 +65,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		// must(s.Tool(DeveloperAgentName)), // Temporarily disabled
 	}
 	candidates = slices.DeleteFunc(candidates, func(agent *CompiledTool) bool {
-		return !agent.CheckAccess(s.Claims())
+		return !agent.CheckAccess(ctx)
 	})
 
 	// Find agent to invoke
@@ -168,14 +169,21 @@ You must answer with a single agent choice and no further explanation. Pick only
 	})
 }
 
+// whitespaceRegexp matches one or more whitespace characters (including newlines).
 var whitespaceRegexp = regexp.MustCompile(`\s+`)
 
+// promptToTitle generates a truncated conversation title from a prompt.
 func promptToTitle(message string) string {
+	// Collapse whitespace to single spaces.
 	title := whitespaceRegexp.ReplaceAllString(message, " ")
 	title = strings.TrimSpace(title)
+
+	// Truncate to 50 characters.
 	if len(title) > 50 {
 		title = title[:47] + "..."
 	}
+
+	// Fallback title if empty.
 	if title == "" {
 		return "New Conversation"
 	}

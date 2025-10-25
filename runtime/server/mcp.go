@@ -41,7 +41,7 @@ func (s *Server) mcpHTTPHandler() http.Handler {
 		}
 
 		// Create MCP server for the session with middleware.
-		srv := sess.MCPServer()
+		srv := sess.MCPServer(r.Context())
 		srv.AddReceivingMiddleware(observability.MCPMiddleware())
 		srv.AddReceivingMiddleware(middleware.TimeoutMCPMiddleware(func(method, tool string) time.Duration {
 			// Sets an upper limit, but note that some tools enforce shorter timeouts in their implementation.

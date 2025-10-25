@@ -33,9 +33,10 @@ func (t *WriteFile) Spec() *mcp.Tool {
 	}
 }
 
-func (t *WriteFile) CheckAccess(claims *runtime.SecurityClaims) bool {
+func (t *WriteFile) CheckAccess(ctx context.Context) bool {
 	// NOTE: Disabled pending further improvements
-	// return claims.Can(runtime.EditRepo)
+	// s := GetSession(ctx)
+	// return s.Claims().Can(runtime.EditRepo)
 	return false
 }
 

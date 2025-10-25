@@ -37,8 +37,9 @@ func (t *GetMetricsView) Spec() *mcp.Tool {
 	}
 }
 
-func (t *GetMetricsView) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return claims.Can(runtime.ReadObjects)
+func (t *GetMetricsView) CheckAccess(ctx context.Context) bool {
+	s := GetSession(ctx)
+	return s.Claims().Can(runtime.ReadObjects)
 }
 
 func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) (*GetMetricsViewResult, error) {
@@ -60,6 +61,10 @@ func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) 
 	}
 	if !access {
 		return nil, fmt.Errorf("resource not found")
+	}
+
+	if r.GetMetricsView().State.ValidSpec == nil {
+		return nil, fmt.Errorf("metrics view %q is invalid", args.MetricsView)
 	}
 
 	specJSON, err := protojson.Marshal(r.GetMetricsView().State.ValidSpec)

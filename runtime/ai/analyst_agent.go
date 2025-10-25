@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -55,8 +56,9 @@ func (t *AnalystAgent) Spec() *mcp.Tool {
 	}
 }
 
-func (t *AnalystAgent) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return claims.Can(runtime.UseAI)
+func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
+	s := GetSession(ctx)
+	return s.Claims().Can(runtime.UseAI)
 }
 
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {
@@ -71,7 +73,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 		metricsViewName = metricsView.Meta.Name.Name
 
-		_, err = s.CallTool(ctx, RoleAssistant, "query_metrics_view_time_range", nil, &QueryMetricsViewTimeRangeArgs{
+		_, err = s.CallTool(ctx, RoleAssistant, "query_metrics_view_summary", nil, &QueryMetricsViewSummaryArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
@@ -106,7 +108,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if args.Explore == "" {
 		tools = append(tools, "list_metrics_views", "get_metrics_view")
 	}
-	tools = append(tools, "query_metrics_view_time_range", "query_metrics_view")
+	tools = append(tools, "query_metrics_view_summary", "query_metrics_view")
 
 	// Build completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
@@ -128,7 +130,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	err = s.Complete(ctx, "Analyst loop", &response, &CompleteOptions{
 		Messages:      messages,
 		Tools:         tools,
-		MaxIterations: 15,
+		MaxIterations: 20,
 		UnwrapCall:    true,
 	})
 	if err != nil {
@@ -142,16 +144,24 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsView, explore st
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
+	ff, err := t.Runtime.FeatureFlags(ctx, session.InstanceID(), session.Claims())
+	if err != nil {
+		return "", fmt.Errorf("failed to get feature flags: %w", err)
+	}
 	data := map[string]any{
 		"ai_instructions": session.ProjectInstructions(),
 		"metrics_view":    metricsView,
 		"explore":         explore,
+		"feature_flags":   ff,
+		"now":             time.Now(),
 	}
 
 	// Generate the system prompt
 	return executeTemplate(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights.
 You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+
+Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "2006-01-02" }}).
 </role>
 
 <communication_style>
@@ -164,6 +174,7 @@ You systematically explore data using available metrics tools, then apply analyt
 **Phase 1: discovery (setup)**
 {{ if .explore }}
 Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_view }}".
+The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
 The metrics view's definition and time range of available data has been provided in your tool calls. You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
@@ -171,7 +182,7 @@ The metrics view's definition and time range of available data has been provided
 Follow these steps in order:
 1. **Discover**: Use "list_metrics_views" to identify available datasets
 2. **Understand**: Use "get_metrics_view" to understand measures and dimensions for the selected view  
-3. **Scope**: Use "query_metrics_view_time_range" to determine the span of available data
+3. **Scope**: Use "query_metrics_view_summary" to determine the span of available data
 {{ end }}
 
 **Phase 2: analysis (loop)**
@@ -184,12 +195,30 @@ In each iteration, you should:
 - **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?
 - **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore
 - **Act**: Execute the query and evaluate results in <thinking> tags
+{{ if .feature_flags.chat_charts }}
+
+**Phase 3: visualization**
+Create a chart: After running "query_metrics_view" create a chart using "create_chart" unless:
+- The user explicitly requests a table-only response
+- The query returns only a single scalar value
+- The data structure doesn't lend itself to visualization (e.g., text-heavy data)
+- There is no appropriate chart type which can be created for the underlying data
+
+Choose the appropriate chart type based on your data:
+- Time series data: line_chart or area_chart (better for cummalative trends)
+- Category comparisons: bar_chart or stacked_bar
+- Part-to-whole relationships: donut_chart
+- Multiple dimensions: Use color encoding with bar_chart, stacked_bar or line_chart
+- Two measures from the same metrics view: Use combo_chart
+- Multiple measures from the same metrics view (more that 2): Use stacked bar chart with multiple measure fields
+- Distribution across two dimensions: heatmap
+{{ end }}
 </process>
 
 <analysis_guidelines>
 **Phase 1: discovery**: 
+- Briefly explain your approach before starting
 - Complete each step fully before proceeding
-- Explain your approach briefly before starting
 - If any step fails, investigate and adapt
 
 **Phase 2: analysis**:
@@ -211,6 +240,12 @@ In each iteration, you should:
 - Use only the exact numbers returned by the tools in your analysis
 </analysis_guidelines>
 
+<guardrails>
+You only engage in conversation that relates to the project's data.
+If a question seems unrelated, first inspect the available metrics views to see if it fits the dataset's domain.
+Decline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.
+</guardrails>
+
 <thinking>
 After each query in Phase 2, think through:
 - What patterns or anomalies did this reveal?
@@ -221,11 +256,9 @@ After each query in Phase 2, think through:
 </thinking>
 
 <output_format>
-Format your analysis as follows:
+**Format your analysis as follows**:
 {{ backticks }}markdown
-[Brief acknowledgment and explanation of approach]
-
-Based on my systematic analysis, here are the key insights:
+Based on the data analysis, here are the key insights:
 
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
@@ -236,8 +269,14 @@ Based on my systematic analysis, here are the key insights:
 3. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-[Offer specific follow-up analysis options]
+[Optional: Offer specific follow-up analysis options]
 {{ backticks }}
+
+**Citation Requirements**:
+- Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user
+- Citations must be inline at the end of a sentence or paragraph, not on a separate line
+- Use descriptive text in sentence case (e.g. "This suggests Android is valuable ([Device breakdown](url))." or "Revenue increased 25%% ([Revenue by country](url)).")
+- When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph
 </output_format>
 
 {{ if .ai_instructions }}

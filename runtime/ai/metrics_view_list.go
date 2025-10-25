@@ -35,8 +35,9 @@ func (t *ListMetricsViews) Spec() *mcp.Tool {
 	}
 }
 
-func (t *ListMetricsViews) CheckAccess(claims *runtime.SecurityClaims) bool {
-	return claims.Can(runtime.ReadObjects)
+func (t *ListMetricsViews) CheckAccess(ctx context.Context) bool {
+	s := GetSession(ctx)
+	return s.Claims().Can(runtime.ReadObjects)
 }
 
 func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsArgs) (*ListMetricsViewsResult, error) {

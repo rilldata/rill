@@ -19,10 +19,16 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+// Tracer for instrumenting requests.
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/ai")
 
 // Runner tracks available tools and manages the lifecycle of AI sessions.
 type Runner struct {
@@ -44,8 +50,9 @@ func NewRunner(rt *runtime.Runtime) *Runner {
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
-	RegisterTool(r, &QueryMetricsViewTimeRange{Runtime: rt})
+	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
+	RegisterTool(r, &CreateChart{Runtime: rt})
 
 	RegisterTool(r, &DevelopModel{Runtime: rt})
 	RegisterTool(r, &DevelopMetricsView{Runtime: rt})
@@ -143,7 +150,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 
 	// Check access: for now, only allow users to access their own sessions
 	if opts.Claims.UserID != session.OwnerID {
-		return nil, drivers.ErrNotFound
+		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
 
 	// Create the session
@@ -175,7 +182,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 // Tool is an interface for an AI tool.
 type Tool[In, Out any] interface {
 	Spec() *mcp.Tool
-	CheckAccess(claims *runtime.SecurityClaims) bool
+	CheckAccess(context.Context) bool
 	Handler(ctx context.Context, args In) (Out, error)
 }
 
@@ -183,7 +190,7 @@ type Tool[In, Out any] interface {
 type CompiledTool struct {
 	Name                  string
 	Spec                  *mcp.Tool
-	CheckAccess           func(claims *runtime.SecurityClaims) bool
+	CheckAccess           func(context.Context) bool
 	UnmarshalArgs         func(content string) (any, error)
 	UnmarshalResult       func(content string) (any, error)
 	JSONHandler           func(ctx context.Context, input json.RawMessage) (json.RawMessage, error)
@@ -714,6 +721,15 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 	}
 
 	handlerOut, handlerErr := func() (handlerOut any, handlerErr error) {
+		// Instrumentation and logging
+		callCtx, span := tracer.Start(callCtx, "ai.Session.Call", trace.WithAttributes(
+			attribute.String("ai_session_id", s.id),
+			attribute.String("tool", opts.Name),
+			attribute.String("args", string(argsJSON)),
+		))
+		s.logger.Info("tool call started", zap.String("tool", opts.Name))
+		start := time.Now()
+
 		// Gracefully handle panics in the tool handler
 		defer func() {
 			// Recover panics and handle as internal errors
@@ -725,6 +741,13 @@ func (s *Session) Call(ctx context.Context, opts *CallOptions) (*CallResult, err
 				// Return an internal error
 				handlerErr = NewInternalError(fmt.Errorf("panic caught: %v\n\n%s", err, string(stack)))
 			}
+
+			// Finish instrumentation
+			if handlerErr != nil {
+				span.SetAttributes(attribute.String("err", handlerErr.Error()))
+			}
+			span.End()
+			s.logger.Info("tool call finished", zap.String("tool", opts.Name), zap.Duration("duration", time.Since(start)), zap.Error(handlerErr))
 		}()
 
 		return opts.Handler(callCtx)
@@ -802,7 +825,7 @@ func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions
 			if !ok {
 				return nil, fmt.Errorf("unknown tool %q", opts.Tool)
 			}
-			if !t.CheckAccess(s.Claims()) {
+			if !t.CheckAccess(ctx) {
 				return nil, fmt.Errorf("access denied to tool %q", opts.Tool)
 			}
 			return t.JSONHandler(ctx, argsJSON)
@@ -819,6 +842,8 @@ func (s *Session) CallTool(ctx context.Context, role Role, toolName string, out,
 		Args: args,
 	})
 }
+
+const llmRequestTimeout = 60 * time.Second
 
 // CompleteOptions provides options for Session.Complete.
 type CompleteOptions struct {
@@ -897,8 +922,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	}
 
 	// Create a lambda that runs the complete loop.
-	completeLoop := func(ctx context.Context) (any, error) {
-		// Reload session from the new context (may be a sub-call if CallLambda was used.)
+	completeLoop := func(ctx context.Context) (outVal any, outErr error) {
+		// Reload session from the new context (may be a sub-call when !opts.UnwrapCall)
 		s := GetSession(ctx)
 
 		// Get LLM handle
@@ -913,20 +938,36 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 		// TODO: For durable execution, add messages from current scope.
 
+		// Log start
+		s.logger.Debug("completion started", zap.Int("messages_count", len(messages)), zap.Int("tools_count", len(tools)), zap.Int("max_iterations", opts.MaxIterations), observability.ZapCtx(ctx))
+		defer s.logger.Debug("completion finished", zap.Int("iterations", opts.MaxIterations), zap.Int("messages_total", len(messages)), zap.Int("messages_added", len(messages)-len(opts.Messages)), zap.Error(outErr), observability.ZapCtx(ctx))
+
 		// Complete and execute tool calls in a loop.
 		var result *aiv1.CompletionMessage
 		for i := range opts.MaxIterations {
 			// Disable tool calls in the last iteration
-			if i+1 == opts.MaxIterations {
+			final := i+1 == opts.MaxIterations
+			if final {
 				tools = nil
+				messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
 			}
 
+			// Truncate messages to fit within LLM context window.
+			truncMessages := maybeTruncateMessages(messages)
+
+			// Log iteration
+			s.logger.Debug("completion iteration started", zap.Int("iteration", i), zap.Bool("iteration_is_final", final), zap.Int("messages_count", len(messages)), zap.Int("truncated_messages_count", len(truncMessages)), observability.ZapCtx(ctx))
+
 			// Call the LLM to complete the messages.
-			res, err := llm.Complete(ctx, maybeTruncateMessages(messages), tools, outputSchema)
+			llmCtx, llmCancel := context.WithTimeout(ctx, llmRequestTimeout)
+			res, err := llm.Complete(llmCtx, truncMessages, tools, outputSchema)
+			llmCancel()
 			if err != nil {
 				return nil, fmt.Errorf("completion failed: %w", err)
 			}
 
+			// Telemetry
+			s.logger.Debug("completion iteration got response", zap.Int("iteration", i), zap.Int("response_blocks_count", len(res.Content)), observability.ZapCtx(ctx))
 			// TODO: Emit `llm_completion` metric messages_count, input_text_length, output_text_length, input_tokens, output_tokens
 
 			// Break the tool call loop if no tool calls were requested.
@@ -986,7 +1027,6 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		if result == nil {
 			return nil, fmt.Errorf("completion loop did not produce a final result")
 		}
-		var outVal any
 		for _, block := range result.Content {
 			switch block := block.BlockType.(type) {
 			case *aiv1.ContentBlock_Text:

@@ -34,9 +34,10 @@ func (t *DevelopModel) Spec() *mcp.Tool {
 	}
 }
 
-func (t *DevelopModel) CheckAccess(claims *runtime.SecurityClaims) bool {
+func (t *DevelopModel) CheckAccess(ctx context.Context) bool {
 	// NOTE: Disabled pending further improvements
-	// return claims.Can(runtime.EditRepo)
+	// s := GetSession(ctx)
+	// return s.Claims().Can(runtime.EditRepo)
 	return false
 }
 

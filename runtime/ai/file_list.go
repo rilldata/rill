@@ -28,9 +28,10 @@ func (t *ListFiles) Spec() *mcp.Tool {
 	}
 }
 
-func (t *ListFiles) CheckAccess(claims *runtime.SecurityClaims) bool {
+func (t *ListFiles) CheckAccess(ctx context.Context) bool {
 	// NOTE: Disabled pending further improvements
-	// return claims.Can(runtime.ReadRepo)
+	// s := GetSession(ctx)
+	// return s.Claims().Can(runtime.ReadRepo)
 	return false
 }
 
