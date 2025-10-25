@@ -69,6 +69,19 @@ func (p *Parser) parseConnector(node *Node) error {
 	r.ConnectorSpec.TemplatedProperties = templatedProps
 	r.ConnectorSpec.Provision = provision
 	r.ConnectorSpec.ProvisionArgs = provisionArgsPB
+
+	// Add the managed field to Properties so drivers can access it
+	if !tmp.Managed.IsZero() {
+		if r.ConnectorSpec.Properties == nil {
+			r.ConnectorSpec.Properties = make(map[string]string)
+		}
+		if provision {
+			r.ConnectorSpec.Properties["managed"] = "true"
+		} else {
+			r.ConnectorSpec.Properties["managed"] = "false"
+		}
+	}
+
 	return nil
 }
 
