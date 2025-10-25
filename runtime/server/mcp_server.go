@@ -15,8 +15,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/middleware"
-	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -45,16 +43,7 @@ func (s *Server) newMCPServer(ctx context.Context, instanceID string, external b
 	}
 
 	mcpServer := server.NewMCPServer("rill", version,
-		server.WithToolHandlerMiddleware(observability.MCPToolHandlerMiddleware()),
 		server.WithToolHandlerMiddleware(mcpErrorMappingMiddleware),
-		server.WithToolHandlerMiddleware(middleware.TimeoutMCPToolHandlerMiddleware(func(tool string) time.Duration {
-			switch tool {
-			case "query_metrics_view_summary", "query_metrics_view":
-				return 120 * time.Second
-			default:
-				return 20 * time.Second
-			}
-		})),
 		server.WithRecovery(),
 		server.WithToolCapabilities(true),
 		server.WithInstructions(mcpInstructions),
@@ -79,7 +68,9 @@ func (s *Server) newMCPServer(ctx context.Context, instanceID string, external b
 	return mcpServer, nil
 }
 
-func (s *Server) newMCPHTTPHandler() http.Handler {
+// NewMCPHTTPHandler is deprecated in favour of the implementation in mcp.go.
+// TODO: Remove it when all logic has been ported to the new implementation.
+func (s *Server) NewMCPHTTPHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := s.mcpHTTPContextFunc(r.Context(), r)
 		instanceID := mcpInstanceIDFromContext(ctx)

@@ -57,6 +57,13 @@ type CatalogStore interface {
 	InsertConversation(ctx context.Context, ownerID, title string, appContextType string, appContextMetadataJSON string) (string, error)
 	FindMessages(ctx context.Context, conversationID string) ([]*Message, error)
 	InsertMessage(ctx context.Context, conversationID, role string, content []MessageContent) (string, error)
+
+	FindAISessions(ctx context.Context, ownerID string) ([]*AISession, error)
+	FindAISession(ctx context.Context, sessionID string) (*AISession, error)
+	InsertAISession(ctx context.Context, s *AISession) error
+	UpdateAISession(ctx context.Context, s *AISession) error
+	FindAIMessages(ctx context.Context, sessionID string) ([]*AIMessage, error)
+	InsertAIMessage(ctx context.Context, m *AIMessage) error
 }
 
 // Resource is an entry in a catalog store
@@ -164,4 +171,30 @@ type MessageContent struct {
 	ToolResultID      string `json:"tool_result_id,omitempty"`
 	ToolResultContent string `json:"tool_result_content,omitempty"`
 	ToolResultIsError bool   `json:"tool_result_is_error,omitempty"`
+}
+
+// AISession represents a session of AI interaction, such as a chat or MCP connection.
+type AISession struct {
+	ID         string    `db:"id"`
+	InstanceID string    `db:"instance_id"`
+	OwnerID    string    `db:"owner_id"`
+	Title      string    `db:"title"`
+	UserAgent  string    `db:"user_agent"`
+	CreatedOn  time.Time `db:"created_on"`
+	UpdatedOn  time.Time `db:"updated_on"`
+}
+
+// AIMessage represents a message in an AISession.
+type AIMessage struct {
+	ID          string    `db:"id"`
+	ParentID    string    `db:"parent_id"`
+	SessionID   string    `db:"session_id"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+	Index       int       `db:"index"`
+	Role        string    `db:"role"`
+	Type        string    `db:"type"`
+	Tool        string    `db:"tool"`
+	ContentType string    `db:"content_type"`
+	Content     string    `db:"content"`
 }

@@ -37,7 +37,6 @@ import type {
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
   RuntimeServiceGenerateResolverBody,
-  RuntimeServiceGetConversationParams,
   RuntimeServiceGetExploreParams,
   RuntimeServiceGetFileParams,
   RuntimeServiceGetInstanceParams,
@@ -1279,13 +1278,11 @@ export function createRuntimeServiceListConversations<
 export const runtimeServiceGetConversation = (
   instanceId: string,
   conversationId: string,
-  params?: RuntimeServiceGetConversationParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetConversationResponse>({
     url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}`,
     method: "GET",
-    params,
     signal,
   });
 };
@@ -1293,11 +1290,9 @@ export const runtimeServiceGetConversation = (
 export const getRuntimeServiceGetConversationQueryKey = (
   instanceId: string,
   conversationId: string,
-  params?: RuntimeServiceGetConversationParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/ai/conversations/${conversationId}`,
-    ...(params ? [params] : []),
   ] as const;
 };
 
@@ -1307,7 +1302,6 @@ export const getRuntimeServiceGetConversationQueryOptions = <
 >(
   instanceId: string,
   conversationId: string,
-  params?: RuntimeServiceGetConversationParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1322,16 +1316,12 @@ export const getRuntimeServiceGetConversationQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetConversationQueryKey(
-      instanceId,
-      conversationId,
-      params,
-    );
+    getRuntimeServiceGetConversationQueryKey(instanceId, conversationId);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetConversation>>
   > = ({ signal }) =>
-    runtimeServiceGetConversation(instanceId, conversationId, params, signal);
+    runtimeServiceGetConversation(instanceId, conversationId, signal);
 
   return {
     queryKey,
@@ -1360,7 +1350,6 @@ export function createRuntimeServiceGetConversation<
 >(
   instanceId: string,
   conversationId: string,
-  params?: RuntimeServiceGetConversationParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1377,7 +1366,6 @@ export function createRuntimeServiceGetConversation<
   const queryOptions = getRuntimeServiceGetConversationQueryOptions(
     instanceId,
     conversationId,
-    params,
     options,
   );
 
