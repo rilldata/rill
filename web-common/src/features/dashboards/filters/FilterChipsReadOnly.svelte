@@ -17,7 +17,7 @@ The main feature-set component for dashboard filters
   import DimensionFilterReadOnlyChip from "./dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import MeasureFilterReadOnlyChip from "./measure-filters/MeasureFilterReadOnlyChip.svelte";
 
-  export let metricsViewName: string;
+  export let metricsViewNames: string[];
   export let dimensions: MetricsViewSpecDimension[];
   export let measures: MetricsViewSpecMeasure[];
   export let filters: V1Expression | undefined;
@@ -83,7 +83,7 @@ The main feature-set component for dashboard filters
         {#if dimension?.column || dimension?.expression}
           <DimensionFilterReadOnlyChip
             {name}
-            metricsViewNames={[metricsViewName]}
+            {metricsViewNames}
             {mode}
             label={label || name}
             values={selectedValues}

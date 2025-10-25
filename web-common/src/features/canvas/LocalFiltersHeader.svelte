@@ -54,7 +54,7 @@
   >
     <Filter size="16px" className="text-gray-400" />
     <FilterChipsReadOnly
-      metricsViewName={$specStore.metrics_view}
+      metricsViewNames={[$specStore.metrics_view]}
       dimensions={$dimensions}
       measures={$measures}
       dimensionThresholdFilters={$dimensionThresholdFilters}
