@@ -486,7 +486,7 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	}
 
 	// Insert the user in the org and its managed usergroups transactionally.
-	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -642,6 +642,79 @@ func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1
 	return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 }
 
+func (s *Server) GetOrganizationMemberUser(ctx context.Context, req *adminv1.GetOrganizationMemberUserRequest) (*adminv1.GetOrganizationMemberUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org member")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Find the organization member
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, "", true, user.Email, 1, "")
+	if err != nil {
+		return nil, err
+	}
+	if len(members) == 0 {
+		return nil, status.Error(codes.NotFound, "user is not a member of the organization")
+	}
+
+	member := members[0]
+
+	return &adminv1.GetOrganizationMemberUserResponse{
+		Member: orgMemberUserToPB(member),
+	}, nil
+}
+
+func (s *Server) UpdateOrganizationMemberUserAttributes(ctx context.Context, req *adminv1.UpdateOrganizationMemberUserAttributesRequest) (*adminv1.UpdateOrganizationMemberUserAttributesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.email", req.Email),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org member attributes")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Convert protobuf Struct to map[string]any
+	var attributes map[string]any
+	if req.Attributes != nil {
+		attributes = req.Attributes.AsMap()
+	}
+
+	// Update the attributes
+	_, err = s.admin.DB.UpdateOrganizationMemberUserAttributes(ctx, org.ID, user.ID, attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.UpdateOrganizationMemberUserAttributesResponse{}, nil
+}
+
 func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrganizationRequest) (*adminv1.LeaveOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Org),
@@ -767,7 +840,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 	}
 
 	for _, user := range newUsers {
-		err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, false)
+		err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
 		if err != nil {
 			return nil, err
 		}

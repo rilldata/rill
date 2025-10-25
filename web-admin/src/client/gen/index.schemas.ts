@@ -550,6 +550,10 @@ export interface V1GetIFrameResponse {
   ttlSeconds?: number;
 }
 
+export interface V1GetOrganizationMemberUserResponse {
+  member?: V1OrganizationMemberUser;
+}
+
 export interface V1GetOrganizationNameForDomainResponse {
   name?: string;
 }
@@ -887,6 +891,8 @@ export interface V1OrganizationMemberService {
   updatedOn?: string;
 }
 
+export type V1OrganizationMemberUserAttributes = { [key: string]: unknown };
+
 export interface V1OrganizationMemberUser {
   userId?: string;
   userEmail?: string;
@@ -895,6 +901,7 @@ export interface V1OrganizationMemberUser {
   roleName?: string;
   projectsCount?: number;
   usergroupsCount?: number;
+  attributes?: V1OrganizationMemberUserAttributes;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1449,6 +1456,10 @@ export interface V1UpdateBookmarkResponse {
   [key: string]: unknown;
 }
 
+export interface V1UpdateOrganizationMemberUserAttributesResponse {
+  [key: string]: unknown;
+}
+
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
@@ -1484,6 +1495,8 @@ export interface V1User {
   updatedOn?: string;
 }
 
+export type V1UserAuthTokenAttributes = { [key: string]: unknown };
+
 export interface V1UserAuthToken {
   id?: string;
   displayName?: string;
@@ -1491,6 +1504,7 @@ export interface V1UserAuthToken {
   authClientDisplayName?: string;
   representingUserId?: string;
   prefix?: string;
+  attributes?: V1UserAuthTokenAttributes;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -1685,6 +1699,14 @@ export type AdminServiceAddOrganizationMemberUserBody = {
 export type AdminServiceSetOrganizationMemberUserRoleBody = {
   role?: string;
   superuserForceAccess?: boolean;
+};
+
+export type AdminServiceUpdateOrganizationMemberUserAttributesBodyAttributes = {
+  [key: string]: unknown;
+};
+
+export type AdminServiceUpdateOrganizationMemberUserAttributesBody = {
+  attributes?: AdminServiceUpdateOrganizationMemberUserAttributesBodyAttributes;
 };
 
 export type AdminServiceListProjectMemberUsergroupsParams = {

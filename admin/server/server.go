@@ -400,6 +400,17 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		"admin":  projectPermissions.ManageProject,
 	}
 
+	member, err := s.admin.DB.FindOrganizationMemberUsers(ctx, orgID, "", false, user.Email, 1, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(member) > 0 {
+		for k, v := range member[0].Attributes {
+			attr[k] = v
+		}
+	}
+
 	return attr, nil
 }
 
