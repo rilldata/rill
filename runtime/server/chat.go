@@ -14,6 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -22,88 +23,68 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ListConversations returns a list of conversations for an instance.
 func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConversationsRequest) (*runtimev1.ListConversationsResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
 
+	if claims.UserID == "" {
+		return &runtimev1.ListConversationsResponse{}, nil
+	}
+
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	catalogConversations, err := catalog.FindConversations(ctx, claims.UserID)
+	sessions, err := catalog.FindAISessions(ctx, claims.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert catalog conversations to protobuf conversations
-	conversations := make([]*runtimev1.Conversation, len(catalogConversations))
-	for i, conv := range catalogConversations {
-		conversations[i] = runtime.ConversationToPB(conv)
+	res := make([]*runtimev1.Conversation, len(sessions))
+	for i, s := range sessions {
+		res[i] = sessionToPB(s)
 	}
-
 	return &runtimev1.ListConversationsResponse{
-		Conversations: conversations,
+		Conversations: res,
 	}, nil
 }
 
-// GetConversation returns a conversation and its messages.
 func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversationRequest) (*runtimev1.GetConversationResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
 
-	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	catalogConversation, err := catalog.FindConversation(ctx, req.ConversationId)
-	if err != nil {
-		return nil, err
-	}
-
-	// For now, we only allow users to access their own conversations.
-	if catalogConversation.OwnerID != claims.UserID {
-		return nil, status.Error(codes.NotFound, "conversation not found")
-	}
-
-	// Convert catalog conversation to protobuf and fetch messages
-	conversation := runtime.ConversationToPB(catalogConversation)
-
-	// Fetch messages separately and convert them
-	catalogMessages, err := catalog.FindMessages(ctx, req.ConversationId)
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	messages := make([]*runtimev1.Message, 0, len(catalogMessages))
-	for _, msg := range catalogMessages {
-		pbMessage, err := runtime.MessageToPB(msg)
+	messages := session.Messages()
+	messagePBs := make([]*runtimev1.Message, 0, len(messages))
+	for _, msg := range messages {
+		pb, err := messageToPB(session, msg)
 		if err != nil {
 			return nil, err
 		}
-
-		// Filter out system messages unless explicitly requested
-		if msg.Role == "system" && !req.IncludeSystemMessages {
-			continue
-		}
-
-		messages = append(messages, pbMessage)
+		messagePBs = append(messagePBs, pb)
 	}
-	conversation.Messages = messages
 
 	return &runtimev1.GetConversationResponse{
-		Conversation: conversation,
+		Conversation: sessionToPB(session.CatalogSession()),
+		Messages:     messagePBs,
 	}, nil
 }
 
@@ -125,42 +106,74 @@ func (s *serverToolService) ExecuteTool(ctx context.Context, toolName string, to
 
 // Complete runs a conversational AI completion with tool calling support.
 func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, err error) {
+	// Access check
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.UseAI) {
 		return nil, ErrForbidden
 	}
 
 	// Add basic validation - fail fast for invalid requests
-	if len(req.Messages) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "messages cannot be empty")
+	if req.Prompt == "" {
+		return nil, status.Error(codes.InvalidArgument, "prompt cannot be empty")
 	}
 
-	// Handle conversation ID: nil or empty string means create new conversation
-	var conversationID string
-	if req.ConversationId != nil {
-		conversationID = *req.ConversationId
+	// Setup user agent
+	version := s.runtime.Version().Number
+	if version == "" {
+		version = "unknown"
 	}
+	userAgent := fmt.Sprintf("rill/%s", version)
 
-	// Create tool service for this server
-	toolService := &serverToolService{server: s, instanceID: req.InstanceId}
-
-	// Delegate to runtime business logic
-	result, err := s.runtime.CompleteWithTools(ctx, &runtime.CompleteWithToolsOptions{
-		OwnerID:        claims.UserID,
-		InstanceID:     req.InstanceId,
-		ConversationID: conversationID,
-		AppContext:     req.AppContext,
-		Messages:       req.Messages,
-		ToolService:    toolService,
+	// Open the AI session
+	session, err := s.ai.Session(ctx, &ai.SessionOptions{
+		InstanceID: req.InstanceId,
+		SessionID:  req.ConversationId,
+		Claims:     claims,
+		UserAgent:  userAgent,
 	})
 	if err != nil {
 		return nil, err
 	}
+	defer session.Flush(ctx)
 
-	// Transform runtime result to gRPC response
+	// Context
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Open subscription for session messages and stream them to the client in the background
+	var messages []*runtimev1.Message
+	subCh := session.Subscribe()
+	defer session.Unsubscribe(subCh)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg, ok := <-subCh:
+				if !ok {
+					return
+				}
+				pb, err := messageToPB(session, msg)
+				if err != nil {
+					s.logger.Error("failed to convert AI message to protobuf", zap.Error(err))
+					continue
+				}
+				messages = append(messages, pb)
+			}
+		}
+	}()
+
+	// Make the call
+	var res *ai.RouterAgentResult
+	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+		Prompt: req.Prompt,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &runtimev1.CompleteResponse{
-		ConversationId: result.ConversationID,
-		Messages:       result.Messages,
+		ConversationId: session.ID(),
+		Messages:       messages,
 	}, nil
 }
 
@@ -185,8 +198,7 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	userAgent := fmt.Sprintf("rill/%s", version)
 
 	// Open the AI session
-	runner := ai.NewRunner(s.runtime)
-	session, err := runner.Session(stream.Context(), &ai.SessionOptions{
+	session, err := s.ai.Session(stream.Context(), &ai.SessionOptions{
 		InstanceID: req.InstanceId,
 		SessionID:  req.ConversationId,
 		Claims:     claims,
@@ -213,20 +225,14 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 				if !ok {
 					return
 				}
-				pb, err := msg.ToProto()
+				pb, err := messageToPB(session, msg)
 				if err != nil {
 					s.logger.Error("failed to convert AI message to protobuf", zap.Error(err))
 					continue
 				}
 				err = stream.Send(&runtimev1.CompleteStreamingResponse{
 					ConversationId: msg.SessionID,
-					Message: &runtimev1.Message{
-						Id:        msg.ID,
-						Role:      pb.Role,
-						Content:   pb.Content,
-						CreatedOn: timestamppb.New(msg.Time),
-						UpdatedOn: timestamppb.New(msg.Time),
-					},
+					Message:        pb,
 				})
 				if err != nil {
 					s.logger.Warn("failed to send AI message to stream", zap.Error(err))
@@ -366,4 +372,114 @@ func (ss *completeStreamingServerShim) SendMsg(m any) error {
 
 func (ss *completeStreamingServerShim) RecvMsg(m any) error {
 	return errors.New("not implemented")
+}
+
+// sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
+func sessionToPB(s *drivers.AISession) *runtimev1.Conversation {
+	return &runtimev1.Conversation{
+		Id:        s.ID,
+		OwnerId:   s.OwnerID,
+		Title:     s.Title,
+		UserAgent: s.UserAgent,
+		CreatedOn: timestamppb.New(s.CreatedOn),
+		UpdatedOn: timestamppb.New(s.UpdatedOn),
+	}
+}
+
+// messageToPB converts an ai.Message to a runtimev1.Message.
+func messageToPB(s *ai.Session, msg *ai.Message) (*runtimev1.Message, error) {
+	// If it's the top-level router_agent tool call, parse its content and return a plain text block with the prompt/response.
+	// In other cases, handle it as a normal block.
+	var block *aiv1.ContentBlock
+	if msg.Tool == ai.RouterAgentName {
+		var text string
+		if msg.Type == ai.MessageTypeCall {
+			args, err := s.UnmarshalMessageContent(msg)
+			if err != nil {
+				return nil, err
+			}
+			text = args.(*ai.RouterAgentArgs).Prompt
+		} else if msg.Type == ai.MessageTypeResult {
+			res, err := s.UnmarshalMessageContent(msg)
+			if err != nil {
+				return nil, err
+			}
+			text = res.(*ai.RouterAgentResult).Response
+		} else {
+			text = msg.Content
+		}
+
+		block = &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_Text{
+				Text: text,
+			},
+		}
+	} else {
+		var err error
+		block, err = messageContentToPB(msg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &runtimev1.Message{
+		Id:          msg.ID,
+		ParentId:    msg.ParentID,
+		CreatedOn:   timestamppb.New(msg.Time),
+		UpdatedOn:   timestamppb.New(msg.Time),
+		Index:       uint32(msg.Index),
+		Role:        string(msg.Role),
+		Type:        string(msg.Type),
+		Tool:        msg.Tool,
+		ContentType: string(msg.ContentType),
+		ContentData: msg.Content,
+		Content:     []*aiv1.ContentBlock{block},
+	}, nil
+}
+
+// messageContentToPB converts an ai.Message Content to a aiv1.ContentBlock.
+func messageContentToPB(msg *ai.Message) (*aiv1.ContentBlock, error) {
+	switch msg.Type {
+	case ai.MessageTypeProgress:
+		return &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_Text{
+				Text: msg.Content,
+			},
+		}, nil
+	case ai.MessageTypeCall:
+		if msg.ContentType != ai.MessageContentTypeJSON {
+			return nil, fmt.Errorf("unexpected content type %q for tool call message %q", msg.ContentType, msg.ID)
+		}
+		var input map[string]any
+		err := json.Unmarshal([]byte(msg.Content), &input)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal JSON content: %w", err)
+		}
+		inputPB, err := structpb.NewStruct(input)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert tool call input to StructPB: %w", err)
+		}
+
+		return &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_ToolCall{
+				ToolCall: &aiv1.ToolCall{
+					Id:    msg.ID,
+					Name:  msg.Tool,
+					Input: inputPB,
+				},
+			},
+		}, nil
+	case ai.MessageTypeResult:
+		return &aiv1.ContentBlock{
+			BlockType: &aiv1.ContentBlock_ToolResult{
+				ToolResult: &aiv1.ToolResult{
+					Id:      msg.ID,
+					Content: msg.Content,
+					IsError: msg.ContentType == ai.MessageContentTypeError,
+				},
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("unexpected message type %q for message %q", msg.Type, msg.ID)
+	}
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
+const DeveloperAgentName = "analyst_agent"
+
 type DeveloperAgent struct {
 	Runtime *runtime.Runtime
 }

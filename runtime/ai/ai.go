@@ -141,6 +141,11 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 	}
 
+	// Check access: for now, only allow users to access their own sessions
+	if opts.Claims.UserID != session.OwnerID {
+		return nil, drivers.ErrNotFound
+	}
+
 	// Create the session
 	base := &BaseSession{
 		id:         opts.SessionID,
@@ -427,8 +432,16 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	return nil
 }
 
+func (s *BaseSession) ID() string {
+	return s.id
+}
+
 func (s *BaseSession) InstanceID() string {
 	return s.instanceID
+}
+
+func (s *BaseSession) CatalogSession() *drivers.AISession {
+	return s.dto
 }
 
 func (s *BaseSession) Claims() *runtime.SecurityClaims {
@@ -1004,7 +1017,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	}
 
 	_, err := s.Call(ctx, &CallOptions{
-		Role:    RoleSystem,
+		Role:    RoleAssistant,
 		Name:    name,
 		Unwrap:  opts.UnwrapCall,
 		Out:     out,
@@ -1018,6 +1031,46 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 // It is not used for tool calls/results invoked by the assistant, only for user-invoked calls/results.
 type LLMMarshaler interface {
 	ToLLM() *aiv1.ContentBlock
+}
+
+// UnmarshalMessageContent unmarshals the content of a message based on its content type and tool.
+func (s *Session) UnmarshalMessageContent(m *Message) (any, error) {
+	if m.ContentType != MessageContentTypeJSON {
+		return m.Content, nil
+	}
+
+	if m.Tool == "" {
+		var data any
+		err := json.Unmarshal([]byte(m.Content), &data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal JSON content %q for message %q: %w", m.Content, m.ID, err)
+		}
+		return data, nil
+	}
+
+	t, ok := s.Tool(m.Tool)
+	if !ok {
+		return nil, fmt.Errorf("unknown tool %q", m.Tool)
+	}
+
+	switch m.Type {
+	case MessageTypeCall:
+		args, err := t.UnmarshalArgs(m.Content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal args %q for tool %q: %w", m.Content, m.Tool, err)
+		}
+		return args, nil
+
+	case MessageTypeResult:
+		result, err := t.UnmarshalResult(m.Content)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal result %q for tool %q: %w", m.Content, m.Tool, err)
+		}
+		return result, nil
+
+	default:
+		return m.Content, nil
+	}
 }
 
 // NewCompletionMessage converts the message to an aiv1.CompletionMessage
@@ -1037,14 +1090,12 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 			role = RoleUser
 
 			// If the tool args have a custom marshaler, use it.
-			if t, ok := s.Tool(m.Tool); ok {
-				args, err := t.UnmarshalArgs(m.Content)
-				if err != nil {
-					return nil, fmt.Errorf("failed to unmarshal args %q for tool %q: %w", m.Content, m.Tool, err)
-				}
-				if args.(LLMMarshaler) != nil {
-					block = args.(LLMMarshaler).ToLLM()
-				}
+			args, err := s.UnmarshalMessageContent(m)
+			if err != nil {
+				return nil, err
+			}
+			if args.(LLMMarshaler) != nil {
+				block = args.(LLMMarshaler).ToLLM()
 			}
 		} else {
 			var args map[string]any
@@ -1075,14 +1126,12 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 			role = RoleAssistant
 
 			// If the tool result has a custom marshaler, use it.
-			if t, ok := s.Tool(m.Tool); ok {
-				result, err := t.UnmarshalResult(m.Content)
-				if err != nil {
-					return nil, fmt.Errorf("failed to unmarshal result %q for tool %q: %w", m.Content, m.Tool, err)
-				}
-				if result.(LLMMarshaler) != nil {
-					block = result.(LLMMarshaler).ToLLM()
-				}
+			result, err := s.UnmarshalMessageContent(m)
+			if err != nil {
+				return nil, err
+			}
+			if result.(LLMMarshaler) != nil {
+				block = result.(LLMMarshaler).ToLLM()
 			}
 		} else {
 			role = RoleTool

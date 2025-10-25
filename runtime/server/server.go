@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -62,6 +63,7 @@ type Server struct {
 	codec    *securetoken.Codec
 	limiter  ratelimit.Limiter
 	activity *activity.Client
+	ai       *ai.Runner
 	// MCP server and client for tool calling and API functionality
 	mcpServer *server.MCPServer
 	mcpClient *client.Client
@@ -92,6 +94,7 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		codec:    codec,
 		limiter:  limiter,
 		activity: activityClient,
+		ai:       ai.NewRunner(rt),
 	}
 
 	if opts.AuthEnable {

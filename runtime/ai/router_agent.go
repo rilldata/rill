@@ -12,6 +12,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
+const RouterAgentName = "router_agent"
+
 // RouterAgent accepts a human prompt and related context, determines which agent is best suited to handling it, and invokes that agent.
 // It is usually the entrypoint for processing human completion requests.
 type RouterAgent struct {
@@ -116,7 +118,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	case "analyst_agent":
 		var res *AnalystAgentResult
 		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
-			Role: RoleSystem,
+			Role: RoleUser, // TODO: Handle better (can't be assistant since it would be serialized as a tool call)
 			Tool: args.Agent,
 			Out:  &res,
 			Args: &AnalystAgentArgs{
@@ -132,7 +134,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	case "developer_agent":
 		var res *DeveloperAgentResult
 		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
-			Role: RoleSystem,
+			Role: RoleUser, // TODO: Handle better (can't be assistant since it would be serialized as a tool call)
 			Tool: args.Agent,
 			Out:  &res,
 			Args: &DeveloperAgentArgs{
