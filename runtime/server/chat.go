@@ -88,22 +88,6 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}, nil
 }
 
-// serverToolService implements runtime.ToolService using the server's MCP functionality
-type serverToolService struct {
-	server     *Server
-	instanceID string
-}
-
-// ListTools implements runtime.ToolService
-func (s *serverToolService) ListTools(ctx context.Context) ([]*aiv1.Tool, error) {
-	return s.server.mcpListTools(ctx, s.instanceID)
-}
-
-// ExecuteTool implements runtime.ToolService
-func (s *serverToolService) ExecuteTool(ctx context.Context, toolName string, toolArgs map[string]any) (any, error) {
-	return s.server.mcpExecuteTool(ctx, s.instanceID, toolName, toolArgs)
-}
-
 // Complete runs a conversational AI completion with tool calling support.
 func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, err error) {
 	// Access check
