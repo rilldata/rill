@@ -112,18 +112,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// Build completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
-	messages = append(messages, s.NewCompletionMessages(s.ExpandMessages(s.Messages(FilterByTool(AnalystAgentName)), func(m *Message) []*Message {
-		// Expand into list of the current message and all its direct children
-		res := append([]*Message{m}, s.Messages(FilterByParent(s.ParentID))...)
-
-		// Return only if it contains a result message. (If it doesn't, it means it was interrupted and may be inconsistent.)
-		for _, rm := range res {
-			if rm.Type == MessageTypeResult {
-				return res
-			}
-		}
-		return nil
-	}))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithChildren(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName)))...)
 
 	// Run an LLM tool call loop
 	var response string

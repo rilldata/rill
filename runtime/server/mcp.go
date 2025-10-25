@@ -9,12 +9,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.uber.org/zap"
 )
 
 // mcpHTTPHandler creates an MCP server handler.
 // It uses a new implementation that replaces the logic in mcp_server.go.
 func (s *Server) mcpHTTPHandler() http.Handler {
-	runner := ai.NewRunner(s.runtime)
+	runner := ai.NewRunner(s.runtime, s.activity)
 
 	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		// Extract instance ID from the request path
@@ -31,12 +32,14 @@ func (s *Server) mcpHTTPHandler() http.Handler {
 
 		// Create session
 		sess, err := runner.Session(r.Context(), &ai.SessionOptions{
-			InstanceID: instanceID,
-			SessionID:  sessionID,
-			Claims:     auth.GetClaims(r.Context(), instanceID),
-			UserAgent:  "mcp/unknown", // It's just preliminary: the MCP server updates it with the actual user agent after the initialization handshake.
+			InstanceID:        instanceID,
+			SessionID:         sessionID,
+			CreateIfNotExists: true,
+			Claims:            auth.GetClaims(r.Context(), instanceID),
+			UserAgent:         "mcp/unknown", // It's just preliminary: the MCP server updates it with the actual user agent after the initialization handshake.
 		})
 		if err != nil {
+			s.logger.Error("failed to create AI session for MCP", zap.String("instance_id", instanceID), zap.String("session_id", sessionID), zap.Error(err))
 			return nil
 		}
 

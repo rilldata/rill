@@ -38,10 +38,11 @@ type Runner struct {
 }
 
 // NewRunner creates a new Runner.
-func NewRunner(rt *runtime.Runtime) *Runner {
+func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	r := &Runner{
-		Runtime: rt,
-		Tools:   make(map[string]*CompiledTool),
+		Runtime:  rt,
+		Activity: activity,
+		Tools:    make(map[string]*CompiledTool),
 	}
 
 	RegisterTool(r, &RouterAgent{Runtime: rt})
@@ -65,10 +66,11 @@ func NewRunner(rt *runtime.Runtime) *Runner {
 
 // SessionOptions provides options for initializing a new session.
 type SessionOptions struct {
-	InstanceID string
-	SessionID  string
-	Claims     *runtime.SecurityClaims
-	UserAgent  string
+	InstanceID        string
+	SessionID         string
+	CreateIfNotExists bool
+	Claims            *runtime.SecurityClaims
+	UserAgent         string
 }
 
 // Session creates or loads an AI session.
@@ -216,14 +218,14 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 			if err := json.Unmarshal([]byte(content), &args); err != nil {
 				return nil, err
 			}
-			return &args, nil
+			return args, nil
 		},
 		UnmarshalResult: func(content string) (any, error) {
 			var result Out
 			if err := json.Unmarshal([]byte(content), &result); err != nil {
 				return nil, err
 			}
-			return &result, nil
+			return result, nil
 		},
 		JSONHandler: func(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
 			var args In
@@ -525,9 +527,26 @@ func (s *BaseSession) Message(predicates ...Predicate) (*Message, bool) {
 	return nil, false
 }
 
+func (s *BaseSession) LatestMessage(predicates ...Predicate) (*Message, bool) {
+	for i := len(s.messages) - 1; i >= 0; i-- {
+		msg := s.messages[i]
+		match := true
+		for _, p := range predicates {
+			if !p(msg) {
+				match = false
+				break
+			}
+		}
+		if match {
+			return msg, true
+		}
+	}
+	return nil, false
+}
+
 func (s *BaseSession) Messages(predicates ...Predicate) []*Message {
 	if len(predicates) == 0 {
-		return s.messages
+		return slices.Clone(s.messages)
 	}
 
 	var res []*Message
@@ -546,20 +565,54 @@ func (s *BaseSession) Messages(predicates ...Predicate) []*Message {
 	return res
 }
 
-func (s *BaseSession) MessagesWithCallResults(msgs []*Message) []*Message {
+func (s *BaseSession) MessagesWithResults(predicates ...Predicate) []*Message {
+	msgs := s.Messages(predicates...)
 	return s.ExpandMessages(msgs, func(m *Message) []*Message {
 		if m.Type != MessageTypeCall {
 			return []*Message{m}
 		}
 
-		resMsgs, ok := s.Message(FilterByParent(m.ID), FilterByType(MessageTypeResult))
+		resMsg, ok := s.Message(FilterByParent(m.ID), FilterByType(MessageTypeResult))
 		if !ok {
 			// Skip the call if there isn't a corresponding result.
 			return nil
 		}
 
-		return []*Message{m, resMsgs}
+		return []*Message{m, resMsg}
 	})
+}
+
+func (s *BaseSession) MessagesWithChildren(predicates ...Predicate) []*Message {
+	msgs := s.Messages(predicates...)
+	msgs = s.ExpandMessages(msgs, func(m *Message) []*Message {
+		// If it's not a call, just return the message itself
+		res := []*Message{m}
+		if m.Type != MessageTypeCall {
+			return res
+		}
+
+		// Find it's children and return them too
+		subMsgs := s.Messages(FilterByParent(m.ID))
+		res = append(res, subMsgs...)
+
+		// For each child that's a call, add its result too
+		for _, sm := range subMsgs {
+			if sm.Type == MessageTypeCall {
+				subResMsg, ok := s.Message(FilterByParent(sm.ID), FilterByType(MessageTypeResult))
+				if ok {
+					res = append(res, subResMsg)
+				}
+			}
+		}
+
+		return res
+	})
+
+	// Sort by index to maintain order
+	slices.SortFunc(msgs, func(a, b *Message) int {
+		return a.Index - b.Index
+	})
+	return msgs
 }
 
 func (s *BaseSession) ExpandMessages(msgs []*Message, fn func(m *Message) []*Message) []*Message {
@@ -1036,18 +1089,6 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				} else if outputSchema != nil {
 					outVal = json.RawMessage(block.Text)
 				}
-
-				// Add the final result message.
-				contentType := MessageContentTypeText
-				if outputSchema != nil {
-					contentType = MessageContentTypeJSON
-				}
-				s.AddMessage(&AddMessageOptions{
-					Role:        RoleAssistant,
-					Type:        MessageTypeResult,
-					ContentType: contentType,
-					Content:     block.Text,
-				})
 			default:
 				return nil, fmt.Errorf("unexpected result block type: %T", block)
 			}
@@ -1134,8 +1175,8 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 			if err != nil {
 				return nil, err
 			}
-			if args.(LLMMarshaler) != nil {
-				block = args.(LLMMarshaler).ToLLM()
+			if args, ok := args.(LLMMarshaler); ok && args != nil {
+				block = args.ToLLM()
 			}
 		} else {
 			var args map[string]any
@@ -1170,8 +1211,8 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 			if err != nil {
 				return nil, err
 			}
-			if result.(LLMMarshaler) != nil {
-				block = result.(LLMMarshaler).ToLLM()
+			if result, ok := result.(LLMMarshaler); ok && result != nil {
+				block = result.ToLLM()
 			}
 		} else {
 			role = RoleTool

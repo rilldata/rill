@@ -89,7 +89,7 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		codec:    codec,
 		limiter:  limiter,
 		activity: activityClient,
-		ai:       ai.NewRunner(rt),
+		ai:       ai.NewRunner(rt, activityClient),
 	}
 
 	if opts.AuthEnable {

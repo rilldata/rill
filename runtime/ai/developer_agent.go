@@ -8,7 +8,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
-const DeveloperAgentName = "analyst_agent"
+const DeveloperAgentName = "developer_agent"
 
 type DeveloperAgent struct {
 	Runtime *runtime.Runtime
@@ -55,9 +55,9 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
-	messages = append(messages, s.NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByRoot()))...)
 	messages = append(messages, NewTextCompletionMessage(RoleUser, args.Prompt))
-	messages = append(messages, s.NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByParent(s.ParentID))))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
 
 	// Run an LLM tool call loop
 	var response string

@@ -16,7 +16,7 @@ func TestAnalystBasic(t *testing.T) {
 			"models/orders.yaml": `
 type: model
 materialize: true
-sql: >
+sql: |
   SELECT '2025-01-01T00:00:00Z'::TIMESTAMP AS event_time, 'United States' AS country, 100 AS revenue
   UNION ALL
   SELECT '2025-01-01T00:00:00Z'::TIMESTAMP AS event_time, 'Denmark' AS country, 10 AS revenue
@@ -49,13 +49,12 @@ measures:
 	require.NoError(t, err)
 
 	// Verify it routed to the "analyst" agent
-	msg, ok := s.Message(
-		ai.FilterByParent(s.LatestRootCall().ID),
+	msg1, ok := s.LatestMessage(
 		ai.FilterByTool("Agent choice"),
 		ai.FilterByType(ai.MessageTypeResult),
 	)
 	require.True(t, ok)
-	require.Equal(t, `{"agent":"analyst_agent"}`, msg.Content)
+	require.Equal(t, `{"agent":"analyst_agent"}`, msg1.Content)
 
 	// Verify the response
 	require.Equal(t, "United States", res.Response)
@@ -67,13 +66,13 @@ measures:
 	require.NoError(t, err)
 
 	// Verify it routed to the "analyst" agent
-	msg, ok = s.Message(
-		ai.FilterByParent(s.LatestRootCall().ID),
+	msg2, ok := s.LatestMessage(
 		ai.FilterByTool("Agent choice"),
 		ai.FilterByType(ai.MessageTypeResult),
 	)
 	require.True(t, ok)
-	require.Equal(t, `{"agent":"analyst_agent"}`, msg.Content)
+	require.NotEqual(t, msg1.ID, msg2.ID)
+	require.Equal(t, `{"agent":"analyst_agent"}`, msg2.Content)
 
 	// Verify the response
 	require.Equal(t, "United States", res.Response)

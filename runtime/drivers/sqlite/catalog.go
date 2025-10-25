@@ -2,7 +2,6 @@ package sqlite
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -358,109 +357,6 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 		ON CONFLICT(instance_id) DO UPDATE SET health_json=excluded.health_json, updated_on=excluded.updated_on;
 	`, h.InstanceID, h.HealthJSON)
 	return err
-}
-
-// FindConversations fetches all conversations in an instance for a given owner.
-func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([]*drivers.Conversation, error) {
-	rows, err := c.db.QueryxContext(ctx, `
-		SELECT conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on
-		FROM conversations
-		WHERE instance_id = ? AND owner_id = ?
-		ORDER BY updated_on DESC
-	`, c.instanceID, ownerID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var result []*drivers.Conversation
-	for rows.Next() {
-		var conv drivers.Conversation
-		if err := rows.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.AppContextType, &conv.AppContextMetadataJSON, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
-			return nil, err
-		}
-		result = append(result, &conv)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// FindConversation fetches a conversation by ID.
-func (c *catalogStore) FindConversation(ctx context.Context, conversationID string) (*drivers.Conversation, error) {
-	row := c.db.QueryRowxContext(ctx, `
-		SELECT conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on
-		FROM conversations
-		WHERE instance_id = ? AND conversation_id = ?
-	`, c.instanceID, conversationID)
-
-	var conv drivers.Conversation
-	if err := row.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.AppContextType, &conv.AppContextMetadataJSON, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
-		return nil, err
-	}
-
-	return &conv, nil
-}
-
-// InsertConversation inserts a new conversation.
-func (c *catalogStore) InsertConversation(ctx context.Context, ownerID, title, appContextType, appContextMetadataJSON string) (string, error) {
-	conversationID := uuid.NewString()
-	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO conversations (instance_id, conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on)
-		VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-  `, c.instanceID, conversationID, ownerID, title, appContextType, appContextMetadataJSON)
-	return conversationID, err
-}
-
-// FindMessages fetches all messages for a conversation, ordered by sequence number.
-func (c *catalogStore) FindMessages(ctx context.Context, conversationID string) ([]*drivers.Message, error) {
-	rows, err := c.db.QueryxContext(ctx, `
-		SELECT message_id, conversation_id, seq_num, role, content_json, created_on, updated_on
-		FROM messages
-		WHERE instance_id = ? AND conversation_id = ?
-		ORDER BY seq_num ASC
-  `, c.instanceID, conversationID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var result []*drivers.Message
-	for rows.Next() {
-		var msg drivers.Message
-		if err := rows.StructScan(&msg); err != nil {
-			return nil, err
-		}
-		result = append(result, &msg)
-	}
-	return result, nil
-}
-
-// InsertMessage inserts a new message into a conversation.
-func (c *catalogStore) InsertMessage(ctx context.Context, conversationID, role string, content []drivers.MessageContent) (string, error) {
-	messageID := uuid.NewString()
-
-	// Create message struct and set content
-	msg := &drivers.Message{
-		ID:             messageID,
-		ConversationID: conversationID,
-		Role:           role,
-	}
-	if err := msg.SetContent(content); err != nil {
-		return "", fmt.Errorf("failed to marshal content: %w", err)
-	}
-
-	// Auto-calculate seq_num using a subquery - this is atomic and race-condition safe
-	_, err := c.db.ExecContext(ctx, `
-  	INSERT INTO messages (instance_id, conversation_id, seq_num, message_id, role, content_json, created_on, updated_on)
-  	VALUES (?, ?, 
-  	  (SELECT COALESCE(MAX(seq_num), 0) + 1 FROM messages WHERE instance_id = ? AND conversation_id = ?),
-  	  ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-  `, c.instanceID, conversationID, c.instanceID, conversationID, messageID, role, msg.ContentJSON)
-	return messageID, err
 }
 
 // FindAISessions fetches all AI sessions for a given owner.

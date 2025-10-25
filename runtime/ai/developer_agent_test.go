@@ -33,8 +33,7 @@ driver: duckdb
 	require.NoError(t, err)
 
 	// Verify it routed to the developer agent
-	msg, ok := s.Message(
-		ai.FilterByParent(s.LatestRootCall().ID),
+	msg, ok := s.LatestMessage(
 		ai.FilterByTool("Agent choice"),
 		ai.FilterByType(ai.MessageTypeResult),
 	)
@@ -42,8 +41,7 @@ driver: duckdb
 	require.Equal(t, `{"agent":"developer_agent"}`, msg.Content)
 
 	// Verify it created a Shopify orders model
-	msg, ok = s.Message(
-		ai.FilterByParent(s.LatestRootCall().ID),
+	msg, ok = s.LatestMessage(
 		ai.FilterByTool("develop_model"),
 		ai.FilterByType(ai.MessageTypeResult),
 	)

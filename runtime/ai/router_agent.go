@@ -62,7 +62,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	// Create a list of candidate agents that the user has access to.
 	candidates := []*CompiledTool{
 		must(s.Tool(AnalystAgentName)),
-		// must(s.Tool(DeveloperAgentName)), // Temporarily disabled
+		must(s.Tool(DeveloperAgentName)),
 	}
 	candidates = slices.DeleteFunc(candidates, func(agent *CompiledTool) bool {
 		return !agent.CheckAccess(ctx)
@@ -89,7 +89,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	default:
 		// Build completion messages for agent choice
 		messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, t.systemPrompt(candidates))}
-		messages = append(messages, s.NewCompletionMessages(s.MessagesWithCallResults(s.Messages(FilterByRoot())))...)
+		messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByRoot()))...)
 		messages = append(messages, NewTextCompletionMessage(RoleUser, args.Prompt))
 
 		// Run agent choice

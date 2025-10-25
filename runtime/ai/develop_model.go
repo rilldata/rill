@@ -125,7 +125,7 @@ A model definition in Rill is a YAML file containing a SQL statement. The SQL st
 type: model
 materialize: true
 
-sql: >
+sql: |
   SELECT '2025-05-01T00:00:00Z' AS event_time, 'United States' AS country, 'Toothbrush' AS product_name, 5 AS quantity, 100 AS price
   UNION ALL
   SELECT '2025-05-02T00:00:00Z' AS event_time, 'Denmark' AS country, 'Apple' AS product_name, 10 AS quantity, 50 AS price

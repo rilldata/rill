@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS conversations;
+DROP TABLE IF EXISTS messages;
+
 CREATE TABLE IF NOT EXISTS ai_sessions (
     id TEXT NOT NULL,
     instance_id TEXT NOT NULL,

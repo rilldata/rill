@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -34,12 +35,10 @@ func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, 
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, opts)
 
 	// Create test AI session
-	sessionID := uuid.NewString()
 	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
-	r := ai.NewRunner(rt)
+	r := ai.NewRunner(rt, activity.NewNoopClient())
 	s, err := r.Session(t.Context(), &ai.SessionOptions{
 		InstanceID: instanceID,
-		SessionID:  sessionID,
 		Claims:     claims,
 		UserAgent:  "rill-evals",
 	})
