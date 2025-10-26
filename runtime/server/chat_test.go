@@ -71,6 +71,7 @@ measures:
 	require.NoError(t, err)
 	require.NotEmpty(t, res1.ConversationId)
 	require.NotEmpty(t, res1.Messages)
+	require.Len(t, res1.Messages, 6)
 
 	// Ask another question in the same conversation
 	res2, err := srv.Complete(ctx, &runtimev1.CompleteRequest{
@@ -81,6 +82,7 @@ measures:
 	require.NoError(t, err)
 	require.Equal(t, res2.ConversationId, res1.ConversationId)
 	require.NotEmpty(t, res2.Messages)
+	require.Len(t, res2.Messages, 6)
 
 	// Ask a question in a new conversation
 	res3, err := srv.Complete(ctx, &runtimev1.CompleteRequest{
@@ -121,7 +123,7 @@ measures:
 		ConversationId: "doesntexist",
 		Prompt:         "What is 2 + 2?",
 	})
-	require.ErrorContains(t, err, "not found")
+	require.ErrorContains(t, err, "failed to find")
 
 	// Check that another user cannot list the conversations
 	ctx = auth.WithClaims(t.Context(), &runtime.SecurityClaims{
@@ -133,4 +135,15 @@ measures:
 	})
 	require.NoError(t, err)
 	require.Len(t, list2.Conversations, 0)
+
+	// Check that an anonymous user cannot list the conversations
+	ctx = auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+		UserID:      "",
+		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}, // Sufficient for analyst_agent, excludes developer agents
+	})
+	list3, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+		InstanceId: instanceID,
+	})
+	require.NoError(t, err)
+	require.Len(t, list3.Conversations, 0)
 }

@@ -89,7 +89,7 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 }
 
 // Complete runs a conversational AI completion with tool calling support.
-func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, err error) {
+func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (resp *runtimev1.CompleteResponse, resErr error) {
 	// Access check
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.UseAI) {
@@ -118,51 +118,47 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	if err != nil {
 		return nil, err
 	}
-	defer session.Flush(ctx)
+	defer func() {
+		err := session.Flush(ctx)
+		if err != nil {
+			resErr = errors.Join(resErr, err)
+		}
+	}()
 
 	// Context
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Open subscription for session messages and stream them to the client in the background
-	var messages []*runtimev1.Message
-	subCh := session.Subscribe()
-	defer session.Unsubscribe(subCh)
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case msg, ok := <-subCh:
-				if !ok {
-					return
-				}
-				pb, err := messageToPB(session, msg)
-				if err != nil {
-					s.logger.Error("failed to convert AI message to protobuf", zap.Error(err))
-					continue
-				}
-				messages = append(messages, pb)
-			}
-		}
-	}()
-
 	// Make the call
 	var res *ai.RouterAgentResult
-	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
+	msg, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
 		Prompt: req.Prompt,
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	// Lookup the result message and all its descendents
+	msgs := session.MessagesWithDescendents(ai.FilterByID(msg.Call.ID))
+
+	// Build result
+	pbs := make([]*runtimev1.Message, 0, len(msgs))
+	for _, msg := range msgs {
+		pb, err := messageToPB(session, msg)
+		if err != nil {
+			return nil, err
+		}
+		pbs = append(pbs, pb)
+	}
+
 	return &runtimev1.CompleteResponse{
 		ConversationId: session.ID(),
-		Messages:       messages,
+		Messages:       pbs,
 	}, nil
 }
 
 // CompleteStreaming implements RuntimeService
-func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stream runtimev1.RuntimeService_CompleteStreamingServer) error {
+func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stream runtimev1.RuntimeService_CompleteStreamingServer) (resErr error) {
 	// Access check
 	claims := auth.GetClaims(stream.Context(), req.InstanceId)
 	if !claims.Can(runtime.UseAI) {
@@ -191,7 +187,12 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	if err != nil {
 		return err
 	}
-	defer session.Flush(stream.Context())
+	defer func() {
+		err := session.Flush(stream.Context())
+		if err != nil {
+			resErr = errors.Join(resErr, err)
+		}
+	}()
 
 	// Context
 	ctx, cancel := context.WithCancel(stream.Context())

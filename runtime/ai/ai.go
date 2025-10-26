@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	goruntime "runtime"
 	"slices"
@@ -382,6 +383,8 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	ctx, cancel := graceful.WithMinimumDuration(ctx, 5*time.Second)
 	defer cancel()
 
+	log.Printf("FLUSHING")
+
 	// Exit early if nothing to flush
 	if !s.dtoDirty && !s.messagesDirty {
 		return nil
@@ -396,6 +399,7 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 
 	// Update session metadata
 	if s.dtoDirty {
+		log.Printf("FLUSHING SESSION")
 		err = catalog.UpdateAISession(ctx, s.dto)
 		if err != nil {
 			return err
@@ -407,8 +411,10 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	if s.messagesDirty {
 		for _, msg := range s.messages {
 			if !msg.dirty {
+				log.Printf("MESSAGE NOT DIRTY %s", msg.ID)
 				continue
 			}
+			log.Printf("FLUSHING MESSAGE id=%s, session=%s", msg.ID, msg.SessionID)
 			err = catalog.InsertAIMessage(ctx, &drivers.AIMessage{
 				ID:          msg.ID,
 				ParentID:    msg.ParentID,
@@ -615,6 +621,25 @@ func (s *BaseSession) MessagesWithChildren(predicates ...Predicate) []*Message {
 	return msgs
 }
 
+func (s *BaseSession) MessagesWithDescendents(predicates ...Predicate) []*Message {
+	ids := make(map[string]struct{})
+	for _, initial := range s.Messages(predicates...) {
+		ids[initial.ID] = struct{}{}
+	}
+
+	var res []*Message
+	for _, m := range s.messages {
+		if _, ok := ids[m.ID]; ok {
+			res = append(res, m)
+		} else if _, ok := ids[m.ParentID]; ok {
+			ids[m.ID] = struct{}{}
+			res = append(res, m)
+		}
+	}
+
+	return res
+}
+
 func (s *BaseSession) ExpandMessages(msgs []*Message, fn func(m *Message) []*Message) []*Message {
 	var res []*Message
 	for _, msg := range msgs {
@@ -700,6 +725,7 @@ func (s *Session) AddMessage(opts *AddMessageOptions) *Message {
 
 	s.messages = append(s.messages, msg)
 	s.messagesDirty = true
+	log.Printf("ADDING MESSAGE: id=%s, session=%s", msg.ID, msg.SessionID)
 	for sub := range s.subscribers {
 		sub <- msg
 	}
