@@ -23,6 +23,80 @@ const ALLOWED_KINDS = new Set<ResourceKind>([
 const AVERAGE_CHAR_WIDTH = 8.5;
 const CONTENT_PADDING = 96;
 
+// Cache last known group assignments so that if a group's anchor
+// (e.g., a metrics view) disappears due to an error, we can keep
+// its resources together in the expected graph grouping.
+const lastGroupAssignments = new Map<string, string>(); // resourceId -> groupId
+const lastGroupLabels = new Map<string, string>(); // groupId -> label
+
+// Persistent client-side cache (localStorage) to keep positions, grouping, and refs
+const CACHE_NS = "rill.resourceGraph.v1";
+type PositionsCache = Record<string, { x: number; y: number }>;
+type AssignmentsCache = Record<string, string>;
+type LabelsCache = Record<string, string>;
+type RefsCache = Record<string, string[]>; // dependentId -> [sourceIds]
+type PersistedCache = {
+  positions?: PositionsCache;
+  assignments?: AssignmentsCache;
+  labels?: LabelsCache;
+  refs?: RefsCache;
+};
+
+function hasLocalStorage() {
+  try {
+    return typeof window !== "undefined" && !!window.localStorage;
+  } catch {
+    return false;
+  }
+}
+
+function loadPersistedCache(): PersistedCache {
+  if (!hasLocalStorage()) return {};
+  try {
+    const raw = window.localStorage.getItem(CACHE_NS);
+    if (!raw) return {};
+    const data = JSON.parse(raw);
+    return typeof data === "object" && data ? data : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePersistedCache(cache: PersistedCache) {
+  if (!hasLocalStorage()) return;
+  try {
+    window.localStorage.setItem(CACHE_NS, JSON.stringify(cache));
+  } catch {
+    // ignore
+  }
+}
+
+const persisted = loadPersistedCache();
+const lastPositions: Map<string, { x: number; y: number }> = new Map(
+  Object.entries(persisted.positions ?? {}),
+);
+for (const [rid, gid] of Object.entries(persisted.assignments ?? {})) {
+  lastGroupAssignments.set(rid, gid);
+}
+for (const [gid, label] of Object.entries(persisted.labels ?? {})) {
+  lastGroupLabels.set(gid, label);
+}
+const lastRefs: Map<string, string[]> = new Map(
+  Object.entries(persisted.refs ?? {}),
+);
+
+function persistAllCaches() {
+  const positions: PositionsCache = {};
+  for (const [k, v] of lastPositions) positions[k] = v;
+  const assignments: AssignmentsCache = {};
+  for (const [k, v] of lastGroupAssignments) assignments[k] = v;
+  const labels: LabelsCache = {};
+  for (const [k, v] of lastGroupLabels) labels[k] = v;
+  const refs: RefsCache = {};
+  for (const [k, v] of lastRefs) refs[k] = v;
+  savePersistedCache({ positions, assignments, labels, refs });
+}
+
 function toNodeId(meta?: V1ResourceMeta): string | undefined {
   if (!meta?.name?.name || !meta?.name?.kind) return undefined;
   return `${meta.name.kind}:${meta.name.name}`;
@@ -31,6 +105,35 @@ function toNodeId(meta?: V1ResourceMeta): string | undefined {
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   if (!name?.kind) return undefined;
   return name.kind as ResourceKind;
+}
+
+function parseNodeId(id: string): { kind: string; name: string } | null {
+  const idx = id.indexOf(":");
+  if (idx <= 0) return null;
+  const kind = id.slice(0, idx);
+  const name = id.slice(idx + 1);
+  if (!kind || !name) return null;
+  return { kind, name };
+}
+
+function makePlaceholderResource(id: string, label?: string): V1Resource {
+  const parsed = parseNodeId(id);
+  const name = parsed?.name ?? id;
+  const kind = parsed?.kind ?? "model";
+  const refIds = lastRefs.get(id) ?? [];
+  const refs = refIds
+    .map((rid) => parseNodeId(rid))
+    .filter((r): r is { kind: string; name: string } => !!r)
+    .map((r) => ({ kind: r.kind, name: r.name }));
+  return {
+    meta: {
+      name: { kind, name },
+      refs,
+      reconcileError:
+        "Resource unavailable due to error or missing spec (cached)",
+      hidden: false,
+    },
+  } as V1Resource;
 }
 
 function estimateNodeWidth(label?: string | null) {
@@ -156,13 +259,19 @@ export function buildResourceGraph(resources: V1Resource[]) {
     const dagreNode = dagreGraph.node(node.id);
     if (!dagreNode) continue;
     const nodeWidth = node.width ?? MIN_NODE_WIDTH;
-    node.position = {
+    const computed = {
       x: dagreNode.x - nodeWidth / 2,
       y: dagreNode.y - (node.height ?? DEFAULT_NODE_HEIGHT) / 2,
     };
+    const cached = lastPositions.get(node.id);
+    node.position = cached ?? computed;
     node.targetPosition = Position.Top;
     node.sourcePosition = Position.Bottom;
+    lastPositions.set(node.id, node.position);
   }
+
+  // Persist positions for future renders
+  persistAllCaches();
 
   return { nodes, edges };
 }
@@ -198,6 +307,9 @@ export function partitionResourcesByMetrics(
     for (const ref of resource.meta?.refs ?? []) {
       const sourceId = toNodeId({ name: ref });
       if (!sourceId) continue;
+      // Record refs for persistence even if source is not currently present
+      const existing = lastRefs.get(dependentId) ?? [];
+      if (!existing.includes(sourceId)) lastRefs.set(dependentId, [...existing, sourceId]);
       if (!resourceMap.has(sourceId)) continue;
 
       adjacency.get(dependentId)!.add(sourceId);
@@ -215,6 +327,7 @@ export function partitionResourcesByMetrics(
     .sort((a, b) => a.label.localeCompare(b.label));
 
   const groups: ResourceGraphGrouping[] = [];
+  const groupById = new Map<string, ResourceGraphGrouping>();
   const assigned = new Set<string>();
 
   const traverseConnected = (startId: string) => {
@@ -244,18 +357,93 @@ export function partitionResourcesByMetrics(
       .filter((res): res is V1Resource => !!res);
 
     if (componentResources.length) {
-      groups.push({
+      const group: ResourceGraphGrouping = {
         id: metric.id,
         resources: componentResources,
         label: metric.label,
-      });
+      };
+      groups.push(group);
+      groupById.set(group.id, group);
+      lastGroupLabels.set(group.id, group.label ?? group.id);
       for (const res of componentIds) assigned.add(res);
     }
   }
 
+  // Try to assign ungrouped resources to their last known existing group.
   const unassignedIds = Array.from(resourceMap.keys()).filter(
     (id) => !assigned.has(id),
   );
+  for (const id of unassignedIds) {
+    const cachedGroupId = lastGroupAssignments.get(id);
+    if (!cachedGroupId) continue;
+    const existingGroup = groupById.get(cachedGroupId);
+    if (!existingGroup) continue;
+    const res = resourceMap.get(id);
+    if (!res) continue;
+    existingGroup.resources.push(res);
+    assigned.add(id);
+  }
+
+  // Build synthetic groups for cached groups whose anchors disappeared.
+  const stillUnassignedIds = Array.from(resourceMap.keys()).filter(
+    (id) => !assigned.has(id),
+  );
+  const syntheticGroups = new Map<string, V1Resource[]>();
+  for (const id of stillUnassignedIds) {
+    const cachedGroupId = lastGroupAssignments.get(id);
+    if (!cachedGroupId) continue;
+    if (groupById.has(cachedGroupId)) continue;
+    if (!syntheticGroups.has(cachedGroupId)) syntheticGroups.set(cachedGroupId, []);
+    const res = resourceMap.get(id);
+    if (res) syntheticGroups.get(cachedGroupId)!.push(res);
+  }
+  for (const [syntheticId, syntheticResources] of syntheticGroups) {
+    if (!syntheticResources.length) continue;
+    const label = lastGroupLabels.get(syntheticId) ?? "Recovered group";
+    const group: ResourceGraphGrouping = {
+      id: syntheticId,
+      resources: syntheticResources,
+      label,
+    };
+    groups.push(group);
+    groupById.set(group.id, group);
+    for (const res of syntheticResources) {
+      const rid = toNodeId(res.meta);
+      if (rid) assigned.add(rid);
+    }
+  }
+
+  // Ensure missing-but-cached resources remain in their last group as placeholders.
+  const presentIds = new Set(resourceMap.keys());
+  for (const [rid, gid] of lastGroupAssignments) {
+    // Only if we already have the group in the result
+    const grp = groupById.get(gid);
+    if (!grp) continue;
+    // Already present
+    if (presentIds.has(rid)) continue;
+    // Avoid duplicate placeholders if already added somehow
+    if (grp.resources.some((r) => toNodeId(r.meta) === rid)) continue;
+    grp.resources.push(makePlaceholderResource(rid));
+    assigned.add(rid);
+  }
+
+  // If some cached groups don't exist in this pass (e.g., all members missing),
+  // create recovered groups composed of placeholders so the component remains visible.
+  for (const [gid, label] of lastGroupLabels) {
+    if (groupById.has(gid)) continue;
+    const members: V1Resource[] = [];
+    for (const [rid, rgid] of lastGroupAssignments) {
+      if (rgid !== gid) continue;
+      if (assigned.has(rid)) continue; // already included
+      members.push(makePlaceholderResource(rid));
+      assigned.add(rid);
+    }
+    if (members.length) {
+      const group: ResourceGraphGrouping = { id: gid, resources: members, label };
+      groups.push(group);
+      groupById.set(gid, group);
+    }
+  }
 
   const collectRemainingComponent = (
     startId: string,
@@ -280,7 +468,9 @@ export function partitionResourcesByMetrics(
     return component;
   };
 
-  const remainingSet = new Set(unassignedIds);
+  const remainingSet = new Set(
+    Array.from(resourceMap.keys()).filter((id) => !assigned.has(id)),
+  );
 
   for (const id of unassignedIds) {
     if (!remainingSet.has(id)) continue;
@@ -314,6 +504,18 @@ export function partitionResourcesByMetrics(
       });
     }
   }
+
+  // Update caches with current grouping assignments.
+  for (const group of groups) {
+    if (group.label) lastGroupLabels.set(group.id, group.label);
+    for (const res of group.resources) {
+      const rid = toNodeId(res.meta);
+      if (rid) lastGroupAssignments.set(rid, group.id);
+    }
+  }
+
+  // Persist grouping cache so we can recover layout/membership on errors
+  persistAllCaches();
 
   return groups;
 }
