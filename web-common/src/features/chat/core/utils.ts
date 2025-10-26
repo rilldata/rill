@@ -4,7 +4,6 @@
  * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in error handling, ID generation, and cache management.
  */
-import type { Page } from "@sveltejs/kit";
 
 // =============================================================================
 // ID GENERATION
