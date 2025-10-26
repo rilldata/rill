@@ -379,19 +379,20 @@ func messageToPB(s *ai.Session, msg *ai.Message) (*runtimev1.Message, error) {
 	var block *aiv1.ContentBlock
 	if msg.Tool == ai.RouterAgentName {
 		var text string
-		if msg.Type == ai.MessageTypeCall {
+		switch msg.Type {
+		case ai.MessageTypeCall:
 			args, err := s.UnmarshalMessageContent(msg)
 			if err != nil {
 				return nil, err
 			}
 			text = args.(*ai.RouterAgentArgs).Prompt
-		} else if msg.Type == ai.MessageTypeResult {
+		case ai.MessageTypeResult:
 			res, err := s.UnmarshalMessageContent(msg)
 			if err != nil {
 				return nil, err
 			}
 			text = res.(*ai.RouterAgentResult).Response
-		} else {
+		default:
 			text = msg.Content
 		}
 
@@ -408,13 +409,37 @@ func messageToPB(s *ai.Session, msg *ai.Message) (*runtimev1.Message, error) {
 		}
 	}
 
+	// The roles used by the `ai` package do not map to conventional LLM roles, so we change them here.
+	// TODO: Refactor such that this is not needed.
+	var role string
+	switch msg.Type {
+	case ai.MessageTypeCall:
+		if msg.Tool == ai.RouterAgentName {
+			role = "user"
+		} else {
+			role = "assistant"
+		}
+	case ai.MessageTypeResult:
+		if msg.Tool == ai.RouterAgentName {
+			role = "assistant"
+		} else {
+			role = "tool"
+		}
+	default:
+		if msg.Role == ai.RoleSystem {
+			role = "system"
+		} else {
+			role = "assistant"
+		}
+	}
+
 	return &runtimev1.Message{
 		Id:          msg.ID,
 		ParentId:    msg.ParentID,
 		CreatedOn:   timestamppb.New(msg.Time),
 		UpdatedOn:   timestamppb.New(msg.Time),
 		Index:       uint32(msg.Index),
-		Role:        string(msg.Role),
+		Role:        role,
 		Type:        string(msg.Type),
 		Tool:        msg.Tool,
 		ContentType: string(msg.ContentType),

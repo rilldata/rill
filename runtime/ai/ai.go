@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	goruntime "runtime"
 	"slices"
@@ -383,8 +382,6 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	ctx, cancel := graceful.WithMinimumDuration(ctx, 5*time.Second)
 	defer cancel()
 
-	log.Printf("FLUSHING")
-
 	// Exit early if nothing to flush
 	if !s.dtoDirty && !s.messagesDirty {
 		return nil
@@ -399,7 +396,6 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 
 	// Update session metadata
 	if s.dtoDirty {
-		log.Printf("FLUSHING SESSION")
 		err = catalog.UpdateAISession(ctx, s.dto)
 		if err != nil {
 			return err
@@ -411,10 +407,8 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	if s.messagesDirty {
 		for _, msg := range s.messages {
 			if !msg.dirty {
-				log.Printf("MESSAGE NOT DIRTY %s", msg.ID)
 				continue
 			}
-			log.Printf("FLUSHING MESSAGE id=%s, session=%s", msg.ID, msg.SessionID)
 			err = catalog.InsertAIMessage(ctx, &drivers.AIMessage{
 				ID:          msg.ID,
 				ParentID:    msg.ParentID,
@@ -725,7 +719,6 @@ func (s *Session) AddMessage(opts *AddMessageOptions) *Message {
 
 	s.messages = append(s.messages, msg)
 	s.messagesDirty = true
-	log.Printf("ADDING MESSAGE: id=%s, session=%s", msg.ID, msg.SessionID)
 	for sub := range s.subscribers {
 		sub <- msg
 	}
