@@ -7,6 +7,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "./types";
+  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 
   export let data: ResourceNodeData;
   export let selected = false;
@@ -44,10 +45,16 @@
       ? resourceColorMapping[kind]
       : DEFAULT_COLOR;
   $: reconcileStatus = data?.resource?.meta?.reconcileStatus;
-  $: statusLabel = reconcileStatus
-    ?.replace("RECONCILE_STATUS_", "")
-    ?.toLowerCase()
-    ?.replaceAll("_", " ");
+  $: hasError = !!data?.resource?.meta?.reconcileError;
+  $: isIdle = reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+  $: statusLabel =
+    reconcileStatus && !isIdle
+      ? reconcileStatus
+          ?.replace("RECONCILE_STATUS_", "")
+          ?.toLowerCase()
+          ?.replaceAll("_", " ")
+      : undefined;
+  $: effectiveStatusLabel = hasError ? "error" : statusLabel;
   $: void [
     id,
     type,
@@ -70,6 +77,7 @@
 <div
   class="node"
   class:selected
+  class:error={hasError}
   style={`--node-accent:${color}`}
   data-kind={kind}
 >
@@ -97,8 +105,10 @@
         Unknown
       {/if}
     </p>
-    {#if statusLabel}
-      <p class="status">{statusLabel}</p>
+    {#if effectiveStatusLabel}
+      <p class="status" class:error={hasError} title={hasError ? data?.resource?.meta?.reconcileError : undefined}>
+        {effectiveStatusLabel}
+      </p>
     {/if}
   </div>
 </div>
@@ -115,6 +125,10 @@
     @apply shadow border-2;
     border-color: var(--node-accent);
     transform: translateY(-1px);
+  }
+
+  .node.error {
+    @apply border-red-300;
   }
 
   .icon-wrapper {
@@ -135,6 +149,10 @@
 
   .status {
     @apply text-xs text-gray-400 italic;
+  }
+
+  .status.error {
+    @apply not-italic text-red-600;
   }
 
   /* Make handles small circular dots, tinted by the node accent */

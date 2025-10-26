@@ -20,7 +20,12 @@
   const formatGroupTitle = (group: ResourceGraphGrouping, index: number) => {
     const baseLabel = group.label ?? `Graph ${index + 1}`;
     const count = group.resources.length;
-    return `${baseLabel} - ${count} resource${count === 1 ? "" : "s"}`;
+    const errorCount = group.resources.filter((r) => !!r.meta?.reconcileError)
+      .length;
+    const errorSuffix = errorCount
+      ? ` • ${errorCount} error${errorCount === 1 ? "" : "s"}`
+      : "";
+    return `${baseLabel} - ${count} resource${count === 1 ? "" : "s"}${errorSuffix}`;
   };
 </script>
 
