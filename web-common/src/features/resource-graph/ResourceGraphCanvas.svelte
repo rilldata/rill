@@ -19,6 +19,7 @@
   let hasNodes = false;
   const nodesStore = writable<Node<ResourceNodeData>[]>([]);
   const edgesStore = writable<Edge[]>([]);
+  const edgesViewStore = writable<Edge[]>([]);
 
   const nodeTypes = {
     "resource-node": ResourceNode,
@@ -27,7 +28,53 @@
   const edgeOptions = {
     type: "smoothstep",
     style: "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;",
-  };
+    pathOptions: { offset: 36, borderRadius: 8 },
+  } as const;
+
+  const HIGHLIGHT_EDGE_STYLE = "stroke:#3b82f6;stroke-width:2px;opacity:1;";
+  const DIM_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.25;";
+
+  // Reactively compute highlighted edges into a writable store that SvelteFlow can mutate.
+  $: (function updateHighlightedEdges() {
+    const nodes = $nodesStore as Node<ResourceNodeData>[];
+    const edges = $edgesStore as Edge[];
+    const selectedIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+    if (!selectedIds.size) {
+      edgesViewStore.set(edges);
+      return;
+    }
+
+    const neighbors = new Map<string, Set<string>>();
+    for (const e of edges) {
+      if (!neighbors.has(e.source)) neighbors.set(e.source, new Set());
+      if (!neighbors.has(e.target)) neighbors.set(e.target, new Set());
+      neighbors.get(e.source)!.add(e.target);
+      neighbors.get(e.target)!.add(e.source);
+    }
+
+    const visited = new Set<string>();
+    const queue: string[] = Array.from(selectedIds);
+    while (queue.length) {
+      const id = queue.shift()!;
+      if (visited.has(id)) continue;
+      visited.add(id);
+      const nbrs = neighbors.get(id);
+      if (!nbrs) continue;
+      for (const nb of nbrs) if (!visited.has(nb)) queue.push(nb);
+    }
+
+    const highlighted = new Set<string>();
+    for (const e of edges) {
+      if (visited.has(e.source) && visited.has(e.target)) highlighted.add(e.id);
+    }
+
+    edgesViewStore.set(
+      edges.map((e) => ({
+        ...e,
+        style: highlighted.has(e.id) ? HIGHLIGHT_EDGE_STYLE : DIM_EDGE_STYLE,
+      })),
+    );
+  })();
 
   $: {
     const graph = buildResourceGraph(resources ?? []);
@@ -82,7 +129,7 @@
     <div class="graph-container">
       <SvelteFlow
         nodes={nodesStore}
-        edges={edgesStore}
+        edges={edgesViewStore}
         nodeTypes={nodeTypes}
         proOptions={{ hideAttribution: true }}
         fitView

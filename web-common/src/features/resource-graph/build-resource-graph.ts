@@ -155,8 +155,9 @@ export function buildResourceGraph(resources: V1Resource[]) {
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setGraph({
     rankdir: "TB",
-    nodesep: 120,
-    ranksep: 160,
+    nodesep: 320,
+    ranksep: 240,
+    edgesep: 80,
     acyclicer: "greedy",
   });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
