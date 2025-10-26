@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"google.golang.org/grpc/codes"
@@ -112,27 +112,22 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 					resp, err := stream.Recv()
 					if err != nil {
 						if errors.Is(err, io.EOF) {
-							lastMsg = nil
 							break
 						}
 						if errors.Is(err, ctx.Err()) {
-							lastMsg = nil
 							break
 						}
 						if s, ok := status.FromError(err); ok && s.Code() == codes.Canceled {
-							lastMsg = nil
 							break
 						}
 						return fmt.Errorf("completion stream failed: %w", err)
 					}
 
 					// Print truncated message
-					text := formatMessage(resp.Message)
-					if text != formatMessage(lastMsg) { // Skip duplicates, usually happens for nested call chains passing back results
-						n := terminalWidth() - 4 - len(resp.Message.Role)
-						text = truncateString(text, n)
-						fmt.Printf("\n◆ %s: %s\n", resp.Message.Role, text)
-					}
+					typ, text := formatMessage(resp.Message)
+					n := terminalWidth() - 4 - len(typ)
+					text = truncateString(text, n)
+					fmt.Printf("\n◆ %s: %s\n", typ, text)
 
 					// Update state
 					conversationID = resp.ConversationId // Won't change after first iteration
@@ -141,7 +136,7 @@ func ChatCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Print the last message untruncated
 				if lastMsg != nil {
-					text := formatMessage(lastMsg)
+					_, text := formatMessage(lastMsg)
 					fmt.Print("\033[3A\033[0J") // Clear the previous three lines
 					fmt.Printf("◆ %s\n", text)
 				}
@@ -173,45 +168,39 @@ func printWelcome() {
 }
 
 // formatMessage formats a runtimev1.Message for display.
-func formatMessage(msg *runtimev1.Message) string {
+func formatMessage(msg *runtimev1.Message) (string, string) {
 	if msg == nil || len(msg.Content) == 0 {
-		return ""
+		return "empty", ""
 	}
 
-	block := msg.Content[0]
-	if block == nil {
-		return ""
+	typ := "assistant"
+	content := msg.ContentData
+
+	if msg.ContentType == string(ai.MessageContentTypeError) {
+		content = fmt.Sprintf("Error: %s", msg.ContentData)
 	}
-	switch block := block.BlockType.(type) {
-	case *aiv1.ContentBlock_Text:
-		if strings.HasPrefix(block.Text, `{"response"`) { // TODO: Remove this hack when we propagate more metadata about final answers
-			var response struct {
-				Response string `json:"response"`
-			}
-			if err := json.Unmarshal([]byte(block.Text), &response); err == nil {
-				return response.Response
-			}
-		}
-		return block.Text
-	case *aiv1.ContentBlock_ToolCall:
-		args, _ := block.ToolCall.Input.MarshalJSON()
-		return fmt.Sprintf("%s(%s)", block.ToolCall.Name, string(args))
-	case *aiv1.ContentBlock_ToolResult:
-		if block.ToolResult.IsError {
-			return fmt.Sprintf("Error: %s", block.ToolResult.Content)
-		}
-		if strings.HasPrefix(block.ToolResult.Content, `{"response"`) { // TODO: Remove this hack when we propagate more metadata about final answers
-			var response struct {
-				Response string `json:"response"`
-			}
-			if err := json.Unmarshal([]byte(block.ToolResult.Content), &response); err == nil {
-				return response.Response
-			}
-		}
-		return block.ToolResult.Content
-	default:
-		return fmt.Sprintf("[Unknown ContentBlock %T]", block)
+
+	if msg.Type == string(ai.MessageTypeCall) {
+		typ = fmt.Sprintf("call(%s)", msg.Tool)
+	} else if msg.Type == string(ai.MessageTypeResult) {
+		typ = fmt.Sprintf("result(%s)", msg.Tool)
 	}
+
+	if msg.Tool == string(ai.RouterAgentName) {
+		if msg.Type == string(ai.MessageTypeResult) {
+			typ = "response"
+			if msg.ContentType == string(ai.MessageContentTypeJSON) {
+				var response struct {
+					Response string `json:"response"`
+				}
+				if err := json.Unmarshal([]byte(msg.ContentData), &response); err == nil {
+					content = response.Response
+				}
+			}
+		}
+	}
+
+	return typ, content
 }
 
 // truncateString truncates a string to a maximum width, adding ellipsis if needed.
