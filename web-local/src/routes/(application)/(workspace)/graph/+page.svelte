@@ -1,0 +1,37 @@
+<script lang="ts">
+  import ResourceGraphContainer from "@rilldata/web-common/features/resource-graph/ResourceGraphContainer.svelte";
+  import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+</script>
+
+<svelte:head>
+  <title>Rill Developer | Project graph</title>
+</svelte:head>
+
+<WorkspaceContainer inspector={false}>
+  <div slot="header" class="header">
+    <h1>Project graph</h1>
+    <p>Visualize dependencies between sources, models, dashboards, and more.</p>
+  </div>
+
+  <div slot="body" class="graph-wrapper">
+    <ResourceGraphContainer />
+  </div>
+</WorkspaceContainer>
+
+<style lang="postcss">
+  .header {
+    @apply px-4 pt-3 pb-2;
+  }
+
+  .header h1 {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  .header p {
+    @apply text-sm text-gray-500 mt-1;
+  }
+
+  .graph-wrapper {
+    @apply h-full w-full;
+  }
+</style>

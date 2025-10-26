@@ -1,0 +1,27 @@
+<script lang="ts">
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import ResourceGraph from "./ResourceGraph.svelte";
+
+  $: ({ instanceId } = $runtime);
+
+  $: resourcesQuery = createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      retry: 2,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+      enabled: !!instanceId,
+    },
+  });
+
+  $: resources = $resourcesQuery.data?.resources ?? [];
+  $: errorMessage = $resourcesQuery.error
+    ? "Failed to load project resources."
+    : null;
+</script>
+
+<ResourceGraph
+  resources={resources}
+  isLoading={$resourcesQuery.isLoading}
+  error={errorMessage}
+/>
