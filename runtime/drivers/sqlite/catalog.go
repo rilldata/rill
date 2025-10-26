@@ -439,7 +439,7 @@ func (c *catalogStore) FindAIMessages(ctx context.Context, sessionID string) ([]
 	rows, err := c.db.QueryxContext(ctx, `
 		SELECT id, parent_id, session_id, created_on, updated_on, "index", role, type, tool, content_type, content
 		FROM ai_messages
-		WHERE instance_id = ? AND session_id = ?
+		WHERE session_id = ?
 		ORDER BY "index" ASC
 	`, c.instanceID, sessionID)
 	if err != nil {

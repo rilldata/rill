@@ -157,7 +157,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 
 	// Create the session
 	base := &BaseSession{
-		id:         opts.SessionID,
+		id:         session.ID,
 		instanceID: opts.InstanceID,
 		claims:     opts.Claims,
 
@@ -699,6 +699,7 @@ func (s *Session) AddMessage(opts *AddMessageOptions) *Message {
 	defer s.mu.Unlock()
 
 	s.messages = append(s.messages, msg)
+	s.messagesDirty = true
 	for sub := range s.subscribers {
 		sub <- msg
 	}

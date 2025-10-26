@@ -12,7 +12,7 @@
         - If the user asks a general question, you should route to the analyst.
         You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
         - analyst_agent (Agent that assists with data analysis tasks.)
-        - analyst_agent (Agent that assists with data analysis tasks.)
+        - developer_agent (Agent that assists with development tasks.)
     - role: user
       content_type: text
       content: What country has the highest revenue? Answer with a single country name and nothing else.
@@ -30,17 +30,17 @@
       content: What country has the highest revenue? Answer with a single country name and nothing else.
     - role: assistant
       content_type: tool_call
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
   response:
     role: assistant
     content_type: tool_call
-    id: call_jUwJbBgC0nVopZRYtqPJESHG
+    id: call_TopTXTkh884CaZg0c3vLhZkw
     tool_name: get_metrics_view
     content: '{"metrics_view":"orders"}'
 - index: 3
@@ -53,26 +53,26 @@
       content: What country has the highest revenue? Answer with a single country name and nothing else.
     - role: assistant
       content_type: tool_call
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
   response:
     role: assistant
     content_type: tool_call
-    id: call_HUESr2IFM7pqUwOXhxx1gRaW
+    id: call_kL6p9nm3A5KQkm8jAScjxSTY
     tool_name: query_metrics_view_summary
     content: '{"metrics_view":"orders"}'
 - index: 4
@@ -85,35 +85,35 @@
       content: What country has the highest revenue? Answer with a single country name and nothing else.
     - role: assistant
       content_type: tool_call
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
     - role: assistant
       content_type: tool_call
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       tool_name: query_metrics_view_summary
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
   response:
     role: assistant
     content_type: tool_call
-    id: call_QUHHDO8L9HIx0wSUUWyNj6so
+    id: call_2tPeh932iybBotfmZPyMdOVL
     tool_name: query_metrics_view
     content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
 - index: 5
@@ -126,39 +126,39 @@
       content: What country has the highest revenue? Answer with a single country name and nothing else.
     - role: assistant
       content_type: tool_call
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
     - role: assistant
       content_type: tool_call
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       tool_name: query_metrics_view_summary
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
     - role: assistant
       content_type: tool_call
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       tool_name: query_metrics_view
       content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
     - role: tool
       content_type: tool_response
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       content: '{"data":[{"country":"United States","revenue":100}]}'
   response:
     role: assistant
@@ -178,13 +178,13 @@
         - If the user asks a general question, you should route to the analyst.
         You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
         - analyst_agent (Agent that assists with data analysis tasks.)
-        - analyst_agent (Agent that assists with data analysis tasks.)
+        - developer_agent (Agent that assists with development tasks.)
     - role: user
       content_type: text
       content: '{"prompt":"What country has the highest revenue? Answer with a single country name and nothing else."}'
     - role: assistant
       content_type: text
-      content: '{"response":"United States"}'
+      content: '{"response":"United States","agent":"analyst_agent"}'
     - role: user
       content_type: text
       content: Repeat the answer you gave to my last question.
@@ -202,39 +202,39 @@
       content: What country has the highest revenue? Answer with a single country name and nothing else.
     - role: assistant
       content_type: tool_call
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
     - role: assistant
       content_type: tool_call
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       tool_name: query_metrics_view_summary
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
     - role: assistant
       content_type: tool_call
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       tool_name: query_metrics_view
       content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
     - role: tool
       content_type: tool_response
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       content: '{"data":[{"country":"United States","revenue":100}]}'
     - role: assistant
       content_type: text
@@ -244,17 +244,17 @@
       content: Repeat the answer you gave to my last question.
     - role: assistant
       content_type: tool_call
-      id: 5c2139c129074bac
+      id: ab46446e07df44cd
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 5c2139c129074bac
+      id: ab46446e07df44cd
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
   response:
     role: assistant
     content_type: tool_call
-    id: call_ux65Et935MrflocxRKWfSThC
+    id: call_u2ApUjIdjCxTKtHisjO6gKJV
     tool_name: get_metrics_view
     content: '{"metrics_view":"orders"}'
 - index: 8
@@ -267,39 +267,39 @@
       content: What country has the highest revenue? Answer with a single country name and nothing else.
     - role: assistant
       content_type: tool_call
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
     - role: assistant
       content_type: tool_call
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       tool_name: query_metrics_view_summary
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
     - role: assistant
       content_type: tool_call
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       tool_name: query_metrics_view
       content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
     - role: tool
       content_type: tool_response
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       content: '{"data":[{"country":"United States","revenue":100}]}'
     - role: assistant
       content_type: text
@@ -309,26 +309,26 @@
       content: Repeat the answer you gave to my last question.
     - role: assistant
       content_type: tool_call
-      id: 5c2139c129074bac
+      id: ab46446e07df44cd
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 5c2139c129074bac
+      id: ab46446e07df44cd
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: e91ca6d4388340f0
+      id: 18adc1549361498d
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: e91ca6d4388340f0
+      id: 18adc1549361498d
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
   response:
     role: assistant
     content_type: tool_call
-    id: call_hdJ0GuEu2ueKGMzzFjm7btt9
+    id: call_vDZyEtLwg6DJfseQXSpfOc4I
     tool_name: query_metrics_view_summary
     content: '{"metrics_view":"orders"}'
 - index: 9
@@ -341,39 +341,39 @@
       content: What country has the highest revenue? Answer with a single country name and nothing else.
     - role: assistant
       content_type: tool_call
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
     - role: assistant
       content_type: tool_call
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       tool_name: query_metrics_view_summary
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
     - role: assistant
       content_type: tool_call
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       tool_name: query_metrics_view
       content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
     - role: tool
       content_type: tool_response
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       content: '{"data":[{"country":"United States","revenue":100}]}'
     - role: assistant
       content_type: text
@@ -383,35 +383,35 @@
       content: Repeat the answer you gave to my last question.
     - role: assistant
       content_type: tool_call
-      id: 5c2139c129074bac
+      id: ab46446e07df44cd
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 5c2139c129074bac
+      id: ab46446e07df44cd
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: e91ca6d4388340f0
+      id: 18adc1549361498d
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: e91ca6d4388340f0
+      id: 18adc1549361498d
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
     - role: assistant
       content_type: tool_call
-      id: d6225e22d29445e9
+      id: 8a2d1c606b2e47af
       tool_name: query_metrics_view_summary
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: d6225e22d29445e9
+      id: 8a2d1c606b2e47af
       content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
   response:
     role: assistant
     content_type: tool_call
-    id: call_XTZ1JoS61QInlyZNJPfDiLyH
+    id: call_A9R3coHARm40hYX0uRfPtQ9M
     tool_name: query_metrics_view
     content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
 - index: 10
@@ -424,39 +424,39 @@
       content: What country has the highest revenue? Answer with a single country name and nothing else.
     - role: assistant
       content_type: tool_call
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 39d7050518a440f6
+      id: 3c2b032d91c74b2b
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: fcb77ed301b74499
+      id: 45a64985ca334272
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
     - role: assistant
       content_type: tool_call
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       tool_name: query_metrics_view_summary
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: a8e5442ab99e449e
+      id: 87f6fe67a61a4524
       content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
     - role: assistant
       content_type: tool_call
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       tool_name: query_metrics_view
       content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
     - role: tool
       content_type: tool_response
-      id: 5f1e752816184588
+      id: 5d5f607fe1f54a4f
       content: '{"data":[{"country":"United States","revenue":100}]}'
     - role: assistant
       content_type: text
@@ -466,39 +466,39 @@
       content: Repeat the answer you gave to my last question.
     - role: assistant
       content_type: tool_call
-      id: 5c2139c129074bac
+      id: ab46446e07df44cd
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: 5c2139c129074bac
+      id: ab46446e07df44cd
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: e91ca6d4388340f0
+      id: 18adc1549361498d
       tool_name: get_metrics_view
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: e91ca6d4388340f0
+      id: 18adc1549361498d
       content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
     - role: assistant
       content_type: tool_call
-      id: d6225e22d29445e9
+      id: 8a2d1c606b2e47af
       tool_name: query_metrics_view_summary
       content: '{"metrics_view":"orders"}'
     - role: tool
       content_type: tool_response
-      id: d6225e22d29445e9
+      id: 8a2d1c606b2e47af
       content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
     - role: assistant
       content_type: tool_call
-      id: 1311d4f4d91145c0
+      id: 4a4c1aef8da24331
       tool_name: query_metrics_view
       content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
     - role: tool
       content_type: tool_response
-      id: 1311d4f4d91145c0
+      id: 4a4c1aef8da24331
       content: '{"data":[{"country":"United States","revenue":100}]}'
   response:
     role: assistant

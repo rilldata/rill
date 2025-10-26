@@ -23,13 +23,15 @@ type RouterAgent struct {
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
-	Prompt  string `json:"prompt"`
-	Agent   string `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
-	Explore string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Prompt      string `json:"prompt"`
+	Agent       string `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
+	Explore     string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	SkipHandoff bool   `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
 type RouterAgentResult struct {
 	Response string `json:"response"`
+	Agent    string `json:"agent"`
 }
 
 func (t *RouterAgent) Spec() *mcp.Tool {
@@ -46,7 +48,18 @@ func (t *RouterAgent) Spec() *mcp.Tool {
 
 func (t *RouterAgent) CheckAccess(ctx context.Context) bool {
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.UseAI)
+
+	// Must be allowed to use AI features
+	if !s.Claims().Can(runtime.UseAI) {
+		return false
+	}
+
+	// Only allow for rill user agents since it's not useful in MCP contexts.
+	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+		return false
+	}
+
+	return true
 }
 
 func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*RouterAgentResult, error) {
@@ -114,9 +127,17 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		args.Agent = agentChoice.Agent
 	}
 
+	// If skip_handoff is true, return the selected agent without invoking it.
+	if args.SkipHandoff {
+		return &RouterAgentResult{
+			Response: fmt.Sprintf("Routed to agent %q. Response omitted.", args.Agent),
+			Agent:    args.Agent,
+		}, nil
+	}
+
 	// Call the selected agent.
 	switch args.Agent {
-	case "analyst_agent":
+	case AnalystAgentName:
 		var res *AnalystAgentResult
 		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
 			Role: RoleUser, // TODO: Handle better (can't be assistant since it would be serialized as a tool call)
@@ -130,9 +151,9 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		if err != nil {
 			return nil, err
 		}
-		return &RouterAgentResult{Response: res.Response}, nil
+		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
 
-	case "developer_agent":
+	case DeveloperAgentName:
 		var res *DeveloperAgentResult
 		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
 			Role: RoleUser, // TODO: Handle better (can't be assistant since it would be serialized as a tool call)
@@ -145,7 +166,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		if err != nil {
 			return nil, err
 		}
-		return &RouterAgentResult{Response: res.Response}, nil
+		return &RouterAgentResult{Response: res.Response, Agent: args.Agent}, nil
 	}
 
 	return nil, fmt.Errorf("agent %q not implemented", args.Agent)

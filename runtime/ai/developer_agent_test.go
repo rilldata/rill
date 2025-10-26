@@ -31,17 +31,10 @@ driver: duckdb
 		Prompt: "Develop a dashboard of Shopify orders",
 	})
 	require.NoError(t, err)
-
-	// Verify it routed to the developer agent
-	msg, ok := s.LatestMessage(
-		ai.FilterByTool("Agent choice"),
-		ai.FilterByType(ai.MessageTypeResult),
-	)
-	require.True(t, ok)
-	require.Equal(t, `{"agent":"developer_agent"}`, msg.Content)
+	require.Equal(t, "developer_agent", res.Agent)
 
 	// Verify it created a Shopify orders model
-	msg, ok = s.LatestMessage(
+	msg, ok := s.LatestMessage(
 		ai.FilterByTool("develop_model"),
 		ai.FilterByType(ai.MessageTypeResult),
 	)

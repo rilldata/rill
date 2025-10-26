@@ -47,16 +47,7 @@ measures:
 		Prompt: "What country has the highest revenue? Answer with a single country name and nothing else.",
 	})
 	require.NoError(t, err)
-
-	// Verify it routed to the "analyst" agent
-	msg1, ok := s.LatestMessage(
-		ai.FilterByTool("Agent choice"),
-		ai.FilterByType(ai.MessageTypeResult),
-	)
-	require.True(t, ok)
-	require.Equal(t, `{"agent":"analyst_agent"}`, msg1.Content)
-
-	// Verify the response
+	require.Equal(t, "analyst_agent", res.Agent)
 	require.Equal(t, "United States", res.Response)
 
 	// Analyst agent question that references the previous response
@@ -64,16 +55,6 @@ measures:
 		Prompt: "Repeat the answer you gave to my last question.",
 	})
 	require.NoError(t, err)
-
-	// Verify it routed to the "analyst" agent
-	msg2, ok := s.LatestMessage(
-		ai.FilterByTool("Agent choice"),
-		ai.FilterByType(ai.MessageTypeResult),
-	)
-	require.True(t, ok)
-	require.NotEqual(t, msg1.ID, msg2.ID)
-	require.Equal(t, `{"agent":"analyst_agent"}`, msg2.Content)
-
-	// Verify the response
+	require.Equal(t, "analyst_agent", res.Agent)
 	require.Equal(t, "United States", res.Response)
 }

@@ -12,9 +12,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// mcpHTTPHandler creates an MCP server handler.
+// mcpHandler creates an MCP server handler.
 // It uses a new implementation that replaces the logic in mcp_server.go.
-func (s *Server) mcpHTTPHandler() http.Handler {
+func (s *Server) mcpHandler() http.Handler {
 	runner := ai.NewRunner(s.runtime, s.activity)
 
 	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {

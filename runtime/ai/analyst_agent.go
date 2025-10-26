@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -58,7 +59,18 @@ func (t *AnalystAgent) Spec() *mcp.Tool {
 
 func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.UseAI)
+
+	// Must be allowed to use AI features
+	if !s.Claims().Can(runtime.UseAI) {
+		return false
+	}
+
+	// Only allow for rill user agents since it's not useful in MCP contexts.
+	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+		return false
+	}
+
+	return true
 }
 
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {

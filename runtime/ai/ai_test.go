@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -23,14 +24,8 @@ import (
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
-// newEval sets up a new runtime instance and AI chat session for it.
-// The conversation and LLM calls are automatically captured and persisted in ./testdata.
-func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, string, *ai.Session) {
-	// Skip AI tests in short mode since they're comparatively expensive.
-	if testing.Short() {
-		t.SkipNow()
-	}
-
+// newTest sets up a new runtime instance and AI chat session for it.
+func newTest(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, string, *ai.Session) {
 	// Create test runtime instance
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, opts)
 
@@ -43,7 +38,30 @@ func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, 
 		UserAgent:  "rill-evals",
 	})
 	require.NoError(t, err)
-	defer s.Flush(t.Context())
+	t.Cleanup(func() {
+		err := s.Flush(t.Context())
+		require.NoError(t, err)
+	})
+
+	return rt, instanceID, s
+}
+
+// newEval sets up a new eval and returns a runtime instance and AI chat session for it.
+// It differs from newTest in that a) it's disabled in CI/short mode, and b) the messages and LLM calls are recorded to ./evals for later inspection.
+func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, string, *ai.Session) {
+	// Skip AI tests in short mode since they're comparatively expensive.
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	// Add openai to the test connectors if not already present.
+	// This enables LLM completions.
+	if !slices.Contains(opts.TestConnectors, "openai") {
+		opts.TestConnectors = append(opts.TestConnectors, "openai")
+	}
+
+	// Create test runtime instance and AI session
+	rt, instanceID, s := newTest(t, opts)
 
 	// Wrap the session's LLM with a recordingAIService to capture every LLM call.
 	ai, release, err := rt.AI(t.Context(), instanceID)
@@ -82,22 +100,6 @@ func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, 
 	})
 
 	return rt, instanceID, s
-}
-
-// requireHasOne asserts that exactly one value in the slice satisfies the predicate.
-func requireHasOne[T any](t *testing.T, vals []T, pred func(T) bool) {
-	var found bool
-	for _, v := range vals {
-		if pred(v) {
-			if found {
-				t.Errorf("expected exactly one value matching predicate, but found multiple")
-			}
-			found = true
-		}
-	}
-	if !found {
-		t.Errorf("expected one value matching predicate, but found none")
-	}
 }
 
 // recordingAIService wraps a drivers.AIService and records all interactions with it.
