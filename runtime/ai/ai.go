@@ -941,7 +941,6 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			opts.MaxIterations = 1
 		}
 	}
-	opts.MaxIterations = 5 // TODO: Temporary
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
@@ -1226,13 +1225,22 @@ func (s *Session) NewCompletionMessage(m *Message) (*aiv1.CompletionMessage, err
 		if m.Role != RoleAssistant {
 			role = RoleAssistant
 
-			// If the tool result has a custom marshaler, use it.
-			result, err := s.UnmarshalMessageContent(m)
-			if err != nil {
-				return nil, err
-			}
-			if result, ok := result.(LLMMarshaler); ok && result != nil {
-				block = result.ToLLM()
+			switch m.ContentType {
+			case MessageContentTypeJSON:
+				// If the tool result has a custom marshaler, use it.
+				result, err := s.UnmarshalMessageContent(m)
+				if err != nil {
+					return nil, err
+				}
+				if result, ok := result.(LLMMarshaler); ok && result != nil {
+					block = result.ToLLM()
+				}
+			case MessageContentTypeError:
+				block = &aiv1.ContentBlock{
+					BlockType: &aiv1.ContentBlock_Text{
+						Text: fmt.Sprintf("Execution error: %s", m.Content),
+					},
+				}
 			}
 		} else {
 			role = RoleTool
@@ -1287,7 +1295,7 @@ func NewTextCompletionMessage(role Role, content string) *aiv1.CompletionMessage
 func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.CompletionMessage {
 	const (
 		maxMessages = 20 // Keep up to 20 messages total
-		keepFirst   = 3  // Always keep first 3 messages for context
+		keepFirst   = 4  // Always keep first 4 messages for context
 		keepLast    = 16 // Keep last 16 messages
 	)
 
@@ -1316,6 +1324,28 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 	// Keep last messages
 	start := len(messages) - keepLast
 	result = append(result, messages[start:]...)
+
+	// Make sure there are no partial tool calls/results
+	unbalancedIDs := make(map[string]bool)
+	for _, msg := range result {
+		for _, block := range msg.Content {
+			if call := block.GetToolCall(); call != nil {
+				unbalancedIDs[call.Id] = true
+			} else if res := block.GetToolResult(); res != nil {
+				unbalancedIDs[res.Id] = !unbalancedIDs[res.Id]
+			}
+		}
+	}
+	result = slices.DeleteFunc(result, func(msg *aiv1.CompletionMessage) bool {
+		for _, block := range msg.Content {
+			if call := block.GetToolCall(); call != nil {
+				return unbalancedIDs[call.Id]
+			} else if res := block.GetToolResult(); res != nil {
+				return unbalancedIDs[res.Id]
+			}
+		}
+		return false
+	})
 
 	return result
 }

@@ -387,11 +387,18 @@ func messageToPB(s *ai.Session, msg *ai.Message) (*runtimev1.Message, error) {
 			}
 			text = args.(*ai.RouterAgentArgs).Prompt
 		case ai.MessageTypeResult:
-			res, err := s.UnmarshalMessageContent(msg)
-			if err != nil {
-				return nil, err
+			switch msg.ContentType {
+			case ai.MessageContentTypeJSON:
+				res, err := s.UnmarshalMessageContent(msg)
+				if err != nil {
+					return nil, err
+				}
+				text = res.(*ai.RouterAgentResult).Response
+			case ai.MessageContentTypeError:
+				text = fmt.Sprintf("Error: %s", msg.Content)
+			default:
+				text = msg.Content
 			}
-			text = res.(*ai.RouterAgentResult).Response
 		default:
 			text = msg.Content
 		}

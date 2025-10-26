@@ -120,7 +120,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if args.Explore == "" {
 		tools = append(tools, "list_metrics_views", "get_metrics_view")
 	}
-	tools = append(tools, "query_metrics_view_summary", "query_metrics_view")
+	tools = append(tools, "query_metrics_view_summary", "query_metrics_view", "create_chart")
 
 	// Build completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
