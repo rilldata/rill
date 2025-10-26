@@ -491,7 +491,7 @@ func messageContentToPB(msg *ai.Message) (*aiv1.ContentBlock, error) {
 		return &aiv1.ContentBlock{
 			BlockType: &aiv1.ContentBlock_ToolResult{
 				ToolResult: &aiv1.ToolResult{
-					Id:      msg.ID,
+					Id:      msg.ParentID,
 					Content: msg.Content,
 					IsError: msg.ContentType == ai.MessageContentTypeError,
 				},
