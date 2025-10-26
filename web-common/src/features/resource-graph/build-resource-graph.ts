@@ -12,7 +12,8 @@ import type { ResourceNodeData } from "./types";
 const MIN_NODE_WIDTH = 180;
 const MAX_NODE_WIDTH = 360;
 const DEFAULT_NODE_HEIGHT = 72;
-const DEFAULT_EDGE_STYLE = "stroke:#111827;stroke-width:2px;";
+// Softer, less intrusive edges
+const DEFAULT_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;";
 const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.Source,
   ResourceKind.Model,

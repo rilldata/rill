@@ -26,7 +26,7 @@
 
   const edgeOptions = {
     type: "smoothstep",
-    style: "stroke:#111827;stroke-width:2px;",
+    style: "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;",
   };
 
   $: {

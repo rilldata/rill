@@ -136,4 +136,17 @@
   .status {
     @apply text-xs text-gray-400 italic;
   }
+
+  /* Make handles small circular dots, tinted by the node accent */
+  :global(.svelte-flow__node[data-id]) :global(.svelte-flow__handle) {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    min-height: 6px;
+    border-radius: 9999px;
+    background-color: color-mix(in srgb, var(--node-accent) 18%, #ffffff);
+    border: 1px solid color-mix(in srgb, var(--node-accent) 55%, #b1b1b7);
+    box-shadow: 0 0 0 1px #ffffff;
+    opacity: 1;
+  }
 </style>
