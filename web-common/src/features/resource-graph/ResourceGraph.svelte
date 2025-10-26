@@ -17,6 +17,9 @@
   );
   $: hasGraphs = resourceGroups.length > 0;
 
+  // Expanded state (fills the graph-wrapper area, not fullscreen)
+  let expandedGroup: ResourceGraphGrouping | null = null;
+
   const formatGroupTitle = (group: ResourceGraphGrouping, index: number) => {
     const baseLabel = group.label ?? `Graph ${index + 1}`;
     const count = group.resources.length;
@@ -45,17 +48,42 @@
     <p>No resources found.</p>
   </div>
 {:else}
-  <div class="graph-grid">
-    {#each resourceGroups as group, index (group.id)}
-      <ResourceGraphCanvas
-        resources={group.resources}
-        title={formatGroupTitle(group, index)}
-      />
-    {/each}
+  <div class="graph-root">
+    <div class={"graph-grid " + (expandedGroup ? 'blur-[1px] pointer-events-none' : '')}>
+      {#each resourceGroups as group, index (group.id)}
+        <ResourceGraphCanvas
+          resources={group.resources}
+          title={formatGroupTitle(group, index)}
+          on:expand={() => (expandedGroup = group)}
+        />
+      {/each}
+    </div>
+
+    {#if expandedGroup}
+      <div class="graph-overlay">
+        <div class="graph-overlay-header">
+          <div class="graph-overlay-title">{formatGroupTitle(expandedGroup, resourceGroups.findIndex((g) => g.id === expandedGroup?.id))}</div>
+          <button class="overlay-close" on:click={() => (expandedGroup = null)} aria-label="Close expanded graph">✕</button>
+        </div>
+        <div class="graph-overlay-body">
+          <ResourceGraphCanvas
+            resources={expandedGroup.resources}
+            title={null}
+            showControls={true}
+            enableExpand={false}
+            fillParent={true}
+          />
+        </div>
+      </div>
+    {/if}
   </div>
 {/if}
 
 <style lang="postcss">
+  .graph-root {
+    @apply relative h-full w-full;
+  }
+
   .graph-grid {
     @apply grid gap-6;
     grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -77,5 +105,26 @@
 
   .loading-state {
     @apply flex items-center gap-x-3;
+  }
+
+  .graph-overlay {
+    @apply absolute inset-0 z-10 flex flex-col rounded-lg border border-gray-200 bg-white;
+  }
+
+  .graph-overlay-header {
+    @apply flex items-center justify-between border-b border-gray-200 p-3;
+  }
+
+  .graph-overlay-title {
+    @apply text-sm font-semibold text-foreground;
+  }
+
+  .overlay-close {
+    @apply h-7 w-7 rounded border border-gray-300 bg-white text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-800;
+    line-height: 1.25rem;
+  }
+
+  .graph-overlay-body {
+    @apply flex-1 overflow-hidden;
   }
 </style>

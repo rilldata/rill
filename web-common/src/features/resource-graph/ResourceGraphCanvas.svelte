@@ -21,6 +21,15 @@
   const edgesStore = writable<Edge[]>([]);
   const edgesViewStore = writable<Edge[]>([]);
 
+  // Props and events for expansion control
+  export let showControls = false;
+  export let enableExpand = true;
+  export let fillParent = false;
+  import { createEventDispatcher } from "svelte";
+  const dispatch = createEventDispatcher<{ expand: void }>();
+
+  $: containerHeightClass = fillParent ? "h-full" : "h-[420px]";
+
   const nodeTypes = {
     "resource-node": ResourceNode,
   };
@@ -126,7 +135,18 @@
   {/if}
 
   {#if hasNodes}
-    <div class="graph-container">
+    <div class={"graph-container " + containerHeightClass}>
+      {#if enableExpand}
+        <button
+          class="expand-btn"
+          aria-label="Expand graph"
+          title="Expand"
+          on:click={() => dispatch('expand')}
+        >
+          ⤢
+        </button>
+      {/if}
+
       <SvelteFlow
         nodes={nodesStore}
         edges={edgesViewStore}
@@ -142,6 +162,9 @@
         defaultEdgeOptions={edgeOptions}
       >
         <Background gap={24} />
+        {#if showControls}
+          <Controls position="top-right" />
+        {/if}
       </SvelteFlow>
     </div>
   {:else}
@@ -161,10 +184,15 @@
   }
 
   .graph-container {
-    @apply h-[420px] w-full overflow-hidden rounded-lg border border-gray-200 bg-white;
+    @apply relative w-full overflow-hidden rounded-lg border border-gray-200 bg-white;
   }
 
   .state {
     @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed border-gray-200 bg-white text-sm text-gray-500;
+  }
+
+  .expand-btn {
+    @apply absolute right-2 top-2 z-10 h-7 w-7 rounded border border-gray-300 bg-white text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-800;
+    line-height: 1.25rem;
   }
 </style>
