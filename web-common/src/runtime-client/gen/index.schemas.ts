@@ -724,6 +724,8 @@ export interface V1Conversation {
   userAgent?: string;
   createdOn?: string;
   updatedOn?: string;
+  /** NOTE: Deprecated. */
+  messages?: V1Message[];
 }
 
 export interface V1CreateDirectoryResponse {

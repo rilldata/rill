@@ -50,7 +50,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 
 	res := make([]*runtimev1.Conversation, len(sessions))
 	for i, s := range sessions {
-		res[i] = sessionToPB(s)
+		res[i] = sessionToPB(s, nil)
 	}
 	return &runtimev1.ListConversationsResponse{
 		Conversations: res,
@@ -83,7 +83,7 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}
 
 	return &runtimev1.GetConversationResponse{
-		Conversation: sessionToPB(session.CatalogSession()),
+		Conversation: sessionToPB(session.CatalogSession(), messagePBs),
 		Messages:     messagePBs,
 	}, nil
 }
@@ -360,7 +360,7 @@ func (ss *completeStreamingServerShim) RecvMsg(m any) error {
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
-func sessionToPB(s *drivers.AISession) *runtimev1.Conversation {
+func sessionToPB(s *drivers.AISession, messages []*runtimev1.Message) *runtimev1.Conversation {
 	return &runtimev1.Conversation{
 		Id:        s.ID,
 		OwnerId:   s.OwnerID,
@@ -368,6 +368,7 @@ func sessionToPB(s *drivers.AISession) *runtimev1.Conversation {
 		UserAgent: s.UserAgent,
 		CreatedOn: timestamppb.New(s.CreatedOn),
 		UpdatedOn: timestamppb.New(s.UpdatedOn),
+		Messages:  messages,
 	}
 }
 

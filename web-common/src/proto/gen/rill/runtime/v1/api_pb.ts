@@ -4177,6 +4177,13 @@ export class Conversation extends Message$1<Conversation> {
    */
   updatedOn?: Timestamp;
 
+  /**
+   * NOTE: Deprecated.
+   *
+   * @generated from field: repeated rill.runtime.v1.Message messages = 7;
+   */
+  messages: Message[] = [];
+
   constructor(data?: PartialMessage<Conversation>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4191,6 +4198,7 @@ export class Conversation extends Message$1<Conversation> {
     { no: 6, name: "user_agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 7, name: "messages", kind: "message", T: Message, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Conversation {

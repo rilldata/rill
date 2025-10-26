@@ -4522,6 +4522,12 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Message'
+        description: 'NOTE: Deprecated.'
     title: Conversation metadata and messages
   v1CreateDirectoryResponse:
     type: object
