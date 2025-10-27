@@ -736,8 +736,6 @@ func (m *CompletionMessageContext) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for MetricsView
-
 	// no validation rules for Explore
 
 	// no validation rules for TimeRange

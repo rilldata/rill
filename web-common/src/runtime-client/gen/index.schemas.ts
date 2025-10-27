@@ -619,7 +619,6 @@ export interface V1CompleteStreamingResponse {
 }
 
 export interface V1CompletionMessageContext {
-  metricsView?: string;
   explore?: string;
   timeRange?: string;
   filters?: string;

@@ -129,19 +129,11 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var mc ai.MessageContext
-	if req.Context != nil {
-		mc.Explore = req.Context.Explore
-		mc.MetricsView = req.Context.MetricsView
-		mc.TimeRange = req.Context.TimeRange
-		mc.Filters = req.Context.Filters
-	}
-
 	// Make the call
 	var res *ai.RouterAgentResult
 	msg, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
 		Prompt:  req.Prompt,
-		Context: mc,
+		Context: contextFromPb(req.Context),
 	})
 	if err != nil {
 		return nil, err
@@ -235,19 +227,11 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
-	var mc ai.MessageContext
-	if req.Context != nil {
-		mc.Explore = req.Context.Explore
-		mc.MetricsView = req.Context.MetricsView
-		mc.TimeRange = req.Context.TimeRange
-		mc.Filters = req.Context.Filters
-	}
-
 	// Make the call
 	var res *ai.RouterAgentResult
 	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
 		Prompt:  req.Prompt,
-		Context: mc,
+		Context: contextFromPb(req.Context),
 	})
 	if err != nil && !errors.Is(err, context.Canceled) {
 		return err
@@ -518,4 +502,16 @@ func messageContentToPB(msg *ai.Message) (*aiv1.ContentBlock, error) {
 	default:
 		return nil, fmt.Errorf("unexpected message type %q for message %q", msg.Type, msg.ID)
 	}
+}
+
+func contextFromPb(context *aiv1.CompletionMessageContext) ai.MessageContext {
+	var mc ai.MessageContext
+	if context != nil {
+		mc.Explore = context.Explore
+		mc.TimeRange = context.TimeRange
+		mc.Filters = context.Filters
+		mc.Measures = context.Measures
+		mc.Dimensions = context.Dimensions
+	}
+	return mc
 }

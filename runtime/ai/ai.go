@@ -346,12 +346,11 @@ type Message struct {
 }
 
 type MessageContext struct {
-	MetricsView string   `json:"metrics_view" yaml:"metrics_view" jsonschema:"Optional metrics view name. If provided, the queries will be limited to this metrics view."`
-	Explore     string   `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	TimeRange   string   `json:"time_range" yaml:"time_range" jsonschema:"Optional time range for queries. If provided, the queries will be limited to this time range."`
-	Filters     string   `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	Measures    []string `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Dimensions  []string `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
+	Explore    string   `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	TimeRange  string   `json:"time_range" yaml:"time_range" jsonschema:"Optional time range for queries. If provided, the queries will be limited to this time range."`
+	Filters    string   `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	Measures   []string `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
+	Dimensions []string `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
 }
 
 // sessionCtxKey is used for saving a session in a context.
