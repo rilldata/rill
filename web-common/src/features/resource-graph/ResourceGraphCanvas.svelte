@@ -43,39 +43,61 @@
   const HIGHLIGHT_EDGE_STYLE = "stroke:#3b82f6;stroke-width:2px;opacity:1;";
   const DIM_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.25;";
 
-  // Reactively compute highlighted edges into a writable store that SvelteFlow can mutate.
+  // Reactively compute highlighted edges tracing strictly upstream and downstream
+  // from the selected node(s). We explore both directions only at the start node(s):
+  // upstream explores only incoming edges (sources) and continues going up;
+  // downstream explores only outgoing edges (dependents) and continues going down.
   $: (function updateHighlightedEdges() {
     const nodes = $nodesStore as Node<ResourceNodeData>[];
     const edges = $edgesStore as Edge[];
     const selectedIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
     if (!selectedIds.size) {
       edgesViewStore.set(edges);
+      // clear route highlight flags if nothing is selected
+      nodesStore.update((nds) => nds.map((n) => ({
+        ...n,
+        data: { ...n.data, routeHighlighted: false },
+      })));
       return;
     }
 
-    const neighbors = new Map<string, Set<string>>();
-    for (const e of edges) {
-      if (!neighbors.has(e.source)) neighbors.set(e.source, new Set());
-      if (!neighbors.has(e.target)) neighbors.set(e.target, new Set());
-      neighbors.get(e.source)!.add(e.target);
-      neighbors.get(e.target)!.add(e.source);
+    // Upstream traversal (incoming edges only)
+    const upstreamVisited = new Set<string>();
+    const upstreamEdgeIds = new Set<string>();
+    const upQueue: string[] = Array.from(selectedIds);
+    while (upQueue.length) {
+      const curr = upQueue.shift()!;
+      if (upstreamVisited.has(curr)) continue;
+      upstreamVisited.add(curr);
+      for (const e of edges) {
+        if (e.target === curr) {
+          upstreamEdgeIds.add(e.id);
+          if (!upstreamVisited.has(e.source)) upQueue.push(e.source);
+        }
+      }
     }
 
-    const visited = new Set<string>();
-    const queue: string[] = Array.from(selectedIds);
-    while (queue.length) {
-      const id = queue.shift()!;
-      if (visited.has(id)) continue;
-      visited.add(id);
-      const nbrs = neighbors.get(id);
-      if (!nbrs) continue;
-      for (const nb of nbrs) if (!visited.has(nb)) queue.push(nb);
+    // Downstream traversal (outgoing edges only)
+    const downstreamVisited = new Set<string>();
+    const downstreamEdgeIds = new Set<string>();
+    const downQueue: string[] = Array.from(selectedIds);
+    while (downQueue.length) {
+      const curr = downQueue.shift()!;
+      if (downstreamVisited.has(curr)) continue;
+      downstreamVisited.add(curr);
+      for (const e of edges) {
+        if (e.source === curr) {
+          downstreamEdgeIds.add(e.id);
+          if (!downstreamVisited.has(e.target)) downQueue.push(e.target);
+        }
+      }
     }
 
-    const highlighted = new Set<string>();
-    for (const e of edges) {
-      if (visited.has(e.source) && visited.has(e.target)) highlighted.add(e.id);
-    }
+    const highlighted = new Set<string>([...upstreamEdgeIds, ...downstreamEdgeIds]);
+    const highlightNodeIds = new Set<string>([
+      ...upstreamVisited,
+      ...downstreamVisited,
+    ]);
 
     edgesViewStore.set(
       edges.map((e) => ({
@@ -83,6 +105,12 @@
         style: highlighted.has(e.id) ? HIGHLIGHT_EDGE_STYLE : DIM_EDGE_STYLE,
       })),
     );
+
+    // Mark nodes along the traced paths as highlighted
+    nodesStore.update((nds) => nds.map((n) => ({
+      ...n,
+      data: { ...n.data, routeHighlighted: highlightNodeIds.has(n.id) },
+    })));
   })();
 
   $: {

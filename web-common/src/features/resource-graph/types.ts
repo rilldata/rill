@@ -5,4 +5,6 @@ export interface ResourceNodeData extends Record<string, unknown> {
   resource: V1Resource;
   kind?: ResourceKind;
   label: string;
+  // transient UI flag to emphasize nodes along the traced path
+  routeHighlighted?: boolean;
 }

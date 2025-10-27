@@ -55,6 +55,7 @@
           ?.replaceAll("_", " ")
       : undefined;
   $: effectiveStatusLabel = hasError ? "error" : statusLabel;
+  $: routeHighlighted = (data as any)?.routeHighlighted === true;
   $: void [
     id,
     type,
@@ -77,6 +78,7 @@
 <div
   class="node"
   class:selected
+  class:route-highlighted={routeHighlighted}
   class:error={hasError}
   style={`--node-accent:${color}`}
   data-kind={kind}
@@ -122,6 +124,12 @@
   }
 
   .node.selected {
+    @apply shadow border-2;
+    border-color: var(--node-accent);
+    transform: translateY(-1px);
+  }
+
+  .node.route-highlighted {
     @apply shadow border-2;
     border-color: var(--node-accent);
     transform: translateY(-1px);

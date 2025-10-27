@@ -1,6 +1,10 @@
 <script lang="ts">
   import ResourceGraphContainer from "@rilldata/web-common/features/resource-graph/ResourceGraphContainer.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import { page } from "$app/stores";
+
+  // Collect `seed` params from URL (supports multiple)
+  $: seeds = Array.from($page.url.searchParams.getAll("seed"));
 </script>
 
 <svelte:head>
@@ -14,7 +18,7 @@
   </div>
 
   <div slot="body" class="graph-wrapper">
-    <ResourceGraphContainer />
+    <ResourceGraphContainer seeds={seeds} />
   </div>
 </WorkspaceContainer>
 
