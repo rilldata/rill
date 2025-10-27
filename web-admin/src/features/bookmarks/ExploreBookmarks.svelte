@@ -28,18 +28,26 @@
   const exploreNameStore = writable(exploreName);
   $: exploreNameStore.set(exploreName);
 
+  // Get url params for the explore based on yaml defaults.
+  // This is used for home bookmarks button when there is no explicit home bookmark created.
   const urlForExploreYAMLDefaultState =
     createUrlForExploreYAMLDefaultState(exploreNameStore);
 
+  // Rill opinionated url params that are removed from url to keep the url short.
+  // To keep bookmarks exhaustive, these are added on top of current url params while creating bookmarks.
   const rillDefaultExploreURLParams =
     createRillDefaultExploreUrlParamsV2(exploreNameStore);
 
+  // Get part of explore state relevant to bookmarks.
+  // We need to do this to reuse the Bookmarks component in canvas.
   const filtersStore = getFilterStateFromNameStore(exploreNameStore);
   const timeControlsStore = getTimeControlsStateFromNameStore(exploreNameStore);
 
-  const exploreBookmarkDataTransformer =
+  // Transformer for legacy bookmark data that was stored in proto format.
+  const exploreBookmarkLegacyDataTransformer =
     createExploreBookmarkLegacyDataTransformer(exploreNameStore);
 
+  // Stable query object for bookmarks for this explore
   const bookmarksQuery = createQuery(
     getBookmarksQueryOptions(
       orgAndProjectNameStore,
@@ -49,25 +57,30 @@
   );
   $: bookmarks = $bookmarksQuery.data?.bookmarks ?? [];
 
+  // Parse bookmarks and fill in metadata based on bookmark data.
   $: parsedBookmarks = parseBookmarks(
     bookmarks,
     $page.url.searchParams,
     $rillDefaultExploreURLParams,
-    $exploreBookmarkDataTransformer,
+    $exploreBookmarkLegacyDataTransformer,
   );
+  // Categorize bookmarks into home, shared and personal bookmarks.
   $: categorizedBookmarks = categorizeBookmarks(parsedBookmarks);
 </script>
 
 <Bookmarks
   {organization}
   {project}
-  metricsViewNames={[metricsViewName]}
-  resourceKind={ResourceKind.Explore}
-  resourceName={exploreName}
-  {bookmarks}
-  {categorizedBookmarks}
-  defaultUrlParams={$rillDefaultExploreURLParams}
-  defaultHomeBookmarkUrl={$urlForExploreYAMLDefaultState}
-  filtersState={$filtersStore}
-  timeControlState={$timeControlsStore}
+  resource={{ name: exploreName, kind: ResourceKind.Explore }}
+  bookmarkData={{
+    bookmarks,
+    categorizedBookmarks,
+    defaultUrlParams: $rillDefaultExploreURLParams,
+    defaultHomeBookmarkUrl: $urlForExploreYAMLDefaultState,
+  }}
+  dashboardState={{
+    metricsViewNames: [metricsViewName],
+    filtersState: $filtersStore,
+    timeControlState: $timeControlsStore,
+  }}
 />

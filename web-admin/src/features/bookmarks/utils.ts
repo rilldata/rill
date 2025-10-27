@@ -10,13 +10,16 @@ import { DateTime, Interval } from "luxon";
 
 export type BookmarkEntry = {
   resource: V1Bookmark;
+  // If bookmark has only filter related params then this is true. Non-filter params from url are copied over to fullUrl.
   filtersOnly: boolean;
+  // If bookmark has an absolute time range. Start and end times will be hardcoded here.
   absoluteTimeRange: boolean;
-  // Url directly converted from bookmark.
+  // Url directly converted from bookmark. Default urls are also cleaned to match the actual url.
   url: string;
   // Full url to be used to navigate.
   // This contains existing non-filter params on top of filter params for filters only bookmark.
   fullUrl: string;
+  // Matches the current url to the above url field. Used to show an active status beside a bookmark item.
   isActive: boolean;
 };
 
@@ -115,6 +118,10 @@ export function formatTimeRange(
   return prettyFormatTimeRange(interval, timeGrain);
 }
 
+/**
+ * Parses bookmark resources by filling in metadata into {@link BookmarkEntry}
+ * Optionally takes a dataTransformer for legacy proto. All new bookmarks will have the url params stored directly.
+ */
 export function parseBookmarks(
   bookmarkResp: V1Bookmark[],
   curUrlParams: URLSearchParams,

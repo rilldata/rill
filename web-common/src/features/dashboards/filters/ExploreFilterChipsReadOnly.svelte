@@ -1,7 +1,7 @@
 <script lang="ts">
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-  import { getCombinedMeasuresAndDimensions } from "@rilldata/web-common/features/metrics-views/get-combined-measures-and-dimensions.ts";
+  import { getCombinedMeasuresAndDimensionsForMetricsViews } from "@rilldata/web-common/features/metrics-views/get-combined-measures-and-dimensions-for-metrics-views.ts";
   import type {
     V1Expression,
     V1TimeRange,
@@ -22,9 +22,8 @@
   const metricsViewNamesStore = writable([] as string[]);
   $: metricsViewNamesStore.set(metricsViewNames);
 
-  const combinedMeasuresAndDimensions = getCombinedMeasuresAndDimensions(
-    metricsViewNamesStore,
-  );
+  const combinedMeasuresAndDimensions =
+    getCombinedMeasuresAndDimensionsForMetricsViews(metricsViewNamesStore);
   $: ({ measures, dimensions } = $combinedMeasuresAndDimensions);
 </script>
 

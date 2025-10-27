@@ -8,7 +8,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import { createQueries } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
-export function getCombinedMeasuresAndDimensions(
+export function getCombinedMeasuresAndDimensionsForMetricsViews(
   metricsViewNamesStore: Readable<string[]>,
 ) {
   const metricsViewQueryOptions = derived(

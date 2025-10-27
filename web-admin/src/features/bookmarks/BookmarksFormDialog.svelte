@@ -34,14 +34,18 @@
   export let organization: string;
   export let project: string;
   export let projectId: string;
-  export let metricsViewNames: string[];
-  export let resourceKind: ResourceKind;
-  export let resourceName: string;
+  export let resource: { name: string; kind: ResourceKind };
   export let bookmark: BookmarkEntry | null = null;
   export let defaultUrlParams: URLSearchParams | undefined = undefined;
-  export let filtersState: FiltersState;
-  export let timeControlState: TimeControlState;
+  export let dashboardState: {
+    metricsViewNames: string[];
+    filtersState: FiltersState;
+    timeControlState: TimeControlState;
+  };
   export let onClose = () => {};
+
+  $: ({ name: resourceName, kind: resourceKind } = resource);
+  $: ({ metricsViewNames, filtersState, timeControlState } = dashboardState);
 
   $: ({ url } = $page);
   $: curUrlParams = url.searchParams;

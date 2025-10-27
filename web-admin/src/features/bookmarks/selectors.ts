@@ -103,6 +103,7 @@ export function getHomeBookmarkExploreState(
       const exploreSpec = exploreSpecResp?.explore ?? {};
 
       if (homeBookmark.data) {
+        // Legacy bookmark data stored in proto format.
         const exploreStateFromLegacyProto = getDashboardStateFromUrl(
           homeBookmark.data,
           metricsViewSpec,
