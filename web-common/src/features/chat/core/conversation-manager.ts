@@ -236,6 +236,18 @@ export class ConversationManager {
       this.instanceId,
     );
 
+    // Check if we have existing cached data
+    const existingData =
+      queryClient.getQueryData<V1ListConversationsResponse>(
+        listConversationsKey,
+      );
+
+    // If no cached data exists, invalidate to fetch fresh data instead of creating an empty list
+    if (!existingData) {
+      queryClient.invalidateQueries({ queryKey: listConversationsKey });
+      return;
+    }
+
     queryClient.setQueryData<V1ListConversationsResponse>(
       listConversationsKey,
       (old) => {

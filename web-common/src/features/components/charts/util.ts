@@ -219,8 +219,8 @@ export function getColorMappingForChart(
     if (isDomainStringArray(colorValues)) {
       colorMapping = getColorForValues(
         colorValues,
-        colorField.colorMapping,
-        isDarkMode,
+        "colorMapping" in colorField ? colorField.colorMapping : undefined,
+        isDarkMode
       );
     }
   }

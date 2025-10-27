@@ -95,7 +95,7 @@
   );
 </script>
 
-{#if isFetching}
+{#if isFetching || measures.length === 0}
   <div class="flex items-center justify-center h-full w-full">
     <Spinner status={EntityStatus.Running} size="20px" />
   </div>
