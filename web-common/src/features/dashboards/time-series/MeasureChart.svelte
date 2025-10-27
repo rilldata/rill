@@ -24,8 +24,11 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+  import MeasureSelection from "@rilldata/web-common/features/dashboards/time-series/measure-selection/MeasureSelection.svelte";
   import MeasurePan from "@rilldata/web-common/features/dashboards/time-series/MeasurePan.svelte";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { roundDownToTimeUnit } from "@rilldata/web-common/features/dashboards/time-series/round-to-nearest-time-unit.ts";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -213,6 +216,16 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
+    const shouldUpdateSelectedRange =
+      !isScrubbing &&
+      measureSelection.hasSelection() &&
+      // Type safety
+      measure.name &&
+      TIME_GRAIN[timeGrain];
+    if (shouldUpdateSelectedRange) {
+      measureSelection.setRange(measure.name!, start, end);
+    }
+
     metricsExplorerStore.setSelectedScrubRange(exploreName, {
       start: adjustedStart,
       end: adjustedEnd,
@@ -242,20 +255,40 @@
     );
   }
 
-  function onMouseClick() {
-    // skip if still scrubbing
+  function onMouseClick(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    // skip if still scrubbing, avoid any click interactions with the chart
     if (preventScrubReset) return;
+
+    const hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
+
     // skip if no scrub range selected
-    if (!hasSubrangeSelected) return;
+    if (!hasSubrangeSelected) {
+      maybeSelectMeasureHoverTime();
+      return;
+    }
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
-    if (
+    const mouseOutsideOfScrubRange =
       mouseoverValue?.x &&
-      (mouseoverValue?.x < start || mouseoverValue?.x > end)
-    ) {
+      (mouseoverValue?.x < start || mouseoverValue?.x > end);
+    if (mouseOutsideOfScrubRange) {
       resetScrub();
+      measureSelection.clear();
+    } else if (measure.name) {
+      measureSelection.setRange(measure.name, scrubStart, scrubEnd);
     }
+  }
+
+  function maybeSelectMeasureHoverTime() {
+    const hasValidMeasureSelectionTarget =
+      hoveredTime && measure.name && TIME_GRAIN[timeGrain];
+    if (!hasValidMeasureSelectionTarget) return;
+    const ts = roundDownToTimeUnit(hoveredTime, TIME_GRAIN[timeGrain].label);
+    measureSelection.setStart(measure.name!, ts);
   }
 </script>
 
@@ -268,7 +301,7 @@
     left={0}
     let:config
     let:yScale
-    on:click={() => onMouseClick()}
+    on:click={onMouseClick}
     on:scrub-end={() => scrub?.endScrub()}
     on:scrub-move={(e) => scrub?.moveScrub(e)}
     on:scrub-start={(e) => scrub?.startScrub(e)}
@@ -372,6 +405,7 @@
                   {showComparison}
                   {mouseoverFormat}
                   {numberKind}
+                  colorClass="stroke-slate-300"
                 />
               {/if}
             </g>
@@ -403,6 +437,18 @@
     {#if annotations && $annotations}
       <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
     {/if}
+
+    <MeasureSelection
+      {data}
+      measureName={measure.name ?? ""}
+      {xAccessor}
+      {yAccessor}
+      {internalXMin}
+      {internalXMax}
+      {mouseoverFormat}
+      {numberKind}
+      {inBounds}
+    />
   </SimpleDataGraphic>
 
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->

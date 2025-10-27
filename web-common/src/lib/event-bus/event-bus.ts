@@ -63,6 +63,7 @@ export interface Events {
   click: null;
   "shift-command-click": null;
   "page-content-resized": PageContentResized;
+  "start-chat": null;
 }
 
 type T = keyof Events;

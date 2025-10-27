@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ConversationContext from "@rilldata/web-common/features/chat/core/context/ConversationContext.svelte";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
@@ -28,7 +29,6 @@
     const target = e.target as HTMLTextAreaElement;
     const value = target.value;
     draftMessageStore.set(value);
-    autoResize();
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -53,7 +53,6 @@
 
     // Let the parent component manage the input value
     await tick();
-    autoResize();
     textarea?.focus();
   }
 
@@ -83,7 +82,11 @@
 
   // Auto-resize when value changes
   $: if (textarea && value !== undefined) {
-    autoResize();
+    // There is an race condition where scrollHeight has not updated yet.
+    // Adding a timeout makes sure it is avoided.
+    setTimeout(() => {
+      autoResize();
+    }, 5);
   }
 </script>
 
@@ -92,38 +95,42 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <textarea
-    bind:this={textarea}
-    {value}
-    class="chat-input"
-    class:fixed-height={!!height}
-    style:height
-    {placeholder}
-    rows="1"
-    on:keydown={handleKeydown}
-    on:input={handleInput}
-  />
-  {#if canCancel}
-    <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
-      <span class="stop-icon">
-        <StopCircle size="1.2em" />
-      </span>
-    </IconButton>
-  {:else}
-    <IconButton
-      ariaLabel="Send message"
-      disabled={!canSend}
-      on:click={sendMessage}
-    >
-      <SendIcon size="1.3em" disabled={!canSend} />
-    </IconButton>
+  {#if currentConversation}
+    <ConversationContext conversation={currentConversation} />
   {/if}
+  <div class="chat-input-elements">
+    <textarea
+      bind:this={textarea}
+      {value}
+      class="chat-input"
+      class:fixed-height={!!height}
+      style:height
+      {placeholder}
+      rows="1"
+      on:keydown={handleKeydown}
+      on:input={handleInput}
+    />
+    {#if canCancel}
+      <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+        <span class="stop-icon">
+          <StopCircle size="1.2em" />
+        </span>
+      </IconButton>
+    {:else}
+      <IconButton
+        ariaLabel="Send message"
+        disabled={!canSend}
+        on:click={sendMessage}
+      >
+        <SendIcon size="1.3em" disabled={!canSend} />
+      </IconButton>
+    {/if}
+  </div>
 </form>
 
 <style lang="postcss">
   .chat-input-form {
-    display: flex;
-    align-items: flex-end;
+    @apply flex flex-col;
     gap: 0.25rem;
     background: var(--background);
     border: 1px solid var(--border);
@@ -131,6 +138,10 @@
     padding: 0.25rem;
     margin: 0 1rem;
     transition: border-color 0.2s;
+  }
+
+  .chat-input-elements {
+    @apply flex flex-row;
   }
 
   .chat-input-form:focus-within {

@@ -1,5 +1,9 @@
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import { get } from "svelte/store";
 import { localStorageStore } from "../../../../lib/store-utils/local-storage";
 import { sessionStorageStore } from "../../../../lib/store-utils/session-storage";
+import type { ConversationContextEntry } from "../../core/context/context-type-data";
+import { getConversationManager } from "../../core/conversation-manager";
 
 // =============================================================================
 // SIDEBAR CONSTANTS
@@ -37,6 +41,23 @@ export const sidebarActions = {
 
   openChat(): void {
     chatOpen.set(true);
+  },
+
+  startChat(
+    instanceId: string,
+    prompt: string,
+    contextEntries: ConversationContextEntry[],
+  ): void {
+    chatOpen.set(true);
+    const conversationManager = getConversationManager(instanceId, {
+      conversationState: "browserStorage",
+    });
+    const currentConversation = get(
+      conversationManager.getCurrentConversation(),
+    );
+    currentConversation.draftMessage.set(prompt);
+    currentConversation.context.override(contextEntries);
+    eventBus.emit("start-chat", null);
   },
 
   closeChat(): void {

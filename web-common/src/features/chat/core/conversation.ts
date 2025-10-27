@@ -1,9 +1,11 @@
+import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
   type RpcStatus,
   type V1CompleteStreamingResponse,
+  type V1CompletionMessageContext,
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
@@ -29,6 +31,7 @@ export class Conversation {
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
+  public readonly context = new ConversationContext();
 
   // Private state
   private sseClient: SSEFetchClient | null = null;
@@ -98,6 +101,8 @@ export class Conversation {
     const prompt = get(this.draftMessage).trim();
     if (!prompt) throw new Error("Cannot send empty message");
 
+    const context = this.context.getRequestContext();
+
     // Optimistic updates
     this.draftMessage.set("");
     this.streamError.set(null);
@@ -108,7 +113,7 @@ export class Conversation {
 
     try {
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(prompt);
+      const streamPromise = this.startStreaming(prompt, context);
 
       // Wait for streaming to complete
       await streamPromise;
@@ -168,7 +173,10 @@ export class Conversation {
    * Start streaming completion responses for a given prompt
    * Returns a Promise that resolves when streaming completes
    */
-  private async startStreaming(prompt: string): Promise<void> {
+  private async startStreaming(
+    prompt: string,
+    context: V1CompletionMessageContext | undefined,
+  ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
       this.sseClient = new SSEFetchClient();
@@ -229,6 +237,7 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
+      context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)

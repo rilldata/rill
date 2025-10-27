@@ -380,6 +380,12 @@ export function isAndOrExpression(expression: V1Expression | undefined) {
   );
 }
 
+export function isExpressionEmpty(expression: V1Expression | undefined) {
+  if (!expression) return true;
+  if (!isAndOrExpression(expression)) return false;
+  return expression?.cond?.exprs?.length === 0;
+}
+
 export function removeWrapperAndOrExpression(
   expression: V1Expression | undefined,
 ) {
