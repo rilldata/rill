@@ -1,9 +1,9 @@
 import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
 import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
 import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-import MetricsViewIcon from "@rilldata/web-common/components/icons/MetricsViewIcon.svelte";
+import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
 import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import {
   V1TimeGrain,
@@ -13,7 +13,7 @@ import { DateTime, Interval } from "luxon";
 import { derived, readable, type Readable } from "svelte/store";
 
 export enum ConversationContextType {
-  MetricsView,
+  Explore,
   TimeRange,
   Filters,
   Measure,
@@ -30,7 +30,7 @@ type ContextDataPerType<
   K extends keyof V1CompletionMessageContext = keyof V1CompletionMessageContext,
 > = {
   key: K;
-  icon: typeof MetricsViewIcon;
+  icon: typeof ExploreIcon;
   formatter: (
     value: V1CompletionMessageContext[K],
     record: ContextRecord,
@@ -44,15 +44,14 @@ export const ContextTypeData: Record<
   ConversationContextType,
   ContextDataPerType
 > = {
-  [ConversationContextType.MetricsView]: <ContextDataPerType<"metricsView">>{
-    key: "metricsView",
-    icon: MetricsViewIcon,
-    formatter: (metricsViewName, _, instanceId) =>
+  [ConversationContextType.Explore]: <ContextDataPerType<"explore">>{
+    key: "explore",
+    icon: ExploreIcon,
+    formatter: (exploreName, _, instanceId) =>
       derived(
-        useMetricsView(instanceId, metricsViewName ?? ""),
+        useExploreValidSpec(instanceId, exploreName ?? ""),
         (metricsViewResp) =>
-          metricsViewResp.data?.metricsView?.state?.validSpec?.displayName ||
-          metricsViewName,
+          metricsViewResp.data?.explore?.displayName || exploreName,
       ),
   },
   [ConversationContextType.TimeRange]: <ContextDataPerType<"timeRange">>{
@@ -85,15 +84,15 @@ export const ContextTypeData: Record<
     icon: Compare,
     formatter: (measureNames, contextRecord, instanceId) =>
       derived(
-        useMetricsView(
+        useExploreValidSpec(
           instanceId,
-          contextRecord[ConversationContextType.MetricsView] ?? "",
+          contextRecord[ConversationContextType.Explore] ?? "",
         ),
         (metricsViewResp) => {
           const measureDisplayNames = measureNames?.map(
             (measureName) =>
               getMeasureDisplayName(
-                metricsViewResp.data?.metricsView?.state?.validSpec?.measures?.find(
+                metricsViewResp.data?.metricsView?.measures?.find(
                   (m) => m.name === measureName,
                 ),
               ) ?? measureName,

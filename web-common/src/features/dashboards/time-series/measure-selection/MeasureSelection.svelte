@@ -26,7 +26,7 @@
   export let inBounds: (min, max, value) => boolean;
 
   $: ({ instanceId } = $runtime);
-  const { metricsViewName, dashboardStore } = getStateManagers();
+  const { exploreName, dashboardStore } = getStateManagers();
 
   const plotConfig: Writable<SimpleDataGraphicConfiguration> = getContext(
     contexts.config,
@@ -48,7 +48,7 @@
     e.preventDefault();
     anomalyExplanation(
       instanceId,
-      $metricsViewName,
+      $exploreName,
       $dashboardStore.whereFilter,
     );
   }

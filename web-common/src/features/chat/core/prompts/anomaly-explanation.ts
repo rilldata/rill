@@ -7,7 +7,7 @@ import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function anomalyExplanation(
   instanceId: string,
-  metricsViewName: string,
+  exploreName: string,
   filters: V1Expression,
 ) {
   if (!measureSelection.hasSelection()) return;
@@ -16,8 +16,8 @@ export function anomalyExplanation(
 
   const context = [
     {
-      type: ConversationContextType.MetricsView,
-      value: metricsViewName,
+      type: ConversationContextType.Explore,
+      value: exploreName,
     },
     ...measureSelection.getContexts(),
   ];

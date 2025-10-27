@@ -31,7 +31,6 @@
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     validSpecStore,
-    metricsViewName,
   } = StateManagers;
 
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
@@ -84,7 +83,7 @@
       } else if (isExplainKey) {
         anomalyExplanation(
           instanceId,
-          $metricsViewName,
+          exploreName,
           $dashboardStore.whereFilter,
         );
       }
@@ -98,7 +97,7 @@
     } else if (isExplainKey) {
       anomalyExplanation(
         instanceId,
-        $metricsViewName,
+        exploreName,
         $dashboardStore.whereFilter,
       );
     }

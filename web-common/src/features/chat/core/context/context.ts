@@ -58,15 +58,14 @@ export class ConversationContext {
     }
     try {
       const contentData = JSON.parse(message.contentData);
-      const context: ConversationContextEntry[] = [];
-
-      Object.entries(contentData.context ?? {}).forEach(([key, value]) => {
-        const camelKey = snakeToCamel(key);
-        const type = ContextKeyToTypeMap[camelKey];
-        if (type) {
-          context.push({ type, value: value as any });
-        }
-      });
+      const context = Object.entries(contentData.context ?? {})
+        .map(([key, value]) => {
+          const camelKey = snakeToCamel(key);
+          const type = ContextKeyToTypeMap[camelKey];
+          const isValid = type !== undefined && !!value;
+          return isValid ? { type, value: value as any } : undefined;
+        })
+        .filter(Boolean) as ConversationContextEntry[];
 
       this.override(context);
     } catch {
