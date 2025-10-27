@@ -116,13 +116,6 @@ export function getOrgUserInvites(organization: string) {
   );
 }
 
-function getOrgUsergroups(organization: string) {
-  return createAdminServiceListOrganizationMemberUsergroups(organization, {
-    pageSize: PAGE_SIZE,
-    includeCounts: true,
-  });
-}
-
 export function getUserCounts(organization: string) {
   return derived(
     [
@@ -156,4 +149,11 @@ export function getUserCounts(organization: string) {
       };
     },
   );
+}
+
+function getOrgUsergroups(organization: string) {
+  return createAdminServiceListOrganizationMemberUsergroups(organization, {
+    pageSize: PAGE_SIZE,
+    includeCounts: true,
+  });
 }
