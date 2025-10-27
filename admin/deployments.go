@@ -200,6 +200,9 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 
 	// Create instance ID
 	instanceID := strings.ReplaceAll(r.ID, "-", "") // Use the provisioned resource ID without dashes as the instance ID
+	depl.RuntimeInstanceID = instanceID
+	depl.RuntimeHost = cfg.Host
+	depl.RuntimeAudience = cfg.Audience
 
 	// Connect to the runtime
 	rt, err := s.OpenRuntimeClient(depl)
