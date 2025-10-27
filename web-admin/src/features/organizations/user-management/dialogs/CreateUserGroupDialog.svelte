@@ -4,6 +4,7 @@
   import {
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
+    createAdminServiceListOrganizationMemberUsers,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
@@ -29,15 +30,33 @@
 
   export let open = false;
   export let groupName: string;
-  export let organizationUsers: V1OrganizationMemberUser[] = [];
   export let currentUserEmail: string = "";
 
   let searchText = "";
+  let debouncedSearchText = "";
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
+  // Debounce search text to avoid too many API calls
+  $: {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      debouncedSearchText = searchText;
+    }, 300);
+  }
+
   $: organization = $page.params.organization;
+  // Use server-side search for organization users
+  $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
+    organization,
+    {
+      pageSize: 50,
+      searchPattern: debouncedSearchText || undefined,
+    },
+  );
+  $: organizationUsers = $organizationUsersQuery.data?.members ?? [];
 
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();

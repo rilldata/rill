@@ -3,14 +3,13 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceListOrganizationMemberUsers,
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceRenameUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import { getOrgUserMembers } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
   import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -35,24 +34,39 @@
   export let currentUserEmail: string = "";
 
   let searchText = "";
+  let debouncedSearchText = "";
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
   let initialized = false;
+
+  // Debounce search text to avoid too many API calls
+  $: {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      debouncedSearchText = searchText;
+    }, 300);
+  }
 
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     groupName,
   );
-  $: orgMemberUsersInfiniteQuery = getOrgUserMembers({
+  // Use server-side search for organization users with debounced text
+  $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
     organization,
-    guestOnly: false,
-  });
+    {
+      pageSize: 50,
+      searchPattern: debouncedSearchText || undefined,
+    },
+  );
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
   $: allOrganizationUsers =
-    $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
-      (page) => page.members ?? [],
+    $organizationUsersQuery.data?.members?.filter(
+      (u) =>
+        !selectedUsers.some((selected) => selected.userEmail === u.userEmail),
     ) ?? [];
   $: if (
     userGroupMembersUsers.length > 0 &&
@@ -69,12 +83,6 @@
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const renameUserGroup = createAdminServiceRenameUsergroup();
-
-  async function ensureAllUsersLoaded() {
-    while ($orgMemberUsersInfiniteQuery.hasNextPage) {
-      await $orgMemberUsersInfiniteQuery.fetchNextPage();
-    }
-  }
 
   function handleRemove(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
@@ -143,11 +151,7 @@
         });
       }
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
-
+      // Invalidate only the necessary queries
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
           organization,
@@ -218,13 +222,21 @@
     },
   );
 
-  $: coercedUsersToOptions = allOrganizationUsers.map((user) => ({
-    value: user.userEmail,
-    label: user.userName,
-  }));
+  $: coercedUsersToOptions = [
+    ...selectedUsers.map((user) => ({
+      value: user.userEmail,
+      label: user.userName,
+    })),
+    ...allOrganizationUsers.map((user) => ({
+      value: user.userEmail,
+      label: user.userName,
+    })),
+  ];
 
   function getMetadata(email: string) {
-    const user = allOrganizationUsers.find((user) => user.userEmail === email);
+    const user =
+      selectedUsers.find((u) => u.userEmail === email) ||
+      allOrganizationUsers.find((u) => u.userEmail === email);
     return user
       ? { name: user.userName, photoUrl: user.userPhotoUrl }
       : undefined;
@@ -232,11 +244,6 @@
 
   // Check if form has been modified
   $: hasFormChanges = $form.newName !== initialValues.newName;
-
-  // Load all users when dialog opens
-  $: if (open) {
-    ensureAllUsersLoaded();
-  }
 
   function handleClose() {
     open = false;
