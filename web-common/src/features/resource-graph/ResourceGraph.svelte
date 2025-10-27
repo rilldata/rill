@@ -4,21 +4,58 @@
   import ResourceGraphCanvas from "./ResourceGraphCanvas.svelte";
   import {
     partitionResourcesByMetrics,
+    partitionResourcesBySeeds,
     type ResourceGraphGrouping,
   } from "./build-resource-graph";
+  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
   export let error: string | null = null;
+  export let seeds: string[] | undefined;
 
   $: normalizedResources = resources ?? [];
-  $: resourceGroups = partitionResourcesByMetrics(
-    normalizedResources,
-  );
+  const KIND_ALIASES: Record<string, ResourceKind> = {
+    metrics: ResourceKind.MetricsView,
+    metric: ResourceKind.MetricsView,
+    metricsview: ResourceKind.MetricsView,
+    dashboard: ResourceKind.Explore,
+    explore: ResourceKind.Explore,
+    model: ResourceKind.Model,
+    source: ResourceKind.Source,
+    canvas: ResourceKind.Canvas,
+  };
+
+  function normalizeSeed(s: string): string | V1ResourceName {
+    const idx = s.indexOf(":");
+    if (idx === -1) {
+      return { kind: ResourceKind.MetricsView, name: s };
+    }
+    const kindPart = s.slice(0, idx);
+    const namePart = s.slice(idx + 1);
+    if (kindPart.includes(".")) {
+      return { kind: kindPart, name: namePart };
+    }
+    const mapped = KIND_ALIASES[kindPart.trim().toLowerCase()];
+    if (mapped) return { kind: mapped, name: namePart };
+    return s;
+  }
+
+  $: normalizedSeeds = (seeds ?? []).map((s) => normalizeSeed(s));
+
+  $: resourceGroups = (normalizedSeeds && normalizedSeeds.length)
+    ? partitionResourcesBySeeds(normalizedResources, normalizedSeeds)
+    : partitionResourcesByMetrics(normalizedResources);
   $: hasGraphs = resourceGroups.length > 0;
 
   // Expanded state (fills the graph-wrapper area, not fullscreen)
   let expandedGroup: ResourceGraphGrouping | null = null;
+
+  // If explicit seeds are provided, auto-open the first seeded graph in expanded view
+  $: if ((seeds?.length ?? 0) > 0 && !expandedGroup && resourceGroups.length > 0) {
+    expandedGroup = resourceGroups[0];
+  }
 
   const formatGroupTitle = (group: ResourceGraphGrouping, index: number) => {
     const baseLabel = group.label ?? `Graph ${index + 1}`;

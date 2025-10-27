@@ -283,97 +283,95 @@ export type ResourceGraphGrouping = {
   label?: string;
 };
 
-export function partitionResourcesByMetrics(
-  resources: V1Resource[],
-): ResourceGraphGrouping[] {
-  const resourceMap = new Map<string, V1Resource>();
+// Build adjacency (both directions) between resources by id
+function buildAdjacency(resources: Map<string, V1Resource>) {
   const adjacency = new Map<string, Set<string>>();
-
-  for (const resource of resources) {
-    const id = toNodeId(resource.meta);
-    if (!id) continue;
-
-    const kind = toResourceKind(resource.meta?.name);
-    if (!kind || !ALLOWED_KINDS.has(kind)) continue;
-    if (resource.meta?.hidden) continue;
-
-    resourceMap.set(id, resource);
+  for (const id of resources.keys()) {
     if (!adjacency.has(id)) adjacency.set(id, new Set());
   }
-
-  for (const resource of resourceMap.values()) {
+  for (const resource of resources.values()) {
     const dependentId = toNodeId(resource.meta);
     if (!dependentId) continue;
-
     for (const ref of resource.meta?.refs ?? []) {
       const sourceId = toNodeId({ name: ref });
       if (!sourceId) continue;
       // Record refs for persistence even if source is not currently present
       const existing = lastRefs.get(dependentId) ?? [];
       if (!existing.includes(sourceId)) lastRefs.set(dependentId, [...existing, sourceId]);
-      if (!resourceMap.has(sourceId)) continue;
-
-      adjacency.get(dependentId)!.add(sourceId);
+      if (!resources.has(sourceId)) continue;
       if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
+      if (!adjacency.has(dependentId)) adjacency.set(dependentId, new Set());
+      adjacency.get(dependentId)!.add(sourceId);
       adjacency.get(sourceId)!.add(dependentId);
     }
   }
+  return adjacency;
+}
 
-  const metricIds = Array.from(resourceMap.entries())
-    .filter(([, resource]) => toResourceKind(resource.meta?.name) === ResourceKind.MetricsView)
-    .map(([id, resource]) => ({
-      id,
-      label: resource.meta?.name?.name ?? id,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+// Collect closure around a seed traversing forwards (dependents) and backwards (sources)
+function traverseClosure(seedId: string, adjacency: Map<string, Set<string>>) {
+  const visited = new Set<string>();
+  const queue = [seedId];
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (visited.has(current)) continue;
+    visited.add(current);
+    const neighbors = adjacency.get(current);
+    if (!neighbors?.size) continue;
+    for (const nb of neighbors) if (!visited.has(nb)) queue.push(nb);
+  }
+  return visited;
+}
+
+export function partitionResourcesBySeeds(
+  resources: V1Resource[],
+  seeds: (string | V1ResourceName)[],
+): ResourceGraphGrouping[] {
+  const resourceMap = new Map<string, V1Resource>();
+  for (const resource of resources) {
+    const id = toNodeId(resource.meta);
+    if (!id) continue;
+    const kind = toResourceKind(resource.meta?.name);
+    if (!kind || !ALLOWED_KINDS.has(kind)) continue;
+    if (resource.meta?.hidden) continue;
+    resourceMap.set(id, resource);
+  }
+
+  const toSeedId = (seed: string | V1ResourceName) =>
+    typeof seed === "string" ? seed : toNodeId({ name: seed });
+
+  const adjacency = buildAdjacency(resourceMap);
 
   const groups: ResourceGraphGrouping[] = [];
   const groupById = new Map<string, ResourceGraphGrouping>();
   const assigned = new Set<string>();
 
-  const traverseConnected = (startId: string) => {
-    const visited = new Set<string>();
-    const queue = [startId];
+  const normalizedSeeds = seeds
+    .map((s) => toSeedId(s))
+    .filter((id): id is string => !!id)
+    .filter((id, idx, arr) => arr.indexOf(id) === idx);
 
-    while (queue.length) {
-      const current = queue.shift()!;
-      if (visited.has(current)) continue;
-      visited.add(current);
-
-      const neighbors = adjacency.get(current);
-      if (!neighbors?.size) continue;
-      for (const neighborId of neighbors) {
-        if (!visited.has(neighborId)) queue.push(neighborId);
-      }
-    }
-
-    return visited;
-  };
-
-  for (const metric of metricIds) {
-    const componentIds = traverseConnected(metric.id);
-
+  for (const seedId of normalizedSeeds) {
+    const componentIds = traverseClosure(seedId, adjacency);
     const componentResources = Array.from(componentIds)
       .map((resourceId) => resourceMap.get(resourceId))
       .filter((res): res is V1Resource => !!res);
+    if (!componentResources.length) continue;
 
-    if (componentResources.length) {
-      const group: ResourceGraphGrouping = {
-        id: metric.id,
-        resources: componentResources,
-        label: metric.label,
-      };
-      groups.push(group);
-      groupById.set(group.id, group);
-      lastGroupLabels.set(group.id, group.label ?? group.id);
-      for (const res of componentIds) assigned.add(res);
-    }
+    const label = resourceMap.get(seedId)?.meta?.name?.name ?? seedId;
+    const group: ResourceGraphGrouping = {
+      id: seedId,
+      resources: componentResources,
+      label,
+    };
+    groups.push(group);
+    groupById.set(group.id, group);
+    lastGroupLabels.set(group.id, group.label ?? group.id);
+    for (const resId of componentIds) assigned.add(resId);
   }
 
   // Try to assign ungrouped resources to their last known existing group.
-  const unassignedIds = Array.from(resourceMap.keys()).filter(
-    (id) => !assigned.has(id),
-  );
+  const unassignedIds = Array.from(resourceMap.keys()).filter((id) => !assigned.has(id));
   for (const id of unassignedIds) {
     const cachedGroupId = lastGroupAssignments.get(id);
     if (!cachedGroupId) continue;
@@ -386,9 +384,7 @@ export function partitionResourcesByMetrics(
   }
 
   // Build synthetic groups for cached groups whose anchors disappeared.
-  const stillUnassignedIds = Array.from(resourceMap.keys()).filter(
-    (id) => !assigned.has(id),
-  );
+  const stillUnassignedIds = Array.from(resourceMap.keys()).filter((id) => !assigned.has(id));
   const syntheticGroups = new Map<string, V1Resource[]>();
   for (const id of stillUnassignedIds) {
     const cachedGroupId = lastGroupAssignments.get(id);
@@ -401,11 +397,7 @@ export function partitionResourcesByMetrics(
   for (const [syntheticId, syntheticResources] of syntheticGroups) {
     if (!syntheticResources.length) continue;
     const label = lastGroupLabels.get(syntheticId) ?? "Recovered group";
-    const group: ResourceGraphGrouping = {
-      id: syntheticId,
-      resources: syntheticResources,
-      label,
-    };
+    const group: ResourceGraphGrouping = { id: syntheticId, resources: syntheticResources, label };
     groups.push(group);
     groupById.set(group.id, group);
     for (const res of syntheticResources) {
@@ -417,93 +409,12 @@ export function partitionResourcesByMetrics(
   // Ensure missing-but-cached resources remain in their last group as placeholders.
   const presentIds = new Set(resourceMap.keys());
   for (const [rid, gid] of lastGroupAssignments) {
-    // Only if we already have the group in the result
     const grp = groupById.get(gid);
     if (!grp) continue;
-    // Already present
     if (presentIds.has(rid)) continue;
-    // Avoid duplicate placeholders if already added somehow
     if (grp.resources.some((r) => toNodeId(r.meta) === rid)) continue;
     grp.resources.push(makePlaceholderResource(rid));
     assigned.add(rid);
-  }
-
-  // If some cached groups don't exist in this pass (e.g., all members missing),
-  // create recovered groups composed of placeholders so the component remains visible.
-  for (const [gid, label] of lastGroupLabels) {
-    if (groupById.has(gid)) continue;
-    const members: V1Resource[] = [];
-    for (const [rid, rgid] of lastGroupAssignments) {
-      if (rgid !== gid) continue;
-      if (assigned.has(rid)) continue; // already included
-      members.push(makePlaceholderResource(rid));
-      assigned.add(rid);
-    }
-    if (members.length) {
-      const group: ResourceGraphGrouping = { id: gid, resources: members, label };
-      groups.push(group);
-      groupById.set(gid, group);
-    }
-  }
-
-  const collectRemainingComponent = (
-    startId: string,
-    available: Set<string>,
-  ) => {
-    const queue = [startId];
-    const component = new Set<string>();
-
-    while (queue.length) {
-      const current = queue.shift()!;
-      if (!available.has(current) || component.has(current)) continue;
-      component.add(current);
-
-      const neighbors = adjacency.get(current);
-      if (!neighbors?.size) continue;
-      for (const neighbor of neighbors) {
-        if (!available.has(neighbor) || component.has(neighbor)) continue;
-        queue.push(neighbor);
-      }
-    }
-
-    return component;
-  };
-
-  const remainingSet = new Set(
-    Array.from(resourceMap.keys()).filter((id) => !assigned.has(id)),
-  );
-
-  for (const id of unassignedIds) {
-    if (!remainingSet.has(id)) continue;
-    const componentIds = collectRemainingComponent(id, remainingSet);
-    if (!componentIds.size) {
-      remainingSet.delete(id);
-      continue;
-    }
-
-    for (const componentId of componentIds) remainingSet.delete(componentId);
-
-    const componentResources = Array.from(componentIds)
-      .map((resourceId) => resourceMap.get(resourceId))
-      .filter((res): res is V1Resource => !!res);
-
-    if (componentResources.length) {
-      groups.push({
-        id,
-        resources: componentResources,
-        label: "Other resources",
-      });
-    }
-  }
-
-  if (!metricIds.length && !groups.length) {
-    const allResources = Array.from(resourceMap.values());
-    if (allResources.length) {
-      groups.push({
-        id: "all-resources",
-        resources: allResources,
-      });
-    }
   }
 
   // Update caches with current grouping assignments.
@@ -519,4 +430,25 @@ export function partitionResourcesByMetrics(
   persistAllCaches();
 
   return groups;
+}
+
+export function partitionResourcesByMetrics(
+  resources: V1Resource[],
+): ResourceGraphGrouping[] {
+  // Derive seeds from metrics views and delegate to seed partitioning.
+  const metricSeedIds = resources
+    .filter((r) => toResourceKind(r.meta?.name) === ResourceKind.MetricsView && !r.meta?.hidden)
+    .map((r) => toNodeId(r.meta)!)
+    .filter(Boolean);
+
+  // Fallback: if no metrics, show a single group with all resources (existing behavior)
+  if (!metricSeedIds.length) {
+    const allResources = resources.filter((r) => {
+      const kind = toResourceKind(r.meta?.name);
+      return !!kind && ALLOWED_KINDS.has(kind) && !r.meta?.hidden;
+    });
+    return allResources.length ? [{ id: "all-resources", resources: allResources }] : [];
+  }
+
+  return partitionResourcesBySeeds(resources, metricSeedIds);
 }

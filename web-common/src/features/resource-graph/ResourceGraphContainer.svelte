@@ -2,6 +2,7 @@
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ResourceGraph from "./ResourceGraph.svelte";
+  export let seeds: string[] | undefined;
 
   $: ({ instanceId } = $runtime);
 
@@ -24,4 +25,5 @@
   resources={resources}
   isLoading={$resourcesQuery.isLoading}
   error={errorMessage}
+  seeds={seeds}
 />
