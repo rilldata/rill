@@ -8,7 +8,10 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+import {
+  getExploreValidSpecQueryOptions,
+  useExploreValidSpec,
+} from "@rilldata/web-common/features/explores/selectors.ts";
 import {
   getQueryServiceMetricsViewTimeRangeQueryOptions,
   type RpcStatus,
@@ -22,13 +25,14 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 import {
   createQuery,
   type CreateQueryOptions,
   type CreateQueryResult,
   type QueryClient,
 } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
 import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -123,6 +127,34 @@ export function useMetricsViewTimeRange(
         },
         queryClient,
       ).subscribe(set),
+  );
+}
+
+export function getMetricsViewTimeRangeFromExploreQueryOptions(
+  exploreNameStore: Readable<string>,
+) {
+  const validSpecQuery = createQuery(
+    getExploreValidSpecQueryOptions(exploreNameStore),
+  );
+
+  return derived(
+    [runtime, validSpecQuery],
+    ([{ instanceId }, validSpecResp]) => {
+      const metricsViewSpec = validSpecResp.data?.metricsViewSpec ?? {};
+      const exploreSpec = validSpecResp.data?.exploreSpec ?? {};
+      const metricsViewName = exploreSpec.metricsView ?? "";
+
+      return getQueryServiceMetricsViewTimeRangeQueryOptions(
+        instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            enabled: !!metricsViewSpec.timeDimension,
+          },
+        },
+      );
+    },
   );
 }
 
