@@ -14,6 +14,7 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import TableIcon from "../../canvas/icons/TableIcon.svelte";
+  import { ButtonGroup, SubButton } from "@rilldata/web-common/components/button-group";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -119,23 +120,36 @@
     </TooltipContent>
   </Tooltip>
 
-  <div class="flex items-center gap-x-1">
-    <Tooltip location="bottom" alignment="start" distance={8}>
-      <Button
-        type="toolbar"
-        onClick={() => togglePivotType($isFlat ? "nest" : "flat")}
+  <div class="flex items-center gap-x-1 pointer-events-auto">
+    <div class="toolbar-button-group">
+      <ButtonGroup
+        selected={$isFlat ? ["flat"] : ["pivot"]}
+        on:subbutton-click={(event) => {
+          togglePivotType(event.detail === "pivot" ? "nest" : "flat");
+        }}
       >
-        {#if $isFlat}
-          <TableIcon size="16px" />
-        {:else}
+        <SubButton
+          value="pivot"
+          tooltips={{
+            selected: "Currently showing pivot view",
+            unselected: "Switch to pivot view"
+          }}
+        >
           <Pivot size="16px" />
-        {/if}
-        <span>{$isFlat ? "Flat table" : "Pivot table"}</span>
-      </Button>
-      <TooltipContent slot="tooltip-content">
-        {$isFlat ? "Switch to a pivot table" : "Switch to a flat table"}
-      </TooltipContent>
-    </Tooltip>
+          Pivot
+        </SubButton>
+        <SubButton
+          value="flat"
+          tooltips={{
+            selected: "Currently showing flat view", 
+            unselected: "Switch to flat view"
+          }}
+        >
+          <TableIcon size="16px" />
+          Flat
+        </SubButton>
+      </ButtonGroup>
+    </div>
 
     <!-- <Button
     compact
@@ -172,3 +186,12 @@
     {/if}
   </div>
 </div>
+
+<style lang="postcss">
+  /* Make ButtonGroup match toolbar button height (24px) */
+  .toolbar-button-group :global(button) {
+    @apply h-6 px-1.5 py-0;
+    @apply text-sm font-normal;
+    @apply flex items-center gap-x-1;
+  }
+</style>
