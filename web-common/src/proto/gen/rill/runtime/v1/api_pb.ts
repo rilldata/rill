@@ -7,7 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
-import { ContentBlock } from "../../ai/v1/ai_pb.js";
+import { CompletionMessageContext, ContentBlock } from "../../ai/v1/ai_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -4510,6 +4510,11 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   prompt = "";
 
+  /**
+   * @generated from field: rill.ai.v1.CompletionMessageContext context = 4;
+   */
+  context?: CompletionMessageContext;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4521,6 +4526,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "context", kind: "message", T: CompletionMessageContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -4608,6 +4614,11 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   prompt = "";
 
+  /**
+   * @generated from field: rill.ai.v1.CompletionMessageContext context = 4;
+   */
+  context?: CompletionMessageContext;
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4619,6 +4630,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "context", kind: "message", T: CompletionMessageContext },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

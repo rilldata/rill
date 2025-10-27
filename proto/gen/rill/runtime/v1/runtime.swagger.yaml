@@ -604,6 +604,8 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              context:
+                $ref: '#/definitions/v1CompletionMessageContext'
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -642,6 +644,8 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              context:
+                $ref: '#/definitions/v1CompletionMessageContext'
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -4334,6 +4338,25 @@ definitions:
       message:
         $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.CompleteStreaming
+  v1CompletionMessageContext:
+    type: object
+    properties:
+      metricsView:
+        type: string
+      explore:
+        type: string
+      timeRange:
+        type: string
+      filters:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      dimensions:
+        type: array
+        items:
+          type: string
   v1Component:
     type: object
     properties:

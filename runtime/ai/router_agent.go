@@ -23,10 +23,10 @@ type RouterAgent struct {
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
-	Prompt      string `json:"prompt"`
-	Agent       string `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
-	Explore     string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	SkipHandoff bool   `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
+	Prompt      string         `json:"prompt"`
+	Agent       string         `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
+	Context     MessageContext `json:"context,omitempty" jsonschema:"Optional context for explorations."`
+	SkipHandoff bool           `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
 type RouterAgentResult struct {
@@ -145,7 +145,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 			Out:  &res,
 			Args: &AnalystAgentArgs{
 				Prompt:  args.Prompt,
-				Explore: args.Explore,
+				Context: args.Context,
 			},
 		})
 		if err != nil {

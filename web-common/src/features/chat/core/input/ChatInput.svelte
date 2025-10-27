@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import { getDashboardContext } from "@rilldata/web-common/features/chat/core/utils.ts";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
@@ -9,6 +12,8 @@
   export let onSend: (() => void) | undefined = undefined;
   export let noMargin = false;
   export let height: string | undefined = undefined;
+
+  $: ({ instanceId } = $runtime);
 
   let textarea: HTMLTextAreaElement;
   let placeholder = "Ask about your data...";
@@ -23,6 +28,8 @@
   $: disabled = $getConversationQuery?.isLoading || $isStreamingStore;
   $: canSend = !disabled && value.trim();
   $: canCancel = $isStreamingStore;
+
+  $: dashboardContext = getDashboardContext(instanceId, $page);
 
   function handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
@@ -45,7 +52,7 @@
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage();
+      await currentConversation.sendMessage({ context: $dashboardContext });
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
