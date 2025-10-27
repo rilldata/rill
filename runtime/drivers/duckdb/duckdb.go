@@ -91,7 +91,7 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Path",
 			Description: "Path to Motherduck database. Must be prefixed with `md:`",
-			Placeholder: "md:my_database",
+			Placeholder: "md:my_db",
 		},
 		{
 			Key:         "token",
@@ -117,7 +117,7 @@ var motherduckSpec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Schema name",
-			Placeholder: "your_schema_name",
+			Placeholder: "main",
 			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},
