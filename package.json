@@ -8,7 +8,8 @@
     "web-admin",
     "web-common",
     "web-integration",
-    "web-local"
+    "web-local",
+    "extensions/gemini"
   ],
   "scripts": {
     "prepare": "husky || true",
