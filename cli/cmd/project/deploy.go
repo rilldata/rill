@@ -80,7 +80,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 	}
 
 	// check if specified project already exists
-	if o.Name != "" {
+	if o.Name != "" && ch.Org != "" {
 		p, err := getProject(ctx, ch, ch.Org, o.Name)
 		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return err
