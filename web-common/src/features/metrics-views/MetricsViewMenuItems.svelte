@@ -15,6 +15,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
+  import Chart from "../../components/icons/Chart.svelte";
 
   export let filePath: string;
 
@@ -50,6 +51,13 @@
       MetricsEventScreenName.Model,
     );
   };
+
+  function viewGraph() {
+    const name = $resourceQuery.data?.meta?.name?.name;
+    if (!name) return;
+    const seed = `metrics:${name}`;
+    goto(`/graph?seed=${encodeURIComponent(seed)}`);
+  }
 </script>
 
 {#if referenceModelName}
@@ -66,3 +74,8 @@
     Generate dashboard
   </NavigationMenuItem>
 {/if}
+
+<NavigationMenuItem on:click={viewGraph}>
+  <Chart slot="icon" />
+  View dependency graph
+</NavigationMenuItem>

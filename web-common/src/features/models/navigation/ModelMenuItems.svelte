@@ -19,6 +19,7 @@
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import Chart from "../../../components/icons/Chart.svelte";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -38,6 +39,13 @@
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
+
+  function viewGraph() {
+    const name = $modelQuery.data?.meta?.name?.name;
+    if (!name) return;
+    const seed = `model:${name}`;
+    goto(`/graph?seed=${encodeURIComponent(seed)}`);
+  }
 
   async function handleCreateModel() {
     try {
@@ -113,6 +121,11 @@
       Dependencies are being reconciled.
     {/if}
   </svelte:fragment>
+</NavigationMenuItem>
+
+<NavigationMenuItem on:click={viewGraph}>
+  <Chart slot="icon" />
+  View dependency graph
 </NavigationMenuItem>
 
 <NavigationMenuItem

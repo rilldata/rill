@@ -52,9 +52,17 @@
   // Expanded state (fills the graph-wrapper area, not fullscreen)
   let expandedGroup: ResourceGraphGrouping | null = null;
 
-  // If explicit seeds are provided, auto-open the first seeded graph in expanded view
-  $: if ((seeds?.length ?? 0) > 0 && !expandedGroup && resourceGroups.length > 0) {
-    expandedGroup = resourceGroups[0];
+  // When the URL seeds change, re-open the first seeded graph in expanded view
+  let lastSeedsSignature = "";
+  $: {
+    const signature = (seeds ?? []).join("|");
+    if (signature !== lastSeedsSignature) {
+      lastSeedsSignature = signature;
+      // If seeds are provided, open the first group; otherwise clear
+      expandedGroup = (seeds && seeds.length && resourceGroups.length)
+        ? resourceGroups[0]
+        : null;
+    }
   }
 
   const formatGroupTitle = (group: ResourceGraphGrouping, index: number) => {

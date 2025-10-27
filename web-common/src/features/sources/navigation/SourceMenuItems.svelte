@@ -31,6 +31,7 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import Chart from "../../../components/icons/Chart.svelte";
 
   export let filePath: string;
 
@@ -55,6 +56,13 @@
   const database = ""; // Sources are ingested into the default database
   const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = source?.state?.table as string;
+
+  function viewGraph() {
+    const name = $sourceQuery.data?.meta?.name?.name;
+    if (!name) return;
+    const seed = `source:${name}`;
+    goto(`/graph?seed=${encodeURIComponent(seed)}`);
+  }
 
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
 
@@ -178,6 +186,11 @@
       Source is being ingested
     {/if}
   </svelte:fragment>
+</NavigationMenuItem>
+
+<NavigationMenuItem on:click={viewGraph}>
+  <Chart slot="icon" />
+  View dependency graph
 </NavigationMenuItem>
 
 <NavigationMenuItem on:click={onRefreshSource}>
