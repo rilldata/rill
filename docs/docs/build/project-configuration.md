@@ -25,13 +25,13 @@ olap_connector: clickhouse
 
 The default OLAP connector is used as the default `output` for all of your models unless otherwise specified.
 
-## Default Settings
 
-### Model Defaults
+
+## Model Defaults
 
 Configure default behaviors for all models in your project. These settings control refresh schedules and materialization behavior that apply across all models unless overridden in individual model files.
 
-#### Model Refresh Schedule
+### Model Refresh Schedule
 
 Set up your project's model refresh schedule. You can override this in the model's YAML file if needed.
 
@@ -43,7 +43,7 @@ models:
 
 For more information on configuring model refreshes, see the [models documentation](/build/models) and [model refresh reference](/reference/project-files/models#refresh).
 
-#### Model Materialization
+### Model Materialization
 
 By default, models in Rill are created as views rather than materialized tables. While views enable a dynamic keystroke-by-keystroke modeling experience, materializing models as tables can significantly improve performance for complex queries and large datasets.
 
@@ -64,12 +64,12 @@ This is particularly useful in production environments where performance is prio
 For more details, see our [model performance guide](/build/models/performance#materialization).
 :::
 
-### Metrics Views Defaults
+## Metrics Views Defaults
 
 Configure default settings for all metrics views in your project. These settings control time-related behavior and security policies that apply across all metrics views unless overridden in individual metrics view files. For comprehensive information on metrics views, see the [metrics view documentation](/build/metrics-view).
 
 
-#### Metrics Views Time Modifiers
+### Metrics Views Time Modifiers
 
 Set default time modifiers for all metrics views, such as `first_day_of_week` or `smallest_time_grain` as shown below. For more parameters, see the [metrics view reference page](/reference/project-files/metrics-views).
 
@@ -79,7 +79,7 @@ metrics_views:
     smallest_time_grain: month
 ```
 
-#### Metrics Views Security Policy
+### Metrics Views Security Policy
 
 By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like in a metrics view file, you can define the security as shown below. For more information, read our [data access documentation](/build/metrics-view/security#examples).
 
@@ -98,11 +98,11 @@ For detailed guide on security policies, review our [data access policies](/buil
 :::
 
 
-### Dashboard Defaults
+## Dashboard Defaults
 
 Rill supports two types of dashboards: **Explores** (metrics-focused dashboards) and **Canvases** (custom visualization dashboards). You can set default configurations for each type. Learn more about creating and customizing dashboards in our [dashboard documentation](/build/dashboards).
 
-#### Dashboard Security Policy
+### Dashboard Security Policy
 
 Similar to metrics views, you can set [security for a dashboard](/build/dashboards/customization#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
 
@@ -115,7 +115,7 @@ canvases:
     access:  '{{ has "dev" .user.groups }}'
 ```
 
-#### Explore Defaults
+### Explore Defaults
 
 You are also able to set the `defaults` parameter in the explore dashboard to define your default time range, as well as the available `time_zones` and `time_ranges` in an Explore dashboard.
 
@@ -140,7 +140,7 @@ explores:
         - P3M
 ```
 
-#### Canvas Defaults
+### Canvas Defaults
 
 Similarly, you can configure defaults for canvas dashboards:
 
