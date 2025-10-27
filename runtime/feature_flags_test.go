@@ -36,7 +36,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"exportHeader":        false,
 				"alerts":              true,
 				"reports":             true,
-				"darkMode":            false,
+				"darkMode":            true,
 				"chat":                true,
 				"dashboardChat":       false,
 				"chatCharts":          false,
