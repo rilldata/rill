@@ -254,6 +254,7 @@ export class CanvasEntity {
     const set = new Set<string>();
 
     let createdNewComponent = false;
+    const isFirstLoad = get(this.firstLoad);
 
     rows.forEach((row, rowIndex) => {
       const items = row.items ?? [];
@@ -298,7 +299,7 @@ export class CanvasEntity {
 
     // Calling this function triggers the rows to rerender, ensuring they're up to date
     // with the components Map, which is not reactive
-    if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+    if ((!didUpdateRowCount && createdNewComponent) || isFirstLoad) {
       this._rows.refresh();
     }
     this.firstLoad.set(false);
