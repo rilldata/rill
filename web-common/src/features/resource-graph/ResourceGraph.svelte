@@ -126,7 +126,7 @@
 
 <style lang="postcss">
   .graph-root {
-    @apply relative h-full w-full;
+    @apply relative h-full w-full overflow-auto;
   }
 
   .graph-grid {
