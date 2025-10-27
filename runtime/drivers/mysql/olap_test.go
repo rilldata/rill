@@ -76,7 +76,7 @@ func testMapScan(t *testing.T, olap drivers.OLAPStore) {
 		},
 		// Floating point types: FLOAT, DOUBLE
 		{
-			"SELECT float_col FROM all_datatypes WHERE float_col = 1.1",
+			"SELECT float_col FROM all_datatypes WHERE tinyint_col = 127",
 			nil,
 			map[string]any{"float_col": float64(1.1)},
 		},
@@ -124,7 +124,7 @@ func testMapScan(t *testing.T, olap drivers.OLAPStore) {
 		},
 		// Binary types: BINARY, VARBINARY, TINYBLOB, BLOB, MEDIUMBLOB, LONGBLOB
 		{
-			"SELECT binary_col FROM all_datatypes WHERE binary_col = 'Binary'",
+			"SELECT binary_col FROM all_datatypes WHERE tinyint_col = 127",
 			nil,
 			map[string]any{"binary_col": "Binary\x00\x00\x00\x00"},
 		},
@@ -192,13 +192,13 @@ func testMapScan(t *testing.T, olap drivers.OLAPStore) {
 		},
 		// BIT type
 		{
-			"SELECT bit_col FROM all_datatypes WHERE bit_col = B'1'",
+			"SELECT bit_col FROM all_datatypes WHERE tinyint_col = 127",
 			nil,
-			map[string]any{"bit_col": []uint8{1}},
+			map[string]any{"bit_col": "1"},
 		},
 		// JSON type
 		{
-			"SELECT json_col FROM all_datatypes WHERE JSON_EXTRACT(json_col, '$.key') = 'value'",
+			"SELECT json_col FROM all_datatypes WHERE tinyint_col = 127",
 			nil,
 			map[string]any{"json_col": `{"key": "value"}`},
 		},
@@ -213,12 +213,12 @@ func testMapScan(t *testing.T, olap drivers.OLAPStore) {
 			rows, err := olap.Query(t.Context(), &drivers.Statement{Query: test.query, Args: test.args})
 			require.NoError(t, err)
 			defer rows.Close()
-			for rows.Next() {
-				res := make(map[string]any)
-				err = rows.MapScan(res)
-				require.NoError(t, err)
-				require.Equal(t, test.result, res)
-			}
+			require.True(t, rows.Next())
+			res := make(map[string]any)
+			err = rows.MapScan(res)
+			require.NoError(t, err)
+			require.Equal(t, test.result, res)
+			require.False(t, rows.Next())
 			require.NoError(t, rows.Err())
 			require.NoError(t, rows.Close())
 		})

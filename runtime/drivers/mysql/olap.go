@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -75,7 +76,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	scanList, err := prepareScanDest(schema)
+	scanDest, err := prepareScanDest(schema)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 
 	mySQLRows := &mysqlRows{
 		Rows:     rows,
-		scanDest: scanList,
+		scanDest: scanDest,
 		colTypes: cts,
 	}
 	res = &drivers.Result{Rows: mySQLRows, Schema: schema}
@@ -176,7 +177,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	t := &runtimev1.Type{Nullable: nullable}
-	switch dbt {
+	switch strings.ToUpper(dbt) {
 	case "DECIMAL":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "NUMERIC":
@@ -253,7 +254,7 @@ func (r *mysqlRows) MapScan(dest map[string]any) error {
 			}
 		case *sql.NullByte:
 			if valPtr.Valid {
-				if r.colTypes[i].DatabaseTypeName() == "TINYINT" {
+				if strings.ToUpper(r.colTypes[i].DatabaseTypeName()) == "TINYINT" {
 					dest[fieldName] = int8(valPtr.Byte)
 				} else {
 					dest[fieldName] = valPtr.Byte
