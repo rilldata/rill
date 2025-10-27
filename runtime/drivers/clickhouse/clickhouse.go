@@ -584,7 +584,7 @@ func (c *Connection) periodicallyEmitStats() {
 	defer regularTicker.Stop()
 
 	// Cache invalidation ticker to reset billing table existence cache
-	cacheInvalidationTicker := time.NewTicker(3 * time.Minute)
+	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
 	defer cacheInvalidationTicker.Stop()
 
 	for {
