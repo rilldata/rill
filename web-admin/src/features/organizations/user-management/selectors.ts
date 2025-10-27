@@ -116,21 +116,20 @@ export function getOrgUserInvites(organization: string) {
   );
 }
 
-export function getUserCounts(organization: string) {
-  // Fetch usergroups to count them
-  // Note: This only counts the first page since API doesn't return totalCount
-  const listOrganizationMemberUsergroups =
-    createAdminServiceListOrganizationMemberUsergroups(organization, {
-      pageSize: PAGE_SIZE,
-      includeCounts: true,
-    });
+function getOrgUsergroups(organization: string) {
+  return createAdminServiceListOrganizationMemberUsergroups(organization, {
+    pageSize: PAGE_SIZE,
+    includeCounts: true,
+  });
+}
 
+export function getUserCounts(organization: string) {
   return derived(
     [
       getOrgUserMembers({ organization, guestOnly: false }),
       getOrgUserMembers({ organization, guestOnly: true }),
       getOrgUserInvites(organization),
-      listOrganizationMemberUsergroups,
+      getOrgUsergroups(organization),
     ],
     ([
       allOrgUserMembersResp,
