@@ -6,6 +6,7 @@
 
   export let title: string | undefined = undefined;
   export let description: string | undefined = undefined;
+  export let showDescriptionAsTooltip: boolean | undefined = false;
   export let filters: ComponentFilterProperties | undefined = undefined;
   export let faint: boolean = false;
   export let component: BaseCanvasComponent<any>;
