@@ -220,7 +220,7 @@ export function getColorMappingForChart(
       colorMapping = getColorForValues(
         colorValues,
         "colorMapping" in colorField ? colorField.colorMapping : undefined,
-        isDarkMode
+        isDarkMode,
       );
     }
   }
