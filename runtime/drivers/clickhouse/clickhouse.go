@@ -401,6 +401,8 @@ type Connection struct {
 	embed *embedClickHouse
 	// billingTableExists cached state of whether the billing.events table exists in the database
 	billingTableExists *bool
+	// skipEstimatedSizeEmission indicates whether to skip emitting estimated size metrics for example when there is insufficient privileges
+	skipEstimatedSizeEmission bool
 }
 
 // Ping implements drivers.Handle.
@@ -582,14 +584,14 @@ func (c *Connection) periodicallyEmitStats() {
 	defer regularTicker.Stop()
 
 	// Cache invalidation ticker to reset billing table existence cache
-	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
+	cacheInvalidationTicker := time.NewTicker(3 * time.Minute)
 	defer cacheInvalidationTicker.Stop()
 
 	for {
 		select {
 		case <-sensitiveTicker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.
-			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute {
+			if (c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) || c.skipEstimatedSizeEmission {
 				continue
 			}
 
@@ -601,6 +603,13 @@ func (c *Connection) periodicallyEmitStats() {
 				lvl := zap.WarnLevel
 				if c.config.Managed {
 					lvl = zap.ErrorLevel
+				}
+
+				var chErr *clickhouse.Exception
+				if errors.As(err, &chErr) && chErr.Code == 497 {
+					// Code 497 is "Not enough privileges" - downgrade to debug level and skip future emissions.
+					lvl = zap.DebugLevel
+					c.skipEstimatedSizeEmission = true
 				}
 
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
@@ -630,8 +639,9 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
 		case <-cacheInvalidationTicker.C:
-			// Invalidate the billing table existence cache every hour.
+			// Invalidate the billing table existence cache and skip size emission flag.
 			c.billingTableExists = nil
+			c.skipEstimatedSizeEmission = false
 		case <-c.ctx.Done():
 			return
 		}
