@@ -26,5 +26,6 @@
     autofocus={false}
     bind:value={filter}
     background={false}
+    rounded="lg"
   />
 </div>

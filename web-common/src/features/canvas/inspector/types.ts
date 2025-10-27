@@ -77,6 +77,11 @@ export interface ComponentInputParam {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
     chartFieldInput?: ChartFieldInput;
+    /**
+     * If true, the boolean input will be inverted. This is useful when true
+     * is the intended default state
+     */
+    invertBoolean?: boolean;
     [key: string]: any;
   };
 }

@@ -12171,6 +12171,8 @@ func (m *ListOrganizationMemberUsersRequest) validate(all bool) error {
 
 	// no validation rules for SuperuserForceAccess
 
+	// no validation rules for SearchPattern
+
 	if len(errors) > 0 {
 		return ListOrganizationMemberUsersRequestMultiError(errors)
 	}

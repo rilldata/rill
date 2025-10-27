@@ -23,14 +23,11 @@ import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceMetricsViewSchema,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
-  type V1StructType,
   V1TimeGrain,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -79,7 +76,6 @@ export function categorizeBookmarks(
   bookmarkResp: V1Bookmark[],
   metricsSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  schema: V1StructType,
   exploreState: ExploreState,
   timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
@@ -101,7 +97,6 @@ export function categorizeBookmarks(
       bookmarkResource,
       metricsSpec,
       exploreSpec,
-      schema,
       exploreState,
       timeRangeSummary,
       rillDefaultExploreURLParams,
@@ -128,9 +123,8 @@ export function getHomeBookmarkExploreState(
     [
       getBookmarks(projectId, exploreName),
       useExploreValidSpec(instanceId, exploreName),
-      createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
     ],
-    ([bookmarksResp, exploreSpecResp, schemaResp]) => {
+    ([bookmarksResp, exploreSpecResp]) => {
       const homeBookmark = bookmarksResp?.bookmarks?.find(isHomeBookmark);
       if (!homeBookmark) return null;
 
@@ -141,7 +135,6 @@ export function getHomeBookmarkExploreState(
         homeBookmark?.data ?? "",
         metricsViewSpec,
         exploreSpec,
-        schemaResp?.schema ?? {},
       );
       return exploreStateFromHomeBookmark;
     },
@@ -209,7 +202,6 @@ function parseBookmark(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
-  schema: V1StructType,
   exploreState: ExploreState,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   rillDefaultExploreURLParams: URLSearchParams,
@@ -218,7 +210,6 @@ function parseBookmark(
     bookmarkResource.data ?? "",
     metricsViewSpec,
     exploreSpec,
-    schema,
   );
 
   const finalExploreState = {

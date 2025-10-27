@@ -15,6 +15,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/sqlconvert"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 )
@@ -250,20 +251,13 @@ func (r *rows) Scan(dest ...any) error {
 	}
 
 	for i := range dest {
-		val, err := convertValue(r.ri.Schema[i], row[i])
+		v, err := convertValue(r.ri.Schema[i], row[i])
 		if err != nil {
-			r.lastErr = err
 			return err
 		}
-		// Use reflection to set the value through the pointer
-		rv := reflect.ValueOf(dest[i])
-		if rv.Kind() != reflect.Ptr || rv.IsNil() {
-			return fmt.Errorf("destination argument %d must be a non-nil pointer", i)
-		}
-		if val == nil {
-			rv.Elem().Set(reflect.Zero(rv.Elem().Type()))
-		} else {
-			rv.Elem().Set(reflect.ValueOf(val))
+		err = sqlconvert.ConvertAssign(dest[i], v)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -341,7 +335,7 @@ func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	return t, nil
 }
 
-func convertValue(field *bigquery.FieldSchema, value bigquery.Value) (sqldriver.Value, error) {
+func convertValue(field *bigquery.FieldSchema, value bigquery.Value) (any, error) {
 	val, err := convertValueHelper(field, value)
 	if err != nil {
 		return nil, err
