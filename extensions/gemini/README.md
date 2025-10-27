@@ -85,7 +85,6 @@ gemini rill upload_local_report --filePath "./reports/quarterly-analysis-2025-10
 - **`generate`** - Create comprehensive analytics reports
   - Required: `title`, `content`
   - Options: `saveLocalOnly`, `localFilePath`, `shareEmail`
-  
 - **`export_to_sheet`** - Export Rill query results to Google Sheets
   - Required: `title`, `data`
   - Options: `sheetName`, `shareEmail`

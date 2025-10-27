@@ -20,6 +20,7 @@ web-common/tests/projects
 web-local/tests/data
 
 .env
+.example.env
 *.sql
 *.bin
 *.csv
