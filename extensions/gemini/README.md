@@ -11,6 +11,8 @@ Professional data analysis and report generation using Rill's metrics layer with
 
 Check out the [Rill Data website](https://www.rilldata.com) for more information about Rill.
 
+Example report generated using this extension can be found in the [Gemini Documentation](docs/bids_report.md).
+
 ## Installation
 
 Install the extension via GitHub:
