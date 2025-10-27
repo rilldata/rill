@@ -49,11 +49,17 @@
 
   $: organization = $page.params.organization;
   // Use server-side search for organization users
+  // Only fetch when user has typed something (debouncedSearchText !== "") to avoid loading all users
   $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
     organization,
     {
-      pageSize: 50,
+      pageSize: debouncedSearchText ? 50 : 0, // Don't fetch anything initially
       searchPattern: debouncedSearchText || undefined,
+    },
+    {
+      query: {
+        enabled: !!debouncedSearchText, // Only enable query when there's a search pattern
+      },
     },
   );
   $: organizationUsers = $organizationUsersQuery.data?.members ?? [];
