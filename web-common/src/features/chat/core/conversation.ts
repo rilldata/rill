@@ -4,7 +4,6 @@ import {
   getRuntimeServiceGetConversationQueryOptions,
   type RpcStatus,
   type V1CompleteStreamingResponse,
-  type V1CompletionMessageContext,
   type V1GetConversationResponse,
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
@@ -85,7 +84,6 @@ export class Conversation {
    * @param options - Callback functions for different stages of message sending
    */
   public async sendMessage(options?: {
-    context?: V1CompletionMessageContext;
     onStreamStart?: () => void;
     onMessage?: (message: V1Message) => void;
     onStreamComplete?: (conversationId: string) => void;
@@ -110,7 +108,7 @@ export class Conversation {
 
     try {
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(prompt, options?.context);
+      const streamPromise = this.startStreaming(prompt);
 
       // Wait for streaming to complete
       await streamPromise;
@@ -170,10 +168,7 @@ export class Conversation {
    * Start streaming completion responses for a given prompt
    * Returns a Promise that resolves when streaming completes
    */
-  private async startStreaming(
-    prompt: string,
-    context: V1CompletionMessageContext | undefined,
-  ): Promise<void> {
+  private async startStreaming(prompt: string): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
       this.sseClient = new SSEFetchClient();
@@ -234,7 +229,6 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
-      context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)

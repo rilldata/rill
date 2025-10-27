@@ -8,7 +8,6 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 )
 
@@ -292,51 +291,4 @@ Based on the data analysis, here are the key insights:
 </additional_user_provided_instructions>
 {{ end }}
 `, data)
-}
-
-func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, exploreName string) (*runtimev1.Resource, *runtimev1.Resource, error) {
-	session := GetSession(ctx)
-
-	ctrl, err := t.Runtime.Controller(ctx, session.InstanceID())
-	if err != nil {
-		return nil, nil, err
-	}
-
-	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: exploreName}, false)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	explore, access, err := t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
-	if err != nil {
-		return nil, nil, err
-	}
-	if !access {
-		return nil, nil, fmt.Errorf("explore %q not found", exploreName)
-	}
-
-	exploreSpec := explore.GetExplore().State.ValidSpec
-	if exploreSpec == nil {
-		return nil, nil, fmt.Errorf("explore %q is not valid", exploreName)
-	}
-
-	metricsView, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: exploreSpec.MetricsView}, false)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	metricsView, access, err = t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), metricsView)
-	if err != nil {
-		return nil, nil, err
-	}
-	if !access {
-		return nil, nil, fmt.Errorf("metrics view %q not found", exploreSpec.MetricsView)
-	}
-
-	metricsViewSpec := metricsView.GetMetricsView().State.ValidSpec
-	if metricsViewSpec == nil {
-		return nil, nil, fmt.Errorf("metrics view %q is not valid", exploreSpec.MetricsView)
-	}
-
-	return explore, metricsView, nil
 }
