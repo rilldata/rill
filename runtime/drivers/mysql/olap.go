@@ -76,11 +76,6 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	scanDest, err := prepareScanDest(schema)
-	if err != nil {
-		return nil, err
-	}
-
 	cts, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, err
@@ -88,7 +83,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 
 	mySQLRows := &mysqlRows{
 		Rows:     rows,
-		scanDest: scanDest,
+		scanDest: prepareScanDest(schema),
 		colTypes: cts,
 	}
 	res = &drivers.Result{Rows: mySQLRows, Schema: schema}
@@ -305,7 +300,7 @@ func (r *mysqlRows) MapScan(dest map[string]any) error {
 	return nil
 }
 
-func prepareScanDest(schema *runtimev1.StructType) ([]any, error) {
+func prepareScanDest(schema *runtimev1.StructType) []any {
 	scanList := make([]any, len(schema.Fields))
 	for i, field := range schema.Fields {
 		var dest any
@@ -339,5 +334,5 @@ func prepareScanDest(schema *runtimev1.StructType) ([]any, error) {
 		}
 		scanList[i] = dest
 	}
-	return scanList, nil
+	return scanList
 }

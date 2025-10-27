@@ -356,23 +356,6 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
-	conf := &ConfigProperties{}
-	if err := mapstructure.WeakDecode(c.config, conf); err != nil {
-		return nil, fmt.Errorf("failed to decode config: %w", err)
-	}
-	dsn, err := conf.resolveGoFormatDSN()
-	if err != nil {
-		return nil, err
-	}
-	db, err := sqlx.Open("mysql", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
-	}
-	return db, nil
-}
-
 // acquireDB lazily initializes and returns a database connection.
 func (c *connection) acquireDB(ctx context.Context) (*sqlx.DB, error) {
 	err := c.dbMu.Acquire(ctx, 1)
