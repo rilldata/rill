@@ -21,7 +21,6 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_RILL_DEFAULT_EXPLORE_STATE,
   AD_BIDS_RILL_DEFAULT_EXPLORE_URL_PARAMS,
-  AD_BIDS_SCHEMA,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
@@ -215,7 +214,6 @@ describe("getBookmarkData and parseBookmarks", () => {
                 metricsViewSpec:
                   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
                 exploreSpec: AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
-                schema: AD_BIDS_SCHEMA,
                 timeRangeSummary: AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
               }),
           );

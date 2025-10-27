@@ -30,7 +30,6 @@ import {
   V1ExploreWebView,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
-  type V1StructType,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 
@@ -109,20 +108,25 @@ export const AD_BIDS_ADVANCED_MEASURES: MetricsViewSpecMeasure[] = [
 export const AD_BIDS_INIT_DIMENSIONS: MetricsViewSpecDimension[] = [
   {
     name: AD_BIDS_PUBLISHER_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
   {
     name: AD_BIDS_DOMAIN_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
 ];
 export const AD_BIDS_THREE_DIMENSIONS: MetricsViewSpecDimension[] = [
   {
     name: AD_BIDS_PUBLISHER_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
   {
     name: AD_BIDS_DOMAIN_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
   {
     name: AD_BIDS_COUNTRY_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
 ];
 
@@ -189,6 +193,7 @@ export const AD_BIDS_METRICS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
     {
       name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
       expression: "case when publisher is null then true else false end",
+      dataType: { code: TypeCode.CODE_BOOL },
     },
   ],
 };
@@ -291,47 +296,6 @@ export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
   AD_BIDS_METRICS_INIT,
   undefined,
 );
-
-export const AD_BIDS_SCHEMA: V1StructType = {
-  fields: [
-    {
-      name: AD_BIDS_PUBLISHER_DIMENSION,
-      type: {
-        code: TypeCode.CODE_STRING,
-      },
-    },
-    {
-      name: AD_BIDS_DOMAIN_DIMENSION,
-      type: {
-        code: TypeCode.CODE_STRING,
-      },
-    },
-    {
-      name: AD_BIDS_COUNTRY_DIMENSION,
-      type: {
-        code: TypeCode.CODE_STRING,
-      },
-    },
-    {
-      name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
-      type: {
-        code: TypeCode.CODE_BOOL,
-      },
-    },
-    {
-      name: AD_BIDS_IMPRESSIONS_MEASURE,
-      type: {
-        code: TypeCode.CODE_INT64,
-      },
-    },
-    {
-      name: AD_BIDS_BID_PRICE_MEASURE,
-      type: {
-        code: TypeCode.CODE_FLOAT64,
-      },
-    },
-  ],
-};
 
 export function getOffsetByHour(time: Date) {
   return getOffset(

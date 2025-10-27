@@ -21,7 +21,6 @@ import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboard
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
@@ -94,10 +93,9 @@ export function getHomeBookmarkExploreState(
     [
       getBookmarks(projectId, ResourceKind.Explore, exploreName),
       useExploreValidSpec(instanceId, exploreName),
-      createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
       useMetricsViewTimeRange(instanceId, metricsViewName),
     ],
-    ([bookmarksResp, exploreSpecResp, schemaResp, timeRangeResp]) => {
+    ([bookmarksResp, exploreSpecResp, timeRangeResp]) => {
       const homeBookmark = bookmarksResp?.bookmarks?.find(isHomeBookmark);
       if (!homeBookmark) return null;
 
@@ -105,11 +103,11 @@ export function getHomeBookmarkExploreState(
       const exploreSpec = exploreSpecResp?.explore ?? {};
 
       if (homeBookmark.data) {
+        // Legacy bookmark data stored in proto format.
         const exploreStateFromLegacyProto = getDashboardStateFromUrl(
           homeBookmark.data,
           metricsViewSpec,
           exploreSpec,
-          schemaResp?.schema ?? {},
         );
         return exploreStateFromLegacyProto;
       }

@@ -18,15 +18,16 @@
 
   export let organization: string;
   export let project: string;
-  export let resourceKind: ResourceKind;
-  export let resourceName: string;
+  export let resource: { name: string; kind: ResourceKind };
   export let homeBookmark: BookmarkEntry | undefined;
-  export let defaultHomeBookmarkUrl: string;
+  export let defaultHomeBookmarkUrl: string | undefined;
   export let manageProject: boolean;
   export let onCreate: () => void;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
-  $: homeBookmarkUrl = homeBookmark?.fullUrl ?? defaultHomeBookmarkUrl;
+  $: ({ name: resourceName, kind: resourceKind } = resource);
+
+  $: homeBookmarkUrl = homeBookmark?.fullUrl ?? defaultHomeBookmarkUrl ?? "";
   $: isHomeBookmarkActive = homeBookmarkUrl === $page.url.toString();
 
   function goToDashboardHome() {

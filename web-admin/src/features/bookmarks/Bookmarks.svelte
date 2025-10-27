@@ -8,7 +8,7 @@
     type V1Bookmark,
   } from "@rilldata/web-admin/client";
   import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
-  import BookmarksFormBookmarksFormDialog from "@rilldata/web-admin/features/bookmarks/BookmarksFormDialog.svelte";
+  import BookmarksFormDialog from "@rilldata/web-admin/features/bookmarks/BookmarksFormDialog.svelte";
   import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     type BookmarkEntry,
@@ -42,22 +42,32 @@
 
   export let organization: string;
   export let project: string;
-  export let metricsViewNames: string[];
-  export let resourceKind: ResourceKind;
-  export let resourceName: string;
-  export let bookmarks: V1Bookmark[];
-  export let categorizedBookmarks: Bookmarks;
-  export let defaultUrlParams: URLSearchParams | undefined = undefined;
-  export let defaultHomeBookmarkUrl: string = "";
-  export let filtersState: FiltersState;
-  export let timeControlState: TimeControlState;
-  export let disableFiltersOnly: boolean = false;
+  export let resource: { name: string; kind: ResourceKind };
+  export let bookmarkData: {
+    bookmarks: V1Bookmark[];
+    categorizedBookmarks: Bookmarks;
+    defaultUrlParams?: URLSearchParams;
+    defaultHomeBookmarkUrl?: string;
+    disableFiltersOnly?: boolean;
+  };
+  export let dashboardState: {
+    metricsViewNames: string[];
+    filtersState: FiltersState;
+    timeControlState: TimeControlState;
+  };
+
+  $: ({ name: resourceName, kind: resourceKind } = resource);
+  $: ({
+    bookmarks,
+    categorizedBookmarks,
+    defaultUrlParams,
+    defaultHomeBookmarkUrl,
+    disableFiltersOnly,
+  } = bookmarkData);
 
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
   const orgAndProjectNameStore = writable({ organization: "", project: "" });
   $: orgAndProjectNameStore.set({ organization, project });
 
@@ -152,8 +162,7 @@
 <HomeBookmarkButton
   {organization}
   {project}
-  {resourceKind}
-  {resourceName}
+  {resource}
   homeBookmark={categorizedBookmarks.home}
   {defaultHomeBookmarkUrl}
   onCreate={createHomeBookmark}
@@ -239,18 +248,15 @@
 </DropdownMenu>
 
 {#if showDialog}
-  <BookmarksFormBookmarksFormDialog
+  <BookmarksFormDialog
     {organization}
     {project}
     {projectId}
     {bookmark}
-    {metricsViewNames}
-    {resourceKind}
-    {resourceName}
+    {resource}
     {defaultUrlParams}
-    {filtersState}
-    {timeControlState}
     {disableFiltersOnly}
+    {dashboardState}
     onClose={() => {
       showDialog = false;
       bookmark = null;
