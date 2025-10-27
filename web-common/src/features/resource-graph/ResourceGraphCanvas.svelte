@@ -37,7 +37,8 @@
   const edgeOptions = {
     type: "smoothstep",
     style: "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;",
-    pathOptions: { offset: 36, borderRadius: 8 },
+    // Increase offset so edges run in a clearer plane outside node bounds
+    pathOptions: { offset: 48, borderRadius: 8 },
   } as const;
 
   const HIGHLIGHT_EDGE_STYLE = "stroke:#3b82f6;stroke-width:2px;opacity:1;";

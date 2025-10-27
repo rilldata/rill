@@ -9,8 +9,8 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { ResourceNodeData } from "./types";
 
-const MIN_NODE_WIDTH = 180;
-const MAX_NODE_WIDTH = 360;
+const MIN_NODE_WIDTH = 160;
+const MAX_NODE_WIDTH = 320;
 const DEFAULT_NODE_HEIGHT = 72;
 // Softer, less intrusive edges
 const DEFAULT_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;";
@@ -21,7 +21,7 @@ const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.Explore,
 ]);
 const AVERAGE_CHAR_WIDTH = 8.5;
-const CONTENT_PADDING = 96;
+const CONTENT_PADDING = 72;
 
 // Cache last known group assignments so that if a group's anchor
 // (e.g., a metrics view) disappears due to an error, we can keep
@@ -155,9 +155,11 @@ export function buildResourceGraph(resources: V1Resource[]) {
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setGraph({
     rankdir: "TB",
-    nodesep: 320,
-    ranksep: 240,
+    // Tighter columns, moderate vertical spacing
+    nodesep: 80,
+    ranksep: 160,
     edgesep: 80,
+    ranker: "tight-tree",
     acyclicer: "greedy",
   });
   dagreGraph.setDefaultEdgeLabel(() => ({}));
@@ -283,11 +285,13 @@ export type ResourceGraphGrouping = {
   label?: string;
 };
 
-// Build adjacency (both directions) between resources by id
-function buildAdjacency(resources: Map<string, V1Resource>) {
-  const adjacency = new Map<string, Set<string>>();
+// Build directed adjacency: incoming (sources) and outgoing (dependents)
+function buildDirectedAdjacency(resources: Map<string, V1Resource>) {
+  const incoming = new Map<string, Set<string>>(); // node <- sources
+  const outgoing = new Map<string, Set<string>>(); // node -> dependents
   for (const id of resources.keys()) {
-    if (!adjacency.has(id)) adjacency.set(id, new Set());
+    if (!incoming.has(id)) incoming.set(id, new Set());
+    if (!outgoing.has(id)) outgoing.set(id, new Set());
   }
   for (const resource of resources.values()) {
     const dependentId = toNodeId(resource.meta);
@@ -299,26 +303,41 @@ function buildAdjacency(resources: Map<string, V1Resource>) {
       const existing = lastRefs.get(dependentId) ?? [];
       if (!existing.includes(sourceId)) lastRefs.set(dependentId, [...existing, sourceId]);
       if (!resources.has(sourceId)) continue;
-      if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
-      if (!adjacency.has(dependentId)) adjacency.set(dependentId, new Set());
-      adjacency.get(dependentId)!.add(sourceId);
-      adjacency.get(sourceId)!.add(dependentId);
+      if (!incoming.has(dependentId)) incoming.set(dependentId, new Set());
+      if (!outgoing.has(sourceId)) outgoing.set(sourceId, new Set());
+      incoming.get(dependentId)!.add(sourceId);
+      outgoing.get(sourceId)!.add(dependentId);
     }
   }
-  return adjacency;
+  return { incoming, outgoing };
 }
 
-// Collect closure around a seed traversing forwards (dependents) and backwards (sources)
-function traverseClosure(seedId: string, adjacency: Map<string, Set<string>>) {
+// Traverse only upstream via incoming edges
+function traverseUpstream(seedId: string, incoming: Map<string, Set<string>>) {
   const visited = new Set<string>();
   const queue = [seedId];
   while (queue.length) {
     const current = queue.shift()!;
     if (visited.has(current)) continue;
     visited.add(current);
-    const neighbors = adjacency.get(current);
-    if (!neighbors?.size) continue;
-    for (const nb of neighbors) if (!visited.has(nb)) queue.push(nb);
+    const parents = incoming.get(current);
+    if (!parents?.size) continue;
+    for (const p of parents) if (!visited.has(p)) queue.push(p);
+  }
+  return visited;
+}
+
+// Traverse only downstream via outgoing edges
+function traverseDownstream(seedId: string, outgoing: Map<string, Set<string>>) {
+  const visited = new Set<string>();
+  const queue = [seedId];
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (visited.has(current)) continue;
+    visited.add(current);
+    const children = outgoing.get(current);
+    if (!children?.size) continue;
+    for (const c of children) if (!visited.has(c)) queue.push(c);
   }
   return visited;
 }
@@ -340,7 +359,7 @@ export function partitionResourcesBySeeds(
   const toSeedId = (seed: string | V1ResourceName) =>
     typeof seed === "string" ? seed : toNodeId({ name: seed });
 
-  const adjacency = buildAdjacency(resourceMap);
+  const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
 
   const groups: ResourceGraphGrouping[] = [];
   const groupById = new Map<string, ResourceGraphGrouping>();
@@ -352,7 +371,11 @@ export function partitionResourcesBySeeds(
     .filter((id, idx, arr) => arr.indexOf(id) === idx);
 
   for (const seedId of normalizedSeeds) {
-    const componentIds = traverseClosure(seedId, adjacency);
+    // Directed closure: only upstream via incoming and only downstream via outgoing
+    const upIds = traverseUpstream(seedId, incoming);
+    const downIds = traverseDownstream(seedId, outgoing);
+    const componentIds = new Set<string>([...upIds, ...downIds]);
+
     const componentResources = Array.from(componentIds)
       .map((resourceId) => resourceMap.get(resourceId))
       .filter((res): res is V1Resource => !!res);
@@ -435,20 +458,96 @@ export function partitionResourcesBySeeds(
 export function partitionResourcesByMetrics(
   resources: V1Resource[],
 ): ResourceGraphGrouping[] {
-  // Derive seeds from metrics views and delegate to seed partitioning.
-  const metricSeedIds = resources
-    .filter((r) => toResourceKind(r.meta?.name) === ResourceKind.MetricsView && !r.meta?.hidden)
-    .map((r) => toNodeId(r.meta)!)
-    .filter(Boolean);
+  // NETWORK approach: build undirected adjacency and group by connected
+  // components rooted at metrics views.
+  const resourceMap = new Map<string, V1Resource>();
+  const adjacency = new Map<string, Set<string>>();
 
-  // Fallback: if no metrics, show a single group with all resources (existing behavior)
-  if (!metricSeedIds.length) {
-    const allResources = resources.filter((r) => {
-      const kind = toResourceKind(r.meta?.name);
-      return !!kind && ALLOWED_KINDS.has(kind) && !r.meta?.hidden;
-    });
-    return allResources.length ? [{ id: "all-resources", resources: allResources }] : [];
+  for (const res of resources) {
+    const id = toNodeId(res.meta);
+    if (!id) continue;
+    const kind = toResourceKind(res.meta?.name);
+    if (!kind || !ALLOWED_KINDS.has(kind)) continue;
+    if (res.meta?.hidden) continue;
+    resourceMap.set(id, res);
+    if (!adjacency.has(id)) adjacency.set(id, new Set());
   }
 
-  return partitionResourcesBySeeds(resources, metricSeedIds);
+  for (const res of resourceMap.values()) {
+    const dependentId = toNodeId(res.meta);
+    if (!dependentId) continue;
+    for (const ref of res.meta?.refs ?? []) {
+      const sourceId = toNodeId({ name: ref });
+      if (!sourceId) continue;
+      const existing = lastRefs.get(dependentId) ?? [];
+      if (!existing.includes(sourceId)) lastRefs.set(dependentId, [...existing, sourceId]);
+      if (!resourceMap.has(sourceId)) continue;
+      if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
+      if (!adjacency.has(dependentId)) adjacency.set(dependentId, new Set());
+      adjacency.get(dependentId)!.add(sourceId);
+      adjacency.get(sourceId)!.add(dependentId);
+    }
+  }
+
+  const metricSeeds = Array.from(resourceMap.entries())
+    .filter(([, r]) => toResourceKind(r.meta?.name) === ResourceKind.MetricsView)
+    .map(([id, r]) => ({ id, label: r.meta?.name?.name ?? id }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  // Helper for undirected traversal
+  const traverseConnected = (startId: string) => {
+    const visited = new Set<string>();
+    const queue = [startId];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      if (visited.has(cur)) continue;
+      visited.add(cur);
+      const nbrs = adjacency.get(cur);
+      if (!nbrs?.size) continue;
+      for (const nb of nbrs) if (!visited.has(nb)) queue.push(nb);
+    }
+    return visited;
+  };
+
+  const groups: ResourceGraphGrouping[] = [];
+  const assigned = new Set<string>();
+
+  for (const m of metricSeeds) {
+    const ids = traverseConnected(m.id);
+    if (!ids.size) continue;
+    const resourcesInGroup = Array.from(ids)
+      .map((rid) => resourceMap.get(rid))
+      .filter((x): x is V1Resource => !!x);
+    if (!resourcesInGroup.length) continue;
+    groups.push({ id: m.id, resources: resourcesInGroup, label: m.label });
+    for (const rid of ids) assigned.add(rid);
+    lastGroupLabels.set(m.id, m.label);
+  }
+
+  // If there are resources not connected to any metrics view, group remaining components.
+  const remaining = Array.from(resourceMap.keys()).filter((id) => !assigned.has(id));
+  const remainingSet = new Set(remaining);
+  while (remainingSet.size) {
+    const seed = remainingSet.values().next().value as string;
+    const ids = traverseConnected(seed);
+    for (const rid of ids) remainingSet.delete(rid);
+    const resourcesInGroup = Array.from(ids)
+      .map((rid) => resourceMap.get(rid))
+      .filter((x): x is V1Resource => !!x);
+    if (resourcesInGroup.length) {
+      groups.push({ id: seed, resources: resourcesInGroup, label: "Other resources" });
+    }
+  }
+
+  // Persist grouping assignments
+  for (const g of groups) {
+    if (g.label) lastGroupLabels.set(g.id, g.label);
+    for (const r of g.resources) {
+      const rid = toNodeId(r.meta);
+      if (rid) lastGroupAssignments.set(rid, g.id);
+    }
+  }
+
+  persistAllCaches();
+  return groups;
 }
