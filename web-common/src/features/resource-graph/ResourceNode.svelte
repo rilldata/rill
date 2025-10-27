@@ -8,6 +8,8 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { ResourceNodeData } from "./types";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { goto } from "$app/navigation";
 
   export let data: ResourceNodeData;
   export let selected = false;
@@ -56,6 +58,35 @@
       : undefined;
   $: effectiveStatusLabel = hasError ? "error" : statusLabel;
   $: routeHighlighted = (data as any)?.routeHighlighted === true;
+
+  let showError = false;
+  function handleClick() {
+    if (hasError && data?.resource?.meta?.reconcileError) {
+      showError = !showError;
+    }
+  }
+
+  $: resourceName = data?.resource?.meta?.name?.name ?? "";
+  $: resourceKind = kind; // already normalized ResourceKind
+  $: artifact = resourceName && resourceKind
+    ? fileArtifacts.findFileArtifact(resourceKind, resourceName)
+    : undefined;
+
+  function openFile(e?: MouseEvent) {
+    e?.stopPropagation();
+    if (artifact?.path) {
+      try {
+        const key = artifact.path;
+        const raw = localStorage.getItem(key);
+        const obj = raw ? JSON.parse(raw) || {} : {};
+        obj.view = "code";
+        localStorage.setItem(key, JSON.stringify(obj));
+      } catch {
+        // ignore storage issues; fall back to default behavior
+      }
+      goto(`/files${artifact.path}`);
+    }
+  }
   $: void [
     id,
     type,
@@ -82,6 +113,7 @@
   class:error={hasError}
   style={`--node-accent:${color}`}
   data-kind={kind}
+  on:click={handleClick}
 >
   <Handle
     id="target"
@@ -113,6 +145,29 @@
       </p>
     {/if}
   </div>
+
+  {#if showError && hasError}
+    <div class="error-popover" role="alert">
+      <div class="error-popover-header">
+        <span class="error-title">Error</span>
+        <div class="error-actions">
+          {#if artifact?.path}
+            <a
+              href={`/files${artifact.path}`}
+              class="error-open"
+              on:click|stopPropagation={openFile}
+              title={`Open ${artifact.path}`}
+              >Open YAML</a
+            >
+          {/if}
+          <button class="error-close" aria-label="Close error" on:click|stopPropagation={() => (showError = false)}>
+            ✕
+          </button>
+        </div>
+      </div>
+      <pre class="error-message" title={data?.resource?.meta?.reconcileError}>{data?.resource?.meta?.reconcileError}</pre>
+    </div>
+  {/if}
 </div>
 
 <style lang="postcss">
@@ -137,6 +192,35 @@
 
   .node.error {
     @apply border-red-300;
+  }
+
+  .error-popover {
+    @apply absolute -top-2 left-1/2 z-20 w-[420px] max-w-[70vw] -translate-y-full -translate-x-1/2 rounded-md border border-red-300 bg-red-50 shadow-lg;
+  }
+
+  .error-popover-header {
+    @apply flex items-center justify-between px-3 py-2 border-b border-red-200 gap-2;
+  }
+
+  .error-title {
+    @apply text-xs font-semibold text-red-700 uppercase tracking-wide;
+  }
+
+  .error-close {
+    @apply h-6 w-6 rounded border border-red-300 bg-white text-xs text-red-600 hover:bg-red-50 hover:text-red-700;
+    line-height: 1rem;
+  }
+
+  .error-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .error-open {
+    @apply text-xs text-red-700 underline hover:text-red-800;
+  }
+
+  .error-message {
+    @apply m-3 max-h-[40vh] overflow-auto whitespace-pre-wrap text-xs text-red-700;
   }
 
   .icon-wrapper {
