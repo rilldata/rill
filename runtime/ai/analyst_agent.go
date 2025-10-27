@@ -8,6 +8,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 )
 
@@ -76,10 +77,15 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	s := GetSession(ctx)
 
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
-	if args.Context.MetricsView != "" {
-		metricsViewName := args.Context.MetricsView
+	var metricsViewName string
+	if args.Context.Explore != "" {
+		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Context.Explore)
+		if err != nil {
+			return nil, err
+		}
+		metricsViewName = metricsView.Meta.Name.Name
 
-		if args.Context.TimeRange != "" {
+		if args.Context.TimeRange == "" {
 			_, err := s.CallTool(ctx, RoleAssistant, "query_metrics_view_summary", nil, &QueryMetricsViewSummaryArgs{
 				MetricsView: metricsViewName,
 			})
@@ -88,7 +94,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 			}
 		}
 
-		_, err := s.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
+		_, err = s.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
@@ -97,7 +103,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if args.Context.MetricsView == "" {
+	if args.Context.Explore == "" {
 		var listRes *ListMetricsViewsResult
 		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", &listRes, &ListMetricsViewsArgs{})
 		if err != nil {
@@ -106,14 +112,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// Add the analyst agent system prompt, optionally tailored for the current explore.
-	systemPrompt, err := t.systemPrompt(ctx, args.Context)
+	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Context)
 	if err != nil {
 		return nil, err
 	}
 
 	// Determine tools that can be used
 	tools := []string{}
-	if args.Context.MetricsView == "" {
+	if args.Context.Explore == "" {
 		tools = append(tools, "list_metrics_views", "get_metrics_view")
 	}
 	tools = append(tools, "query_metrics_view_summary", "query_metrics_view", "create_chart")
@@ -137,7 +143,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	return &AnalystAgentResult{Response: response}, nil
 }
 
-func (t *AnalystAgent) systemPrompt(ctx context.Context, context MessageContext) (string, error) {
+func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string, context MessageContext) (string, error) {
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
@@ -147,12 +153,12 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, context MessageContext)
 	}
 	data := map[string]any{
 		"ai_instructions": session.ProjectInstructions(),
-		"metrics_view":    context.MetricsView,
+		"metrics_view":    metricsViewName,
 		"explore":         context.Explore,
 		"time_range":      context.TimeRange,
 		"filters":         context.Filters,
-		"measures":        context.Measures,
-		"dimensions":      context.Dimensions,
+		"measures":        strings.Join(context.Measures, ""),
+		"dimensions":      strings.Join(context.Dimensions, ""),
 		"feature_flags":   ff,
 		"now":             time.Now(),
 	}
@@ -291,4 +297,51 @@ Based on the data analysis, here are the key insights:
 </additional_user_provided_instructions>
 {{ end }}
 `, data)
+}
+
+func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, exploreName string) (*runtimev1.Resource, *runtimev1.Resource, error) {
+	session := GetSession(ctx)
+
+	ctrl, err := t.Runtime.Controller(ctx, session.InstanceID())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: exploreName}, false)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	explore, access, err := t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !access {
+		return nil, nil, fmt.Errorf("explore %q not found", exploreName)
+	}
+
+	exploreSpec := explore.GetExplore().State.ValidSpec
+	if exploreSpec == nil {
+		return nil, nil, fmt.Errorf("explore %q is not valid", exploreName)
+	}
+
+	metricsView, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: exploreSpec.MetricsView}, false)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	metricsView, access, err = t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), metricsView)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !access {
+		return nil, nil, fmt.Errorf("metrics view %q not found", exploreSpec.MetricsView)
+	}
+
+	metricsViewSpec := metricsView.GetMetricsView().State.ValidSpec
+	if metricsViewSpec == nil {
+		return nil, nil, fmt.Errorf("metrics view %q is not valid", exploreSpec.MetricsView)
+	}
+
+	return explore, metricsView, nil
 }

@@ -282,32 +282,27 @@ export class CompletionMessage extends Message<CompletionMessage> {
  */
 export class CompletionMessageContext extends Message<CompletionMessageContext> {
   /**
-   * @generated from field: string metrics_view = 1;
-   */
-  metricsView = "";
-
-  /**
-   * @generated from field: string explore = 2;
+   * @generated from field: string explore = 1;
    */
   explore = "";
 
   /**
-   * @generated from field: string time_range = 3;
+   * @generated from field: string time_range = 2;
    */
   timeRange = "";
 
   /**
-   * @generated from field: string filters = 4;
+   * @generated from field: string filters = 3;
    */
   filters = "";
 
   /**
-   * @generated from field: repeated string measures = 5;
+   * @generated from field: repeated string measures = 4;
    */
   measures: string[] = [];
 
   /**
-   * @generated from field: repeated string dimensions = 6;
+   * @generated from field: repeated string dimensions = 5;
    */
   dimensions: string[] = [];
 
@@ -319,12 +314,11 @@ export class CompletionMessageContext extends Message<CompletionMessageContext> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.ai.v1.CompletionMessageContext";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "filters", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "filters", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompletionMessageContext {

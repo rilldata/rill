@@ -4341,8 +4341,6 @@ definitions:
   v1CompletionMessageContext:
     type: object
     properties:
-      metricsView:
-        type: string
       explore:
         type: string
       timeRange:
