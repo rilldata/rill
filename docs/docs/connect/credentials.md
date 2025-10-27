@@ -24,7 +24,7 @@ While Rill **can** infer credentials from your local environment (AWS CLI, Azure
 
 1. **Credentials referenced in connection strings or DSN within YAML files (RECOMMENDED)** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)
 2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [templating](/connect/templating) for more details)
-3. **Credentials configured via CLI** - For [AWS](/connect/data-source/s3#rill-developer-local-credentials) / [Azure](/connect/data-source/azure#rill-developer-local-credentials) / [Google Cloud](/connect/data-source/gcs#rill-developer-local-credentials) - **NOT RECOMMENDED for production use**
+3. **Credentials configured via CLI** - For [AWS](/connect/data-source/s3#local-aws-credentials-local-development-only) / [Azure](/connect/data-source/azure#azure-cli-authentication-local-development-only) / [Google Cloud](/connect/data-source/gcs#local-google-cloud-cli-credentials-local-development-only) - **NOT RECOMMENDED for production use**
 
 For more details, please refer to the corresponding [connector](/connect) or [OLAP engine](/connect/olap) page.
 
