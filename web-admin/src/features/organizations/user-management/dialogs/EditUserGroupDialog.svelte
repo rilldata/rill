@@ -33,7 +33,7 @@
   export let groupName: string;
   export let currentUserEmail: string = "";
 
-  let searchText = "";
+  let searchInput = "";
   let debouncedSearchText = "";
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   let selectedUsers: V1OrganizationMemberUser[] = [];
@@ -41,11 +41,11 @@
   let pendingRemovals: string[] = [];
   let initialized = false;
 
-  // Debounce search text to avoid too many API calls
+  // Debounce search input to avoid too many API calls
   $: {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-      debouncedSearchText = searchText;
+      debouncedSearchText = searchInput;
     }, 300);
   }
 
@@ -54,26 +54,32 @@
     organization,
     groupName,
   );
-  // Use server-side search for organization users with debounced text
-  // Only fetch when user has typed something (debouncedSearchText !== "") to avoid loading all users
+
+  $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
+
+  // Query organization users when user types (debounced)
+  // Use a more stable pattern - create query once and let params drive it
   $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
     organization,
-    {
-      pageSize: debouncedSearchText ? 50 : 0, // Don't fetch anything initially
-      searchPattern: debouncedSearchText || undefined,
-    },
+    debouncedSearchText
+      ? {
+          pageSize: 50,
+          searchPattern: `${debouncedSearchText}%`,
+        }
+      : { pageSize: 50 }, // Pass params even when no search to keep query stable
     {
       query: {
-        enabled: !!debouncedSearchText, // Only enable query when there's a search pattern
+        enabled: debouncedSearchText.length > 0,
       },
     },
   );
-  $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
+
   $: allOrganizationUsers =
     $organizationUsersQuery.data?.members?.filter(
       (u) =>
         !selectedUsers.some((selected) => selected.userEmail === u.userEmail),
     ) ?? [];
+
   $: if (
     userGroupMembersUsers.length > 0 &&
     selectedUsers.length === 0 &&
@@ -82,6 +88,7 @@
     selectedUsers = [...userGroupMembersUsers];
     initialized = true;
   }
+
   // TODO: we need to get role from a separate query and fill in selectedUsers
   //       organizationUsers is not guaranteed to have the user present in the group.
 
@@ -253,7 +260,7 @@
 
   function handleClose() {
     open = false;
-    searchText = "";
+    searchInput = "";
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
@@ -307,10 +314,11 @@
             Users
           </label>
           <Combobox
-            searchValue={searchText}
+            bind:searchValue={searchInput}
             options={coercedUsersToOptions}
             placeholder="Search to add/remove users"
             {getMetadata}
+            enableClientFiltering={false}
             selectedValues={[
               ...new Set(
                 [
