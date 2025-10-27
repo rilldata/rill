@@ -1,17 +1,11 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
-  import { getBookmarksQueryOptions } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
-  import {
-    categorizeBookmarks,
-    parseBookmarks,
-  } from "@rilldata/web-admin/features/bookmarks/utils.ts";
+  import { getCanvasCategorisedBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
   import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-  import { createQuery } from "@tanstack/svelte-query";
   import { writable } from "svelte/store";
 
   export let organization: string;
@@ -57,27 +51,27 @@
     selectedTimezone: $selectedTimezone,
   };
 
-  const bookmarksQuery = createQuery(
-    getBookmarksQueryOptions(
-      orgAndProjectNameStore,
-      ResourceKind.Canvas,
-      canvasNameStore,
-    ),
+  const categorizedBookmarksStore = getCanvasCategorisedBookmarks(
+    orgAndProjectNameStore,
+    canvasNameStore,
   );
-  $: bookmarks = $bookmarksQuery.data?.bookmarks ?? [];
-  $: parsedBookmarks = parseBookmarks(bookmarks, $page.url.searchParams);
-  $: categorizedBookmarks = categorizeBookmarks(parsedBookmarks);
+  $: ({
+    data: { bookmarks, categorizedBookmarks },
+  } = $categorizedBookmarksStore);
 </script>
 
 <Bookmarks
   {organization}
   {project}
-  metricsViewNames={$metricViewNames}
-  resourceKind={ResourceKind.Canvas}
-  resourceName={canvasName}
-  {bookmarks}
-  {categorizedBookmarks}
-  {filtersState}
-  {timeControlState}
-  disableFiltersOnly
+  resource={{ name: canvasName, kind: ResourceKind.Canvas }}
+  bookmarkData={{
+    bookmarks,
+    categorizedBookmarks,
+    disableFiltersOnly: true,
+  }}
+  dashboardState={{
+    metricsViewNames: $metricViewNames,
+    filtersState,
+    timeControlState,
+  }}
 />

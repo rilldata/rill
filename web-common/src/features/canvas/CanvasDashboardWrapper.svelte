@@ -13,10 +13,11 @@
   export let filtersEnabled: boolean | undefined;
   export let canvasName: string;
   export let embedded: boolean = false;
+  export let homeBookmarkUrlSearch: string | undefined = undefined;
   export let onClick: () => void = () => {};
 
   onMount(async () => {
-    await restoreSnapshot();
+    await restoreSnapshot(homeBookmarkUrlSearch);
   });
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);

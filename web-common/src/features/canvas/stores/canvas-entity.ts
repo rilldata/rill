@@ -199,11 +199,11 @@ export class CanvasEntity {
     this.lastVisitedState.set(filterState);
   };
 
-  restoreSnapshot = async () => {
-    const lastVisitedState = get(this.lastVisitedState);
+  restoreSnapshot = async (initState: string | undefined) => {
+    const stateToRestore = get(this.lastVisitedState) ?? initState;
 
-    if (lastVisitedState) {
-      await goto(`?${lastVisitedState}`, {
+    if (stateToRestore) {
+      await goto(`?${stateToRestore}`, {
         replaceState: true,
       });
     }

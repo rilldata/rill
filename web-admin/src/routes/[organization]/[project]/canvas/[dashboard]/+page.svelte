@@ -2,6 +2,7 @@
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
+  import { getCanvasCategorisedBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import {
     DashboardBannerID,
@@ -15,12 +16,20 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
+  import { writable } from "svelte/store";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
 
   $: ({ instanceId } = $runtime);
   $: canvasName = $page.params.dashboard;
+  const canvasNameStore = writable(canvasName);
+  $: canvasNameStore.set(canvasName);
+  const orgAndProjectNameStore = writable({ organization: "", project: "" });
+  $: orgAndProjectNameStore.set({
+    organization: $page.params.organization,
+    project: $page.params.project,
+  });
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas, {
     refetchInterval: (query) => {
@@ -65,6 +74,13 @@
     });
   }
 
+  const categorizedBookmarksStore = getCanvasCategorisedBookmarks(
+    orgAndProjectNameStore,
+    canvasNameStore,
+  );
+  $: homeBookmarkUrlSearch =
+    $categorizedBookmarksStore.data.categorizedBookmarks.home?.url;
+
   onNavigate(({ from, to }) => {
     const changedDashboard =
       !from || !to || from.params.dashboard !== to.params.dashboard;
@@ -100,6 +116,6 @@
 
 {#if isCanvasReconcilingForFirstTime(canvasResource)}
   <DashboardBuilding />
-{:else}
-  <CanvasDashboardEmbed resource={canvasResource} />
+{:else if !$categorizedBookmarksStore.isPending}
+  <CanvasDashboardEmbed resource={canvasResource} {homeBookmarkUrlSearch} />
 {/if}
