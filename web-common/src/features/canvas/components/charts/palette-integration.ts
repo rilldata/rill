@@ -122,6 +122,18 @@ export function getQualitativePaletteRange(): string[] {
     "var(--color-qualitative-10)",
     "var(--color-qualitative-11)",
     "var(--color-qualitative-12)",
+    "var(--color-qualitative-13)",
+    "var(--color-qualitative-14)",
+    "var(--color-qualitative-15)",
+    "var(--color-qualitative-16)",
+    "var(--color-qualitative-17)",
+    "var(--color-qualitative-18)",
+    "var(--color-qualitative-19)",
+    "var(--color-qualitative-20)",
+    "var(--color-qualitative-21)",
+    "var(--color-qualitative-22)",
+    "var(--color-qualitative-23)",
+    "var(--color-qualitative-24)",
   ];
 }
 
