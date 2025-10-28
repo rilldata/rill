@@ -1,4 +1,4 @@
-name: Claude – Apply PR comments (edits only)
+name: DoClaude – Apply PR comments (edits only)
 
 on:
   issue_comment:
@@ -14,12 +14,13 @@ permissions:
 
 jobs:
   apply:
+    # Trigger on any PR comment containing "DoClaude"
     if: >
       (github.event.issue.pull_request || github.event.pull_request) &&
       (
-        contains(github.event.comment.body, '/claude') ||
-        startsWith(github.event.comment.body, 'Claude ') ||
-        startsWith(github.event.comment.body, 'claude ')
+        contains(github.event.comment.body, '/DoClaude') ||
+        startsWith(github.event.comment.body, 'DoClaude ') ||
+        startsWith(github.event.comment.body, 'doclaude ')
       )
     runs-on: ubuntu-latest
     steps:
@@ -39,7 +40,6 @@ jobs:
             });
             core.setOutput('number', pr.number);
             core.setOutput('head_ref', pr.head.ref);
-            core.setOutput('base_ref', pr.base.ref);
 
       - name: Checkout PR head
         uses: actions/checkout@v4
@@ -47,22 +47,22 @@ jobs:
           fetch-depth: 0
           ref: ${{ steps.pr.outputs.head_ref }}
 
-      - name: Gather comment context (file/hunk if review comment)
+      - name: Gather comment context
         id: context
         uses: actions/github-script@v7
         with:
           script: |
             const c = context.payload.comment;
             let file = "", diff_hunk = "";
-            if (context.eventName === "pull_request_review_comment" || c?.path) {
-              file = c.path || "";
+            if (c?.path) {
+              file = c.path;
               diff_hunk = c.diff_hunk || "";
             }
             core.setOutput('file', file);
             core.setOutput('diff_hunk', diff_hunk);
-            core.setOutput('comment_body', c.body || "");
+            core.setOutput('comment_body', c.body);
 
-      - name: Build instruction file
+      - name: Build DoClaude instruction file
         run: |
           {
             echo "USER INSTRUCTION";
@@ -85,55 +85,40 @@ jobs:
             USER INSTRUCTION
             {{file:/tmp/instruction.txt}}
 
-            HARD LIMITS (must follow exactly)
+            HARD LIMITS
             - Do NOT create, rename, or delete files.
             - Edit ONLY existing Markdown/MDX documentation files (e.g., docs/**, README.md).
-            - Make in-place textual edits (replace page text). Do not add new files.
-            - Preserve frontmatter, headings, links, anchors, and formatting.
+            - Make in-place textual edits only.
+            - Preserve frontmatter, headings, links, and formatting.
 
             TASK
-            - Return a single unified diff patch that applies the requested documentation updates by editing ONLY files that already exist.
+            - Return a single unified diff patch that updates only existing documentation.
 
-            OUTPUT FORMAT (IMPORTANT)
-            - Output ONLY a valid unified diff (no extra prose).
-            - Must start with lines like:
+            OUTPUT FORMAT
+            - Output ONLY a valid unified diff.
+            - Must start with:
               --- a/path.md
               +++ b/path.md
 
-      - name: Capture Claude output to file
-        run: |
-          echo "${{ steps.claude.outputs.text }}" > /tmp/patch.diff
+      - name: Capture Claude output
+        run: echo "${{ steps.claude.outputs.text }}" > /tmp/patch.diff
 
-      - name: Validate patch – no new/renamed/deleted files; only existing docs
-        id: validate
+      - name: Validate patch (no new or renamed files)
         run: |
           set -e
           PATCH=/tmp/patch.diff
           cat "$PATCH" >/dev/null
-
-          # 1) Reject creations/renames/deletions
           if grep -qE '^(--- /dev/null|\+\+\+ /dev/null|new file mode|deleted file mode|rename (from|to))' "$PATCH"; then
-            echo "Patch attempts file create/rename/delete, which is forbidden."; exit 1
+            echo "❌ Patch attempts to create or rename files"; exit 1
           fi
-
-          # 2) Ensure +++ headers point to existing files
           files=$(grep -E '^\+\+\+ b/' "$PATCH" | sed 's|^\+\+\+ b/||')
-          if [ -z "$files" ]; then
-            echo "No target files detected in patch."; exit 1
-          fi
-
-          # 3) Restrict to docs/**/*.md|mdx and README.md; ensure file exists; ensure matching --- a/
           allowed_globs='^docs/.*\.(md|mdx)$|^README\.md$'
           for f in $files; do
             if ! echo "$f" | grep -Eq "$allowed_globs"; then
-              echo "Forbidden path or extension in patch: $f"; exit 1
+              echo "❌ Forbidden path: $f"; exit 1
             fi
             if [ ! -f "$f" ]; then
-              echo "Target file does not exist (would be a create): $f"; exit 1
-            fi
-            a_line=$(grep -E "^--- a/$(printf '%s' "$f" | sed 's/[.[\*^$(){}?|+]/\\&/g')" "$PATCH" || true)
-            if [ -z "$a_line" ]; then
-              echo "Missing original file header for $f (possible create/rename)."; exit 1
+              echo "❌ File does not exist: $f"; exit 1
             fi
           done
 
@@ -143,14 +128,14 @@ jobs:
           PATCH=/tmp/patch.diff
           git apply --index --reject "$PATCH" || true
           if git ls-files --others --exclude-standard | grep -q '\.rej$'; then
-            echo "Patch had rejects. Please resolve them and rerun."; exit 1
+            echo "❌ Patch had rejects"; exit 1
           fi
-          git config user.name "claude-bot"
+          git config user.name "do-claude-bot"
           git config user.email "actions@users.noreply.github.com"
-          git commit -m "docs: apply Claude suggestion (no new files)" || { echo "No changes to commit."; exit 0; }
+          git commit -m "docs: DoClaude suggestion (edits only)" || { echo "No changes to commit."; exit 0; }
           git push
 
-      - name: Acknowledge in PR thread
+      - name: Confirm success
         uses: actions/github-script@v7
         with:
           script: |
@@ -159,5 +144,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              body: "✅ Changes applied by Claude (edits only)."
+              body: "✅ DoClaude applied the requested changes."
             });
