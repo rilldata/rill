@@ -4390,6 +4390,8 @@ definitions:
       data:
         type: string
         format: byte
+      urlSearch:
+        type: string
       resourceKind:
         type: string
       resourceName:
@@ -4491,9 +4493,8 @@ definitions:
         type: string
       description:
         type: string
-      data:
+      urlSearch:
         type: string
-        format: byte
       resourceKind:
         type: string
       resourceName:
@@ -6175,9 +6176,8 @@ definitions:
         type: string
       description:
         type: string
-      data:
+      urlSearch:
         type: string
-        format: byte
       default:
         type: boolean
       shared:

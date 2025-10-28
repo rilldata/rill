@@ -51,5 +51,9 @@ func contextWithQueryID(ctx context.Context) context.Context {
 	if traceID == "" {
 		return ctx
 	}
-	return clickhouse.Context(ctx, clickhouse.WithQueryID(traceID))
+
+	// clickhouse complains if the query ID of two concurrent queries are the same
+	// we append a random suffix to ensure uniqueness but users can still correlate queries by trace ID
+	queryID := traceID + "_" + uuid.New().String()[0:8]
+	return clickhouse.Context(ctx, clickhouse.WithQueryID(queryID))
 }

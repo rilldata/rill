@@ -226,6 +226,7 @@ export interface V1Bookmark {
   displayName?: string;
   description?: string;
   data?: string;
+  urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
   projectId?: string;
@@ -286,7 +287,7 @@ export interface V1CreateAssetResponse {
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
-  data?: string;
+  urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
   projectId?: string;
@@ -1441,7 +1442,7 @@ export interface V1UpdateBookmarkRequest {
   bookmarkId?: string;
   displayName?: string;
   description?: string;
-  data?: string;
+  urlSearch?: string;
   default?: boolean;
   shared?: boolean;
 }

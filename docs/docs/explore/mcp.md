@@ -43,7 +43,14 @@ Rill offers two ways to use MCP:
 - **Rill MCP Server** (this guide) - Connect external AI assistants like Claude Desktop to your Rill projects
 - **[AI Chat](/explore/ai-chat)** - Built-in chat interface in Rill Cloud with zero setup required
 
-You can also add `ai_instructions` to your project file and metrics views, which will give your LLM additional context on how to use the Rill MCP Server for best results. Users can then ask questions like:
+You can also add `ai_instructions` to your project file and metrics views, which will give your LLM additional context on how to use the Rill MCP Server for best results.
+
+:::tip Configure AI instructions
+Set project-wide AI instructions to provide context unique to your project and improve MCP responses.
+[Learn more about AI configuration →](/build/project-configuration#ai-configuration)
+:::
+
+Users can then ask questions like:
 
 - What are my *week-on-week* __increases or decreases in sales__ of `XYZ service`?
 - During the *current year*, do I have any __outliers in website views__? What might this correlate to?
