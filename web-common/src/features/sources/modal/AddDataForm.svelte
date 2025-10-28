@@ -21,7 +21,7 @@
     prepareSourceFormData,
     compileSourceYAML,
   } from "../sourceUtils";
-  import { humanReadableErrorMessage } from "../errors/errors";
+
   import {
     submitAddConnectorForm,
     submitAddSourceForm,
@@ -33,7 +33,7 @@
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { isEmpty, normalizeErrors } from "./utils";
+  import { isEmpty, normalizeErrors, normalizeConnectorError } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
@@ -260,40 +260,17 @@
       );
       onClose();
     } catch (e) {
-      let error: string;
-      let details: string | undefined = undefined;
-
-      // Handle different error types
-      if (e instanceof Error) {
-        error = e.message;
-        details = undefined;
-      } else if (e?.message && e?.details) {
-        error = e.message;
-        details = e.details !== e.message ? e.details : undefined;
-      } else if (e?.response?.data) {
-        const originalMessage = e.response.data.message;
-        const humanReadable = humanReadableErrorMessage(
-          connector.name,
-          e.response.data.code,
-          originalMessage,
-        );
-        error = humanReadable;
-        details =
-          humanReadable !== originalMessage ? originalMessage : undefined;
-      } else if (e?.message) {
-        error = e.message;
-        details = undefined;
-      } else {
-        error = "Unknown error";
-        details = undefined;
-      }
+      const { message, details } = normalizeConnectorError(
+        connector.name ?? "",
+        e,
+      );
 
       // Keep error state for each form - match the display logic
       if (hasOnlyDsn() || connectionTab === "dsn") {
-        dsnError = error;
+        dsnError = message;
         dsnErrorDetails = details;
       } else {
-        paramsError = error;
+        paramsError = message;
         paramsErrorDetails = details;
       }
     } finally {
@@ -448,40 +425,17 @@
 
       onClose();
     } catch (e) {
-      let error: string;
-      let details: string | undefined = undefined;
-
-      // Handle different error types
-      if (e instanceof Error) {
-        error = e.message;
-        details = undefined;
-      } else if (e?.message && e?.details) {
-        error = e.message;
-        details = e.details !== e.message ? e.details : undefined;
-      } else if (e?.response?.data) {
-        const originalMessage = e.response.data.message;
-        const humanReadable = humanReadableErrorMessage(
-          connector.name,
-          e.response.data.code,
-          originalMessage,
-        );
-        error = humanReadable;
-        details =
-          humanReadable !== originalMessage ? originalMessage : undefined;
-      } else if (e?.message) {
-        error = e.message;
-        details = undefined;
-      } else {
-        error = "Unknown error";
-        details = undefined;
-      }
+      const { message, details } = normalizeConnectorError(
+        connector.name ?? "",
+        e,
+      );
 
       // Keep error state for each form - match the display logic
       if (hasOnlyDsn() || connectionTab === "dsn") {
-        dsnError = error;
+        dsnError = message;
         dsnErrorDetails = details;
       } else {
-        paramsError = error;
+        paramsError = message;
         paramsErrorDetails = details;
       }
     } finally {
