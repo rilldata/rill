@@ -14,7 +14,7 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 REPO = os.environ.get("REPO")
 PR_NUMBER = int(os.environ.get("PR_NUMBER", 0))
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-4-5-sonnet-latest")
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-5-20250929")
 
 def main():
     if not all([GITHUB_TOKEN, REPO, PR_NUMBER, ANTHROPIC_API_KEY]):
