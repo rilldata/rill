@@ -233,7 +233,7 @@ func (r *rows) Next() bool {
 		return false
 	}
 	r.results = nextResults
-	r.currentRow = 1 // todo: check if there is header in next page also
+	r.currentRow = 0 // there is no header in next page
 	// call Next to process the newly fetched page
 	return r.Next()
 }
