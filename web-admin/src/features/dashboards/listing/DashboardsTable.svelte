@@ -125,7 +125,7 @@
 {:else if isError}
   <ResourceError kind="dashboard" {error} />
 {:else if isSuccess}
-  <div class="flex flex-col w-full">
+  <div class="flex flex-col w-full gap-y-3">
     <ResourceList
       kind="dashboard"
       data={displayData}
