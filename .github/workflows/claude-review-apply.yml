@@ -1,16 +1,7 @@
 name: DoClaude – Apply PR comments and review suggestions
 
 on:
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'PR number to process'
-        required: true
-        type: number
+ push
 
 permissions:
   contents: write
@@ -18,9 +9,8 @@ permissions:
 
 jobs:
   prepare:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      ((github.event.issue.pull_request || github.event.pull_request) && contains(github.event.comment.body, 'doclaude'))
+    # if: |
+    #   ((github.event.issue.pull_request || github.event.pull_request) && contains(github.event.comment.body, 'doclaude'))
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.get_pr.outputs.pr_number }}
@@ -33,20 +23,9 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // For workflow_dispatch: use manual input
-            // For issue_comment: PR number is in issue.number
-            // For pull_request_review_comment: PR number is in pull_request.number
-            let prNumber;
-            if (context.eventName === 'workflow_dispatch') {
-              prNumber = context.payload.inputs.pr_number;
-              core.info(`Manual trigger for PR #${prNumber}`);
-            } else {
-              prNumber = context.payload.pull_request?.number || context.payload.issue?.number;
-            }
-            
-            if (!prNumber) {
-              throw new Error('Could not determine PR number from event payload');
-            }
+            // MANUAL TEST: Hardcoded for PR #8166
+            const prNumber = 8166;
+            core.info(`Manual test for PR #${prNumber}`);
             
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
