@@ -7,7 +7,7 @@ sidebar_position: 30
 Google Cloud Storage (GCS) is Google's object storage service. Rill supports ingesting data from GCS buckets.
 
 :::tip
-For more information on how to model data from your GCS buckets, see our [OLAP data modeling documentation](/build/models/models.md).
+For more information on how to model data from your GCS buckets, see our [OLAP data modeling documentation](/build/models).
 :::
 
 ## Authentication

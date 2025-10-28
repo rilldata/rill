@@ -152,13 +152,27 @@ def apply_changes(claude_output):
         print()
 
     # Extract file blocks: ```file:path/to/file.md ... ```
-    file_pattern = r'```file:(.*?)\n(.*?)\n```'
-    file_matches = re.finditer(file_pattern, claude_output, re.DOTALL)
+    # Split by file markers, then find the end of each block
+    file_blocks = re.split(r'```file:', claude_output)
     
     changes_applied = 0
-    for match in file_matches:
-        file_path = match.group(1).strip()
-        file_content = match.group(2)
+    for block in file_blocks[1:]:  # Skip the first split (before any file marker)
+        # Extract file path (everything up to first newline)
+        lines = block.split('\n', 1)
+        if len(lines) < 2:
+            continue
+            
+        file_path = lines[0].strip()
+        remaining = lines[1]
+        
+        # Find the closing ``` that ends this file block
+        # Look for ``` at the start of a line, potentially followed by EOF or another ```file:
+        end_match = re.search(r'\n```\s*(?=\n|$)', remaining)
+        if not end_match:
+            print(f"⚠️ Could not find closing backticks for file: {file_path}")
+            continue
+        
+        file_content = remaining[:end_match.start() + 1]  # Include the final newline
         
         # Verify file exists
         if not Path(file_path).exists():
