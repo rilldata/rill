@@ -2,6 +2,7 @@
   import {
     createAdminServiceAddProjectMemberUser,
     createAdminServiceAddProjectMemberUsergroup,
+    getAdminServiceListOrganizationMemberUsersQueryOptions,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
@@ -141,10 +142,31 @@
   async function handleSearch(query: string) {
     if (!query) return [];
 
-    const lower = query.toLowerCase();
-    return searchList
-      .filter((user) => user.identifier.toLowerCase().includes(lower))
-      .slice(0, 5); // Limit to 5 results to match previous behavior
+    // Server-side user search (prefix) using query client for consistency/caching
+    const options = getAdminServiceListOrganizationMemberUsersQueryOptions(
+      organization,
+      {
+        pageSize: 5,
+        searchPattern: `${query}%`,
+      },
+    );
+
+    const usersResp = await queryClient.fetchQuery(options);
+    const users = (usersResp?.members ?? []) as Array<{
+      userEmail: string;
+      userName: string;
+      roleName?: string;
+      userPhotoUrl?: string;
+    }>;
+
+    // Return only remote user results; SearchAndInviteInput merges with local searchList
+    return users.map((u) => ({
+      identifier: u.userEmail,
+      type: "user" as const,
+      name: u.userName,
+      orgRoleName: u.roleName,
+      photoUrl: u.userPhotoUrl,
+    }));
   }
 
   async function onInviteHandler(emailsAndGroups: string[], role: string) {

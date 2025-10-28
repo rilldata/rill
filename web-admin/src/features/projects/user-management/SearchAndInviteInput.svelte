@@ -54,15 +54,32 @@
 
   // Debounced search for better performance
   const debouncedSearch = debounce(async (query: string) => {
+    let remoteResults = [] as SearchResult[];
+    let localResults = [] as SearchResult[];
+
+    try {
+      if (onSearch) {
+        remoteResults = await onSearch(query);
+      }
+    } catch {
+      remoteResults = [];
+    }
+
     if (searchList) {
-      searchResults = filterSearchResults(searchList, searchKeys, query);
-    } else {
-      try {
-        searchResults = await onSearch(query);
-      } catch {
-        searchResults = [];
+      localResults = filterSearchResults(searchList, searchKeys, query);
+    }
+
+    // Merge and de-duplicate by identifier
+    const seen = new Set<string>();
+    const merged: SearchResult[] = [];
+    for (const r of [...localResults, ...remoteResults]) {
+      if (!seen.has(r.identifier)) {
+        merged.push(r);
+        seen.add(r.identifier);
       }
     }
+
+    searchResults = merged;
     showDropdown = searchResults.length > 0;
     if (showDropdown) {
       updateDropdownPosition();
