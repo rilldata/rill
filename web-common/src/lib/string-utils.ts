@@ -1,16 +1,20 @@
-export function snakeToCamel(self: string): string {
-  let str = self[0];
-  for (let i = 1; i < self.length; i++) {
-    const isUnderscore = self[i] === "_";
+export function snakeToCamel(snake: string): string {
+  let camel = snake[0];
+  for (let i = 1; i < snake.length; i++) {
+    const isUnderscore = snake[i] === "_";
     if (!isUnderscore) {
-      str += self[i];
+      camel += snake[i];
       continue;
     }
 
     i++;
-    if (i >= self.length) break;
+    if (i >= snake.length) break;
 
-    str += self[i].toUpperCase();
+    camel += snake[i].toUpperCase();
   }
-  return str;
+  return camel;
+}
+
+export function camelToSnake(camel: string): string {
+  return camel.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }

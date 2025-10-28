@@ -114,8 +114,6 @@
     $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
 
-  $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
-
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
   $: mouseOverCords = mouseoverValue?.x && $xScale(mouseoverValue?.x);

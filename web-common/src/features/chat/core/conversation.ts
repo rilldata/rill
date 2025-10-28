@@ -1,4 +1,5 @@
 import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
+import { camelToSnake } from "@rilldata/web-common/lib/string-utils.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryKey,
@@ -109,7 +110,7 @@ export class Conversation {
     this.isStreaming.set(true);
     this.hasReceivedFirstMessage = false;
 
-    const userMessage = this.addOptimisticUserMessage(prompt);
+    const userMessage = this.addOptimisticUserMessage(prompt, context);
 
     try {
       // Start streaming - this establishes the connection
@@ -333,11 +334,20 @@ export class Conversation {
   /**
    * Add optimistic user message to cache
    */
-  private addOptimisticUserMessage(prompt: string): V1Message {
+  private addOptimisticUserMessage(
+    prompt: string,
+    context: V1CompletionMessageContext | undefined,
+  ): V1Message {
+    const snakeCaseContext = Object.fromEntries(
+      Object.entries(context || {}).map(([k, v]) => [camelToSnake(k), v]),
+    );
+
     const userMessage: V1Message = {
       id: getOptimisticMessageId(),
       role: "user",
       content: [{ text: prompt }],
+      contentType: "JSON",
+      contentData: JSON.stringify({ prompt, context: snakeCaseContext }),
       createdOn: new Date().toISOString(),
       updatedOn: new Date().toISOString(),
     };

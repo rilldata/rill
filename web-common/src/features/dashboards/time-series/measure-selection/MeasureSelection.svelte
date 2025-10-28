@@ -46,11 +46,7 @@
   function onExplain(e) {
     e.stopPropagation();
     e.preventDefault();
-    anomalyExplanation(
-      instanceId,
-      $exploreName,
-      $dashboardStore.whereFilter,
-    );
+    anomalyExplanation(instanceId, $exploreName, $dashboardStore.whereFilter);
   }
 </script>
 

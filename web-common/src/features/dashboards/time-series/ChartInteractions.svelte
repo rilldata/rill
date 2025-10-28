@@ -95,11 +95,7 @@
       e.preventDefault();
       undoZoom();
     } else if (isExplainKey) {
-      anomalyExplanation(
-        instanceId,
-        exploreName,
-        $dashboardStore.whereFilter,
-      );
+      anomalyExplanation(instanceId, exploreName, $dashboardStore.whereFilter);
     }
   }
 

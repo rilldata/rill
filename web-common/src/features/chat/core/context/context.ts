@@ -82,10 +82,6 @@ export class ConversationContext {
       context[ContextTypeData[e.type].key] = e.value as any;
     });
 
-    if (context.metricsView) {
-      context.explore = context.metricsView;
-    }
-
     return context;
   }
 
