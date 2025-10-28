@@ -16,6 +16,7 @@
   export let columnVisibility: Record<string, boolean> = {};
   export let kind: string;
   export let toolbar: boolean = true;
+  export let fixedRowHeight: boolean = true;
 
   let sorting = [];
   function setSorting(updater) {
@@ -69,46 +70,48 @@
   $: isFiltered = $table.getState().globalFilter?.length > 0;
 </script>
 
-{#if toolbar}
-  <slot name="toolbar">
-    <ResourceListToolbar />
-  </slot>
-{/if}
+<div class="flex flex-col gap-y-3 w-full">
+  {#if toolbar}
+    <slot name="toolbar">
+      <ResourceListToolbar />
+    </slot>
+  {/if}
 
-<div class="w-full">
-  <slot name="header" />
-  <ul role="list" class="resource-list">
-    {#each $table.getRowModel().rows as row (row.id)}
-      <li class="resource-list-item">
-        {#each row.getVisibleCells() as cell (cell.id)}
-          <svelte:component
-            this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-          />
-        {/each}
-      </li>
-    {:else}
-      <li class="resource-list-item-empty">
-        <div class="text-center py-16">
-          {#if isFiltered}
-            <!-- Filtered empty state: no results match search -->
-            <div class="flex flex-col gap-y-2 items-center text-sm">
-              <div class="text-gray-600 font-semibold">
-                No {kind}s match your search
+  <div class="w-full">
+    <slot name="header" />
+    <ul role="list" class="resource-list">
+      {#each $table.getRowModel().rows as row (row.id)}
+        <li class="resource-list-item" class:fixed-height={fixedRowHeight}>
+          {#each row.getVisibleCells() as cell (cell.id)}
+            <svelte:component
+              this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+            />
+          {/each}
+        </li>
+      {:else}
+        <li class="resource-list-item-empty">
+          <div class="text-center py-16">
+            {#if isFiltered}
+              <!-- Filtered empty state: no results match search -->
+              <div class="flex flex-col gap-y-2 items-center text-sm">
+                <div class="text-gray-600 font-semibold">
+                  No {kind}s match your search
+                </div>
+                <div class="text-gray-500">Try adjusting your search terms</div>
               </div>
-              <div class="text-gray-500">Try adjusting your search terms</div>
-            </div>
-          {:else}
-            <!-- Custom empty state via slot, or fallback -->
-            <slot name="empty">
-              <div class="text-gray-600 text-sm font-semibold">
-                You don't have any {kind}s yet
-              </div>
-            </slot>
-          {/if}
-        </div>
-      </li>
-    {/each}
-  </ul>
+            {:else}
+              <!-- Custom empty state via slot, or fallback -->
+              <slot name="empty">
+                <div class="text-gray-600 text-sm font-semibold">
+                  You don't have any {kind}s yet
+                </div>
+              </slot>
+            {/if}
+          </div>
+        </li>
+      {/each}
+    </ul>
+  </div>
 </div>
 
 <style lang="postcss">
@@ -119,6 +122,10 @@
   .resource-list-item,
   .resource-list-item-empty {
     @apply block w-full border border-gray-200;
+  }
+
+  .resource-list-item.fixed-height {
+    @apply h-[60px];
   }
 
   /* Remove top border on non-first items to avoid double borders */

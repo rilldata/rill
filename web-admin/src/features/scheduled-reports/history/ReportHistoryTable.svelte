@@ -53,6 +53,7 @@
       {columns}
       data={$reportQuery.data?.resource.report.state.executionHistory}
       toolbar={false}
+      fixedRowHeight={false}
     />
   {/if}
 </div>

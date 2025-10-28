@@ -54,6 +54,7 @@
       {columns}
       data={$alertQuery.data?.resource.alert.state.executionHistory}
       toolbar={false}
+      fixedRowHeight={false}
     />
   {/if}
 </div>

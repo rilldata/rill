@@ -30,7 +30,7 @@
     : ResourceKind.Canvas;
 </script>
 
-<a class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-[60px]" {href}>
+<a class="flex flex-col gap-y-1 group px-4 py-2.5 w-full h-full" {href}>
   <div class="flex gap-x-2 items-center min-h-[20px]">
     <ResourceTypeBadge kind={resourceKind} />
     <span
