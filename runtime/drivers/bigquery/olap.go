@@ -208,7 +208,6 @@ func (r *rows) MapScan(dest map[string]any) error {
 	for i, col := range r.ri.Schema {
 		dest[col.Name], err = convertValue(r.ri.Schema[i], row[i])
 		if err != nil {
-			r.lastErr = err
 			return err
 		}
 	}

@@ -26,7 +26,11 @@ func (c *Connection) Dialect() drivers.Dialect {
 
 // Exec implements drivers.OLAPStore.
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	panic("unimplemented")
+	res, err := c.Query(ctx, stmt)
+	if err != nil {
+		return err
+	}
+	return res.Rows.Close()
 }
 
 // InformationSchema implements drivers.OLAPStore.
@@ -46,6 +50,9 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil, err
 	}
 
+	if stmt.DryRun {
+		stmt.Query = fmt.Sprintf("EXPLAIN %s", stmt.Query)
+	}
 	params := make([]string, len(stmt.Args))
 	for i, v := range stmt.Args {
 		params[i] = fmt.Sprint(v)

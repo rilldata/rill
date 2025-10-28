@@ -1,6 +1,7 @@
 package athena_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -413,6 +414,37 @@ func TestQueryScan(t *testing.T) {
 
 		require.Equal(t, len(expectedRows), rowCount)
 		require.NoError(t, result.Err())
+	})
+}
+
+func TestExec(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	_, olap := acquireTestAthena(t)
+
+	t.Run("simple exec", func(t *testing.T) {
+		// Create a view
+		err := olap.Exec(t.Context(), &drivers.Statement{
+			Query: "CREATE OR REPLACE VIEW integration_test.all_datatypes_view AS SELECT * FROM integration_test.all_datatypes",
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			// Drop the view
+			err = olap.Exec(context.Background(), &drivers.Statement{
+				Query: "DROP TABLE integration_test.all_datatypes_view",
+			})
+			require.NoError(t, err)
+		})
+
+		// Verify the view was created by querying it
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT id FROM integration_test.all_datatypes_view limit 0",
+		})
+		require.NoError(t, err)
+		require.NoError(t, result.Close())
+		require.Equal(t, len(result.Schema.Fields), 1)
 	})
 }
 
