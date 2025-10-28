@@ -1,4 +1,4 @@
-name: DoClaude – Apply PR comments (edits only)
+name: DoClaude – Apply docs edits from PR comments
 
 on:
   issue_comment:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   apply:
-    # Trigger on any PR comment containing "DoClaude" or "doclaude:"
+    # Trigger on PR comments (issue or inline review) starting with DoClaude/doclaude (docs edits only)
     if: >
       (github.event.issue.pull_request || github.event.pull_request) &&
       (
@@ -32,10 +32,16 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const isIssue = !!context.payload.issue;
-            const prNumber = isIssue
-              ? context.payload.issue.number
-              : context.payload.pull_request?.number;
+            // For issue_comment, PR number is in issue.number
+            // For pull_request_review_comment, PR number is in pull_request.number
+            let prNumber;
+            if (context.payload.issue) {
+              prNumber = context.payload.issue.number;
+            } else if (context.payload.pull_request) {
+              prNumber = context.payload.pull_request.number;
+            } else {
+              throw new Error('Could not find PR number in event payload');
+            }
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -56,10 +62,15 @@ jobs:
         with:
           script: |
             const c = context.payload.comment;
+            if (!c) {
+              throw new Error('No comment found in event payload');
+            }
             let file = "", diff_hunk = "";
-            if (c?.path) {
+            // For pull_request_review_comment, path and diff_hunk are on comment
+            if (c.path) {
               file = c.path;
               diff_hunk = c.diff_hunk || "";
+              core.info(`Review comment on file: ${file}`);
             }
             core.setOutput('file', file);
             core.setOutput('diff_hunk', diff_hunk);
@@ -92,10 +103,11 @@ jobs:
             - Do NOT create, rename, or delete files.
             - Edit ONLY existing Markdown/MDX documentation files (e.g., docs/**, README.md).
             - Make in-place textual edits only.
-            - Preserve frontmatter, headings, links, and formatting.
+            - Preserve existing file structure, formatting, and syntax.
 
             TASK
-            - Return a single unified diff patch that updates only existing documentation.
+            - Return a single unified diff patch that updates only existing files to address the user's instruction.
+            - If a specific file and diff hunk are provided, focus your changes there.
 
             OUTPUT FORMAT
             - Output ONLY a valid unified diff.
@@ -135,7 +147,7 @@ jobs:
           fi
           git config user.name "do-claude-bot"
           git config user.email "actions@users.noreply.github.com"
-          git commit -m "docs: DoClaude suggestion (edits only)" || { echo "No changes to commit."; exit 0; }
+          git commit -m "docs: DoClaude suggestion" || { echo "No changes to commit."; exit 0; }
           git push
 
       - name: Confirm success
