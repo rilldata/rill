@@ -15,22 +15,14 @@
   }
 
   $: filterTable(filter);
-  $: numResults = $table.getRowModel().rows.length;
 
   beforeNavigate(() => (filter = "")); // resets filter when changing projects
 </script>
 
-<div class="w-full flex items-center justify-between gap-x-4">
-  <!-- Search bar -->
-  <Search
-    placeholder="Search"
-    autofocus={false}
-    bind:value={filter}
-    background={false}
-    rounded="lg"
-  />
-  <!-- Result count -->
-  <span class="text-sm text-gray-500 shrink-0">
-    {numResults} result{numResults !== 1 ? "s" : ""}
-  </span>
-</div>
+<Search
+  placeholder="Search"
+  autofocus={false}
+  bind:value={filter}
+  background={false}
+  rounded="lg"
+/>
