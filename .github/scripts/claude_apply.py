@@ -32,17 +32,14 @@ def main():
     # Get all review comments (inline comments on code)
     review_comments = list(pr.get_review_comments())
     
-    # Filter for comments containing "DoClaude" (case-insensitive)
-    doclaude_comments = [
-        c for c in review_comments 
-            c.body.lower()
-    ]
+    # Use all review comments
+    doclaude_comments = review_comments
 
     if not doclaude_comments:
-        print("ℹ️ No DoClaude comments found in this PR")
+        print("ℹ️ No review comments found in this PR")
         sys.exit(0)
 
-    print(f"✅ Found {len(doclaude_comments)} DoClaude comment(s)")
+    print(f"✅ Found {len(doclaude_comments)} review comment(s)")
 
     # Read documentation instructions
     instructions_path = Path(".claude/instructions.md")
