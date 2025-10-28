@@ -1616,6 +1616,7 @@ message ListOrganizationMemberUsersRequest {
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
   bool superuser_force_access = 6;
+  string search_pattern = 7; // Optional search pattern to filter users by email or display name
 }
 
 message ListOrganizationMemberUsersResponse {
@@ -2125,7 +2126,7 @@ message GetBookmarkResponse {
 message CreateBookmarkRequest {
   string display_name = 1;
   string description = 2;
-  bytes data = 3;
+  string url_search = 9;
   string resource_kind = 4;
   string resource_name = 5;
   string project_id = 6;
@@ -2141,7 +2142,7 @@ message UpdateBookmarkRequest {
   string bookmark_id = 1;
   string display_name = 2;
   string description = 4;
-  bytes data = 3;
+  string url_search = 7;
   bool default = 5;
   bool shared = 6;
 }
@@ -2968,6 +2969,7 @@ message Bookmark {
   string display_name = 2;
   string description = 9;
   bytes data = 3;
+  string url_search = 13;
   string resource_kind = 10;
   string resource_name = 4;
   string project_id = 5;

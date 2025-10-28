@@ -8,7 +8,7 @@
   export let issuedToken: string | null = null;
 
   // Construct the API URL for the MCP server
-  $: apiUrl = `${CANONICAL_ADMIN_API_URL}/v1/org/${organization}/projects/${project}/runtime/mcp`;
+  $: apiUrl = `${CANONICAL_ADMIN_API_URL}/v1/orgs/${organization}/projects/${project}/runtime/mcp`;
 
   // Config snippets with exact formatting
   $: publicConfig = `{

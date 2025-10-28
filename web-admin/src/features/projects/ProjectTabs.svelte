@@ -16,6 +16,11 @@
 
   $: tabs = [
     {
+      route: `/${organization}/${project}`,
+      label: "Home",
+      hasPermission: true,
+    },
+    {
       route: `/${organization}/${project}/-/ai`,
       label: "AI",
       hasPermission: $chat,
@@ -82,7 +87,7 @@
   {#if $width && $position}
     <span
       style:width="{$width}px"
-      style:transform="translateX({$position}px)"
+      style:transform="translateX({$position}px) "
     />
   {/if}
 </div>

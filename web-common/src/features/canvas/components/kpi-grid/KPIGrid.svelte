@@ -1,7 +1,7 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import type { KPIGridComponent } from ".";
   import ComponentHeader from "../../ComponentHeader.svelte";
-  import ComponentError from "../ComponentError.svelte";
   import { getMinWidth, type KPISpec } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
   import { validateKPIGridSchema } from "./selector";
@@ -23,6 +23,7 @@
     metrics_view: kpiGridProperties.metrics_view,
     measure,
     sparkline: kpiGridProperties.sparkline,
+    hide_time_range: kpiGridProperties.hide_time_range,
     comparison: kpiGridProperties.comparison,
     dimension_filters: kpiGridProperties.dimension_filters,
     time_filters: kpiGridProperties.time_filters,

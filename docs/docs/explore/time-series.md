@@ -2,7 +2,7 @@
 title: "Time Series Filter"
 sidebar_label: "Time Series Filter"
 hide_table_of_contents: false
-sidebar_position: 07
+sidebar_position: 15
 tags:
     - Quickstart
     - Tutorial

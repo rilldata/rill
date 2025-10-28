@@ -119,6 +119,36 @@ test.describe("Embeds", () => {
         logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
       ).toBeTruthy();
     });
+
+    test.describe("embedded explore with initial state", () => {
+      test.use({
+        embeddedInitialState:
+          "&tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
+      });
+
+      test("init state is applied to dashboard", async ({ embedPage }) => {
+        const logMessages: string[] = [];
+        await waitForReadyMessage(embedPage, logMessages);
+        const frame = embedPage.frameLocator("iframe");
+
+        await expect(
+          frame.getByRole("button", {
+            name: "Advertising Spend Overall $252.33",
+          }),
+        ).toContainText(
+          /Advertising Spend Overall\s+\$252.33\s+-\$52.08\s+-17%/m,
+        );
+        await embedPage.waitForTimeout(500);
+
+        expect(
+          logMessages.some((msg) =>
+            msg.includes(
+              "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
+            ),
+          ),
+        ).toBeTruthy();
+      });
+    });
   });
 
   test.describe("embedded canvas", () => {
@@ -185,7 +215,7 @@ test.describe("Embeds", () => {
       ).toBeTruthy();
     });
 
-    test("setState changes embedded explore", async ({ embedPage }) => {
+    test("setState changes embedded canvas", async ({ embedPage }) => {
       const logMessages: string[] = [];
       await waitForReadyMessage(embedPage, logMessages);
       const frame = embedPage.frameLocator("iframe");
@@ -209,6 +239,32 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) => msg.includes(`{"id":1337,"result":true}`)),
       ).toBeTruthy();
+    });
+
+    test.describe("embedded canvas with initial state", () => {
+      test.use({
+        embeddedInitialState:
+          "&tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
+      });
+
+      test("init state is applied to canvas", async ({ embedPage }) => {
+        const logMessages: string[] = [];
+        await waitForReadyMessage(embedPage, logMessages);
+        const frame = embedPage.frameLocator("iframe");
+
+        await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
+          /Advertising Spend Overall\s+\$252.33\s+-\$52.08 -17%\s+vs previous period/m,
+        );
+        await embedPage.waitForTimeout(500);
+
+        expect(
+          logMessages.some((msg) =>
+            msg.includes(
+              "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+('Instacart')",
+            ),
+          ),
+        ).toBeTruthy();
+      });
     });
   });
 

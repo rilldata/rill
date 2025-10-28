@@ -226,6 +226,7 @@ export interface V1Bookmark {
   displayName?: string;
   description?: string;
   data?: string;
+  urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
   projectId?: string;
@@ -285,7 +286,7 @@ export interface V1CreateAssetResponse {
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
-  data?: string;
+  urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
   projectId?: string;
@@ -1443,7 +1444,7 @@ export interface V1UpdateBookmarkRequest {
   bookmarkId?: string;
   displayName?: string;
   description?: string;
-  data?: string;
+  urlSearch?: string;
   default?: boolean;
   shared?: boolean;
 }
@@ -1673,6 +1674,10 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
   superuserForceAccess?: boolean;
+  /**
+   * Optional search pattern to filter users by email or display name
+   */
+  searchPattern?: string;
 };
 
 export type AdminServiceAddOrganizationMemberUserBody = {

@@ -3,15 +3,17 @@
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
-  import type { Chat } from "../chat";
+  import type { ConversationManager } from "../conversation-manager";
 
-  export let chat: Chat;
-  export let onSend: () => void;
+  export let conversationManager: ConversationManager;
+  export let onSend: (() => void) | undefined = undefined;
+  export let noMargin = false;
+  export let height: string | undefined = undefined;
 
   let textarea: HTMLTextAreaElement;
   let placeholder = "Ask about your data...";
 
-  $: currentConversationStore = chat.getCurrentConversation();
+  $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
   $: draftMessageStore = currentConversation.draftMessage;
@@ -44,7 +46,7 @@
     // Message handling with input focus
     try {
       await currentConversation.sendMessage();
-      onSend();
+      onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -60,7 +62,7 @@
   }
 
   function autoResize() {
-    if (textarea) {
+    if (textarea && !height) {
       textarea.style.height = "auto";
       textarea.style.height = textarea.scrollHeight + "px";
     }
@@ -85,11 +87,17 @@
   }
 </script>
 
-<form class="chat-input-form" on:submit|preventDefault={sendMessage}>
+<form
+  class="chat-input-form"
+  class:no-margin={noMargin}
+  on:submit|preventDefault={sendMessage}
+>
   <textarea
     bind:this={textarea}
     {value}
     class="chat-input"
+    class:fixed-height={!!height}
+    style:height
     {placeholder}
     rows="1"
     on:keydown={handleKeydown}
@@ -129,6 +137,10 @@
     @apply border-primary-400;
   }
 
+  .chat-input-form.no-margin {
+    margin: 0;
+  }
+
   .chat-input {
     flex: 1;
     border: none;
@@ -142,6 +154,11 @@
     padding: 0.25rem;
     font-family: inherit;
     overflow-y: auto;
+  }
+
+  .chat-input.fixed-height {
+    min-height: unset;
+    max-height: unset;
   }
 
   .chat-input::placeholder {
