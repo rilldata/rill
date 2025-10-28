@@ -41,11 +41,6 @@
       {/if}
     </div>
 
-    <!-- Visual separator -->
-    {#if $chat}
-      <div class="border-t border-gray-200"></div>
-    {/if}
-
     <!-- Dashboards Section -->
     <div class="flex flex-col gap-y-4">
       <h2 class="text-xl font-semibold text-gray-900">Dashboards</h2>
