@@ -98,7 +98,7 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 }
 
 // Lookup implements drivers.OLAPInformationSchema.
-func (c *Connection) Lookup(ctx context.Context, db string, schema string, name string) (*drivers.OlapTable, error) {
+func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
 	meta, err := c.GetTable(ctx, db, schema, name)
 	if err != nil {
 		return nil, err
