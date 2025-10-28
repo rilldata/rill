@@ -912,12 +912,12 @@ func (s *Server) checkGithubRateLimit(route string) middleware.CheckFunc {
 }
 
 func (s *Server) userAccessToken(ctx context.Context, user *database.User) (string, error) {
-	if user.GithubRefreshToken == "" {
-		return "", errors.New("refresh token is empty")
-	}
-
 	if user.GithubTokenExpiresOn != nil && user.GithubTokenExpiresOn.After(time.Now().Add(5*time.Minute)) {
 		return user.GithubToken, nil
+	}
+
+	if user.GithubRefreshToken == "" {
+		return "", errors.New("refresh token is empty")
 	}
 
 	oauthConf := &oauth2.Config{
