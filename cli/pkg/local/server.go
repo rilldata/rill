@@ -539,7 +539,15 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				return nil, err
 			}
 		} else {
-			author, err := s.app.ch.GitSignature(ctx, s.app.ProjectPath)
+			reporoot, subpath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
+			if err != nil {
+				return nil, err
+			}
+			// just for verification confirm that subpath matches the one stored in project
+			if subpath != projResp.Project.Subpath {
+				return nil, fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Try doing deploy using rill cli from github repo root by passing explicit subpath using `rill deploy --subpath %s`", subpath, projResp.Project.Subpath, projResp.Project.Subpath)
+			}
+			author, err := s.app.ch.GitSignature(ctx, reporoot)
 			if err != nil {
 				return nil, err
 			}
@@ -547,7 +555,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				Remote:        projResp.Project.GitRemote,
 				DefaultBranch: projResp.Project.ProdBranch,
 			}
-			err = gitutil.CommitAndForcePush(ctx, s.app.ProjectPath, config, "", author)
+			err = gitutil.CommitAndForcePush(ctx, reporoot, config, "", author)
 			if err != nil {
 				return nil, err
 			}

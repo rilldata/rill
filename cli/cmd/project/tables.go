@@ -7,6 +7,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // TableInfo represents information about a database table
@@ -89,9 +90,11 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				// Get row count using SQL query
 				var rowCount string
-				queryRes, err := rt.QueryServiceClient().Query(cmd.Context(), &runtimev1.QueryRequest{
-					InstanceId: instanceID,
-					Sql:        fmt.Sprintf("SELECT COUNT(*) FROM %s", drivers.DialectDuckDB.EscapeIdentifier(table.Name)),
+				countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s", drivers.DialectDuckDB.EscapeIdentifier(table.Name))
+				queryRes, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
+					InstanceId:         instanceID,
+					Resolver:           "sql",
+					ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": countQuery})),
 				})
 				if err != nil {
 					rowCount = "error"
@@ -99,11 +102,7 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 					// Extract the count value from the first row, first column (should be only one column from COUNT(*))
 					for _, countValue := range queryRes.Data[0].Fields {
 						if countValue != nil {
-							if countValueNumber := countValue.GetNumberValue(); countValueNumber != 0 {
-								rowCount = ch.FormatNumber(int64(countValueNumber))
-							} else {
-								rowCount = "0"
-							}
+							rowCount = fmt.Sprint(countValue.AsInterface())
 						} else {
 							rowCount = "unknown"
 						}
@@ -132,4 +131,11 @@ func TablesCmd(ch *cmdutil.Helper) *cobra.Command {
 	tablesCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")
 
 	return tablesCmd
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

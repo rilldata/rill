@@ -13,17 +13,11 @@ Rill supports connecting to an existing Druid cluster via a "live connector" and
 ## Configuring Rill Developer with Druid
 
 When using Rill for local development, there are a few options to configure Rill to enable Druid as an OLAP engine:
-1. Connect to an OLAP engine via Add Data. This will automatically create the `druid.yaml` file in your `connectors` folder and populate the `.env` file with `connector.druid.password` or `connector.druid.dsn` depending on which you select in the UI.
+1. Connect to an OLAP engine via Add Data. This will automatically create the `druid.yaml` file in your `connectors` directory and populate the `.env` file with `connector.druid.password` or `connector.druid.dsn` depending on which you select in the UI.
 
 For more information on supported parameters, see our [Druid connector YAML reference docs](/reference/project-files/connectors#druid).
 
-<img src='/img/connect/olap-engines/druid/druid-parameters.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
-
-```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
+```yaml 
 type: connector
 
 driver: druid

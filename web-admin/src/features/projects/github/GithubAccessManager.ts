@@ -1,6 +1,7 @@
 import {
   createAdminServiceGetGithubUserStatus,
   getAdminServiceGetGithubUserStatusQueryKey,
+  getAdminServiceListGithubUserReposQueryKey,
 } from "@rilldata/web-admin/client";
 import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
@@ -21,18 +22,20 @@ export class GithubAccessManager {
   );
 
   private userPromptWindow = new PopupWindow();
+  private reSelectingRepos = false;
 
   /**
    * Used to reselect connected orgs.
    * Opens the grantAccessUrl page to achieve this.
    */
-  public async reselectOrgs() {
+  public async reselectOrgOrRepos(reSelectingRepos: boolean) {
     await waitUntil(() => !get(this.userStatus).isFetching);
     const userStatus = get(this.userStatus).data;
     if (!userStatus?.grantAccessUrl) {
       return;
     }
 
+    this.reSelectingRepos = reSelectingRepos;
     this.userPromptWindow
       .openAndWaitForClose(userStatus.grantAccessUrl + "?remote=autoclose")
       .then(() => this.refetch());
@@ -61,15 +64,24 @@ export class GithubAccessManager {
   }
 
   private async refetch() {
-    await queryClient.refetchQueries({
-      queryKey: getAdminServiceGetGithubUserStatusQueryKey(),
-    });
-    await waitUntil(() => !get(this.userStatus).isFetching);
+    if (this.reSelectingRepos) {
+      this.reSelectingRepos = false;
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceListGithubUserReposQueryKey(),
+      });
 
-    if (!get(this.userStatus).data?.hasAccess) {
-      this.githubConnectionFailed.set(true);
-      return;
+      // When github installations are changed, we still need to make sure org list from GetGithubUserStatus is updated.
+      // So refetch that query after ListGithubUserRepos
+      await queryClient.refetchQueries({
+        queryKey: getAdminServiceGetGithubUserStatusQueryKey(),
+      });
+    } else {
+      const refetched = await get(this.userStatus).refetch();
+      if (!refetched.data?.hasAccess) {
+        this.githubConnectionFailed.set(true);
+        return;
+      }
+      this.githubConnectionFailed.set(false);
     }
-    this.githubConnectionFailed.set(false);
   }
 }

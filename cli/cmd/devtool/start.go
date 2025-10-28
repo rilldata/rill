@@ -44,7 +44,7 @@ var (
 var presets = []string{"cloud", "local", "e2e", "other"}
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
-	var verbose, reset, refreshDotenv bool
+	var verbose, reset, refreshDotenv, full bool
 	services := &servicesCfg{}
 
 	cmd := &cobra.Command{
@@ -67,19 +67,20 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to parse services: %w", err)
 			}
 
-			return start(ch, preset, verbose, reset, refreshDotenv, services)
+			return start(ch, preset, verbose, reset, refreshDotenv, full, services)
 		},
 	}
 
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Set log level to debug")
 	cmd.Flags().BoolVar(&reset, "reset", false, "Reset local development state")
 	cmd.Flags().BoolVar(&refreshDotenv, "refresh-dotenv", true, "Refresh .env file from shared storage")
+	cmd.Flags().BoolVar(&full, "full", false, "Start all services instead of minimal set (cloud preset only)")
 	services.addFlags(cmd)
 
 	return cmd
 }
 
-func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool, services *servicesCfg) error {
+func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv, full bool, services *servicesCfg) error {
 	ctx := graceful.WithCancelOnTerminate(context.Background())
 
 	err := errors.Join(
@@ -94,11 +95,11 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 
 	switch preset {
 	case "cloud":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "cloud", services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "cloud", full, services)
 	case "e2e":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", false, services)
 	case "other":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "other", services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "other", false, services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
@@ -229,7 +230,7 @@ func (s *servicesCfg) parse() error {
 
 type cloud struct{}
 
-func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, services *servicesCfg) error {
+func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, full bool, services *servicesCfg) error {
 	if refreshDotenv {
 		err := downloadDotenv(ctx, preset)
 		if err != nil {
@@ -238,8 +239,17 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		logInfo.Printf("Refreshed .env\n")
 	}
 
+	profiles := []string{preset}
 	if preset == "other" {
-		preset = "e2e"
+		profiles = []string{"e2e"}
+	}
+
+	if preset == "cloud" {
+		if full {
+			profiles = []string{"core", "extras"}
+		} else {
+			profiles = []string{"core"}
+		}
 	}
 
 	// Validate the .env file is well-formed.
@@ -269,7 +279,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
-		g.Go(func() error { return s.runDeps(ctx, verbose, preset) })
+		g.Go(func() error { return s.runDeps(ctx, verbose, profiles) })
 	}
 
 	depsReadyCh := make(chan struct{})
@@ -400,9 +410,13 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "down", "--volumes").Run()
 }
 
-func (s cloud) runDeps(ctx context.Context, verbose bool, profile string) error {
+func (s cloud) runDeps(ctx context.Context, verbose bool, profiles []string) error {
 	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s --profile %s up\n", composeFile, profile)
+	profileArgs := make([]string, 0, len(profiles)*2)
+	for _, p := range profiles {
+		profileArgs = append(profileArgs, "--profile", p)
+	}
+	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s %s up\n", composeFile, strings.Join(profileArgs, " "))
 	defer logInfo.Printf("Stopped dependencies\n")
 
 	err := prepareStripeConfig()
@@ -410,7 +424,10 @@ func (s cloud) runDeps(ctx context.Context, verbose bool, profile string) error 
 		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
-	cmd := newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "--profile", profile, "up")
+	args := []string{"docker", "compose", "--env-file", ".env", "-f", composeFile}
+	args = append(args, profileArgs...)
+	args = append(args, "up")
+	cmd := newCmd(ctx, args[0], args[1:]...)
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout

@@ -36,7 +36,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, claims, res)
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, claims, res)
 	if err != nil {
 		return nil, nil, err
 	}

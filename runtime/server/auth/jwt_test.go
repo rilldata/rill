@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -20,18 +21,24 @@ func TestTokens(t *testing.T) {
 			AudienceURL:         aud.audienceURL,
 			Subject:             "alice",
 			TTL:                 time.Duration(time.Hour),
-			SystemPermissions:   []Permission{ManageInstances},
-			InstancePermissions: map[string][]Permission{"example": {ReadOLAP}},
+			SystemPermissions:   []runtime.Permission{runtime.ReadInstance},
+			InstancePermissions: map[string][]runtime.Permission{"example": {runtime.ReadOLAP}},
 		})
 
-		claims, err := aud.ParseAndValidate(token)
+		cp, err := aud.ParseAndValidate(token)
 		require.NoError(t, err)
-		require.Equal(t, "alice", claims.Subject())
-		require.True(t, claims.Can(ManageInstances))
-		require.False(t, claims.Can(ReadOLAP))
-		require.True(t, claims.CanInstance("example", ReadOLAP))
-		require.False(t, claims.CanInstance("example", ReadObjects))
-		require.False(t, claims.CanInstance("unknown", ReadOLAP))
+
+		claims := cp.Claims("")
+		require.Equal(t, "alice", claims.UserID)
+		require.True(t, claims.Can(runtime.ReadInstance))
+		require.False(t, claims.Can(runtime.ReadOLAP))
+
+		claims = cp.Claims("example")
+		require.True(t, claims.Can(runtime.ReadOLAP))
+		require.False(t, claims.Can(runtime.ReadObjects))
+
+		claims = cp.Claims("unknown")
+		require.False(t, claims.Can(runtime.ReadOLAP))
 	})
 
 	t.Run("Expired", func(t *testing.T) {
@@ -39,8 +46,8 @@ func TestTokens(t *testing.T) {
 			AudienceURL:         aud.audienceURL,
 			Subject:             "alice",
 			TTL:                 time.Duration(time.Millisecond),
-			SystemPermissions:   []Permission{ManageInstances},
-			InstancePermissions: map[string][]Permission{"example": {ReadOLAP}},
+			SystemPermissions:   []runtime.Permission{runtime.ReadInstance},
+			InstancePermissions: map[string][]runtime.Permission{"example": {runtime.ReadOLAP}},
 		})
 
 		time.Sleep(50 * time.Millisecond)

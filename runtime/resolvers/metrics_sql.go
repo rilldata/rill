@@ -81,7 +81,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			if err != nil {
 				return nil, err
 			}
-			sec, err := opts.Runtime.ResolveSecurity(ctrl.InstanceID, opts.Claims, mv)
+			sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
 			if err != nil {
 				return nil, err
 			}
@@ -91,7 +91,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			return mv, nil
 		},
 		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
-			sec, err := opts.Runtime.ResolveSecurity(ctrl.InstanceID, opts.Claims, mv)
+			sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}

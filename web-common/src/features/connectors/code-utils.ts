@@ -22,7 +22,10 @@ import {
   runtimeServiceGetInstance,
   runtimeServicePutFile,
 } from "../../runtime-client";
-import { makeSufficientlyQualifiedTableName } from "./connectors-utils";
+import {
+  getDriverNameForConnector,
+  makeSufficientlyQualifiedTableName,
+} from "./connectors-utils";
 
 const YAML_MODEL_TEMPLATE = `type: model
 materialize: true\n
@@ -45,7 +48,7 @@ export function compileConnectorYAML(
   
 type: connector
 
-driver: ${connector.name}`;
+driver: ${getDriverNameForConnector(connector.name as string)}`;
 
   // Use the provided orderedProperties if available, otherwise fall back to configProperties/sourceProperties
   let properties =

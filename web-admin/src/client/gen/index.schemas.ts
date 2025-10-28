@@ -5,13 +5,6 @@
  * It is used to manage organizations, projects, deployments, users, and roles.
  * OpenAPI spec version: v1
  */
-export interface GetReportMetaResponseURLs {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
-  unsubscribeUrl?: string;
-}
-
 export interface ListGithubUserReposResponseRepo {
   name?: string;
   owner?: string;
@@ -233,6 +226,7 @@ export interface V1Bookmark {
   displayName?: string;
   description?: string;
   data?: string;
+  urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
   projectId?: string;
@@ -292,7 +286,7 @@ export interface V1CreateAssetResponse {
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
-  data?: string;
+  urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
   projectId?: string;
@@ -450,14 +444,23 @@ export interface V1GenerateReportYAMLResponse {
   yaml?: string;
 }
 
+export type V1GetAlertMetaResponseRecipientUrls = {
+  [key: string]: V1GetAlertMetaResponseURLs;
+};
+
 export type V1GetAlertMetaResponseQueryForAttributes = {
   [key: string]: unknown;
 };
 
 export interface V1GetAlertMetaResponse {
+  recipientUrls?: V1GetAlertMetaResponseRecipientUrls;
+  queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+}
+
+export interface V1GetAlertMetaResponseURLs {
   openUrl?: string;
   editUrl?: string;
-  queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
+  unsubscribeUrl?: string;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -615,11 +618,18 @@ This enables checkpointing progress across hibernations and also more easily pin
 }
 
 export type V1GetReportMetaResponseRecipientUrls = {
-  [key: string]: GetReportMetaResponseURLs;
+  [key: string]: V1GetReportMetaResponseURLs;
 };
 
 export interface V1GetReportMetaResponse {
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
+}
+
+export interface V1GetReportMetaResponseURLs {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
+  unsubscribeUrl?: string;
 }
 
 export interface V1GetServiceResponse {
@@ -1431,7 +1441,7 @@ export interface V1UpdateBookmarkRequest {
   bookmarkId?: string;
   displayName?: string;
   description?: string;
-  data?: string;
+  urlSearch?: string;
   default?: boolean;
   shared?: boolean;
 }
@@ -1546,6 +1556,11 @@ export type AdminServiceCreateAlertBodyBody = {
   options?: V1AlertOptions;
 };
 
+export type AdminServiceUnsubscribeAlertBodyBody = {
+  email?: string;
+  slackUser?: string;
+};
+
 export type AdminServiceCreateReportBodyBody = {
   options?: V1ReportOptions;
 };
@@ -1656,6 +1671,10 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
   superuserForceAccess?: boolean;
+  /**
+   * Optional search pattern to filter users by email or display name
+   */
+  searchPattern?: string;
 };
 
 export type AdminServiceAddOrganizationMemberUserBody = {
@@ -1829,11 +1848,6 @@ export type AdminServiceRedeployProjectParams = {
   superuserForceAccess?: boolean;
 };
 
-export type AdminServiceUnsubscribeReportBody = {
-  email?: string;
-  slackUser?: string;
-};
-
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1968,6 +1982,9 @@ export type AdminServiceGetAlertMetaBody = {
   annotations?: AdminServiceGetAlertMetaBodyAnnotations;
   queryForUserId?: string;
   queryForUserEmail?: string;
+  ownerId?: string;
+  emailRecipients?: string[];
+  anonRecipients?: boolean;
 };
 
 export type AdminServicePullVirtualRepoParams = {

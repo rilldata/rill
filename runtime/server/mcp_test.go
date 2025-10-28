@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -15,13 +16,16 @@ import (
 
 // testCtx provides authentication context for testing
 func testCtx() context.Context {
-	return auth.WithClaims(context.Background(), auth.NewOpenClaims())
+	return auth.WithClaims(context.Background(), &runtime.SecurityClaims{SkipChecks: true})
 }
 
 func newMCPTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
-			"rill.yaml": ``,
+			"rill.yaml": `
+features:
+  chat_charts: true
+`,
 			// Create a simple model
 			"test_data.sql": `SELECT 'US' AS country, 100 AS revenue, NOW() AS timestamp`,
 			// Create a metrics view
@@ -48,13 +52,25 @@ measures:
 	return srv, instanceID
 }
 
-func TestMCPListTools(t *testing.T) {
-	srv, instanceID := newMCPTestServer(t)
+func newMCPToolService(t *testing.T, ctx context.Context, s *Server, instanceID string) *serverToolService {
+	// Create tool service for this server
+	mcpServer, err := s.newMCPServer(ctx, instanceID, false)
+	require.NoError(t, err)
+	mcpClient, err := newMCPClient(mcpServer)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		mcpClient.Close()
+	})
+	return &serverToolService{instanceID: instanceID, mcpClient: mcpClient}
+}
 
+func TestMCPListTools(t *testing.T) {
 	ctx := testCtx()
+	srv, instanceID := newMCPTestServer(t)
+	toolService := newMCPToolService(t, ctx, srv, instanceID)
 
 	// Test listing tools
-	tools, err := srv.mcpListTools(ctx, instanceID)
+	tools, err := toolService.ListTools(ctx)
 	require.NoError(t, err)
 
 	// Verify expected tools are present
@@ -63,6 +79,7 @@ func TestMCPListTools(t *testing.T) {
 		"get_metrics_view",
 		"query_metrics_view",
 		"query_metrics_view_summary",
+		"create_chart",
 	}
 
 	require.Len(t, tools, len(expectedToolNames))
@@ -97,18 +114,18 @@ func TestMCPListTools(t *testing.T) {
 }
 
 func TestMCPExecuteTool_Success(t *testing.T) {
-	srv, instanceID := newMCPTestServer(t)
-
 	ctx := testCtx()
+	srv, instanceID := newMCPTestServer(t)
+	toolService := newMCPToolService(t, ctx, srv, instanceID)
 
 	// Test executing list_metrics_views tool (no parameters required)
-	result, err := srv.mcpExecuteTool(ctx, instanceID, "list_metrics_views", map[string]any{})
+	result, err := toolService.ExecuteTool(ctx, "list_metrics_views", map[string]any{})
 	require.NoError(t, err)
 	require.NotEmpty(t, result)
 
 	// The response should be valid JSON with metrics view data
 	var jsonData map[string]interface{}
-	err = json.Unmarshal([]byte(result), &jsonData)
+	err = json.Unmarshal([]byte(result.(string)), &jsonData)
 	require.NoError(t, err, "expected valid JSON response from successful tool execution")
 
 	// Verify the response contains the expected structure
@@ -125,12 +142,12 @@ func TestMCPExecuteTool_Success(t *testing.T) {
 }
 
 func TestMCPExecuteTool_MissingParam(t *testing.T) {
-	srv, instanceID := newMCPTestServer(t)
-
 	ctx := testCtx()
+	srv, instanceID := newMCPTestServer(t)
+	toolService := newMCPToolService(t, ctx, srv, instanceID)
 
 	// Test executing get_metrics_view tool without required parameter
-	result, err := srv.mcpExecuteTool(ctx, instanceID, "get_metrics_view", map[string]any{})
+	result, err := toolService.ExecuteTool(ctx, "get_metrics_view", map[string]any{})
 
 	// The tool should either error or return an error message in the response
 	if err != nil {
@@ -145,9 +162,9 @@ func TestMCPExecuteTool_MissingParam(t *testing.T) {
 }
 
 func TestMCPQueryMetricsView_IncludesURL(t *testing.T) {
-	srv, instanceID := newMCPTestServer(t)
-
 	ctx := testCtx()
+	srv, instanceID := newMCPTestServer(t)
+	toolService := newMCPToolService(t, ctx, srv, instanceID)
 
 	// Test executing query_metrics_view tool with basic parameters
 	queryParams := map[string]any{
@@ -156,12 +173,12 @@ func TestMCPQueryMetricsView_IncludesURL(t *testing.T) {
 		"measures":     []map[string]any{{"name": "total_revenue"}},
 	}
 
-	textResult, err := srv.mcpExecuteTool(ctx, instanceID, "query_metrics_view", queryParams)
+	textResult, err := toolService.ExecuteTool(ctx, "query_metrics_view", queryParams)
 	require.NoError(t, err)
 
 	// Parse the response
 	var jsonData map[string]interface{}
-	err = json.Unmarshal([]byte(textResult), &jsonData)
+	err = json.Unmarshal([]byte(textResult.(string)), &jsonData)
 	require.NoError(t, err)
 
 	// Verify the open URL is included

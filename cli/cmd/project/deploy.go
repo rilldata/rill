@@ -83,7 +83,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 	}
 
 	// check if specified project already exists
-	if o.Name != "" {
+	if o.Name != "" && ch.Org != "" {
 		p, err := getProject(ctx, ch, ch.Org, o.Name)
 		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return err
@@ -463,7 +463,15 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			Remote:        opts.pushToProject.GitRemote,
 			DefaultBranch: opts.pushToProject.ProdBranch,
 		}
-		err := gitutil.CommitAndForcePush(ctx, opts.LocalProjectPath(), config, "", nil)
+		repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(opts.LocalProjectPath())
+		if err != nil {
+			return err
+		}
+		// just for verification confirm that subpath matches the one stored in project
+		if subpath != proj.Subpath {
+			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Run rill cli from github repo root and pass explicit subpath using `rill deploy --subpath %s`", subpath, proj.Subpath, proj.Subpath)
+		}
+		err = gitutil.CommitAndForcePush(ctx, repoRoot, config, "", nil)
 		if err != nil {
 			return err
 		}

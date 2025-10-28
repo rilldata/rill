@@ -61,6 +61,7 @@ class FeatureFlags {
   darkMode = new FeatureFlag("user", false);
   chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
+  deploy = new FeatureFlag("user", true);
 
   constructor() {
     this.ready = new Promise<void>((resolve) => {

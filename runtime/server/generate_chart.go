@@ -30,7 +30,8 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	// Must have edit permissions on the repo
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -39,7 +40,7 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 		Resolver:           req.Resolver,
 		ResolverProperties: req.ResolverProperties.AsMap(),
 		Args:               nil,
-		Claims:             auth.GetClaims(ctx).SecurityClaims(),
+		Claims:             claims,
 	})
 	if err != nil {
 		return nil, err

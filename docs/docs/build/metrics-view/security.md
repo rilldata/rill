@@ -82,6 +82,11 @@ There are two locations that control data access in Rill.
 
 By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/customization#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
 
+:::tip Set project-wide security defaults
+Configure default security policies for all metrics views and dashboards in your project.
+[Learn more about security defaults →](/build/project-configuration#metrics-views-security-policy)
+:::
+
 ```yaml
 metrics_views:
   security:
@@ -153,6 +158,11 @@ Note: Rill requires users to confirm their email address before letting them int
 ## Testing Policies in Rill Developer
 
 In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
+
+:::tip Test policies in Rill Developer
+Use `mock_users` in rill.yaml to test your security policies before deploying.
+[Learn more about testing security →](/build/project-configuration#testing-security)
+:::
 
 In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute and can optionally have `name` and `admin` attributes. For example:
 ```yaml

@@ -4687,6 +4687,13 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
    */
   superuserForceAccess = false;
 
+  /**
+   * Optional search pattern to filter users by email or display name
+   *
+   * @generated from field: string search_pattern = 7;
+   */
+  searchPattern = "";
+
   constructor(data?: PartialMessage<ListOrganizationMemberUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4701,6 +4708,7 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "search_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationMemberUsersRequest {
@@ -9184,9 +9192,9 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   description = "";
 
   /**
-   * @generated from field: bytes data = 3;
+   * @generated from field: string url_search = 9;
    */
-  data = new Uint8Array(0);
+  urlSearch = "";
 
   /**
    * @generated from field: string resource_kind = 4;
@@ -9223,7 +9231,7 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 9, name: "url_search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -9305,9 +9313,9 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
   description = "";
 
   /**
-   * @generated from field: bytes data = 3;
+   * @generated from field: string url_search = 7;
    */
-  data = new Uint8Array(0);
+  urlSearch = "";
 
   /**
    * @generated from field: bool default = 5;
@@ -9330,7 +9338,7 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
     { no: 1, name: "bookmark_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 7, name: "url_search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -11619,12 +11627,14 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   webOpenMode = "";
 
   /**
-   * @generated from field: string where_filter_json = 11;
+   * @generated from field: string where_filter_json = 11 [deprecated = true];
+   * @deprecated
    */
   whereFilterJson = "";
 
   /**
-   * @generated from field: repeated string accessible_fields = 12;
+   * @generated from field: repeated string accessible_fields = 12 [deprecated = true];
+   * @deprecated
    */
   accessibleFields: string[] = [];
 
@@ -11793,6 +11803,21 @@ export class GetAlertMetaRequest extends Message<GetAlertMetaRequest> {
     case: "queryForUserEmail";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
+  /**
+   * @generated from field: string owner_id = 7;
+   */
+  ownerId = "";
+
+  /**
+   * @generated from field: repeated string email_recipients = 8;
+   */
+  emailRecipients: string[] = [];
+
+  /**
+   * @generated from field: bool anon_recipients = 9;
+   */
+  anonRecipients = false;
+
   constructor(data?: PartialMessage<GetAlertMetaRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11806,6 +11831,9 @@ export class GetAlertMetaRequest extends Message<GetAlertMetaRequest> {
     { no: 4, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 5, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 6, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 7, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaRequest {
@@ -11830,14 +11858,9 @@ export class GetAlertMetaRequest extends Message<GetAlertMetaRequest> {
  */
 export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
   /**
-   * @generated from field: string open_url = 1;
+   * @generated from field: map<string, rill.admin.v1.GetAlertMetaResponse.URLs> recipient_urls = 2;
    */
-  openUrl = "";
-
-  /**
-   * @generated from field: string edit_url = 2;
-   */
-  editUrl = "";
+  recipientUrls: { [key: string]: GetAlertMetaResponse_URLs } = {};
 
   /**
    * @generated from field: google.protobuf.Struct query_for_attributes = 3;
@@ -11852,8 +11875,7 @@ export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetAlertMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "recipient_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetAlertMetaResponse_URLs} },
     { no: 3, name: "query_for_attributes", kind: "message", T: Struct },
   ]);
 
@@ -11871,6 +11893,55 @@ export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
 
   static equals(a: GetAlertMetaResponse | PlainMessage<GetAlertMetaResponse> | undefined, b: GetAlertMetaResponse | PlainMessage<GetAlertMetaResponse> | undefined): boolean {
     return proto3.util.equals(GetAlertMetaResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetAlertMetaResponse.URLs
+ */
+export class GetAlertMetaResponse_URLs extends Message<GetAlertMetaResponse_URLs> {
+  /**
+   * @generated from field: string open_url = 1;
+   */
+  openUrl = "";
+
+  /**
+   * @generated from field: string edit_url = 2;
+   */
+  editUrl = "";
+
+  /**
+   * @generated from field: string unsubscribe_url = 3;
+   */
+  unsubscribeUrl = "";
+
+  constructor(data?: PartialMessage<GetAlertMetaResponse_URLs>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetAlertMetaResponse.URLs";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaResponse_URLs {
+    return new GetAlertMetaResponse_URLs().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAlertMetaResponse_URLs {
+    return new GetAlertMetaResponse_URLs().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAlertMetaResponse_URLs {
+    return new GetAlertMetaResponse_URLs().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAlertMetaResponse_URLs | PlainMessage<GetAlertMetaResponse_URLs> | undefined, b: GetAlertMetaResponse_URLs | PlainMessage<GetAlertMetaResponse_URLs> | undefined): boolean {
+    return proto3.util.equals(GetAlertMetaResponse_URLs, a, b);
   }
 }
 
@@ -12575,6 +12646,16 @@ export class UnsubscribeAlertRequest extends Message<UnsubscribeAlertRequest> {
    */
   name = "";
 
+  /**
+   * @generated from field: string email = 4;
+   */
+  email = "";
+
+  /**
+   * @generated from field: string slack_user = 5;
+   */
+  slackUser = "";
+
   constructor(data?: PartialMessage<UnsubscribeAlertRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -12586,6 +12667,8 @@ export class UnsubscribeAlertRequest extends Message<UnsubscribeAlertRequest> {
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "slack_user", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnsubscribeAlertRequest {
@@ -15688,6 +15771,11 @@ export class Bookmark extends Message<Bookmark> {
   data = new Uint8Array(0);
 
   /**
+   * @generated from field: string url_search = 13;
+   */
+  urlSearch = "";
+
+  /**
    * @generated from field: string resource_kind = 10;
    */
   resourceKind = "";
@@ -15739,6 +15827,7 @@ export class Bookmark extends Message<Bookmark> {
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 13, name: "url_search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

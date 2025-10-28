@@ -111,15 +111,19 @@
 
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
-          <div class="flex items-center justify-between py-2">
+          <div class="flex items-center justify-between py-1">
             <InputLabel
               small
               label={config.label ?? key}
               id={key}
-              faint={!localParamValues[key]}
+              faint={config.meta?.invertBoolean
+                ? localParamValues[key]
+                : !localParamValues[key]}
             />
             <Switch
-              checked={$specStore[key]}
+              checked={config.meta?.invertBoolean
+                ? !$specStore[key]
+                : $specStore[key]}
               on:click={() => {
                 component.updateProperty(key, !localParamValues[key]);
               }}

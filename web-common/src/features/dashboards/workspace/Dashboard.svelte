@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
@@ -106,8 +107,10 @@
 </script>
 
 <article
-  class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
+  class="flex flex-col overflow-y-hidden dashboard-theme-boundary"
   bind:clientWidth={exploreContainerWidth}
+  class:w-full={$dynamicHeight}
+  class:size-full={!$dynamicHeight}
 >
   <div
     id="header"
@@ -139,10 +142,12 @@
     <PivotDisplay />
   {:else}
     <div
-      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide bg-surface"
+      class="flex gap-x-1 gap-y-2 overflow-hidden pl-4 slide bg-surface"
       class:flex-col={showTimeDimensionDetail}
       class:flex-row={!showTimeDimensionDetail}
       class:left-shift={extraLeftPadding}
+      class:w-full={$dynamicHeight}
+      class:size-full={!$dynamicHeight}
     >
       <div
         class="pt-2 flex-none"
