@@ -35,7 +35,7 @@ def main():
     # Filter for comments containing "DoClaude" (case-insensitive)
     doclaude_comments = [
         c for c in review_comments 
-        if "doclaude" in c.body.lower()
+            c.body.lower()
     ]
 
     if not doclaude_comments:
