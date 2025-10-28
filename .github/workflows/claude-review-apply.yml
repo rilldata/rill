@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   prepare:
-    if: (github.event.issue.pull_request || github.event.pull_request_review_comment) && contains(github.event.comment.body, 'doclaude')
+    if: contains(github.event.comment.body, 'doclaude')
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.get_pr.outputs.pr_number }}
