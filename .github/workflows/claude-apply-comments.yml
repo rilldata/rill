@@ -1,0 +1,163 @@
+name: Claude – Apply PR comments (edits only)
+
+on:
+  issue_comment:
+    types: [created, edited]
+  pull_request_review_comment:
+    types: [created, edited]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  apply:
+    if: >
+      (github.event.issue.pull_request || github.event.pull_request) &&
+      (
+        contains(github.event.comment.body, '/claude') ||
+        startsWith(github.event.comment.body, 'Claude ') ||
+        startsWith(github.event.comment.body, 'claude ')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve PR info
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isIssue = !!context.payload.issue;
+            const prNumber = isIssue
+              ? context.payload.issue.number
+              : context.payload.pull_request?.number;
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            core.setOutput('number', pr.number);
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('base_ref', pr.base.ref);
+
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.pr.outputs.head_ref }}
+
+      - name: Gather comment context (file/hunk if review comment)
+        id: context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const c = context.payload.comment;
+            let file = "", diff_hunk = "";
+            if (context.eventName === "pull_request_review_comment" || c?.path) {
+              file = c.path || "";
+              diff_hunk = c.diff_hunk || "";
+            }
+            core.setOutput('file', file);
+            core.setOutput('diff_hunk', diff_hunk);
+            core.setOutput('comment_body', c.body || "");
+
+      - name: Build instruction file
+        run: |
+          {
+            echo "USER INSTRUCTION";
+            echo "${{ steps.context.outputs.comment_body }}";
+            echo "";
+            echo "If a specific file/hunk is provided, focus there:";
+            echo "FILE: ${{ steps.context.outputs.file }}";
+            echo "DIFF_HUNK:";
+            printf "%s\n" "${{ steps.context.outputs.diff_hunk }}";
+          } > /tmp/instruction.txt
+
+      - name: "Ask Claude for patch (strict: no new files)"
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-3-5-sonnet-latest
+          max_output_tokens: 4000
+          prompt: |
+            USER INSTRUCTION
+            {{file:/tmp/instruction.txt}}
+
+            HARD LIMITS (must follow exactly)
+            - Do NOT create, rename, or delete files.
+            - Edit ONLY existing Markdown/MDX documentation files (e.g., docs/**, README.md).
+            - Make in-place textual edits (replace page text). Do not add new files.
+            - Preserve frontmatter, headings, links, anchors, and formatting.
+
+            TASK
+            - Return a single unified diff patch that applies the requested documentation updates by editing ONLY files that already exist.
+
+            OUTPUT FORMAT (IMPORTANT)
+            - Output ONLY a valid unified diff (no extra prose).
+            - Must start with lines like:
+              --- a/path.md
+              +++ b/path.md
+
+      - name: Capture Claude output to file
+        run: |
+          echo "${{ steps.claude.outputs.text }}" > /tmp/patch.diff
+
+      - name: Validate patch – no new/renamed/deleted files; only existing docs
+        id: validate
+        run: |
+          set -e
+          PATCH=/tmp/patch.diff
+          cat "$PATCH" >/dev/null
+
+          # 1) Reject creations/renames/deletions
+          if grep -qE '^(--- /dev/null|\+\+\+ /dev/null|new file mode|deleted file mode|rename (from|to))' "$PATCH"; then
+            echo "Patch attempts file create/rename/delete, which is forbidden."; exit 1
+          fi
+
+          # 2) Ensure +++ headers point to existing files
+          files=$(grep -E '^\+\+\+ b/' "$PATCH" | sed 's|^\+\+\+ b/||')
+          if [ -z "$files" ]; then
+            echo "No target files detected in patch."; exit 1
+          fi
+
+          # 3) Restrict to docs/**/*.md|mdx and README.md; ensure file exists; ensure matching --- a/
+          allowed_globs='^docs/.*\.(md|mdx)$|^README\.md$'
+          for f in $files; do
+            if ! echo "$f" | grep -Eq "$allowed_globs"; then
+              echo "Forbidden path or extension in patch: $f"; exit 1
+            fi
+            if [ ! -f "$f" ]; then
+              echo "Target file does not exist (would be a create): $f"; exit 1
+            fi
+            a_line=$(grep -E "^--- a/$(printf '%s' "$f" | sed 's/[.[\*^$(){}?|+]/\\&/g')" "$PATCH" || true)
+            if [ -z "$a_line" ]; then
+              echo "Missing original file header for $f (possible create/rename)."; exit 1
+            fi
+          done
+
+      - name: Apply patch & commit
+        run: |
+          set -e
+          PATCH=/tmp/patch.diff
+          git apply --index --reject "$PATCH" || true
+          if git ls-files --others --exclude-standard | grep -q '\.rej$'; then
+            echo "Patch had rejects. Please resolve them and rerun."; exit 1
+          fi
+          git config user.name "claude-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "docs: apply Claude suggestion (no new files)" || { echo "No changes to commit."; exit 0; }
+          git push
+
+      - name: Acknowledge in PR thread
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.number }};
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: "✅ Changes applied by Claude (edits only)."
+            });
