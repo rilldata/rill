@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   prepare:
-    if: contains(github.event.comment.body, 'doclaude')
+    # if: contains(github.event.comment.body, 'doclaude')
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.get_pr.outputs.pr_number }}
