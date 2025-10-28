@@ -1,10 +1,10 @@
 name: Claude Review (Manual Apply)
 
-on:
-  pull_request_review_comment:
-    types: [created]
-  pull_request_review:
-    types: [submitted]
+on: push
+  # pull_request_review_comment:
+  #   types: [created]
+  # pull_request_review:
+  #   types: [submitted]
 
 permissions:
   contents: write
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   prepare:
-    if: contains(github.event.comment.body, '/claude apply')
+    if: contains(github.event.comment.body, 'DoClaude')
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.get_pr.outputs.pr_number }}
@@ -64,7 +64,7 @@ jobs:
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          CLAUDE_MODEL: claude-3-5-sonnet-latest
         run: |
           python .github/scripts/claude_apply.py
 
@@ -76,7 +76,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Apply fixes from inline comments via Claude"
+            git commit -m "docs: Apply DoClaude inline review comments"
             git push origin HEAD:${{ needs.prepare.outputs.head_ref }}
           fi
 
@@ -86,7 +86,19 @@ jobs:
         with:
           script: |
             const prNumber = Number('${{ needs.prepare.outputs.pr_number }}');
-            const body = `✅ Claude processed feedback and attempted fixes.\n\n- Branch: \`${{ needs.prepare.outputs.head_ref }}\`\n- Outcome: ${{ steps.apply.outcome }}\n\nIf something looks off, you can push follow-ups or comment \`/claude apply\` again.`;
+            const outcome = '${{ steps.apply.outcome }}';
+            let body = '';
+            if (outcome === 'success') {
+              body = `✅ **DoClaude processed all inline review comments**\n\n` +
+                     `📝 Changes have been applied to the branch: \`${{ needs.prepare.outputs.head_ref }}\`\n\n` +
+                     `The changes were made according to the documentation guidelines in \`.claude/instructions.md\`.\n\n` +
+                     `Review the commit and push additional changes if needed.`;
+            } else {
+              body = `⚠️ **DoClaude encountered an issue**\n\n` +
+                     `Branch: \`${{ needs.prepare.outputs.head_ref }}\`\n` +
+                     `Outcome: ${outcome}\n\n` +
+                     `Check the [workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.`;
+            }
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -107,5 +119,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: Number('${{ needs.prepare.outputs.pr_number }}'),
-              body: '⚠️ `/claude apply` is disabled for forked PRs. Please switch to a same-repo branch or elevate permissions with care.',
+              body: '⚠️ **DoClaude is disabled for forked PRs**\n\nFor security reasons, this workflow cannot write to forked repositories. Please use a branch within the main repository instead.',
             });
