@@ -4,10 +4,7 @@
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
-  import {
-    ConnectorDriverPropertyType,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import { ConnectorDriverPropertyType } from "@rilldata/web-common/runtime-client";
   import { normalizeErrors } from "./utils";
   import { GCS_AUTH_OPTIONS, type GCSAuthMethod } from "./constants";
 
