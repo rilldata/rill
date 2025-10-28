@@ -232,29 +232,29 @@ const connectorSubmissions = new Map<
   }
 >();
 
-// Handle Save Anyway logic immediately without reconciliation
-async function handleSaveAnywayImmediate(
+async function saveConnectorAnyway(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   newConnectorName: string,
-  instanceId: string,
+  instanceId?: string,
 ): Promise<void> {
+  const resolvedInstanceId = instanceId ?? get(runtime).instanceId;
+
   // Create connector file
   const newConnectorFilePath = getFileAPIPathFromNameAndType(
     newConnectorName,
     EntityType.Connector,
   );
 
-  // Always create the file - don't skip if it exists
-  // This ensures Save Anyway always creates the file immediately
-  await runtimeServicePutFile(instanceId, {
+  // Always create/overwrite to ensure the file is created immediately
+  await runtimeServicePutFile(resolvedInstanceId, {
     path: newConnectorFilePath,
     blob: compileConnectorYAML(connector, formValues, {
       connectorInstanceName: newConnectorName,
     }),
     create: true,
-    createOnly: false, // Allow overwriting to ensure file is created
+    createOnly: false,
   });
 
   // Update .env file with secrets
@@ -266,7 +266,7 @@ async function handleSaveAnywayImmediate(
     newConnectorName,
   );
 
-  await runtimeServicePutFile(instanceId, {
+  await runtimeServicePutFile(resolvedInstanceId, {
     path: ".env",
     blob: newEnvBlob,
     create: true,
@@ -274,7 +274,11 @@ async function handleSaveAnywayImmediate(
   });
 
   if (OLAP_ENGINES.includes(connector.name as string)) {
-    await setOlapConnectorInRillYAML(queryClient, instanceId, newConnectorName);
+    await setOlapConnectorInRillYAML(
+      queryClient,
+      resolvedInstanceId,
+      newConnectorName,
+    );
   }
 
   // Go to the new connector file
@@ -314,7 +318,7 @@ export async function submitAddConnectorForm(
       const newConnectorName = existingSubmission.connectorName;
 
       // Proceed immediately with Save Anyway logic
-      await handleSaveAnywayImmediate(
+      await saveConnectorAnyway(
         queryClient,
         connector,
         formValues,
@@ -354,15 +358,15 @@ export async function submitAddConnectorForm(
 
       // Make a new `<connector>.yaml` file
       if (saveAnyway) {
-        // For Save Anyway, check if file already exists to avoid duplicates
-        await runtimeServicePutFile(instanceId, {
-          path: newConnectorFilePath,
-          blob: compileConnectorYAML(connector, formValues, {
-            connectorInstanceName: newConnectorName,
-          }),
-          create: true,
-          createOnly: true,
-        });
+        // Save Anyway: bypass reconciliation entirely via centralized helper
+        await saveConnectorAnyway(
+          queryClient,
+          connector,
+          formValues,
+          newConnectorName,
+          instanceId,
+        );
+        return;
       } else {
         // For Test and Connect, create file normally with abort signal
         await runtimeServicePutFile(
@@ -390,16 +394,7 @@ export async function submitAddConnectorForm(
         newConnectorName,
       );
 
-      if (saveAnyway) {
-        // When saving anyway, just create the .env file without waiting for reconciliation
-        await runtimeServicePutFile(instanceId, {
-          path: ".env",
-          blob: newEnvBlob,
-          create: true,
-          createOnly: false,
-        });
-        // Skip reconciliation and error checking - just save the files
-      } else {
+      if (!saveAnyway) {
         // Make sure the file has reconciled before testing the connection
         await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
           path: ".env",
