@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
-  import { type BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import BookmarksMenuItem from "@rilldata/web-admin/features/bookmarks/BookmarksMenuItem.svelte";
+  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
@@ -13,23 +13,28 @@
   import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
+  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
   export let organization: string;
   export let project: string;
-  export let exploreName: string;
+  export let resource: { name: string; kind: ResourceKind };
   export let homeBookmark: BookmarkEntry | undefined;
-  export let urlForExploreYAMLDefaultState: string;
+  export let defaultHomeBookmarkUrl: string | undefined;
   export let manageProject: boolean;
   export let onCreate: () => void;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
-  $: homeBookmarkUrl = homeBookmark?.url ?? urlForExploreYAMLDefaultState;
+  $: ({ name: resourceName, kind: resourceKind } = resource);
+
+  $: homeBookmarkUrl = homeBookmark?.fullUrl ?? defaultHomeBookmarkUrl ?? "";
   $: isHomeBookmarkActive = homeBookmarkUrl === $page.url.toString();
 
   function goToDashboardHome() {
-    // Without clearing sessions empty, DashboardStateDataLoader will load from session for explore view
-    clearExploreSessionStore(exploreName, `${organization}__${project}__`);
+    if (resourceKind === ResourceKind.Explore) {
+      // Without clearing sessions empty, DashboardStateDataLoader will load from session for explore view
+      clearExploreSessionStore(resourceName, `${organization}__${project}__`);
+    }
   }
 
   let open = false;
@@ -55,7 +60,7 @@
     </DropdownMenuTrigger>
     <DropdownMenuContent class="w-[330px]">
       {#if homeBookmark}
-        <BookmarkItem
+        <BookmarksMenuItem
           bookmark={homeBookmark}
           {onDelete}
           readOnly={!manageProject}
