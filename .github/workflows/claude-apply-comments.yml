@@ -1,0 +1,164 @@
+# .github/workflows/claude-apple-comments.yml
+name: "DoClaude – Apply docs edits from PR comments"
+
+on:
+  issue_comment:
+    types: [created, edited]
+  # pull_request_review_comment:
+  #   types: [created, edited]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  apply:
+    # Trigger on PR comments (issue or inline review) starting with DoClaude/doclaude (docs edits only)
+    if: >
+      (github.event.issue.pull_request || github.event.pull_request) &&
+      (
+        contains(github.event.comment.body, '/DoClaude') ||
+        startsWith(github.event.comment.body, 'DoClaude:') ||
+        startsWith(github.event.comment.body, 'DoClaude') ||
+        startsWith(github.event.comment.body, '/doclaude:') ||
+        startsWith(github.event.comment.body, 'doclaude ') ||
+        startsWith(github.event.comment.body, 'doclaude:')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve PR info
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // For issue_comment, PR number is in issue.number
+            // For pull_request_review_comment, PR number is in pull_request.number
+            let prNumber;
+            if (context.payload.issue) {
+              prNumber = context.payload.issue.number;
+            } else if (context.payload.pull_request) {
+              prNumber = context.payload.pull_request.number;
+            } else {
+              throw new Error('Could not find PR number in event payload');
+            }
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            core.setOutput('number', pr.number);
+            core.setOutput('head_ref', pr.head.ref);
+
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.pr.outputs.head_ref }}
+
+      - name: Gather comment context
+        id: context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const c = context.payload.comment;
+            if (!c) {
+              throw new Error('No comment found in event payload');
+            }
+            let file = "", diff_hunk = "";
+            // For pull_request_review_comment, path and diff_hunk are on comment
+            if (c.path) {
+              file = c.path;
+              diff_hunk = c.diff_hunk || "";
+              core.info(`Review comment on file: ${file}`);
+            }
+            core.setOutput('file', file);
+            core.setOutput('diff_hunk', diff_hunk);
+            core.setOutput('comment_body', c.body);
+
+      - name: Build DoClaude instruction file
+        run: |
+          {
+            echo "USER INSTRUCTION";
+            echo "${{ steps.context.outputs.comment_body }}";
+            echo "";
+            echo "If a specific file/hunk is provided, focus there:";
+            echo "FILE: ${{ steps.context.outputs.file }}";
+            echo "DIFF_HUNK:";
+            printf "%s\n" "${{ steps.context.outputs.diff_hunk }}";
+          } > /tmp/instruction.txt
+
+      - name: "Ask Claude for patch (strict: no new files)"
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-3-5-sonnet-latest
+          max_output_tokens: 4000
+          prompt: |
+            USER INSTRUCTION
+            {{file:/tmp/instruction.txt}}
+
+            HARD LIMITS
+            - Do NOT create, rename, or delete files.
+            - Edit ONLY existing Markdown/MDX documentation files (e.g., docs/**, README.md).
+            - Make in-place textual edits only.
+            - Preserve existing file structure, formatting, and syntax.
+
+            TASK
+            - Return a single unified diff patch that updates only existing files to address the user's instruction.
+            - If a specific file and diff hunk are provided, focus your changes there.
+
+            OUTPUT FORMAT
+            - Output ONLY a valid unified diff.
+            - Must start with:
+              --- a/path.md
+              +++ b/path.md
+
+      - name: Capture Claude output
+        run: echo "${{ steps.claude.outputs.text }}" > /tmp/patch.diff
+
+      - name: Validate patch (no new or renamed files)
+        run: |
+          set -e
+          PATCH=/tmp/patch.diff
+          cat "$PATCH" >/dev/null
+          if grep -qE '^(--- /dev/null|\+\+\+ /dev/null|new file mode|deleted file mode|rename (from|to))' "$PATCH"; then
+            echo "❌ Patch attempts to create or rename files"; exit 1
+          fi
+          files=$(grep -E '^\+\+\+ b/' "$PATCH" | sed 's|^\+\+\+ b/||')
+          allowed_globs='^docs/.*\.(md|mdx)$|^README\.md$'
+          for f in $files; do
+            if ! echo "$f" | grep -Eq "$allowed_globs"; then
+              echo "❌ Forbidden path: $f"; exit 1
+            fi
+            if [ ! -f "$f" ]; then
+              echo "❌ File does not exist: $f"; exit 1
+            fi
+          done
+
+      - name: Apply patch & commit
+        run: |
+          set -e
+          PATCH=/tmp/patch.diff
+          git apply --index --reject "$PATCH" || true
+          if git ls-files --others --exclude-standard | grep -q '\.rej$'; then
+            echo "❌ Patch had rejects"; exit 1
+          fi
+          git config user.name "do-claude-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "docs: DoClaude suggestion" || { echo "No changes to commit."; exit 0; }
+          git push
+
+      - name: Confirm success
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.number }};
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: "✅ DoClaude applied the requested changes."
+            });

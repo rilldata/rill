@@ -1,0 +1,139 @@
+# .github/workflows/claude-docs-draft.yml
+name: "DoClaude – Draft docs PR (manual or labeled)"
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  draft-docs:
+    if: github.event.label.name == 'do-claude-docs'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute code diff (exclude docs themselves)
+        id: diff
+        run: |
+          set -e
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          git diff --unified=0 --no-color "$BASE_SHA" "$HEAD_SHA" -- \
+            ':!docs/**' ':!README.md' > /tmp/code.diff || true
+          echo "HAS_CHANGES=$( [ -s /tmp/code.diff ] && echo true || echo false )" >> $GITHUB_OUTPUT
+
+      - name: Bail if no relevant changes
+        if: steps.diff.outputs.HAS_CHANGES != 'true'
+        run: echo "No relevant code changes for docs." && exit 0
+
+      - name: "Generate docs patch with Claude (strict: no new files)"
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-3-5-sonnet-latest
+          max_output_tokens: 4000
+          prompt: |
+            You are a meticulous documentation engineer for this repository.
+
+            HARD LIMITS (must follow exactly)
+            - Do NOT create, rename, or delete files.
+            - Edit ONLY existing Markdown/MDX documentation files (e.g., docs/**, README.md).
+            - Make in-place textual edits (replace page text). Do not add new files.
+            - Preserve frontmatter, headings, links, anchors, and formatting.
+
+            CONTEXT
+            - Unified diff of code changes in PR #${{ github.event.pull_request.number }}:
+              ```
+              {{file:/tmp/code.diff}}
+              ```
+
+            TASK
+            - Produce a single unified diff patch that updates ONLY existing docs to reflect the code changes.
+            - Every diff hunk must target an existing file in the repo.
+
+            OUTPUT FORMAT (IMPORTANT)
+            - Output ONLY a valid unified diff (no extra prose).
+            - Must start with lines like:
+              --- a/path.md
+              +++ b/path.md
+
+      - name: Capture Claude output to file
+        run: |
+          echo "${{ steps.claude.outputs.text }}" > /tmp/claude.patch
+
+      - name: Validate patch – no new/renamed/deleted files; only existing docs
+        id: validate
+        run: |
+          set -e
+          PATCH=/tmp/claude.patch
+          cat "$PATCH" >/dev/null
+
+          # 1) Reject creations/renames/deletions
+          if grep -qE '^(--- /dev/null|\+\+\+ /dev/null|new file mode|deleted file mode|rename (from|to))' "$PATCH"; then
+            echo "Patch attempts file create/rename/delete, which is forbidden."; exit 1
+          fi
+
+          # 2) Ensure we have +++ headers and they point to existing files
+          files=$(grep -E '^\+\+\+ b/' "$PATCH" | sed 's|^\+\+\+ b/||')
+          if [ -z "$files" ]; then
+            echo "No target files detected in patch."; exit 1
+          fi
+
+          # 3) Allow only docs/**/*.md|mdx and README.md; ensure file exists
+          allowed_globs='^docs/.*\.(md|mdx)$|^README\.md$'
+          for f in $files; do
+            if ! echo "$f" | grep -Eq "$allowed_globs"; then
+              echo "Forbidden path or extension in patch: $f"; exit 1
+            fi
+            if [ ! -f "$f" ]; then
+              echo "Target file does not exist (would be a create): $f"; exit 1
+            fi
+            a_line=$(grep -E "^--- a/$(printf '%s' "$f" | sed 's/[.[\*^$(){}?|+]/\\&/g')" "$PATCH" || true)
+            if [ -z "$a_line" ]; then
+              echo "Missing original file header for $f (possible create/rename)."; exit 1
+            fi
+          done
+
+      - name: Create branch, apply patch, commit
+        id: apply
+        run: |
+          set -e
+          PATCH=/tmp/claude.patch
+          BRANCH="docs/auto-pr-${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          git checkout -b "$BRANCH"
+          git apply --index --reject "$PATCH" || true
+          if git ls-files --others --exclude-standard | grep -q '\.rej$'; then
+            echo "Patch had rejects; please resolve manually."; exit 1
+          fi
+          git config user.name "claude-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "docs: draft updates for PR #${{ github.event.pull_request.number }} (no new files)" || { echo "No changes to commit."; exit 0; }
+          git push -u origin "$BRANCH"
+
+      - name: Open draft PR with docs edits
+        if: steps.apply.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const base = context.payload.pull_request.base.ref;
+            const head = `docs/auto-pr-${context.payload.pull_request.number}-${context.runId}`;
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Docs: draft updates for #${context.payload.pull_request.number}`,
+              head,
+              base,
+              draft: true,
+              body: `Auto-generated by Claude based on code changes in #${context.payload.pull_request.number}. (No new files; edits only.)`
+            });
+            core.info(`Draft docs PR: #${pr.number}`)
