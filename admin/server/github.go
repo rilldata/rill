@@ -916,7 +916,7 @@ func (s *Server) userAccessToken(ctx context.Context, user *database.User) (stri
 		return "", errors.New("refresh token is empty")
 	}
 
-	if user.GithubTokenExpiresOn != nil && user.GithubTokenExpiresOn.After(time.Now().Add(2*time.Minute)) {
+	if user.GithubTokenExpiresOn != nil && user.GithubTokenExpiresOn.After(time.Now().Add(5*time.Minute)) {
 		return user.GithubToken, nil
 	}
 

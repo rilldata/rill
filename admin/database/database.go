@@ -612,23 +612,22 @@ type StaticRuntimeSlotsUsed struct {
 // User is a person registered in Rill.
 // Users may belong to multiple organizations and projects.
 type User struct {
-	ID                                string
-	Email                             string
-	DisplayName                       string     `db:"display_name"`
-	PhotoURL                          string     `db:"photo_url"`
-	GithubUsername                    string     `db:"github_username"`
-	GithubToken                       string     `db:"github_token"`
-	GithubTokenExpiresOn              *time.Time `db:"github_token_expires_on"`
-	GithubRefreshToken                string     `db:"github_refresh_token"`
-	GithubRefreshTokenEncryptionKeyID string     `db:"github_refresh_token_encryption_key_id"`
-	CreatedOn                         time.Time  `db:"created_on"`
-	UpdatedOn                         time.Time  `db:"updated_on"`
-	ActiveOn                          time.Time  `db:"active_on"`
-	QuotaSingleuserOrgs               int        `db:"quota_singleuser_orgs"`
-	QuotaTrialOrgs                    int        `db:"quota_trial_orgs"`
-	CurrentTrialOrgsCount             int        `db:"current_trial_orgs_count"`
-	PreferenceTimeZone                string     `db:"preference_time_zone"`
-	Superuser                         bool       `db:"superuser"`
+	ID                    string
+	Email                 string
+	DisplayName           string     `db:"display_name"`
+	PhotoURL              string     `db:"photo_url"`
+	GithubUsername        string     `db:"github_username"`
+	GithubToken           string     `db:"github_token"`
+	GithubTokenExpiresOn  *time.Time `db:"github_token_expires_on"`
+	GithubRefreshToken    string     `db:"github_refresh_token"`
+	CreatedOn             time.Time  `db:"created_on"`
+	UpdatedOn             time.Time  `db:"updated_on"`
+	ActiveOn              time.Time  `db:"active_on"`
+	QuotaSingleuserOrgs   int        `db:"quota_singleuser_orgs"`
+	QuotaTrialOrgs        int        `db:"quota_trial_orgs"`
+	CurrentTrialOrgsCount int        `db:"current_trial_orgs_count"`
+	PreferenceTimeZone    string     `db:"preference_time_zone"`
+	Superuser             bool       `db:"superuser"`
 }
 
 // InsertUserOptions defines options for inserting a new user
