@@ -74,6 +74,23 @@
     icon={AlertIcon}
     iconColor={alertColor}
     message="You don't have any alerts yet"
-    action="To create an alert, click the Create alert button in a dashboard."
-  />
+  >
+    <span slot="action">
+      Create <a
+        href="https://docs.rilldata.com/explore/alerts"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        alerts
+      </a>
+      from any dashboard or{" "}
+      <a
+        href="https://docs.rilldata.com/reference/project-files/alerts"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        via code</a
+      >.
+    </span>
+  </ResourceListEmptyState>
 </ResourceList>

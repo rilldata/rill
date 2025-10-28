@@ -5,6 +5,8 @@
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
@@ -14,6 +16,8 @@
   export let isEmbedded = false;
   export let isPreview = false;
   export let previewLimit = 5;
+
+  const exploreColor = resourceColorMapping[ResourceKind.Explore];
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -132,10 +136,19 @@
       <ResourceListEmptyState
         slot="empty"
         icon={ExploreIcon}
-        iconColor="#cbd5e1"
+        iconColor={exploreColor}
         message="You don't have any dashboards yet"
-        action="Learn how to deploy a dashboard in our docs"
-      />
+      >
+        <span slot="action">
+          <a
+            href="https://docs.rilldata.com/build/dashboards"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Create a dashboard</a
+          > to get started
+        </span>
+      </ResourceListEmptyState>
     </ResourceList>
     {#if hasMoreDashboards}
       <div class="pl-4 py-1">

@@ -76,6 +76,15 @@
     icon={ReportIcon}
     iconColor={reportColor}
     message="You don't have any reports yet"
-    action="To create a report, click the Export button in a dashboard."
-  />
+  >
+    <span slot="action">
+      Schedule <a
+        href="https://docs.rilldata.com/explore/exports"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        reports</a
+      > from any dashboard
+    </span>
+  </ResourceListEmptyState>
 </ResourceList>

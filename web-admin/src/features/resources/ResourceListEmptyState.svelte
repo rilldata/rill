@@ -13,7 +13,11 @@
     <div class="text-gray-600 font-semibold">
       {message}
     </div>
-    {#if action}
+    {#if $$slots.action}
+      <div class="text-gray-500">
+        <slot name="action" />
+      </div>
+    {:else if action}
       <div class="text-gray-500">
         {action}
       </div>
