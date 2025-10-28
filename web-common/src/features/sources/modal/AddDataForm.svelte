@@ -165,10 +165,12 @@
     if (hasOnlyDsn() || connectionTab === "dsn") {
       // DSN form: check required DSN properties
       for (const property of dsnProperties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $dsnForm[key];
-          if (isEmpty(value) || $dsnErrors[key]?.length) return true;
+        const key = String(property.key);
+        const value = $dsnForm[key];
+        // DSN should be present even if not marked required in metadata
+        const mustBePresent = property.required || key === "dsn";
+        if (mustBePresent && (isEmpty(value) || $dsnErrors[key]?.length)) {
+          return true;
         }
       }
       return false;
