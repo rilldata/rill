@@ -1,13 +1,9 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import {
-    ConnectorDriverPropertyType,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
   import { createEventDispatcher } from "svelte";
   import {
@@ -27,31 +23,30 @@
     submitAddSourceForm,
   } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
-  import { dsnSchema, getYupSchema } from "./yupSchemas";
+  import {
+    dsnSchema as dsnValidation,
+    getValidationSchemaForConnector,
+  } from "./FormValidation";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
-  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { isEmpty, normalizeErrors } from "./utils";
+  import { isEmpty } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
-    GCS_AUTH_OPTIONS,
     type ClickHouseConnectorType,
-    type GCSAuthMethod,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
   import { compileConnectorYAML } from "../../connectors/code-utils";
-  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import CredentialsInput from "@rilldata/web-common/components/forms/CredentialsInput.svelte";
-  import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import { MULTI_STEP_CONNECTORS } from "./constants";
   import {
     connectorStepStore,
     setStep,
     setConnectorConfig,
   } from "./connectorStepStore";
+  import FormRenderer from "./FormRenderer.svelte";
+  import YamlPreview from "./YamlPreview.svelte";
+  import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -63,9 +58,7 @@
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
 
-  let copied = false;
   let connectionTab: ConnectorType = "parameters";
-  let gcsAuthMethod: GCSAuthMethod = "credentials";
 
   // Simple multi-step state management
   const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
@@ -125,7 +118,7 @@
     // For other connectors, filter out noPrompt properties
     return properties.filter((property) => !property.noPrompt);
   })();
-  const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
+  const schema = yup(getValidationSchemaForConnector(connector.name as string));
   const initialFormValues = getInitialFormValuesFromProperties(properties);
   const {
     form: paramsForm,
@@ -155,7 +148,7 @@
     [];
 
   const filteredDsnProperties = dsnProperties;
-  const dsnYupSchema = yup(dsnSchema);
+  const dsnYupSchema = yup(dsnValidation);
   const {
     form: dsnForm,
     errors: dsnErrors,
@@ -377,13 +370,7 @@
     }
   })();
 
-  function copyYamlPreview() {
-    navigator.clipboard.writeText(yamlPreview);
-    copied = true;
-    setTimeout(() => {
-      copied = false;
-    }, 2_000);
-  }
+  // YAML copy handled in YamlPreview component
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -564,52 +551,13 @@
               use:paramsEnhance
               on:submit|preventDefault={paramsSubmit}
             >
-              {#each filteredParamsProperties as property (property.key)}
-                {@const propertyKey = property.key ?? ""}
-                {@const label =
-                  property.displayName +
-                  (property.required ? "" : " (optional)")}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                    <Input
-                      id={propertyKey}
-                      label={property.displayName}
-                      placeholder={property.placeholder}
-                      optional={!property.required}
-                      secret={property.secret}
-                      hint={property.hint}
-                      errors={normalizeErrors($paramsErrors[propertyKey])}
-                      bind:value={$paramsForm[propertyKey]}
-                      onInput={(_, e) => onStringInputChange(e)}
-                      alwaysShowError
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                    <Checkbox
-                      id={propertyKey}
-                      bind:checked={$paramsForm[propertyKey]}
-                      {label}
-                      hint={property.hint}
-                      optional={!property.required}
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                    <InformationalField
-                      description={property.description}
-                      hint={property.hint}
-                      href={property.docsUrl}
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                    <CredentialsInput
-                      id={propertyKey}
-                      label={property.displayName}
-                      hint={property.hint}
-                      optional={!property.required}
-                      bind:value={$paramsForm[propertyKey]}
-                      uploadFile={handleFileUpload}
-                      accept=".json"
-                    />
-                  {/if}
-                </div>
-              {/each}
+              <FormRenderer
+                properties={filteredParamsProperties}
+                form={paramsForm}
+                errors={$paramsErrors}
+                {onStringInputChange}
+                uploadFile={handleFileUpload}
+              />
             </form>
           </TabsContent>
           <TabsContent value="dsn">
@@ -619,33 +567,13 @@
               use:dsnEnhance
               on:submit|preventDefault={dsnSubmit}
             >
-              {#each filteredDsnProperties as property (property.key)}
-                {@const propertyKey = property.key ?? ""}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                    <CredentialsInput
-                      id={propertyKey}
-                      label={property.displayName}
-                      hint={property.hint}
-                      optional={!property.required}
-                      bind:value={$dsnForm[propertyKey]}
-                      uploadFile={handleFileUpload}
-                      accept=".json"
-                    />
-                  {:else}
-                    <Input
-                      id={propertyKey}
-                      label={property.displayName}
-                      placeholder={property.placeholder}
-                      secret={property.secret}
-                      hint={property.hint}
-                      errors={$dsnErrors[propertyKey]}
-                      bind:value={$dsnForm[propertyKey]}
-                      alwaysShowError
-                    />
-                  {/if}
-                </div>
-              {/each}
+              <FormRenderer
+                properties={filteredDsnProperties}
+                form={dsnForm}
+                errors={$dsnErrors}
+                {onStringInputChange}
+                uploadFile={handleFileUpload}
+              />
             </form>
           </TabsContent>
         </Tabs>
@@ -657,33 +585,13 @@
           use:dsnEnhance
           on:submit|preventDefault={dsnSubmit}
         >
-          {#each filteredDsnProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                <CredentialsInput
-                  id={propertyKey}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                  bind:value={$dsnForm[propertyKey]}
-                  uploadFile={handleFileUpload}
-                  accept=".json"
-                />
-              {:else}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={$dsnErrors[propertyKey]}
-                  bind:value={$dsnForm[propertyKey]}
-                  alwaysShowError
-                />
-              {/if}
-            </div>
-          {/each}
+          <FormRenderer
+            properties={filteredDsnProperties}
+            form={dsnForm}
+            errors={$dsnErrors}
+            {onStringInputChange}
+            uploadFile={handleFileUpload}
+          />
         </form>
       {:else if isMultiStepConnector}
         {#if stepState.step === "connector"}
@@ -694,90 +602,13 @@
             use:paramsEnhance
             on:submit|preventDefault={paramsSubmit}
           >
-            <!-- Authentication method selection -->
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              <div class="text-sm font-medium mb-4">Authentication method</div>
-              <Radio
-                bind:value={gcsAuthMethod}
-                options={GCS_AUTH_OPTIONS}
-                name="gcs-auth-method"
-              >
-                <svelte:fragment slot="custom-content" let:option>
-                  {#if option.value === "credentials"}
-                    <CredentialsInput
-                      id="google_application_credentials"
-                      hint="Upload a JSON key file for a service account with GCS access."
-                      optional={false}
-                      bind:value={$paramsForm.google_application_credentials}
-                      uploadFile={handleFileUpload}
-                      accept=".json"
-                    />
-                  {:else if option.value === "hmac"}
-                    <div class="space-y-3">
-                      <Input
-                        id="key_id"
-                        label="Access Key ID"
-                        placeholder="Enter your HMAC access key ID"
-                        optional={false}
-                        secret={true}
-                        hint="HMAC access key ID for S3-compatible authentication"
-                        errors={normalizeErrors($paramsErrors.key_id)}
-                        bind:value={$paramsForm.key_id}
-                        alwaysShowError
-                      />
-                      <Input
-                        id="secret"
-                        label="Secret Access Key"
-                        placeholder="Enter your HMAC secret access key"
-                        optional={false}
-                        secret={true}
-                        hint="HMAC secret access key for S3-compatible authentication"
-                        errors={normalizeErrors($paramsErrors.secret)}
-                        bind:value={$paramsForm.secret}
-                        alwaysShowError
-                      />
-                    </div>
-                  {/if}
-                </svelte:fragment>
-              </Radio>
-            </div>
-
-            <!-- Render other connector properties (excluding path and auth fields) -->
-            {#each filteredParamsProperties as property (property.key)}
-              {@const propertyKey = property.key ?? ""}
-              {#if propertyKey !== "path" && propertyKey !== "google_application_credentials" && propertyKey !== "key_id" && propertyKey !== "secret"}
-                <div class="py-1.5 first:pt-0 last:pb-0">
-                  {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                    <Input
-                      id={propertyKey}
-                      label={property.displayName}
-                      placeholder={property.placeholder}
-                      optional={!property.required}
-                      secret={property.secret}
-                      hint={property.hint}
-                      errors={normalizeErrors($paramsErrors[propertyKey])}
-                      bind:value={$paramsForm[propertyKey]}
-                      onInput={(_, e) => onStringInputChange(e)}
-                      alwaysShowError
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                    <Checkbox
-                      id={propertyKey}
-                      bind:checked={$paramsForm[propertyKey]}
-                      label={property.displayName}
-                      hint={property.hint}
-                      optional={!property.required}
-                    />
-                  {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                    <InformationalField
-                      description={property.description}
-                      hint={property.hint}
-                      href={property.docsUrl}
-                    />
-                  {/if}
-                </div>
-              {/if}
-            {/each}
+            <GCSMultiStepForm
+              properties={filteredParamsProperties}
+              {paramsForm}
+              paramsErrors={$paramsErrors}
+              {onStringInputChange}
+              {handleFileUpload}
+            />
           </form>
         {:else}
           <!-- GCS Step 2: Source configuration -->
@@ -787,40 +618,13 @@
             use:paramsEnhance
             on:submit|preventDefault={paramsSubmit}
           >
-            <!-- Only show source-specific fields -->
-            {#each stepProperties as property (property.key)}
-              {@const propertyKey = property.key ?? ""}
-              <div class="py-1.5 first:pt-0 last:pb-0">
-                {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                  <Input
-                    id={propertyKey}
-                    label={property.displayName}
-                    placeholder={property.placeholder}
-                    optional={!property.required}
-                    secret={property.secret}
-                    hint={property.hint}
-                    errors={normalizeErrors($paramsErrors[propertyKey])}
-                    bind:value={$paramsForm[propertyKey]}
-                    onInput={(_, e) => onStringInputChange(e)}
-                    alwaysShowError
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                  <Checkbox
-                    id={propertyKey}
-                    bind:checked={$paramsForm[propertyKey]}
-                    label={property.displayName}
-                    hint={property.hint}
-                    optional={!property.required}
-                  />
-                {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                  <InformationalField
-                    description={property.description}
-                    hint={property.hint}
-                    href={property.docsUrl}
-                  />
-                {/if}
-              </div>
-            {/each}
+            <FormRenderer
+              properties={stepProperties}
+              form={paramsForm}
+              errors={$paramsErrors}
+              {onStringInputChange}
+              uploadFile={handleFileUpload}
+            />
           </form>
         {/if}
       {:else}
@@ -830,49 +634,13 @@
           use:paramsEnhance
           on:submit|preventDefault={paramsSubmit}
         >
-          {#each filteredParamsProperties as property (property.key)}
-            {@const propertyKey = property.key ?? ""}
-            <div class="py-1.5 first:pt-0 last:pb-0">
-              {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
-                <Input
-                  id={propertyKey}
-                  label={property.displayName}
-                  placeholder={property.placeholder}
-                  optional={!property.required}
-                  secret={property.secret}
-                  hint={property.hint}
-                  errors={normalizeErrors($paramsErrors[propertyKey])}
-                  bind:value={$paramsForm[propertyKey]}
-                  onInput={(_, e) => onStringInputChange(e)}
-                  alwaysShowError
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
-                <Checkbox
-                  id={propertyKey}
-                  bind:checked={$paramsForm[propertyKey]}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-                <InformationalField
-                  description={property.description}
-                  hint={property.hint}
-                  href={property.docsUrl}
-                />
-              {:else if property.type === ConnectorDriverPropertyType.TYPE_FILE}
-                <CredentialsInput
-                  id={propertyKey}
-                  label={property.displayName}
-                  hint={property.hint}
-                  optional={!property.required}
-                  bind:value={$paramsForm[propertyKey]}
-                  uploadFile={handleFileUpload}
-                  accept=".json"
-                />
-              {/if}
-            </div>
-          {/each}
+          <FormRenderer
+            properties={filteredParamsProperties}
+            form={paramsForm}
+            errors={$paramsErrors}
+            {onStringInputChange}
+            uploadFile={handleFileUpload}
+          />
         </form>
       {/if}
     </div>
@@ -957,33 +725,16 @@
       />
     {/if}
 
-    <div>
-      <div class="text-sm leading-none font-medium mb-4">
-        {#if isMultiStepConnector}
-          {stepState.step === "connector"
-            ? "Connector preview"
-            : "Model preview"}
-        {:else}
-          {isSourceForm ? "Model preview" : "Connector preview"}
-        {/if}
-      </div>
-      <div class="relative">
-        <button
-          class="absolute top-2 right-2 p-1 rounded"
-          type="button"
-          aria-label="Copy YAML"
-          on:click={copyYamlPreview}
-        >
-          {#if copied}
-            <Check size="16px" />
-          {:else}
-            <CopyIcon size="16px" />
-          {/if}
-        </button>
-        <pre
-          class="bg-muted p-3 rounded text-xs border border-gray-200 overflow-x-auto">{yamlPreview}</pre>
-      </div>
-    </div>
+    <YamlPreview
+      title={isMultiStepConnector
+        ? stepState.step === "connector"
+          ? "Connector preview"
+          : "Model preview"
+        : isSourceForm
+          ? "Model preview"
+          : "Connector preview"}
+      yaml={yamlPreview}
+    />
 
     <NeedHelpText {connector} />
   </div>
