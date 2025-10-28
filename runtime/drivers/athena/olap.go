@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/sqlconvert"
 )
 
 var _ drivers.OLAPStore = &Connection{}
@@ -31,7 +31,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 // InformationSchema implements drivers.OLAPStore.
 func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
-	panic("unimplemented")
+	return c
 }
 
 // MayBeScaledToZero implements drivers.OLAPStore.
@@ -60,8 +60,13 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil, err
 	}
 
+	schema, err := rows.runtimeSchema()
+	if err != nil {
+		return nil, err
+	}
 	return &drivers.Result{
-		Rows: rows,
+		Rows:   rows,
+		Schema: schema,
 	}, nil
 }
 
@@ -73,6 +78,46 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 // WithConnection implements drivers.OLAPStore.
 func (c *Connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	return drivers.ErrNotImplemented
+}
+
+// All implements drivers.OLAPInformationSchema.
+func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	return drivers.AllFromInformationSchema(ctx, like, pageSize, pageToken, c)
+}
+
+// LoadPhysicalSize implements drivers.OLAPInformationSchema.
+func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.OlapTable) error {
+	return nil
+}
+
+// Lookup implements drivers.OLAPInformationSchema.
+func (c *Connection) Lookup(ctx context.Context, db string, schema string, name string) (*drivers.OlapTable, error) {
+	meta, err := c.GetTable(ctx, db, schema, name)
+	if err != nil {
+		return nil, err
+	}
+	runtimeSchema := &runtimev1.StructType{
+		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
+	}
+	for name, typ := range meta.Schema {
+		rtType, err := athenaTypeToRuntimeType(typ)
+		if err != nil {
+			return nil, err
+		}
+		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
+			Name: name,
+			Type: rtType,
+		})
+	}
+	return &drivers.OlapTable{
+		Database:          db,
+		DatabaseSchema:    schema,
+		Name:              name,
+		View:              meta.View,
+		Schema:            runtimeSchema,
+		UnsupportedCols:   nil,
+		PhysicalSizeBytes: 0,
+	}, nil
 }
 
 type rows struct {
@@ -146,12 +191,19 @@ func (r *rows) Next() bool {
 	if r.results.UpdateCount != nil && *r.results.UpdateCount != 0 {
 		return false
 	}
+	if r.scanErr != nil {
+		return false
+	}
 
 	// see if we have more rows in current page
 	if r.currentRow < len(r.results.ResultSet.Rows) {
 		row := r.results.ResultSet.Rows[r.currentRow]
 		var err error
 		for i, col := range row.Data {
+			if col.VarCharValue == nil {
+				r.scannedRow[i] = nil
+				continue
+			}
 			r.scannedRow[i], err = convertValue(*r.columnInfo[i].Type, *col.VarCharValue)
 			if err != nil {
 				r.scanErr = err
@@ -181,6 +233,9 @@ func (r *rows) Next() bool {
 
 // Scan implements drivers.Rows.
 func (r *rows) Scan(dest ...any) error {
+	if r.scanErr != nil {
+		return r.scanErr
+	}
 	if r.scannedRow == nil {
 		return fmt.Errorf("must call Next before Scan")
 	}
@@ -189,31 +244,69 @@ func (r *rows) Scan(dest ...any) error {
 	}
 
 	for i := range dest {
-		// Use reflection to set the value through the pointer
-		rv := reflect.ValueOf(dest[i])
-		if rv.Kind() != reflect.Ptr || rv.IsNil() {
-			return fmt.Errorf("destination argument %d must be a non-nil pointer", i)
-		}
-		if r.scannedRow[i] == nil {
-			// Set zero value for nil
-			rv.Elem().Set(reflect.Zero(rv.Elem().Type()))
-		} else {
-			rv.Elem().Set(reflect.ValueOf(r.scannedRow[i]))
+		err := sqlconvert.ConvertAssign(dest[i], r.scannedRow[i])
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func convertValue(colType string, val string) (any, error) {
-	// https://stackoverflow.com/questions/30299649/parse-string-to-specific-type-of-int-int8-int16-int32-int64
-	// https://prestodb.io/docs/current/language/types.html#integer
-	var err error
-	var i int64
-	var f float64
+func (r *rows) runtimeSchema() (*runtimev1.StructType, error) {
+	fields := make([]*runtimev1.StructType_Field, len(r.columnInfo))
+	for i, col := range r.columnInfo {
+		fields[i] = &runtimev1.StructType_Field{
+			Name: *col.Name,
+		}
+		colType, err := athenaTypeToRuntimeType(*col.Type)
+		if err != nil {
+			return nil, err
+		}
+		fields[i].Type = colType
+	}
+	res := &runtimev1.StructType{
+		Fields: fields,
+	}
+	return res, nil
+}
+
+func athenaTypeToRuntimeType(colType string) (*runtimev1.Type, error) {
+	t := &runtimev1.Type{}
 	switch colType {
 	case "tinyint":
-		// strconv.ParseInt() behavior is to return (int64(0), err)
-		// which is not as good as just return (nil, err)
+		t.Code = runtimev1.Type_CODE_INT8
+	case "smallint":
+		t.Code = runtimev1.Type_CODE_INT16
+	case "integer":
+		t.Code = runtimev1.Type_CODE_INT32
+	case "bigint":
+		t.Code = runtimev1.Type_CODE_INT64
+	case "float", "real":
+		t.Code = runtimev1.Type_CODE_FLOAT32
+	case "double":
+		t.Code = runtimev1.Type_CODE_FLOAT64
+	case "boolean":
+		t.Code = runtimev1.Type_CODE_BOOL
+	case "date", "time", "time with time zone", "timestamp", "timestamp with time zone":
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case "json", "char", "varchar", "varbinary", "row", "string", "binary",
+		"struct", "interval year to month", "interval day to second", "decimal",
+		"ipaddress", "array", "map", "unknown":
+		t.Code = runtimev1.Type_CODE_STRING
+	default:
+		return nil, fmt.Errorf("unknown type %q", colType)
+	}
+	return t, nil
+}
+
+func convertValue(colType string, val string) (any, error) {
+	var (
+		err error
+		i   int64
+		f   float64
+	)
+	switch colType {
+	case "tinyint":
 		if i, err = strconv.ParseInt(val, 10, 8); err != nil {
 			return nil, err
 		}
@@ -243,33 +336,28 @@ func convertValue(colType string, val string) (any, error) {
 			return nil, err
 		}
 		return f, nil
-	// for binary, we assume all chars are 0 or 1; for json,
-	// we assume the json syntax is correct. Leave to caller to verify it.
-	case "json", "char", "varchar", "varbinary", "row", "string", "binary",
-		"struct", "interval year to month", "interval day to second", "decimal",
-		"ipaddress", "array", "map", "unknown":
-		return val, nil
 	case "boolean":
-		val, err := strconv.ParseBool(val)
-		if err != nil {
-			return nil, err
-		}
-		return val, nil
+		return strconv.ParseBool(val)
 	case "date", "time", "time with time zone", "timestamp", "timestamp with time zone":
 		vv, err := scanTime(val)
 		if !vv.Valid {
 			return nil, fmt.Errorf("invalid time value")
 		}
 		return vv.Time, err
+	// for all other datatypes return string value directly
+	case "json", "char", "varchar", "varbinary", "row", "string", "binary",
+		"struct", "interval year to month", "interval day to second", "decimal",
+		"ipaddress", "array", "map", "unknown":
+		return val, nil
 	default:
 		return nil, fmt.Errorf("unknown type %q with value %q", colType, val)
 	}
 }
 
-// AthenaTime represents a time.Time value that can be null.
-// The AthenaTime supports Athena's Date, Time and Timestamp data types,
+// athenaTime represents a time.Time value that can be null.
+// The athenaTime supports Athena's Date, Time and Timestamp data types,
 // with or without time zone.
-type AthenaTime struct {
+type athenaTime struct {
 	Time  time.Time
 	Valid bool
 }
@@ -282,7 +370,7 @@ var timeLayouts = []string{
 	"2006-01-02 15:04:05.000",
 }
 
-func scanTime(vv string) (AthenaTime, error) {
+func scanTime(vv string) (athenaTime, error) {
 	parts := strings.Split(vv, " ")
 	if len(parts) > 1 && !unicode.IsDigit(rune(parts[len(parts)-1][0])) {
 		return parseAthenaTimeWithLocation(vv)
@@ -290,34 +378,34 @@ func scanTime(vv string) (AthenaTime, error) {
 	return parseAthenaTime(vv)
 }
 
-func parseAthenaTime(v string) (AthenaTime, error) {
+func parseAthenaTime(v string) (athenaTime, error) {
 	var t time.Time
 	var err error
 	for _, layout := range timeLayouts {
 		t, err = time.ParseInLocation(layout, v, time.Local)
 		if err == nil {
-			return AthenaTime{Valid: true, Time: t}, nil
+			return athenaTime{Valid: true, Time: t}, nil
 		}
 	}
-	return AthenaTime{}, err
+	return athenaTime{}, err
 }
 
-func parseAthenaTimeWithLocation(v string) (AthenaTime, error) {
+func parseAthenaTimeWithLocation(v string) (athenaTime, error) {
 	idx := strings.LastIndex(v, " ")
 	if idx == -1 {
-		return AthenaTime{}, fmt.Errorf("cannot convert %v (%T) to time+zone", v, v)
+		return athenaTime{}, fmt.Errorf("cannot convert %v (%T) to time+zone", v, v)
 	}
 	stamp, location := v[:idx], v[idx+1:]
 	loc, err := time.LoadLocation(location)
 	if err != nil {
-		return AthenaTime{}, fmt.Errorf("cannot load timezone %q: %v", location, err)
+		return athenaTime{}, fmt.Errorf("cannot load timezone %q: %v", location, err)
 	}
 	var t time.Time
 	for _, layout := range timeLayouts {
 		t, err = time.ParseInLocation(layout, stamp, loc)
 		if err == nil {
-			return AthenaTime{Valid: true, Time: t}, nil
+			return athenaTime{Valid: true, Time: t}, nil
 		}
 	}
-	return AthenaTime{}, err
+	return athenaTime{}, err
 }

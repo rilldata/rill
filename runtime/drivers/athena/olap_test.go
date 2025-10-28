@@ -31,12 +31,6 @@ func TestQuery(t *testing.T) {
 			result: map[string]any{"bool": true},
 		},
 		{
-			name:   "boolean false",
-			query:  "SELECT false AS bool",
-			args:   nil,
-			result: map[string]any{"bool": false},
-		},
-		{
 			name:   "tinyint",
 			query:  "SELECT CAST(127 AS TINYINT) AS val",
 			args:   nil,
@@ -154,7 +148,7 @@ func TestQueryWithParameters(t *testing.T) {
 
 	t.Run("query with parameter", func(t *testing.T) {
 		result, err := olap.Query(t.Context(), &drivers.Statement{
-			Query: "SELECT int32_col, float_col FROM integration_test.all_datatypes WHERE int32_col = ?",
+			Query: "SELECT int32_col, float_col FROM integration_test.all_datatypes WHERE id = ?",
 			Args:  []any{1},
 		})
 		require.NoError(t, err)
@@ -166,7 +160,7 @@ func TestQueryWithParameters(t *testing.T) {
 			res := make(map[string]any)
 			err = result.MapScan(res)
 			require.NoError(t, err)
-			require.Equal(t, int32(1), res["int32_col"])
+			require.Equal(t, int32(123), res["int32_col"])
 			require.NotNil(t, res["float_col"])
 		}
 		require.True(t, hasRows, "expected at least one row")
@@ -192,6 +186,30 @@ func TestEmptyRows(t *testing.T) {
 	require.NoError(t, result.Err())
 }
 
+func TestScanAllRows(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode")
+	}
+
+	_, olap := acquireTestAthena(t)
+
+	result, err := olap.Query(t.Context(), &drivers.Statement{
+		Query: "SELECT int32_col FROM integration_test.all_datatypes",
+	})
+	require.NoError(t, err)
+	defer result.Close()
+
+	var rowCount int
+	for result.Next() {
+		var int32Col *int32
+		err = result.Scan(&int32Col)
+		require.NoError(t, err)
+		rowCount++
+	}
+	require.NoError(t, result.Err())
+	require.Equal(t, rowCount, 3)
+}
+
 func TestQueryScan(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode")
@@ -199,7 +217,7 @@ func TestQueryScan(t *testing.T) {
 
 	_, olap := acquireTestAthena(t)
 
-	t.Run("scan values", func(t *testing.T) {
+	t.Run("scan basic types", func(t *testing.T) {
 		result, err := olap.Query(t.Context(), &drivers.Statement{
 			Query: "SELECT 42 AS num, 'test' AS str, true AS flag",
 		})
@@ -218,6 +236,182 @@ func TestQueryScan(t *testing.T) {
 		require.Equal(t, true, flag)
 
 		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
+
+	t.Run("scan integer types", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT CAST(127 AS TINYINT) AS tiny, CAST(32767 AS SMALLINT) AS small, CAST(2147483647 AS INTEGER) AS int, CAST(9223372036854775807 AS BIGINT) AS big",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		require.True(t, result.Next())
+
+		var tiny int8
+		var small int16
+		var intVal int32
+		var big int64
+		err = result.Scan(&tiny, &small, &intVal, &big)
+		require.NoError(t, err)
+		require.Equal(t, int8(127), tiny)
+		require.Equal(t, int16(32767), small)
+		require.Equal(t, int32(2147483647), intVal)
+		require.Equal(t, int64(9223372036854775807), big)
+
+		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
+
+	t.Run("scan float types", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT CAST(3.14 AS REAL) AS float_val, CAST(3.14159265359 AS DOUBLE) AS double_val",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		require.True(t, result.Next())
+
+		var floatVal float32
+		var doubleVal float64
+		err = result.Scan(&floatVal, &doubleVal)
+		require.NoError(t, err)
+		require.Equal(t, float32(3.14), floatVal)
+		require.Equal(t, float64(3.14159265359), doubleVal)
+
+		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
+
+	t.Run("scan string types", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT 'hello world' AS str, CAST('test' AS VARCHAR) AS varchar_val",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		require.True(t, result.Next())
+
+		var str string
+		var varcharVal string
+		err = result.Scan(&str, &varcharVal)
+		require.NoError(t, err)
+		require.Equal(t, "hello world", str)
+		require.Equal(t, "test", varcharVal)
+
+		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
+
+	t.Run("scan date and timestamp", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT DATE '2021-01-01' AS date_val, TIMESTAMP '2025-01-31 23:59:59.999' AS timestamp_val",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		require.True(t, result.Next())
+
+		var dateVal time.Time
+		var timestampVal time.Time
+		err = result.Scan(&dateVal, &timestampVal)
+		require.NoError(t, err)
+		require.Equal(t, mustParseTime(t, "2006-01-02", "2021-01-01"), dateVal)
+		require.Equal(t, mustParseTime(t, "2006-01-02 15:04:05.000", "2025-01-31 23:59:59.999"), timestampVal)
+
+		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
+
+	t.Run("scan decimal", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT CAST(123.45 AS DECIMAL(10,2)) AS decimal_val",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		require.True(t, result.Next())
+
+		var decimalVal string
+		err = result.Scan(&decimalVal)
+		require.NoError(t, err)
+		require.Equal(t, "123.45", decimalVal)
+
+		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
+
+	t.Run("scan complex types", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT ARRAY[1, 2, 3] AS array_val, MAP(ARRAY['key1', 'key2'], ARRAY[1, 2]) AS map_val, CAST(ROW(1, 'abc') AS ROW(a INTEGER, b VARCHAR)) AS struct_val",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		require.True(t, result.Next())
+
+		var arrayVal string
+		var mapVal string
+		var structVal string
+		err = result.Scan(&arrayVal, &mapVal, &structVal)
+		require.NoError(t, err)
+		require.Equal(t, "[1, 2, 3]", arrayVal)
+		require.Equal(t, "{key1=1, key2=2}", mapVal)
+		require.Equal(t, "{a=1, b=abc}", structVal)
+
+		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
+
+	t.Run("scan boolean", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT true AS bool_true, false AS bool_false",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		require.True(t, result.Next())
+
+		var boolTrue bool
+		var boolFalse bool
+		err = result.Scan(&boolTrue, &boolFalse)
+		require.NoError(t, err)
+		require.Equal(t, true, boolTrue)
+		require.Equal(t, false, boolFalse)
+
+		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
+
+	t.Run("scan multiple rows", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT * FROM (VALUES (1, 'first'), (2, 'second'), (3, 'third')) AS t(id, name)",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		expectedRows := []struct {
+			id   int32
+			name string
+		}{
+			{1, "first"},
+			{2, "second"},
+			{3, "third"},
+		}
+
+		rowCount := 0
+		for result.Next() {
+			var id int32
+			var name string
+			err = result.Scan(&id, &name)
+			require.NoError(t, err)
+			require.Less(t, rowCount, len(expectedRows))
+			require.Equal(t, expectedRows[rowCount].id, id)
+			require.Equal(t, expectedRows[rowCount].name, name)
+			rowCount++
+		}
+
+		require.Equal(t, len(expectedRows), rowCount)
 		require.NoError(t, result.Err())
 	})
 }
