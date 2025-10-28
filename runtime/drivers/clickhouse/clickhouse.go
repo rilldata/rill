@@ -401,8 +401,6 @@ type Connection struct {
 	embed *embedClickHouse
 	// billingTableExists cached state of whether the billing.events table exists in the database
 	billingTableExists *bool
-	// skipEstimatedSizeEmission indicates whether to skip emitting estimated size metrics for example when there is insufficient privileges
-	skipEstimatedSizeEmission bool
 }
 
 // Ping implements drivers.Handle.
@@ -587,11 +585,12 @@ func (c *Connection) periodicallyEmitStats() {
 	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
 	defer cacheInvalidationTicker.Stop()
 
+	skipEstimatedSizeEmission := false
 	for {
 		select {
 		case <-sensitiveTicker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.
-			if (c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) || c.skipEstimatedSizeEmission {
+			if (c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) || skipEstimatedSizeEmission {
 				continue
 			}
 
@@ -609,7 +608,7 @@ func (c *Connection) periodicallyEmitStats() {
 				if errors.As(err, &chErr) && chErr.Code == 497 {
 					// Code 497 is "Not enough privileges" - downgrade to debug level and skip future emissions.
 					lvl = zap.DebugLevel
-					c.skipEstimatedSizeEmission = true
+					skipEstimatedSizeEmission = true
 				}
 
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
@@ -641,7 +640,7 @@ func (c *Connection) periodicallyEmitStats() {
 		case <-cacheInvalidationTicker.C:
 			// Invalidate the billing table existence cache and skip size emission flag.
 			c.billingTableExists = nil
-			c.skipEstimatedSizeEmission = false
+			skipEstimatedSizeEmission = false
 		case <-c.ctx.Done():
 			return
 		}
