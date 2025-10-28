@@ -41,6 +41,10 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
+// Track connector file paths that were created via Save Anyway so
+// in-flight Test-and-Connect submissions don't roll them back.
+const savedAnywayPaths = new Set<string>();
+
 async function beforeSubmitForm(
   instanceId: string,
   connector?: V1ConnectorDriver,
@@ -247,6 +251,9 @@ async function saveConnectorAnyway(
     EntityType.Connector,
   );
 
+  // Mark to avoid rollback by concurrent submissions
+  savedAnywayPaths.add(newConnectorFilePath);
+
   // Always create/overwrite to ensure the file is created immediately
   await runtimeServicePutFile(resolvedInstanceId, {
     path: newConnectorFilePath,
@@ -413,12 +420,15 @@ export async function submitAddConnectorForm(
             connector.name as string,
           );
         } catch (error) {
-          // The connector file was already created, so we need to delete it
-          await rollbackChanges(
-            instanceId,
-            newConnectorFilePath,
-            originalEnvBlob,
-          );
+          // The connector file was already created, so we would delete it
+          // unless Save Anyway has already created it intentionally.
+          if (!savedAnywayPaths.has(newConnectorFilePath)) {
+            await rollbackChanges(
+              instanceId,
+              newConnectorFilePath,
+              originalEnvBlob,
+            );
+          }
           const errorDetails = (error as any).details;
 
           throw {
@@ -438,11 +448,13 @@ export async function submitAddConnectorForm(
           newConnectorFilePath,
         );
         if (errorMessage) {
-          await rollbackChanges(
-            instanceId,
-            newConnectorFilePath,
-            originalEnvBlob,
-          );
+          if (!savedAnywayPaths.has(newConnectorFilePath)) {
+            await rollbackChanges(
+              instanceId,
+              newConnectorFilePath,
+              originalEnvBlob,
+            );
+          }
           throw new Error(errorMessage);
         }
       }
