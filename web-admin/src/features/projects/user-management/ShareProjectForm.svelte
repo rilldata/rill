@@ -4,7 +4,6 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationInvitesInfinite,
     createAdminServiceListOrganizationMemberUsergroups,
-    createAdminServiceListOrganizationMemberUsersInfinite,
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
