@@ -14,13 +14,9 @@
   export let errors: Record<string, any> | undefined;
   export let onStringInputChange: (event: Event) => void = () => {};
   export let uploadFile: (file: File) => Promise<string> = async () => "";
-
-  // Optional filters
-  export let filter: (p: ConnectorDriverProperty) => boolean = () => true;
-  $: filtered = properties.filter((p) => filter(p));
 </script>
 
-{#each filtered as property (property.key)}
+{#each properties as property (property.key)}
   {@const propertyKey = property.key ?? ""}
   {@const label =
     property.displayName + (property.required ? "" : " (optional)")}
