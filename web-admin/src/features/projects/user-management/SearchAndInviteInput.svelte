@@ -149,19 +149,23 @@
   }
 
   async function refreshSearchResults() {
-    if (searchList) {
-      searchResults = searchList;
-    } else {
-      try {
-        searchResults = await onSearch("");
-        showDropdown = searchResults.length > 0;
-        if (showDropdown) {
-          updateDropdownPosition();
+    try {
+      const remote = onSearch ? await onSearch("") : [];
+      const local = searchList ?? [];
+      const seen = new Set<string>();
+      const merged: SearchResult[] = [];
+      for (const r of [...local, ...remote]) {
+        if (!seen.has(r.identifier)) {
+          merged.push(r);
+          seen.add(r.identifier);
         }
-      } catch {
-        searchResults = [];
-        showDropdown = false;
       }
+      searchResults = merged;
+      showDropdown = searchResults.length > 0;
+      if (showDropdown) updateDropdownPosition();
+    } catch {
+      searchResults = searchList ?? [];
+      showDropdown = searchResults.length > 0;
     }
   }
 
@@ -299,14 +303,9 @@
     }
   }
 
-  function handleFocus() {
-    if (searchList) {
-      searchResults = filterSearchResults(searchList, searchKeys, input);
-      showDropdown = searchResults.length > 0;
-      if (showDropdown) {
-        updateDropdownPosition();
-      }
-    }
+  async function handleFocus() {
+    // On focus, load top 5 users from server (via onSearch("") -> no searchPattern)
+    await refreshSearchResults();
   }
 
   function handleBlur(e: FocusEvent) {

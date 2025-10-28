@@ -140,14 +140,12 @@
   }
 
   async function handleSearch(query: string) {
-    if (!query) return [];
-
-    // Server-side user search (prefix) using query client for consistency/caching
+    // Server-side user search (top 5). Use prefix search when query provided; otherwise, omit searchPattern.
     const options = getAdminServiceListOrganizationMemberUsersQueryOptions(
       organization,
       {
         pageSize: 5,
-        searchPattern: `${query}%`,
+        ...(query ? { searchPattern: `${query}%` } : {}),
       },
     );
 
