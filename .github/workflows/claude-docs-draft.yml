@@ -1,4 +1,5 @@
-name: DoClaude – Draft docs PR (manual or labeled)
+# .github/workflows/claude-docs-draft.yml
+name: "DoClaude – Draft docs PR (manual or labeled)"
 
 on:
   workflow_dispatch: {}

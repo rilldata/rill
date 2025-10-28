@@ -1,10 +1,11 @@
-name: DoClaude – Apply docs edits from PR comments
+# .github/workflows/claude-apple-comments.yml
+name: "DoClaude – Apply docs edits from PR comments"
 
 on:
   issue_comment:
     types: [created, edited]
-  pull_request_review_comment:
-    types: [created, edited]
+  # pull_request_review_comment:
+  #   types: [created, edited]
   workflow_dispatch: {}
 
 permissions:
