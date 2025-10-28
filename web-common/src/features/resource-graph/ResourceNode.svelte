@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Handle, Position } from "@xyflow/svelte";
+  import { Handle, Position, NodeToolbar } from "@xyflow/svelte";
   import { displayResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     resourceColorMapping,
@@ -10,6 +10,7 @@
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { goto } from "$app/navigation";
+  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
 
   export let data: ResourceNodeData;
   export let selected = false;
@@ -146,6 +147,17 @@
     {/if}
   </div>
 
+  <NodeToolbar isVisible={selected && !hasError && !!artifact?.path} position={Position.Top} align="center" offset={2}>
+    <button
+      class="toolbar-open-btn"
+      aria-label="Open in code"
+      title={`Open ${artifact?.path}`}
+      on:click|stopPropagation={openFile}
+    >
+      <ExternalLink size="10px" />
+    </button>
+  </NodeToolbar>
+
   {#if showError && hasError}
     <div class="error-popover" role="alert">
       <div class="error-popover-header">
@@ -245,6 +257,20 @@
 
   .status.error {
     @apply not-italic text-red-600;
+  }
+
+  .toolbar-open-btn {
+    @apply h-6 w-6 rounded-sm border border-transparent bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 flex items-center justify-center shadow-sm ring-1 ring-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60;
+  }
+
+  .toolbar-open-btn :global(svg) {
+    width: 12px;
+    height: 12px;
+    display: block;
+  }
+
+  .toolbar-open-btn :global(svg path) {
+    fill: currentColor;
   }
 
   /* Make handles small circular dots, tinted by the node accent */
