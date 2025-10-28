@@ -22,8 +22,7 @@ import (
 
 // Constants for AI completion
 const (
-	completionTimeout     = 120 * time.Second // Overall timeout for entire AI completion
-	aiRequestTimeout      = 30 * time.Second  // Timeout for individual AI API calls
+	aiRequestTimeout      = 60 * time.Second // Timeout for individual AI API calls (needs to be generous for tool calling)
 	maxToolCallIterations = 20
 )
 
@@ -222,8 +221,14 @@ func (r *Runtime) processProjectChatContext(ctx context.Context, instanceID stri
 		aiInstructions = instance.AIInstructions
 	}
 
+	// Find the feature flags. NOTE: We don't need to support user-specific flags here.
+	ff, err := r.FeatureFlags(ctx, instanceID, &SecurityClaims{UserAttributes: map[string]any{}})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feature flags: %w", err)
+	}
+
 	// Build the system prompt
-	systemPrompt := buildProjectChatSystemPrompt(aiInstructions)
+	systemPrompt := buildProjectChatSystemPrompt(aiInstructions, ff)
 
 	return []*runtimev1.Message{{
 		Role: "system",
@@ -288,8 +293,14 @@ func (r *Runtime) processExploreDashboardContext(ctx context.Context, instanceID
 		aiInstructions = instance.AIInstructions
 	}
 
+	// Find the feature flags. NOTE: We don't need to support user-specific flags here.
+	ff, err := r.FeatureFlags(ctx, instanceID, &SecurityClaims{UserAttributes: map[string]any{}})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feature flags: %w", err)
+	}
+
 	// Build the system prompt
-	systemPrompt := buildExploreDashboardSystemPrompt(dashboardName, metricsViewName, metricsViewSpec, timeRangeSummary, aiInstructions)
+	systemPrompt := buildExploreDashboardSystemPrompt(dashboardName, metricsViewName, metricsViewSpec, timeRangeSummary, aiInstructions, ff)
 
 	return []*runtimev1.Message{{
 		Role: "system",
@@ -353,10 +364,6 @@ func (r *Runtime) executeAICompletion(ctx context.Context, instanceID, conversat
 		return nil, err
 	}
 	defer release()
-
-	// Apply timeout
-	ctx, cancel := context.WithTimeout(ctx, completionTimeout)
-	defer cancel()
 
 	// Get available tools
 	tools, err := toolService.ListTools(ctx)
@@ -720,9 +727,38 @@ func (r *Runtime) addMessage(ctx context.Context, instanceID, conversationID, ro
 }
 
 // buildProjectChatSystemPrompt constructs the system prompt for the project chat context
-func buildProjectChatSystemPrompt(aiInstructions string) string {
+func buildProjectChatSystemPrompt(aiInstructions string, featureFlags map[string]bool) string {
 	// TODO: call 'list_metrics_views' and seed the result in the system prompt
 	currentTime := time.Now()
+
+	// Check if chat_charts feature flag is enabled
+	chatChartsEnabled := featureFlags["chat_charts"]
+
+	// Conditionally add Phase 3 if chat_charts is enabled
+	phase3Section := ""
+	thinkingPhase := "Phase 2"
+	if chatChartsEnabled {
+		phase3Section = `
+
+**Phase 3: Visualization**
+5. **Create a chart:** After running "query_metrics_view" create a chart using "create_chart" unless:
+   - The user explicitly requests a table-only response
+   - The query returns only a single scalar value
+   - The data structure doesn't lend itself to visualization (e.g., text-heavy data)
+   - There is no appropriate chart type which can be created for the underlying data
+
+## Visualization Best Practices
+Choose the appropriate chart type based on your data:
+- Time series data: line_chart or area_chart (better for cummalative trends)
+- Category comparisons: bar_chart or stacked_bar
+- Part-to-whole relationships: donut_chart
+- Multiple dimensions: Use color encoding with bar_chart, stacked_bar or line_chart
+- Two measures from the same metrics view: Use combo_chart
+- Multiple measures from the same metrics view (more that 2): Use stacked bar chart with multiple measure fields
+- Distribution across two dimensions: heatmap`
+		thinkingPhase = "Phase 3"
+	}
+
 	basePrompt := fmt.Sprintf(`<role>
 You are a data analysis agent specialized in uncovering actionable business insights. You systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
 
@@ -739,7 +775,7 @@ Today's date is %s (%s).
 **Phase 1: Data Discovery (Deterministic)**
 Follow these steps in order:
 1. **Discover**: Use "list_metrics_views" to identify available datasets
-2. **Understand**: Use "get_metrics_view" to understand measures and dimensions for the selected view  
+2. **Understand**: Use "get_metrics_view" to understand measures and dimensions for the selected view
 3. **Scope**: Use "query_metrics_view_time_range" to determine the span of available data
 
 **Phase 2: Analysis (Agentic OODA Loop)**
@@ -749,11 +785,11 @@ Follow these steps in order:
    - **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore
    - **Act**: Execute the query and evaluate results in <thinking> tags
 
-Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results. Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.
+Execute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results. Continue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.%s
 </process>
 
 <analysis_guidelines>
-**Setup Phase (Steps 1-3)**: 
+**Setup Phase (Steps 1-3)**:
 - Briefly explain your approach before starting
 - Complete each step fully before proceeding
 - If any step fails, investigate and adapt
@@ -778,11 +814,11 @@ Execute a MINIMUM of 4-6 distinct analytical queries, building each query based 
 </analysis_guidelines>
 
 <guardrails>
-You only engage in conversation that relates to the project's data. If a question seems unrelated, first inspect the available metrics views to see if it fits the dataset’s domain. Decline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.
+You only engage in conversation that relates to the project's data. If a question seems unrelated, first inspect the available metrics views to see if it fits the dataset's domain. Decline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.
 </guardrails>
 
 <thinking>
-After each query in Phase 2, think through:
+After each query in %s, think through:
 - What patterns or anomalies did this reveal?
 - How does this connect to previous findings?
 - What new questions does this raise?
@@ -798,7 +834,7 @@ Based on the data analysis, here are the key insights:
 1. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
-2. ## [Headline with specific impact/number]  
+2. ## [Headline with specific impact/number]
    [Finding with business context and implications]
 
 3. ## [Headline with specific impact/number]
@@ -812,7 +848,7 @@ Based on the data analysis, here are the key insights:
 - Citations must be inline at the end of a sentence or paragraph, not on a separate line
 - Use descriptive text in sentence case (e.g. "This suggests Android is valuable ([Device breakdown](url))." or "Revenue increased 25%% ([Revenue by country](url)).")
 - When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph
-</output_format>`, currentTime.Format("Monday, January 2, 2006"), currentTime.Format("2006-01-02"))
+</output_format>`, currentTime.Format("Monday, January 2, 2006"), currentTime.Format("2006-01-02"), phase3Section, thinkingPhase)
 
 	if aiInstructions != "" {
 		return basePrompt + "\n\n## Additional Instructions (provided by the Rill project developer)\n" + aiInstructions
@@ -822,7 +858,7 @@ Based on the data analysis, here are the key insights:
 }
 
 // buildExploreDashboardSystemPrompt constructs the system prompt for explore dashboard context
-func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, metricsViewSpec, timeRangeSummary any, aiInstructions string) string {
+func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, metricsViewSpec, timeRangeSummary any, aiInstructions string, featureFlags map[string]bool) string {
 	var prompt strings.Builder
 
 	// 1. WHO: Establish the AI's role and purpose
@@ -850,8 +886,13 @@ func buildExploreDashboardSystemPrompt(dashboardName, metricsViewName string, me
 	prompt.WriteString("You can use \"query_metrics_view\" to run queries and get aggregated results from this metrics view. ")
 	prompt.WriteString("The metrics view spec above shows all available dimensions and measures, and the time range information shows what time periods are available for analysis. ")
 	prompt.WriteString("Use this information to craft meaningful queries that answer the user's questions and provide valuable insights.\n\n")
+	if featureFlags["chat_charts"] {
+		prompt.WriteString("You can also use \"create_chart\" to generate interactive visualizations when appropriate. ")
+		prompt.WriteString("Charts are helpful for showing trends, comparisons, and patterns in the data. ")
+		prompt.WriteString("Choose the appropriate chart type based on the data and insight you want to communicate. ")
+	}
 
-	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" tool must include \"metrics_view\": %q in the payload.**\n\n", metricsViewName))
+	prompt.WriteString(fmt.Sprintf("**IMPORTANT: Every invocation of the \"query_metrics_view\" and \"create_chart\" tools (if available) must include \"metrics_view\": %q in the spec/payload.**\n\n", metricsViewName))
 
 	// 5. HOW TO CITE: Describe citation requirements
 	prompt.WriteString("## Citation Requirements\n")

@@ -7181,6 +7181,17 @@ definitions:
         $ref: '#/definitions/v1ThemeSpec'
       state:
         $ref: '#/definitions/v1ThemeState'
+  v1ThemeColors:
+    type: object
+    properties:
+      primary:
+        type: string
+      secondary:
+        type: string
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1ThemeSpec:
     type: object
     properties:
@@ -7192,6 +7203,10 @@ definitions:
         type: string
       secondaryColorRaw:
         type: string
+      light:
+        $ref: '#/definitions/v1ThemeColors'
+      dark:
+        $ref: '#/definitions/v1ThemeColors'
   v1ThemeState:
     type: object
   v1TimeGrain:

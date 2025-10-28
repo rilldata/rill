@@ -19,12 +19,10 @@
   beforeNavigate(() => (filter = "")); // resets filter when changing projects
 </script>
 
-<div class="w-full flex items-center">
-  <!-- Search bar -->
-  <Search
-    placeholder="Search"
-    autofocus={false}
-    bind:value={filter}
-    background={false}
-  />
-</div>
+<Search
+  placeholder="Search"
+  autofocus={false}
+  bind:value={filter}
+  background={false}
+  rounded="lg"
+/>
