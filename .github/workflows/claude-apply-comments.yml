@@ -14,13 +14,16 @@ permissions:
 
 jobs:
   apply:
-    # Trigger on any PR comment containing "DoClaude"
+    # Trigger on any PR comment containing "DoClaude" or "doclaude:"
     if: >
       (github.event.issue.pull_request || github.event.pull_request) &&
       (
         contains(github.event.comment.body, '/DoClaude') ||
-        startsWith(github.event.comment.body, 'DoClaude ') ||
-        startsWith(github.event.comment.body, 'doclaude ')
+        startsWith(github.event.comment.body, 'DoClaude:') ||
+        startsWith(github.event.comment.body, 'DoClaude') ||
+        startsWith(github.event.comment.body, '/doclaude:') ||
+        startsWith(github.event.comment.body, 'doclaude ') ||
+        startsWith(github.event.comment.body, 'doclaude:')
       )
     runs-on: ubuntu-latest
     steps:
