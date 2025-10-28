@@ -301,6 +301,7 @@ test.describe("Embeds", () => {
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .first()
       .click();
     // Time range is still the default
     await expect(frame.getByText("Last 24 hours")).toBeVisible();
@@ -327,6 +328,7 @@ test.describe("Embeds", () => {
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .first()
       .click();
 
     // Old selection has persisted
@@ -350,7 +352,10 @@ test.describe("Embeds", () => {
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
     // Go to `Bids Canvas Dashboard` using the links on home
-    await frame.getByRole("link", { name: "Bids Canvas Dashboard" }).click();
+    await frame
+      .getByRole("link", { name: "Bids Canvas Dashboard" })
+      .first()
+      .click();
     // Old selection has persisted
     await expect(frame.getByText("Last 7 days")).toBeVisible();
   });

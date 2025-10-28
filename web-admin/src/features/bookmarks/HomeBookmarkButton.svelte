@@ -28,7 +28,9 @@
   $: ({ name: resourceName, kind: resourceKind } = resource);
 
   $: homeBookmarkUrl = homeBookmark?.fullUrl ?? defaultHomeBookmarkUrl ?? "";
-  $: isHomeBookmarkActive = homeBookmarkUrl === $page.url.toString();
+  $: cleanBookmarkUrl = homeBookmark?.url ?? defaultHomeBookmarkUrl ?? "";
+  $: isHomeBookmarkActive =
+    cleanBookmarkUrl === $page.url.searchParams.toString();
 
   function goToDashboardHome() {
     if (resourceKind === ResourceKind.Explore) {
@@ -72,6 +74,7 @@
             href={homeBookmarkUrl}
             on:click={goToDashboardHome}
             class="flex flex-row gap-x-2 w-full min-h-7"
+            aria-label="Home Bookmark Entry"
           >
             <HomeBookmark size="16px" className="text-gray-700" />
             <div class="flex flex-col gap-y-0.5">
