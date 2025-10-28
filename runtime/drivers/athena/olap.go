@@ -306,7 +306,7 @@ func athenaTypeToRuntimeType(colType string) (*runtimev1.Type, error) {
 	return t, nil
 }
 
-func convertValue(colType string, val string) (any, error) {
+func convertValue(colType, val string) (any, error) {
 	var (
 		err error
 		i   int64
@@ -405,7 +405,7 @@ func parseAthenaTimeWithLocation(v string) (athenaTime, error) {
 	stamp, location := v[:idx], v[idx+1:]
 	loc, err := time.LoadLocation(location)
 	if err != nil {
-		return athenaTime{}, fmt.Errorf("cannot load timezone %q: %v", location, err)
+		return athenaTime{}, fmt.Errorf("cannot load timezone %q: %w", location, err)
 	}
 	var t time.Time
 	for _, layout := range timeLayouts {

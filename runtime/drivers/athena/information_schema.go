@@ -18,7 +18,7 @@ import (
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	client, err := c.getClient(ctx)
+	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -80,7 +80,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	LIMIT %d 
 	`, sqlSafeName(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
-	client, err := c.getClient(ctx)
+	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -147,7 +147,7 @@ ORDER BY c.ordinal_position
 		}
 		res.Schema[col] = typ
 	}
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return res, nil

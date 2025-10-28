@@ -125,7 +125,7 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	client, err := c.getClient(ctx)
+	client, err := c.acquireClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -278,24 +278,16 @@ func (c *Connection) acquireClient(ctx context.Context) (*athena.Client, error) 
 		return c.client, c.clientErr
 	}
 
-	c.client, c.clientErr = c.getClient(ctx)
-	if c.clientErr != nil {
-		c.client = nil
-		return nil, c.clientErr
-	}
-	return c.client, nil
-}
-
-func (c *Connection) getClient(ctx context.Context) (*athena.Client, error) {
 	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+		c.clientErr = fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, c.clientErr
 	}
 
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+	c.client = athena.NewFromConfig(awsConfig, func(o *athena.Options) {
 		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
 	})
-	return client, nil
+	return c.client, nil
 }
 
 func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string, args []string) (*string, error) {
