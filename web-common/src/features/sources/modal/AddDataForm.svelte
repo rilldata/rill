@@ -363,6 +363,49 @@
     }
   })();
 
+  $: isClickhouse = connector.name === "clickhouse";
+
+  $: shouldShowSaveAnywayButton =
+    isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
+
+  $: primaryDisabled = isClickhouse
+    ? clickhouseSubmitting || clickhouseIsSubmitDisabled || saveAnyway
+    : submitting || isSubmitDisabled || saveAnyway;
+
+  $: primaryLoading = isClickhouse
+    ? clickhouseSubmitting && !saveAnyway
+    : submitting && !saveAnyway;
+
+  $: saveAnywayLoading = isClickhouse
+    ? clickhouseSubmitting && saveAnyway
+    : submitting && saveAnyway;
+
+  $: primaryLoadingCopy = isClickhouse
+    ? saveAnyway
+      ? "Saving..."
+      : "Connecting..."
+    : "Testing connection...";
+
+  $: primaryLabel = (() => {
+    if (isClickhouse) {
+      if (clickhouseConnectorType === "rill-managed") {
+        if (clickhouseSubmitting && saveAnyway) return "Saving...";
+        if (clickhouseSubmitting && !saveAnyway) return "Connecting...";
+        return "Connect";
+      } else {
+        if (clickhouseSubmitting && saveAnyway) return "Saving...";
+        if (clickhouseSubmitting && !saveAnyway) return "Testing connection...";
+        return "Test and Connect";
+      }
+    } else if (isConnectorForm) {
+      if (submitting && !saveAnyway) return "Testing connection...";
+      return "Test and Connect";
+    } else {
+      if (submitting && !saveAnyway) return "Testing connection...";
+      return "Test and Add data";
+    }
+  })();
+
   function copyYamlPreview() {
     navigator.clipboard.writeText(yamlPreview);
     copied = true;
@@ -669,13 +712,10 @@
       <Button onClick={onBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
-        <!-- Show Save Anyway button when form submission has started - only for connector forms -->
-        {#if isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway)}
+        {#if shouldShowSaveAnywayButton}
           <Button
             disabled={false}
-            loading={connector.name === "clickhouse"
-              ? clickhouseSubmitting && saveAnyway
-              : submitting && saveAnyway}
+            loading={saveAnywayLoading}
             loadingCopy="Saving..."
             onClick={handleSaveAnyway}
             type="secondary"
@@ -685,48 +725,14 @@
         {/if}
 
         <Button
-          disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled || saveAnyway
-            : submitting || isSubmitDisabled || saveAnyway}
-          loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting && !saveAnyway
-            : submitting && !saveAnyway}
-          loadingCopy={connector.name === "clickhouse"
-            ? saveAnyway
-              ? "Saving..."
-              : "Connecting..."
-            : "Testing connection..."}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+          disabled={primaryDisabled}
+          loading={primaryLoading}
+          loadingCopy={primaryLoadingCopy}
+          form={isClickhouse ? clickhouseFormId : formId}
           submitForm
           type="primary"
         >
-          {#if connector.name === "clickhouse"}
-            {#if clickhouseConnectorType === "rill-managed"}
-              {#if clickhouseSubmitting && saveAnyway}
-                Saving...
-              {:else if clickhouseSubmitting && !saveAnyway}
-                Connecting...
-              {:else}
-                Connect
-              {/if}
-            {:else if clickhouseSubmitting && saveAnyway}
-              Saving...
-            {:else if clickhouseSubmitting && !saveAnyway}
-              Testing connection...
-            {:else}
-              Test and Connect
-            {/if}
-          {:else if isConnectorForm}
-            {#if submitting && !saveAnyway}
-              Testing connection...
-            {:else}
-              Test and Connect
-            {/if}
-          {:else if submitting && !saveAnyway}
-            Testing connection...
-          {:else}
-            Test and Add data
-          {/if}
+          {primaryLabel}
         </Button>
       </div>
     </div>
