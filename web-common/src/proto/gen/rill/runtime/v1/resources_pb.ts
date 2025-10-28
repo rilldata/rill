@@ -1008,6 +1008,11 @@ export class ModelSpec extends Message<ModelSpec> {
   triggerFull = false;
 
   /**
+   * @generated from field: bool trigger_partitions = 30;
+   */
+  triggerPartitions = false;
+
+  /**
    * defined_as_source is true if it was defined by user as a source but converted internally to a model.
    *
    * @generated from field: bool defined_as_source = 23;
@@ -1045,6 +1050,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "trigger_full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 30, name: "trigger_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 23, name: "defined_as_source", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
