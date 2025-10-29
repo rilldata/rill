@@ -101,13 +101,13 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if args.Explore == "" {
-		var listRes *ListMetricsViewsResult
-		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", &listRes, &ListMetricsViewsArgs{})
-		if err != nil {
-			return nil, err
-		}
-	}
+	// if args.Explore == "" {
+	// 	var listRes *ListMetricsViewsResult
+	// 	_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", &listRes, &ListMetricsViewsArgs{})
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 
 	// Add the analyst agent system prompt, optionally tailored for the current explore.
 	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Explore)

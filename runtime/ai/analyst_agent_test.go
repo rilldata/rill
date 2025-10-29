@@ -10,8 +10,8 @@ import (
 
 func TestAnalystBasic(t *testing.T) {
 	// Setup a basic metrics view with an "event_time" time dimension, "country" dimension, and "count" and "revenue" measures.
-	rt, instanceID, s := newEval(t, testruntime.InstanceOptions{
-		TestConnectors: []string{"openai"},
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		EnableLLM: true,
 		Files: map[string]string{
 			"models/orders.yaml": `
 type: model
@@ -41,6 +41,9 @@ measures:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
 
+	// Initialize eval
+	s := newEval(t, rt, instanceID)
+
 	// Analyst agent question
 	var res *ai.RouterAgentResult
 	_, err := s.CallTool(t.Context(), ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
@@ -57,4 +60,35 @@ measures:
 	require.NoError(t, err)
 	require.Equal(t, "analyst_agent", res.Agent)
 	require.Equal(t, "United States", res.Response)
+}
+
+func TestAnalystOpenRTB(t *testing.T) {
+	// Setup runtime instance with the OpenRTB dataset
+	n, files := testruntime.OpenRTB(t)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		EnableLLM: true,
+		Files:     files,
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
+
+	// Test it remembers previous tool calls over
+	t.Run("MultipleTurns", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
+			Prompt: "Tell me about the auction metrics",
+		})
+		require.NoError(t, err)
+
+		_, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
+			Prompt: "Now tell me about the other dataset",
+		})
+		require.NoError(t, err)
+
+		_, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
+			Prompt: "Tell me which non-US country has the most activity",
+		})
+		require.NoError(t, err)
+	})
+
 }
