@@ -73,7 +73,7 @@ def main():
         comments_context.append(f"""
 ### Comment {i}
 **File**: `{comment.path}`
-**Line**: {comment.position or comment.original_position or 'N/A'}
+**Line**: {comment.position or comment.original_position or 'N/A'} 
 **Author**: @{comment.user.login}
 **Comment**: {comment.body}
 
