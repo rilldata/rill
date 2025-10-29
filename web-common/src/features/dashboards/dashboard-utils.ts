@@ -28,30 +28,29 @@ export function isSummableMeasure(measure: MetricsViewSpecMeasure): boolean {
   const expression = measure.expression?.toLowerCase();
 
   // Check if expression contains SUM or COUNT
-  const hasSumOrCount = !!(
+  const hasNoSumOrCount = !(
     expression?.match(countRegex) || expression?.match(sumRegex)
   );
 
-  if (hasSumOrCount) {
-    // If it has SUM/COUNT and contains division, verify both sides are summable
-    if (expression?.includes("/")) {
-      // Check if this is a ratio expression: sum/sum, count/sum, sum/count, count/count
-      // Split by division and check if both parts contain sum or count
-      const parts = expression.split("/").map((p) => p.trim());
-      if (parts.length === 2) {
-        const leftHasSumOrCount = !!(
-          parts[0].match(countRegex) || parts[0].match(sumRegex)
-        );
-        const rightHasSumOrCount = !!(
-          parts[1].match(countRegex) || parts[1].match(sumRegex)
-        );
+  if (hasNoSumOrCount) return false;
 
-        return leftHasSumOrCount && !rightHasSumOrCount;
-      }
+  // If it has SUM/COUNT and contains division, verify both sides are summable
+  if (expression?.includes("/")) {
+    // Check if this is a ratio expression: sum/sum, count/sum, sum/count, count/count
+    // Split by division and check if both parts contain sum or count
+    const parts = expression.split("/").map((p) => p.trim());
+    if (parts.length === 2) {
+      const leftHasSumOrCount = !!(
+        parts[0].match(countRegex) || parts[0].match(sumRegex)
+      );
+      const rightHasSumOrCount = !!(
+        parts[1].match(countRegex) || parts[1].match(sumRegex)
+      );
+
+      return leftHasSumOrCount && !rightHasSumOrCount;
     }
-    return true;
   }
-  return false;
+  return true;
 }
 
 export function isPercentageMeasure(measure: MetricsViewSpecMeasure): boolean {
