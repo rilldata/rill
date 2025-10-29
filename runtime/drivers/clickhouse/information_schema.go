@@ -186,12 +186,13 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		isView = view
 		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
 			if errors.Is(err, errUnsupportedType) {
-				schemaMap[colName] = fmt.Sprintf("Unknown(%s)", dataType)
+				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
 			} else {
 				return nil, err
 			}
+		} else if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
 		} else {
-			// not returning db internal type matching the current implementation
 			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
 		}
 	}
