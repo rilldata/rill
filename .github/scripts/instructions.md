@@ -90,13 +90,28 @@ When you receive inline review comments to address:
 - Prefer short, focused examples over large blocks of code
 - Check docs/reference that the example code matches the correct YAML keys
 
+<!-- Added from PR #8166 review - 2025-01-xx: Data source YAML completeness -->
+#### Data Source YAML Examples
+When documenting data sources (GCS, S3, Azure, etc.), ensure YAML examples include:
+- ✅ **Triggers** - Data sources typically need refresh triggers (e.g., `refresh: cron: "0 */6 * * *"`)
+- ✅ **Connector reference** - Must reference a connector file via `connector:` property
+- ✅ **Complete working configuration** - Not just authentication, but the full model setup
+- ❌ Don't show partial configs that won't work in practice
+- Verify against `runtime/parser/*` for correct property names and structure
+
+Example checklist for data source docs:
+- [ ] Connector YAML example includes all required authentication fields
+- [ ] Model YAML example includes `type: model`, `connector:`, and appropriate trigger
+- [ ] Both examples use `.env` references for sensitive values
+- [ ] File paths use `connectors/` and `models/` directories (not `sources/`)
+
 ### Language
 - Use "you" to address the reader
 - Avoid jargon unless domain-specific and necessary
 - Spell out acronyms on first use
 - Use present tense: "returns" not "will return"
 - Keep paragraphs short (1–3 sentences)
-- Avoid filler words (“basically,” “in order to,” etc.)
+- Avoid filler words ("basically," "in order to," etc.)
 
 ### Build Validation
 - After editing docs, **run `npm run build docs/`**.
@@ -130,5 +145,4 @@ When you receive inline review comments to address:
 
 - The automation workflow will also detect the key (ABC-123) in the branch name or title and insert the correct link automatically.
 - Keep the Linear key in your branch name (docs/ABC-123-update-auth-docs) so the workflow can link it even if you forget to edit the body.
-- If the PR doesn’t relate to an existing Linear issue, include a short reason such as “Internal cleanup — no Linear ticket”.
-
+- If the PR doesn't relate to an existing Linear issue, include a short reason such as "Internal cleanup — no Linear ticket".
