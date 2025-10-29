@@ -42,7 +42,7 @@ def main():
     print(f"✅ Found {len(doclaude_comments)} review comment(s)")
 
     # Read documentation instructions
-    instructions_path = Path(".claude/instructions.md")
+    instructions_path = Path(".github/scripts/instructions.md")
     if instructions_path.exists():
         instructions = instructions_path.read_text()
         print(f"📖 Loaded instructions from {instructions_path}")
@@ -165,13 +165,15 @@ def apply_changes(claude_output):
         file_path = lines[0].strip()
         remaining = lines[1]
         
-        # Find the closing ``` that ends this file block
-        # Look for ``` at the start of a line, potentially followed by EOF or another ```file:
-        end_match = re.search(r'\n```\s*(?=\n|$)', remaining)
-        if not end_match:
+        # Find the LAST closing ``` that ends this file block
+        # We need to find all occurrences and take the last one
+        matches = list(re.finditer(r'\n```\s*$', remaining, re.MULTILINE))
+        if not matches:
             print(f"⚠️ Could not find closing backticks for file: {file_path}")
             continue
         
+        # Use the last match (the actual closing backticks of the file block)
+        end_match = matches[-1]
         file_content = remaining[:end_match.start() + 1]  # Include the final newline
         
         # Verify file exists
