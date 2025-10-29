@@ -37,7 +37,7 @@ const lastGroupLabels = new Map<string, string>(); // groupId -> label
 
 // Persistent client-side cache (localStorage) to keep positions, grouping, and refs
 // Include a layout signature so changes to Dagre spacing or node height invalidate old positions
-const CACHE_NS = `rill.resourceGraph.v1:ns${DAGRE_NODESEP}-rs${DAGRE_RANKSEP}-es${DAGRE_EDGESEP}-h${DEFAULT_NODE_HEIGHT}`;
+const CACHE_NS = `rill.resourceGraph.v1:ns${DAGRE_NODESEP}-rs${DAGRE_RANKSEP}-es${DAGRE_EDGESEP}-h${DEFAULT_NODE_HEIGHT}-mw${MAX_NODE_WIDTH}`;
 type PositionsCache = Record<string, { x: number; y: number }>;
 type AssignmentsCache = Record<string, string>;
 type LabelsCache = Record<string, string>;

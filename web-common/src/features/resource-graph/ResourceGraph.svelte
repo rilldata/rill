@@ -51,6 +51,7 @@
 
   // Expanded state (fills the graph-wrapper area, not fullscreen)
   let expandedGroup: ResourceGraphGrouping | null = null;
+  let rootEl: HTMLDivElement | null = null;
 
   // When the URL seeds change, re-open the first seeded graph in expanded view
   let lastSeedsSignature = "";
@@ -93,13 +94,18 @@
     <p>No resources found.</p>
   </div>
 {:else}
-  <div class="graph-root">
+  <div class="graph-root" bind:this={rootEl}>
     <div class={"graph-grid " + (expandedGroup ? 'blur-[1px] pointer-events-none' : '')}>
       {#each resourceGroups as group, index (group.id)}
         <ResourceGraphCanvas
           resources={group.resources}
           title={formatGroupTitle(group, index)}
-          on:expand={() => (expandedGroup = group)}
+          on:expand={() => {
+            expandedGroup = group;
+            // Scroll the scroll container and window to top so overlay is visible
+            try { rootEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+            try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+          }}
         />
       {/each}
     </div>
@@ -130,13 +136,13 @@
   }
 
   .graph-grid {
-    @apply grid gap-6;
+    @apply grid gap-4;
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
   @media (min-width: 1024px) {
     .graph-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 

@@ -113,6 +113,7 @@
   class:route-highlighted={routeHighlighted}
   class:error={hasError}
   style={`--node-accent:${color}`}
+  style:width={width ? `${width}px` : undefined}
   data-kind={kind}
   on:click={handleClick}
 >
@@ -240,7 +241,7 @@
   }
 
   .details {
-    @apply flex flex-col gap-y-0.5;
+    @apply flex flex-col gap-y-0.5 min-w-0;
   }
 
   .title {

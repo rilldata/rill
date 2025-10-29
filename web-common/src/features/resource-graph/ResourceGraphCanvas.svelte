@@ -28,7 +28,8 @@
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher<{ expand: void }>();
 
-  $: containerHeightClass = fillParent ? "h-full" : "h-[420px]";
+  // Shrink card height so 3x3 fits comfortably
+  $: containerHeightClass = fillParent ? "h-full" : "h-[260px]";
 
   const nodeTypes = {
     "resource-node": ResourceNode,
@@ -182,7 +183,10 @@
         nodeTypes={nodeTypes}
         proOptions={{ hideAttribution: true }}
         fitView
-        fitViewOptions={{ padding: 0.01, minZoom: 0.1, maxZoom: 1.25, duration: 200 }}
+        fitViewOptions={{ padding: 0.22, minZoom: 0.05, maxZoom: 1.25, duration: 200 }}
+        preventScrolling={fillParent}
+        zoomOnScroll={fillParent}
+        panOnScroll={false}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable
