@@ -40,6 +40,24 @@ var spec = drivers.Spec{
 			Placeholder: "Enter your AWS secret access key",
 			Secret:      true,
 		},
+		{
+			Key:         "region",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Region",
+			Description: "AWS Region for the bucket.",
+			Placeholder: "us-east-1",
+			Required:    false,
+			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
+		},
+		{
+			Key:         "endpoint",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Endpoint",
+			Description: "Override S3 endpoint URL",
+			Placeholder: "https://s3.example.com",
+			Required:    false,
+			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3 compatible services, such as Cloudflare R2 or MinIO.",
+		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{

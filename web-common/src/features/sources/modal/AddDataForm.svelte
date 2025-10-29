@@ -611,7 +611,7 @@
           >
             {#if connector.name === "gcs"}
               <GCSMultiStepForm
-                properties={filteredParamsProperties}
+                properties={stepProperties}
                 {paramsForm}
                 paramsErrors={$paramsErrors}
                 {onStringInputChange}
@@ -619,7 +619,7 @@
               />
             {:else if connector.name === "s3"}
               <S3MultiStepForm
-                properties={filteredParamsProperties}
+                properties={stepProperties}
                 {paramsForm}
                 paramsErrors={$paramsErrors}
                 {onStringInputChange}
