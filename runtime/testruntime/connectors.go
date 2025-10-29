@@ -348,6 +348,18 @@ var Connectors = map[string]ConnectorAcquireFunc{
 
 		return map[string]string{"dsn": dsn}
 	},
+	"openai": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+		apiKey := os.Getenv("RILL_RUNTIME_OPENAI_TEST_API_KEY")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"api_key": apiKey}
+	},
 }
 
 func uploadDirectory(ctx context.Context, client *azblob.Client, containerName, localDir string) error {

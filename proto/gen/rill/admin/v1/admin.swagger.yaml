@@ -4696,6 +4696,8 @@ definitions:
       data:
         type: string
         format: byte
+      urlSearch:
+        type: string
       resourceKind:
         type: string
       resourceName:
@@ -4730,6 +4732,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1Tool'
         title: Optional list of tools that the AI can use during completion
+      outputJsonSchema:
+        type: string
+        title: Optional output JSON schema
   v1CompleteResponse:
     type: object
     properties:
@@ -4794,9 +4799,8 @@ definitions:
         type: string
       description:
         type: string
-      data:
+      urlSearch:
         type: string
-        format: byte
       resourceKind:
         type: string
       resourceName:
@@ -6478,9 +6482,8 @@ definitions:
         type: string
       description:
         type: string
-      data:
+      urlSearch:
         type: string
-        format: byte
       default:
         type: boolean
       shared:
