@@ -114,6 +114,7 @@ export const timeControlStateSelector = ([
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   ExploreState,
 ]): TimeControlState => {
+  console.log({ exploreState });
   const hasTimeSeries = Boolean(metricsView?.timeDimension);
   if (
     !metricsView ||
