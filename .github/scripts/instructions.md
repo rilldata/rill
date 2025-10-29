@@ -146,3 +146,20 @@ Example checklist for data source docs:
 - The automation workflow will also detect the key (ABC-123) in the branch name or title and insert the correct link automatically.
 - Keep the Linear key in your branch name (docs/ABC-123-update-auth-docs) so the workflow can link it even if you forget to edit the body.
 - If the PR doesn't relate to an existing Linear issue, include a short reason such as "Internal cleanup — no Linear ticket".
+
+---
+
+<!-- Added from review comments - 2025-01-xx: Workflow file separation guidance -->
+## 🔧 Workflow and Automation Changes
+
+### Scope Separation
+- **Keep workflow changes in separate PRs** - Don't mix automation/workflow changes with documentation content changes
+- If you need to modify `.github/workflows/` files:
+  - Create a separate PR focused only on workflow changes
+  - Link the workflow PR to the documentation PR if they're related
+  - This allows independent review of automation logic vs. content
+  
+### Consolidation with Existing Workflows
+- Before creating new workflow files, check if similar functionality exists
+- Propose consolidation with existing workflows (e.g., `claude.yml`) when appropriate
+- Discuss in PR description if a new workflow is truly needed vs. extending an existing one
