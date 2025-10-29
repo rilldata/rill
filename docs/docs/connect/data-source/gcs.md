@@ -13,7 +13,7 @@ sidebar_position: 15
 
 ## Authentication Methods
 
-To connect to Google Cloud Storage, you need to provide authentication credentials. Rill supports three methods:
+To connect to Google Cloud Storage, you need to provide authentication credentials (or skip for public buckets). Rill supports three methods:
 
 1. **Use Service Account JSON** (recommended for production)
 2. **Use HMAC Keys** (alternative authentication method)
@@ -25,7 +25,7 @@ Choose the method that best fits your setup. For production deployments to Rill 
 
 When you add a GCS data model through the Rill UI, the process follows two steps:
 
-1. **Configure Authentication** - Set up your GCS connector with credentials (Service Account JSON or HMAC keys), or skip for public buckets
+1. **Configure Authentication** - Set up your GCS connector with credentials (Service Account JSON or HMAC keys)
 2. **Configure Data Model** - Define which bucket and objects to ingest
 
 This two-step flow ensures your credentials are securely stored in the connector configuration, while your data model references remain clean and portable.
@@ -85,12 +85,8 @@ refresh:
 connector.gcs.google_application_credentials='{"type":"service_account","project_id":"your-project",...}'
 ```
 
-### Creating a Service Account
-
-For detailed instructions on creating a Service Account, see the [Appendix](#how-to-create-a-service-account-using-the-google-cloud-console).
-
-:::warning
-Store your Service Account JSON key securely. It provides access to your GCS resources. Never commit it to version control.
+:::tip
+See the [Appendix](#how-to-create-a-service-account-using-the-google-cloud-console) for detailed instructions on creating a service account.
 :::
 
 ---
@@ -147,12 +143,8 @@ connector.gcs.key_id=GOOG1234567890ABCDEFG
 connector.gcs.secret=your-secret-access-key
 ```
 
-### Generating HMAC Keys
-
-For detailed instructions on generating HMAC keys, see the [Appendix](#generating-hmac-keys).
-
-:::warning
-Keep your HMAC keys secure and never commit them to version control.
+:::tip
+See the [Appendix](#how-to-generate-hmac-keys-using-the-google-cloud-console) for detailed instructions on generating HMAC keys.
 :::
 
 ---
@@ -168,14 +160,22 @@ For local development, you can use credentials from the Google Cloud CLI. This m
    ```bash
    gcloud auth application-default login
    ```
-3. Create your model file without a connector reference
+3. Create your model file referencing a connector without explicit credentials
 
-### Model Configuration
+### Configuration
+
+Create `connectors/my_gcs.yaml`:
+
+```yaml
+type: connector
+driver: gcs
+```
 
 Create `models/my_gcs_data.yaml`:
 
 ```yaml
 type: model
+connector: duckdb
 sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
 
 # Add a refresh schedule
@@ -183,7 +183,7 @@ refresh:
   cron: "0 */6 * * *"
 ```
 
-When no `connector` is specified and you're running locally, Rill will automatically use your local Google Cloud CLI credentials.
+When no explicit credentials are provided in the connector, Rill will automatically use your local Google Cloud CLI credentials.
 
 :::warning
 This method only works for local development. Deploying to Rill Cloud with this configuration will fail because the cloud environment doesn't have access to your local credentials. Always use Service Account JSON or HMAC keys for production deployments.
@@ -193,23 +193,25 @@ This method only works for local development. Deploying to Rill Cloud with this 
 
 ## Deploying to Rill Cloud
 
-When deploying your project to Rill Cloud, you must use either Service Account JSON or HMAC Keys. Local Google Cloud CLI credentials will not work in the cloud environment.
+When deploying your project to Rill Cloud, you must provide a JSON key file for a Google Cloud service account with appropriate read access/permissions to the buckets used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically. If you're using inferred credentials only, you'll need to configure explicit credentials to avoid deployment failures.
 
-### Setting Credentials for Deployment
-
-Use the `rill env configure` command to securely set your credentials:
+To configure your environment variables for deployment, run:
 
 ```bash
 rill env configure
 ```
 
-The CLI will interactively walk you through configuring all required connectors. You'll be prompted to enter the credential values securely. These are stored encrypted in Rill Cloud and injected at runtime.
+The CLI will interactively prompt you to configure credentials for all connectors in your project.
 
-Then deploy your project:
+Then deploy with:
 
 ```bash
 rill deploy
 ```
+
+:::tip Did you know?
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+:::
 
 ---
 
@@ -229,7 +231,7 @@ Here is a step-by-step guide on how to create a Google Cloud service account wit
 7. Choose the "JSON" key type and click "Create".
 8. Download and save the JSON key file to a secure location on your computer.
 
-### How to create a service account using the `gcloud` CLI
+### How to create a service account using the gcloud CLI
 
 1. Open a terminal window and follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) if you haven't already done so.
 2. You will need your Google Cloud project ID to complete this tutorial. Run the following command to show it:
@@ -260,9 +262,9 @@ Here is a step-by-step guide on how to create a Google Cloud service account wit
     ```
 6. You have now created a JSON key file named `rill-service-account.json` in your current working directory.
 
-### Generating HMAC Keys
+### How to generate HMAC keys using the Google Cloud Console
 
-You can generate HMAC keys through the Google Cloud Console or using the `gcloud` CLI.
+You can generate HMAC keys through the Google Cloud Console or using the `gcloud` CLI:
 
 **Using the Google Cloud Console:**
 
@@ -285,5 +287,9 @@ gcloud storage hmac list
 ```
 
 :::info
-HMAC keys use S3-compatible authentication. When using HMAC keys, GCS transparently handles the authentication in an S3-compatible mode.
+As an alternative, to ensure that you are running Rill with a specific service account, you can provide the key in the `rill start` command. This is useful when you have multiple profiles or may receive limited access to a bucket.
+
+```bash
+rill start --env key_id=<KEY> --env secret=<SECRET>
+```
 :::
