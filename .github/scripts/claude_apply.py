@@ -32,16 +32,31 @@ def main():
     print(f"📋 Processing PR #{PR_NUMBER}: {pr.title}")
 
     # Get all review comments (inline comments on code)
+    print("🔍 Fetching inline review comments from PR...")
+    
+    # Check reviews first
+    reviews = list(pr.get_reviews())
+    print(f"📊 Found {len(reviews)} review(s) on this PR:")
+    for review in reviews:
+        print(f"  - Review by {review.user.login}: {review.state} ({review.submitted_at})")
+    
+    # Get review comments (inline comments on code lines)
     review_comments = list(pr.get_review_comments())
+    
+    # Debug: Show what we found
+    print(f"\n📊 Found {len(review_comments)} inline review comment(s):")
+    for i, comment in enumerate(review_comments, 1):
+        print(f"  {i}. {comment.path}:{comment.line or comment.original_line or 'N/A'} - {comment.body[:60]}...")
     
     # Use all review comments
     doclaude_comments = review_comments
 
     if not doclaude_comments:
-        print("ℹ️ No review comments found in this PR")
+        print("⚠️ No inline review comments found in this PR")
+        print("ℹ️ Note: This fetches inline code review comments only, not general PR comments")
         sys.exit(0)
 
-    print(f"✅ Found {len(doclaude_comments)} review comment(s)")
+    print(f"\n✅ Processing {len(doclaude_comments)} inline review comment(s)")
 
     # Read documentation instructions
     instructions_path = Path(".github/scripts/instructions.md")
