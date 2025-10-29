@@ -37,7 +37,7 @@
   export let resource: { name: string; kind: ResourceKind };
   export let bookmark: BookmarkEntry | null = null;
   export let defaultUrlParams: URLSearchParams | undefined = undefined;
-  export let disableFiltersOnly: boolean;
+  export let showFiltersOnly: boolean = true;
   export let dashboardState: {
     metricsViewNames: string[];
     filtersState: FiltersState;
@@ -197,7 +197,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           tooltip={CategoryTooltip}
         />
       </ProjectAccessControls>
-      {#if !disableFiltersOnly}
+      {#if showFiltersOnly}
         <div class="flex items-center space-x-2">
           <Switch
             bind:checked={$form["filtersOnly"]}

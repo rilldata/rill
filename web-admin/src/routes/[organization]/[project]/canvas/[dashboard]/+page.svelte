@@ -8,15 +8,19 @@
     DashboardBannerID,
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import {
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
   import { writable } from "svelte/store";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -116,6 +120,12 @@
 
 {#if isCanvasReconcilingForFirstTime(canvasResource)}
   <DashboardBuilding />
-{:else if !$categorizedBookmarksStore.isPending}
+{:else if $categorizedBookmarksStore.isPending}
+  <CtaLayoutContainer>
+    <CtaContentContainer>
+      <Spinner status={EntityStatus.Running} size="32px" />
+    </CtaContentContainer>
+  </CtaLayoutContainer>
+{:else}
   <CanvasDashboardEmbed resource={canvasResource} {homeBookmarkUrlSearch} />
 {/if}

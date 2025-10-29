@@ -27,10 +27,14 @@
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
 
-  $: homeBookmarkUrl = homeBookmark?.fullUrl ?? defaultHomeBookmarkUrl ?? "";
-  $: cleanBookmarkUrl = homeBookmark?.url ?? defaultHomeBookmarkUrl ?? "";
+  // fullHomeBookmarkUrl contains every param where as homeBookmarkUrl will have params that are equal to rill defaults removed.
+  // EG: in explore if all dimensions are shown, fullHomeBookmarkUrl will have `dims=*` where as this will be skipped from homeBookmarkUrl
+  $: fullHomeBookmarkUrl =
+    homeBookmark?.fullUrl ?? defaultHomeBookmarkUrl ?? "";
+  $: homeBookmarkUrl = homeBookmark?.url ?? defaultHomeBookmarkUrl ?? "";
+  // Since we remove default params we need to check the current url with homeBookmarkUrl instead of fullHomeBookmarkUrl
   $: isHomeBookmarkActive =
-    cleanBookmarkUrl === $page.url.searchParams.toString();
+    homeBookmarkUrl === $page.url.searchParams.toString();
 
   function goToDashboardHome() {
     if (resourceKind === ResourceKind.Explore) {
@@ -71,7 +75,7 @@
       {:else}
         <DropdownMenuItem class="py-2">
           <a
-            href={homeBookmarkUrl}
+            href={fullHomeBookmarkUrl}
             on:click={goToDashboardHome}
             class="flex flex-row gap-x-2 w-full min-h-7"
             aria-label="Home Bookmark Entry"
@@ -110,7 +114,7 @@
         type="secondary"
         compact
         preload={false}
-        href={homeBookmarkUrl}
+        href={fullHomeBookmarkUrl}
         onClick={goToDashboardHome}
         class="border border-primary-300"
         builders={[builder]}

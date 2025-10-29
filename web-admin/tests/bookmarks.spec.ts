@@ -438,7 +438,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name IN ('Instacart','Leafly')`,
+          `tr=6h+as+of+latest%2Fh%2B1h&grain=hour&compare_tr=rill-PD&f=advertiser_name IN ('Instacart','Leafly')`,
         );
         // Assert filters applied
         await expect(
@@ -507,7 +507,7 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Last 24 hours")).toBeVisible();
         await expect(adminPage.getByText("No filters selected")).toBeVisible();
         // make sure the url has the correct params
-        assertUrlParams(adminPage, `tr=PT24H&compare_tr=rill-PD`);
+        assertUrlParams(adminPage, `compare_tr=rill-PD&tr=PT24H&grain=hour`);
         // Assert filters applied
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
@@ -563,8 +563,7 @@ test.describe("Bookmarks", () => {
         );
       });
 
-      // TODO: taking bookmark as default is not trivial in canvas. this will need some refactor
-      test.skip("Visiting dashboard with params should not apply home bookmark", async ({
+      test("Visiting dashboard with params should not apply home bookmark", async ({
         adminPage,
       }) => {
         // Add random params. Home bookmark shouldnt apply

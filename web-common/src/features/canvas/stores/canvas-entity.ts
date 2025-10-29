@@ -82,6 +82,8 @@ export class CanvasEntity {
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
+  defaultUrlParamsStore: Readable<URLSearchParams>;
+
   constructor(
     name: string,
     private instanceId: string,
@@ -188,6 +190,9 @@ export class CanvasEntity {
         this.processRows(spec.data);
       }
     });
+
+    // TODO: merge more stores once we add support for defaults for those.
+    this.defaultUrlParamsStore = this.timeControls.defaultUrlParamsStore;
   }
 
   // Not currently being used

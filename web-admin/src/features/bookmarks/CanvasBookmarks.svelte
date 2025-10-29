@@ -2,7 +2,6 @@
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import { getCanvasCategorisedBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
-  import { getCanvasDefaultUrlParams } from "@rilldata/web-common/features/canvas/stores/defaults.ts";
   import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -35,6 +34,7 @@
         comparisonRangeStateStore,
         selectedTimezone,
       },
+      defaultUrlParamsStore,
     },
   } = getCanvasStore(canvasName, instanceId));
 
@@ -59,7 +59,6 @@
   $: ({
     data: { bookmarks, categorizedBookmarks },
   } = $categorizedBookmarksStore);
-  const defaultUrlParamsStore = getCanvasDefaultUrlParams(canvasNameStore);
   $: defaultHomeBookmarkUrl = "?" + $defaultUrlParamsStore.toString();
 </script>
 
@@ -70,7 +69,7 @@
   bookmarkData={{
     bookmarks,
     categorizedBookmarks,
-    disableFiltersOnly: true,
+    showFiltersOnly: false,
     defaultHomeBookmarkUrl,
   }}
   dashboardState={{

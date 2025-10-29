@@ -1,5 +1,6 @@
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+  import { unorderedParamsAreEqual } from "@rilldata/web-common/lib/url-utils.ts";
   import { onDestroy, onMount } from "svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
@@ -16,21 +17,32 @@
   export let homeBookmarkUrlSearch: string | undefined = undefined;
   export let onClick: () => void = () => {};
 
-  onMount(async () => {
-    await restoreSnapshot(homeBookmarkUrlSearch);
-  });
-
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
 
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { saveSnapshot, restoreSnapshot, themeSpec },
+    canvasEntity: {
+      saveSnapshot,
+      restoreSnapshot,
+      themeSpec,
+      defaultUrlParamsStore,
+    },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ width: clientWidth } = contentRect);
 
   $: updateThemeVariables($themeSpec);
+
+  onMount(async () => {
+    const shouldLoadHomeBookmark = unorderedParamsAreEqual(
+      $page.url.searchParams,
+      $defaultUrlParamsStore,
+    );
+    await restoreSnapshot(
+      shouldLoadHomeBookmark ? homeBookmarkUrlSearch : undefined,
+    );
+  });
 
   onDestroy(() => {
     saveSnapshot($page.url.searchParams.toString());
