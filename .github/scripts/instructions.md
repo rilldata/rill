@@ -70,6 +70,10 @@ When you receive inline review comments to address:
   - Advanced troubleshooting details
 - Keep main body focused on the primary/recommended approach
 - Structure: Introduction → Main content → Common use cases → Appendix
+- **Appendix header formatting**: Use consistent title format across all appendix sections
+  - Format: `### How to [action using specific tool/interface]`
+  - Example: `### How to create a service account using the Google Cloud Console`
+  - Maintain parallel structure for all appendix headings in a document
 
 ### Terminology Standards (Updated from Review Comments)
 
@@ -118,16 +122,24 @@ When you receive inline review comments to address:
   - Always verify property names against `runtime/parser/*` connector definitions
 
 - ✅ **SQL vs path property**:
-  - Use `sql:` property with DuckDB table functions (recommended, `path:` is deprecated)
-  - WRONG: `path: gs://bucket/file.parquet`
+  - Use `sql:` property with DuckDB table functions (this is the correct, non-deprecated way)
+  - WRONG: `path: gs://bucket/file.parquet` (deprecated)
   - RIGHT: `sql: SELECT * FROM read_parquet('gs://bucket/file.parquet')`
-  - The `sql:` approach is not optional—it's the correct, non-deprecated way
+  - The `sql:` approach is required, not optional
+  - Never mark `sql:` usage as "optional" in comments or documentation
 
 - ✅ **Environment variable naming**:
   - Format: `connector.<connector-name>.<property>`
   - Example: `connector.gcs.key_id=<value>`
   - Example: `connector.gcs.secret=<value>`
   - Not: `gcs_key_id` or other variations
+
+<!-- Added from PR review - 2025-01-xx: Authentication requirements and public access -->
+- ✅ **Authentication optionality**:
+  - Some cloud storage services support public bucket access
+  - When authentication is optional (e.g., for public buckets), clearly indicate this
+  - Example: "Authentication (or skip for public buckets)"
+  - Don't imply authentication is always required when public access is possible
 
 ### Code Examples
 - Always include working, runnable examples
@@ -159,7 +171,7 @@ Example checklist for data source docs:
 - Spell out acronyms on first use
 - Use present tense: "returns" not "will return"
 - Keep paragraphs short (1–3 sentences)
-- Avoid filler words ("basically," "in order to," etc.)
+- Avoid filler words ("basically," "in order to," etc.")
 
 <!-- Added from PR review - 2025-01-xx: Deployment documentation standards -->
 ### Deployment Instructions
@@ -267,3 +279,33 @@ Example checklist for data source docs:
 - When in doubt, add to existing content rather than replacing it
 - Mark alternative or advanced patterns appropriately with inline comments, don't remove them
 - If replacing overview or introduction text, verify your version is actually clearer and more accurate
+
+<!-- Added from PR review - 2025-01-xx: Overview content positioning -->
+### Overview Section Placement
+
+**Critical: Overview content must appear at the top of documentation pages**
+
+- ✅ **Overview position**: The overview/introduction explaining what the service is should be the **first content** after the page title
+  - WRONG: Starting with configuration steps or authentication details
+  - RIGHT: Service description → Authentication → Configuration
+  - Review comments like "return this to the top of the page" indicate overview was moved incorrectly
+
+- ✅ **Overview content quality**: 
+  - If reviewer says "replace this with the current 'overview' it was better", use the original text
+  - Don't replace specific, accurate service descriptions with generic text
+  - Keep technical details that help users understand what the service does
+
+**Example structure:**
+```markdown
+# Service Name
+
+[Overview paragraph explaining what the service is and its key features]
+
+## Authentication
+
+[Authentication methods and setup]
+
+## Configuration
+
+[Configuration details]
+```
