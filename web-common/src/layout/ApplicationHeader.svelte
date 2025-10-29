@@ -115,15 +115,6 @@
     {/if}
   {/if}
 
-  <Button
-      type="secondary"
-      label="View Graph"
-      href="/graph"
-      class="graph-button"
-    >
-      View Graph
-    </Button>
-
   <div class="ml-auto flex gap-x-2 h-full w-fit items-center py-2">
     {#if mode === "Preview"}
       {#if route.id?.includes("explore")}
@@ -132,6 +123,14 @@
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {/if}
+    <Button
+      type="secondary"
+      label="View Graph"
+      href="/graph"
+      class="graph-button"
+    >
+      View Graph
+    </Button>
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}

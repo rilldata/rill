@@ -37,8 +37,8 @@
   const edgeOptions = {
     type: "smoothstep",
     style: "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;",
-    // Increase offset so edges run in a clearer plane outside node bounds
-    pathOptions: { offset: 48, borderRadius: 8 },
+    // Small offset so edges clear nodes slightly
+    pathOptions: { offset: 3, borderRadius: 4 },
   } as const;
 
   const HIGHLIGHT_EDGE_STYLE = "stroke:#3b82f6;stroke-width:2px;opacity:1;";
@@ -182,7 +182,7 @@
         nodeTypes={nodeTypes}
         proOptions={{ hideAttribution: true }}
         fitView
-        fitViewOptions={{ padding: 0.2, minZoom: 0.1, maxZoom: 1.25, duration: 200 }}
+        fitViewOptions={{ padding: 0.01, minZoom: 0.1, maxZoom: 1.25, duration: 200 }}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable

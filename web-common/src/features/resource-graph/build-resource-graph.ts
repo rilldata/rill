@@ -11,7 +11,13 @@ import type { ResourceNodeData } from "./types";
 
 const MIN_NODE_WIDTH = 160;
 const MAX_NODE_WIDTH = 320;
-const DEFAULT_NODE_HEIGHT = 72;
+const DEFAULT_NODE_HEIGHT = 56;
+
+// Centralize Dagre spacing so we can version the cache against it
+// Increase both horizontal and vertical spacing by 1.5x
+const DAGRE_NODESEP = 27; // was 18
+const DAGRE_RANKSEP = 72; // was 48
+const DAGRE_EDGESEP = 4;
 // Softer, less intrusive edges
 const DEFAULT_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;";
 const ALLOWED_KINDS = new Set<ResourceKind>([
@@ -30,7 +36,8 @@ const lastGroupAssignments = new Map<string, string>(); // resourceId -> groupId
 const lastGroupLabels = new Map<string, string>(); // groupId -> label
 
 // Persistent client-side cache (localStorage) to keep positions, grouping, and refs
-const CACHE_NS = "rill.resourceGraph.v1";
+// Include a layout signature so changes to Dagre spacing or node height invalidate old positions
+const CACHE_NS = `rill.resourceGraph.v1:ns${DAGRE_NODESEP}-rs${DAGRE_RANKSEP}-es${DAGRE_EDGESEP}-h${DEFAULT_NODE_HEIGHT}`;
 type PositionsCache = Record<string, { x: number; y: number }>;
 type AssignmentsCache = Record<string, string>;
 type LabelsCache = Record<string, string>;
@@ -155,10 +162,10 @@ export function buildResourceGraph(resources: V1Resource[]) {
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setGraph({
     rankdir: "TB",
-    // Tighter columns, moderate vertical spacing
-    nodesep: 80,
-    ranksep: 160,
-    edgesep: 80,
+    // Extreme compactness; overlaps allowed
+    nodesep: DAGRE_NODESEP,
+    ranksep: DAGRE_RANKSEP,
+    edgesep: DAGRE_EDGESEP,
     ranker: "tight-tree",
     acyclicer: "greedy",
   });
