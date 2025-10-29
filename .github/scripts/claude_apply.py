@@ -177,45 +177,102 @@ def resolve_review_comments(comments, pr):
 def resolve_comments_graphql(comments):
     """Use GitHub GraphQL API to resolve review threads."""
     
-    # Get the node_id for each comment and resolve it
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Content-Type": "application/json"
     }
     
-    resolved_count = 0
+    # Group comments by pull request review thread
+    # We need to get the thread ID for each comment
+    resolved_threads = set()
+    
     for comment in comments:
-        # Get the node_id (GraphQL ID) from the comment
-        node_id = comment.raw_data.get('node_id')
-        if not node_id:
+        # Get the comment's node_id
+        comment_node_id = comment.raw_data.get('node_id')
+        if not comment_node_id:
             continue
         
-        # GraphQL mutation to resolve the review thread
-        query = """
+        # First, query to get the pull request review thread for this comment
+        query_thread = """
+        query($commentId: ID!) {
+          node(id: $commentId) {
+            ... on PullRequestReviewComment {
+              pullRequestReview {
+                id
+              }
+              pullRequest {
+                reviewThreads(first: 100) {
+                  nodes {
+                    id
+                    isResolved
+                    comments(first: 1) {
+                      nodes {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        """
+        
+        response = requests.post(
+            "https://api.github.com/graphql",
+            headers=headers,
+            json={"query": query_thread, "variables": {"commentId": comment_node_id}}
+        )
+        
+        if response.status_code != 200:
+            print(f"⚠️ Could not fetch thread for comment {comment.id}")
+            continue
+        
+        data = response.json()
+        
+        # Find the thread containing this comment
+        review_threads = data.get('data', {}).get('node', {}).get('pullRequest', {}).get('reviewThreads', {}).get('nodes', [])
+        
+        thread_id = None
+        for thread in review_threads:
+            if thread.get('isResolved'):
+                continue  # Skip already resolved threads
+            thread_comments = thread.get('comments', {}).get('nodes', [])
+            if any(tc.get('id') == comment_node_id for tc in thread_comments):
+                thread_id = thread.get('id')
+                break
+        
+        if not thread_id or thread_id in resolved_threads:
+            continue
+        
+        # Now resolve the thread
+        resolve_mutation = """
         mutation($threadId: ID!) {
           resolveReviewThread(input: {threadId: $threadId}) {
             thread {
+              id
               isResolved
             }
           }
         }
         """
         
-        variables = {"threadId": node_id}
-        
         response = requests.post(
             "https://api.github.com/graphql",
             headers=headers,
-            json={"query": query, "variables": variables}
+            json={"query": resolve_mutation, "variables": {"threadId": thread_id}}
         )
         
         if response.status_code == 200:
-            resolved_count += 1
+            result = response.json()
+            if not result.get('errors'):
+                resolved_threads.add(thread_id)
+                print(f"✅ Resolved thread for comment on {comment.path}")
         else:
-            print(f"⚠️ GraphQL resolve failed for comment {comment.id}: {response.text}")
+            print(f"⚠️ GraphQL resolve failed: {response.text}")
     
-    if resolved_count > 0:
-        print(f"✅ Resolved {resolved_count} review thread(s) via GraphQL")
+    if len(resolved_threads) > 0:
+        print(f"\n✅ Resolved {len(resolved_threads)} review thread(s) via GraphQL")
 
 def apply_changes(claude_output):
     """Parse Claude's output and write file changes."""
