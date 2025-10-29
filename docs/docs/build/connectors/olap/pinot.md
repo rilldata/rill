@@ -7,7 +7,7 @@ sidebar_position: 20
 
 [Apache Pinot](https://docs.pinot.apache.org/) is a real-time distributed OLAP datastore purpose-built for low-latency, high-throughput analytics, and is perfect for user-facing analytical workloads.
 
-Rill supports connecting to an existing Pinot cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/connect/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing Pinot cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 
 ## Configuring Rill Developer with Pinot
@@ -36,7 +36,7 @@ If you are facing issues related to DSN connection errors in your dashboards eve
 
 Rill connects to Pinot using the [Pinot Golang Client](https://docs.pinot.apache.org/users/clients/golang) and requires a connection string of the following format: `http://<user>:<password>@<broker_host>:<port>?controller=<controller_host>:<port>`. If `user` or `password` contain special characters, they should be URL encoded (i.e., `p@ssword` -> `p%40ssword`). This should be set in the `connector.pinot.dsn` property in Rill.
 
-<img src='/img/connect/olap-engines/pinot/pinot-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
+<img src='/img/build/connectors/olap-engines/pinot/pinot-dsn.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
 
 As an example, this typically looks like:
 
@@ -60,7 +60,7 @@ olap_connector: pinot
 
 :::info Interested in using multiple OLAP engines in the same project?
 
-Please see our [Using Multiple OLAP Engines](/connect/olap/multiple-olap) page.
+Please see our [Using Multiple OLAP Engines](/build/connectors/olap/multiple-olap) page.
 
 :::
 

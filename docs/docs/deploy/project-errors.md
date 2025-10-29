@@ -10,7 +10,7 @@ sidebar_position: 25
 Rill projects can go into an error state for many reasons, such as a malformed YAML file, missing credentials for a connector, or a breaking change in a data type.
 Regardless of the error, Rill Cloud takes various steps to surface, manage, and contain errors:
 
-- **Visibility:** Admins will always be able to view the project status at the individual resource level within Rill Cloud using the `Status` tab or by using the [rill project status](/reference/cli/project/status.md) CLI command.
+- **Visibility:** Admins will always be able to view the project status at the individual resource level within Rill Cloud using the `Status` tab or by using the [rill project status](/reference/cli/project/status) CLI command.
 - **Isolation:** Rill Cloud will handle errors at the individual resource level. For example, if a dashboard falls into an error state or fails to reconcile, all other dashboards should remain available. 
 - **Fallback:** Rill Cloud will attempt to fall back to the most recent valid state when possible. For example, if the underlying model for a dashboard fails to build, the dashboard will keep serving from the most recent valid state.
 
@@ -20,7 +20,7 @@ To help you quickly identify and fix errors, you can configure a Rill alert that
 
 :::tip Want to learn more about alerts?
 
-Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/explore/alerts/alerts.md)!
+Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/explore/alerts)!
 
 :::
 
@@ -49,13 +49,13 @@ notify:
 
 :::info Don't forget to commit your changes!
 
-After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101.md#pushing-changes) to your git repository.
+After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
 :::
 
 ### Configure a Slack alert
 
-To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](../explore/alerts/slack.md). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
+To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](../explore/alerts/slack). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
 
 ```yaml
 type: alert
@@ -79,6 +79,6 @@ notify:
 
 :::info Don't forget to commit your changes!
 
-After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101.md#pushing-changes) to your git repository.
+After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
 :::

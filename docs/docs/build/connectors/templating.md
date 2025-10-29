@@ -19,7 +19,7 @@ Unless explicitly defined, Rill Developer will use a `dev` environment. If you w
 
 ## Setting Up Environmental Variables
 
-You can set up environmental variables in several locations in Rill. Please review our [configure local credentials documentation](/connect/credentials#setting-credentials-for-rill-developer) for more information.
+You can set up environmental variables in several locations in Rill. Please review our [configure local credentials documentation](/build/connectors/credentials#setting-credentials-for-rill-developer) for more information.
 
 ## Environment-Specific Connectors
 
