@@ -418,3 +418,7 @@ func (u *URLs) OAuthAuthorize() string {
 func (u *URLs) OAuthToken() string {
 	return urlutil.MustJoinURL(u.External(), "/auth/oauth/token")
 }
+
+func (u *URLs) OAuthJWKS() string {
+	return urlutil.MustJoinURL(u.External(), ".well-known/jwks.json")
+}

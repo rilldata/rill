@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/pingcap/log"
 	"go.uber.org/zap"
 	"net/http"
 	"net/url"
@@ -154,7 +153,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
 		return
 	}
-	log.Info("Exchanged authorization code for access token", zap.String("userID", userID), zap.String("clientID", clientID))
+	a.logger.Debug("Exchanged authorization code for access token", zap.String("userID", userID), zap.String("clientID", clientID))
 }
 
 // verifyCodeChallenge validates the code verifier with the stored code challenge

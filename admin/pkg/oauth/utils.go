@@ -29,7 +29,7 @@ type ProtectedResourceMetadata struct {
 }
 
 // AuthorizationServerMetadata contains OAuth 2.0 Authorization Server Metadata as per RFC 8414
-// See: https://www.rfc-editor.org/rfc/rfc8414.html
+// See: https://www.rfc-editor.org/rfc/rfc8414.html#section-2
 type AuthorizationServerMetadata struct {
 	// Issuer is the authorization server's issuer identifier URL
 	Issuer string `json:"issuer"`
@@ -39,6 +39,8 @@ type AuthorizationServerMetadata struct {
 	TokenEndpoint string `json:"token_endpoint"`
 	// RegistrationEndpoint is the URL of the authorization server's dynamic client registration endpoint
 	RegistrationEndpoint string `json:"registration_endpoint,omitempty"`
+	// JWKSURI is the URL of the authorization server's JSON Web Key Set document
+	JWKSURI string `json:"jwks_uri,omitempty"`
 	// ScopesSupported is an array of the OAuth 2.0 scope values that this authorization server supports
 	ScopesSupported []string `json:"scopes_supported,omitempty"`
 	// ResponseTypesSupported is an array of the OAuth 2.0 response_type values that this authorization server supports
@@ -70,10 +72,6 @@ type ClientRegistrationRequest struct {
 	ClientName string `json:"client_name,omitempty"`
 	// ClientURI is a URL of the home page of the client
 	ClientURI string `json:"client_uri,omitempty"`
-	// SoftwareID is a unique identifier for the client software
-	SoftwareID string `json:"software_id,omitempty"`
-	// SoftwareVersion is the version of the client software
-	SoftwareVersion string `json:"software_version,omitempty"`
 }
 
 // ClientRegistrationResponse contains the OAuth 2.0 Dynamic Client Registration response as per RFC 7591
@@ -95,8 +93,4 @@ type ClientRegistrationResponse struct {
 	ResponseTypes []string `json:"response_types,omitempty"`
 	// ClientURI is a URL of the home page of the client
 	ClientURI string `json:"client_uri,omitempty"`
-	// SoftwareID is a unique identifier for the client software
-	SoftwareID string `json:"software_id,omitempty"`
-	// SoftwareVersion is the version of the client software
-	SoftwareVersion string `json:"software_version,omitempty"`
 }

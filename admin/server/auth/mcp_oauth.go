@@ -6,7 +6,6 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/rilldata/rill/admin/pkg/oauth"
 )
@@ -40,6 +39,7 @@ func (a *Authenticator) handleOAuthAuthorizationServerMetadata(w http.ResponseWr
 		AuthorizationEndpoint: a.admin.URLs.OAuthAuthorize(),
 		TokenEndpoint:         a.admin.URLs.OAuthToken(),
 		RegistrationEndpoint:  a.admin.URLs.OAuthRegister(),
+		JWKSURI:               a.admin.URLs.OAuthJWKS(),
 		ResponseTypesSupported: []string{
 			"code", // Authorization code flow
 		},
@@ -88,9 +88,6 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Log the request for debugging
-	a.admin.Logger.Info("OAuth client registration request", zap.String("body", string(body)), zap.String("redirect_uris", strings.Join(req.RedirectURIs, ", ")))
-
 	// Use client_name if provided, otherwise use a default name
 	displayName := req.ClientName
 	if displayName == "" {
@@ -120,8 +117,6 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		GrantTypes:              req.GrantTypes,
 		ResponseTypes:           req.ResponseTypes,
 		ClientURI:               req.ClientURI,
-		SoftwareID:              req.SoftwareID,
-		SoftwareVersion:         req.SoftwareVersion,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -130,4 +125,6 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		internalServerError(w, fmt.Errorf("failed to encode response: %w", err))
 		return
 	}
+
+	a.logger.Info("Registered new OAuth client", zap.String("client_id", client.ID), zap.String("client_name", displayName))
 }

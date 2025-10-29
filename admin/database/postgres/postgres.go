@@ -10,8 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/pingcap/log"
-	"go.uber.org/zap"
 	"io"
 	"strings"
 	"time"
@@ -1119,7 +1117,6 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 	if err != nil {
 		return nil, parseErr("auth token", err)
 	}
-	log.Info("Inserted user auth token", zap.String("token_id", res.ID), zap.String("user_id", res.UserID))
 	return res, nil
 }
 
@@ -1674,13 +1671,11 @@ func (c *connection) InsertAuthorizationCode(ctx context.Context, code, userID, 
 	if err != nil {
 		return nil, parseErr("authorization code", err)
 	}
-	log.Info("Inserted authorization code:", zap.String("id", res.ID), zap.String("code", res.Code), zap.String("client_id", res.ClientID), zap.String("user_id", res.UserID), zap.String("redirect_uri", res.RedirectURI))
 	return res, nil
 }
 
 func (c *connection) DeleteAuthorizationCode(ctx context.Context, code string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM authorization_codes WHERE code=$1", code)
-	log.Info("Deleted authorization code:", zap.String("code", code))
 	return checkDeleteRow("authorization code", res, err)
 }
 

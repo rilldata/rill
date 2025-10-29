@@ -3,8 +3,6 @@ package server
 import (
 	"bufio"
 	"fmt"
-	"github.com/pingcap/log"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/url"
@@ -63,8 +61,6 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			jwt = strings.TrimSpace(authorizationHeader[6:])
 		}
 	}
-
-	log.Info("claims in runtime proxy", zap.String("owner_type", string(claims.OwnerType())), zap.String("owner_id", claims.OwnerID()), zap.String("token_id", claims.AuthTokenID()))
 	// If a direct JWT was not provided, we rely on admin service auth to issue a new ephemeral runtime JWT for the proxied request.
 	// TODO: This mirrors logic in GetProject. Consider refactoring to avoid duplication.
 	if jwt == "" {
@@ -74,8 +70,10 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			permissions.ReadProd = true
 		}
 		if !permissions.ReadProd {
-			log.Info("denying runtime proxy access due to insufficient permissions", zap.String("deployment_id", depl.ID), zap.String("owner_type", string(claims.OwnerType())), zap.String("owner_id", claims.OwnerID()))
-			w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata()))
+			if claims.OwnerType() == auth.OwnerTypeAnon {
+				// This means no token was provided, so initiate an OAuth flow
+				w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata()))
+			}
 			return httputil.Errorf(http.StatusUnauthorized, "does not have permission to access the production deployment")
 		}
 
@@ -216,6 +214,5 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	log.Info("proxied request to runtime", zap.String("org", org), zap.String("project", project), zap.String("deployment_id", depl.ID), zap.String("proxy_url", proxyURL.String()), zap.Int("response_status", res.StatusCode))
 	return nil
 }
