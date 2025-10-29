@@ -1,0 +1,133 @@
+package auth
+
+import (
+	"encoding/json"
+	"fmt"
+	"go.uber.org/zap"
+	"io"
+	"net/http"
+	"strings"
+
+	"github.com/rilldata/rill/admin/pkg/oauth"
+)
+
+// handleOAuthProtectedResourceMetadata serves the OAuth 2.0 Protected Resource Metadata
+// as per RFC 8414 and MCP OAuth specification.
+// This endpoint helps MCP clients discover the authorization server for this protected resource.
+func (a *Authenticator) handleOAuthProtectedResourceMetadata(w http.ResponseWriter, r *http.Request) {
+	metadata := oauth.ProtectedResourceMetadata{
+		Resource:             a.admin.URLs.External(),
+		AuthorizationServers: []string{a.admin.URLs.External()},
+		BearerMethodsSupported: []string{
+			"header", // Authorization: Bearer <token>
+		},
+		ResourceDocumentation: "https://docs.rilldata.com",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(metadata); err != nil {
+		internalServerError(w, fmt.Errorf("failed to encode metadata: %w", err))
+		return
+	}
+}
+
+// handleOAuthAuthorizationServerMetadata serves the OAuth 2.0 Authorization Server Metadata
+// as per RFC 8414. This endpoint provides information about the OAuth 2.0 authorization server
+// including supported flows, endpoints, and capabilities.
+func (a *Authenticator) handleOAuthAuthorizationServerMetadata(w http.ResponseWriter, r *http.Request) {
+	metadata := oauth.AuthorizationServerMetadata{
+		Issuer:                a.admin.URLs.External(),
+		AuthorizationEndpoint: a.admin.URLs.OAuthAuthorize(),
+		TokenEndpoint:         a.admin.URLs.OAuthToken(),
+		RegistrationEndpoint:  a.admin.URLs.OAuthRegister(),
+		ResponseTypesSupported: []string{
+			"code", // Authorization code flow
+		},
+		ResponseModesSupported: []string{
+			"query", // Response parameters in query string
+		},
+		GrantTypesSupported: []string{
+			"authorization_code",                           // Authorization code grant
+			"urn:ietf:params:oauth:grant-type:device_code", // Device code grant
+		},
+		TokenEndpointAuthMethodsSupported: []string{
+			"none", // Public clients (PKCE)
+		},
+		CodeChallengeMethodsSupported: []string{
+			"S256", // SHA-256 based PKCE
+		},
+		ServiceDocumentation: "https://docs.rilldata.com",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(metadata); err != nil {
+		internalServerError(w, fmt.Errorf("failed to encode metadata: %w", err))
+		return
+	}
+}
+
+// handleOAuthRegister handles OAuth 2.0 Dynamic Client Registration as per RFC 7591.
+// This endpoint allows MCP clients like Claude Desktop or ChatGPT Desktop to dynamically
+// register and obtain a client_id for use in OAuth flows.
+func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected a POST request", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse request body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
+		return
+	}
+
+	var req oauth.ClientRegistrationRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		http.Error(w, "invalid JSON in request body", http.StatusBadRequest)
+		return
+	}
+
+	// Log the request for debugging
+	a.admin.Logger.Info("OAuth client registration request", zap.String("body", string(body)), zap.String("redirect_uris", strings.Join(req.RedirectURIs, ", ")))
+
+	// Use client_name if provided, otherwise use a default name
+	displayName := req.ClientName
+	if displayName == "" {
+		displayName = "MCP Client"
+	}
+
+	// Validate redirect_uris - at least one is required for OAuth flows
+	if len(req.RedirectURIs) == 0 {
+		http.Error(w, "at least one redirect_uri is required", http.StatusBadRequest)
+		return
+	}
+
+	// Create a new auth client in the database
+	client, err := a.admin.DB.InsertAuthClient(r.Context(), displayName)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to create auth client: %w", err))
+		return
+	}
+
+	// Build response - echo back the client's registration metadata as per RFC 7591
+	resp := oauth.ClientRegistrationResponse{
+		ClientID:                client.ID,
+		ClientName:              client.DisplayName,
+		ClientIDIssuedAt:        client.CreatedOn.Unix(),
+		RedirectURIs:            req.RedirectURIs,
+		TokenEndpointAuthMethod: req.TokenEndpointAuthMethod,
+		GrantTypes:              req.GrantTypes,
+		ResponseTypes:           req.ResponseTypes,
+		ClientURI:               req.ClientURI,
+		SoftwareID:              req.SoftwareID,
+		SoftwareVersion:         req.SoftwareVersion,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		internalServerError(w, fmt.Errorf("failed to encode response: %w", err))
+		return
+	}
+}

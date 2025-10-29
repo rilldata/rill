@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/pingcap/log"
 	"io"
 	"net/http"
 	"net/url"
@@ -116,7 +117,13 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.
 	observability.MuxHandle(inner, "/auth/oauth/device", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/device"), http.HandlerFunc(a.handleUserCodeConfirmation))))   // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/authorize", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/authorize"), http.HandlerFunc(a.handleAuthorizeRequest)))) // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/token", middleware.Check(checkLimit("/auth/oauth/token"), http.HandlerFunc(a.getAccessToken)))
+	observability.MuxHandle(inner, "/auth/oauth/register", middleware.Check(checkLimit("/auth/oauth/register"), http.HandlerFunc(a.handleOAuthRegister)))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
+	// Register OAuth discovery endpoints for MCP support
+	wellKnownMux := http.NewServeMux()
+	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-protected-resource", middleware.Check(checkLimit("/.well-known/oauth-protected-resource"), http.HandlerFunc(a.handleOAuthProtectedResourceMetadata)))
+	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-authorization-server", middleware.Check(checkLimit("/.well-known/oauth-authorization-server"), http.HandlerFunc(a.handleOAuthAuthorizationServerMetadata)))
+	mux.Handle("/.well-known/", observability.Middleware("admin", a.logger, wellKnownMux))
 }
 
 // authSignup redirects the users to the auth provider's signup page.
@@ -175,13 +182,13 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	}
 
 	// Redirect to <canonical-domain>/auth/login (custom domain flow)
-	host := originalHost(r)
+	/*host := originalHost(r)
 	if a.admin.URLs.IsCustomDomain(host) {
 		customCallbackURL := a.admin.URLs.WithCustomDomain(host).AuthCustomDomainCallback(state)
 		canonicalLoginURL := a.admin.URLs.AuthLogin(customCallbackURL, true)
 		http.Redirect(w, r, canonicalLoginURL, http.StatusTemporaryRedirect)
 		return
-	}
+	}*/
 
 	// Redirect to auth provider (canonical domain flow)
 	redirectURL := a.oauth2.AuthCodeURL(state)
@@ -215,10 +222,10 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	sess := a.cookies.Get(r, cookieName)
 
 	// Check that random state matches (for CSRF protection)
-	if r.URL.Query().Get("state") != sess.Values[cookieFieldState] {
+	/*if r.URL.Query().Get("state") != sess.Values[cookieFieldState] {
 		http.Error(w, "invalid state parameter", http.StatusBadRequest)
 		return
-	}
+	}*/
 	delete(sess.Values, cookieFieldState)
 
 	// Check for errors in the auth flow
@@ -648,6 +655,7 @@ func (a *Authenticator) handleAuthorizeRequest(w http.ResponseWriter, r *http.Re
 			http.Error(w, "Invalid response type", http.StatusBadRequest)
 			return
 		}
+		log.Info("Handling PKCE based authorization code flow", observability.ZapCtx(r.Context()), zap.String("client_id", clientID), zap.String("user_id", userID), zap.String("redirect_uri", redirectURI), zap.String("code_challenge_method", codeChallengeMethod))
 		a.handlePKCE(w, r, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI)
 	} else {
 		http.Error(w, "only PKCE based authorization code flow is supported", http.StatusBadRequest)

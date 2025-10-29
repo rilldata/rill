@@ -210,6 +210,8 @@ type DB interface {
 	DeleteAuthorizationCode(ctx context.Context, code string) error
 	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
 
+	InsertAuthClient(ctx context.Context, displayName string) (*AuthClient, error)
+
 	FindOrganizationRoles(ctx context.Context) ([]*OrganizationRole, error)
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRoles(ctx context.Context) ([]*ProjectRole, error)
@@ -837,7 +839,7 @@ type InsertNotificationTokenOptions struct {
 // AuthClient is a client that requests and consumes auth tokens.
 type AuthClient struct {
 	ID          string
-	DisplayName string
+	DisplayName string    `db:"display_name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
 }

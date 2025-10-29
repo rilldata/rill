@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 	"time"
@@ -122,8 +124,10 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
+	// ttl of 10 years
+	ttl := 10 * 365 * 24 * time.Hour
 	// Issue an access token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, nil)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, &ttl)
 	if err != nil {
 		if errors.Is(err, r.Context().Err()) {
 			http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
@@ -136,7 +140,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	resp := oauth.TokenResponse{
 		AccessToken: authToken.Token().String(),
 		TokenType:   "Bearer",
-		ExpiresIn:   0, // never expires
+		ExpiresIn:   int64(ttl.Seconds()),
 		UserID:      userID,
 	}
 	respBytes, err := json.Marshal(resp)
@@ -150,6 +154,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
 		return
 	}
+	log.Info("Exchanged authorization code for access token", zap.String("userID", userID), zap.String("clientID", clientID))
 }
 
 // verifyCodeChallenge validates the code verifier with the stored code challenge
