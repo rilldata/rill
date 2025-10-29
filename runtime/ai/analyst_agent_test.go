@@ -85,7 +85,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 
 		// It should make two sub-calls: get_metrics_view
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
-			Prompt: "Tell me about the auction metrics",
+			Prompt: "Tell me about the auction metrics (but don't query the data)",
 		})
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
@@ -94,7 +94,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 
 		// It should make two sub-calls: get_metrics_view
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
-			Prompt: "Now tell me about the other dataset",
+			Prompt: "Now tell me about the other dataset (but don't query the data)",
 		})
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
@@ -103,7 +103,7 @@ func TestAnalystOpenRTB(t *testing.T) {
 
 		// It should remember the previous turns and only make one sub-call: query_metrics_view_summary and query_metrics_view
 		res, err = s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
-			Prompt: "Tell me which non-US country has the most activity",
+			Prompt: "Tell me which non-US country has the most auctions",
 		})
 		require.NoError(t, err)
 		calls = s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
