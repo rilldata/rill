@@ -59,6 +59,18 @@ When you receive inline review comments to address:
   - Follow best practices and dont put raw text in the examples for connectors and instead reference the `.env` 
     - IE `google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"`
 
+<!-- Added from PR review - 2025-01-xx: Document structure organization -->
+### Document Organization
+
+**Appendix sections:**
+- Move detailed technical reference material to an "Appendix" section at the end
+- Consider moving to appendix:
+  - Alternative authentication methods (e.g., service account JSON after HMAC keys)
+  - Legacy or less common configuration patterns
+  - Advanced troubleshooting details
+- Keep main body focused on the primary/recommended approach
+- Structure: Introduction → Main content → Common use cases → Appendix
+
 ### Terminology Standards (Updated from Review Comments)
 
 **Critical terminology changes to always apply:**
@@ -75,6 +87,14 @@ When you receive inline review comments to address:
 - ✅ **File structure** for data sources:
   - `connectors/[name].yaml` - Contains authentication credentials
   - `models/[name].yaml` or `models/[name].sql` - Contains data model configuration
+
+<!-- Added from PR review - 2025-01-xx: YAML type and driver specifications -->
+- ✅ **YAML `type` and `driver` fields**:
+  - Connector files: `type: connector` and `driver: <service-name>`
+    - Example: `type: connector` with `driver: gcs`
+  - Model files: `type: model` and `driver: <service-name>` or `connector: <connector-name>`
+    - Example: `type: model` with `driver: gcs` OR `connector: duckdb` for cloud storage
+  - Always verify the correct `type` and `driver` combination for each file type
   
 **When processing review comments:**
 - If a comment mentions "source is deprecated", update ALL occurrences throughout the file
@@ -86,10 +106,11 @@ When you receive inline review comments to address:
 
 **For cloud storage data sources (GCS, S3, Azure, etc.):**
 
-- ✅ **Connector type**: Always use `connector: duckdb` (not the storage service name)
+- ✅ **Connector type**: Always use `connector: duckdb` in model files (not the storage service name)
   - Cloud storage models use DuckDB's native capabilities to read from cloud storage
-  - WRONG: `connector: gcs` or `connector: s3`
-  - RIGHT: `connector: duckdb`
+  - WRONG: `connector: gcs` or `connector: s3` in model files
+  - RIGHT: `connector: duckdb` in model files
+  - Note: The connector file itself uses `driver: gcs` or `driver: s3`
 
 - ✅ **Authentication property names** (case-sensitive):
   - GCS with HMAC: `key_id` and `secret` (not `access_key_id` or `secret_access_key`)
@@ -97,9 +118,10 @@ When you receive inline review comments to address:
   - Always verify property names against `runtime/parser/*` connector definitions
 
 - ✅ **SQL vs path property**:
-  - Use `sql:` property with DuckDB table functions (recommended)
-  - The `path:` property is deprecated
-  - Example: `sql: SELECT * FROM read_parquet('gs://bucket/file.parquet')`
+  - Use `sql:` property with DuckDB table functions (recommended, `path:` is deprecated)
+  - WRONG: `path: gs://bucket/file.parquet`
+  - RIGHT: `sql: SELECT * FROM read_parquet('gs://bucket/file.parquet')`
+  - The `sql:` approach is not optional—it's the correct, non-deprecated way
 
 - ✅ **Environment variable naming**:
   - Format: `connector.<connector-name>.<property>`
@@ -157,6 +179,11 @@ Example checklist for data source docs:
 - ✅ **Preserve existing deployment sections**:
   - If a page has a working deployment section, don't remove or oversimplify it
   - When updating, enhance rather than replace unless the content is incorrect
+
+- ❌ **Avoid unnecessary checklists**:
+  - Don't add step-by-step checklists for simple deployment processes
+  - The `rill env configure` and `rill deploy` workflow is straightforward enough without checkboxes
+  - Save checklists for genuinely complex multi-step processes
 
 ### Build Validation
 - After editing docs, **run `npm run build docs/`**.
@@ -222,17 +249,21 @@ Example checklist for data source docs:
 - ✅ **Overview sections**: Keep overview text that effectively explains the service/feature
   - Don't replace good overview content with generic descriptions
   - If the original overview is better, restore it
+  - Review comments like "replace with old version" indicate the original was superior
 - ✅ **Critical sections**: Never remove important sections that were previously present
   - Always check what content existed before your changes
   - If a section was removed accidentally, restore it with a comment explaining why it's important
+  - Pay special attention to sections reviewers mark as "!important"
 
 **Red flags that indicate you may be removing valuable content:**
 - Reviewer asks to "bring back" or "return" sections
 - Reviewer says "this is missing !important"
 - Simplifying deployment sections that had nuanced, correct information
 - Removing worked examples or CLI command sequences that were accurate
+- Comments to "replace overview with old version"
 
 **Best practice:**
 - Before making major structural changes, understand why the current structure exists
 - When in doubt, add to existing content rather than replacing it
-- Mark optional patterns as "optional" with inline comments, don't remove them
+- Mark alternative or advanced patterns appropriately with inline comments, don't remove them
+- If replacing overview or introduction text, verify your version is actually clearer and more accurate
