@@ -1,18 +1,20 @@
 ---
-title: Google Cloud Storage (GCS)
-sidebar_label: Google Cloud Storage (GCS)
+title: Google Cloud Storage
+sidebar_label: Google Cloud Storage
 sidebar_position: 30
 ---
 
-<!-- markdownlint-disable MD034 -->
+Google Cloud Storage (GCS) is Google's object storage service. Rill supports connecting to GCS buckets to read data files (CSV, Parquet, JSON, etc.) for building dashboards.
 
-## Overview
+:::tip
 
-Rill supports ingesting data from Google Cloud Storage buckets through a connector-based authentication flow. You can authenticate using Service Account JSON credentials, HMAC keys, or local Google Cloud CLI credentials (for development only).
+For information about Google BigQuery, see [BigQuery](/connect/bigquery).
+
+:::
 
 ## Authentication Methods
 
-To connect to Google Cloud Storage, you need to provide authentication credentials using one of these methods:
+To connect to Google Cloud Storage, you need to provide authentication credentials. Rill supports three methods:
 
 1. **Use Service Account JSON** (recommended for production)
 2. **Use HMAC Keys** (alternative authentication method)
@@ -22,285 +24,351 @@ Choose the method that best fits your setup. For production deployments to Rill 
 
 ## Using the Add Data UI
 
-When adding a GCS data model through Rill's UI, you'll follow a two-step process:
+The easiest way to connect to GCS is through Rill's Add Data interface:
 
-**Step 1: Configure Authentication** - You'll first set up a GCS connector with your credentials (Service Account JSON or HMAC Keys).
+1. **Step 1: Configure Authentication** - Add your GCS credentials (Service Account JSON or HMAC keys)
+2. **Step 2: Configure Data Model** - Specify the bucket and file path(s) to read
 
-**Step 2: Configure Data Model** - After authentication is configured, you'll create a model that references your connector and specifies which GCS files to ingest.
-
-This separation allows you to reuse the same connector across multiple models.
+This two-step process separates authentication (stored in `connectors/`) from data configuration (stored in `models/`), making it easier to reuse credentials across multiple data models.
 
 ## Method 1: Service Account JSON (Recommended)
 
-Service Account JSON authentication uses a Google Cloud service account key file. This is the recommended method for production deployments.
+Service Account JSON is the recommended authentication method for production deployments. This method uses a JSON key file from a Google Cloud service account.
 
-### Using the UI
+### Prerequisites
 
-1. Navigate to the **Add Data** interface in Rill
-2. Select **Google Cloud Storage** as your data source
-3. In the authentication step:
-   - Choose **Service Account JSON**
-   - Upload your service account JSON key file using the file picker
-   - Or paste the JSON content directly into the text field
-4. Configure your data model:
-   - Specify the GCS path (e.g., `gs://my-bucket/path/to/data/*.parquet`)
-   - Set a refresh schedule if needed
-   - Complete the model configuration
+1. A Google Cloud project with billing enabled
+2. A service account with appropriate permissions
+3. A JSON key file for the service account
 
-### Manual Configuration
-
-If you prefer to configure files manually, you'll need to create two files:
-
-#### Step 1: Create the Connector File
-
-Create a file at `connectors/my_gcs.yaml`:
-
-```yaml
-type: connector
-driver: gcs
-google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"
-```
-
-Add your Service Account JSON credentials to your `.env` file:
-
-```bash
-connector.gcs.google_application_credentials=<service-account-json>
-```
-
-:::tip
-The Service Account JSON should be provided as a single-line string. You can convert a multi-line JSON file to a single line using: `cat service-account.json | jq -c`
-:::
-
-#### Step 2: Create the Model File
-
-Create a file at `models/my_gcs_data.yaml`:
-
-```yaml
-type: model
-connector: my_gcs
-sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
-refresh:
-  cron: "0 */6 * * *"  # Refresh every 6 hours
-```
-
-Or if you prefer SQL files, create `models/my_gcs_data.sql`:
-
-```sql
--- @connector: my_gcs
--- @refresh.cron: 0 */6 * * *
-
-SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
-```
-
-### Setting up a Service Account
+### Setting Up a Service Account
 
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
 2. Navigate to **IAM & Admin** → **Service Accounts**
 3. Click **Create Service Account**
-4. Provide a name and description, then click **Create and Continue**
-5. Grant the service account appropriate permissions (at minimum, `Storage Object Viewer` for read access)
+4. Give it a name and description
+5. Grant the **Storage Object Viewer** role (or **Storage Admin** for write access)
 6. Click **Done**
-7. Find your new service account in the list and click on it
+7. Click on the created service account
 8. Go to the **Keys** tab
 9. Click **Add Key** → **Create new key**
-10. Choose **JSON** format and click **Create**
-11. The JSON key file will download automatically - keep it secure!
-
-## Method 2: HMAC Keys
-
-HMAC (Hash-based Message Authentication Code) keys provide an alternative authentication method that's compatible with S3-style authentication.
+10. Choose **JSON** format
+11. Click **Create** - the JSON key file will download automatically
 
 ### Using the UI
 
-1. Navigate to the **Add Data** interface in Rill
-2. Select **Google Cloud Storage** as your data source
-3. In the authentication step:
-   - Choose **HMAC Keys**
-   - Enter your Access Key ID
-   - Enter your Secret Access Key
-4. Configure your data model:
-   - Specify the GCS path (e.g., `gs://my-bucket/path/to/data/*.parquet`)
-   - Set a refresh schedule if needed
-   - Complete the model configuration
+1. In your Rill project, click **Add Data** in the top right
+2. Select **Google Cloud Storage** from the list of data sources
+3. Choose **Service Account JSON** as the authentication method
+4. Upload your JSON key file or paste its contents
+5. Click **Save** to create the connector
+6. Configure your data model by specifying the bucket and file path
+7. Click **Add Data** to create the model
+
+This will create two files:
+- `connectors/gcs.yaml` - Contains your authentication credentials
+- `models/my_gcs_data.yaml` - References the connector and specifies data location
 
 ### Manual Configuration
 
-#### Step 1: Create the Connector File
+Alternatively, you can create the connector and model files manually:
 
-Create a file at `connectors/my_gcs.yaml`:
+**Step 1: Create a connector file** (`connectors/gcs.yaml`):
 
 ```yaml
 type: connector
 driver: gcs
-access_key_id: "{{ .env.connector.gcs.access_key_id }}"
-secret_access_key: "{{ .env.connector.gcs.secret_access_key }}"
+
+# Reference the service account JSON from your .env file
+google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"
 ```
 
-Add your HMAC credentials to your `.env` file:
+Add the service account JSON to your `.env` file:
 
 ```bash
-connector.gcs.access_key_id=<your-access-key-id>
-connector.gcs.secret_access_key=<your-secret-access-key>
+connector.gcs.google_application_credentials={"type":"service_account","project_id":"your-project",...}
 ```
 
-#### Step 2: Create the Model File
-
-Create a file at `models/my_gcs_data.yaml`:
+**Step 2: Create a model file** (`models/my_gcs_data.yaml`):
 
 ```yaml
 type: model
-connector: my_gcs
+
+# Reference the connector
+connector: gcs
+
+# Specify the GCS path
 sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
+
+# Add a refresh trigger for production
 refresh:
   cron: "0 */6 * * *"  # Refresh every 6 hours
 ```
 
-Or using SQL format at `models/my_gcs_data.sql`:
+## Method 2: HMAC Keys
 
-```sql
--- @connector: my_gcs
--- @refresh.cron: 0 */6 * * *
-
-SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
-```
+HMAC keys provide S3-compatible authentication for GCS. This method is useful when you need S3-compatible access to GCS buckets.
 
 ### Generating HMAC Keys
 
-You can generate HMAC keys using either the Google Cloud Console or the `gsutil` command-line tool.
-
-#### Option A: Using Google Cloud Console
+#### Using Google Cloud Console
 
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
-2. Navigate to **Cloud Storage** → **Settings** → **Interoperability**
-3. If you haven't already, set a default project for interoperability
-4. Under **User account HMAC**, click **Create a key for a user account** (or **Create a key for a service account** if using a service account)
-5. Select the appropriate user or service account
-6. Click **Create key**
-7. Copy the **Access Key** and **Secret** - you won't be able to retrieve the secret again!
+2. Navigate to **Cloud Storage** → **Settings**
+3. Click on the **Interoperability** tab
+4. If you haven't created keys before, click **Create keys for a service account**
+5. Select an existing service account or create a new one
+6. Click **Create new key**
+7. Save the **Access Key** and **Secret** - you won't be able to see the secret again
 
-#### Option B: Using gsutil CLI
+#### Using gcloud CLI
 
 ```bash
-gsutil hmac create <service-account-email>
+# Create HMAC key for a service account
+gcloud storage hmac create SERVICE_ACCOUNT_EMAIL
+
+# List existing HMAC keys
+gcloud storage hmac list
 ```
 
-This will output:
+### Using the UI
+
+1. In your Rill project, click **Add Data** in the top right
+2. Select **Google Cloud Storage** from the list of data sources
+3. Choose **HMAC Keys** as the authentication method
+4. Enter your **Access Key ID** and **Secret Access Key**
+5. Click **Save** to create the connector
+6. Configure your data model by specifying the bucket and file path
+7. Click **Add Data** to create the model
+
+### Manual Configuration
+
+**Step 1: Create a connector file** (`connectors/gcs.yaml`):
+
+```yaml
+type: connector
+driver: gcs
+
+# Use S3-compatible authentication with HMAC keys
+aws_access_key_id: "{{ .env.connector.gcs.aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.connector.gcs.aws_secret_access_key }}"
 ```
-Access ID: <access-key-id>
-Secret: <secret-access-key>
+
+Add the HMAC credentials to your `.env` file:
+
+```bash
+connector.gcs.aws_access_key_id=GOOG1234567890ABCDEF
+connector.gcs.aws_secret_access_key=your-secret-key-here
 ```
 
-:::warning
-Save your HMAC secret immediately - you cannot retrieve it again after creation. If you lose it, you'll need to create a new HMAC key.
-:::
-
-## Method 3: Local Google Cloud CLI (Development Only)
-
-For local development, you can use credentials from the Google Cloud CLI. This method is simpler for development but **will not work** when deploying to Rill Cloud.
-
-### Setup
-
-1. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install)
-2. Run `gcloud auth application-default login` to authenticate
-3. Create your model file without a connector reference
-
-### Model Configuration
-
-Create a file at `models/my_gcs_data.yaml`:
+**Step 2: Create a model file** (`models/my_gcs_data.yaml`):
 
 ```yaml
 type: model
-sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
+
+# Reference the connector
+connector: gcs
+
+# Specify the GCS path (use gs:// prefix)
+sql: SELECT * FROM read_csv('gs://my-bucket/path/to/data/*.csv')
+
+# Add a refresh trigger for production
 refresh:
   cron: "0 */6 * * *"  # Refresh every 6 hours
 ```
 
-:::danger Production Deployment
-Local Google Cloud CLI credentials are stored only on your local machine and will cause deployment failures when pushing to Rill Cloud. For production deployments, use Service Account JSON or HMAC Keys.
+## Method 3: Local Google Cloud CLI (Development Only)
+
+:::warning
+This method only works for local development. Do not use it for production deployments to Rill Cloud, as it will cause authentication failures.
 :::
 
-## File Path Formats
+If you have the Google Cloud SDK installed and configured locally, Rill can use your local credentials automatically.
 
-GCS paths in your SQL queries should use the `gs://` protocol:
+### Prerequisites
 
-```sql
--- Single file
-SELECT * FROM read_parquet('gs://my-bucket/data/file.parquet')
+1. Install the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
+2. Authenticate with your Google account:
+   ```bash
+   gcloud auth application-default login
+   ```
 
--- Multiple files with wildcard
-SELECT * FROM read_parquet('gs://my-bucket/data/*.parquet')
+### Configuration
 
--- Nested directory with glob pattern
-SELECT * FROM read_parquet('gs://my-bucket/data/**/*.parquet')
+**Create a model file** (`models/my_gcs_data.yaml`):
+
+```yaml
+type: model
+
+# No connector needed - uses local gcloud credentials
+# Leave connector empty or omit it
+connector: ""
+
+# Specify the GCS path
+sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
+
+# Add a refresh trigger if needed
+refresh:
+  cron: "0 */6 * * *"
+```
+
+When running `rill start` locally, Rill will automatically use your Google Cloud CLI credentials.
+
+## Common File Formats
+
+GCS supports various file formats through DuckDB's read functions:
+
+### Parquet Files
+
+```yaml
+type: model
+connector: gcs
+sql: SELECT * FROM read_parquet('gs://my-bucket/data/*.parquet')
+refresh:
+  cron: "0 */6 * * *"
+```
+
+### CSV Files
+
+```yaml
+type: model
+connector: gcs
+sql: SELECT * FROM read_csv('gs://my-bucket/data/*.csv', auto_detect=true)
+refresh:
+  cron: "0 */6 * * *"
+```
+
+### JSON Files
+
+```yaml
+type: model
+connector: gcs
+sql: SELECT * FROM read_json('gs://my-bucket/data/*.json')
+refresh:
+  cron: "0 */6 * * *"
+```
+
+### Multiple Files with Wildcards
+
+```yaml
+type: model
+connector: gcs
+sql: |
+  SELECT * FROM read_parquet([
+    'gs://my-bucket/data/2024-01-*.parquet',
+    'gs://my-bucket/data/2024-02-*.parquet'
+  ])
+refresh:
+  cron: "0 */6 * * *"
 ```
 
 ## Deploying to Rill Cloud
 
-When deploying a project with GCS models to Rill Cloud:
+When deploying to Rill Cloud, you must use either Service Account JSON or HMAC Keys authentication. Local Google Cloud CLI credentials will not work in production.
 
-1. **Ensure you're using Service Account JSON or HMAC Keys** - Local CLI credentials will not work in Rill Cloud
-2. **Set up credentials as environment variables** in your Rill Cloud project:
-   - For Service Account JSON: Set `connector.gcs.google_application_credentials`
-   - For HMAC Keys: Set `connector.gcs.access_key_id` and `connector.gcs.secret_access_key`
-3. **Deploy your project** - Rill will use the configured connector to access your GCS data
+### Required Files
+
+Your project must include:
+1. **Connector file** (`connectors/gcs.yaml`) - Contains authentication configuration
+2. **Model file(s)** (`models/*.yaml`) - References the connector and specifies data location
+3. **Environment variables** (`.env`) - Contains sensitive credentials (not committed to git)
+
+### Deployment Steps
+
+1. Ensure your connector file is properly configured with Service Account JSON or HMAC keys
+2. Add credentials to your `.env` file (this file should be in `.gitignore`)
+3. Deploy to Rill Cloud:
+   ```bash
+   rill deploy
+   ```
+4. During deployment, you'll be prompted to securely provide your environment variables
+5. Rill Cloud will use these credentials to authenticate with GCS
 
 ### Setting Environment Variables in Rill Cloud
 
-Via the Rill CLI:
-```bash
-rill env set connector.gcs.google_application_credentials='<service-account-json>'
+After deploying, you can manage environment variables in the Rill Cloud UI:
+
+1. Go to your project in Rill Cloud
+2. Navigate to **Settings** → **Environment Variables**
+3. Add or update your GCS credentials:
+   - For Service Account JSON: `connector.gcs.google_application_credentials`
+   - For HMAC Keys: `connector.gcs.aws_access_key_id` and `connector.gcs.aws_secret_access_key`
+
+## Refresh Triggers
+
+For production use, configure refresh triggers to keep your data up to date:
+
+```yaml
+type: model
+connector: gcs
+sql: SELECT * FROM read_parquet('gs://my-bucket/data/*.parquet')
+
+# Refresh every 6 hours
+refresh:
+  cron: "0 */6 * * *"
 ```
 
-Or for HMAC keys:
-```bash
-rill env set connector.gcs.access_key_id='<access-key-id>'
-rill env set connector.gcs.secret_access_key='<secret-access-key>'
-```
+Common refresh patterns:
+- Every hour: `"0 * * * *"`
+- Every 6 hours: `"0 */6 * * *"`
+- Daily at midnight: `"0 0 * * *"`
+- Every Monday at 9am: `"0 9 * * 1"`
 
-## Common Issues
+## Troubleshooting
 
-### Authentication Failures
+### Authentication Errors
 
-**Problem**: `Failed to authenticate with GCS`
+**Error**: `Failed to authenticate with GCS`
 
 **Solutions**:
-- Verify your Service Account JSON is valid and properly formatted
-- Ensure your service account has the necessary permissions (`Storage Object Viewer` or higher)
-- For HMAC keys, verify both access key ID and secret are correct
-- Check that your credentials are properly set in your `.env` file or Rill Cloud environment variables
+- Verify your service account JSON is valid and complete
+- Check that the service account has the necessary permissions (Storage Object Viewer)
+- Ensure your HMAC keys are correct and active
+- Confirm environment variables are properly set in `.env`
 
 ### File Not Found Errors
 
-**Problem**: `File or directory not found: gs://my-bucket/...`
+**Error**: `No files found matching pattern`
 
 **Solutions**:
 - Verify the bucket name and path are correct
-- Ensure your service account or HMAC key has access to the specific bucket
-- Check that files exist at the specified path
-- Verify your wildcard patterns match existing files
+- Check that the service account has access to the bucket
+- Ensure files exist at the specified path
+- Try listing files with `gsutil ls gs://my-bucket/path/` to verify access
+
+### Permission Denied
+
+**Error**: `Permission denied when accessing gs://my-bucket/...`
+
+**Solutions**:
+- Grant the service account the **Storage Object Viewer** role on the bucket
+- Check bucket-level and object-level permissions
+- Verify the service account is active and not disabled
 
 ### Deployment Failures
 
-**Problem**: Model works locally but fails in Rill Cloud
+**Error**: `Authentication failed after deploying to Rill Cloud`
 
 **Solutions**:
-- Ensure you're using Service Account JSON or HMAC Keys (not local CLI credentials)
-- Verify environment variables are set correctly in Rill Cloud
-- Check that your service account has access from external networks (not restricted by IP)
-- Confirm your connector file is included in your project
+- Ensure you're using Service Account JSON or HMAC keys (not local gcloud credentials)
+- Verify environment variables are set in Rill Cloud
+- Check that the connector file properly references environment variables
+- Confirm the service account JSON is correctly formatted
 
-## Supported File Formats
+## Best Practices
 
-GCS models in Rill support DuckDB's file reading capabilities, including:
-
-- **Parquet**: `read_parquet('gs://bucket/path/*.parquet')`
-- **CSV**: `read_csv('gs://bucket/path/*.csv')`
-- **JSON**: `read_json('gs://bucket/path/*.json')`
-- **NDJSON**: `read_json_auto('gs://bucket/path/*.ndjson')`
+1. **Use Service Account JSON for production** - It's the most secure and reliable method
+2. **Store credentials in `.env`** - Never commit credentials to git
+3. **Use least-privilege access** - Grant only the permissions needed (typically Storage Object Viewer)
+4. **Separate connectors from models** - Keep authentication in `connectors/` and data configuration in `models/`
+5. **Add refresh triggers** - Configure appropriate refresh schedules for production data
+6. **Use wildcards efficiently** - Leverage glob patterns to read multiple files efficiently
+7. **Test locally first** - Verify your configuration works with `rill start` before deploying
+8. **Monitor costs** - GCS charges for data egress, so be mindful of how much data you're reading
 
 ## Additional Resources
 
-- [DuckDB GCS Extension Documentation](https://duckdb.org/docs/extensions/httpfs.html#gcs)
 - [Google Cloud Storage Documentation](https://cloud.google.com/storage/docs)
-- [Service Account Key Management Best Practices](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys)
-- [Rill Model Documentation](../../build/models/models.md)
+- [Service Account Key Management](https://cloud.google.com/iam/docs/creating-managing-service-account-keys)
+- [HMAC Keys for GCS](https://cloud.google.com/storage/docs/authentication/hmackeys)
+- [DuckDB GCS Extension](https://duckdb.org/docs/extensions/httpfs.html)
