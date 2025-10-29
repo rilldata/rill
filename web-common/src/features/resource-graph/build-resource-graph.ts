@@ -114,6 +114,23 @@ function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   return name.kind as ResourceKind;
 }
 
+// Sidebar logic: some runtime Model resources are defined-as-source and represent Sources in the UI.
+// We mirror that here so the graph shows Sources consistently with the sidebar.
+function coerceKindForGraph(res: V1Resource, raw: ResourceKind | undefined): ResourceKind | undefined {
+  if (raw === ResourceKind.Model) {
+    try {
+      // A resource is a Source if it's a model defined-as-source and its result table matches the resource name
+      const name = res.meta?.name?.name;
+      const resultTable = (res as any)?.model?.state?.resultTable;
+      const definedAsSource = Boolean((res as any)?.model?.spec?.definedAsSource);
+      if (name && name === resultTable && definedAsSource) return ResourceKind.Source;
+    } catch {
+      // ignore
+    }
+  }
+  return raw;
+}
+
 function parseNodeId(id: string): { kind: string; name: string } | null {
   const idx = id.indexOf(":");
   if (idx <= 0) return null;
@@ -178,7 +195,8 @@ export function buildResourceGraph(resources: V1Resource[]) {
     const id = toNodeId(resource.meta);
     if (!id) continue;
 
-    const kind = toResourceKind(resource.meta?.name);
+    const rawKind = toResourceKind(resource.meta?.name);
+    const kind = coerceKindForGraph(resource, rawKind);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
     if (resource.meta?.hidden) continue;
 
