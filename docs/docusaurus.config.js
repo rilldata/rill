@@ -23,7 +23,6 @@ const config = {
   trailingSlash: false,
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "throw",
   favicon: "img/favicon.png",
 
   // Even if you don't use internalization, you can use this field to set useful
@@ -528,7 +527,7 @@ const config = {
             from: '/explore/filters/time-series',
             to: '/explore/time-series'
           },
-          {    
+          {
             from: '/build/metrics-view/advanced-expressions/case-statements',
             to: '/build/metrics-view/measures/case-statements'
           },
@@ -601,6 +600,9 @@ const config = {
   themes: ['@docusaurus/theme-mermaid'],
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: "throw",
+    },
   },
   stylesheets: [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"

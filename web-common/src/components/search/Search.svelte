@@ -18,6 +18,7 @@
   export let retainValueOnMount = false;
   export let forcedInputStyle = "";
   export let theme = false;
+  export let rounded: "sm" | "md" | "lg" = "sm";
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement | HTMLTextAreaElement;
@@ -77,7 +78,10 @@
     class:focus={showBorderOnFocus}
     class:bg-gray-50={background}
     class:border
-    class="outline-none rounded-[2px] block w-full pl-8 p-1 {forcedInputStyle} resize-none"
+    class:rounded-sm={rounded === "sm"}
+    class:rounded-md={rounded === "md"}
+    class:rounded-lg={rounded === "lg"}
+    class="outline-none block w-full pl-8 p-1 {forcedInputStyle} resize-none"
     class:h-full={large}
     {disabled}
     {placeholder}

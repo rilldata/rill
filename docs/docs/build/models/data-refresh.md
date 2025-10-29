@@ -41,6 +41,11 @@ For more details about available model configurations and properties, check our 
 
 You can also specify a project-wide refresh schedule that will apply to all models by default. This can be done through the `rill.yaml` file. More details can be found [here](/reference/project-files/rill-yaml#project-wide-defaults).
 
+:::tip Set project-wide defaults
+You can set a default refresh schedule for all models in your project.
+[Learn more about project defaults →](/build/project-configuration#model-refresh-schedule)
+:::
+
 Using the same example as above, the following sets a project-wide default of refreshing models every 24 hours:
 
 ```yaml

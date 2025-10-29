@@ -211,7 +211,10 @@ export function getColorMappingForChart(
     const fieldKey = colorField.field;
     const colorValues = domainValues[fieldKey];
     if (isDomainStringArray(colorValues)) {
-      colorMapping = getColorForValues(colorValues, colorField.colorMapping);
+      colorMapping = getColorForValues(
+        colorValues,
+        "colorMapping" in colorField ? colorField.colorMapping : undefined,
+      );
     }
   }
 

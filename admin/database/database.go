@@ -1109,6 +1109,7 @@ type Bookmark struct {
 	DisplayName  string    `db:"display_name"`
 	Description  string    `db:"description"`
 	Data         []byte    `db:"data"`
+	URLSearch    string    `db:"url_search"`
 	ResourceKind string    `db:"resource_kind"`
 	ResourceName string    `db:"resource_name"`
 	ProjectID    string    `db:"project_id"`
@@ -1122,7 +1123,7 @@ type Bookmark struct {
 // InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
 	DisplayName  string `json:"display_name"`
-	Data         []byte `json:"data"`
+	URLSearch    string `json:"url_search"`
 	ResourceKind string `json:"resource_kind"`
 	ResourceName string `json:"resource_name"`
 	Description  string `json:"description"`
@@ -1137,7 +1138,7 @@ type UpdateBookmarkOptions struct {
 	BookmarkID  string `json:"bookmark_id"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
-	Data        []byte `json:"data"`
+	URLSearch   string `json:"url_search"`
 	Shared      bool   `json:"shared"`
 }
 
