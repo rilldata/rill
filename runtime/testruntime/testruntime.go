@@ -135,12 +135,12 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 			t.SkipNow()
 		}
 
-		// Add openai to the test connectors if not already present.
+		// Add "openai" to the test connectors if not already present.
 		if !slices.Contains(opts.TestConnectors, "openai") {
 			opts.TestConnectors = append(opts.TestConnectors, "openai")
 		}
 
-		// Set the `openai` test connector as the instance's default AI connector.
+		// Set the "openai" test connector as the instance's default AI connector.
 		// This enables LLM completions.
 		aiConnector = "openai"
 	}

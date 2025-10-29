@@ -30,8 +30,8 @@ func DatasetPath(t TestingT, ds Dataset) string {
 	// If dataset is a local file, return the absolute path
 	if u.Scheme == "" {
 		p, err := filepath.Abs(u.Path)
-		require.NoError(t, err, "failed to get absolute path for %s: %v", ds, err)
-		require.FileExists(t, p, "local dataset file does not exist: %s", p)
+		require.NoError(t, err)
+		require.FileExists(t, p)
 		return p
 	}
 

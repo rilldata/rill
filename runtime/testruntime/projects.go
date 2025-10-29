@@ -2,11 +2,11 @@ package testruntime
 
 import "fmt"
 
-// OpenRTB returns project files that resemble our public rill-openrtb-prog-ads example project.
+// ProjectOpenRTB returns project files that resemble our public rill-openrtb-prog-ads example project.
 // Unlike the example project, it:
 // 1. uses local cached copies of the datasets for faster and more reliable tests.
 // 2. has been trimmed to the essential resources and properties.
-func OpenRTB(t TestingT) (int, map[string]string) {
+func ProjectOpenRTB(t TestingT) (int, map[string]string) {
 	auctionsParquet := DatasetPath(t, DatasetOpenRTBAuctions)
 	bidsParquet := DatasetPath(t, DatasetOpenRTBBids)
 

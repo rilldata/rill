@@ -949,6 +949,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
+		if !tool.CheckAccess(ctx) {
+			continue
+		}
 		var inputSchema string
 		if tool.Spec.InputSchema != nil {
 			inputSchemaBytes, err := json.Marshal(tool.Spec.InputSchema)

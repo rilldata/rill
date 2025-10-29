@@ -80,16 +80,8 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine if it's the first invocation of the agent in this session.
 	first := len(s.Messages(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName))) == 1
 
-	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if first && args.Explore == "" {
-		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", nil, &ListMetricsViewsArgs{})
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
-	// TODO: This uses `first`, but that may not be safe. We probably need some more sophisticated de-duplication here.
+	// TODO: This uses `first`, but that may not be safe if the user has navigated to another dashboard. We probably need some more sophisticated de-duplication here.
 	var metricsViewName string
 	if first && args.Explore != "" {
 		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
@@ -113,10 +105,12 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 	}
 
-	// Add the analyst agent system prompt, optionally tailored for the current explore.
-	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Explore)
-	if err != nil {
-		return nil, err
+	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
+	if first && args.Explore == "" {
+		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", nil, &ListMetricsViewsArgs{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Determine tools that can be used
@@ -127,6 +121,10 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	tools = append(tools, "query_metrics_view_summary", "query_metrics_view", "create_chart")
 
 	// Build completion messages
+	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Explore)
+	if err != nil {
+		return nil, err
+	}
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithChildren(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName)))...)
 
