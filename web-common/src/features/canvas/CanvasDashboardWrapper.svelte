@@ -1,7 +1,9 @@
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { unorderedParamsAreEqual } from "@rilldata/web-common/lib/url-utils.ts";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { onDestroy, onMount } from "svelte";
+  import { get } from "svelte/store";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -35,9 +37,10 @@
   $: updateThemeVariables($themeSpec);
 
   onMount(async () => {
+    await waitUntil(() => !get(defaultUrlParamsStore).isPending, 500);
     const shouldLoadHomeBookmark = unorderedParamsAreEqual(
       $page.url.searchParams,
-      $defaultUrlParamsStore,
+      get(defaultUrlParamsStore).data,
     );
     await restoreSnapshot(
       shouldLoadHomeBookmark ? homeBookmarkUrlSearch : undefined,

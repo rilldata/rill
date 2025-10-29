@@ -82,7 +82,10 @@ export class CanvasEntity {
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
-  defaultUrlParamsStore: Readable<URLSearchParams>;
+  defaultUrlParamsStore: Readable<{
+    data: URLSearchParams;
+    isPending: boolean;
+  }>;
 
   constructor(
     name: string,

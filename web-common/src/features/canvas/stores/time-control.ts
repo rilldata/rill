@@ -75,9 +75,13 @@ export class TimeControls {
     writable(undefined);
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
 
-  defaultUrlParamsStore: Writable<URLSearchParams> = writable(
-    new URLSearchParams(),
-  );
+  defaultUrlParamsStore: Writable<{
+    data: URLSearchParams;
+    isPending: boolean;
+  }> = writable({
+    data: new URLSearchParams(),
+    isPending: true,
+  });
 
   constructor(
     private specStore: CanvasSpecResponseStore,
@@ -190,7 +194,9 @@ export class TimeControls {
         );
 
         if (
-          !get(this.defaultUrlParamsStore).has(ExploreStateURLParams.TimeRange)
+          !get(this.defaultUrlParamsStore).data.has(
+            ExploreStateURLParams.TimeRange,
+          )
         ) {
           const defaultTimeRangePartial = calculateTimeRangePartial(
             allTimeRange,
@@ -200,8 +206,24 @@ export class TimeControls {
             defaultTimeRange,
             minTimeGrain,
           );
-          if (defaultTimeRangePartial)
-            this.setDefaultTimeRange(defaultTimeRangePartial);
+          if (defaultTimeRangePartial) {
+            const newComparisonRange = getComparisonTimeRange(
+              timeRanges,
+              allTimeRange,
+              { name: defaultPreset?.timeRange } as DashboardTimeControls,
+              undefined,
+            );
+            this.setDefaultTimeRange(
+              defaultTimeRangePartial,
+              newComparisonRange?.name,
+            );
+
+            this.set.grain(
+              defaultTimeRangePartial.selectedTimeRange?.interval ??
+                V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+              true,
+            );
+          }
         }
 
         const timeRangeState = calculateTimeRangePartial(
@@ -279,18 +301,6 @@ export class TimeControls {
           true,
         );
 
-        const timeRangeState = calculateTimeRangePartial(
-          allTimeRange,
-          initialRange,
-          undefined,
-          selectedTimezone,
-          initialRange,
-          minTimeGrain,
-        );
-        if (timeRangeState?.selectedTimeRange?.interval) {
-          this.set.grain(timeRangeState?.selectedTimeRange?.interval, true);
-        }
-
         const newComparisonRange = getComparisonTimeRange(
           timeRanges,
           get(this.allTimeRange),
@@ -305,9 +315,6 @@ export class TimeControls {
             V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
         ) {
           this.set.comparison(newComparisonRange.name, true);
-        }
-        if (newComparisonRange?.name) {
-          this.setDefaultComparisonRange(newComparisonRange.name);
         }
       });
     }
@@ -484,10 +491,13 @@ export class TimeControls {
     this.selectedComparisonTimeRange.set(comparisonTimeRange);
   };
 
-  private setDefaultTimeRange(defaultTimeRangeState: TimeRangeState) {
-    this.defaultUrlParamsStore.update((params) => {
-      if (!defaultTimeRangeState.selectedTimeRange?.name) return params;
-      const paramsCopy = new URLSearchParams(params);
+  private setDefaultTimeRange(
+    defaultTimeRangeState: TimeRangeState,
+    comparisonName: string | undefined,
+  ) {
+    this.defaultUrlParamsStore.update((state) => {
+      if (!defaultTimeRangeState.selectedTimeRange?.name) return state;
+      const paramsCopy = new URLSearchParams(state.data);
 
       let timeRange = defaultTimeRangeState.selectedTimeRange.name;
       if (timeRange === TimeRangePreset.CUSTOM) {
@@ -504,15 +514,17 @@ export class TimeControls {
         paramsCopy.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
       }
 
-      return paramsCopy;
-    });
-  }
+      if (comparisonName) {
+        paramsCopy.set(
+          ExploreStateURLParams.ComparisonTimeRange,
+          comparisonName,
+        );
+      }
 
-  private setDefaultComparisonRange(comparisonName: string) {
-    this.defaultUrlParamsStore.update((params) => {
-      const paramsCopy = new URLSearchParams(params);
-      paramsCopy.set(ExploreStateURLParams.ComparisonTimeRange, comparisonName);
-      return paramsCopy;
+      return {
+        data: paramsCopy,
+        isPending: false,
+      };
     });
   }
 }

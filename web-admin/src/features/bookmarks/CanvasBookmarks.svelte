@@ -59,7 +59,7 @@
   $: ({
     data: { bookmarks, categorizedBookmarks },
   } = $categorizedBookmarksStore);
-  $: defaultHomeBookmarkUrl = "?" + $defaultUrlParamsStore.toString();
+  $: defaultHomeBookmarkUrl = "?" + $defaultUrlParamsStore.data.toString();
 </script>
 
 <Bookmarks
