@@ -1180,6 +1180,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "urlSearch": {
+            "type": "string"
+          },
           "userId": {
             "type": "string"
           }
@@ -1196,6 +1199,10 @@
               "$ref": "#/components/schemas/v1CompletionMessage"
             },
             "type": "array"
+          },
+          "outputJsonSchema": {
+            "title": "Optional output JSON schema",
+            "type": "string"
           },
           "tools": {
             "items": {
@@ -1293,10 +1300,6 @@
       },
       "v1CreateBookmarkRequest": {
         "properties": {
-          "data": {
-            "format": "byte",
-            "type": "string"
-          },
           "default": {
             "type": "boolean"
           },
@@ -1317,6 +1320,9 @@
           },
           "shared": {
             "type": "boolean"
+          },
+          "urlSearch": {
+            "type": "string"
           }
         },
         "type": "object"
@@ -3748,10 +3754,6 @@
           "bookmarkId": {
             "type": "string"
           },
-          "data": {
-            "format": "byte",
-            "type": "string"
-          },
           "default": {
             "type": "boolean"
           },
@@ -3763,6 +3765,9 @@
           },
           "shared": {
             "type": "boolean"
+          },
+          "urlSearch": {
+            "type": "string"
           }
         },
         "type": "object"

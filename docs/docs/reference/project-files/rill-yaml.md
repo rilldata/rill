@@ -81,10 +81,8 @@ _[object]_ - Defines project-wide default settings for explores. Unless overridd
 _[object]_ - Defines project-wide default settings for canvases. Unless overridden, individual canvases will inherit these defaults. 
 
 ```yaml
-# For example, the following YAML configuration below will set a project-wide default for:
-# Models - Configure a [source refresh](/build/build/models/data-refresh.md).
-# Metrics View - Set the [first day of the week](metrics-view.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
-# Explore Dashboards - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
+# For complete examples, see: 
+# https://docs.rilldata.com/build/rill-project-file#dashboard-defaults
 models:
     refresh:
         cron: '0 * * * *'
@@ -96,31 +94,17 @@ explores:
         time_range: P24M
     time_zones:
         - UTC
-        - America/Los_Angeles
-        - America/New_York
-        - Europe/London
-        - Europe/Paris
-        - Asia/Tokyo
-        - Australia/Sydney
     time_ranges:
         - PT24H
         - P6M
-        - P12M
 canvases:
     defaults:
-        time_range: P24M
+        time_range: P7D
     time_zones:
         - UTC
-        - America/Los_Angeles
-        - America/New_York
-        - Europe/London
-        - Europe/Paris
-        - Asia/Tokyo
-        - Australia/Sydney
     time_ranges:
         - PT24H
-        - P6M
-        - P12M
+        - P7D
 ```
 
 ## Setting variables
