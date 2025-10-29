@@ -28,8 +28,7 @@
     "redocusaurus": "^2.5.0",
     "sass": "^1.88.0",
     "sass-loader": "^16.0.5",
-    "tailwindcss": "^3.4.13",
-    "js-yaml": "^4.1.0"
+    "tailwindcss": "^3.4.13"
   },
   "engines": {
     "node": ">=18.0"
