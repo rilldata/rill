@@ -249,7 +249,9 @@ export class CanvasEntity {
   processRows = (canvasData: Partial<CanvasResponse>) => {
     const newComponents = canvasData.components;
     const existingKeys = new Set(this.components.keys());
-    const rows = canvasData.canvas?.rows ?? [];
+    const rows = canvasData.canvas?.rows;
+
+    if (!rows) return;
 
     const set = new Set<string>();
 
@@ -301,8 +303,8 @@ export class CanvasEntity {
     // with the components Map, which is not reactive
     if ((!didUpdateRowCount && createdNewComponent) || isFirstLoad) {
       this._rows.refresh();
+      this.firstLoad.set(false);
     }
-    this.firstLoad.set(false);
   };
 
   processTheme = async (

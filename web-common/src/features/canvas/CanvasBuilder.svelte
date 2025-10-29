@@ -40,6 +40,17 @@
   export let canvasName: string;
   export let openSidebar: () => void;
 
+  let initialMousePosition: { x: number; y: number } | null = null;
+  let clientWidth: number;
+  let offset = { x: 0, y: 0 };
+  let dragComponent: BaseCanvasComponent | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  let dragTimeout: ReturnType<typeof setTimeout> | null = null;
+  let dragItemPosition = { top: 0, left: 0 };
+  let dragItemDimensions = { width: 0, height: 0 };
+  let openSidebarAfterSelection = false;
+  let pendingComponentDelete: string | undefined = undefined;
+
   $: ({
     canvasEntity: {
       setSelectedComponent,
@@ -55,18 +66,9 @@
 
   $: layoutRows = $_rows;
 
-  let initialMousePosition: { x: number; y: number } | null = null;
-  let clientWidth: number;
-  let offset = { x: 0, y: 0 };
-  let dragComponent: BaseCanvasComponent | null = null;
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  let dragTimeout: ReturnType<typeof setTimeout> | null = null;
-  let dragItemPosition = { top: 0, left: 0 };
-  let dragItemDimensions = { width: 0, height: 0 };
-  let openSidebarAfterSelection = false;
-  let pendingComponentDelete: string | undefined = undefined;
-
   $: ({ instanceId } = $runtime);
+
+  $: canvasData = $specStore.data;
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
 
   $: metricsViewQuery = useDefaultMetrics(instanceId, metricsViews?.[0]?.[0]);
@@ -74,7 +76,6 @@
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
 
-  $: canvasData = $specStore.data;
   $: resolvedComponents = canvasData?.components;
 
   $: spec = canvasData?.canvas ?? {
