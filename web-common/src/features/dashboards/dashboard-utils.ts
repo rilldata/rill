@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { URI_DIMENSION_SUFFIX } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimension,
@@ -22,12 +23,44 @@ const countRegex = /count(?=[^(]*\()/i;
 const sumRegex = /sum(?=[^(]*\()/i;
 
 export function isSummableMeasure(measure: MetricsViewSpecMeasure): boolean {
+  if (measure.validPercentOfTotal) return true;
+
   const expression = measure.expression?.toLowerCase();
+
+  // Check if expression contains SUM or COUNT
+  const hasSumOrCount = !!(
+    expression?.match(countRegex) || expression?.match(sumRegex)
+  );
+
+  if (hasSumOrCount) {
+    // If it has SUM/COUNT and contains division, verify both sides are summable
+    if (expression?.includes("/")) {
+      // Check if this is a ratio expression: sum/sum, count/sum, sum/count, count/count
+      // Split by division and check if both parts contain sum or count
+      const parts = expression.split("/").map((p) => p.trim());
+      if (parts.length === 2) {
+        const leftHasSumOrCount = !!(
+          parts[0].match(countRegex) || parts[0].match(sumRegex)
+        );
+        const rightHasSumOrCount = !!(
+          parts[1].match(countRegex) || parts[1].match(sumRegex)
+        );
+
+        return leftHasSumOrCount && !rightHasSumOrCount;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+export function isPercentageMeasure(measure: MetricsViewSpecMeasure): boolean {
   return (
-    !!(expression?.match(countRegex) || expression?.match(sumRegex)) ||
-    Boolean(measure.validPercentOfTotal)
+    measure.formatPreset === FormatPreset.PERCENTAGE ||
+    !!measure.formatD3?.endsWith("%")
   );
 }
+
 /**
  * Returns a sanitized column name appropriate for use in e.g. filters.
  *

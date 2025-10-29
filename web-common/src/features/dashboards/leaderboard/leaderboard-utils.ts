@@ -1,17 +1,20 @@
-import { isSummableMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
+import {
+  isPercentageMeasure,
+  isSummableMeasure,
+} from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1MetricsViewComparisonMeasureType as ApiSortType,
+  type MetricsViewSpecMeasure,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewComparisonValue,
-  type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
 import { SortType } from "../proto-state/derived-types";
-import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 
 export type LeaderboardItemData = {
   /**
@@ -372,6 +375,8 @@ export function getLeaderboardMaxValues(
       // For valid percent of total measures use the total directly as max width.
       if (isSummableMeasure(measure)) {
         return [measureName, leaderboardTotals[measureName]];
+      } else if (isPercentageMeasure(measure)) {
+        return [measureName, 1];
       }
 
       // Else use the max from the visible values
