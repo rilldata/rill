@@ -10,6 +10,7 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"golang.org/x/exp/slices"
 )
 
 const AnalystAgentName = "analyst_agent"
@@ -76,9 +77,21 @@ func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {
 	s := GetSession(ctx)
 
+	// Determine if it's the first invocation of the agent in this session.
+	first := len(s.Messages(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName))) == 1
+
+	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
+	if first && args.Explore == "" {
+		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", nil, &ListMetricsViewsArgs{})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
+	// TODO: This uses `first`, but that may not be safe. We probably need some more sophisticated de-duplication here.
 	var metricsViewName string
-	if args.Explore != "" {
+	if first && args.Explore != "" {
 		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
 		if err != nil {
 			return nil, err
@@ -100,15 +113,6 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 	}
 
-	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	// if args.Explore == "" {
-	// 	var listRes *ListMetricsViewsResult
-	// 	_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", &listRes, &ListMetricsViewsArgs{})
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// }
-
 	// Add the analyst agent system prompt, optionally tailored for the current explore.
 	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Explore)
 	if err != nil {
@@ -125,6 +129,18 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Build completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithChildren(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName)))...)
+
+	// If this is the first agent call in the session, re-organize messages to put the user prompt at the end (after the seeded tool calls).
+	// NOTE: We should find a cleaner way to organize/prioritize message ordering.
+	if first {
+		for i, m := range messages {
+			if m.Role == string(RoleUser) {
+				messages = slices.Delete(messages, i, i+1)
+				messages = append(messages, m)
+				break
+			}
+		}
+	}
 
 	// Run an LLM tool call loop
 	var response string
