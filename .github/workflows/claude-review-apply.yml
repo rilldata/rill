@@ -60,7 +60,7 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install anthropic PyGithub
+          pip install anthropic PyGithub requests
 
       - name: Generate & apply Claude patch
         id: apply
@@ -96,7 +96,8 @@ jobs:
             if (outcome === 'success') {
               body = `✅ **DoClaude processed all inline review comments**\n\n` +
                      `📝 Changes have been applied to the branch: \`${{ needs.prepare.outputs.head_ref }}\`\n\n` +
-                     `The changes were made according to the documentation guidelines. The agent also analyzed the review comments and may have updated \`.github/scripts/instructions.md\` with new learnings to improve future responses.\n\n` +
+                     `🔄 Review comments have been marked as addressed\n\n` +
+                     `📚 The agent analyzed the review comments and may have updated \`.github/scripts/instructions.md\` with new learnings to improve future responses.\n\n` +
                      `Review the commit and push additional changes if needed.`;
             } else {
               body = `⚠️ **DoClaude encountered an issue**\n\n` +

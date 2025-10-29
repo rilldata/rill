@@ -6,6 +6,7 @@ Reads all inline PR review comments, generates a summary, and applies changes us
 import os
 import sys
 import re
+import requests
 from pathlib import Path
 from github import Github
 from anthropic import Anthropic
@@ -135,12 +136,86 @@ Then, for each file that needs changes, output the complete updated file content
         # Parse Claude's output and apply changes
         apply_changes(claude_output)
         
+        # Resolve the review comments that were addressed
+        resolve_review_comments(doclaude_comments, pr)
+        
         # Update instructions.md based on review comments
         update_instructions_from_comments(doclaude_comments, anthropic)
 
     except Exception as e:
         print(f"❌ Error calling Claude API: {e}")
         sys.exit(1)
+
+def resolve_review_comments(comments, pr):
+    """Mark review comments as resolved after addressing them."""
+    
+    print("\n📌 Resolving review comments...")
+    
+    # GitHub's REST API via PyGithub doesn't support resolving comments directly
+    # We need to use GraphQL API for that
+    # For now, we'll reply to each comment to indicate it was addressed
+    
+    resolved_count = 0
+    for comment in comments:
+        try:
+            # Reply to the comment
+            comment.create_reply("✅ Addressed by DoClaude automation")
+            resolved_count += 1
+            print(f"✅ Marked comment on {comment.path} as addressed")
+        except Exception as e:
+            print(f"⚠️ Could not reply to comment {comment.id}: {e}")
+    
+    if resolved_count > 0:
+        print(f"\n✅ Replied to {resolved_count} review comment(s)")
+    
+    # Also try to resolve via GraphQL if we have the necessary access
+    try:
+        resolve_comments_graphql(comments)
+    except Exception as e:
+        print(f"ℹ️ Could not resolve comments via GraphQL (this is optional): {e}")
+
+def resolve_comments_graphql(comments):
+    """Use GitHub GraphQL API to resolve review threads."""
+    
+    # Get the node_id for each comment and resolve it
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    resolved_count = 0
+    for comment in comments:
+        # Get the node_id (GraphQL ID) from the comment
+        node_id = comment.raw_data.get('node_id')
+        if not node_id:
+            continue
+        
+        # GraphQL mutation to resolve the review thread
+        query = """
+        mutation($threadId: ID!) {
+          resolveReviewThread(input: {threadId: $threadId}) {
+            thread {
+              isResolved
+            }
+          }
+        }
+        """
+        
+        variables = {"threadId": node_id}
+        
+        response = requests.post(
+            "https://api.github.com/graphql",
+            headers=headers,
+            json={"query": query, "variables": variables}
+        )
+        
+        if response.status_code == 200:
+            resolved_count += 1
+        else:
+            print(f"⚠️ GraphQL resolve failed for comment {comment.id}: {response.text}")
+    
+    if resolved_count > 0:
+        print(f"✅ Resolved {resolved_count} review thread(s) via GraphQL")
 
 def apply_changes(claude_output):
     """Parse Claude's output and write file changes."""
