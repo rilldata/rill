@@ -332,12 +332,12 @@ Use `rill env set --local` to set credentials for local development without affe
 
 GCS connectors support any file format that DuckDB can read:
 
-| Format | DuckDB Function | Example |
-|--------|----------------|---------|
-| Parquet | `read_parquet()` | `read_parquet('gs://bucket/data.parquet')` |
-| CSV | `read_csv()` | `read_csv('gs://bucket/data.csv')` |
-| JSON | `read_json()` | `read_json('gs://bucket/data.json')` |
-| Excel | `read_excel()` | Requires [spatial extension](https://duckdb.org/docs/extensions/spatial) |
+| Format  | DuckDB Function  | Example                                                                  |
+| ------- | ---------------- | ------------------------------------------------------------------------ |
+| Parquet | `read_parquet()` | `read_parquet('gs://bucket/data.parquet')`                               |
+| CSV     | `read_csv()`     | `read_csv('gs://bucket/data.csv')`                                       |
+| JSON    | `read_json()`    | `read_json('gs://bucket/data.json')`                                     |
+| Excel   | `read_excel()`   | Requires [spatial extension](https://duckdb.org/docs/extensions/spatial) |
 
 See the [DuckDB documentation](https://duckdb.org/docs/) for more details on file readers.
 
@@ -386,4 +386,4 @@ See the [DuckDB documentation](https://duckdb.org/docs/) for more details on fil
 - [Google Cloud Storage Documentation](https://cloud.google.com/storage/docs)
 - [Service Account Best Practices](https://cloud.google.com/iam/docs/best-practices-service-accounts)
 - [DuckDB GCS Extension](https://duckdb.org/docs/extensions/gcs)
-- [Rill Models Documentation](/build/models/models.md)
+- [Rill Models Documentation](/build/models)

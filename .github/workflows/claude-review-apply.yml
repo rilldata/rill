@@ -81,7 +81,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "docs: Apply DoClaude inline review comments"
+            git commit -m "docs: Apply DoClaude review comments and update instructions"
             git push origin HEAD:${{ needs.prepare.outputs.head_ref }}
           fi
 
@@ -96,7 +96,7 @@ jobs:
             if (outcome === 'success') {
               body = `✅ **DoClaude processed all inline review comments**\n\n` +
                      `📝 Changes have been applied to the branch: \`${{ needs.prepare.outputs.head_ref }}\`\n\n` +
-                     `The changes were made according to the documentation guidelines in \`.claude/instructions.md\`.\n\n` +
+                     `The changes were made according to the documentation guidelines. The agent also analyzed the review comments and may have updated \`.github/scripts/instructions.md\` with new learnings to improve future responses.\n\n` +
                      `Review the commit and push additional changes if needed.`;
             } else {
               body = `⚠️ **DoClaude encountered an issue**\n\n` +

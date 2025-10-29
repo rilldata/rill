@@ -1,3 +1,27 @@
+## 🚨 CRITICAL: Processing Review Comments
+
+When you receive inline review comments to address:
+
+### Output Requirements
+1. **Output COMPLETE files** - You MUST provide the entire file from start to finish, not just changed sections
+2. **Never truncate** - Don't use "..." or comments like "rest of file unchanged"
+3. **Include everything** - All frontmatter, all sections, all code blocks, all content
+4. **Preserve formatting** - Keep all markdown structure, indentation, and spacing exactly as it was
+
+### Processing Approach
+1. **Read the full context** - Understand the entire document before making changes
+2. **Address ALL comments** - Process every review comment, don't skip any
+3. **Apply comprehensively** - If a comment asks to change terminology, update it throughout the entire file
+4. **Verify completeness** - Before outputting, ensure you have the complete file from line 1 to the last line
+
+### Common Pitfalls to Avoid
+- ❌ Stopping at code blocks within the file (the file likely contains multiple code blocks)
+- ❌ Outputting only the changed sections
+- ❌ Skipping sections with comments like "remaining content unchanged"
+- ❌ Forgetting to include content after your changes
+
+---
+
 ## Documentation Style Guide
 
 ### Tone
@@ -34,6 +58,28 @@
   - Replace them with modern and correct usage examples, check the runtime/parser/* to understand the actual usage of each component.
   - Follow best practices and dont put raw text in the examples for connectors and instead reference the `.env` 
     - IE `google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"`
+
+### Terminology Standards (Updated from Review Comments)
+
+**Critical terminology changes to always apply:**
+
+- ✅ **Use "model"** instead of "source" (sources are deprecated)
+  - WRONG: `type: source`, `sources/my_data.yaml`, "create a source file"
+  - RIGHT: `type: model`, `models/my_data.yaml`, "create a model file"
+  - Apply this to: file paths, YAML properties, explanatory text, and all documentation
+
+- ✅ **Use "connector"** for authentication/connection configuration
+  - Connectors go in `connectors/` directory
+  - Models reference connectors via the `connector:` property
+
+- ✅ **File structure** for data sources:
+  - `connectors/[name].yaml` - Contains authentication credentials
+  - `models/[name].yaml` or `models/[name].sql` - Contains data model configuration
+  
+**When processing review comments:**
+- If a comment mentions "source is deprecated", update ALL occurrences throughout the file
+- Check file paths, code examples, and explanatory text
+- Update both YAML examples AND the prose that describes them
 
 ### Code Examples
 - Always include working, runnable examples

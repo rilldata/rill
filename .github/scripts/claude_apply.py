@@ -5,6 +5,7 @@ Reads all inline PR review comments, generates a summary, and applies changes us
 
 import os
 import sys
+import re
 from pathlib import Path
 from github import Github
 from anthropic import Anthropic
@@ -133,6 +134,9 @@ Then, for each file that needs changes, output the complete updated file content
 
         # Parse Claude's output and apply changes
         apply_changes(claude_output)
+        
+        # Update instructions.md based on review comments
+        update_instructions_from_comments(doclaude_comments, anthropic)
 
     except Exception as e:
         print(f"❌ Error calling Claude API: {e}")
@@ -140,8 +144,6 @@ Then, for each file that needs changes, output the complete updated file content
 
 def apply_changes(claude_output):
     """Parse Claude's output and write file changes."""
-    
-    import re
     
     # Extract summary
     summary_match = re.search(r'```summary\n(.*?)\n```', claude_output, re.DOTALL)
@@ -193,6 +195,103 @@ def apply_changes(claude_output):
         print("⚠️ No file changes were applied")
     else:
         print(f"\n✅ Successfully applied changes to {changes_applied} file(s)")
+
+def update_instructions_from_comments(comments, anthropic):
+    """Analyze review comments and update instructions.md with learnings."""
+    
+    instructions_path = Path(".github/scripts/instructions.md")
+    if not instructions_path.exists():
+        print("⚠️ Instructions file not found, skipping instruction updates")
+        return
+    
+    # Build context from comments
+    comments_text = "\n\n".join([
+        f"**File**: {c.path}\n**Comment**: {c.body}" 
+        for c in comments
+    ])
+    
+    current_instructions = instructions_path.read_text()
+    
+    prompt = f"""You are improving documentation guidelines based on review feedback.
+
+## Current Instructions File
+{current_instructions}
+
+## Review Comments Received
+{comments_text}
+
+## Your Task
+Analyze these review comments and determine if there are patterns, rules, or guidance that should be added to the instructions file to prevent similar issues in the future.
+
+If the comments reveal:
+- New terminology standards (e.g., deprecated terms to avoid)
+- Common mistakes or patterns to fix
+- Style preferences
+- Technical requirements
+- Structural guidelines
+
+Then output an updated version of the instructions file with a new section capturing these learnings.
+
+**Important:**
+- Only add NEW guidance that isn't already covered
+- Keep all existing content
+- Add a dated comment showing when/why this was added (e.g., "<!-- Added from PR #8166 review - 2024-10-29 -->")
+- If no meaningful updates are needed, output "NO_UPDATES_NEEDED"
+
+Output format:
+```instructions:.github/scripts/instructions.md
+[Complete updated instructions file if updates needed, or just "NO_UPDATES_NEEDED"]
+```
+"""
+
+    print("\n🤖 Analyzing review comments to improve instructions...")
+    
+    try:
+        response = anthropic.messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=4000,
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }]
+        )
+        
+        output = response.content[0].text
+        
+        # Check if updates are needed
+        if "NO_UPDATES_NEEDED" in output:
+            print("ℹ️ No new patterns found, instructions remain unchanged")
+            return
+        
+        # Extract updated instructions
+        # Use same approach as file extraction - find last closing backticks
+        blocks = re.split(r'```instructions:', output)
+        if len(blocks) < 2:
+            print("⚠️ Could not parse instruction updates")
+            return
+        
+        block = blocks[1]
+        lines = block.split('\n', 1)
+        if len(lines) < 2:
+            print("⚠️ Could not parse instruction updates")
+            return
+        
+        remaining = lines[1]
+        matches = list(re.finditer(r'\n```\s*$', remaining, re.MULTILINE))
+        if not matches:
+            print("⚠️ Could not find closing backticks for instructions")
+            return
+        
+        end_match = matches[-1]
+        updated_instructions = remaining[:end_match.start() + 1]
+        
+        # Write updated instructions
+        instructions_path.write_text(updated_instructions)
+        print("✅ Updated instructions.md with learnings from review comments")
+        
+    except Exception as e:
+        print(f"⚠️ Could not update instructions: {e}")
+        # Non-fatal - continue with the main task
 
 if __name__ == "__main__":
     main()
