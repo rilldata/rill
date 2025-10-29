@@ -96,7 +96,11 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 
 func LoginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	ch.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
-	time.Sleep(2 * time.Second)
+	select {
+	case <-time.After(2 * time.Second):
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginStart)
 
