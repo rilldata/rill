@@ -1,7 +1,10 @@
 name: DoClaude – Apply PR comments and review suggestions
 
 on:
- push
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
