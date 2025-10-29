@@ -67,11 +67,17 @@
   );
   $: stepState = $connectorStepStore;
 
+  // Precompute per-step property lists for readability
+  $: connectorStepProperties =
+    connector.configProperties?.filter((p) => p.key !== "dsn") ?? [];
+  $: sourceStepProperties = connector.sourceProperties ?? [];
+
   // Reactive properties based on current step
-  $: stepProperties =
-    isMultiStepConnector && stepState.step === "source"
-      ? (connector.sourceProperties ?? [])
-      : properties;
+  $: stepProperties = !isMultiStepConnector
+    ? properties
+    : stepState.step === "source"
+      ? sourceStepProperties
+      : connectorStepProperties;
 
   // Update form when transitioning to step 2
   $: if (

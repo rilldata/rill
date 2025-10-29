@@ -6,6 +6,8 @@ import {
 
 export const getYupSchema = {
   s3: yup.object().shape({
+    aws_access_key_id: yup.string().optional(),
+    aws_secret_access_key: yup.string().optional(),
     path: yup
       .string()
       .matches(/^s3:\/\//, "Must be an S3 URI (e.g. s3://bucket/path)")
@@ -14,8 +16,6 @@ export const getYupSchema = {
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
       .optional(),
-    aws_access_key_id: yup.string().optional(),
-    aws_secret_access_key: yup.string().optional(),
   }),
 
   gcs: yup.object().shape({
