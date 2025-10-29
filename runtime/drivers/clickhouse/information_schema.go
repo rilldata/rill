@@ -13,6 +13,199 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
+func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	var args []any
+	var condFilter string
+	if c.config.DatabaseWhitelist != "" {
+		dbs := strings.Split(c.config.DatabaseWhitelist, ",")
+		var sb strings.Builder
+		for i, db := range dbs {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString("?")
+			args = append(args, strings.TrimSpace(db))
+		}
+		condFilter = fmt.Sprintf("(schema_name IN (%s))", sb.String())
+	} else {
+		condFilter = "(schema_name == currentDatabase() OR lower(schema_name) NOT IN ('information_schema', 'system'))"
+	}
+
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		condFilter += "	AND schema_name > ?"
+		args = append(args, startAfter)
+	}
+
+	q := fmt.Sprintf(`
+	SELECT
+		schema_name
+	FROM information_schema.schemata
+	WHERE %s 
+	ORDER BY schema_name 
+	LIMIT ?
+	`, condFilter)
+	args = append(args, limit+1)
+
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var res []*drivers.DatabaseSchemaInfo
+	for rows.Next() {
+		var schema string
+		if err := rows.Scan(&schema); err != nil {
+			return nil, "", err
+		}
+		res = append(res, &drivers.DatabaseSchemaInfo{
+			Database:       "",
+			DatabaseSchema: schema,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	next := ""
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].DatabaseSchema)
+	}
+	return res, next, nil
+}
+
+func (c *Connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	q := `
+	SELECT
+		table_name,
+		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
+	FROM information_schema.tables
+	WHERE table_schema = ?
+	`
+	args := []any{databaseSchema}
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		q += "	AND table_name > ?"
+		args = append(args, startAfter)
+	}
+	q += `
+	ORDER BY table_name 
+	LIMIT ?
+	`
+	args = append(args, limit+1)
+
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	defer func() { _ = release() }()
+
+	rows, err := conn.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var res []*drivers.TableInfo
+	for rows.Next() {
+		var name string
+		var view bool
+		if err := rows.Scan(&name, &view); err != nil {
+			return nil, "", err
+		}
+		// default unknown size to -1 to match API contract
+		res = append(res, &drivers.TableInfo{
+			Name: name,
+			View: view,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	next := ""
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
+	}
+	return res, next, nil
+}
+
+func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
+	q := `
+    SELECT
+        CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view,
+        c.column_name,
+        c.data_type
+    FROM information_schema.tables t
+    LEFT JOIN information_schema.columns c 
+		ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+    WHERE t.table_schema = ? AND t.table_name = ?
+    ORDER BY c.ordinal_position
+    `
+	rows, err := conn.QueryxContext(ctx, q, databaseSchema, table)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	schemaMap := make(map[string]string)
+	var isView bool
+	for rows.Next() {
+		var view bool
+		var colName, dataType string
+		if err := rows.Scan(&view, &colName, &dataType); err != nil {
+			return nil, err
+		}
+		isView = view
+		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
+			if errors.Is(err, errUnsupportedType) {
+				schemaMap[colName] = fmt.Sprintf("Unknown(%s)", dataType)
+			} else {
+				return nil, err
+			}
+		} else {
+			// not returning db internal type matching the current implementation
+			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &drivers.TableMetadata{
+		Schema: schemaMap,
+		View:   isView,
+	}, nil
+}
+
 func (c *Connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
