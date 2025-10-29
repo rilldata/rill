@@ -62,6 +62,7 @@ Create `connectors/my_gcs.yaml`:
 ```yaml
 type: connector
 driver: gcs
+
 google_application_credentials: "{{ .env.connector.gcs.google_application_credentials }}"
 ```
 
@@ -72,6 +73,7 @@ Create `models/my_gcs_data.yaml`:
 ```yaml
 type: model
 connector: duckdb
+
 sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
 
 # Add a refresh schedule
@@ -82,12 +84,8 @@ refresh:
 **Step 3: Add credentials to `.env`**
 
 ```bash
-connector.gcs.google_application_credentials='{"type":"service_account","project_id":"your-project",...}'
+connector.gcs.google_application_credentials=<json_credentials>
 ```
-
-:::tip
-See the [Appendix](#how-to-create-a-service-account-using-the-google-cloud-console) for detailed instructions on creating a service account.
-:::
 
 ---
 
@@ -118,6 +116,7 @@ Create `connectors/my_gcs_hmac.yaml`:
 ```yaml
 type: connector
 driver: gcs
+
 key_id: "{{ .env.connector.gcs.key_id }}"
 secret: "{{ .env.connector.gcs.secret }}"
 ```
@@ -129,6 +128,7 @@ Create `models/my_gcs_data.yaml`:
 ```yaml
 type: model
 connector: duckdb
+
 sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
 
 # Add a refresh schedule
@@ -143,8 +143,8 @@ connector.gcs.key_id=GOOG1234567890ABCDEFG
 connector.gcs.secret=your-secret-access-key
 ```
 
-:::tip
-See the [Appendix](#how-to-generate-hmac-keys-using-the-google-cloud-console) for detailed instructions on generating HMAC keys.
+:::info
+Notice that the connector uses `key_id` and `secret`. HMAC keys use S3-compatible authentication with GCS.
 :::
 
 ---
@@ -160,9 +160,9 @@ For local development, you can use credentials from the Google Cloud CLI. This m
    ```bash
    gcloud auth application-default login
    ```
-3. Create your model file referencing a connector without explicit credentials
+3. Create your connector and model files
 
-### Configuration
+### Connector Configuration
 
 Create `connectors/my_gcs.yaml`:
 
@@ -171,11 +171,14 @@ type: connector
 driver: gcs
 ```
 
+### Model Configuration
+
 Create `models/my_gcs_data.yaml`:
 
 ```yaml
 type: model
 connector: duckdb
+
 sql: SELECT * FROM read_parquet('gs://my-bucket/path/to/data/*.parquet')
 
 # Add a refresh schedule
@@ -191,26 +194,89 @@ This method only works for local development. Deploying to Rill Cloud with this 
 
 ---
 
-## Deploying to Rill Cloud
+## Using GCS Data in Models
 
-When deploying your project to Rill Cloud, you must provide a JSON key file for a Google Cloud service account with appropriate read access/permissions to the buckets used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically. If you're using inferred credentials only, you'll need to configure explicit credentials to avoid deployment failures.
+Once your connector is configured, you can reference GCS paths in your model SQL queries using DuckDB's GCS functions.
 
-To configure your environment variables for deployment, run:
+### Basic Example
 
-```bash
-rill env configure
+```yaml
+type: model
+connector: duckdb
+
+sql: SELECT * FROM read_parquet('gs://my-bucket/data/*.parquet')
+
+refresh:
+  cron: "0 */6 * * *"
 ```
 
-The CLI will interactively prompt you to configure credentials for all connectors in your project.
+### Reading Multiple File Types
 
-Then deploy with:
+```yaml
+type: model
+connector: duckdb
+
+sql: |
+  -- Read Parquet files
+  SELECT * FROM read_parquet('gs://my-bucket/parquet-data/*.parquet')
+  
+  UNION ALL
+  
+  -- Read CSV files
+  SELECT * FROM read_csv('gs://my-bucket/csv-data/*.csv', AUTO_DETECT=TRUE)
+
+refresh:
+  cron: "0 */6 * * *"
+```
+
+### Path Patterns
+
+You can use wildcards to read multiple files:
+
+```sql
+-- Single file
+SELECT * FROM read_parquet('gs://my-bucket/data/file.parquet')
+
+-- All files in a directory
+SELECT * FROM read_parquet('gs://my-bucket/data/*.parquet')
+
+-- All files in nested directories
+SELECT * FROM read_parquet('gs://my-bucket/data/**/*.parquet')
+
+-- Files matching a pattern
+SELECT * FROM read_parquet('gs://my-bucket/data/2024-*.parquet')
+```
+
+---
+
+## Deploying to Rill Cloud
+
+When deploying your project to Rill Cloud, you must use either Service Account JSON or HMAC Keys. Local Google Cloud CLI credentials will not work in the cloud environment.
+
+### Prerequisites
+
+- Rill Cloud account
+- Service Account JSON or HMAC Keys configured locally
+- Connector and model files properly configured with environment variable references
+
+### Deployment Process
+
+Once your project is configured with credentials in your local `.env` file, deploying to Rill Cloud is straightforward:
 
 ```bash
 rill deploy
 ```
 
-:::tip Did you know?
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+During deployment, you'll be prompted to configure any missing credentials. Alternatively, you can configure credentials for your deployed project using:
+
+```bash
+rill env configure
+```
+
+The CLI will interactively walk you through configuring all required credentials for your connectors.
+
+:::tip
+Credentials are stored encrypted in Rill Cloud and injected at runtime. You only need to configure them once per project.
 :::
 
 ---
@@ -231,7 +297,11 @@ Here is a step-by-step guide on how to create a Google Cloud service account wit
 7. Choose the "JSON" key type and click "Create".
 8. Download and save the JSON key file to a secure location on your computer.
 
-### How to create a service account using the gcloud CLI
+:::note Permission denied?
+You'll need to contact your internal cloud admin to create your Service Account JSONs for you.
+:::
+
+### How to create a service account using the `gcloud` CLI
 
 1. Open a terminal window and follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) if you haven't already done so.
 2. You will need your Google Cloud project ID to complete this tutorial. Run the following command to show it:
@@ -262,21 +332,17 @@ Here is a step-by-step guide on how to create a Google Cloud service account wit
     ```
 6. You have now created a JSON key file named `rill-service-account.json` in your current working directory.
 
-### How to generate HMAC keys using the Google Cloud Console
-
-You can generate HMAC keys through the Google Cloud Console or using the `gcloud` CLI:
-
-**Using the Google Cloud Console:**
+### How to create HMAC keys using the Google Cloud Console
 
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
-2. Navigate to **Cloud Storage** > **Settings** > **Interoperability**
+2. Navigate to **Cloud Storage** → **Settings** → **Interoperability**
 3. If not already enabled, click **Enable Interoperability Access**
 4. Scroll to **Service account HMAC** section
 5. Select a service account or create a new one
 6. Click **Create a key for a service account**
 7. Copy the **Access Key** and **Secret** - you won't be able to view the secret again
 
-**Using the gcloud CLI:**
+### How to create HMAC keys using the `gcloud` CLI
 
 ```bash
 # Create HMAC keys for a service account
@@ -286,10 +352,8 @@ gcloud storage hmac create SERVICE_ACCOUNT_EMAIL
 gcloud storage hmac list
 ```
 
-:::info
-As an alternative, to ensure that you are running Rill with a specific service account, you can provide the key in the `rill start` command. This is useful when you have multiple profiles or may receive limited access to a bucket.
+Replace `SERVICE_ACCOUNT_EMAIL` with your service account's email address.
 
-```bash
-rill start --env key_id=<KEY> --env secret=<SECRET>
-```
+:::warning
+Keep your HMAC keys secure and never commit them to version control.
 :::
