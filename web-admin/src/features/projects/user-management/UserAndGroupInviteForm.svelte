@@ -146,7 +146,8 @@
     const options = getAdminServiceListOrganizationMemberUsersQueryOptions(
       organization,
       {
-        pageSize: 5,
+        // Request one extra to keep a consistent 5 after filtering out self
+        pageSize: 6,
         ...(query ? { searchPattern: `${query}%` } : {}),
       },
     );
@@ -165,8 +166,10 @@
       ? users.filter((u) => u.userEmail?.toLowerCase() !== myEmail)
       : users;
 
+    const trimmed = filtered.length > 5 ? filtered.slice(0, 5) : filtered;
+
     // Return only remote user results; SearchAndInviteInput merges with local searchList
-    return filtered.map((u) => ({
+    return trimmed.map((u) => ({
       identifier: u.userEmail,
       type: "user" as const,
       name: u.userName,
