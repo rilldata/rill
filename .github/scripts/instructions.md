@@ -81,6 +81,32 @@ When you receive inline review comments to address:
 - Check file paths, code examples, and explanatory text
 - Update both YAML examples AND the prose that describes them
 
+<!-- Added from PR review - 2025-01-xx: Cloud storage connector and property corrections -->
+### Cloud Storage Specific Standards
+
+**For cloud storage data sources (GCS, S3, Azure, etc.):**
+
+- ✅ **Connector type**: Always use `connector: duckdb` (not the storage service name)
+  - Cloud storage models use DuckDB's native capabilities to read from cloud storage
+  - WRONG: `connector: gcs` or `connector: s3`
+  - RIGHT: `connector: duckdb`
+
+- ✅ **Authentication property names** (case-sensitive):
+  - GCS with HMAC: `key_id` and `secret` (not `access_key_id` or `secret_access_key`)
+  - S3: `access_key_id` and `secret_access_key`
+  - Always verify property names against `runtime/parser/*` connector definitions
+
+- ✅ **SQL vs path property**:
+  - Use `sql:` property with DuckDB table functions (recommended)
+  - The `path:` property is deprecated
+  - Example: `sql: SELECT * FROM read_parquet('gs://bucket/file.parquet')`
+
+- ✅ **Environment variable naming**:
+  - Format: `connector.<connector-name>.<property>`
+  - Example: `connector.gcs.key_id=<value>`
+  - Example: `connector.gcs.secret=<value>`
+  - Not: `gcs_key_id` or other variations
+
 ### Code Examples
 - Always include working, runnable examples
 - Show both success and error cases
@@ -112,6 +138,25 @@ Example checklist for data source docs:
 - Use present tense: "returns" not "will return"
 - Keep paragraphs short (1–3 sentences)
 - Avoid filler words ("basically," "in order to," etc.)
+
+<!-- Added from PR review - 2025-01-xx: Deployment documentation standards -->
+### Deployment Instructions
+
+**When documenting deployment and environment configuration:**
+
+- ✅ **Keep it simple**: Use `rill env configure` without additional arguments
+  - The CLI will walk through all required connectors interactively
+  - WRONG: `rill env configure connector.gcs.google_application_credentials`
+  - RIGHT: `rill env configure`
+
+- ❌ **Don't use these commands in deploy docs**:
+  - `rill env set` - Not part of standard deployment workflow
+  - `rill env push` - Not part of standard deployment workflow
+  - `rill env pull` - Not part of standard deployment workflow
+
+- ✅ **Preserve existing deployment sections**:
+  - If a page has a working deployment section, don't remove or oversimplify it
+  - When updating, enhance rather than replace unless the content is incorrect
 
 ### Build Validation
 - After editing docs, **run `npm run build docs/`**.
@@ -163,3 +208,31 @@ Example checklist for data source docs:
 - Before creating new workflow files, check if similar functionality exists
 - Propose consolidation with existing workflows (e.g., `claude.yml`) when appropriate
 - Discuss in PR description if a new workflow is truly needed vs. extending an existing one
+
+---
+
+<!-- Added from PR review - 2025-01-xx: Content preservation guidelines -->
+## 📝 Content Revision Guidelines
+
+### Preserving Quality Content
+
+**When revising documentation:**
+
+- ✅ **Evaluate before replacing**: If existing content is clear and accurate, enhance it rather than rewriting
+- ✅ **Overview sections**: Keep overview text that effectively explains the service/feature
+  - Don't replace good overview content with generic descriptions
+  - If the original overview is better, restore it
+- ✅ **Critical sections**: Never remove important sections that were previously present
+  - Always check what content existed before your changes
+  - If a section was removed accidentally, restore it with a comment explaining why it's important
+
+**Red flags that indicate you may be removing valuable content:**
+- Reviewer asks to "bring back" or "return" sections
+- Reviewer says "this is missing !important"
+- Simplifying deployment sections that had nuanced, correct information
+- Removing worked examples or CLI command sequences that were accurate
+
+**Best practice:**
+- Before making major structural changes, understand why the current structure exists
+- When in doubt, add to existing content rather than replacing it
+- Mark optional patterns as "optional" with inline comments, don't remove them
