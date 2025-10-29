@@ -1,10 +1,11 @@
 swagger: "2.0"
 info:
-  title: rill/admin/v1/ai.proto
+  title: Rill Admin API
+  description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
   version: version not set
 tags:
-  - name: AIService
   - name: AdminService
+  - name: AIService
   - name: TelemetryService
 consumes:
   - application/json
@@ -4446,6 +4447,23 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
+  runtimev1Operation:
+    type: string
+    enum:
+      - OPERATION_UNSPECIFIED
+      - OPERATION_EQ
+      - OPERATION_NEQ
+      - OPERATION_LT
+      - OPERATION_LTE
+      - OPERATION_GT
+      - OPERATION_GTE
+      - OPERATION_OR
+      - OPERATION_AND
+      - OPERATION_IN
+      - OPERATION_NIN
+      - OPERATION_LIKE
+      - OPERATION_NLIKE
+    default: OPERATION_UNSPECIFIED
   v1AddOrganizationMemberUserResponse:
     type: object
     properties:
@@ -4728,7 +4746,7 @@ definitions:
     type: object
     properties:
       op:
-        $ref: '#/definitions/v1Operation'
+        $ref: '#/definitions/runtimev1Operation'
       exprs:
         type: array
         items:
@@ -5595,23 +5613,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-  v1Operation:
-    type: string
-    enum:
-      - OPERATION_UNSPECIFIED
-      - OPERATION_EQ
-      - OPERATION_NEQ
-      - OPERATION_LT
-      - OPERATION_LTE
-      - OPERATION_GT
-      - OPERATION_GTE
-      - OPERATION_OR
-      - OPERATION_AND
-      - OPERATION_IN
-      - OPERATION_NIN
-      - OPERATION_LIKE
-      - OPERATION_NLIKE
-    default: OPERATION_UNSPECIFIED
   v1Organization:
     type: object
     properties:
@@ -6624,3 +6625,6 @@ definitions:
         type: string
       role:
         type: string
+externalDocs:
+  description: Rill API Documentation
+  url: https://docs.rilldata.com

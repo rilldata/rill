@@ -69,13 +69,9 @@ const config = {
         config: path.join(__dirname, 'redocly.yaml'),
         specs: [
           {
-            id: 'admin-api',
-            spec: 'api/rill/admin/v1/public.swagger.yaml',
+            id: 'public',
+            spec: 'api/admin/v1/public.swagger.json',
             route: '/api/admin/',
-            layout: {
-              title: "Rill Public API",
-              description: "Public Rill API documentation",
-            },
           },
         ],
         theme: {},
