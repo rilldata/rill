@@ -38,7 +38,7 @@ def main():
     reviews = list(pr.get_reviews())
     print(f"📊 Found {len(reviews)} review(s) on this PR:")
     for review in reviews:
-        print(f"  - Review by {review.user.login}: {review.state} ({review.submitted_at})")
+        print(f"  - Review by {review.user.login}: {review.state} ({review.submitted_at})") 
     
     # Get review comments (inline comments on code lines)
     review_comments = list(pr.get_review_comments())
