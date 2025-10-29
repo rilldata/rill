@@ -3,11 +3,11 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 
 	"github.com/rilldata/rill/admin/pkg/oauth"
+	"go.uber.org/zap"
 )
 
 // handleOAuthProtectedResourceMetadata serves the OAuth 2.0 Protected Resource Metadata

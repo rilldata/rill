@@ -8,13 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/oauth"
+	"go.uber.org/zap"
 )
 
 const authorizationCodeGrantType = "authorization_code"
