@@ -56,7 +56,7 @@ def main():
         print("ℹ️ Note: This fetches inline code review comments only, not general PR comments")
         sys.exit(0)
 
-    print(f"\n✅ Processing {len(doclaude_comments)} inline review comment(s)") 
+    print(f"\n✅ Processing {len(doclaude_comments)} inline review comment(s)")
 
     # Read documentation instructions
     instructions_path = Path(".github/scripts/instructions.md")
