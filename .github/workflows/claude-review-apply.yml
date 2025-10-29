@@ -65,7 +65,7 @@ jobs:
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CLAUDE_MODEL: claude-sonnet-4-5-20250929
+          CLAUDE_MODEL: claude-4-5-sonnet-latest
         run: |
           python .github/scripts/claude_apply.py
 
