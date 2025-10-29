@@ -87,12 +87,34 @@ export function detectAppContext(page: Page): V1AppContext | null {
 
 // Helper to check if a tool result contains chart data
 export function isChartToolResult(toolResult: any, toolCall: any): boolean {
-  if (!toolResult || !toolResult?.content || toolResult?.isError) return false;
-  if (toolCall?.name !== "create_chart") return false;
+  if (toolResult?.isError || toolCall?.name !== "create_chart") return false;
   try {
-    const parsed = JSON.parse(toolResult.content);
-    return !!(parsed.chart_type && parsed.spec);
+    // Check if input is already an object or needs parsing
+    const parsed =
+      typeof toolCall?.input === "string"
+        ? JSON.parse(toolCall.input)
+        : toolCall?.input;
+    return !!(parsed?.chart_type && parsed?.spec);
   } catch {
     return false;
+  }
+}
+
+// Helper to parse chart data from tool result
+export function parseChartData(toolCall: any) {
+  try {
+    // Check if input is already an object or needs parsing
+    const parsed =
+      typeof toolCall?.input === "string"
+        ? JSON.parse(toolCall.input)
+        : toolCall?.input;
+
+    return {
+      chartType: parsed.chart_type,
+      chartSpec: parsed.spec,
+    };
+  } catch (error) {
+    console.error("Failed to parse chart data:", error);
+    return null;
   }
 }
