@@ -6,7 +6,6 @@ import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_INIT,
-  AD_BIDS_SCHEMA,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
@@ -110,7 +109,6 @@ describe("sparse proto", () => {
           defaultProto,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_EXPLORE_INIT,
-          AD_BIDS_SCHEMA,
         );
         assertDashboardEquals(AD_BIDS_EXPLORE_NAME, dashboard);
       });
@@ -140,7 +138,6 @@ describe("sparse proto", () => {
           partialProto,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_EXPLORE_INIT,
-          AD_BIDS_SCHEMA,
         );
         assertDashboardEquals(AD_BIDS_EXPLORE_NAME, {
           ...get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],

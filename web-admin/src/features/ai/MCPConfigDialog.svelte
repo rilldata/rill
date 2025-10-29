@@ -28,7 +28,7 @@
       </Dialog.Description>
     </Dialog.Header>
 
-    <div class="flex flex-col gap-y-6">
+    <div class="flex flex-col gap-y-6 min-w-0">
       {#if !isPublic}
         <div class="border-t pt-6">
           <PersonalAccessTokensSection bind:issuedToken />

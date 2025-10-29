@@ -11,6 +11,26 @@ export interface SSEMessage {
   data: string;
 }
 
+/**
+ * HTTP error thrown by SSEFetchClient
+ */
+export class SSEHttpError extends Error {
+  public readonly status: number;
+  public readonly statusText: string;
+
+  constructor(status: number, statusText: string) {
+    super(`HTTP ${status}: ${statusText}`);
+    this.name = "SSEHttpError";
+    this.status = status;
+    this.statusText = statusText;
+
+    // Maintains proper stack trace for where error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, SSEHttpError);
+    }
+  }
+}
+
 // ===== SSE PROTOCOL PARSING =====
 // These functions handle SSE format parsing and could be extracted
 // to a separate module if needed for reuse.
@@ -150,7 +170,7 @@ export class SSEFetchClient {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new SSEHttpError(response.status, response.statusText);
       }
 
       if (!response.body) {
@@ -175,7 +195,7 @@ export class SSEFetchClient {
    */
   public stop(): void {
     if (this.abortController) {
-      this.abortController.abort();
+      this.abortController.abort("SSE stream stopped by client");
       this.abortController = undefined;
     }
   }

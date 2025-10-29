@@ -30,6 +30,7 @@
     measure: measureName,
     sparkline,
     comparison: comparisonOptions,
+    hide_time_range: hideTimeRange,
   } = spec);
 
   $: ({
@@ -150,6 +151,7 @@
   {comparisonLabel}
   {interval}
   sparkline={spec.sparkline}
+  {hideTimeRange}
   comparisonOptions={spec.comparison}
   primaryTotalResult={$totalQuery}
   comparisonTotalResult={$comparisonTotalQuery}

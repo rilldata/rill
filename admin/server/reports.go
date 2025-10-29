@@ -69,19 +69,27 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	var tokens map[string]string
-	var ownerEmail string
 	if webOpenMode == WebOpenModeRecipient {
 		// This is the default mode for existing reports, this also implies that reports will break for users who don't have access to the project.
 		// But we agree this is acceptable and report owner needs to change to creator mode if they want to share with users who don't have access.
 		// In this mode, tokens are used only for unsubscribe links, so no access to resources or owner attributes
-		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, "", "", nil, recipients, nil)
+		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, "", "", nil, recipients, nil)
 	} else {
 		// whereFilterJSON and accessibleFields is only needed for backwards compatibility during runtime rollout after admin upgrade, can be removed in next version
 		// nolint:staticcheck // needed during rollout for backwards compatibility
-		tokens, ownerEmail, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
+		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.WhereFilterJson, req.AccessibleFields, recipients, req.Resources)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
+	}
+
+	var ownerEmail string
+	if req.OwnerId != "" {
+		owner, err := s.admin.DB.FindUser(ctx, req.OwnerId)
+		if err != nil {
+			return nil, err
+		}
+		ownerEmail = owner.Email
 	}
 
 	// Generate URLs for each recipient based on web open mode, and whether they are the owner -
@@ -92,10 +100,9 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	// 	Recipients other than owner do not get an edit link, they can edit from the project UI if they have permissions.
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
-			// no token needed for owner and no unsubscribe link
 			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
-				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
+				OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+				ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 			}
 			continue
@@ -607,7 +614,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, whereFilterJSON string, accessibleFields, emails []string, resources []*adminv1.ResourceName) (map[string]string, string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, whereFilterJSON string, accessibleFields, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -632,16 +639,15 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 	mgcOpts.Resources = res
 
-	ownerEmail := ""
 	if ownerID != "" {
 		// Get the project-level permissions for the creating user.
 		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, ownerID)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, projectID, ownerID, orgPerms)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 
 		// Generate JWT attributes based on the creating user's, but with limited project-level permissions.
@@ -651,16 +657,15 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 		// NOTE: Another problem is that if the creator is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
 		attrs, err := s.jwtAttributesForUser(ctx, ownerID, orgID, projectPermissions)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		mgcOpts.Attributes = attrs
-		ownerEmail = attrs["email"].(string)
 	}
 
 	// issue magic tokens for new external emails
 	cctx, tx, err := s.admin.DB.NewTx(ctx, false)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to start transaction: %w", err)
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 
@@ -679,7 +684,7 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 		tkn, err := s.admin.IssueMagicAuthToken(cctx, mgcOpts)
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
+			return nil, fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
 		}
 
 		emailTokens[email] = tkn.Token().String()
@@ -691,16 +696,16 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 			MagicAuthTokenID: tkn.Token().ID.String(),
 		})
 		if err != nil {
-			return nil, "", fmt.Errorf("failed to insert report token for email %s: %w", email, err)
+			return nil, fmt.Errorf("failed to insert report token for email %s: %w", email, err)
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return emailTokens, ownerEmail, nil
+	return emailTokens, nil
 }
 
 var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)

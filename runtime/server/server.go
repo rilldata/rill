@@ -12,11 +12,10 @@ import (
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/mark3labs/mcp-go/client"
-	"github.com/mark3labs/mcp-go/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -62,9 +61,7 @@ type Server struct {
 	codec    *securetoken.Codec
 	limiter  ratelimit.Limiter
 	activity *activity.Client
-	// MCP server and client for tool calling and API functionality
-	mcpServer *server.MCPServer
-	mcpClient *client.Client
+	ai       *ai.Runner
 }
 
 var (
@@ -92,6 +89,7 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		codec:    codec,
 		limiter:  limiter,
 		activity: activityClient,
+		ai:       ai.NewRunner(rt, activityClient),
 	}
 
 	if opts.AuthEnable {
@@ -102,14 +100,6 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		srv.aud = aud
 	}
 
-	// Initialize MCP server and client for shared use across the runtime
-	srv.mcpServer = srv.newMCPServer()
-	mcpClient, err := srv.newMCPClient(srv.mcpServer)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create MCP client: %w", err)
-	}
-	srv.mcpClient = mcpClient
-
 	return srv, nil
 }
 
@@ -119,10 +109,6 @@ func (s *Server) Close() error {
 
 	if s.aud != nil {
 		s.aud.Close()
-	}
-
-	if s.mcpClient != nil {
-		s.mcpClient.Close()
 	}
 
 	return nil
@@ -230,7 +216,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Adds the MCP server handlers.
 	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
-	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHTTPHandler(s.mcpServer)))
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.mcpHandler()))
 	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
 	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility
@@ -308,12 +294,8 @@ func timeoutSelector(fullMethodName string) time.Duration {
 		return time.Minute * 30
 	}
 
-	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName {
-		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
-	}
-
-	if fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
-		return time.Minute * 2 // Match the completionTimeout from runtime/completion.go
+	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName || fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
+		return time.Minute * 5
 	}
 
 	if fullMethodName == runtimev1.RuntimeService_Health_FullMethodName || fullMethodName == runtimev1.RuntimeService_InstanceHealth_FullMethodName {
@@ -406,7 +388,7 @@ func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequ
 		attr["domain"] = email[strings.LastIndex(email, "@")+1:]
 	}
 
-	jwt, err := auth.NewDevToken(attr)
+	jwt, err := auth.NewDevToken(attr, runtime.AllPermissions)
 	if err != nil {
 		return nil, err
 	}

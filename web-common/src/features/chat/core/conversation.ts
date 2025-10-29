@@ -10,6 +10,7 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   SSEFetchClient,
+  SSEHttpError,
   type SSEMessage,
 } from "@rilldata/web-common/runtime-client/sse-fetch-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
@@ -55,7 +56,6 @@ export class Conversation {
       getRuntimeServiceGetConversationQueryOptions(
         this.instanceId,
         this.conversationId,
-        undefined,
         {
           query: {
             enabled: this.conversationId !== NEW_CONVERSATION_ID,
@@ -119,6 +119,11 @@ export class Conversation {
       // Transport errors can occur at two different stages:
       // 1. Before streaming starts: message not persisted, needs rollback
       // 2. During streaming: message already persisted, no rollback needed
+      console.error("[Conversation] Message send error:", {
+        error,
+        conversationId: this.conversationId,
+        hasReceivedFirstMessage: this.hasReceivedFirstMessage,
+      });
       this.handleTransportError(
         error,
         userMessage,
@@ -195,6 +200,13 @@ export class Conversation {
 
       this.sseClient.on("error", (error) => {
         // Transport errors only: connection, network, HTTP failures
+        console.error("[SSE] Transport error:", {
+          message: error.message,
+          status: error instanceof SSEHttpError ? error.status : undefined,
+          statusText:
+            error instanceof SSEHttpError ? error.statusText : undefined,
+          name: error.name,
+        });
         this.streamError.set(this.formatTransportError(error));
       });
 
@@ -485,23 +497,48 @@ export class Conversation {
   /**
    * Format transport error into user-friendly message
    */
-  private formatTransportError(error: any): string {
+  private formatTransportError(error: Error): string {
     if (error.name === "AbortError") {
       return "Message sending was cancelled";
     }
 
-    if (error.message?.includes("HTTP 5")) {
+    // Extract status code from SSEHttpError
+    const status = error instanceof SSEHttpError ? error.status : null;
+
+    // Authentication errors - suggest refresh to get new JWT
+    if (status === 401 || status === 403) {
+      return "Authentication failed. Please refresh the page and try again.";
+    }
+
+    // Bad request errors
+    if (status === 400) {
+      return "Invalid request. Please try again.";
+    }
+
+    // Server errors (5xx)
+    if (status && status >= 500 && status < 600) {
       return "Server is temporarily unavailable. Please try sending your message again.";
     }
 
-    if (error.name === "NetworkError" || !navigator.onLine) {
-      return "Connection lost. Check your internet connection and try again.";
-    }
-
-    if (error.message?.includes("HTTP 429")) {
+    // Rate limiting
+    if (status === 429) {
       return "Too many requests. Please wait a moment before trying again.";
     }
 
+    // Network/connection errors (fetch() throws TypeError for network failures)
+    const lowerMessage = error.message?.toLowerCase() || "";
+    const isNetworkError =
+      (error.name === "TypeError" &&
+        (lowerMessage.includes("fetch") ||
+          lowerMessage.includes("network") ||
+          lowerMessage.includes("load failed"))) ||
+      (typeof navigator !== "undefined" && !navigator.onLine);
+
+    if (isNetworkError) {
+      return "Unable to connect to server. Please check your connection and try again.";
+    }
+
+    // Fallback error message
     return "Failed to connect to server. Please try again or refresh the page.";
   }
 
