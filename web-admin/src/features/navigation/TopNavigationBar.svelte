@@ -176,7 +176,7 @@
   ];
 
   $: exploreQuery = useExplore(instanceId, dashboard, {
-    enabled: !!instanceId && !!dashboard,
+    enabled: !!instanceId && !!dashboard && !onCanvasDashboardPage,
   });
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
