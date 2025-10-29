@@ -2,6 +2,7 @@ module github.com/rilldata/rill
 
 go 1.24.9
 
+toolchain go1.24.9
 require (
 	cloud.google.com/go/bigquery v1.66.2
 	cloud.google.com/go/storage v1.51.0
