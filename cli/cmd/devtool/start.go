@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -183,6 +184,7 @@ type servicesCfg struct {
 	deps    bool
 	runtime bool
 	ui      bool
+	minimal bool
 	only    []string
 	except  []string
 }
@@ -190,9 +192,22 @@ type servicesCfg struct {
 func (s *servicesCfg) addFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&s.only, "only", []string{}, "Only start the listed services (options: admin, deps, runtime, ui)")
 	cmd.Flags().StringSliceVar(&s.except, "except", []string{}, "Start all except the listed services (options: admin, deps, runtime, ui)")
+	cmd.Flags().BoolVar(&s.minimal, "minimal", false, "Start minimal services: deps (postgres, redis), runtime, and admin")
 }
 
 func (s *servicesCfg) parse() error {
+	if s.minimal {
+		if len(s.only) > 0 || len(s.except) > 0 {
+			return errors.New("cannot use --minimal with --only or --except")
+		}
+		s.deps = true
+		s.runtime = true
+		s.admin = true
+		s.ui = false
+
+		return nil
+	}
+
 	if len(s.only) > 0 && len(s.except) > 0 {
 		return errors.New("cannot use both --only and --except")
 	}
@@ -269,7 +284,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
-		g.Go(func() error { return s.runDeps(ctx, verbose, preset) })
+		g.Go(func() error { return s.runDeps(ctx, verbose, preset, services.minimal) })
 	}
 
 	depsReadyCh := make(chan struct{})
@@ -400,17 +415,30 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "down", "--volumes").Run()
 }
 
-func (s cloud) runDeps(ctx context.Context, verbose bool, profile string) error {
+func (s cloud) runDeps(ctx context.Context, verbose bool, profile string, minimal bool) error {
 	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
 	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s --profile %s up\n", composeFile, profile)
 	defer logInfo.Printf("Stopped dependencies\n")
 
-	err := prepareStripeConfig()
-	if err != nil {
-		return fmt.Errorf("failed to prepare stripe config: %w", err)
-	}
+	var cmd *exec.Cmd
+	if minimal {
+		os.Setenv("RILL_ADMIN_METRICS_EXPORTER", observability.NoopExporter.String())
+		os.Setenv("RILL_ADMIN_TRACES_EXPORTER", observability.NoopExporter.String())
+		os.Setenv("RILL_RUNTIME_METRICS_EXPORTER", observability.NoopExporter.String())
+		os.Setenv("RILL_RUNTIME_TRACES_EXPORTER", observability.NoopExporter.String())
+		os.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", observability.OtelNoopEndpoint)
+		logInfo.Printf("Minimal mode: Disabled OTEL and Prometheus exporters\n")
 
-	cmd := newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "--profile", profile, "up")
+		// For minimal mode, start only postgres and redis
+		logInfo.Printf("Starting minimal dependencies: postgres and redis\n")
+		cmd = newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "up", "postgres", "redis")
+	} else {
+		err := prepareStripeConfig()
+		if err != nil {
+			return fmt.Errorf("failed to prepare stripe config: %w", err)
+		}
+		cmd = newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "--profile", profile, "up")
+	}
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout
