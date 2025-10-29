@@ -1,14 +1,15 @@
 ---
 title: Google Cloud Storage
 sidebar_label: Google Cloud Storage
-sidebar_position: 20
+sidebar_position: 10
 ---
 
-Google Cloud Storage (GCS) is a cloud-based object storage service provided by Google Cloud Platform. This connector allows you to read data files stored in GCS buckets.
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-## Authentication Methods
+## Overview
 
-To connect to Google Cloud Storage, you need to provide authentication credentials. Rill supports three authentication methods:
+Rill supports ingesting data from Google Cloud Storage (GCS) buckets. You can connect to GCS using one of three authentication methods:
 
 1. **Use Service Account JSON** (recommended for production)
 2. **Use HMAC Keys** (alternative authentication method)
@@ -18,37 +19,52 @@ Choose the method that best fits your setup. For production deployments to Rill 
 
 ## Using the Add Data UI
 
-When you add a GCS data model through the UI, Rill uses a two-step process:
+When using Rill's Add Data UI, authentication follows a two-step process:
 
-1. **Step 1: Configure Authentication** - Set up your GCS connector with authentication credentials
-2. **Step 2: Configure Data Model** - Reference your GCS files and create your data model
+1. **Step 1: Configure Authentication** - Set up your GCS connector with credentials
+2. **Step 2: Configure Data Model** - Create your data model pointing to specific GCS files
 
 This separation allows you to:
 - Reuse the same connector across multiple data models
-- Manage credentials independently from data model definitions
-- Keep sensitive credentials separate from your model logic
+- Manage credentials independently from data models
+- Update authentication without modifying data model configurations
 
-## Method 1: Service Account JSON (Recommended)
+## Authentication Methods
 
-### Using the UI
+### Service Account JSON
 
-1. Navigate to your Rill project
-2. Click "Add Data" and select "Google Cloud Storage"
+Service Account authentication is recommended for production deployments to Rill Cloud.
+
+#### Using the UI
+
+1. Navigate to the Add Data UI in Rill
+2. Select **Google Cloud Storage** as your data source
 3. In Step 1 (Configure Authentication):
-   - Enter a name for your connector (e.g., `my_gcs`)
-   - Upload your Service Account JSON key file using the file picker
-   - Click "Save Connector"
+   - Choose **Service Account JSON** as the authentication method
+   - Upload your JSON key file using the file picker
+   - Click **Save** to create the connector
 4. In Step 2 (Configure Data Model):
-   - Enter the GCS URI for your data (e.g., `gs://my-bucket/path/to/data.parquet`)
-   - Configure any additional model settings
-   - Click "Create Model"
+   - Enter your GCS path (e.g., `gs://bucket-name/path/to/file.parquet`)
+   - Configure additional model settings
+   - Click **Create** to finalize
 
-### Manual Configuration
+#### Manual Configuration
 
-#### Create Connector File
-
-Create a connector file at `connectors/my_gcs.yaml`:
+<Tabs>
+<TabItem value="connector" label="Connector File (connectors/gcs.yaml)">
 
 ```yaml
 type: gcs
-google_application_credentials: path/to/service-account-key.json
+google_application_credentials: |
+  {
+    "type": "service_account",
+    "project_id": "your-project-id",
+    "private_key_id": "key-id",
+    "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+    "client_email": "your-service-account@your-project.iam.gserviceaccount.com",
+    "client_id": "client-id",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account%40your-project.iam.gserviceaccount.com"
+  }
