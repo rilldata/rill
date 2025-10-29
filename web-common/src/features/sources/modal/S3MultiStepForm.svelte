@@ -15,37 +15,10 @@
 
 <!-- Step 1: Connector configuration for S3 -->
 <div>
-  <div class="py-1.5 first:pt-0 last:pb-0">
-    <div class="space-y-3">
-      <Input
-        id="aws_access_key_id"
-        label="AWS access key ID"
-        placeholder="Enter your AWS access key ID"
-        optional={false}
-        secret={true}
-        hint="Access key ID for explicit credentials"
-        errors={normalizeErrors(paramsErrors.aws_access_key_id)}
-        bind:value={$paramsForm.aws_access_key_id}
-        alwaysShowError
-      />
-      <Input
-        id="aws_secret_access_key"
-        label="AWS secret access key"
-        placeholder="Enter your AWS secret access key"
-        optional={false}
-        secret={true}
-        hint="Secret access key for explicit credentials"
-        errors={normalizeErrors(paramsErrors.aws_secret_access_key)}
-        bind:value={$paramsForm.aws_secret_access_key}
-        alwaysShowError
-      />
-    </div>
-  </div>
-
-  <!-- Render other connector properties (excluding auth fields and source fields) -->
+  <!-- Render connector properties (excluding source fields and role-based fields) -->
   {#each filteredParamsProperties as property (property.key)}
     {@const propertyKey = property.key ?? ""}
-    {#if propertyKey !== "aws_access_key_id" && propertyKey !== "aws_secret_access_key" && propertyKey !== "aws_role_arn" && propertyKey !== "aws_role_session_name" && propertyKey !== "aws_external_id" && propertyKey !== "path" && propertyKey !== "name"}
+    {#if propertyKey !== "path" && propertyKey !== "name"}
       <div class="py-1.5 first:pt-0 last:pb-0">
         {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
           <Input

@@ -31,6 +31,7 @@ var spec = drivers.Spec{
 			Description: "AWS access key ID for explicit credentials",
 			Placeholder: "Enter your AWS access key ID",
 			Secret:      true,
+			Required:    true,
 		},
 		{
 			Key:         "aws_secret_access_key",
@@ -39,6 +40,7 @@ var spec = drivers.Spec{
 			Description: "AWS secret access key for explicit credentials",
 			Placeholder: "Enter your AWS secret access key",
 			Secret:      true,
+			Required:    true,
 		},
 		{
 			Key:         "region",
