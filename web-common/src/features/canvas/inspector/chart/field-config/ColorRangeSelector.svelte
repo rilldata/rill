@@ -31,7 +31,12 @@
 
   // Available Vega-Lite color schemes
   // https://vega.github.io/vega/docs/schemes/
-  const colorSchemes: { label: string; value: ColorScheme }[] = [
+  const colorSchemes: {
+    label: string;
+    value: ColorScheme | "sequential" | "diverging";
+  }[] = [
+    { label: "Sequential (Theme)", value: "sequential" },
+    { label: "Diverging (Theme)", value: "diverging" },
     { label: "Teal blues", value: "tealblues" },
     { label: "Viridis", value: "viridis" },
     { label: "Magma", value: "magma" },
@@ -105,7 +110,9 @@
     onChange("colorRange", updatedRange);
   }
 
-  function handleSchemeChange(scheme: ColorScheme) {
+  function handleSchemeChange(
+    scheme: ColorScheme | "sequential" | "diverging",
+  ) {
     const updatedRange: ColorRangeMapping = {
       mode: "scheme",
       scheme,

@@ -28,7 +28,6 @@ export class VegaSignalManager {
 
     return {
       ...this.compiledSpec,
-      background: "transparent",
       signals: updatedSignals,
     };
   }

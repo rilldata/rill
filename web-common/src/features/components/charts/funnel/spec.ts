@@ -10,6 +10,7 @@ import {
   createPositionEncoding,
 } from "../builder";
 import type { ChartDataResult } from "../types";
+import { resolveCSSVariable } from "../util";
 import type { FunnelChartSpec } from "./FunnelChartProvider";
 import {
   createFunnelSortEncoding,
@@ -286,6 +287,16 @@ export function generateVLFunnelChartSpec(
     },
   };
 
+  // Resolve CSS variables for canvas rendering
+  const darkTextColor = resolveCSSVariable(
+    "var(--color-gray-900)",
+    data.isDarkMode,
+  );
+  const lightTextColor = resolveCSSVariable(
+    "var(--color-gray-50)",
+    data.isDarkMode,
+  );
+
   const valueTextLayer: UnitSpec<Field> = {
     mark: {
       type: "text",
@@ -295,7 +306,7 @@ export function generateVLFunnelChartSpec(
       },
       color: {
         // Use theme-aware colors: dark text on light backgrounds, light text on dark backgrounds
-        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(colorField ?? "")}'] ) ) > 0.45 ? 'var(--color-gray-900)' : 'var(--color-gray-50)'`,
+        expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(colorField ?? "")}'] ) ) > 0.45 ? '${darkTextColor}' : '${lightTextColor}'`,
       },
     },
     encoding: {

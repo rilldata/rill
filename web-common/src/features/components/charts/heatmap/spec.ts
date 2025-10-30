@@ -11,6 +11,7 @@ import {
   createPositionEncoding,
 } from "../builder";
 import type { ChartDataResult } from "../types";
+import { resolveCSSVariable } from "../util";
 import type { HeatmapChartSpec } from "./HeatmapChartProvider";
 
 function createHeatmapSortEncoding(
@@ -84,6 +85,16 @@ export function generateVLHeatmapSpec(
   ];
 
   if (config.show_data_labels === true) {
+    // Resolve CSS variables for canvas rendering
+    const darkTextColor = resolveCSSVariable(
+      "var(--color-gray-900)",
+      data.isDarkMode,
+    );
+    const lightTextColor = resolveCSSVariable(
+      "var(--color-gray-50)",
+      data.isDarkMode,
+    );
+
     spec.layer.push({
       mark: {
         type: "text",
@@ -92,7 +103,7 @@ export function generateVLHeatmapSpec(
         opacity: 0.9,
         color: {
           // Use theme-aware colors: dark text on light backgrounds, light text on dark backgrounds
-          expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(config.color?.field ?? "")}'] ) ) > 0.45 ? 'var(--color-gray-900)' : 'var(--color-gray-50)'`,
+          expr: `luminance ( scale ( 'color', datum['${sanitizeValueForVega(config.color?.field ?? "")}'] ) ) > 0.45 ? '${darkTextColor}' : '${lightTextColor}'`,
         },
       },
       encoding: {

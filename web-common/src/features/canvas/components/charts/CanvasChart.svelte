@@ -17,11 +17,10 @@
   export let component: BaseChart<CanvasChartSpec>;
 
   // Theme mode (light/dark) - separate from which theme is selected
-  $: currentThemeMode = $themeControl;
-  $: isThemeModeDark = currentThemeMode === "dark";
-
-  // Create a reactive store from theme mode for chart data dependency
-  $: themeModeStore = derived([], () => isThemeModeDark);
+  $: isThemeModeDark = derived(
+    themeControl,
+    ($themeControl) => $themeControl === "dark",
+  );
 
   $: ({ instanceId } = $runtime);
 
@@ -53,14 +52,14 @@
 
   $: measures = getMeasuresForMetricView(metrics_view);
 
-  $: currentTheme = resolveThemeObject($themeSpec, isThemeModeDark);
+  $: currentTheme = resolveThemeObject($themeSpec, $isThemeModeDark);
 
   $: chartData = getChartDataForCanvas(
     store,
     component,
     chartSpec,
     timeAndFilterStore,
-    themeModeStore,
+    isThemeModeDark,
   );
 
   $: ({ isFetching, error } = $chartData);
@@ -93,7 +92,7 @@
         {chartData}
         measures={$measures}
         isCanvas
-        themeMode={isThemeModeDark ? "dark" : "light"}
+        themeMode={$isThemeModeDark ? "dark" : "light"}
         theme={currentTheme}
       />
     {/if}

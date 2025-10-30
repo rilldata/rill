@@ -45,6 +45,7 @@ export function createMultiLayerBaseSpec() {
     width: "container",
     data: { name: "metrics-view" },
     autosize: { type: "fit" },
+    background: "transparent",
     layer: [],
   };
   return baseSpec;
