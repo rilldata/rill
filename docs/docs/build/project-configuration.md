@@ -343,17 +343,10 @@ To enable feature flags, add the `features` section to your `rill.yaml`:
 
 ```yaml
 features:
-  - alertsInCloud
   - chatCharts
   - cloudDataViewer
 ```
 
-**Example: Enable AI chat with visualizations**
-```yaml
-features:
-  - chat  # Enable AI chat functionality
-  - chatCharts  # Enable chart visualizations in chat responses
-```
 
 **Available feature flags:**
 - `cloudDataViewer`: Enables the cloud data viewer interface for exploring data directly in the browser (default: `false`)
