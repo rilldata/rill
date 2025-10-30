@@ -2087,12 +2087,18 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UNSPECIFIED
 	case database.DeploymentStatusPending:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING
+	case database.DeploymentStatusUpdating:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING
 	case database.DeploymentStatusOK:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK
 	case database.DeploymentStatusError:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR
+	case database.DeploymentStatusStopping:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING
 	case database.DeploymentStatusStopped:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED
+	case database.DeploymentStatusDeleting:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_DELETING
 	default:
 		panic(fmt.Errorf("unhandled deployment status %d", d.Status))
 	}
