@@ -38,8 +38,6 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config.ts";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  getQueryServiceMetricsViewSchemaQueryKey,
-  queryServiceMetricsViewSchema,
   type V1ExploreSpec,
   type V1Expression,
   type V1MetricsViewAggregationDimension,
@@ -213,22 +211,10 @@ async function mergeDashboardFromUrlState(
 ) {
   if (!exploreSpec.metricsView) return;
 
-  const schemaResp = await queryClient.fetchQuery({
-    queryKey: getQueryServiceMetricsViewSchemaQueryKey(
-      instanceId,
-      exploreSpec.metricsView,
-    ),
-    // This seems like an edge case with linter where the undefined check is not honored. Perhaps because it is a callback.
-    queryFn: () =>
-      queryServiceMetricsViewSchema(instanceId, exploreSpec.metricsView!),
-  });
-  if (!schemaResp.schema) return;
-
   const parsedDashboard = getDashboardStateFromUrl(
     urlState,
     metricsViewSpec,
     exploreSpec,
-    schemaResp.schema,
   );
   for (const k in parsedDashboard) {
     exploreState[k] = parsedDashboard[k];

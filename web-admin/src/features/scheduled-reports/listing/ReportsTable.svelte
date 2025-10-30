@@ -1,12 +1,13 @@
 <script lang="ts">
-  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
-  import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import ResourceListToolbar from "@rilldata/web-admin/features/resources/ResourceListToolbar.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
+  import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
-  import Table from "../../../components/table/Table.svelte";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
 
   export let data: V1Resource[];
@@ -14,6 +15,7 @@
   export let project: string;
 
   const { fullPageReportEditor } = featureFlags;
+  const reportColor = resourceColorMapping[ResourceKind.Report];
 
   /**
    * Table column definitions.
@@ -71,9 +73,9 @@
   };
 </script>
 
-<Table {columns} {data} {columnVisibility} kind="report">
+<ResourceList {columns} {data} {columnVisibility} kind="report">
   <div slot="toolbar" class="flex flex-row items-center w-full gap-x-2">
-    <Toolbar />
+    <ResourceListToolbar />
     {#if $fullPageReportEditor}
       <Button
         type="primary"
@@ -83,5 +85,20 @@
       </Button>
     {/if}
   </div>
-  <ResourceHeader kind="report" icon={ReportIcon} slot="header" />
-</Table>
+  <ResourceListEmptyState
+    slot="empty"
+    icon={ReportIcon}
+    iconColor={reportColor}
+    message="You don't have any reports yet"
+  >
+    <span slot="action">
+      Schedule <a
+        href="https://docs.rilldata.com/explore/exports"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        reports</a
+      > from any dashboard
+    </span>
+  </ResourceListEmptyState>
+</ResourceList>

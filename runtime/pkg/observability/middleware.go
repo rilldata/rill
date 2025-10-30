@@ -10,8 +10,7 @@ import (
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -327,35 +326,43 @@ func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 	activity.SetAttributes(ctx, attrs...)
 }
 
-// MCPToolHandlerMiddleware is a middleware for MCP tool handlers that adds MCP-related observability attributes.
+// MCPMiddleware is a middleware for MCP servers that adds MCP-related observability attributes.
 // It is expected to run on an MCP server that has already been wrapped with observability.Middleware(...).
-func MCPToolHandlerMiddleware() server.ToolHandlerMiddleware {
-	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
-		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			// Tool name attribute
-			AddRequestAttributes(ctx, attribute.String("mcp.tool", req.Params.Name))
+func MCPMiddleware() mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (result mcp.Result, err error) {
+			// Add method, session, tool
+			AddRequestAttributes(
+				ctx,
+				attribute.String("mcp.method", method),
+				attribute.String("mcp.session.id", req.GetSession().ID()),
+			)
+			if ctr, ok := req.(*mcp.CallToolRequest); ok {
+				AddRequestAttributes(ctx, attribute.String("mcp.tool", ctr.Params.Name))
+			}
 
 			// Process and add error attributes
-			res, err := next(ctx, req)
+			res, err := next(ctx, method, req)
 			if err != nil {
 				AddRequestAttributes(ctx, attribute.String("mcp.error", err.Error()))
-			}
-			if res != nil && res.IsError {
-				var msg string
-				if len(res.Content) > 0 {
-					txt, ok := res.Content[0].(mcp.TextContent)
-					if ok {
-						msg = txt.Text
+			} else if res != nil {
+				ctr, ok := res.(*mcp.CallToolResult)
+				if ok && ctr.IsError {
+					var msg string
+					if len(ctr.Content) > 0 {
+						txt, ok := ctr.Content[0].(*mcp.TextContent)
+						if ok {
+							msg = txt.Text
+						} else {
+							msg = fmt.Sprintf("unknown error with content type %T", ctr.Content[0])
+						}
 					} else {
-						msg = fmt.Sprintf("unknown error with content type %T", res.Content[0])
+						msg = "unknown error with no content"
 					}
-				} else {
-					msg = "unknown error with no content"
+
+					AddRequestAttributes(ctx, attribute.String("mcp.error", msg))
 				}
-
-				AddRequestAttributes(ctx, attribute.String("mcp.error", msg))
 			}
-
 			return res, err
 		}
 	}

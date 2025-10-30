@@ -177,7 +177,7 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil)
+	res, err := ai.Complete(ctx, msgs, nil, nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -260,7 +260,7 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil)
+	res, err := ai.Complete(ctx, msgs, nil, nil)
 	if err != nil {
 		return "", nil, err
 	}

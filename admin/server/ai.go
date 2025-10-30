@@ -2,9 +2,12 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -31,8 +34,17 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 		}
 	}
 
+	// Parse schema if given
+	var outputSchema *jsonschema.Schema
+	if req.OutputJsonSchema != "" {
+		err := json.Unmarshal([]byte(req.OutputJsonSchema), &outputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse output JSON schema: %w", err)
+		}
+	}
+
 	// Pass messages and tools to the AI service
-	msg, err := s.admin.AI.Complete(ctx, messages, req.Tools)
+	msg, err := s.admin.AI.Complete(ctx, messages, req.Tools, outputSchema)
 	if err != nil {
 		return nil, err
 	}

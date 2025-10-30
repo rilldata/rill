@@ -59,7 +59,7 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   fullPageReportEditor = new FeatureFlag("user", false);
-  darkMode = new FeatureFlag("user", false);
+  darkMode = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);

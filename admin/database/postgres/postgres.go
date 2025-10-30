@@ -840,11 +840,13 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_refresh_token=$5, quota_singleuser_orgs=$6, quota_trial_orgs=$7, preference_time_zone=$8, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_token=$5, github_token_expires_on=$6, github_refresh_token=$7, quota_singleuser_orgs=$8, quota_trial_orgs=$9, preference_time_zone=$10, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
 		opts.GithubUsername,
+		opts.GithubToken,
+		opts.GithubTokenExpiresOn,
 		opts.GithubRefreshToken,
 		opts.QuotaSingleuserOrgs,
 		opts.QuotaTrialOrgs,
@@ -2473,9 +2475,9 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, data, resource_kind, resource_name, project_id, user_id, "default", shared)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, url_search, resource_kind, resource_name, project_id, user_id, "default", shared)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.DisplayName, opts.Description, opts.Data, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
+		opts.DisplayName, opts.Description, opts.URLSearch, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -2486,8 +2488,8 @@ func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBo
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3, shared=$4 WHERE id=$5`,
-		opts.DisplayName, opts.Description, opts.Data, opts.Shared, opts.BookmarkID)
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, url_search=$3, shared=$4 WHERE id=$5`,
+		opts.DisplayName, opts.Description, opts.URLSearch, opts.Shared, opts.BookmarkID)
 	return checkUpdateRow("bookmark", res, err)
 }
 

@@ -614,18 +614,20 @@ type StaticRuntimeSlotsUsed struct {
 type User struct {
 	ID                    string
 	Email                 string
-	DisplayName           string    `db:"display_name"`
-	PhotoURL              string    `db:"photo_url"`
-	GithubUsername        string    `db:"github_username"`
-	GithubRefreshToken    string    `db:"github_refresh_token"`
-	CreatedOn             time.Time `db:"created_on"`
-	UpdatedOn             time.Time `db:"updated_on"`
-	ActiveOn              time.Time `db:"active_on"`
-	QuotaSingleuserOrgs   int       `db:"quota_singleuser_orgs"`
-	QuotaTrialOrgs        int       `db:"quota_trial_orgs"`
-	CurrentTrialOrgsCount int       `db:"current_trial_orgs_count"`
-	PreferenceTimeZone    string    `db:"preference_time_zone"`
-	Superuser             bool      `db:"superuser"`
+	DisplayName           string     `db:"display_name"`
+	PhotoURL              string     `db:"photo_url"`
+	GithubUsername        string     `db:"github_username"`
+	GithubToken           string     `db:"github_token"`
+	GithubTokenExpiresOn  *time.Time `db:"github_token_expires_on"`
+	GithubRefreshToken    string     `db:"github_refresh_token"`
+	CreatedOn             time.Time  `db:"created_on"`
+	UpdatedOn             time.Time  `db:"updated_on"`
+	ActiveOn              time.Time  `db:"active_on"`
+	QuotaSingleuserOrgs   int        `db:"quota_singleuser_orgs"`
+	QuotaTrialOrgs        int        `db:"quota_trial_orgs"`
+	CurrentTrialOrgsCount int        `db:"current_trial_orgs_count"`
+	PreferenceTimeZone    string     `db:"preference_time_zone"`
+	Superuser             bool       `db:"superuser"`
 }
 
 // InsertUserOptions defines options for inserting a new user
@@ -640,13 +642,15 @@ type InsertUserOptions struct {
 
 // UpdateUserOptions defines options for updating an existing user
 type UpdateUserOptions struct {
-	DisplayName         string
-	PhotoURL            string
-	GithubUsername      string
-	GithubRefreshToken  string
-	QuotaSingleuserOrgs int
-	QuotaTrialOrgs      int
-	PreferenceTimeZone  string
+	DisplayName          string
+	PhotoURL             string
+	GithubUsername       string
+	GithubToken          string
+	GithubTokenExpiresOn *time.Time
+	GithubRefreshToken   string
+	QuotaSingleuserOrgs  int
+	QuotaTrialOrgs       int
+	PreferenceTimeZone   string
 }
 
 // Service represents a service account.
@@ -1109,6 +1113,7 @@ type Bookmark struct {
 	DisplayName  string    `db:"display_name"`
 	Description  string    `db:"description"`
 	Data         []byte    `db:"data"`
+	URLSearch    string    `db:"url_search"`
 	ResourceKind string    `db:"resource_kind"`
 	ResourceName string    `db:"resource_name"`
 	ProjectID    string    `db:"project_id"`
@@ -1122,7 +1127,7 @@ type Bookmark struct {
 // InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
 	DisplayName  string `json:"display_name"`
-	Data         []byte `json:"data"`
+	URLSearch    string `json:"url_search"`
 	ResourceKind string `json:"resource_kind"`
 	ResourceName string `json:"resource_name"`
 	Description  string `json:"description"`
@@ -1137,7 +1142,7 @@ type UpdateBookmarkOptions struct {
 	BookmarkID  string `json:"bookmark_id"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
-	Data        []byte `json:"data"`
+	URLSearch   string `json:"url_search"`
 	Shared      bool   `json:"shared"`
 }
 
