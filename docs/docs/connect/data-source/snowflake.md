@@ -1,127 +1,84 @@
 ---
-title: Snowflake 
-description: Connect to data in Snowflake
-sidebar_label: Snowflake
-sidebar_position: 75
+title: "Snowflake"
+description: Connect to a Snowflake table as a data source
+sidebar_label: "Snowflake"
+sidebar_position: 50
 ---
 
-<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-:::info Deprecation of password authentication
-
-Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/blocking-single-factor-password-authentification/) for single-factor password authentication. Rill supports and recommends using private key authentication to avoid any disruption of your service.
-
+:::warning 
+Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/blacklisting-eol-io-domains/) effective for versions 1.23.0 onward. This means that you **must** use your own Snowflake account (`<account>.snowflakecomputing.com`) and _cannot_ use the IO domain endpoints (e.g. `<account>.us-west-2.snowflakecomputing.io`) after February 28, 2025. Please refer to our [migration guide](/deploy/existing-project/migrate-project) for more details.
 :::
-
-## Overview
 
 [Snowflake](https://docs.snowflake.com/en/user-guide-intro) is a cloud-based data platform designed to facilitate data warehousing, data lakes, data engineering, data science, data application development, and data sharing. It separates compute and storage, enabling users to scale up or down instantly without downtime, providing a cost-effective solution for data management. With its unique architecture and support for multi-cloud environments, including AWS, Azure, and Google Cloud Platform, Snowflake offers seamless data integration, secure data sharing across organizations, and real-time access to data insights, making it a common choice to power many business intelligence applications and use cases. You can connect to and read from Snowflake data warehouses using the [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake).
 
-:::tip Snowflake as OLAP Engine
+## Local Modeling
 
-Snowflake can also be used as an OLAP engine to power Rill dashboards directly, without data ingestion. This allows you to query existing Snowflake tables and leverage Snowflake's elastic compute for analytics. See our [Snowflake OLAP documentation](/connect/olap/snowflake) for more information.
-
-:::
-
-
-## Connect to Snowflake
-
-Create a connector with your credentials to connect to Snowflake. Here's an example connector configuration file you can copy into your `connectors` directory to get started:
+Create a connector YAML file in your Rill project directory (e.g. `connectors/snowflake.yaml`) with your Snowflake connection details and authentication credentials. Replace the placeholder text in this example with your actual Snowflake credentials:
 
 ```yaml
 type: connector
 driver: snowflake
-
-dsn: "{{ .env.connector.snowflake.dsn }}" 
+account: "{{ .env.connector.snowflake.account }}"
+username: "{{ .env.connector.snowflake.username }}"
+password: "{{ .env.connector.snowflake.password }}"
+database: "{{ .env.connector.snowflake.database }}"
+schema: "{{ .env.connector.snowflake.schema }}"
+warehouse: "{{ .env.connector.snowflake.warehouse }}"
+role: "{{ .env.connector.snowflake.role }}"
 ```
 
-:::tip Using the Add Data Form
-You can also use the Add Data form in Rill Developer, which will automatically create the `snowflake.yaml` file and populate the `.env` file with `connector.snowflake.*` parameters based on the parameters or connection string you provide.
-:::
+Set these Snowflake credentials in your `.env` file:
 
-
-
-Use the following syntax when defining a connection string using a private key:
-
-```sql
-<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_url_safe>
+```bash
+connector.snowflake.account=<your_account>.snowflakecomputing.com
+connector.snowflake.username=<your_username>
+connector.snowflake.password=<your_password>
+connector.snowflake.database=<your_database>
+connector.snowflake.schema=<your_schema>
+connector.snowflake.warehouse=<your_warehouse>
+connector.snowflake.role=<your_role>
 ```
-See the full documentation to set up [private key authentication](#using-keypair-authentication).
 
-<img src='/img/connect/data-sources/snowflake_conn_strings.png' class='rounded-gif' />
-<br />
-
-:::info Finding the Snowflake account identifier
-
-To determine your [Snowflake account identifier](https://docs.snowflake.com/en/user-guide/admin-account-identifier), one easy way is to check your Snowflake account URL. The account identifier to use in your connection string should be everything before `.snowflakecomputing.com`!
-
+:::info
+The `account` should be your full Snowflake account URL (e.g., `mycompany.us-east-1.snowflakecomputing.com`). Do not use the deprecated `.io` domain endpoints.
 :::
 
-## Separating Dev and Prod Environments
+Create a model YAML file (e.g. `models/my_snowflake_data.yaml`) that references your Snowflake connector to pull data from your Snowflake table or view:
 
-When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+```yaml
+type: model
+connector: snowflake
+sql: SELECT * FROM my_table
+```
 
-For more details, see our [Dev/Prod setup docs](/connect/templating).
+:::tip
+For large tables, consider adding LIMIT clauses during development or using WHERE conditions to reduce query costs and data transfer time.
+:::
 
-## Deploy to Rill Cloud
+## Deployment
 
-When deploying your project to Rill Cloud, you must provide Snowflake credentials via the connection string as a source configuration `dsn` field. If these credentials exist in your `.env` file, they'll be pushed with your project automatically.
+Once you're ready to deploy your project to Rill Cloud, you can set the credentials as secrets using the `rill env configure` command:
 
-To manually configure your environment variables, run:
 ```bash
 rill env configure
 ```
 
-:::tip Did you know?
+The CLI will walk you through configuring each connector used in your project. For Snowflake, you'll be prompted to provide:
+- Your Snowflake account URL
+- Username and password
+- Database, schema, warehouse, and role
 
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
-
-:::
-
-## Appendix
-
-### Using keypair authentication
-
-You can use keypair authentication for enhanced security when connecting to Snowflake as an alternative to password-based authentication, which Snowflake has deprecated. Per the [Snowflake Go Driver](https://github.com/snowflakedb/gosnowflake) specifications, this requires the following changes to the dsn:
-- Remove the password  
-- Add `authenticator=SNOWFLAKE_JWT`  
-- Add `privateKey=<privateKey_url_safe>` 
-
-```sql
-<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_url_safe>
-```
-
-#### Generate a private key
-
-Please refer to the [Snowflake documentation](https://docs.snowflake.com/en/user-guide/key-pair-auth) on how to configure an unencrypted private key to use in Rill.
-
-The Snowflake Go Driver only supports **unencrypted PKCS#8 keys**. Make sure to include the `-nocrypt` flag, as encrypted keys are not supported. You can generate one using: 
+After configuring your credentials, deploy your project:
 
 ```bash
-# Generate a 2048-bit unencrypted PKCS#8 private key
-openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
+rill deploy
 ```
 
-#### Convert the private key to a URL-safe format for the DSN
+## Additional Resources
 
-After generating the private key, you need to convert it into a URL-safe Base64 format for use in the Snowflake DSN. Run the following command:
-
-```bash
-# Convert URL safe format for DSN
-cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
-```
-
-> Note: When copying the output, do not include the trailing % character that may appear in your terminal.
-
-:::info Check your OS version
-
-Depending on your OS version, above commands may differ slightly. Please check your OS reference manual for the correct syntax.
-
-:::
-
-
-:::tip Best Practices
-
-If using keypair authentication, consider rotating your public key regularly to ensure compliance with security and governance best practices.
-
-:::
+- [Snowflake Documentation](https://docs.snowflake.com/)
+- [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake)
+- [Snowflake Account Migration Guide](https://www.snowflake.com/en/blog/blacklisting-eol-io-domains/)
