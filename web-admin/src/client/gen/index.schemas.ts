@@ -244,6 +244,7 @@ export interface V1CancelBillingSubscriptionResponse {
 export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
+  outputJsonSchema?: string;
 }
 
 export interface V1CompleteResponse {

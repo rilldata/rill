@@ -198,7 +198,7 @@ export class TimeControls {
         const hasTimeRangeDefaultParam = get(
           this.defaultUrlParamsStore,
         ).data.has(ExploreStateURLParams.TimeRange);
-        if (hasTimeRangeDefaultParam) {
+        if (!hasTimeRangeDefaultParam) {
           this.calculateAndSetDefaultTimeRanges({
             allTimeRange,
             timeRanges: timeRanges ?? [],
@@ -498,6 +498,13 @@ export class TimeControls {
       minTimeGrain,
     );
     if (!defaultTimeRangePartial?.selectedTimeRange?.name) return;
+
+    // Make sure the default time grain is set. Otherwise, equality checks in some cases will not work.
+    this.set.grain(
+      defaultTimeRangePartial.selectedTimeRange?.interval ??
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+      true,
+    );
 
     const newComparisonRange = getComparisonTimeRange(
       timeRanges,

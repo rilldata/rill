@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -60,6 +61,7 @@ type Server struct {
 	codec    *securetoken.Codec
 	limiter  ratelimit.Limiter
 	activity *activity.Client
+	ai       *ai.Runner
 }
 
 var (
@@ -87,6 +89,7 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		codec:    codec,
 		limiter:  limiter,
 		activity: activityClient,
+		ai:       ai.NewRunner(rt, activityClient),
 	}
 
 	if opts.AuthEnable {
@@ -213,7 +216,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Adds the MCP server handlers.
 	// The path without an instance ID is a convenience path intended for Rill Developer (localhost). In this case, the implementation falls back to using the default instance ID.
-	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.newMCPHTTPHandler()))
+	mcpHandler := observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, s.mcpHandler()))
 	observability.MuxHandle(httpMux, "/mcp", mcpHandler)                                    // Routes to the default instance ID (for Rill Developer on localhost)
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/mcp", mcpHandler)         // The MCP handler will extract the instance ID from the request path.
 	observability.MuxHandle(httpMux, "/mcp/sse", mcpHandler)                                // Backwards compatibility
@@ -291,11 +294,7 @@ func timeoutSelector(fullMethodName string) time.Duration {
 		return time.Minute * 30
 	}
 
-	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName {
-		return time.Minute * 5
-	}
-
-	if fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
+	if fullMethodName == runtimev1.RuntimeService_Complete_FullMethodName || fullMethodName == runtimev1.RuntimeService_CompleteStreaming_FullMethodName {
 		return time.Minute * 5
 	}
 
@@ -389,7 +388,7 @@ func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequ
 		attr["domain"] = email[strings.LastIndex(email, "@")+1:]
 	}
 
-	jwt, err := auth.NewDevToken(attr)
+	jwt, err := auth.NewDevToken(attr, runtime.AllPermissions)
 	if err != nil {
 		return nil, err
 	}
