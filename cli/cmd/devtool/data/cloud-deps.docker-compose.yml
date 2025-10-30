@@ -38,7 +38,7 @@ services:
       - "6432:5432"
   redis:
     <<: *service
-    profiles: ["cloud", "minimal"]
+    profiles: ["cloud", "e2e", "minimal"]
     image: redis
     ports:
       - "6379:6379"
