@@ -9,7 +9,8 @@ import (
 )
 
 func TestMetricsViewQueryOpenURL(t *testing.T) {
-	rt, instanceID, s := newTest(t, testruntime.InstanceOptions{
+	// Setup a basic project with a metrics view
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			// Create a simple model
 			"test_data.sql": `SELECT 'US' AS country, 100 AS revenue, NOW() AS timestamp`,
@@ -31,6 +32,10 @@ explore:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
+	// Initialize test session
+	s := newSession(t, rt, instanceID)
+
+	// Query the metrics view and check it returns a valid OpenURL
 	var res *ai.QueryMetricsViewResult
 	_, err := s.CallTool(t.Context(), ai.RoleUser, "query_metrics_view", &res, ai.QueryMetricsViewArgs{
 		"metrics_view": "test_metrics",
@@ -38,7 +43,6 @@ explore:
 		"measures":     []map[string]any{{"name": "total_revenue"}},
 	})
 	require.NoError(t, err)
-
 	require.NotEmpty(t, res.Data)
 	require.Contains(t, res.OpenURL, "https://ui.rilldata.com/test-org/test-project")
 	require.Contains(t, res.OpenURL, "/-/open-query?query=")
