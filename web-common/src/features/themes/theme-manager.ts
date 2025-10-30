@@ -210,9 +210,13 @@ class ThemeManager {
           ["light", "dark"].forEach((mode) => {
             root.style.removeProperty(`--color-${type}-${mode}-${spacing}`);
           });
+          root.style.removeProperty(`--color-${type}-${spacing}`);
         });
       });
     }
+
+    // Clear CSS variable cache to ensure fresh lookups
+    this.clearCSSVariableCache();
   }
 
   private injectCurrentModeThemeVariables(
