@@ -27,7 +27,8 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	)
 
 	// Check if user has access to query for canvas data (we use the ReadAPI permission for this for now)
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadAPI) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadAPI) {
 		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to canvas data")
 	}
 
@@ -45,7 +46,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	}
 
 	// Check if the user has access to the canvas
-	res, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), res)
+	res, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply security policy: %w", err)
 	}
@@ -68,7 +69,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	}
 	templateData := parser.TemplateData{
 		Environment: inst.Environment,
-		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
+		User:        claims.UserAttributes,
 		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
 			"args": req.Args.AsMap(),
@@ -144,7 +145,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 							if err != nil {
 								return nil, err
 							}
-							sec, err := s.runtime.ResolveSecurity(ctrl.InstanceID, auth.GetClaims(ctx).SecurityClaims(), mv)
+							sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
 							if err != nil {
 								return nil, err
 							}
@@ -196,7 +197,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 
 	// Apply security policies to the metrics views.
 	for name, mv := range referencedMetricsViews {
-		mv, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), mv)
+		mv, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, mv)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply security policy: %w", err)
 		}
@@ -224,7 +225,8 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	)
 
 	// Check if user has access to query for component data (we use the ReadAPI permission for this for now)
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadAPI) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadAPI) {
 		return nil, status.Errorf(codes.FailedPrecondition, "does not have access to component data")
 	}
 
@@ -257,7 +259,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Setup templating data
 	td := parser.TemplateData{
 		Environment: inst.Environment,
-		User:        auth.GetClaims(ctx).SecurityClaims().UserAttributes,
+		User:        claims.UserAttributes,
 		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
 			"args": args,

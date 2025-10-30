@@ -1,14 +1,18 @@
 <script lang="ts">
-  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import AlertIcon from "@rilldata/web-common/components/icons/AlertIcon.svelte";
+  import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
-  import { BellIcon } from "lucide-svelte";
-  import Table from "../../../components/table/Table.svelte";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
 
   export let data: V1Resource[];
   export let organization: string;
   export let project: string;
+
+  const alertColor = resourceColorMapping[ResourceKind.Alert];
 
   /**
    * Table column definitions.
@@ -64,6 +68,29 @@
   };
 </script>
 
-<Table {columns} {data} {columnVisibility} kind="alert">
-  <ResourceHeader kind="alert" icon={BellIcon} slot="header" />
-</Table>
+<ResourceList {columns} {data} {columnVisibility} kind="alert">
+  <ResourceListEmptyState
+    slot="empty"
+    icon={AlertIcon}
+    iconColor={alertColor}
+    message="You don't have any alerts yet"
+  >
+    <span slot="action">
+      Create <a
+        href="https://docs.rilldata.com/explore/alerts"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        alerts
+      </a>
+      from any dashboard or{" "}
+      <a
+        href="https://docs.rilldata.com/reference/project-files/alerts"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        via code</a
+      >.
+    </span>
+  </ResourceListEmptyState>
+</ResourceList>

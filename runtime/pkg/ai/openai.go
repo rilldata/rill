@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/sashabaranov/go-openai"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -33,7 +34,7 @@ func (o *Options) getModel() string {
 	if o.Model != "" {
 		return o.Model
 	}
-	return openai.GPT4o // Default model if not specified
+	return openai.GPT4Dot1 // Default model if not specified
 }
 
 func (o *Options) getTemperature() float32 {
@@ -78,7 +79,7 @@ func NewOpenAI(apiKey string, opts *Options) (Client, error) {
 
 // Complete sends a chat completion request to OpenAI and returns the response.
 // It handles conversion between Rill's message format and OpenAI's message format.
-func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
+func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error) {
 	// Convert Rill messages to OpenAI's message format
 	var reqMsgs []openai.ChatCompletionMessage
 	for _, msg := range msgs {
@@ -102,11 +103,24 @@ func (c *openAI) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, t
 		}
 	}
 
+	// Determine response format based on output schema
+	var responseFormat *openai.ChatCompletionResponseFormat
+	if outputSchema != nil {
+		responseFormat = &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
+			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+				Name:   "llm_completion_result",
+				Schema: outputSchema,
+			},
+		}
+	}
+
 	// Prepare request parameters
 	params := openai.ChatCompletionRequest{
-		Model:       c.opts.getModel(),
-		Messages:    reqMsgs,
-		Temperature: c.opts.getTemperature(),
+		Model:          c.opts.getModel(),
+		Messages:       reqMsgs,
+		Temperature:    c.opts.getTemperature(),
+		ResponseFormat: responseFormat,
 	}
 	if len(openaiTools) > 0 {
 		params.Tools = openaiTools

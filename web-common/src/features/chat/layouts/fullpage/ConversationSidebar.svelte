@@ -1,23 +1,24 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Button from "../../../../components/button/Button.svelte";
+  import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
   import DelayedContent from "../../../entity-management/DelayedContent.svelte";
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
-  import type { Chat } from "../../core/chat";
+  import type { ConversationManager } from "../../core/conversation-manager";
 
-  export let chat: Chat;
+  export let conversationManager: ConversationManager;
   export let onConversationClick: () => void = () => {};
   export let onNewConversationClick: () => void = () => {};
 
   // Get URL parameters for href construction
   $: ({ organization, project } = $page.params);
 
-  $: currentConversation = chat.getCurrentConversation();
+  $: currentConversation = conversationManager.getCurrentConversation();
   $: getConversationQuery = $currentConversation?.getConversationQuery();
   $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
 
-  $: listConversationsQuery = chat.listConversationsQuery();
+  $: listConversationsQuery = conversationManager.listConversationsQuery();
 
   $: conversations = $listConversationsQuery.data?.conversations ?? [];
   $: isLoading = $listConversationsQuery.isLoading;
@@ -30,7 +31,7 @@
 
   // Handle new conversation button click (for focus, navigation handled by href)
   function handleNewConversationButtonClick() {
-    chat.enterNewConversationMode();
+    conversationManager.enterNewConversationMode();
     onNewConversationClick();
   }
 </script>
@@ -39,11 +40,12 @@
   <div class="conversation-sidebar-header">
     <Button
       type="secondary"
-      href={`/${organization}/${project}/-/chat?new=true`}
+      href={`/${organization}/${project}/-/ai?new=true`}
       class="new-conversation-btn"
       onClick={handleNewConversationButtonClick}
     >
-      + New conversation
+      <PlusIcon size="12px" />
+      New conversation
     </Button>
   </div>
 
@@ -62,7 +64,7 @@
     {:else if conversations.length}
       {#each conversations as conversation}
         <a
-          href={`/${organization}/${project}/-/chat/${conversation.id}`}
+          href={`/${organization}/${project}/-/ai/${conversation.id}`}
           class="conversation-item"
           class:active={conversation.id === currentConversationDto?.id}
           data-testid="conversation-item"
@@ -80,21 +82,27 @@
       </div>
     {/if}
   </div>
+
+  <!-- Footer slot for additional actions (e.g., MCP config button) -->
+  <div class="conversation-sidebar-footer">
+    <slot name="footer" />
+  </div>
 </div>
 
 <style lang="postcss">
   .conversation-sidebar {
     width: 280px;
-    background: #f8f9fa;
-    border-right: 1px solid #e5e7eb;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    min-height: 0;
   }
 
   .conversation-sidebar-header {
     padding: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border);
   }
 
   /* Custom full-width styling that preserves small height */
@@ -106,6 +114,14 @@
     flex: 1;
     overflow-y: auto;
     padding: 0.25rem;
+    min-height: 0;
+  }
+
+  .conversation-sidebar-footer {
+    flex-shrink: 0;
+    padding: 0.75rem;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
   }
 
   .loading-conversations {
@@ -133,11 +149,11 @@
   }
 
   .conversation-item:hover {
-    background: #e5e7eb;
+    background: var(--muted);
   }
 
   .conversation-item.active {
-    @apply bg-theme-50 border border-theme-300;
+    @apply bg-gray-100;
   }
 
   .conversation-title {

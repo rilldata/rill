@@ -352,6 +352,74 @@ func TimeGrainFromProto(t runtimev1.TimeGrain) TimeGrain {
 	}
 }
 
+// AnalyzeQueryFields returns a list of all fields (dimensions and measures) that are part of the query.
+func AnalyzeQueryFields(q *Query) []string {
+	// Extract accessible fields from the query
+	fieldsMap := make(map[string]struct{})
+	// Add dimensions
+	for _, dim := range q.Dimensions {
+		fieldsMap[getDimensionName(dim)] = struct{}{}
+	}
+	// Add measures
+	for _, meas := range q.Measures {
+		fieldsMap[getMeasureName(meas)] = struct{}{}
+	}
+	// Add time dimension if present
+	if q.TimeRange != nil && q.TimeRange.TimeDimension != "" {
+		fieldsMap[q.TimeRange.TimeDimension] = struct{}{}
+	}
+
+	exprFields := AnalyzeExpressionFields(q.Where)
+	for _, f := range exprFields {
+		fieldsMap[f] = struct{}{}
+	}
+
+	var fields []string
+	for f := range fieldsMap {
+		fields = append(fields, f)
+	}
+
+	return fields
+}
+
+func getDimensionName(dim Dimension) string {
+	if dim.Compute == nil {
+		return dim.Name
+	}
+
+	if dim.Compute.TimeFloor != nil {
+		return dim.Compute.TimeFloor.Dimension
+	}
+
+	panic("could not find dimension name")
+}
+
+func getMeasureName(m Measure) string {
+	if m.Compute == nil {
+		return m.Name
+	}
+	switch {
+	case m.Compute.Count:
+		return "" // skip
+	case m.Compute.CountDistinct != nil:
+		return m.Compute.CountDistinct.Dimension
+	case m.Compute.ComparisonValue != nil: // although comparison cases can be skipped as base fields would have already been added but adding for switch completeness as it will deduped
+		return m.Compute.ComparisonValue.Measure
+	case m.Compute.ComparisonDelta != nil:
+		return m.Compute.ComparisonDelta.Measure
+	case m.Compute.ComparisonRatio != nil:
+		return m.Compute.ComparisonRatio.Measure
+	case m.Compute.PercentOfTotal != nil:
+		return m.Compute.PercentOfTotal.Measure
+	case m.Compute.URI != nil:
+		return m.Compute.URI.Dimension
+	case m.Compute.ComparisonTime != nil:
+		return m.Compute.ComparisonTime.Dimension
+	default:
+		panic("could not find measure name")
+	}
+}
+
 var timeDecodeFunc mapstructure.DecodeHookFunc = func(from reflect.Type, to reflect.Type, data any) (any, error) {
 	if from == reflect.TypeOf(&time.Time{}) {
 		t, ok := data.(*time.Time)

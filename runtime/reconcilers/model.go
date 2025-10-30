@@ -417,6 +417,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	return runtime.ReconcileResult{Retrigger: refreshOn}
 }
 
+func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}
+
 // executionSpecHash computes a hash of those model properties that impact execution.
 // It also incorporates the spec hashes of the model's refs.
 // If the spec hash changes, it means the model should be reset and fully re-executed.

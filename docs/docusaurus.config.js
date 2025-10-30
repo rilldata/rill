@@ -9,6 +9,7 @@ const darkCodeTheme = themes.dracula;
 const llmsTxtPlugin = require('./plugins/llms-txt-plugin');
 
 const def = require("redocusaurus");
+const path = require('path');
 def;
 
 /** @type {import('@docusaurus/types').Config} */
@@ -22,7 +23,6 @@ const config = {
   trailingSlash: false,
 
   onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "throw",
   favicon: "img/favicon.png",
 
   // Even if you don't use internalization, you can use this field to set useful
@@ -62,6 +62,24 @@ const config = {
         },
       }),
     ],
+    // [
+    //   'redocusaurus',
+    //   {
+    //     config: path.join(__dirname, 'redocly.yaml'),
+    //     specs: [
+    //       {
+    //         id: 'admin-api',
+    //         spec: 'api/rill/admin/v1/public.swagger.yaml',
+    //         route: '/api/admin/',
+    //         layout: {
+    //           title: "Rill Public API",
+    //           description: "Public Rill API documentation",
+    //         },
+    //       },
+    //     ],
+    //     theme: {},
+    //   },
+    // ]
   ],
 
   themeConfig:
@@ -123,6 +141,12 @@ const config = {
             position: "left",
             label: "Reference",
           },
+
+          // {
+          //   to: "/api/admin/",
+          //   position: "left",
+          //   label: "API",
+          // },
 
           {
             type: "docSidebar",
@@ -492,6 +516,14 @@ const config = {
             to: '/build/custom-apis'
           },
           {
+            from: '/integrate/custom-apis/metrics-sql-api',
+            to: '/build/custom-apis'
+          },
+          {
+            from: '/integrate/custom-apis/sql-api',
+            to: '/build/custom-apis'
+          },
+          {
             from: '/explore/filters/filters',
             to: '/explore/filters'
           },
@@ -499,7 +531,7 @@ const config = {
             from: '/explore/filters/time-series',
             to: '/explore/time-series'
           },
-          {    
+          {
             from: '/build/metrics-view/advanced-expressions/case-statements',
             to: '/build/metrics-view/measures/case-statements'
           },
@@ -572,10 +604,14 @@ const config = {
   themes: ['@docusaurus/theme-mermaid'],
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: "throw",
+    },
   },
   stylesheets: [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
   ],
+
 };
 
 module.exports = config;

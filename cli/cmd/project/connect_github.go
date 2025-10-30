@@ -126,7 +126,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Extract Github account and repo name from the gitRemote
-	ghAccount, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
+	_, ghRepo, ok := gitutil.SplitGithubRemote(opts.remoteURL)
 	if !ok {
 		return fmt.Errorf("remote %q is not a valid github.com remote", opts.remoteURL)
 	}
@@ -149,7 +149,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	// If no default org is set by now, it means the user is not in an org yet.
 	// We create a default org based on their Github account name.
 	if ch.Org == "" {
-		err := createOrgFlow(ctx, ch, ghAccount)
+		err := createOrgFlow(ctx, ch)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
 		}
@@ -160,17 +160,17 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
-		OrganizationName: ch.Org,
-		Name:             opts.Name,
-		Description:      opts.Description,
-		Provisioner:      opts.Provisioner,
-		ProdVersion:      opts.ProdVersion,
-		ProdSlots:        int64(opts.Slots),
-		Subpath:          opts.SubPath,
-		ProdBranch:       opts.ProdBranch,
-		Public:           opts.Public,
-		DirectoryName:    filepath.Base(localProjectPath),
-		GitRemote:        opts.remoteURL,
+		Org:           ch.Org,
+		Project:       opts.Name,
+		Description:   opts.Description,
+		Provisioner:   opts.Provisioner,
+		ProdVersion:   opts.ProdVersion,
+		ProdSlots:     int64(opts.Slots),
+		Subpath:       opts.SubPath,
+		ProdBranch:    opts.ProdBranch,
+		Public:        opts.Public,
+		DirectoryName: filepath.Base(localProjectPath),
+		GitRemote:     opts.remoteURL,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -195,9 +195,9 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 				return err
 			}
 			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization: ch.Org,
-				Project:      opts.Name,
-				Variables:    vars,
+				Org:       ch.Org,
+				Project:   opts.Name,
+				Variables: vars,
 			})
 			if err != nil {
 				ch.PrintfWarn("Failed to upload .env: %v\n", err)
@@ -210,8 +210,12 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 		if ch.Interactive {
 			ch.PrintfSuccess("Opening project in browser...\n")
-			time.Sleep(3 * time.Second)
-			_ = browser.Open(res.Project.FrontendUrl)
+			select {
+			case <-time.After(3 * time.Second):
+				_ = browser.Open(res.Project.FrontendUrl)
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 
@@ -237,7 +241,6 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 		if res.GrantAccessUrl != "" {
 			// Print instructions to grant access
-			time.Sleep(3 * time.Second)
 			ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
 			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
@@ -424,7 +427,13 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, gitRemote string) (*adm
 		// Print instructions to grant access
 		ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
 		ch.Print("You need to grant Rill read only access to your repository on Github.\n\n")
-		time.Sleep(3 * time.Second)
+
+		// Wait three seconds before opening the browser
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 		ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
 		ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
@@ -483,15 +492,15 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 		}
 
 		ch.PrintfWarn("Rill project names are derived from your Github repository name.\n")
-		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Name, req.OrganizationName)
+		ch.PrintfWarn("The %q project already exists under org %q. Please enter a different name.\n", req.Project, req.Org)
 
 		// project name already exists, prompt for project name and create project with new name again
-		name, err := projectNamePrompt(ctx, ch, req.OrganizationName)
+		name, err := projectNamePrompt(ctx, ch, req.Org)
 		if err != nil {
 			return nil, err
 		}
 
-		req.Name = name
+		req.Project = name
 		return c.CreateProject(ctx, req)
 	}
 	return res, err

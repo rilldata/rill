@@ -91,7 +91,7 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Path",
 			Description: "Path to Motherduck database. Must be prefixed with `md:`",
-			Placeholder: "md:my_database",
+			Placeholder: "md:my_db",
 		},
 		{
 			Key:         "token",
@@ -117,7 +117,7 @@ var motherduckSpec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Schema name",
-			Placeholder: "your_schema_name",
+			Placeholder: "main",
 			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},
@@ -388,7 +388,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
-	if c.config.Mode != modeReadWrite {
+	if opts.OutputHandle == c && c.config.Mode != modeReadWrite {
 		return nil, fmt.Errorf("model execution is disabled. To enable modeling on this database, set 'mode: readwrite' in your connector configuration. WARNING: This will allow Rill to create and overwrite tables in your database")
 	}
 	if opts.InputHandle == c && opts.OutputHandle == c {
@@ -541,6 +541,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 			Attach:             c.config.Attach,
 			DBName:             c.config.DatabaseName,
 			SchemaName:         c.config.SchemaName,
+			ReadOnlyMode:       c.config.Mode == modeReadOnly,
 			LocalDataDir:       dataDir,
 			LocalCPU:           c.config.CPU,
 			LocalMemoryLimitGB: c.config.MemoryLimitGB,

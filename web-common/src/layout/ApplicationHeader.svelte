@@ -21,7 +21,7 @@
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
 
-  const { darkMode } = featureFlags;
+  const { darkMode, deploy } = featureFlags;
 
   export let mode: string;
 
@@ -35,6 +35,7 @@
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
   $: onDeployPage = isDeployPage($page);
+  $: showDeployCTA = $deploy && !onDeployPage;
 
   $: exploresQuery = useValidExplores(instanceId);
   $: canvasQuery = useValidCanvases(instanceId);
@@ -121,7 +122,7 @@
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {/if}
-    {#if !onDeployPage}
+    {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
     <LocalAvatarButton darkMode={$darkMode} />

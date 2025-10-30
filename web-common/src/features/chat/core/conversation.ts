@@ -8,15 +8,15 @@ import {
   type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { SSEFetchClient } from "@rilldata/web-common/runtime-client/sse-fetch-client";
+import {
+  SSEFetchClient,
+  SSEHttpError,
+  type SSEMessage,
+} from "@rilldata/web-common/runtime-client/sse-fetch-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import {
-  formatChatError,
-  getOptimisticMessageId,
-  NEW_CONVERSATION_ID,
-} from "./chat-utils";
+import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
 
 /**
  * Individual conversation state management.
@@ -31,8 +31,8 @@ export class Conversation {
   public readonly streamError = writable<string | null>(null);
 
   // Private state
-  private sseClient: SSEFetchClient<V1CompleteStreamingResponse> | null = null;
-  private hasReceivedFirstUserMessage = false;
+  private sseClient: SSEFetchClient | null = null;
+  private hasReceivedFirstMessage = false;
 
   constructor(
     private readonly instanceId: string,
@@ -56,7 +56,6 @@ export class Conversation {
       getRuntimeServiceGetConversationQueryOptions(
         this.instanceId,
         this.conversationId,
-        undefined,
         {
           query: {
             enabled: this.conversationId !== NEW_CONVERSATION_ID,
@@ -103,7 +102,7 @@ export class Conversation {
     this.draftMessage.set("");
     this.streamError.set(null);
     this.isStreaming.set(true);
-    this.hasReceivedFirstUserMessage = false; // Reset for new message
+    this.hasReceivedFirstMessage = false;
 
     const userMessage = this.addOptimisticUserMessage(prompt);
 
@@ -111,19 +110,26 @@ export class Conversation {
       // Start streaming - this establishes the connection
       const streamPromise = this.startStreaming(prompt);
 
-      // Stream has been initiated, notify caller
-      options?.onStreamStart?.();
-
       // Wait for streaming to complete
       await streamPromise;
 
       // Stream has completed successfully
       options?.onStreamComplete?.(this.conversationId);
     } catch (error) {
-      // Business logic errors: flow control, validation, business failures
-      // These require full rollback of optimistic updates
-      this.handleStreamingError(error, userMessage);
-      options?.onError?.(formatChatError(error));
+      // Transport errors can occur at two different stages:
+      // 1. Before streaming starts: message not persisted, needs rollback
+      // 2. During streaming: message already persisted, no rollback needed
+      console.error("[Conversation] Message send error:", {
+        error,
+        conversationId: this.conversationId,
+        hasReceivedFirstMessage: this.hasReceivedFirstMessage,
+      });
+      this.handleTransportError(
+        error,
+        userMessage,
+        this.hasReceivedFirstMessage,
+      );
+      options?.onError?.(this.formatTransportError(error));
     } finally {
       this.isStreaming.set(false);
     }
@@ -165,22 +171,47 @@ export class Conversation {
   private async startStreaming(prompt: string): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
-      this.sseClient = new SSEFetchClient<V1CompleteStreamingResponse>();
+      this.sseClient = new SSEFetchClient();
 
-      // Set up transport-level event handlers
-      this.sseClient.on("data", (response) => {
-        // Delegate to business logic handler
-        this.processStreamingResponse(response);
+      // Set up SSE event handlers
+      this.sseClient.on("message", (message: SSEMessage) => {
+        // Mark that we've received data
+        // Since server always emits user message first (after persisting),
+        // receiving any message means the server has persisted our message
+        this.hasReceivedFirstMessage = true;
+
+        // Handle application-level errors sent via SSE
+        if (message.type === "error") {
+          this.handleServerError(message.data);
+          return;
+        }
+
+        // Handle normal streaming data
+        try {
+          const response: V1CompleteStreamingResponse = JSON.parse(
+            message.data,
+          );
+          this.processStreamingResponse(response);
+        } catch (error) {
+          console.error("Failed to parse streaming response:", error);
+          this.streamError.set("Failed to process server response");
+        }
       });
 
       this.sseClient.on("error", (error) => {
-        // Transport errors: connection, parsing, network issues
-        // No rollback needed - these are infrastructure failures
-        this.streamError.set(this.getDescriptiveError(error));
+        // Transport errors only: connection, network, HTTP failures
+        console.error("[SSE] Transport error:", {
+          message: error.message,
+          status: error instanceof SSEHttpError ? error.status : undefined,
+          statusText:
+            error instanceof SSEHttpError ? error.statusText : undefined,
+          name: error.name,
+        });
+        this.streamError.set(this.formatTransportError(error));
       });
 
       this.sseClient.on("close", () => {
-        // Transport completed - business logic handles completion in sendMessage
+        // Stream closed - completion handled in sendMessage
       });
     }
 
@@ -204,16 +235,10 @@ export class Conversation {
     this.options?.onStreamStart?.();
 
     // Start streaming - this will establish the connection and then stream until completion
-    const streamPromise = this.sseClient.start(baseUrl, {
+    await this.sseClient.start(baseUrl, {
       method: "POST",
       body: requestBody,
     });
-
-    // Stream has been initiated - we can notify that streaming started
-    // (the connection is established at this point, even though data may still be streaming)
-
-    // Wait for the stream to complete
-    await streamPromise;
   }
 
   // ----- Business Logic Layer: Message Processing -----
@@ -235,12 +260,11 @@ export class Conversation {
     }
 
     if (response.message) {
-      // Skip the first user message from the stream since we've already added it optimistically
-      if (
-        response.message.role === "user" &&
-        !this.hasReceivedFirstUserMessage
-      ) {
-        this.hasReceivedFirstUserMessage = true;
+      // Skip ALL user messages from the stream
+      // Server echoes back the user message (potentially as multiple content blocks)
+      // We've already added it optimistically, so we don't want duplicates
+      // Note: Server generates new IDs for streamed messages, can't match by ID
+      if (response.message.role === "user") {
         return;
       }
 
@@ -440,43 +464,110 @@ export class Conversation {
   }
 
   // ----- Error Handling -----
+  // Error handling is split by error type (server vs transport) and responsibility
+  // (formatting vs handling). Each error type has a formatter (pure) and handler (side effects).
+
+  // ----- Server Errors (Application-level) -----
 
   /**
-   * Handle streaming errors with rollback and user feedback
+   * Format server error data into user-friendly message
    */
-  private handleStreamingError(error: any, userMessage: V1Message): void {
-    // Set error state for UI display
-    this.streamError.set(this.getDescriptiveError(error));
-
-    // Roll back optimistic updates
-    this.removeMessageFromCache(userMessage.id!);
-
-    // Restore draft message so user can easily retry
-    const textContent = userMessage.content?.[0]?.text || "";
-    this.draftMessage.set(textContent);
+  private formatServerError(errorData: string): string {
+    try {
+      const parsed = JSON.parse(errorData);
+      return parsed.error || "Server error occurred";
+    } catch {
+      return `Server error: ${errorData}`;
+    }
   }
 
   /**
-   * Get descriptive error message for user feedback
+   * Handle server-sent errors (event: error from SSE)
+   *
+   * These are application-level errors (AI failures, tool errors, etc.) that occur
+   * AFTER the server has already persisted the user's message. No rollback is needed -
+   * the user's message should remain visible in the conversation with an error indicator.
    */
-  private getDescriptiveError(error: any): string {
+  private handleServerError(errorData: string): void {
+    this.streamError.set(this.formatServerError(errorData));
+  }
+
+  // ----- Transport Errors (Connection-level) -----
+
+  /**
+   * Format transport error into user-friendly message
+   */
+  private formatTransportError(error: Error): string {
     if (error.name === "AbortError") {
       return "Message sending was cancelled";
     }
 
-    if (error.status >= 500) {
+    // Extract status code from SSEHttpError
+    const status = error instanceof SSEHttpError ? error.status : null;
+
+    // Authentication errors - suggest refresh to get new JWT
+    if (status === 401 || status === 403) {
+      return "Authentication failed. Please refresh the page and try again.";
+    }
+
+    // Bad request errors
+    if (status === 400) {
+      return "Invalid request. Please try again.";
+    }
+
+    // Server errors (5xx)
+    if (status && status >= 500 && status < 600) {
       return "Server is temporarily unavailable. Please try sending your message again.";
     }
 
-    if (error.name === "NetworkError" || !navigator.onLine) {
-      return "Connection lost. Check your internet connection and try again.";
-    }
-
-    if (error.status === 429) {
+    // Rate limiting
+    if (status === 429) {
       return "Too many requests. Please wait a moment before trying again.";
     }
 
-    // Generic error with retry guidance
-    return "Failed to send message. Please try again or refresh the page.";
+    // Network/connection errors (fetch() throws TypeError for network failures)
+    const lowerMessage = error.message?.toLowerCase() || "";
+    const isNetworkError =
+      (error.name === "TypeError" &&
+        (lowerMessage.includes("fetch") ||
+          lowerMessage.includes("network") ||
+          lowerMessage.includes("load failed"))) ||
+      (typeof navigator !== "undefined" && !navigator.onLine);
+
+    if (isNetworkError) {
+      return "Unable to connect to server. Please check your connection and try again.";
+    }
+
+    // Fallback error message
+    return "Failed to connect to server. Please try again or refresh the page.";
+  }
+
+  /**
+   * Handle transport-level errors with conditional rollback
+   *
+   * Transport errors can occur at two stages:
+   * 1. Before streaming starts: Connection failures, HTTP errors before request completes
+   *    → Rollback needed (message never reached server)
+   * 2. During streaming: Network drops, server crashes while streaming responses
+   *    → No rollback (message already persisted on server)
+   */
+  private handleTransportError(
+    error: any,
+    userMessage: V1Message,
+    wasStreaming: boolean,
+  ): void {
+    // Set error message
+    this.streamError.set(this.formatTransportError(error));
+
+    // Only rollback if we hadn't started streaming yet
+    if (!wasStreaming) {
+      // Message never reached server - remove optimistic update
+      this.removeMessageFromCache(userMessage.id!);
+
+      // Restore draft message so user can easily retry
+      const textContent = userMessage.content?.[0]?.text || "";
+      this.draftMessage.set(textContent);
+    }
+    // If we were streaming, message is already on server - keep it in UI
   }
 }
