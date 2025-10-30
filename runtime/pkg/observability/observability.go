@@ -27,14 +27,7 @@ const (
 	OtelExporter       Exporter = "otel"
 	FileBasedExporter  Exporter = "file"
 	PrometheusExporter Exporter = "prometheus"
-
-	OtelNoopEndpoint = ""
 )
-
-// String returns the string representation of the Exporter
-func (e Exporter) String() string {
-	return string(e)
-}
 
 // Options for configuring telemetry setup
 type Options struct {
