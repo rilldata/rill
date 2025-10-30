@@ -66,13 +66,9 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		return nil, err
 	}
 
-	schema, err := rows.runtimeSchema()
-	if err != nil {
-		return nil, err
-	}
 	return &drivers.Result{
 		Rows:   rows,
-		Schema: schema,
+		Schema: rows.runtimeSchema(),
 	}, nil
 }
 
@@ -254,7 +250,7 @@ func (r *rows) Scan(dest ...any) error {
 	return nil
 }
 
-func (r *rows) runtimeSchema() (*runtimev1.StructType, error) {
+func (r *rows) runtimeSchema() *runtimev1.StructType {
 	fields := make([]*runtimev1.StructType_Field, len(r.columnInfo))
 	for i, col := range r.columnInfo {
 		fields[i] = &runtimev1.StructType_Field{
@@ -265,7 +261,7 @@ func (r *rows) runtimeSchema() (*runtimev1.StructType, error) {
 	res := &runtimev1.StructType{
 		Fields: fields,
 	}
-	return res, nil
+	return res
 }
 
 func athenaTypeToRuntimeType(colType string) *runtimev1.Type {
