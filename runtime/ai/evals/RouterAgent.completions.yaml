@@ -1,0 +1,170 @@
+- index: 1
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        You are a routing agent that determines which specialized agent should handle a user's request.
+        You operate in the context of a business intelligence tool that supports data modeling and data exploration, and more.
+        Your input includes the user's previous messages and responses, as well as the user's latest message, which you are responsible for routing.
+        Routing guidelines:
+        - If the user's question relates to developing or changing the data model or dashboards, you should route to the developer.
+        - If the user's question relates to retrieving specific business metrics, you should route to the analyst.
+        - If the user asks a general question, you should route to the analyst.
+        You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
+        - analyst_agent (Agent that assists with data analysis tasks.)
+        - developer_agent (Agent that assists with development tasks.)
+    - role: user
+      content_type: text
+      content: What country has the highest revenue?
+  response:
+    role: assistant
+    content_type: text
+    content: '{"agent":"analyst_agent"}'
+- index: 2
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        You are a routing agent that determines which specialized agent should handle a user's request.
+        You operate in the context of a business intelligence tool that supports data modeling and data exploration, and more.
+        Your input includes the user's previous messages and responses, as well as the user's latest message, which you are responsible for routing.
+        Routing guidelines:
+        - If the user's question relates to developing or changing the data model or dashboards, you should route to the developer.
+        - If the user's question relates to retrieving specific business metrics, you should route to the analyst.
+        - If the user asks a general question, you should route to the analyst.
+        You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
+        - analyst_agent (Agent that assists with data analysis tasks.)
+        - developer_agent (Agent that assists with development tasks.)
+    - role: user
+      content_type: text
+      content: '{"prompt":"What country has the highest revenue?","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+    - role: user
+      content_type: text
+      content: Repeat the answer you gave to my last question
+  response:
+    role: assistant
+    content_type: text
+    content: '{"agent":"analyst_agent"}'
+- index: 3
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        You are a routing agent that determines which specialized agent should handle a user's request.
+        You operate in the context of a business intelligence tool that supports data modeling and data exploration, and more.
+        Your input includes the user's previous messages and responses, as well as the user's latest message, which you are responsible for routing.
+        Routing guidelines:
+        - If the user's question relates to developing or changing the data model or dashboards, you should route to the developer.
+        - If the user's question relates to retrieving specific business metrics, you should route to the analyst.
+        - If the user asks a general question, you should route to the analyst.
+        You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
+        - analyst_agent (Agent that assists with data analysis tasks.)
+        - developer_agent (Agent that assists with development tasks.)
+    - role: user
+      content_type: text
+      content: '{"prompt":"What country has the highest revenue?","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+    - role: user
+      content_type: text
+      content: '{"prompt":"Repeat the answer you gave to my last question","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+    - role: user
+      content_type: text
+      content: Create a model called 'sales_data' that selects all columns from the 'orders' table.
+  response:
+    role: assistant
+    content_type: text
+    content: '{"agent":"developer_agent"}'
+- index: 4
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        You are a routing agent that determines which specialized agent should handle a user's request.
+        You operate in the context of a business intelligence tool that supports data modeling and data exploration, and more.
+        Your input includes the user's previous messages and responses, as well as the user's latest message, which you are responsible for routing.
+        Routing guidelines:
+        - If the user's question relates to developing or changing the data model or dashboards, you should route to the developer.
+        - If the user's question relates to retrieving specific business metrics, you should route to the analyst.
+        - If the user asks a general question, you should route to the analyst.
+        You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
+        - analyst_agent (Agent that assists with data analysis tasks.)
+        - developer_agent (Agent that assists with development tasks.)
+    - role: user
+      content_type: text
+      content: '{"prompt":"What country has the highest revenue?","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+    - role: user
+      content_type: text
+      content: '{"prompt":"Repeat the answer you gave to my last question","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+    - role: user
+      content_type: text
+      content: '{"prompt":"Create a model called ''sales_data'' that selects all columns from the ''orders'' table.","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+    - role: user
+      content_type: text
+      content: Do another one for the 'customers' table.
+  response:
+    role: assistant
+    content_type: text
+    content: '{"agent":"developer_agent"}'
+- index: 5
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        You are a routing agent that determines which specialized agent should handle a user's request.
+        You operate in the context of a business intelligence tool that supports data modeling and data exploration, and more.
+        Your input includes the user's previous messages and responses, as well as the user's latest message, which you are responsible for routing.
+        Routing guidelines:
+        - If the user's question relates to developing or changing the data model or dashboards, you should route to the developer.
+        - If the user's question relates to retrieving specific business metrics, you should route to the analyst.
+        - If the user asks a general question, you should route to the analyst.
+        You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
+        - analyst_agent (Agent that assists with data analysis tasks.)
+        - developer_agent (Agent that assists with development tasks.)
+    - role: user
+      content_type: text
+      content: '{"prompt":"What country has the highest revenue?","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+    - role: user
+      content_type: text
+      content: '{"prompt":"Repeat the answer you gave to my last question","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+    - role: user
+      content_type: text
+      content: '{"prompt":"Create a model called ''sales_data'' that selects all columns from the ''orders'' table.","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+    - role: user
+      content_type: text
+      content: '{"prompt":"Do another one for the ''customers'' table.","skip_handoff":true}'
+    - role: assistant
+      content_type: text
+      content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+    - role: user
+      content_type: text
+      content: What is 2 + 2?
+  response:
+    role: assistant
+    content_type: text
+    content: '{"agent":"analyst_agent"}'

@@ -16,7 +16,7 @@
   $: hasManageOrgMembers = organizationPermissions?.manageOrgMembers;
 
   $: userCountsQuery = getUserCounts(organization);
-  $: ({ membersCount, guestsCount } = $userCountsQuery);
+  $: ({ membersCount, guestsCount, groupsCount } = $userCountsQuery);
 
   $: navItems = [
     {
@@ -30,7 +30,7 @@
       hasPermission: hasManageOrgMembers,
     },
     {
-      label: "Groups",
+      label: `Groups (${groupsCount})`,
       route: "/groups",
       hasPermission: hasManageOrgMembers,
     },

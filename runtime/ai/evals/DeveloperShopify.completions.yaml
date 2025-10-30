@@ -1,0 +1,411 @@
+- index: 1
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        You are a routing agent that determines which specialized agent should handle a user's request.
+        You operate in the context of a business intelligence tool that supports data modeling and data exploration, and more.
+        Your input includes the user's previous messages and responses, as well as the user's latest message, which you are responsible for routing.
+        Routing guidelines:
+        - If the user's question relates to developing or changing the data model or dashboards, you should route to the developer.
+        - If the user's question relates to retrieving specific business metrics, you should route to the analyst.
+        - If the user asks a general question, you should route to the analyst.
+        You must answer with a single agent choice and no further explanation. Pick only from this list of available agents (description in parentheses):
+        - analyst_agent (Agent that assists with data analysis tasks.)
+        - developer_agent (Agent that assists with development tasks.)
+    - role: user
+      content_type: text
+      content: Develop a dashboard of Shopify orders
+  response:
+    role: assistant
+    content_type: text
+    content: '{"agent":"developer_agent"}'
+- index: 2
+  input:
+    - role: system
+      content_type: text
+      content: "<role>You are a data engineer agent specialized in developing data models and metrics view definitions in the Rill business intelligence platform.</role>\n\n<concepts>\nRill is a \"business intelligence as code\" platform where all resources are defined using YAML files containing SQL snippets in a project directory.\nRill supports many different resource types, such as connectors, models, metrics views, explore dashboards, canvas dashboards, and more.\nFor the purposes of your work, you will only deal with:\n- **Models**: SQL statements and related metadata that produce a single table in the project's database (usually DuckDB or Clickhouse).\n- **Metrics views**: Sets of queryable business dimensions and measures based on a single model in the project. This is sometimes called the \"semantic layer\" or \"metrics layer\" in other tools.\nRill maintains a DAG of resources. In this DAG, metrics views are always derived from a single model. Multiple metrics views can derive from a single model, although usually it makes sense to have just one metrics view per model.\nWhen users ask you to develop a \"dashboard\", that just means to develop a new metrics view (and possibly a new underlying model). Rill automatically creates visual dashboards for each metrics view.\n</concepts>\n\n<example>\nThis example is not directly related to your current task. It just serves to explain how Rill project's look and how you might act on a user request.\n\nRill projects often (but not always) organize files in directories by resource type. A Rill project might look like this:\n```\nconnectors/duckdb.yaml\nmodels/orders.yaml\nmetrics/orders.yaml\nrill.yaml\n```\n\nThe user might ask you to \"Create a dashboard for my Github activity\". You would notice that this does not relate to the current files, and proceed with the following plan:\n1. Add a new model in \"models/git_commits.yaml\" using the \"develop_model\" tool.\n2. Add a new metrics view in \"metrics/git_commits.yaml\" based on the new \"git_commits\" model using the \"develop_metrics_view\" tool.\n</example>\n\n<process>\nAt a high level, you should follow these steps:\n1. Understand the current contents of the project.\n2. Make a plan for how to implement the user's request. \n3. Only if necessary, add a new model or update an existing model to reflect the user's request\n4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.\n\nYou should use the tools available to you to understand the current project contents and to make the necessary changes. You should use the \"read_file\" tool sparingly and surgically to understand files you consider promising for your task, you should not use it to inspect many files in the project.\n\nYou should not make many changes at a time. Carefully consider the minimum changes you can make to address the user's request. If there's a model already in place that relates to the user's request, consider re-using that and only adding or updating a metrics view.\n</process>"
+    - role: user
+      content_type: text
+      content: Develop a dashboard of Shopify orders
+  response:
+    role: assistant
+    content_type: tool_call
+    id: call_HPAKdwzpq5iTYxpHiZFjYNCp
+    tool_name: list_files
+    content: '{}'
+- index: 3
+  input:
+    - role: system
+      content_type: text
+      content: "<role>You are a data engineer agent specialized in developing data models and metrics view definitions in the Rill business intelligence platform.</role>\n\n<concepts>\nRill is a \"business intelligence as code\" platform where all resources are defined using YAML files containing SQL snippets in a project directory.\nRill supports many different resource types, such as connectors, models, metrics views, explore dashboards, canvas dashboards, and more.\nFor the purposes of your work, you will only deal with:\n- **Models**: SQL statements and related metadata that produce a single table in the project's database (usually DuckDB or Clickhouse).\n- **Metrics views**: Sets of queryable business dimensions and measures based on a single model in the project. This is sometimes called the \"semantic layer\" or \"metrics layer\" in other tools.\nRill maintains a DAG of resources. In this DAG, metrics views are always derived from a single model. Multiple metrics views can derive from a single model, although usually it makes sense to have just one metrics view per model.\nWhen users ask you to develop a \"dashboard\", that just means to develop a new metrics view (and possibly a new underlying model). Rill automatically creates visual dashboards for each metrics view.\n</concepts>\n\n<example>\nThis example is not directly related to your current task. It just serves to explain how Rill project's look and how you might act on a user request.\n\nRill projects often (but not always) organize files in directories by resource type. A Rill project might look like this:\n```\nconnectors/duckdb.yaml\nmodels/orders.yaml\nmetrics/orders.yaml\nrill.yaml\n```\n\nThe user might ask you to \"Create a dashboard for my Github activity\". You would notice that this does not relate to the current files, and proceed with the following plan:\n1. Add a new model in \"models/git_commits.yaml\" using the \"develop_model\" tool.\n2. Add a new metrics view in \"metrics/git_commits.yaml\" based on the new \"git_commits\" model using the \"develop_metrics_view\" tool.\n</example>\n\n<process>\nAt a high level, you should follow these steps:\n1. Understand the current contents of the project.\n2. Make a plan for how to implement the user's request. \n3. Only if necessary, add a new model or update an existing model to reflect the user's request\n4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.\n\nYou should use the tools available to you to understand the current project contents and to make the necessary changes. You should use the \"read_file\" tool sparingly and surgically to understand files you consider promising for your task, you should not use it to inspect many files in the project.\n\nYou should not make many changes at a time. Carefully consider the minimum changes you can make to address the user's request. If there's a model already in place that relates to the user's request, consider re-using that and only adding or updating a metrics view.\n</process>"
+    - role: user
+      content_type: text
+      content: Develop a dashboard of Shopify orders
+    - role: assistant
+      content_type: tool_call
+      id: b73d3c09fab54004
+      tool_name: list_files
+      content: '{}'
+    - role: tool
+      content_type: tool_response
+      id: b73d3c09fab54004
+      content: '{"files":[{"path":"/connectors/duckdb.yaml","resources":[{"kind":"rill.runtime.v1.Connector","name":"duckdb","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]},{"path":"/rill.yaml"}]}'
+  response:
+    role: assistant
+    content_type: tool_call
+    id: call_Pngp4s4trDXfug9dvLco98Xj
+    tool_name: develop_model
+    content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically found in Shopify order exports."}'
+- index: 4
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        <role>You are a data engineer agent specialized in developing data models in the Rill business intelligence platform.</role>
+
+        <concepts>
+        Rill is a "business intelligence as code" platform where all resources are defined using YAML files containing SQL snippets in a project directory.
+        For the purposes of your work, you will only deal with **model** resources, which are SQL statements and related metadata that produce a single table in the project's database.
+        In Rill, when you write a file, the platform discovers and "reconciles" it immediately. For a model, reconcile updates the database to contain the defined table.
+        </concepts>
+
+        <process>
+        At a high level, you should follow these steps:
+        1. Leverage the "read_file" tool to understand the file's current contents, if any (it may return a file not found error).
+        2. Generate a new model definition based on the user's prompt and save it to the requested path using the "write_file" tool.
+        3. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
+
+        Additional instructions:
+        - The user will often ask you to create or update models that require external data, such as from a SaaS application or their data warehouse. In these cases, you should generate a SQL query that emits mock data that resembles the expected structure and contents of the external data. You may generate up to 100 rows of mock data.
+        - You should not attempt to reference other models in the project, unless the model already exists and already references them.
+        - The SQL expression should be a plain SELECT query without a semicolon at the end.
+        </process>
+
+        <example>
+        A model definition in Rill is a YAML file containing a SQL statement. The SQL statement will be creates as a table in the project's database using "CREATE TABLE name AS SELECT ...". Here is an example Rill model:
+        ```
+        type: model
+        materialize: true
+
+        sql: |
+          SELECT '2025-05-01T00:00:00Z' AS event_time, 'United States' AS country, 'Toothbrush' AS product_name, 5 AS quantity, 100 AS price
+          UNION ALL
+          SELECT '2025-05-02T00:00:00Z' AS event_time, 'Denmark' AS country, 'Apple' AS product_name, 10 AS quantity, 50 AS price
+        ```
+        </example>
+    - role: user
+      content_type: text
+      content: |-
+        Task: Create a model for Shopify orders. The model should ingest order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically found in Shopify order exports.
+
+        Output path: /models/shopify_orders.yaml
+
+        SQL dialect: duckdb
+  response:
+    role: assistant
+    content_type: tool_call
+    id: call_i0aB5pux4k7RNizDnfs55bmv
+    tool_name: read_file
+    content: '{"path":"/models/shopify_orders.yaml"}'
+- index: 5
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        <role>You are a data engineer agent specialized in developing data models in the Rill business intelligence platform.</role>
+
+        <concepts>
+        Rill is a "business intelligence as code" platform where all resources are defined using YAML files containing SQL snippets in a project directory.
+        For the purposes of your work, you will only deal with **model** resources, which are SQL statements and related metadata that produce a single table in the project's database.
+        In Rill, when you write a file, the platform discovers and "reconciles" it immediately. For a model, reconcile updates the database to contain the defined table.
+        </concepts>
+
+        <process>
+        At a high level, you should follow these steps:
+        1. Leverage the "read_file" tool to understand the file's current contents, if any (it may return a file not found error).
+        2. Generate a new model definition based on the user's prompt and save it to the requested path using the "write_file" tool.
+        3. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
+
+        Additional instructions:
+        - The user will often ask you to create or update models that require external data, such as from a SaaS application or their data warehouse. In these cases, you should generate a SQL query that emits mock data that resembles the expected structure and contents of the external data. You may generate up to 100 rows of mock data.
+        - You should not attempt to reference other models in the project, unless the model already exists and already references them.
+        - The SQL expression should be a plain SELECT query without a semicolon at the end.
+        </process>
+
+        <example>
+        A model definition in Rill is a YAML file containing a SQL statement. The SQL statement will be creates as a table in the project's database using "CREATE TABLE name AS SELECT ...". Here is an example Rill model:
+        ```
+        type: model
+        materialize: true
+
+        sql: |
+          SELECT '2025-05-01T00:00:00Z' AS event_time, 'United States' AS country, 'Toothbrush' AS product_name, 5 AS quantity, 100 AS price
+          UNION ALL
+          SELECT '2025-05-02T00:00:00Z' AS event_time, 'Denmark' AS country, 'Apple' AS product_name, 10 AS quantity, 50 AS price
+        ```
+        </example>
+    - role: user
+      content_type: text
+      content: |-
+        Task: Create a model for Shopify orders. The model should ingest order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically found in Shopify order exports.
+
+        Output path: /models/shopify_orders.yaml
+
+        SQL dialect: duckdb
+    - role: assistant
+      content_type: tool_call
+      id: 3d171434fa79412f
+      tool_name: read_file
+      content: '{"path":"/models/shopify_orders.yaml"}'
+    - role: tool
+      content_type: tool_response
+      id: 3d171434fa79412f
+      is_error: true
+      content: open /models/shopify_orders.yaml no such file or directory
+  response:
+    role: assistant
+    content_type: tool_call
+    id: call_ycymiybQfXsTeEVaP80s1gZ5
+    tool_name: write_file
+    content: '{"contents":"type: model\nmaterialize: true\n\nsql: |\n  SELECT 1001 AS order_id, 501 AS customer_id, ''2024-06-01T10:15:00Z'' AS order_date, 120.50 AS total_amount, ''USD'' AS currency, ''paid'' AS order_status,\n         ''John Doe'' AS customer_name, ''john@example.com'' AS customer_email, ''2024-06-01T10:10:00Z'' AS created_at, ''2024-06-01T10:20:00Z'' AS updated_at,\n         ''shipped'' AS fulfillment_status, ''Credit Card'' AS payment_method, 2 AS total_items, ''123 Main St, New York, NY'' AS shipping_address,\n         ''Standard'' AS shipping_method, 10.00 AS shipping_cost, 0.00 AS discount_amount, 8.50 AS tax_amount, 129.00 AS grand_total\n  UNION ALL\n  SELECT 1002, 502, ''2024-06-02T14:30:00Z'', 75.00, ''USD'', ''pending'',\n         ''Jane Smith'', ''jane@example.com'', ''2024-06-02T14:25:00Z'', ''2024-06-02T14:35:00Z'',\n         ''unfulfilled'', ''PayPal'', 1, ''456 Oak Ave, Los Angeles, CA'', ''Express'', 15.00, 5.00, 6.00, 91.00\n  UNION ALL\n  SELECT 1003, 503, ''2024-06-03T09:05:00Z'', 200.00, ''EUR'', ''cancelled'',\n         ''Alice Brown'', ''alice@example.com'', ''2024-06-03T09:00:00Z'', ''2024-06-03T09:10:00Z'',\n         ''unfulfilled'', ''Credit Card'', 3, ''789 Pine Rd, London, UK'', ''Standard'', 12.00, 0.00, 20.00, 232.00\n  UNION ALL\n  SELECT 1004, 504, ''2024-06-04T16:45:00Z'', 50.00, ''USD'', ''paid'',\n         ''Bob Lee'', ''bob@example.com'', ''2024-06-04T16:40:00Z'', ''2024-06-04T16:50:00Z'',\n         ''fulfilled'', ''Gift Card'', 1, ''321 Maple St, Toronto, CA'', ''Standard'', 8.00, 2.00, 4.00, 60.00\n  UNION ALL\n  SELECT 1005, 505, ''2024-06-05T11:20:00Z'', 300.00, ''GBP'', ''refunded'',\n         ''Carol White'', ''carol@example.com'', ''2024-06-05T11:15:00Z'', ''2024-06-05T11:25:00Z'',\n         ''unfulfilled'', ''Credit Card'', 5, ''654 Cedar Blvd, Manchester, UK'', ''Express'', 20.00, 15.00, 30.00, 335.00\n","path":"/models/shopify_orders.yaml"}'
+- index: 6
+  input:
+    - role: system
+      content_type: text
+      content: |-
+        <role>You are a data engineer agent specialized in developing data models in the Rill business intelligence platform.</role>
+
+        <concepts>
+        Rill is a "business intelligence as code" platform where all resources are defined using YAML files containing SQL snippets in a project directory.
+        For the purposes of your work, you will only deal with **model** resources, which are SQL statements and related metadata that produce a single table in the project's database.
+        In Rill, when you write a file, the platform discovers and "reconciles" it immediately. For a model, reconcile updates the database to contain the defined table.
+        </concepts>
+
+        <process>
+        At a high level, you should follow these steps:
+        1. Leverage the "read_file" tool to understand the file's current contents, if any (it may return a file not found error).
+        2. Generate a new model definition based on the user's prompt and save it to the requested path using the "write_file" tool.
+        3. The "write_file" tool will respond with the reconcile status. If there are parse or reconcile errors, you should fix them using the "write_file" tool. If there are no errors, your work is done.
+
+        Additional instructions:
+        - The user will often ask you to create or update models that require external data, such as from a SaaS application or their data warehouse. In these cases, you should generate a SQL query that emits mock data that resembles the expected structure and contents of the external data. You may generate up to 100 rows of mock data.
+        - You should not attempt to reference other models in the project, unless the model already exists and already references them.
+        - The SQL expression should be a plain SELECT query without a semicolon at the end.
+        </process>
+
+        <example>
+        A model definition in Rill is a YAML file containing a SQL statement. The SQL statement will be creates as a table in the project's database using "CREATE TABLE name AS SELECT ...". Here is an example Rill model:
+        ```
+        type: model
+        materialize: true
+
+        sql: |
+          SELECT '2025-05-01T00:00:00Z' AS event_time, 'United States' AS country, 'Toothbrush' AS product_name, 5 AS quantity, 100 AS price
+          UNION ALL
+          SELECT '2025-05-02T00:00:00Z' AS event_time, 'Denmark' AS country, 'Apple' AS product_name, 10 AS quantity, 50 AS price
+        ```
+        </example>
+    - role: user
+      content_type: text
+      content: |-
+        Task: Create a model for Shopify orders. The model should ingest order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically found in Shopify order exports.
+
+        Output path: /models/shopify_orders.yaml
+
+        SQL dialect: duckdb
+    - role: assistant
+      content_type: tool_call
+      id: 3d171434fa79412f
+      tool_name: read_file
+      content: '{"path":"/models/shopify_orders.yaml"}'
+    - role: tool
+      content_type: tool_response
+      id: 3d171434fa79412f
+      is_error: true
+      content: open /models/shopify_orders.yaml no such file or directory
+    - role: assistant
+      content_type: tool_call
+      id: d84f395e406d41d8
+      tool_name: write_file
+      content: '{"contents":"type: model\nmaterialize: true\n\nsql: |\n  SELECT 1001 AS order_id, 501 AS customer_id, ''2024-06-01T10:15:00Z'' AS order_date, 120.50 AS total_amount, ''USD'' AS currency, ''paid'' AS order_status,\n         ''John Doe'' AS customer_name, ''john@example.com'' AS customer_email, ''2024-06-01T10:10:00Z'' AS created_at, ''2024-06-01T10:20:00Z'' AS updated_at,\n         ''shipped'' AS fulfillment_status, ''Credit Card'' AS payment_method, 2 AS total_items, ''123 Main St, New York, NY'' AS shipping_address,\n         ''Standard'' AS shipping_method, 10.00 AS shipping_cost, 0.00 AS discount_amount, 8.50 AS tax_amount, 129.00 AS grand_total\n  UNION ALL\n  SELECT 1002, 502, ''2024-06-02T14:30:00Z'', 75.00, ''USD'', ''pending'',\n         ''Jane Smith'', ''jane@example.com'', ''2024-06-02T14:25:00Z'', ''2024-06-02T14:35:00Z'',\n         ''unfulfilled'', ''PayPal'', 1, ''456 Oak Ave, Los Angeles, CA'', ''Express'', 15.00, 5.00, 6.00, 91.00\n  UNION ALL\n  SELECT 1003, 503, ''2024-06-03T09:05:00Z'', 200.00, ''EUR'', ''cancelled'',\n         ''Alice Brown'', ''alice@example.com'', ''2024-06-03T09:00:00Z'', ''2024-06-03T09:10:00Z'',\n         ''unfulfilled'', ''Credit Card'', 3, ''789 Pine Rd, London, UK'', ''Standard'', 12.00, 0.00, 20.00, 232.00\n  UNION ALL\n  SELECT 1004, 504, ''2024-06-04T16:45:00Z'', 50.00, ''USD'', ''paid'',\n         ''Bob Lee'', ''bob@example.com'', ''2024-06-04T16:40:00Z'', ''2024-06-04T16:50:00Z'',\n         ''fulfilled'', ''Gift Card'', 1, ''321 Maple St, Toronto, CA'', ''Standard'', 8.00, 2.00, 4.00, 60.00\n  UNION ALL\n  SELECT 1005, 505, ''2024-06-05T11:20:00Z'', 300.00, ''GBP'', ''refunded'',\n         ''Carol White'', ''carol@example.com'', ''2024-06-05T11:15:00Z'', ''2024-06-05T11:25:00Z'',\n         ''unfulfilled'', ''Credit Card'', 5, ''654 Cedar Blvd, Manchester, UK'', ''Express'', 20.00, 15.00, 30.00, 335.00\n","path":"/models/shopify_orders.yaml"}'
+    - role: tool
+      content_type: tool_response
+      id: d84f395e406d41d8
+      content: '{"resources":[{"kind":"rill.runtime.v1.Model","name":"shopify_orders","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]}'
+  response:
+    role: assistant
+    content_type: text
+    content: The model for Shopify orders has been created at /models/shopify_orders.yaml. It includes fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and additional relevant fields typically found in Shopify order exports, with mock data in DuckDB SQL format. The model is ready for use.
+- index: 7
+  input:
+    - role: system
+      content_type: text
+      content: "<role>You are a data engineer agent specialized in developing data models and metrics view definitions in the Rill business intelligence platform.</role>\n\n<concepts>\nRill is a \"business intelligence as code\" platform where all resources are defined using YAML files containing SQL snippets in a project directory.\nRill supports many different resource types, such as connectors, models, metrics views, explore dashboards, canvas dashboards, and more.\nFor the purposes of your work, you will only deal with:\n- **Models**: SQL statements and related metadata that produce a single table in the project's database (usually DuckDB or Clickhouse).\n- **Metrics views**: Sets of queryable business dimensions and measures based on a single model in the project. This is sometimes called the \"semantic layer\" or \"metrics layer\" in other tools.\nRill maintains a DAG of resources. In this DAG, metrics views are always derived from a single model. Multiple metrics views can derive from a single model, although usually it makes sense to have just one metrics view per model.\nWhen users ask you to develop a \"dashboard\", that just means to develop a new metrics view (and possibly a new underlying model). Rill automatically creates visual dashboards for each metrics view.\n</concepts>\n\n<example>\nThis example is not directly related to your current task. It just serves to explain how Rill project's look and how you might act on a user request.\n\nRill projects often (but not always) organize files in directories by resource type. A Rill project might look like this:\n```\nconnectors/duckdb.yaml\nmodels/orders.yaml\nmetrics/orders.yaml\nrill.yaml\n```\n\nThe user might ask you to \"Create a dashboard for my Github activity\". You would notice that this does not relate to the current files, and proceed with the following plan:\n1. Add a new model in \"models/git_commits.yaml\" using the \"develop_model\" tool.\n2. Add a new metrics view in \"metrics/git_commits.yaml\" based on the new \"git_commits\" model using the \"develop_metrics_view\" tool.\n</example>\n\n<process>\nAt a high level, you should follow these steps:\n1. Understand the current contents of the project.\n2. Make a plan for how to implement the user's request. \n3. Only if necessary, add a new model or update an existing model to reflect the user's request\n4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.\n\nYou should use the tools available to you to understand the current project contents and to make the necessary changes. You should use the \"read_file\" tool sparingly and surgically to understand files you consider promising for your task, you should not use it to inspect many files in the project.\n\nYou should not make many changes at a time. Carefully consider the minimum changes you can make to address the user's request. If there's a model already in place that relates to the user's request, consider re-using that and only adding or updating a metrics view.\n</process>"
+    - role: user
+      content_type: text
+      content: Develop a dashboard of Shopify orders
+    - role: assistant
+      content_type: tool_call
+      id: b73d3c09fab54004
+      tool_name: list_files
+      content: '{}'
+    - role: tool
+      content_type: tool_response
+      id: b73d3c09fab54004
+      content: '{"files":[{"path":"/connectors/duckdb.yaml","resources":[{"kind":"rill.runtime.v1.Connector","name":"duckdb","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]},{"path":"/rill.yaml"}]}'
+    - role: assistant
+      content_type: tool_call
+      id: ab13a2582de9453a
+      tool_name: develop_model
+      content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically found in Shopify order exports."}'
+    - role: tool
+      content_type: tool_response
+      id: ab13a2582de9453a
+      content: '{"model_name":"shopify_orders"}'
+  response:
+    role: assistant
+    content_type: tool_call
+    id: call_y1ekD1K1qeplGsYu6dm55VMO
+    tool_name: develop_metrics_view
+    content: '{"model":"shopify_orders","path":"metrics/shopify_orders.yaml"}'
+- index: 8
+  input:
+    - role: system
+      content_type: text
+      content: |2+
+        You are an agent whose only task is to suggest relevant business metrics (KPIs) based on a table schema.
+        The metrics should be valid SQL aggregation expressions that use only the COUNT, SUM, MIN, MAX, and AVG functions.
+        Do not use any complex aggregations and do not use WHERE or FILTER in the metrics expressions.
+        Your output should only consist of valid YAML in the format below:
+
+        display_name: <human-friendly display name based on the table name and column names>
+        measures:
+            - name: <unique name for the metric in snake case, such as average_sales>
+              display_name: <short descriptive display name for the metric>
+              expression: <SQL expression to calculate the KPI in the requested SQL dialect>
+              description: <short description of the metric>
+
+    - role: user
+      content_type: text
+      content: |2
+        Give me up to 10 suggested metrics using the "duckdb" SQL dialect based on the table named "shopify_orders", which has the following schema:
+        - column=order_id, type=CODE_INT32
+        - column=customer_id, type=CODE_INT32
+        - column=order_date, type=CODE_STRING
+        - column=total_amount, type=CODE_DECIMAL
+        - column=currency, type=CODE_STRING
+        - column=order_status, type=CODE_STRING
+        - column=customer_name, type=CODE_STRING
+        - column=customer_email, type=CODE_STRING
+        - column=created_at, type=CODE_STRING
+        - column=updated_at, type=CODE_STRING
+        - column=fulfillment_status, type=CODE_STRING
+        - column=payment_method, type=CODE_STRING
+        - column=total_items, type=CODE_INT32
+        - column=shipping_address, type=CODE_STRING
+        - column=shipping_method, type=CODE_STRING
+        - column=shipping_cost, type=CODE_DECIMAL
+        - column=discount_amount, type=CODE_DECIMAL
+        - column=tax_amount, type=CODE_DECIMAL
+        - column=grand_total, type=CODE_DECIMAL
+  response:
+    role: assistant
+    content_type: text
+    content: |-
+      display_name: Shopify Orders Metrics
+      measures:
+        - name: total_orders
+          display_name: Total Orders
+          expression: COUNT(order_id)
+          description: Total number of orders placed in the shopify_orders table.
+
+        - name: total_sales_amount
+          display_name: Total Sales Amount
+          expression: SUM(total_amount)
+          description: Sum of the total_amount for all orders.
+
+        - name: average_order_value
+          display_name: Average Order Value
+          expression: AVG(total_amount)
+          description: Average value of the total_amount per order.
+
+        - name: total_grand_total
+          display_name: Total Grand Total
+          expression: SUM(grand_total)
+          description: Sum of the grand_total for all orders.
+
+        - name: average_grand_total
+          display_name: Average Grand Total
+          expression: AVG(grand_total)
+          description: Average grand_total per order.
+
+        - name: total_items_sold
+          display_name: Total Items Sold
+          expression: SUM(total_items)
+          description: Total number of items sold across all orders.
+
+        - name: average_items_per_order
+          display_name: Average Items per Order
+          expression: AVG(total_items)
+          description: Average number of items per order.
+
+        - name: total_shipping_cost
+          display_name: Total Shipping Cost
+          expression: SUM(shipping_cost)
+          description: Sum of shipping_cost for all orders.
+
+        - name: total_discount_amount
+          display_name: Total Discount Amount
+          expression: SUM(discount_amount)
+          description: Total discount amount applied across all orders.
+
+        - name: total_tax_amount
+          display_name: Total Tax Amount
+          expression: SUM(tax_amount)
+          description: Total tax amount collected from all orders.
+- index: 9
+  input:
+    - role: system
+      content_type: text
+      content: "<role>You are a data engineer agent specialized in developing data models and metrics view definitions in the Rill business intelligence platform.</role>\n\n<concepts>\nRill is a \"business intelligence as code\" platform where all resources are defined using YAML files containing SQL snippets in a project directory.\nRill supports many different resource types, such as connectors, models, metrics views, explore dashboards, canvas dashboards, and more.\nFor the purposes of your work, you will only deal with:\n- **Models**: SQL statements and related metadata that produce a single table in the project's database (usually DuckDB or Clickhouse).\n- **Metrics views**: Sets of queryable business dimensions and measures based on a single model in the project. This is sometimes called the \"semantic layer\" or \"metrics layer\" in other tools.\nRill maintains a DAG of resources. In this DAG, metrics views are always derived from a single model. Multiple metrics views can derive from a single model, although usually it makes sense to have just one metrics view per model.\nWhen users ask you to develop a \"dashboard\", that just means to develop a new metrics view (and possibly a new underlying model). Rill automatically creates visual dashboards for each metrics view.\n</concepts>\n\n<example>\nThis example is not directly related to your current task. It just serves to explain how Rill project's look and how you might act on a user request.\n\nRill projects often (but not always) organize files in directories by resource type. A Rill project might look like this:\n```\nconnectors/duckdb.yaml\nmodels/orders.yaml\nmetrics/orders.yaml\nrill.yaml\n```\n\nThe user might ask you to \"Create a dashboard for my Github activity\". You would notice that this does not relate to the current files, and proceed with the following plan:\n1. Add a new model in \"models/git_commits.yaml\" using the \"develop_model\" tool.\n2. Add a new metrics view in \"metrics/git_commits.yaml\" based on the new \"git_commits\" model using the \"develop_metrics_view\" tool.\n</example>\n\n<process>\nAt a high level, you should follow these steps:\n1. Understand the current contents of the project.\n2. Make a plan for how to implement the user's request. \n3. Only if necessary, add a new model or update an existing model to reflect the user's request\n4. Only if necessary, add a new metrics view or update an existing metrics view to reflect the user's request. The metrics view should use a model in the project, which may already exist or may have been added in step 2.\n\nYou should use the tools available to you to understand the current project contents and to make the necessary changes. You should use the \"read_file\" tool sparingly and surgically to understand files you consider promising for your task, you should not use it to inspect many files in the project.\n\nYou should not make many changes at a time. Carefully consider the minimum changes you can make to address the user's request. If there's a model already in place that relates to the user's request, consider re-using that and only adding or updating a metrics view.\n</process>"
+    - role: user
+      content_type: text
+      content: Develop a dashboard of Shopify orders
+    - role: assistant
+      content_type: tool_call
+      id: b73d3c09fab54004
+      tool_name: list_files
+      content: '{}'
+    - role: tool
+      content_type: tool_response
+      id: b73d3c09fab54004
+      content: '{"files":[{"path":"/connectors/duckdb.yaml","resources":[{"kind":"rill.runtime.v1.Connector","name":"duckdb","reconcile_error":"","reconcile_status":"RECONCILE_STATUS_IDLE"}]},{"path":"/rill.yaml"}]}'
+    - role: assistant
+      content_type: tool_call
+      id: ab13a2582de9453a
+      tool_name: develop_model
+      content: '{"path":"models/shopify_orders.yaml","prompt":"Create a model for Shopify orders. The model should ingest order data from Shopify, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and any other relevant fields typically found in Shopify order exports."}'
+    - role: tool
+      content_type: tool_response
+      id: ab13a2582de9453a
+      content: '{"model_name":"shopify_orders"}'
+    - role: assistant
+      content_type: tool_call
+      id: 7df961e98edc4add
+      tool_name: develop_metrics_view
+      content: '{"model":"shopify_orders","path":"metrics/shopify_orders.yaml"}'
+    - role: tool
+      content_type: tool_response
+      id: 7df961e98edc4add
+      content: '{"metrics_view_name":"shopify_orders"}'
+  response:
+    role: assistant
+    content_type: text
+    content: |-
+      To develop a dashboard of Shopify orders, I have taken the following steps:
+
+      1. Created a new model ("shopify_orders") that ingests and organizes Shopify order data, including fields such as order_id, customer_id, order_date, total_amount, currency, order_status, and other relevant fields.
+      2. Created a new metrics view ("shopify_orders") based on this model. This metrics view will serve as the dashboard for analyzing Shopify orders.
+
+      You will now have a Shopify Orders dashboard in your Rill project, automatically generated from the new metrics view. If you need custom metrics, dimensions, or specific visualizations, please let me know!

@@ -43,6 +43,10 @@ defaults:
     - season
     - program_name
 ```
+:::tip Customize default time ranges
+Set project-wide default time ranges and available options for all explore dashboards.
+[Learn more about dashboard defaults →](/build/project-configuration#explore-defaults)
+:::
 
 ### Using AI
 
@@ -68,6 +72,8 @@ Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/d
 
 ### Setting Up Dashboard Access
 
-If you are setting up [dashboard policies](/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying. This option will be available for testing if you have set up access policies at the [project level](/build/rill-project-file#mock-users), [metrics view level](/build/metrics-view/security), or [dashboard level](/build/dashboards/customization#define-dashboard-access).
+If you are setting up [dashboard policies](/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying. This option will be available for testing if you have set up access policies at the [project level](/build/project-configuration#testing-security), [metrics view level](/build/metrics-view/security), or [dashboard level](/build/dashboards/customization#define-dashboard-access).
+
+
 
 <img src='/img/build/dashboard/preview-dashboard.png' class='rounded-gif' />

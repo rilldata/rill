@@ -4,6 +4,7 @@
   import {
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
+    createAdminServiceListOrganizationMemberUsers,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
@@ -29,15 +30,42 @@
 
   export let open = false;
   export let groupName: string;
-  export let organizationUsers: V1OrganizationMemberUser[] = [];
   export let currentUserEmail: string = "";
 
-  let searchText = "";
+  let searchInput = "";
+  let debouncedSearchText = "";
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
+  // Debounce search input to avoid too many API calls
+  $: {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      debouncedSearchText = searchInput;
+    }, 300);
+  }
+
   $: organization = $page.params.organization;
+
+  // Query organization users when user types (debounced)
+  $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
+    organization,
+    debouncedSearchText
+      ? {
+          pageSize: 50,
+          searchPattern: `${debouncedSearchText}%`,
+        }
+      : undefined,
+    {
+      query: {
+        enabled: debouncedSearchText.length > 0,
+      },
+    },
+  );
+
+  $: organizationUsers = $organizationUsersQuery.data?.members ?? [];
 
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
@@ -186,7 +214,7 @@
 
   function handleClose() {
     open = false;
-    searchText = "";
+    searchInput = "";
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
@@ -239,10 +267,11 @@
             Users
           </label>
           <Combobox
-            searchValue={searchText}
+            bind:searchValue={searchInput}
             options={coercedUsersToOptions}
             placeholder="Search to add/remove users"
             {getMetadata}
+            enableClientFiltering={false}
             selectedValues={[
               ...new Set(
                 [
