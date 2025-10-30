@@ -430,7 +430,7 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, gitRemote string) (*adm
 
 		// Wait three seconds before opening the browser
 		select {
-		case <-time.After(2 * time.Second):
+		case <-time.After(3 * time.Second):
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		}
