@@ -55,6 +55,13 @@
     colorMapping,
   });
 
+  // Create a more efficient key for component remounting
+  $: configKey = config ? Object.keys(config).sort().join(",") : "default";
+  $: colorMappingKey = colorMapping
+    .map((m) => `${m.value}:${m.color}`)
+    .join("|");
+  $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
+
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
   };
@@ -88,7 +95,7 @@
       {error}
     </div>
   {:else}
-    {#key `${themeMode}-${JSON.stringify(config)}-${JSON.stringify(colorMapping)}`}
+    {#key componentKey}
       <VegaLite
         {data}
         {spec}
