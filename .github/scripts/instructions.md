@@ -253,6 +253,36 @@ Example checklist for data source docs:
 <!-- Added from PR review - 2025-01-xx: Content preservation guidelines -->
 ## 📝 Content Revision Guidelines
 
+### Stay Focused on PR Purpose
+
+**When iterating on changes based on review comments:**
+
+- ✅ **Maintain original scope**: Review comments should refine the original PR changes, not trigger a complete rewrite
+  - Before making changes, understand what the original PR was trying to accomplish
+  - Only modify content that's directly related to the review comments
+  - Don't expand into unrelated sections or topics
+  
+- ❌ **Avoid scope creep**: Don't use review comments as an excuse to revise the entire document
+  - WRONG: A comment about fixing terminology in one section leads to restructuring the entire page
+  - RIGHT: Fix the terminology issue mentioned, leave other sections alone unless they have the same issue
+  
+- ✅ **Targeted fixes**: Apply review feedback surgically
+  - If a reviewer comments on authentication examples, fix authentication examples
+  - Don't also rewrite the overview, reorganize sections, or change unrelated code blocks
+  - Stay within the boundaries of what's being reviewed
+
+**Red flags that indicate scope creep:**
+- You're modifying sections that weren't mentioned in review comments
+- You're adding new content beyond what was requested
+- You're restructuring the document when reviews only asked for small fixes
+- The diff is much larger than necessary to address the specific comments
+
+**Best practice:**
+- Read all review comments first to understand the scope
+- Make a mental checklist of exactly what needs to change
+- After making changes, verify you haven't touched unrelated content
+- When in doubt, make the minimal change that addresses the feedback
+
 ### Preserving Quality Content
 
 **When revising documentation:**
