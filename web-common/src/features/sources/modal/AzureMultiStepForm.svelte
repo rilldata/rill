@@ -1,5 +1,7 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import { ConnectorDriverPropertyType } from "@rilldata/web-common/runtime-client";
   import { normalizeErrors } from "./utils";
 
@@ -8,31 +10,44 @@
   export let paramsErrors: Record<string, any>;
   export let onStringInputChange: (e: Event) => void;
 
-  // Derive the connection property from the provided spec (first config property)
-  const connectionStringProperty = properties?.[0] ?? {
-    key: "connection_string",
-    type: ConnectorDriverPropertyType.TYPE_STRING,
-    displayName: "Connection string",
-    required: false,
-    secret: true,
-    hint: undefined,
-  };
+  const filteredParamsProperties = properties;
 </script>
 
 <!-- Step 1: Connector configuration (Azure) -->
 <div>
-  <div class="py-1.5 first:pt-0 last:pb-0">
-    <Input
-      id={connectionStringProperty.key}
-      label={connectionStringProperty.displayName ?? "Connection string"}
-      placeholder={connectionStringProperty.placeholder}
-      optional={!connectionStringProperty.required}
-      secret={connectionStringProperty.secret}
-      hint={connectionStringProperty.hint}
-      errors={normalizeErrors(paramsErrors[connectionStringProperty.key])}
-      bind:value={$paramsForm[connectionStringProperty.key]}
-      onInput={(_, e) => onStringInputChange(e)}
-      alwaysShowError
-    />
-  </div>
+  {#each filteredParamsProperties as property (property.key)}
+    {@const propertyKey = property.key ?? ""}
+    {#if propertyKey !== "path" && propertyKey !== "name"}
+      <div class="py-1.5 first:pt-0 last:pb-0">
+        {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+          <Input
+            id={propertyKey}
+            label={property.displayName}
+            placeholder={property.placeholder}
+            optional={!property.required}
+            secret={property.secret}
+            hint={property.hint}
+            errors={normalizeErrors(paramsErrors[propertyKey])}
+            bind:value={$paramsForm[propertyKey]}
+            onInput={(_, e) => onStringInputChange(e)}
+            alwaysShowError
+          />
+        {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+          <Checkbox
+            id={propertyKey}
+            bind:checked={$paramsForm[propertyKey]}
+            label={property.displayName}
+            hint={property.hint}
+            optional={!property.required}
+          />
+        {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+          <InformationalField
+            description={property.description}
+            hint={property.hint}
+            href={property.docsUrl}
+          />
+        {/if}
+      </div>
+    {/if}
+  {/each}
 </div>
