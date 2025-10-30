@@ -28,7 +28,7 @@ jobs:
         with:
           script: |
             // MANUAL TEST: Hardcoded for PR #8166
-            const prNumber = 8166;
+            const prNumber = 8132;
             core.info(`Manual test for PR #${prNumber}`);
             
             const pr = await github.rest.pulls.get({
