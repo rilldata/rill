@@ -139,13 +139,15 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	user, err := s.DB.FindUserByEmail(ctx, email)
 	if err == nil {
 		return s.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-			DisplayName:         name,
-			PhotoURL:            photoURL,
-			GithubUsername:      user.GithubUsername,
-			GithubRefreshToken:  user.GithubRefreshToken,
-			QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-			QuotaTrialOrgs:      user.QuotaTrialOrgs,
-			PreferenceTimeZone:  user.PreferenceTimeZone,
+			DisplayName:          name,
+			PhotoURL:             photoURL,
+			GithubUsername:       user.GithubUsername,
+			GithubToken:          user.GithubToken,
+			GithubTokenExpiresOn: user.GithubTokenExpiresOn,
+			GithubRefreshToken:   user.GithubRefreshToken,
+			QuotaSingleuserOrgs:  user.QuotaSingleuserOrgs,
+			QuotaTrialOrgs:       user.QuotaTrialOrgs,
+			PreferenceTimeZone:   user.PreferenceTimeZone,
 		})
 	} else if !errors.Is(err, database.ErrNotFound) {
 		return nil, err
