@@ -83,13 +83,19 @@ func TestQuery(t *testing.T) {
 			name:   "date",
 			query:  "SELECT DATE '2021-01-01' AS val",
 			args:   nil,
-			result: map[string]any{"val": mustParseTime(t, "2006-01-02", "2021-01-01")},
+			result: map[string]any{"val": mustParseTime(t, "2006-01-02", "2021-01-01", time.UTC)},
+		},
+		{
+			name:   "time",
+			query:  "SELECT TIME '10:11:12.345 -06:30' AS tpz",
+			args:   nil,
+			result: map[string]any{"tpz": mustParseTime(t, time.TimeOnly, "10:11:12.345", time.FixedZone("", -6*60*60-30*60))},
 		},
 		{
 			name:   "timestamp",
-			query:  "SELECT TIMESTAMP '2025-01-31 23:59:59.999' AS val",
+			query:  "SELECT TIMESTAMP '2025-01-31 23:59:59.999 +06:30' AS val",
 			args:   nil,
-			result: map[string]any{"val": mustParseTime(t, "2006-01-02 15:04:05.000", "2025-01-31 23:59:59.999")},
+			result: map[string]any{"val": mustParseTime(t, time.DateTime, "2025-01-31 23:59:59.999", time.FixedZone("", 6*60*60+30*60))},
 		},
 		{
 			name:   "decimal",
@@ -129,7 +135,7 @@ func TestQuery(t *testing.T) {
 			require.NoError(t, err)
 			defer result.Close()
 
-			require.True(t, result.Next(), "expected at least one row")
+			require.True(t, result.Next(), "expected at least one row, scan error: %v", result.Err())
 			res := make(map[string]any)
 			err = result.MapScan(res)
 			require.NoError(t, err)
@@ -317,8 +323,8 @@ func TestQueryScan(t *testing.T) {
 		var timestampVal time.Time
 		err = result.Scan(&dateVal, &timestampVal)
 		require.NoError(t, err)
-		require.Equal(t, mustParseTime(t, "2006-01-02", "2021-01-01"), dateVal)
-		require.Equal(t, mustParseTime(t, "2006-01-02 15:04:05.000", "2025-01-31 23:59:59.999"), timestampVal)
+		require.Equal(t, mustParseTime(t, "2006-01-02", "2021-01-01", time.UTC), dateVal)
+		require.Equal(t, mustParseTime(t, "2006-01-02 15:04:05.000", "2025-01-31 23:59:59.999", time.UTC), timestampVal)
 
 		require.False(t, result.Next())
 		require.NoError(t, result.Err())
@@ -461,9 +467,9 @@ func acquireTestAthena(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	return conn, olap
 }
 
-func mustParseTime(t *testing.T, layout, value string) time.Time {
+func mustParseTime(t *testing.T, layout, value string, loc *time.Location) time.Time {
 	t.Helper()
-	tm, err := time.ParseInLocation(layout, value, time.Local)
+	tm, err := time.ParseInLocation(layout, value, loc)
 	require.NoError(t, err)
 	return tm
 }

@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
@@ -45,7 +44,7 @@ func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // Query implements drivers.OLAPStore.
 func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +278,7 @@ func (r *rows) runtimeSchema() (*runtimev1.StructType, error) {
 
 func athenaTypeToRuntimeType(colType string) (*runtimev1.Type, error) {
 	t := &runtimev1.Type{}
-	switch colType {
+	switch strings.ToLower(colType) {
 	case "tinyint":
 		t.Code = runtimev1.Type_CODE_INT8
 	case "smallint":
@@ -301,7 +300,7 @@ func athenaTypeToRuntimeType(colType string) (*runtimev1.Type, error) {
 		"ipaddress", "array", "map", "unknown":
 		t.Code = runtimev1.Type_CODE_STRING
 	default:
-		return nil, fmt.Errorf("unknown type %q", colType)
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	}
 	return t, nil
 }
@@ -312,7 +311,7 @@ func convertValue(colType, val string) (any, error) {
 		i   int64
 		f   float64
 	)
-	switch colType {
+	switch strings.ToLower(colType) {
 	case "tinyint":
 		if i, err = strconv.ParseInt(val, 10, 8); err != nil {
 			return nil, err
@@ -345,74 +344,106 @@ func convertValue(colType, val string) (any, error) {
 		return f, nil
 	case "boolean":
 		return strconv.ParseBool(val)
-	case "date", "time", "time with time zone", "timestamp", "timestamp with time zone":
-		vv, err := scanTime(val)
-		if !vv.Valid {
-			return nil, fmt.Errorf("invalid time value")
+	case "date":
+		t, err := time.Parse(time.DateOnly, val)
+		if err != nil {
+			return nil, err
 		}
-		return vv.Time, err
+		return t, nil
+	case "time":
+		t, err := time.Parse(time.TimeOnly, val)
+		if err != nil {
+			return nil, err
+		}
+		return t, nil
+	case "time with time zone":
+		t, err := parseAthenaTimeWithLocation(time.TimeOnly, val)
+		if err != nil {
+			return nil, err
+		}
+		return t, nil
+	case "timestamp":
+		t, err := time.Parse(time.DateTime, val)
+		if err != nil {
+			return nil, err
+		}
+		return t, nil
+	case "timestamp with time zone":
+		t, err := parseAthenaTimeWithLocation(time.DateTime, val)
+		if err != nil {
+			return nil, err
+		}
+		return t, err
 	// for all other datatypes return string value directly
 	case "json", "char", "varchar", "varbinary", "row", "string", "binary",
 		"struct", "interval year to month", "interval day to second", "decimal",
 		"ipaddress", "array", "map", "unknown":
 		return val, nil
 	default:
-		return nil, fmt.Errorf("unknown type %q with value %q", colType, val)
+		return val, nil
 	}
 }
 
-// athenaTime represents a time.Time value that can be null.
-// The athenaTime supports Athena's Date, Time and Timestamp data types,
-// with or without time zone.
-type athenaTime struct {
-	Time  time.Time
-	Valid bool
-}
-
-var timeLayouts = []string{
-	"2006-01-02",
-	"15:04:05.000",
-	"2006-01-02 15:04:05.000000000",
-	"2006-01-02 15:04:05.000000",
-	"2006-01-02 15:04:05.000",
-}
-
-func scanTime(vv string) (athenaTime, error) {
-	parts := strings.Split(vv, " ")
-	if len(parts) > 1 && !unicode.IsDigit(rune(parts[len(parts)-1][0])) {
-		return parseAthenaTimeWithLocation(vv)
-	}
-	return parseAthenaTime(vv)
-}
-
-func parseAthenaTime(v string) (athenaTime, error) {
-	var t time.Time
-	var err error
-	for _, layout := range timeLayouts {
-		t, err = time.ParseInLocation(layout, v, time.Local)
-		if err == nil {
-			return athenaTime{Valid: true, Time: t}, nil
-		}
-	}
-	return athenaTime{}, err
-}
-
-func parseAthenaTimeWithLocation(v string) (athenaTime, error) {
-	idx := strings.LastIndex(v, " ")
+func parseAthenaTimeWithLocation(layout, v string) (time.Time, error) {
+	idx := strings.LastIndexAny(v, "+-")
 	if idx == -1 {
-		return athenaTime{}, fmt.Errorf("cannot convert %v (%T) to time+zone", v, v)
+		return time.Parse(layout, v)
 	}
-	stamp, location := v[:idx], v[idx+1:]
-	loc, err := time.LoadLocation(location)
-	if err != nil {
-		return athenaTime{}, fmt.Errorf("cannot load timezone %q: %w", location, err)
-	}
-	var t time.Time
-	for _, layout := range timeLayouts {
-		t, err = time.ParseInLocation(layout, stamp, loc)
-		if err == nil {
-			return athenaTime{Valid: true, Time: t}, nil
+	stamp, location := strings.TrimSpace(v[:idx]), v[idx:]
+	// check if location is offset like -06:00 by checking if it does not contain alphabets
+	var loc *time.Location
+	var err error
+	if isTimezoneOffset(location) {
+		loc, err = parseOffSet(location)
+		if err != nil {
+			return time.Time{}, err
+		}
+	} else {
+		loc, err = time.LoadLocation(location)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("cannot load timezone %q: %w", location, err)
 		}
 	}
-	return athenaTime{}, err
+	t, err := time.ParseInLocation(layout, stamp, loc)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("cannot parse time %q with layout %q: %w", stamp, layout, err)
+	}
+	return t, nil
+}
+
+func parseOffSet(offset string) (*time.Location, error) {
+	sign := 1
+	if strings.HasPrefix(offset, "-") {
+		sign = -1
+		offset = offset[1:] // remove sign
+	} else if strings.HasPrefix(offset, "+") {
+		offset = offset[1:]
+	}
+
+	hours, mins := 0, 0
+	_, err := fmt.Sscanf(offset, "%d:%d", &hours, &mins)
+	if err != nil {
+		return nil, err
+	}
+	totalMinutes := sign * (hours*60 + mins)
+	loc := time.FixedZone("", totalMinutes*60)
+	return loc, nil
+}
+
+// isTimezoneOffset checks if the string is a timezone offset like +05:30 or -06:00
+func isTimezoneOffset(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	if s[0] != '+' && s[0] != '-' {
+		return false
+	}
+
+	for _, c := range s[1:] {
+		if c != ':' && (c < '0' || c > '9') {
+			return false
+		}
+	}
+	return true
 }

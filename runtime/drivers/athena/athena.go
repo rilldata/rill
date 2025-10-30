@@ -125,7 +125,7 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	return awsConfig, nil
 }
 
-func (c *Connection) acquireClient(ctx context.Context) (*athena.Client, error) {
+func (c *Connection) getClient(ctx context.Context) (*athena.Client, error) {
 	if err := c.clientMu.Acquire(ctx, 1); err != nil {
 		return nil, err
 	}
