@@ -47,12 +47,11 @@ export async function waitForResourceReconciliation(
   resourceName: string,
   resourceKind: ResourceKind,
 ) {
-  const pollInterval = 2000; // 2 seconds
-  // Match server timeout: 59 minutes = 59 * 60 * 1000 / 2000 = 1770 attempts
-  // This handles ClickHouse scale-to-zero scenarios and other long-running operations
-  const maxAttempts = 1770; // 59 minutes worth of 2-second intervals
+  const pollInterval = 2_000; // 2 seconds
+  let attempt = 0;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+  while (true) {
+    attempt++;
     try {
       const resource = await runtimeServiceGetResource(instanceId, {
         "name.kind": resourceKind,
@@ -73,15 +72,8 @@ export async function waitForResourceReconciliation(
       }
 
       // Still reconciling, continue polling
-      if (attempt < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
-        continue;
-      }
-
-      // Server should have timed out by now, but if not, throw timeout
-      throw new Error(
-        `Resource reconciliation timeout after 59 minutes. Please try again.`,
-      );
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      continue;
     } catch (error) {
       // Resource not found could mean it was deleted due to reconcile failure
       if (error?.status === 404 || error?.response?.status === 404) {
