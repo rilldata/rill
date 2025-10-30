@@ -210,8 +210,12 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 		if ch.Interactive {
 			ch.PrintfSuccess("Opening project in browser...\n")
-			time.Sleep(3 * time.Second)
-			_ = browser.Open(res.Project.FrontendUrl)
+			select {
+			case <-time.After(3 * time.Second):
+				_ = browser.Open(res.Project.FrontendUrl)
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 
@@ -237,7 +241,6 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 		if res.GrantAccessUrl != "" {
 			// Print instructions to grant access
-			time.Sleep(3 * time.Second)
 			ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
 			ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 
@@ -424,7 +427,13 @@ func githubFlow(ctx context.Context, ch *cmdutil.Helper, gitRemote string) (*adm
 		// Print instructions to grant access
 		ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
 		ch.Print("You need to grant Rill read only access to your repository on Github.\n\n")
-		time.Sleep(3 * time.Second)
+
+		// Wait three seconds before opening the browser
+		select {
+		case <-time.After(3 * time.Second):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 		ch.Print("Open this URL in your browser to grant Rill access to Github:\n\n")
 		ch.Print("\t" + res.GrantAccessUrl + "\n\n")
 

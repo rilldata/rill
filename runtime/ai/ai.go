@@ -949,6 +949,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
+		if !tool.CheckAccess(ctx) {
+			continue
+		}
 		var inputSchema string
 		if tool.Spec.InputSchema != nil {
 			inputSchemaBytes, err := json.Marshal(tool.Spec.InputSchema)
@@ -1061,12 +1064,17 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			for _, block := range res.Content {
 				switch block := block.BlockType.(type) {
 				case *aiv1.ContentBlock_Text:
-					s.AddMessage(&AddMessageOptions{
+					msg := s.AddMessage(&AddMessageOptions{
 						Role:        RoleAssistant,
 						Type:        MessageTypeProgress,
 						ContentType: MessageContentTypeText,
 						Content:     block.Text,
 					})
+					msgPB, err := s.NewCompletionMessage(msg)
+					if err != nil {
+						return nil, err
+					}
+					messages = append(messages, msgPB)
 				case *aiv1.ContentBlock_ToolCall:
 					toolResult, err := s.CallToolWithOptions(ctx, &CallToolOptions{
 						Role: RoleAssistant,

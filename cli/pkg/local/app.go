@@ -415,10 +415,9 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 		// We sleep before the first health check as a slightly hacky way to protect against the situation where
 		// another Rill server is already running, which will pass the health check as a false positive.
 		// By sleeping first, the ctx is in practice sure to have been cancelled with a "port taken" error at that point.
-		time.Sleep(250 * time.Millisecond)
-
-		// Check for cancellation
-		if ctx.Err() != nil {
+		select {
+		case <-time.After(250 * time.Millisecond):
+		case <-ctx.Done():
 			return
 		}
 
