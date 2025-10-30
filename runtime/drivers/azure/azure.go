@@ -28,7 +28,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Azure Connection String",
 			Description: "Azure connection string for storage account",
-			Placeholder: "Paste your Azure connection string here",
+			Placeholder: "azure://<account>.blob.core.windows.net/<container>/path/file.csv",
 			Secret:      true,
 		},
 	},

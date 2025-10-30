@@ -47,7 +47,6 @@
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
-  import AzureMultiStepForm from "./AzureMultiStepForm.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -627,14 +626,6 @@
                 paramsErrors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
-              />
-            {:else if connector.name === "azure"}
-              <!-- TODO: GenericMultiStepForm -->
-              <AzureMultiStepForm
-                properties={filteredParamsProperties}
-                {paramsForm}
-                paramsErrors={$paramsErrors}
-                {onStringInputChange}
               />
             {:else}
               <FormRenderer
