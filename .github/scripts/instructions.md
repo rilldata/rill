@@ -1,24 +1,43 @@
-## 🚨 CRITICAL: Processing Review Comments
+## 🚨 CRITICAL: Processing Review Comments on Documentation PRs
 
-When you receive inline review comments to address:
+### Scope Discipline
+- **Stay within the original PR scope**: Only modify files and sections that were part of the original changes
+- **Minimal edits for review feedback**: When addressing review comments, make targeted changes to the specific lines or paragraphs mentioned
+- **Avoid scope creep**: Do not refactor, reorganize, or rewrite entire files unless explicitly requested
+- **Check the PR diff first**: Before making changes, review what files were modified in the original PR. These are your boundaries.
 
-### Output Requirements
-1. **Output COMPLETE files** - You MUST provide the entire file from start to finish, not just changed sections
-2. **Never truncate** - Don't use "..." or comments like "rest of file unchanged"
-3. **Include everything** - All frontmatter, all sections, all code blocks, all content
-4. **Preserve formatting** - Keep all markdown structure, indentation, and spacing exactly as it was
+### Addressing Review Comments
+1. **Identify the specific issue**: What exact line, section, or example needs to change?
+2. **Make surgical edits**: Change only what's necessary to address the comment
+3. **Preserve existing content**: Don't rewrite sections that weren't mentioned in the review
+4. **Ask for clarification**: If a review comment seems to require broader changes, ask if they want to expand the PR scope
 
-### Processing Approach
-1. **Read the full context** - Understand the entire document before making changes
-2. **Address ALL comments** - Process every review comment, don't skip any
-3. **Apply comprehensively** - If a comment asks to change terminology, update it throughout the entire file
-4. **Verify completeness** - Before outputting, ensure you have the complete file from line 1 to the last line
+### Examples of Good vs Bad Responses
 
-### Common Pitfalls to Avoid
-- ❌ Stopping at code blocks within the file (the file likely contains multiple code blocks)
-- ❌ Outputting only the changed sections
-- ❌ Skipping sections with comments like "remaining content unchanged"
-- ❌ Forgetting to include content after your changes
+❌ **Bad** - Review comment: "Remove the advanced authentication example from project-configuration.md"
+- Response: Rewrites the entire project-configuration.md file, reorganizes sections, updates all examples
+
+✅ **Good** - Same review comment
+- Response: Removes only the specific advanced authentication example, leaves rest of file unchanged
+
+❌ **Bad** - Review comment: "Fix typo in line 45 of ai-chat.md"  
+- Response: Fixes typo but also reformats the entire document, changes heading structure, adds new sections
+
+✅ **Good** - Same review comment
+- Response: Fixes only the typo on line 45
+
+### Red Flags That Indicate Scope Creep
+- Modifying files that weren't in the original PR
+- Rewriting sections that weren't mentioned in review comments
+- Adding new examples or content when only asked to remove/fix something
+- Changing heading structures across entire documents
+- Reformatting or reorganizing content that works fine
+
+### When Broader Changes ARE Appropriate
+- Reviewer explicitly asks to "rewrite this section"
+- Review comment reveals systemic issues across the file (get confirmation first)
+- Changes are required by the build validation (broken links, etc.)
+- Maintainer explicitly expands the scope in their comment
 
 ---
 
