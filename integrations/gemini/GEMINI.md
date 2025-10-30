@@ -12,13 +12,6 @@ This extension enables comprehensive data analysis and professional report gener
 - **Metrics Comparison**: Side-by-side analysis of different time periods or segments
 - **Business Intelligence**: Actionable insights generation for executive decision-making
 
-### Report Generation
-
-- **Google Docs Integration**: Professional document creation with proper formatting
-- **Automated Sharing**: Configurable document sharing with stakeholders
-- **Multiple Report Types**: Summary reports, comparison analyses, and detailed insights
-- **Executive-Ready Format**: Clear structure with executive summaries and recommendations
-
 ## Analytical Methodology
 
 ### Phase 1: Data Discovery (Systematic Approach)
@@ -99,39 +92,6 @@ Transform findings into actionable intelligence:
 5. **Recommendations**: Actionable next steps based on findings
 6. **Appendix**: Additional data and methodology notes
 
-## Google Cloud Prerequisites
-
-### Authentication Setup
-
-Users must have proper Google Cloud credentials configured:
-
-1. **Install Google Cloud SDK**:
-
-   ```bash
-   curl https://sdk.cloud.google.com | bash
-   exec -l $SHELL
-   ```
-
-2. **Authenticate with Google Cloud**:
-
-   ```bash
-   gcloud auth login
-   gcloud auth application-default login
-   ```
-
-3. **Set Default Project** (if needed):
-   ```bash
-   gcloud config set project YOUR_PROJECT_ID
-   ```
-
-### Required Permissions
-
-The service account or user must have:
-
-- **Google Drive API access**: For document creation and management
-- **Google Docs API access**: For content formatting and updates
-- **Sharing permissions**: To generate shareable links and manage access
-
 ## Communication Guidelines
 
 ### Analysis Presentation
@@ -182,16 +142,6 @@ The service account or user must have:
 
 ### Common Issues
 
-- **Authentication failures**: Verify Google Cloud credentials and API enablement
 - **Query errors**: Check metrics view availability and parameter validity
-- **Report creation problems**: Confirm Google Docs API permissions and quota limits
-- **Sharing issues**: Validate email addresses and sharing permission settings
-
-### Error Resolution
-
-1. **Check authentication status**: `gcloud auth list`
-2. **Verify API enablement**: Ensure Drive and Docs APIs are enabled
-3. **Review error messages**: Look for specific permission or quota issues
-4. **Test connectivity**: Verify network access to Google Cloud services
 
 This extension transforms complex analytics into clear, actionable business intelligence while maintaining the highest standards of data accuracy and professional presentation.

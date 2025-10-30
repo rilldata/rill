@@ -5,11 +5,11 @@
   "type": "module",
   "workspaces": [
     "docs",
+    "integrations/gemini",
     "web-admin",
     "web-common",
     "web-integration",
-    "web-local",
-    "extensions/gemini"
+    "web-local"
   ],
   "scripts": {
     "prepare": "husky || true",

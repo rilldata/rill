@@ -1,14 +1,10 @@
 {
-  "name": "rill-analytics-extension",
+  "name": "rill-analytics",
   "version": "0.1.0",
   "displayName": "Rill Analytics",
-  "description": "Professional data analysis and report generation using Rill's metrics layer with Google Docs integration",
+  "description": "Professional data analysis using Rill's metrics layer",
   "contextFileName": "GEMINI.md",
   "mcpServers": {
-    "generator": {
-      "command": "node",
-      "args": ["${extensionPath}${/}dist${/}server.js"]
-    },
     "rill": {
       "command": "npx",
       "args": [
