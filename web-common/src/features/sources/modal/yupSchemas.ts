@@ -6,22 +6,26 @@ import {
 
 export const getYupSchema = {
   s3: yup.object().shape({
+    aws_access_key_id: yup.string().optional(),
+    aws_secret_access_key: yup.string().optional(),
     path: yup
       .string()
       .matches(/^s3:\/\//, "Must be an S3 URI (e.g. s3://bucket/path)")
-      .required("S3 URI is required"),
-    aws_region: yup.string(),
+      .optional(),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
+      .optional(),
   }),
 
   gcs: yup.object().shape({
+    google_application_credentials: yup.string().optional(),
+    key_id: yup.string().optional(),
+    secret: yup.string().optional(),
     path: yup
       .string()
       .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
-      .required("GS URI is required"),
+      .optional(),
   }),
 
   https: yup.object().shape({
