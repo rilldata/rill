@@ -295,11 +295,25 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 		return nil, err
 	}
 
+	stopQuery := func() error {
+		ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
+		defer cancel()
+		_, stopErr := client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
+			QueryExecutionId: queryExecutionOutput.QueryExecutionId,
+		})
+		return stopErr
+	}
+
 	for {
 		status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 			QueryExecutionId: queryExecutionOutput.QueryExecutionId,
 		})
 		if err != nil {
+			if errors.Is(err, ctx.Err()) {
+				// If the context was cancelled, cancel the running query
+				stopErr := stopQuery()
+				return nil, errors.Join(err, stopErr)
+			}
 			return nil, err
 		}
 
@@ -318,11 +332,7 @@ func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sq
 			// Time to retry
 		case <-ctx.Done():
 			// If the context was cancelled, cancel the running query
-			ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
-			_, stopErr := client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
-				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
-			})
-			cancel()
+			stopErr := stopQuery()
 			return nil, errors.Join(ctx.Err(), stopErr)
 		}
 	}
