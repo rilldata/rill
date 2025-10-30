@@ -197,7 +197,6 @@ export async function submitAddSourceForm(
       instanceId,
       newSourceName,
       ResourceKind.Model,
-      connector.name as string,
     );
   } catch (error) {
     // The source file was already created, so we need to delete it

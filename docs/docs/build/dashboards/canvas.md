@@ -32,7 +32,7 @@ To modify any single widget, click to select it and use the right-hand panel to 
 
 
 ### Filters
-Optionally toggle on the **global filter bar** under Canvas properties to give dashboard viewers access to the same time and dimension filters available on Explore dashboards. 
+Optionally toggle on the **global filter bar** under Canvas properties to give dashboard viewers access to the same time and dimension filters available on Explore dashboards.
 
 <img src = '/img/build/dashboard/canvas/global-filter-bar.png' class='rounded-gif' />
 <br/>
@@ -49,6 +49,11 @@ While we encourage creating Canvas dashboards via the visual editing experience 
 
 <img src = '/img/build/dashboard/canvas/code-toggle.png' class='rounded-gif' />
 <br/>
+
+:::tip Customize default time ranges
+Set project-wide default time ranges and available options for all canvas dashboards.
+[Learn more about canvas defaults →](/build/project-configuration#canvas-defaults)
+::: 
 
 <!-- 
 ## Default Filters

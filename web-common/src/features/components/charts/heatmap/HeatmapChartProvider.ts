@@ -30,9 +30,9 @@ import {
 
 export type HeatmapChartSpec = {
   metrics_view: string;
-  x?: FieldConfig;
-  y?: FieldConfig;
-  color?: FieldConfig;
+  x?: FieldConfig<"nominal" | "time">;
+  y?: FieldConfig<"nominal" | "time">;
+  color?: FieldConfig<"quantitative">;
   show_data_labels?: boolean;
 };
 

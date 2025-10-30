@@ -210,6 +210,12 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		transcoder.ServeHTTP(w, r)
 	}))
 
+	// Add backwards compatibility alias for credentials endpoint
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/credentials", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)
+		transcoder.ServeHTTP(w, r)
+	}))
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		mux.Handle("/metrics", promhttp.Handler())
