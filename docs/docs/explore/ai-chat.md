@@ -16,7 +16,7 @@ AI Chat is powered by [Rill's Model Context Protocol (MCP)](/explore/mcp) integr
 <img src='/img/explore/chat/project-chat.png' class='rounded-gif'/>
 <br />
 
-## How It Works
+## How It Works 
 
 AI Chat uses the same [Rill MCP Server](/explore/mcp) technology that powers external AI integrations with tools like Claude Desktop. This means:
 
