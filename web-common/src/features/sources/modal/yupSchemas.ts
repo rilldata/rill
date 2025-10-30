@@ -18,10 +18,13 @@ export const getYupSchema = {
   }),
 
   gcs: yup.object().shape({
+    google_application_credentials: yup.string().optional(),
+    key_id: yup.string().optional(),
+    secret: yup.string().optional(),
     path: yup
       .string()
       .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
-      .required("GS URI is required"),
+      .optional(),
   }),
 
   https: yup.object().shape({
@@ -63,18 +66,18 @@ export const getYupSchema = {
   }),
 
   azure: yup.object().shape({
+    azure_storage_connection_string: yup.string(),
     path: yup
       .string()
       .matches(
         /^azure:\/\//,
         "Must be an Azure URI (e.g. azure://container/path)",
       )
-      .required("Path is required"),
-    azure_storage_account: yup.string(),
+      .optional(),
     name: yup
       .string()
       .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
+      .optional(),
   }),
 
   postgres: yup.object().shape({
