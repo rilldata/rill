@@ -56,7 +56,6 @@ export class Conversation {
       getRuntimeServiceGetConversationQueryOptions(
         this.instanceId,
         this.conversationId,
-        undefined,
         {
           query: {
             enabled: this.conversationId !== NEW_CONVERSATION_ID,

@@ -1,6 +1,9 @@
 <script lang="ts">
   import ChartBlock from "@rilldata/web-common/features/chat/core/messages/ChartBlock.svelte";
-  import { isChartToolResult } from "@rilldata/web-common/features/chat/core/utils";
+  import {
+    isChartToolResult,
+    parseChartData,
+  } from "@rilldata/web-common/features/chat/core/utils";
   import type { V1Message } from "../../../../runtime-client";
   import TextMessage from "./TextMessage.svelte";
   import ToolCallBlock from "./ToolCallBlock.svelte";
@@ -18,20 +21,6 @@
   // Currently we have split responsibility: Conversation handles streaming correlation,
   // but UI handles initial fetch correlation. This creates inconsistent architecture.
   // All correlation should happen in the business layer, with UI just displaying pre-correlated data.
-
-  // Helper to parse chart data from tool result
-  function parseChartData(toolResult: any) {
-    try {
-      const parsed = JSON.parse(toolResult.content);
-      return {
-        chartType: parsed.chart_type,
-        chartSpec: parsed.spec,
-      };
-    } catch (error) {
-      console.error("Failed to parse chart data:", error);
-      return null;
-    }
-  }
 
   // Helper to create a tool block
   function createToolBlock(toolCall: any, toolResult: any, index: number) {
@@ -70,7 +59,7 @@
     }
 
     // Try to parse chart data
-    const chartData = parseChartData(toolResult);
+    const chartData = parseChartData(block.toolCall);
     if (!chartData) {
       // Parsing failed, fallback to regular tool block
       return [createToolBlock(block.toolCall, toolResult, index)];

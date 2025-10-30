@@ -4,7 +4,6 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationInvitesInfinite,
     createAdminServiceListOrganizationMemberUsergroups,
-    createAdminServiceListOrganizationMemberUsersInfinite,
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
@@ -38,25 +37,6 @@
   const currentUser = createAdminServiceGetCurrentUser();
 
   const PAGE_SIZE = 50;
-
-  $: orgMemberUsersInfiniteQuery =
-    createAdminServiceListOrganizationMemberUsersInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-      },
-      {
-        query: {
-          enabled,
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
   $: orgInvitesInfiniteQuery =
     createAdminServiceListOrganizationInvitesInfinite(
       organization,
@@ -152,32 +132,11 @@
     },
   );
 
-  $: allOrgMemberUsersRows =
-    $orgMemberUsersInfiniteQuery?.data?.pages?.flatMap(
-      (page) => page?.members ?? [],
-    ) ?? [];
+  $: allOrgMemberUsersRows = [];
   $: allOrgInvitesRows =
     $orgInvitesInfiniteQuery?.data?.pages?.flatMap(
       (page) => page?.invites ?? [],
     ) ?? [];
-
-  async function ensureAllUsersLoaded() {
-    if (
-      $orgMemberUsersInfiniteQuery?.hasNextPage &&
-      !$orgMemberUsersInfiniteQuery?.isFetchingNextPage
-    ) {
-      await $orgMemberUsersInfiniteQuery.fetchNextPage();
-      // Recursively call until all pages are loaded
-      if ($orgMemberUsersInfiniteQuery?.hasNextPage) {
-        await ensureAllUsersLoaded();
-      }
-    }
-  }
-
-  // Load all users when popover opens
-  $: if (enabled) {
-    ensureAllUsersLoaded();
-  }
 
   $: orgMemberUsergroups =
     $listOrganizationMemberUsergroups?.data?.members ?? [];
