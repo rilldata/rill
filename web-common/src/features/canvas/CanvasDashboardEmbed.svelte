@@ -8,6 +8,7 @@
 
   export let resource: V1Resource;
   export let navigationEnabled: boolean = true;
+  export let homeBookmarkUrlSearch: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
 
@@ -30,6 +31,7 @@
     {canvasName}
     filtersEnabled={canvas?.spec?.filtersEnabled}
     embedded
+    {homeBookmarkUrlSearch}
   >
     {#each rows as row, rowIndex (rowIndex)}
       <StaticCanvasRow
