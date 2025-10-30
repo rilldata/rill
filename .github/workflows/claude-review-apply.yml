@@ -15,7 +15,9 @@ permissions:
 
 jobs:
   prepare:
-    if: contains(github.event.pull_request.review.body, '@doclaude') # only run if @doclaude is in the review body.
+    if: |
+        contains(github.event.review.body, '@doclaude') ||
+        contains(github.event.comment.body, '@doclaude')
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.get_pr.outputs.pr_number }}
