@@ -240,6 +240,7 @@ const metricsViewReducers = {
   },
 
   setPivotRows(name: string, value: PivotChipData[]) {
+    console.log(value);
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
@@ -265,6 +266,7 @@ const metricsViewReducers = {
   },
 
   setPivotColumns(name: string, value: PivotChipData[]) {
+    console.log(value);
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
