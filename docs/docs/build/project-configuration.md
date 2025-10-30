@@ -346,6 +346,13 @@ features:
   - cloudDataViewer
 ```
 
+**Example: Enable AI chat with visualizations**
+```yaml
+features:
+  - chat  # Enable AI chat functionality
+  - chatCharts  # Enable chart visualizations in chat responses
+```
+
 **Available feature flags:**
 - `cloudDataViewer`: Enables the cloud data viewer interface for exploring data directly in the browser (default: `false`)
 - `dimensionSearch`: Enables advanced dimension search functionality (default: `false`)
@@ -358,6 +365,7 @@ features:
 - `darkMode`: Enables dark mode interface (default: `true`)
 - `chat`: Enables chat functionality (default: `false`)
 - `dashboardChat`: Enables chat features within dashboards (default: `false`)
+- `chatCharts`: Enables interactive chart visualizations in AI chat responses (default: `false`)
 
 **How to enable**: Add the `features` section to your `rill.yaml`
 

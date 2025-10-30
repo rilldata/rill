@@ -7,7 +7,7 @@ sidebar_position: 00
 
 ## Overview
 
-AI Chat in Rill Cloud allows you to have natural language conversations with your data directly in your browser. Instead of building queries or navigating through dashboards, simply ask questions in plain English and get instant insights backed by your metrics views—complete with **interactive visualizations** and **direct links** to your existing dashboards for deeper exploration.
+AI Chat in Rill Cloud allows you to have natural language conversations with your data directly in your browser. Instead of building queries or navigating through dashboards, simply ask questions in plain English and get instant insights backed by your metrics views—complete with **interactive charts and visualizations** that render right in the chat interface, plus **direct links** to your existing dashboards for deeper exploration.
 
 AI Chat is powered by [Rill's Model Context Protocol (MCP)](/explore/mcp) integration, which ensures that responses are accurate, governed, and consistent with the metrics displayed in your dashboards. By querying data with **predefined measures and dimensions**, you can trust that the answers you receive are as reliable as the data in your Rill dashboards. 
 
@@ -66,23 +66,43 @@ AI Chat provides rich, multi-layered responses to help you understand your data 
 ### What's Included in Responses
 
 1. **Summary** - A concise answer to your question with key findings and insights
-2. **Visualizations** _Coming soon!_ - Interactive visualizations that help you see patterns at a glance. These can include:
-   - Time series charts showing trends over time
-   - Bar charts comparing dimensions or categories
-   - Tables with formatted data
-  
+2. **Interactive Visualizations** - Charts and graphs that help you see patterns at a glance. The AI automatically chooses the most appropriate visualization based on your data and question, including:
+   - **Line charts** - Show trends and changes over time
+   - **Area charts** - Highlight cumulative trends and patterns
+   - **Bar charts** - Compare values across categories or dimensions
+   - **Stacked bar charts** - Show part-to-whole relationships across categories
+   - **Donut charts** - Display proportional breakdowns of a total
+   - **Combo charts** - Combine multiple measures with different scales
+   - **Heatmaps** - Visualize distribution across two dimensions
+
 3. **Detailed Results** - Tables or lists with specific numbers and breakdowns
 4. **Dashboard Links** - Direct links to your existing [Explore dashboards](/explore/dashboard-101) with filters and time ranges pre-applied based on your question
-5. **Suggested Next Steps** - Follow-up questions or areas to investigate further
+5. **Suggested Follow-ups** - Related questions or areas to investigate further
 
 ### Visual Components
 
-Unlike text-only AI assistants, AI Chat in Rill Cloud can render actual dashboard components directly in the chat interface. These visualizations are built using the same [canvas dashboard](/build/dashboards/canvas-widgets) technology used throughout Rill, ensuring:
+AI Chat in Rill Cloud automatically generates interactive visualizations to complement textual answers. After running queries against your metrics views, the AI intelligently selects the most appropriate chart type based on:
+
+- **Data structure** - Number of dimensions, measures, and their relationships
+- **Question context** - Whether you're asking about trends, comparisons, or distributions
+- **Best practices** - Following visualization principles to maximize clarity
+
+These visualizations are built using the same [canvas dashboard](/build/dashboards/canvas-widgets) technology used throughout Rill, ensuring:
 
 - **Consistency** - Visualizations match the style and behavior of your regular dashboards
-- **Interactivity** - Click, hover, and interact with charts right in the chat
-- **Accuracy** - Charts are generated from the same data sources as your dashboards
+- **Interactivity** - Hover over data points to see detailed values and context
+- **Accuracy** - Charts are generated from the same governed data sources as your dashboards
 - **Clarity** - Complex data patterns become immediately visible
+
+#### When Charts Are Generated
+
+The AI will automatically create a chart after running queries, unless:
+- You explicitly request a table-only response
+- The query returns only a single scalar value
+- The data structure doesn't support visualization (e.g., text-heavy data)
+- There's no appropriate chart type for the underlying data
+
+This smart behavior ensures you always get the most useful visualization without cluttering responses with unnecessary charts.
 
 ### Linking Back to Dashboards
 
