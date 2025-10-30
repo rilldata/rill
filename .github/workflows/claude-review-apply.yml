@@ -3,6 +3,8 @@ name: DoClaude – Apply PR comments and review suggestions
 on:
   pull_request_review: # trigger on review submission, must have @doclaude in the review body.
     types: [submitted]
+  pull_request_review_comment: # trigger on review comment submission, must have @doclaude in the comment body.
+    types: [created]
 
 
 permissions:
