@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/snowflakedb/gosnowflake"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -68,6 +69,7 @@ var spec = drivers.Spec{
 			Key:         "database",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Database",
+			Required:    true,
 			Placeholder: "your_database",
 			Hint:        "The name of the Snowflake database you want to connect to. This database must exist in your Snowflake account and you must have access permissions to it.",
 		},
@@ -111,6 +113,9 @@ type configProperties struct {
 	PrivateKey         string         `mapstructure:"privateKey"`
 	ParallelFetchLimit int            `mapstructure:"parallel_fetch_limit"`
 	Extras             map[string]any `mapstructure:",remain"`
+
+	// LogQueries controls whether to log the raw SQL passed to OLAP.
+	LogQueries bool `mapstructure:"log_queries"`
 }
 
 func (c *configProperties) validate() error {
@@ -215,6 +220,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		configProperties: conf,
 		storage:          st,
 		logger:           logger,
+		dbMu:             semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -234,15 +240,18 @@ type connection struct {
 	configProperties *configProperties
 	storage          *storage.Client
 	logger           *zap.Logger
+
+	db    *sqlx.DB // lazily populated using acquireDB
+	dbErr error
+	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.getDB()
+	db, err := c.acquireDB(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open snowflake connection: %w", err)
 	}
-	defer db.Close()
 	return db.PingContext(ctx)
 }
 
@@ -270,6 +279,9 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	if c.db != nil {
+		return c.db.Close()
+	}
 	return nil
 }
 
@@ -300,7 +312,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -314,16 +326,16 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
 	if opts.InputHandle == c {
 		if _, ok := opts.OutputHandle.AsObjectStore(); ok {
 			return &selfToObjectStoreExecutor{
 				c:           c,
 				objectStore: opts.OutputHandle,
-			}, true
+			}, nil
 		}
 	}
-	return nil, false
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
@@ -346,18 +358,22 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
+func (c *connection) acquireDB(ctx context.Context) (*sqlx.DB, error) {
+	err := c.dbMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	defer c.dbMu.Release(1)
+	if c.db != nil || c.dbErr != nil {
+		return c.db, c.dbErr
+	}
 	dsn, err := c.configProperties.resolveDSN()
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := sqlx.Open("snowflake", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
-	}
-	return db, nil
+	c.db, c.dbErr = sqlx.Open("snowflake", dsn)
+	return c.db, c.dbErr
 }
 
 // parseRSAPrivateKey parses a private key string

@@ -14,6 +14,7 @@
   import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import { onDestroy, onMount } from "svelte";
   import SyntaxElement from "../components/SyntaxElement.svelte";
+  import { RillTimeLabel } from "../../../url-state/time-ranges/RillTime";
 
   export let dateTimeAnchor: DateTime;
   export let grain: V1TimeGrain | undefined;
@@ -24,10 +25,8 @@
   export let watermark: DateTime | undefined;
   export let latest: DateTime | undefined;
   export let zone: string;
-  export let ref: "latest" | "watermark" | "now" | string;
-  export let onSelectAsOfOption: (
-    ref: "latest" | "watermark" | "now" | string,
-  ) => void;
+  export let ref: RillTimeLabel | undefined;
+  export let onSelectAsOfOption: (ref: RillTimeLabel) => void;
   export let onToggleAlignment: (forward: boolean) => void;
   export let onSelectEnding: (
     grain: V1TimeGrain | undefined,
@@ -64,20 +63,20 @@
 
   $: options = [
     {
-      id: "watermark",
+      id: RillTimeLabel.Watermark,
       label: "complete data",
       timestamp: watermark,
       description:
         "Timestamp prior to which data frames are considered complete, also known as the watermark",
     },
     {
-      id: "latest",
+      id: RillTimeLabel.Latest,
       label: "latest data",
       timestamp: latest,
       description: "Timestamp of latest data point",
     },
     {
-      id: "now",
+      id: RillTimeLabel.Now,
       label: "current time",
       timestamp: now,
       description: "Server clock in selected timezone",
@@ -97,18 +96,21 @@
     });
   }
 
-  function humanizeRef(ref: string, grain: V1TimeGrain | undefined): string {
+  function humanizeRef(
+    ref: RillTimeLabel | undefined,
+    grain: V1TimeGrain | undefined,
+  ): string {
     switch (ref) {
-      case "watermark":
+      case RillTimeLabel.Watermark:
         if (grain) return "complete";
         return "complete data";
-      case "latest":
+      case RillTimeLabel.Latest:
         return "latest";
-      case "now":
+      case RillTimeLabel.Now:
         if (grain) return "current";
         return "now";
       default:
-        return ref;
+        return "now";
     }
   }
 
@@ -141,10 +143,11 @@
         id="truncation-selector-trigger"
       >
         <button
+          type="button"
           {...getAttrs([builder, builder2])}
           use:builderActions={{ builders: [builder, builder2] }}
           class="flex gap-x-1 items-center flex-none truncate"
-          aria-label="Select time range"
+          aria-label="Select reference time and grain"
           data-state={open ? "open" : "closed"}
         >
           <p>
@@ -156,7 +159,7 @@
               {/if}
             </b>
             {#if grain}
-              {#if snapToEnd || ref === "watermark"}
+              {#if snapToEnd || ref === RillTimeLabel.Watermark}
                 end
               {:else}
                 start
@@ -189,7 +192,7 @@
     <DropdownMenu.Group class="p-1">
       <h3 class="mt-1 px-2 uppercase text-gray-500 font-semibold">Reference</h3>
       {#each options as { id, label, description, timestamp } (id)}
-        {#if id !== "watermark" || (id === "watermark" && !!timestamp)}
+        {#if id !== RillTimeLabel.Watermark || (id === RillTimeLabel.Watermark && !!timestamp)}
           <DropdownMenu.CheckboxItem
             checkRight
             checked={ref === id}
@@ -198,7 +201,10 @@
             }}
           >
             <Tooltip.Root>
-              <Tooltip.Trigger class="size-full flex justify-between ">
+              <Tooltip.Trigger
+                class="size-full flex justify-between"
+                id="{label}-tooltip-trigger"
+              >
                 {label}
               </Tooltip.Trigger>
 
@@ -216,7 +222,7 @@
                       <SyntaxElement range={id} dark />
                     </div>
 
-                    {#if id !== "now"}
+                    {#if id !== RillTimeLabel.Now}
                       <div>
                         {getColloquialOffset(timestamp)}
                       </div>
@@ -256,9 +262,9 @@
           <span>Anchor to period end</span>
 
           <Switch
-            disabled={ref === "watermark"}
+            disabled={ref === RillTimeLabel.Watermark}
             small
-            checked={snapToEnd || ref === "watermark"}
+            checked={snapToEnd || ref === RillTimeLabel.Watermark}
             on:click={() => {
               onToggleAlignment(!snapToEnd);
             }}

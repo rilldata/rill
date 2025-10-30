@@ -43,7 +43,7 @@
         <mj-spacer height="20px" />
         
         <mj-text align="center" font-size="12px">
-          To edit or unsubscribe from this alert, <a href="{{ .EditLink }}">click here</a>.
+          {{ if .EditLink }} To edit this alert, <a href="{{ .EditLink }}">click here</a>. {{ end }} {{ if .UnsubscribeLink }} To unsubscribe from this alert, <a href="{{ .UnsubscribeLink }}">click here</a>. {{ end }}
         </mj-text>
         
         <mj-text align="center" font-size="12px" line-height="1.5">

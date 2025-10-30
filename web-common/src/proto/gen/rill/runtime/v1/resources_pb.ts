@@ -966,6 +966,26 @@ export class ModelSpec extends Message<ModelSpec> {
   outputProperties?: Struct;
 
   /**
+   * @generated from field: optional uint32 retry_attempts = 26;
+   */
+  retryAttempts?: number;
+
+  /**
+   * @generated from field: optional uint32 retry_delay_seconds = 27;
+   */
+  retryDelaySeconds?: number;
+
+  /**
+   * @generated from field: optional bool retry_exponential_backoff = 28;
+   */
+  retryExponentialBackoff?: boolean;
+
+  /**
+   * @generated from field: repeated string retry_if_error_matches = 29;
+   */
+  retryIfErrorMatches: string[] = [];
+
+  /**
    * change_mode is the mode of change detection to use for the model.
    *
    * @generated from field: rill.runtime.v1.ModelChangeMode change_mode = 24;
@@ -1017,6 +1037,10 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
+    { no: 26, name: "retry_attempts", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 27, name: "retry_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 28, name: "retry_exponential_backoff", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 29, name: "retry_if_error_matches", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 24, name: "change_mode", kind: "enum", T: proto3.getEnumType(ModelChangeMode) },
     { no: 25, name: "tests", kind: "message", T: ModelTest, repeated: true },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -2017,6 +2041,12 @@ export class SecurityRule extends Message<SecurityRule> {
      */
     value: SecurityRuleRowFilter;
     case: "rowFilter";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleTransitiveAccess transitive_access = 4;
+     */
+    value: SecurityRuleTransitiveAccess;
+    case: "transitiveAccess";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<SecurityRule>) {
@@ -2030,6 +2060,7 @@ export class SecurityRule extends Message<SecurityRule> {
     { no: 1, name: "access", kind: "message", T: SecurityRuleAccess, oneof: "rule" },
     { no: 2, name: "field_access", kind: "message", T: SecurityRuleFieldAccess, oneof: "rule" },
     { no: 3, name: "row_filter", kind: "message", T: SecurityRuleRowFilter, oneof: "rule" },
+    { no: 4, name: "transitive_access", kind: "message", T: SecurityRuleTransitiveAccess, oneof: "rule" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRule {
@@ -2054,14 +2085,41 @@ export class SecurityRule extends Message<SecurityRule> {
  */
 export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
   /**
-   * @generated from field: string condition = 1;
+   * The condition under which this rule applies.
+   * It is ANDed together with the condition_kinds and condition_resources.
+   *
+   * @generated from field: string condition_expression = 1;
    */
-  condition = "";
+  conditionExpression = "";
 
   /**
+   * The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+   *
+   * @generated from field: repeated string condition_kinds = 3;
+   */
+  conditionKinds: string[] = [];
+
+  /**
+   * The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+   * It is ORed together with the condition_kinds.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName condition_resources = 4;
+   */
+  conditionResources: ResourceName[] = [];
+
+  /**
+   * Whether to allow or deny access to the resources covered by the conditions.
+   *
    * @generated from field: bool allow = 2;
    */
   allow = false;
+
+  /**
+   * If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true).
+   *
+   * @generated from field: bool exclusive = 5;
+   */
+  exclusive = false;
 
   constructor(data?: PartialMessage<SecurityRuleAccess>) {
     super();
@@ -2071,8 +2129,11 @@ export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleAccess";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "condition_kinds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "condition_resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "exclusive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleAccess {
@@ -2097,14 +2158,39 @@ export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
  */
 export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
   /**
-   * @generated from field: string condition = 1;
+   * The condition under which this rule applies.
+   * It is ANDed together with the condition_kinds and condition_resources.
+   *
+   * @generated from field: string condition_expression = 1;
    */
-  condition = "";
+  conditionExpression = "";
+
+  /**
+   * The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+   *
+   * @generated from field: repeated string condition_kinds = 5;
+   */
+  conditionKinds: string[] = [];
+
+  /**
+   * The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+   * It is ORed together with the condition_kinds.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName condition_resources = 6;
+   */
+  conditionResources: ResourceName[] = [];
 
   /**
    * @generated from field: bool allow = 2;
    */
   allow = false;
+
+  /**
+   * If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true).
+   *
+   * @generated from field: bool exclusive = 7;
+   */
+  exclusive = false;
 
   /**
    * @generated from field: repeated string fields = 3;
@@ -2124,8 +2210,11 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleFieldAccess";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "condition_kinds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "condition_resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "exclusive", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "all_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -2152,9 +2241,27 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
  */
 export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
   /**
-   * @generated from field: string condition = 1;
+   * The condition under which this rule applies.
+   * It is ANDed together with the condition_kinds and condition_resources.
+   *
+   * @generated from field: string condition_expression = 1;
    */
-  condition = "";
+  conditionExpression = "";
+
+  /**
+   * The resource kinds the rule applies to. If empty, it defaults to all resource kinds.
+   *
+   * @generated from field: repeated string condition_kinds = 4;
+   */
+  conditionKinds: string[] = [];
+
+  /**
+   * The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+   * It is ORed together with the condition_kinds.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName condition_resources = 5;
+   */
+  conditionResources: ResourceName[] = [];
 
   /**
    * Raw SQL expression to apply to the underlying table
@@ -2178,7 +2285,9 @@ export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleRowFilter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "condition_kinds", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "condition_resources", kind: "message", T: ResourceName, repeated: true },
     { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "expression", kind: "message", T: Expression },
   ]);
@@ -2197,6 +2306,45 @@ export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
 
   static equals(a: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined, b: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined): boolean {
     return proto3.util.equals(SecurityRuleRowFilter, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleTransitiveAccess
+ */
+export class SecurityRuleTransitiveAccess extends Message<SecurityRuleTransitiveAccess> {
+  /**
+   * this rules resolves to rules that provides access to whatever is needed to access this resource.
+   *
+   * @generated from field: rill.runtime.v1.ResourceName resource = 1;
+   */
+  resource?: ResourceName;
+
+  constructor(data?: PartialMessage<SecurityRuleTransitiveAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleTransitiveAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "resource", kind: "message", T: ResourceName },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleTransitiveAccess {
+    return new SecurityRuleTransitiveAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleTransitiveAccess | PlainMessage<SecurityRuleTransitiveAccess> | undefined, b: SecurityRuleTransitiveAccess | PlainMessage<SecurityRuleTransitiveAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleTransitiveAccess, a, b);
   }
 }
 
@@ -4082,6 +4230,16 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   secondaryColorRaw = "";
 
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeColors light = 5;
+   */
+  light?: ThemeColors;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeColors dark = 6;
+   */
+  dark?: ThemeColors;
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4094,6 +4252,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
     { no: 3, name: "primary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "light", kind: "message", T: ThemeColors, opt: true },
+    { no: 6, name: "dark", kind: "message", T: ThemeColors, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
@@ -4141,6 +4301,55 @@ export class ThemeState extends Message<ThemeState> {
 
   static equals(a: ThemeState | PlainMessage<ThemeState> | undefined, b: ThemeState | PlainMessage<ThemeState> | undefined): boolean {
     return proto3.util.equals(ThemeState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeColors
+ */
+export class ThemeColors extends Message<ThemeColors> {
+  /**
+   * @generated from field: string primary = 1;
+   */
+  primary = "";
+
+  /**
+   * @generated from field: string secondary = 2;
+   */
+  secondary = "";
+
+  /**
+   * @generated from field: map<string, string> variables = 3;
+   */
+  variables: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<ThemeColors>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeColors";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "primary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "secondary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeColors {
+    return new ThemeColors().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeColors {
+    return new ThemeColors().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeColors {
+    return new ThemeColors().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeColors | PlainMessage<ThemeColors> | undefined, b: ThemeColors | PlainMessage<ThemeColors> | undefined): boolean {
+    return proto3.util.equals(ThemeColors, a, b);
   }
 }
 

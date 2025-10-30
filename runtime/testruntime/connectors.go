@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	goruntime "runtime"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/joho/godotenv"
@@ -17,6 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // AcquireConnector acquires a test connector by name.
@@ -98,9 +100,12 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			require.NoError(t, godotenv.Load(envPath))
 		}
 
+		path := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_PATH")
+		require.NotEmpty(t, path)
 		token := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")
-		require.NotEmpty(t, token, "RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN not configured")
-		return map[string]string{"token": token}
+		require.NotEmpty(t, token)
+
+		return map[string]string{"path": path, "token": token}
 	},
 	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
@@ -313,6 +318,47 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"azure_storage_connection_string_ip": connectionStringWithIP,
 			"azure_storage_account":              azurite.AccountName,
 		}
+	},
+	"pinot": func(t TestingT) map[string]string {
+		ctx := context.Background()
+		pinot, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:        "apachepinot/pinot:latest",
+				ExposedPorts: []string{"9000/tcp", "8000/tcp"},
+				Cmd:          []string{"QuickStart", "-type", "batch"},
+				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(2 * time.Minute),
+			},
+			Started: true,
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			err := pinot.Terminate(ctx)
+			require.NoError(t, err)
+		})
+
+		host, err := pinot.Host(ctx)
+		require.NoError(t, err)
+		brokerPort, err := pinot.MappedPort(ctx, "8000")
+		require.NoError(t, err)
+		controllerPort, err := pinot.MappedPort(ctx, "9000")
+		require.NoError(t, err)
+
+		dsn := fmt.Sprintf("http://%s:%s?controller=http://%s:%s",
+			host, brokerPort.Port(), host, controllerPort.Port())
+
+		return map[string]string{"dsn": dsn}
+	},
+	"openai": func(t TestingT) map[string]string {
+		// Load .env file at the repo root (if any)
+		_, currentFile, _, _ := goruntime.Caller(0)
+		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+		_, err := os.Stat(envPath)
+		if err == nil {
+			require.NoError(t, godotenv.Load(envPath))
+		}
+		apiKey := os.Getenv("RILL_RUNTIME_OPENAI_TEST_API_KEY")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"api_key": apiKey}
 	},
 }
 

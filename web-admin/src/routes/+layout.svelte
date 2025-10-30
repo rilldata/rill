@@ -3,6 +3,7 @@
   import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
@@ -17,6 +18,8 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
+  import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils.ts";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
@@ -76,7 +79,7 @@
     return () => removeJavascriptListeners?.();
   });
 
-  $: isEmbed = pathname === "/-/embed";
+  $: isEmbed = isEmbedPage($page);
 
   $: hideTopBar =
     // invite page shouldn't show the top bar because it is considered an onboard step
@@ -92,6 +95,26 @@
     isProjectInvitePage($page);
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
+
+  function pageContentSizeHandler(node: HTMLElement) {
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        eventBus.emit("page-content-resized", {
+          width,
+          height,
+        });
+      }
+    });
+
+    resizeObserver.observe(node);
+
+    return {
+      destroy() {
+        resizeObserver.disconnect();
+      },
+    };
+  }
 </script>
 
 <svelte:head>
@@ -104,7 +127,12 @@
 </svelte:head>
 
 <QueryClientProvider client={queryClient}>
-  <main class="flex flex-col min-h-screen h-screen bg-surface">
+  <main
+    class="flex flex-col bg-surface"
+    class:min-h-screen={!$dynamicHeight}
+    class:h-screen={!$dynamicHeight}
+    use:pageContentSizeHandler
+  >
     <BannerCenter />
     {#if !hideBillingManager}
       <BillingBannerManager {organization} {organizationPermissions} />
@@ -116,6 +144,7 @@
         manageProjectAdmins={projectPermissions?.manageProjectAdmins}
         manageOrgAdmins={organizationPermissions?.manageOrgAdmins}
         manageOrgMembers={organizationPermissions?.manageOrgMembers}
+        readProjects={organizationPermissions?.readProjects}
         {organizationLogoUrl}
         {planDisplayName}
       />

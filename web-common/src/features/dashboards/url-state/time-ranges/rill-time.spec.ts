@@ -115,12 +115,44 @@ function getPeriodToDateTestCases(): TestCase[] {
   }).flat();
 }
 
+function getLegacyISOTestCases(): TestCase[] {
+  return [
+    [`P2M3D`, "Last 2 months and 3 days", false, undefined, undefined],
+    [`PT2H3M`, "Last 2 hours and 3 minutes", false, undefined, undefined],
+    [
+      `P2M3DT2H3M`,
+      "Last 2 months, 3 days, 2 hours and 3 minutes",
+      false,
+      undefined,
+      undefined,
+    ],
+  ];
+}
+
+function getLegacyDAXTestCases(): TestCase[] {
+  return [
+    ["rill-TD", "Today", false, undefined, undefined],
+    ["rill-WTD", "Week to Date", false, undefined, undefined],
+    ["rill-QTD", "Quarter to Date", false, undefined, undefined],
+    ["rill-MTD", "Month to Date", false, undefined, undefined],
+    ["rill-YTD", "Year to Date", false, undefined, undefined],
+
+    ["rill-PDC", "Yesterday", false, undefined, undefined],
+    ["rill-PWC", "Previous week", false, undefined, undefined],
+    ["rill-PQC", "Previous quarter", false, undefined, undefined],
+    ["rill-PMC", "Previous month", false, undefined, undefined],
+    ["rill-PYC", "Previous year", false, undefined, undefined],
+  ];
+}
+
 describe("rill time", () => {
   describe("positive cases", () => {
     const Cases: TestCase[] = [
       ...getSinglePeriodTestCases(),
       ...getMultiPeriodTestCases(7),
       ...getPeriodToDateTestCases(),
+      ...getLegacyISOTestCases(),
+      ...getLegacyDAXTestCases(),
       [
         "-5W4M3Q2Y to -4W3M2Q1Y",
         "-5W4M3Q2Y to -4W3M2Q1Y",
@@ -151,6 +183,8 @@ describe("rill time", () => {
         undefined,
         undefined,
       ],
+
+      ["inf", "All time", false, undefined, undefined],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);

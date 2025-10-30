@@ -75,6 +75,6 @@ Using service accounts for production workflows and pipelines is a general best 
 
 :::warning Be careful of overriding local credentials and/or pushing the wrong credentials to Rill Cloud
 
-When using service accounts, it is very likely that different or even personal credentials are being used in local development (i.e., Rill Developer). Therefore, it is worth double-checking that the correct credentials are being used or set before [syncing credentials](/connect/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) between your local instance of [Rill Developer and Rill Cloud](/home/concepts/cloud-vs-developer) using the `rill env push` and `rill env pull` commands respectively.
+When using service accounts, it is very likely that different or even personal credentials are being used in local development (i.e., Rill Developer). Therefore, it is worth double-checking that the correct credentials are being used or set before [syncing credentials](/connect/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) between your local instance of [Rill Developer and Rill Cloud](/get-started/concepts/cloud-vs-developer) using the `rill env push` and `rill env pull` commands respectively.
 
 :::

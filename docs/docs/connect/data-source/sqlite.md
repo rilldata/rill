@@ -11,14 +11,17 @@ sidebar_position: 80
 
 [SQLite](https://www.sqlite.org/about.html) is a lightweight, self-contained SQL database engine renowned for its reliability, speed, and full-featured, serverless architecture. SQLite is primarily known as an in-process database and is widely used in embedded systems, mobile applications, and various small-to-medium-sized applications due to its simplicity, zero-configuration, and single-file database format. SQLite supports standard SQL syntax and includes features such as transactions and atomic commit and rollback, making it a practical choice for applications requiring a compact, efficient data management system. Rill supports connecting to and reading from a SQLite database as a source through the [DuckDB SQLite extension](https://duckdb.org/docs/extensions/sqlite.html).
 
-<img src='/img/reference/connectors/sqlite/sqlite.png' class='centered' />
-<br />
+## Connect to SQLite
 
-## Local credentials
 
-In many cases, since SQLite is used as an in-process database, credentials are not required. Instead, Rill will need to know the path to the SQLite database file so that it can be read accordingly. If creating a new SQLite source from the UI, you should provide the appropriate path to the database file under **DB** and the name of the table under **Table**:
+In many cases, since SQLite is used as an in-process database, credentials are not required. Instead, Rill will need to know the path to the SQLite database file so that it can be read accordingly.
 
-![SQLite UI creation](/img/reference/connectors/sqlite/sqlite_example.png)
+```yaml
+type: connector
+driver: sqlite 
+
+dsn: "file:mydatabase.db" 
+```
 
 Alternatively, you can create the connector directly using the [connector YAML reference documentation](/reference/project-files/connectors#sqlite). 
 

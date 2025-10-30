@@ -6,8 +6,8 @@ import type {
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client/index";
 import { get, writable } from "svelte/store";
-import { runtime } from "./runtime-store";
 import { asyncWait } from "../lib/waitUtils";
+import { runtime } from "./runtime-store";
 
 const MAX_RETRIES = 5;
 const BACKOFF_DELAY = 1000;
@@ -134,7 +134,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
   private cancel() {
     // Clean up fetch stream
-    this.controller?.abort();
+    this.controller?.abort("Watch request cancelled");
     this.stream = this.controller = undefined;
 
     // Clean up SSE connection

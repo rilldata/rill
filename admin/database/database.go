@@ -77,7 +77,7 @@ type DB interface {
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
-	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, afterID string, limit int) ([]*Project, error)
+	FindProjectsForUserAndFingerprint(ctx context.Context, userID, directoryName, gitRemote, subpath, rillMgdRemote string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, includePublic bool, afterProjectName string, limit int) ([]*Project, error)
@@ -156,6 +156,7 @@ type DB interface {
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
+	DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 	DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error
 
@@ -192,10 +193,10 @@ type DB interface {
 	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
 
-	FindReportTokens(ctx context.Context, reportName string) ([]*ReportToken, error)
-	FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*ReportTokenWithSecret, error)
-	FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*ReportToken, error)
-	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
+	FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*NotificationToken, error)
+	FindNotificationTokensWithSecret(ctx context.Context, resourceKind, resourceName string) ([]*NotificationTokenWithSecret, error)
+	FindNotificationTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*NotificationToken, error)
+	InsertNotificationToken(ctx context.Context, opts *InsertNotificationTokenOptions) (*NotificationToken, error)
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -218,8 +219,8 @@ type DB interface {
 	ResolveOrganizationRoleForService(ctx context.Context, serviceID, orgID string) (*OrganizationRole, error)
 	ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*ProjectRole, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int) ([]*OrganizationMemberUser, error)
-	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string) (int, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*OrganizationMemberUser, error)
+	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, searchPattern string) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
@@ -330,6 +331,9 @@ type DB interface {
 	CountManagedGitRepos(ctx context.Context, orgID string) (int, error)
 	InsertManagedGitRepo(ctx context.Context, opts *InsertManagedGitRepoOptions) (*ManagedGitRepo, error)
 	DeleteManagedGitRepos(ctx context.Context, ids []string) error
+
+	FindGitRepoTransfer(ctx context.Context, remote string) (*GitRepoTransfer, error)
+	InsertGitRepoTransfer(ctx context.Context, fromRemote, toRemote string) (*GitRepoTransfer, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -610,18 +614,20 @@ type StaticRuntimeSlotsUsed struct {
 type User struct {
 	ID                    string
 	Email                 string
-	DisplayName           string    `db:"display_name"`
-	PhotoURL              string    `db:"photo_url"`
-	GithubUsername        string    `db:"github_username"`
-	GithubRefreshToken    string    `db:"github_refresh_token"`
-	CreatedOn             time.Time `db:"created_on"`
-	UpdatedOn             time.Time `db:"updated_on"`
-	ActiveOn              time.Time `db:"active_on"`
-	QuotaSingleuserOrgs   int       `db:"quota_singleuser_orgs"`
-	QuotaTrialOrgs        int       `db:"quota_trial_orgs"`
-	CurrentTrialOrgsCount int       `db:"current_trial_orgs_count"`
-	PreferenceTimeZone    string    `db:"preference_time_zone"`
-	Superuser             bool      `db:"superuser"`
+	DisplayName           string     `db:"display_name"`
+	PhotoURL              string     `db:"photo_url"`
+	GithubUsername        string     `db:"github_username"`
+	GithubToken           string     `db:"github_token"`
+	GithubTokenExpiresOn  *time.Time `db:"github_token_expires_on"`
+	GithubRefreshToken    string     `db:"github_refresh_token"`
+	CreatedOn             time.Time  `db:"created_on"`
+	UpdatedOn             time.Time  `db:"updated_on"`
+	ActiveOn              time.Time  `db:"active_on"`
+	QuotaSingleuserOrgs   int        `db:"quota_singleuser_orgs"`
+	QuotaTrialOrgs        int        `db:"quota_trial_orgs"`
+	CurrentTrialOrgsCount int        `db:"current_trial_orgs_count"`
+	PreferenceTimeZone    string     `db:"preference_time_zone"`
+	Superuser             bool       `db:"superuser"`
 }
 
 // InsertUserOptions defines options for inserting a new user
@@ -636,13 +642,15 @@ type InsertUserOptions struct {
 
 // UpdateUserOptions defines options for updating an existing user
 type UpdateUserOptions struct {
-	DisplayName         string
-	PhotoURL            string
-	GithubUsername      string
-	GithubRefreshToken  string
-	QuotaSingleuserOrgs int
-	QuotaTrialOrgs      int
-	PreferenceTimeZone  string
+	DisplayName          string
+	PhotoURL             string
+	GithubUsername       string
+	GithubToken          string
+	GithubTokenExpiresOn *time.Time
+	GithubRefreshToken   string
+	QuotaSingleuserOrgs  int
+	QuotaTrialOrgs       int
+	PreferenceTimeZone   string
 }
 
 // Service represents a service account.
@@ -806,23 +814,26 @@ type InsertMagicAuthTokenOptions struct {
 	Internal        bool
 }
 
-type ReportToken struct {
+type NotificationToken struct {
 	ID               string
-	ReportName       string `db:"report_name"`
+	ResourceKind     string `db:"resource_kind"`
+	ResourceName     string `db:"resource_name"`
 	RecipientEmail   string `db:"recipient_email"`
 	MagicAuthTokenID string `db:"magic_auth_token_id"`
 }
 
-type ReportTokenWithSecret struct {
+type NotificationTokenWithSecret struct {
 	ID                   string
-	ReportName           string `db:"report_name"`
+	ResourceKind         string `db:"resource_kind"`
+	ResourceName         string `db:"resource_name"`
 	RecipientEmail       string `db:"recipient_email"`
 	MagicAuthTokenID     string `db:"magic_auth_token_id"`
 	MagicAuthTokenSecret []byte `db:"magic_auth_token_secret"`
 }
 
-type InsertReportTokenOptions struct {
-	ReportName       string
+type InsertNotificationTokenOptions struct {
+	ResourceKind     string
+	ResourceName     string
 	RecipientEmail   string
 	MagicAuthTokenID string
 }
@@ -1102,6 +1113,7 @@ type Bookmark struct {
 	DisplayName  string    `db:"display_name"`
 	Description  string    `db:"description"`
 	Data         []byte    `db:"data"`
+	URLSearch    string    `db:"url_search"`
 	ResourceKind string    `db:"resource_kind"`
 	ResourceName string    `db:"resource_name"`
 	ProjectID    string    `db:"project_id"`
@@ -1115,7 +1127,7 @@ type Bookmark struct {
 // InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
 	DisplayName  string `json:"display_name"`
-	Data         []byte `json:"data"`
+	URLSearch    string `json:"url_search"`
 	ResourceKind string `json:"resource_kind"`
 	ResourceName string `json:"resource_name"`
 	Description  string `json:"description"`
@@ -1130,7 +1142,7 @@ type UpdateBookmarkOptions struct {
 	BookmarkID  string `json:"bookmark_id"`
 	DisplayName string `json:"display_name"`
 	Description string `json:"description"`
-	Data        []byte `json:"data"`
+	URLSearch   string `json:"url_search"`
 	Shared      bool   `json:"shared"`
 }
 
@@ -1402,4 +1414,11 @@ type ProjectMemberServiceWithProject struct {
 	Attributes  map[string]any `db:"attributes"`
 	CreatedOn   time.Time      `db:"created_on"`
 	UpdatedOn   time.Time      `db:"updated_on"`
+}
+
+// GitRepoTransfer tracks a transfer of a project between two Git repositories.
+// This is set when a user switches a rill managed repo to self hosted Git repo.
+type GitRepoTransfer struct {
+	From string `db:"from_git_remote"`
+	To   string `db:"to_git_remote"`
 }

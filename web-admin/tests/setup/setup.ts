@@ -202,13 +202,17 @@ setup.describe("global setup", () => {
     // Navigate to the project URL and expect to see the successful deployment
     const url = match[0];
     await adminPage.goto(url);
-    await expect(adminPage.getByText(RILL_ORG_NAME)).toBeVisible(); // Organization breadcrumb
-    await expect(adminPage.getByText(RILL_PROJECT_NAME)).toBeVisible(); // Project breadcrumb
-
-    // Expect to land on the chat page
-    await adminPage.waitForURL("**/-/chat");
     await expect(
-      adminPage.getByText("How can I help you today?"),
+      adminPage.getByRole("link", { name: RILL_ORG_NAME }),
+    ).toBeVisible(); // Organization breadcrumb
+    await expect(
+      adminPage.getByRole("link", { name: RILL_PROJECT_NAME }),
+    ).toBeVisible(); // Project breadcrumb
+
+    // Expect to land on the project home page
+    await adminPage.waitForURL(`/${RILL_ORG_NAME}/${RILL_PROJECT_NAME}`);
+    await expect(
+      adminPage.getByText(`Welcome to ${RILL_PROJECT_NAME}`),
     ).toBeVisible();
 
     // Navigate to the dashboards page to validate the deployment

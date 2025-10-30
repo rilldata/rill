@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
   import { getRepoNameFromGitRemote } from "@rilldata/web-common/features/project/deploy/github-utils";
   import {
     AlertDialog,
@@ -16,32 +15,40 @@
 
   export let open = false;
   export let loading: boolean;
-  export let error: ReturnType<typeof extractGithubConnectError>;
+  export let error: string | undefined;
 
   export let onConfirm: () => Promise<void>;
-  export let onCancel: () => void;
+  export let onCancel: () => void = () => {};
   export let githubRemote: string;
   export let subpath: string;
 
-  let confirmInput = "";
-  $: confirmed = confirmInput === "overwrite";
+  $: path =
+    `${getRepoNameFromGitRemote(githubRemote)}` +
+    (subpath ? `/${subpath}` : "");
 
-  $: path = `${getRepoNameFromGitRemote(githubRemote)}/${subpath}`;
+  const CONFIRMATION_TEXT = "overwrite";
+
+  let confirmInput = "";
+  $: confirmed = confirmInput === CONFIRMATION_TEXT;
 
   function close() {
     onCancel();
-    confirmInput = "";
     open = false;
   }
 
   async function handleContinue() {
     await onConfirm();
-    confirmInput = "";
-    open = false;
   }
 </script>
 
-<AlertDialog bind:open>
+<AlertDialog
+  bind:open
+  onOpenChange={(o) => {
+    if (o) {
+      confirmInput = "";
+    }
+  }}
+>
   <AlertDialogTrigger asChild>
     <div class="hidden"></div>
   </AlertDialogTrigger>
@@ -49,23 +56,20 @@
     <AlertDialogHeader>
       <AlertDialogTitle class="flex flex-row gap-x-2 items-center">
         <AlertCircleOutline size="40px" className="text-yellow-600" />
-        <div>
-          Overwrite files in this {subpath ? "subpath" : "repository"}?
-        </div>
+        <div>Pull changes from {path}?</div>
       </AlertDialogTitle>
       <AlertDialogDescription class="flex flex-col gap-y-1.5">
         <div>
-          It appears that <b>{path}</b> is not empty. Rill will overwrite this repo's
-          contents with this project.
+          Current project contents will be overwritten with the contents of the
+          repository. There is no way to retrieve this current project. Are you
+          sure?
         </div>
         <div class="mt-1">
-          Type <b>overwrite</b> in the box below to confirm:
+          Type <b>{CONFIRMATION_TEXT}</b> in the box below to confirm:
         </div>
         <Input bind:value={confirmInput} id="confirmation" label="" />
-        {#if error?.message}
-          <div class="text-red-500 text-sm py-px">
-            {error.message}
-          </div>
+        {#if error}
+          <div class="text-red-500 text-sm py-px">{error}</div>
         {/if}
       </AlertDialogDescription>
     </AlertDialogHeader>

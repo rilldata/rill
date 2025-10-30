@@ -8,6 +8,7 @@
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AlignmentInput from "./AlignmentInput.svelte";
+  import CanvasFieldSwitcher from "./CanvasFieldSwitcher.svelte";
   import ChartTypeSelector from "./chart/ChartTypeSelector.svelte";
   import MarkSelector from "./chart/MarkSelector.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
@@ -110,15 +111,19 @@
 
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
-          <div class="flex items-center justify-between py-2">
+          <div class="flex items-center justify-between py-1">
             <InputLabel
               small
               label={config.label ?? key}
               id={key}
-              faint={!localParamValues[key]}
+              faint={config.meta?.invertBoolean
+                ? localParamValues[key]
+                : !localParamValues[key]}
             />
             <Switch
-              checked={$specStore[key]}
+              checked={config.meta?.invertBoolean
+                ? !$specStore[key]
+                : $specStore[key]}
               on:click={() => {
                 component.updateProperty(key, !localParamValues[key]);
               }}
@@ -157,6 +162,18 @@
             size="sm"
             sameWidth
             fontSize={12}
+            onChange={(newValue) => {
+              component.updateProperty(key, newValue);
+            }}
+          />
+
+          <!-- SWITCHER TABS -->
+        {:else if config.type === "switcher_tab"}
+          <CanvasFieldSwitcher
+            {key}
+            label={config.label ?? key}
+            options={config.meta?.options ?? []}
+            value={localParamValues[key] ?? config.meta?.default}
             onChange={(newValue) => {
               component.updateProperty(key, newValue);
             }}

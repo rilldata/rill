@@ -6,8 +6,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -33,18 +34,13 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	if err != nil {
 		return err
 	}
-
-	creds, err := c.newCredentials()
+	client, err := getS3Client(ctx, c.config, u.Host)
 	if err != nil {
 		return err
 	}
 
-	sess, err := c.newSessionForBucket(ctx, u.Host, "", "", creds)
-	if err != nil {
-		return err
-	}
 	base, _ := doublestar.SplitPattern(strings.TrimPrefix(u.Path, "/"))
-	return deleteObjectsInPrefix(ctx, sess, u.Host, base)
+	return deleteObjectsInPrefix(ctx, client, u.Host, base)
 }
 
 func (c *Connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
@@ -88,12 +84,11 @@ func (c *Connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.
 	}, nil
 }
 
-func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketName, prefix string) error {
-	s3client := s3.New(sess)
-	deleteBatch := func(objects []*s3.ObjectIdentifier) error {
-		_, err := s3client.DeleteObjectsWithContext(ctx, &s3.DeleteObjectsInput{
-			Bucket: &bucketName,
-			Delete: &s3.Delete{
+func deleteObjectsInPrefix(ctx context.Context, client *s3.Client, bucketName, prefix string) error {
+	deleteBatch := func(objects []types.ObjectIdentifier) error {
+		_, err := client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(bucketName),
+			Delete: &types.Delete{
 				Objects: objects,
 			},
 		})
@@ -102,18 +97,18 @@ func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketNam
 
 	var continuationToken *string
 	for {
-		out, err := s3client.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
-			Bucket:            &bucketName,
-			Prefix:            &prefix,
+		out, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+			Bucket:            aws.String(bucketName),
+			Prefix:            aws.String(prefix),
 			ContinuationToken: continuationToken,
 		})
 		if err != nil {
 			return err
 		}
 
-		ids := make([]*s3.ObjectIdentifier, 0, len(out.Contents))
+		ids := make([]types.ObjectIdentifier, 0, len(out.Contents))
 		for _, o := range out.Contents {
-			ids = append(ids, &s3.ObjectIdentifier{
+			ids = append(ids, types.ObjectIdentifier{
 				Key: o.Key,
 			})
 		}
@@ -124,7 +119,7 @@ func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketNam
 			}
 		}
 
-		if *out.IsTruncated && out.NextContinuationToken != nil {
+		if out.IsTruncated != nil && *out.IsTruncated && out.NextContinuationToken != nil {
 			continuationToken = out.NextContinuationToken
 		} else {
 			break

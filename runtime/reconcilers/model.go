@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -414,6 +415,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Return the next refresh time
 	return runtime.ReconcileResult{Retrigger: refreshOn}
+}
+
+func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 
 // executionSpecHash computes a hash of those model properties that impact execution.
@@ -1234,19 +1239,52 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	}
 
 	// Execute the stage step if configured
-	var stageDuration time.Duration
-	if executor.stage != nil {
-		// Also resolve templating in the stage props
-		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
-		if err != nil {
-			return nil, err
+	return r.executeWithRetry(ctx, self, mdl, func(ctx context.Context) (*drivers.ModelResult, error) {
+		var stageDuration time.Duration
+		if executor.stage != nil {
+			// Also resolve templating in the stage props
+			stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
+			if err != nil {
+				return nil, err
+			}
+
+			// Execute the stage step
+			stageResult, err := executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
+				ModelExecutorOptions: executor.stageOpts,
+				InputProperties:      inputProps,
+				OutputProperties:     stageProps,
+				Priority:             0,
+				Incremental:          mdl.Spec.Incremental,
+				IncrementalRun:       incrementalRun,
+				PartitionRun:         partitionKey != "",
+				PartitionKey:         partitionKey,
+				PreviousResult:       prevResult,
+				TempDir:              tempDir,
+			})
+			if err != nil {
+				return nil, err
+			}
+			stageDuration = stageResult.ExecDuration
+
+			// We change the inputProps to be the result properties of the stage step
+			inputProps = stageResult.Properties
+
+			// Drop the stage result after the final step has executed.
+			// We do this using the same ctx, which means we may leak data in the staging connector in case of context cancellations.
+			// This is acceptable since the staging connector is assumed to be configured for temporary data.
+			defer func() {
+				err := executor.stageResultManager.Delete(ctx, stageResult)
+				if err != nil {
+					r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
+				}
+			}()
 		}
 
-		// Execute the stage step
-		stageResult, err := executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
-			ModelExecutorOptions: executor.stageOpts,
+		// Execute the final step
+		finalResult, err := executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
+			ModelExecutorOptions: executor.finalOpts,
 			InputProperties:      inputProps,
-			OutputProperties:     stageProps,
+			OutputProperties:     outputProps,
 			Priority:             0,
 			Incremental:          mdl.Spec.Incremental,
 			IncrementalRun:       incrementalRun,
@@ -1258,40 +1296,94 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		if err != nil {
 			return nil, err
 		}
-		stageDuration = stageResult.ExecDuration
+		finalResult.ExecDuration += stageDuration
 
-		// We change the inputProps to be the result properties of the stage step
-		inputProps = stageResult.Properties
-
-		// Drop the stage result after the final step has executed.
-		// We do this using the same ctx, which means we may leak data in the staging connector in case of context cancellations.
-		// This is acceptable since the staging connector is assumed to be configured for temporary data.
-		defer func() {
-			err := executor.stageResultManager.Delete(ctx, stageResult)
-			if err != nil {
-				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-			}
-		}()
-	}
-
-	// Execute the final step
-	finalResult, err := executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
-		ModelExecutorOptions: executor.finalOpts,
-		InputProperties:      inputProps,
-		OutputProperties:     outputProps,
-		Priority:             0,
-		Incremental:          mdl.Spec.Incremental,
-		IncrementalRun:       incrementalRun,
-		PartitionRun:         partitionKey != "",
-		PartitionKey:         partitionKey,
-		PreviousResult:       prevResult,
-		TempDir:              tempDir,
+		return finalResult, nil
 	})
-	if err != nil {
-		return nil, err
+}
+
+// executeWithRetry applies retry logic around the provided execution function.
+func (r *ModelReconciler) executeWithRetry(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.Model, executeFunc func(context.Context) (*drivers.ModelResult, error)) (*drivers.ModelResult, error) {
+	// Apply defaults for retry options
+	var defaultAttempts uint32 = 3
+	var defaultDelay uint32 = 5
+	defaultExponentialBackoff := true
+	defaultIfErrorMatches := []string{".*OvercommitTracker.*", ".*Bad Gateway.*", ".*Timeout.*"}
+
+	retryAttempts := mdl.Spec.RetryAttempts
+	if retryAttempts == nil {
+		retryAttempts = &defaultAttempts
 	}
-	finalResult.ExecDuration += stageDuration
-	return finalResult, nil
+	retryDelay := mdl.Spec.RetryDelaySeconds
+	if retryDelay == nil {
+		retryDelay = &defaultDelay
+	}
+	retryExponentialBackoff := mdl.Spec.RetryExponentialBackoff
+	if retryExponentialBackoff == nil {
+		retryExponentialBackoff = &defaultExponentialBackoff
+	}
+	retryIfErrorMatches := mdl.Spec.RetryIfErrorMatches
+	if len(retryIfErrorMatches) == 0 {
+		retryIfErrorMatches = defaultIfErrorMatches
+	}
+
+	attempts := int(*retryAttempts)
+	if attempts == 0 {
+		attempts = 1
+	}
+
+	// maxRetries is not used, so remove its assignment
+	backoff := time.Duration(*retryDelay) * time.Second
+
+	var finalResult *drivers.ModelResult
+	var lastErr error
+
+	for attempt := 1; attempt <= attempts; attempt++ {
+		res, err := executeFunc(ctx)
+		if err == nil {
+			return res, nil
+		}
+
+		lastErr = err
+		finalResult = res
+
+		// Check if we should retry this error
+		shouldRetry := false
+		if len(retryIfErrorMatches) > 0 {
+			errStr := err.Error()
+			for _, pattern := range retryIfErrorMatches {
+				if matched, regexErr := regexp.MatchString(pattern, errStr); regexErr == nil && matched {
+					shouldRetry = true
+					break
+				}
+			}
+		}
+
+		// If this is the last attempt or we shouldn't retry, don't wait
+		if attempt >= attempts || !shouldRetry {
+			break
+		}
+
+		r.C.Logger.Warn("Model execution failed, retrying", zap.String("model", self.Meta.Name.Name), zap.Int("attempt", attempt), zap.Int("max_attempts", attempts), zap.Error(err), observability.ZapCtx(ctx))
+
+		// Calculate backoff duration
+		actualBackoff := backoff
+		if *retryExponentialBackoff {
+			for i := 1; i < attempt; i++ {
+				actualBackoff *= 2
+			}
+		}
+
+		// Wait before retrying
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(actualBackoff):
+			// Continue to next attempt
+		}
+	}
+
+	return finalResult, lastErr
 }
 
 // wrappedModelExecutor is a ModelExecutor wraps one or two ModelExecutors. It is used to execute a model with a staging connector.
@@ -1420,10 +1512,13 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 		opts.InputHandle = ic
 		opts.OutputHandle = ic
 
-		e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
-		if !ok {
+		e, err := ic.AsModelExecutor(r.C.InstanceID, opts)
+		if err != nil {
 			ir()
-			return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
+			if errors.Is(err, drivers.ErrNotImplemented) {
+				return "", nil, nil, fmt.Errorf("connector %q is not capable of executing models", opts.InputConnector)
+			}
+			return "", nil, nil, err
 		}
 
 		return opts.InputConnector, e, ir, nil
@@ -1437,22 +1532,33 @@ func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *driver
 
 	opts.InputHandle = ic
 	opts.OutputHandle = oc
-
-	executorName := opts.InputConnector
-	e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)
-	if !ok {
-		executorName = opts.OutputConnector
-		e, ok = oc.AsModelExecutor(r.C.InstanceID, opts)
-		if !ok {
-			ir()
-			or()
-			return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
-		}
-	}
-
 	release := func() {
 		ir()
 		or()
+	}
+
+	executorName := opts.InputConnector
+	e, inputErr := ic.AsModelExecutor(r.C.InstanceID, opts)
+	if inputErr != nil {
+		// Try the other connector
+		executorName = opts.OutputConnector
+		var outputErr error
+		e, outputErr = oc.AsModelExecutor(r.C.InstanceID, opts)
+		if outputErr != nil {
+			// Both connectors are not model executors.
+			release()
+
+			// If one of them returned a unique error, return it
+			if !errors.Is(inputErr, drivers.ErrNotImplemented) {
+				return "", nil, nil, inputErr
+			}
+			if !errors.Is(outputErr, drivers.ErrNotImplemented) {
+				return "", nil, nil, outputErr
+			}
+
+			// Both returned not implemented errors
+			return "", nil, nil, fmt.Errorf("cannot execute model: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
+		}
 	}
 
 	return executorName, e, release, nil
