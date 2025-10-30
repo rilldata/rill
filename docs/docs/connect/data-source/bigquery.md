@@ -11,6 +11,12 @@ sidebar_position: 10
 
 [Google BigQuery](https://cloud.google.com/bigquery/docs) is a fully managed, serverless data warehouse that enables scalable and cost-effective analysis of large datasets using SQL-like queries. It supports a highly scalable and flexible architecture, allowing users to analyze large amounts of data in real time, making it suitable for BI/ML applications. Rill supports natively connecting to and reading from BigQuery as a source by leveraging the [BigQuery SDK](https://cloud.google.com/bigquery/docs/reference/libraries).
 
+:::tip BigQuery as OLAP Engine
+
+BigQuery can also be used as an OLAP engine to power Rill dashboards directly, without data ingestion. This allows you to query existing BigQuery tables and leverage BigQuery's compute for analytics. See our [BigQuery OLAP documentation](/connect/olap/bigquery) for more information.
+
+:::
+
 
 
 ## Connect to BigQuery

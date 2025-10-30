@@ -17,6 +17,12 @@ Snowflake has issued a [deprecation notice](https://www.snowflake.com/en/blog/bl
 
 [Snowflake](https://docs.snowflake.com/en/user-guide-intro) is a cloud-based data platform designed to facilitate data warehousing, data lakes, data engineering, data science, data application development, and data sharing. It separates compute and storage, enabling users to scale up or down instantly without downtime, providing a cost-effective solution for data management. With its unique architecture and support for multi-cloud environments, including AWS, Azure, and Google Cloud Platform, Snowflake offers seamless data integration, secure data sharing across organizations, and real-time access to data insights, making it a common choice to power many business intelligence applications and use cases. You can connect to and read from Snowflake data warehouses using the [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake).
 
+:::tip Snowflake as OLAP Engine
+
+Snowflake can also be used as an OLAP engine to power Rill dashboards directly, without data ingestion. This allows you to query existing Snowflake tables and leverage Snowflake's elastic compute for analytics. See our [Snowflake OLAP documentation](/connect/olap/snowflake) for more information.
+
+:::
+
 
 ## Connect to Snowflake
 

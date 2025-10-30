@@ -41,6 +41,8 @@ Rill supports the use of several different OLAP engines to power your dashboards
 ### MotherDuck
 ### Druid
 ### Pinot
+### BigQuery
+### Snowflake
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -81,6 +83,22 @@ Rill supports the use of several different OLAP engines to power your dashboards
     link="/connect/olap/pinot"
     linkLabel="Learn more"
     referenceLink="pinot"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-BigQuery.svg" alt="BigQuery" />}
+    content="Fully managed serverless data warehouse for scalable analytics on large datasets."
+    link="/connect/olap/bigquery"
+    linkLabel="Learn more"
+    referenceLink="bigquery"
+  />
+
+  <ConnectorIcon
+    icon={<img src="/img/connect/icons/Logo-Snowflake.svg" alt="Snowflake" />}
+    content="Cloud data platform with separate compute and storage for elastic scalability."
+    link="/connect/olap/snowflake"
+    linkLabel="Learn more"
+    referenceLink="snowflake"
   />
 </div>
 
