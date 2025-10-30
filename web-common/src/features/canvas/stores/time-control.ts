@@ -25,7 +25,9 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewTimeRange,
+  type V1CanvasPreset,
   V1ExploreComparisonMode,
+  type V1ExploreTimeRange,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -193,37 +195,18 @@ export class TimeControls {
           timeZone,
         );
 
-        if (
-          !get(this.defaultUrlParamsStore).data.has(
-            ExploreStateURLParams.TimeRange,
-          )
-        ) {
-          const defaultTimeRangePartial = calculateTimeRangePartial(
+        const hasTimeRangeDefaultParam = get(
+          this.defaultUrlParamsStore,
+        ).data.has(ExploreStateURLParams.TimeRange);
+        if (hasTimeRangeDefaultParam) {
+          this.calculateAndSetDefaultTimeRanges({
             allTimeRange,
+            timeRanges: timeRanges ?? [],
             defaultTimeRange,
-            undefined,
             timeZone,
-            defaultTimeRange,
             minTimeGrain,
-          );
-          if (defaultTimeRangePartial) {
-            const newComparisonRange = getComparisonTimeRange(
-              timeRanges,
-              allTimeRange,
-              { name: defaultPreset?.timeRange } as DashboardTimeControls,
-              undefined,
-            );
-            this.setDefaultTimeRange(
-              defaultTimeRangePartial,
-              newComparisonRange?.name,
-            );
-
-            this.set.grain(
-              defaultTimeRangePartial.selectedTimeRange?.interval ??
-                V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-              true,
-            );
-          }
+            defaultPreset,
+          });
         }
 
         const timeRangeState = calculateTimeRangePartial(
@@ -491,33 +474,61 @@ export class TimeControls {
     this.selectedComparisonTimeRange.set(comparisonTimeRange);
   };
 
-  private setDefaultTimeRange(
-    defaultTimeRangeState: TimeRangeState,
-    comparisonName: string | undefined,
-  ) {
+  private calculateAndSetDefaultTimeRanges({
+    allTimeRange,
+    timeRanges,
+    defaultTimeRange,
+    timeZone,
+    minTimeGrain,
+    defaultPreset,
+  }: {
+    allTimeRange: AllTimeRange;
+    timeRanges: V1ExploreTimeRange[];
+    defaultTimeRange: DashboardTimeControls;
+    timeZone: string;
+    minTimeGrain: V1TimeGrain;
+    defaultPreset: V1CanvasPreset | undefined;
+  }) {
+    const defaultTimeRangePartial = calculateTimeRangePartial(
+      allTimeRange,
+      defaultTimeRange,
+      undefined,
+      timeZone,
+      defaultTimeRange,
+      minTimeGrain,
+    );
+    if (!defaultTimeRangePartial?.selectedTimeRange?.name) return;
+
+    const newComparisonRange = getComparisonTimeRange(
+      timeRanges,
+      allTimeRange,
+      { name: defaultPreset?.timeRange } as DashboardTimeControls,
+      undefined,
+    );
+
     this.defaultUrlParamsStore.update((state) => {
-      if (!defaultTimeRangeState.selectedTimeRange?.name) return state;
+      if (!defaultTimeRangePartial.selectedTimeRange?.name) return state; // type safety
       const paramsCopy = new URLSearchParams(state.data);
 
-      let timeRange = defaultTimeRangeState.selectedTimeRange.name;
+      let timeRange = defaultTimeRangePartial.selectedTimeRange.name;
       if (timeRange === TimeRangePreset.CUSTOM) {
-        timeRange = `${defaultTimeRangeState.selectedTimeRange.start.toISOString()}/${defaultTimeRangeState.selectedTimeRange.end.toISOString()}`;
+        timeRange = `${defaultTimeRangePartial.selectedTimeRange.start.toISOString()}/${defaultTimeRangePartial.selectedTimeRange.end.toISOString()}`;
       }
       paramsCopy.set(ExploreStateURLParams.TimeRange, timeRange);
 
       const mappedTimeGrain =
         ToURLParamTimeGrainMapMap[
-          defaultTimeRangeState.selectedTimeRange.interval ??
+          defaultTimeRangePartial.selectedTimeRange.interval ??
             V1TimeGrain.TIME_GRAIN_UNSPECIFIED
         ];
       if (mappedTimeGrain) {
         paramsCopy.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
       }
 
-      if (comparisonName) {
+      if (newComparisonRange?.name) {
         paramsCopy.set(
           ExploreStateURLParams.ComparisonTimeRange,
-          comparisonName,
+          newComparisonRange.name,
         );
       }
 
