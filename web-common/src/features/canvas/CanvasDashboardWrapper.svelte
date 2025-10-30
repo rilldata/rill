@@ -1,8 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
+  import { unorderedParamsAreEqual } from "@rilldata/web-common/lib/url-utils.ts";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy, onMount } from "svelte";
+  import { get } from "svelte/store";
   import { updateThemeVariables } from "../themes/actions";
   import { themeControl } from "../themes/theme-control";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
@@ -14,20 +17,22 @@
   export let filtersEnabled: boolean | undefined;
   export let canvasName: string;
   export let embedded: boolean = false;
+  export let homeBookmarkUrlSearch: string | undefined = undefined;
   export let onClick: () => void = () => {};
 
   let themeBoundary: HTMLElement | null = null;
-
-  onMount(async () => {
-    await restoreSnapshot();
-  });
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
 
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { saveSnapshot, restoreSnapshot, themeSpec },
+    canvasEntity: {
+      saveSnapshot,
+      restoreSnapshot,
+      themeSpec,
+      defaultUrlParamsStore,
+    },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({ width: clientWidth } = contentRect);
@@ -36,6 +41,17 @@
     $themeControl;
     updateThemeVariables($themeSpec, themeBoundary);
   }
+
+  onMount(async () => {
+    await waitUntil(() => !get(defaultUrlParamsStore).isPending, 500);
+    const shouldLoadHomeBookmark = unorderedParamsAreEqual(
+      $page.url.searchParams,
+      get(defaultUrlParamsStore).data,
+    );
+    await restoreSnapshot(
+      shouldLoadHomeBookmark ? homeBookmarkUrlSearch : undefined,
+    );
+  });
 
   onDestroy(() => {
     saveSnapshot($page.url.searchParams.toString());
