@@ -11,8 +11,8 @@ import (
 
 func TestDeveloperShopify(t *testing.T) {
 	// Setup a basic empty project
-	rt, instanceID, s := newEval(t, testruntime.InstanceOptions{
-		TestConnectors: []string{"openai"},
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		EnableLLM: true,
 		Files: map[string]string{
 			"rill.yaml": `
 olap_connector: duckdb
@@ -24,6 +24,9 @@ driver: duckdb
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	// Initialize eval
+	s := newEval(t, rt, instanceID)
 
 	// Ask it to add a Shopify dashboard
 	var res *ai.RouterAgentResult
