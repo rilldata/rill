@@ -1,103 +1,139 @@
 ---
-title: BigQuery
+title: BigQuery 
+description: Connect to data in BigQuery
 sidebar_label: BigQuery
 sidebar_position: 10
-hide_table_of_contents: true
 ---
+
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
 ## Overview
 
 [Google BigQuery](https://cloud.google.com/bigquery/docs) is a fully managed, serverless data warehouse that enables scalable and cost-effective analysis of large datasets using SQL-like queries. It supports a highly scalable and flexible architecture, allowing users to analyze large amounts of data in real time, making it suitable for BI/ML applications. Rill supports natively connecting to and reading from BigQuery as a source by leveraging the [BigQuery SDK](https://cloud.google.com/bigquery/docs/reference/libraries).
 
-## Local Credentials
+:::tip BigQuery as OLAP Engine
 
-Rill can connect to BigQuery using [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/provide-credentials-adc#local-dev) credentials that have been set locally either in an environment variable (`GOOGLE_APPLICATION_CREDENTIALS`) or on a path already checked by the BigQuery SDK. In most cases, you should be able to run the following command to locally authenticate via ADC (which will set the credentials in a well-known location already checked by the BigQuery SDK):
-```
-gcloud auth application-default login
-```
-
-For more details, please refer to Google's official [Application Default Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc#local-dev) documentation.
-
-:::info Deploying to Rill Cloud
-
-Please note that when deploying a project to Rill Cloud, you will need to explicitly set and pass credentials during the deployment command / workflow. For more information, please see our [Credentials](../../deploy/credentials.md) documentation.
+BigQuery can also be used as an OLAP engine to power Rill dashboards directly, without data ingestion. This allows you to query existing BigQuery tables and leverage BigQuery's compute for analytics. See our [BigQuery OLAP documentation](/connect/olap/bigquery) for more information.
 
 :::
 
-## Configuring BigQuery as a source
 
-Once BigQuery credentials have been configured and set locally, you should now be able to connect to and reference BigQuery tables in Rill! Under the hood, this is powered by using DuckDB's native BigQuery integration (which _does not require_ you to install any additional extensions).
 
-Once everything has been set up, you will be able to query BigQuery tables directly using DuckDB SQL and table functions. Depending on how you'd like to set up and/or configure the source to ingest from BigQuery, there are generally 2 separate methods that can be used _(the second being more configurable than the first)_:
+## Connect to BigQuery
 
-### Method 1 - Using BigQuery with DuckDB's SQL SELECT
-Instead of creating a source YAML file, you can directly query the table from a model SQL file!
+To connect to Google BigQuery, you need to provide authentication credentials. You have two options:
 
-```sql
--- If you want to use BigQuery directly in a model,
--- you can directly query the source table via DuckDB SQL.
--- NOTE - You should have already authenticated locally using `gcloud auth application-default login`
+1. **Use Service Account JSON** (recommended for cloud deployment)
+2. **Use Local Google Cloud CLI credentials** (local development only - not recommended for production)
 
-SELECT * FROM bigquery_scan('my_gcp_project.my_dataset.source_table');
+Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON. Local Google Cloud CLI credentials only work for local development and will cause deployment failures.
+
+### Service Account JSON 
+
+We recommend using Service Account JSON for authentication as it makes deployment to Rill Cloud easier. The `GOOGLE_APPLICATION_CREDENTIALS` environment variable tells Google Cloud SDK which service account key file to use for authentication.
+
+Create your Service Account JSON with the following command:
+
+```bash
+gcloud iam service-accounts keys create ~/key.json \
+  --iam-account=my-service-account@PROJECT_ID.iam.gserviceaccount.com
 ```
 
-### Method 2 - Creating a source YAML file
+:::note Permission denied?
+You'll need to contact your internal cloud admin to create your Service Account JSON credentials for you.
+:::
 
-Alternatively, if you'd like more control to configure and/or document the underlying data source, you can create a _source YAML file_. Create a new `<name>.yaml` source file in your Rill project directory (in our example, under `sources`) and enter the following:
+
+Create a connector with your credentials to connect to BigQuery. Here's an example connector configuration file you can copy into your `connectors` directory to get started. The UI will also populate your `.env` with `connector.bigquery.google_application_credentials`.
 
 ```yaml
-# BigQuery Source YAML
+type: connector
 
-# Type will always be "source" for sources
-type: source
+driver: bigquery
 
-# Connector to use - for BigQuery, we can use the duckdb connector
-connector: duckdb
-
-# The SQL query that Rill will run to ingest the data into DuckDB
-sql: SELECT * FROM bigquery_scan('my_gcp_project.my_dataset.source_table');
-
-# This is commented out but for reference, you may optionally add a trigger to refresh the source on a schedule
-# refresh:
-#   cron: "0 */6 * * *" # Refresh every 6 hours (optional)
+google_application_credentials: "{{ .env.connector.bigquery.google_application_credentials }}"
+project_id: "rilldata"
 ```
-
-:::info
-
-For the definition / list of available properties for sources, please refer to [source YAML](../../reference/project-files/sources.md).
-
-:::
 
 :::tip Did you know?
 
-If you have a BigQuery table name with special characters, you can escape these special characters in DuckDB by wrapping them in double quotes. For example, `bigquery_scan('my_gcp_project.my_dataset."data.table"')`. For more details, please see our [DuckDB identifier docs](https://duckdb.org/docs/sql/dialect/keywords_and_identifiers.html#rules-for-case-sensitivity).
+If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 
-## Deploying to Rill Cloud
 
-Once you have modeled your data with Rill locally using BigQuery as a source and you are ready to deploy your project to Rill Cloud, you will need to explicitly set credentials that can be used by Rill Cloud to connect to BigQuery.
+### Local Google Cloud CLI Credentials (Local Development Only)
 
-### Using Service Account credentials in Rill Cloud
+:::warning Not recommended for production
+Local Google Cloud CLI credentials only work for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Use Method 1 above for production deployments.
+:::
 
-Rather than deploying with your personal credentials, we recommended creating and using a [Service Account](https://cloud.google.com/iam/docs/service-account-overview) for deployment to Rill Cloud. Google Service Accounts represent non-human identities in the Google Cloud and can be assigned custom permissions and access to certain resources within the GCP (including specific datasets or tables in BigQuery).
+Follow these steps to configure your local environment credentials:
 
-In the command line, you can run `rill env configure` to set credentials that Rill Cloud can use to access BigQuery:
+1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated.
+2. If it does not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
+3. **Important**: Run `gcloud auth application-default login` to set up Application Default Credentials (ADC). If you skip this step, the app will error with missing `GOOGLE_APPLICATION_CREDENTIALS`.
+
+:::tip Service Accounts
+If you are using a service account, you will need to run the following command instead:
 ```
+gcloud auth activate-service-account --key-file=path_to_json_key_file
+```
+:::
+
+You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials the next time you try to ingest a source.
+
+## Deploy to Rill Cloud
+
+When deploying your project to Rill Cloud, you must provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. If these credentials exist in your `.env` file, they'll be pushed with your project automatically. If you're using inferred credentials only, your deployment will result in errored dashboards.
+
+When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
+
+If you subsequently add sources that require new credentials (or if you enter the wrong credentials during the initial deploy), you can update the credentials used by Rill Cloud by running:
+```bash
 rill env configure
 ```
-You will be prompted to enter a [base64-encoded service account JSON key](https://cloud.google.com/iam/docs/keys-create-delete#creating) in a multi-line input (press Return + Ctrl+D when done entering the key):
-```
-$ rill env configure
-? Which connector would you like to configure? bigquery
-? Enter your BigQuery credentials [type: string, hint: gcp service account json]: Paste in the base64 encoded version here!
-```
 
-:::info
-For more details on creating a Service Account and base64-encoding a JSON key, please check out our [Deploy with BigQuery credentials](../../deploy/credentials.md#bigquery) documentation.
+:::tip Did you know?
+
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+
 :::
 
-Then, run the deploy command and follow the prompts to deploy your project to Rill Cloud:
-```
-rill deploy
-```
+## Separating Dev and Prod Environments
+
+When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
+
+For more details, see our [Dev/Prod setup docs](/connect/templating).
+
+## Appendix
+
+### How to create a service account using the Google Cloud Console
+
+Here is a step-by-step guide on how to create a Google Cloud service account with access to BigQuery:
+
+1. Navigate to the [Service Accounts page](https://console.cloud.google.com/iam-admin/serviceaccounts) under "IAM & Admin" in the Google Cloud Console.
+
+2. Click the "Create Service Account" button at the top of the page.
+
+3. In the "Create Service Account" window, enter a name for the service account, then click "Create and continue".
+
+4. In the "Role" field, search for and select the following [BigQuery roles](https://cloud.google.com/bigquery/docs/access-control): 
+   - [roles/bigquery.dataViewer](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataViewer) (Lowest-level resources: Table, View)
+     - Provides the ability to read data and metadata from the project's datasets/dataset's tables/table or view.
+   - [roles/bigquery.readSessionUser](https://cloud.google.com/bigquery/docs/access-control#bigquery.readSessionUser) (Lowest-level resources: Project)
+     - Provides the ability to create and use read sessions that can be used to read data from BigQuery managed tables using the Storage API (to read data from BigQuery at high speeds). The role does not provide any other permissions related to BigQuery datasets, tables, or other resources.
+   - [roles/bigquery.jobUser](https://cloud.google.com/bigquery/docs/access-control#bigquery.jobUser) (Lowest-level resources: Project)
+     - Provides permissions to run BigQuery-specific jobs (including queries), within the project and respecting limits set by roles above.
+
+   Click "Continue", then click "Done".
+
+   **Note**: BigQuery has storage and compute [separated](https://cloud.google.com/blog/products/bigquery/separation-of-storage-and-compute-in-bigquery) from each other, so the lowest-level resource where compute-specific roles are granted is a project, while the lowest-level for data-specific roles is table/view.
+
+5. On the "Service Accounts" page, locate the service account you just created and click on the three dots on the right-hand side. Select "Manage Keys" from the dropdown menu.
+
+6. On the "Keys" page, click the "Add key" button and select "Create new key".
+
+7. Choose the "JSON" key type and click "Create".
+
+8. Download and save the JSON key file to a secure location on your computer.
