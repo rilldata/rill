@@ -293,6 +293,8 @@ func athenaTypeToRuntimeType(colType string) *runtimev1.Type {
 	return t
 }
 
+var timeTZLayout = "15:04:05-07:00"
+
 func convertValue(colType, val string) (any, error) {
 	var (
 		err error
@@ -345,7 +347,7 @@ func convertValue(colType, val string) (any, error) {
 		}
 		return t, nil
 	case "time with time zone":
-		t, err := parseAthenaTimeWithLocation(time.TimeOnly, val)
+		t, err := time.Parse(timeTZLayout, val)
 		if err != nil {
 			return nil, err
 		}
@@ -373,11 +375,11 @@ func convertValue(colType, val string) (any, error) {
 }
 
 func parseAthenaTimeWithLocation(layout, v string) (time.Time, error) {
-	idx := strings.LastIndexAny(v, "+-")
+	idx := strings.LastIndexAny(v, " ")
 	if idx == -1 {
 		return time.Parse(layout, v)
 	}
-	stamp, location := strings.TrimSpace(v[:idx]), v[idx:]
+	stamp, location := strings.TrimSpace(v[:idx]), v[idx+1:]
 	var loc *time.Location
 	var err error
 	if isTimezoneOffset(location) {
