@@ -1,14 +1,12 @@
 package ai_test
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
-	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -120,17 +118,12 @@ func TestAnalystOpenRTB(t *testing.T) {
 	t.Run("DashboardContext", func(t *testing.T) {
 		s := newEval(t, rt, instanceID)
 
-		// ProjectOpenRTB has times relative to "now". So send start and end within to avoid possible corrections by LLM.
-		timeEnd := timeutil.TruncateTime(time.Now(), timeutil.TimeGrainDay, time.UTC, 0, 0)
-		timeEnd = timeutil.OffsetTime(timeEnd, timeutil.TimeGrainDay, -2, time.UTC)
-		timeStart := timeutil.OffsetTime(timeEnd, timeutil.TimeGrainDay, -2, time.UTC)
-
 		// It should make three sub-calls: query_metrics_view_summary, get_metrics_view, query_metrics_view
 		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
 			Prompt:    "Tell me which app_site_name has the most impressions",
-			Explore:   "bids_explore",
-			TimeStart: timeStart,
-			TimeEnd:   timeEnd,
+			Explore:   "bids_metrics",
+			TimeStart: parseTestTime(t, "2023-09-11T00:00:00Z"),
+			TimeEnd:   parseTestTime(t, "2023-09-14T00:00:00Z"),
 			Where: &metricsview.Expression{
 				Condition: &metricsview.Condition{
 					Operator: metricsview.OperatorEq,
@@ -149,15 +142,14 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Equal(t, "query_metrics_view", calls[2].Tool)
 
 		// Map the request sent and assert that context was honored.
-		var rawQry map[string]interface{}
-		err = json.Unmarshal([]byte(calls[2].Content), &rawQry)
+		rawQry, err := s.UnmarshalMessageContent(calls[2])
 		require.NoError(t, err)
 		var qry metricsview.Query
 		err = mapstructureutil.WeakDecode(rawQry, &qry)
 		require.NoError(t, err)
 		// Assert that the time range is sent using the context
-		require.Equal(t, timeStart, qry.TimeRange.Start)
-		require.Equal(t, timeEnd, qry.TimeRange.End)
+		require.Equal(t, parseTestTime(t, "2023-09-11T00:00:00Z"), qry.TimeRange.Start)
+		require.Equal(t, parseTestTime(t, "2023-09-14T00:00:00Z"), qry.TimeRange.End)
 		// Assert that the filter is sent using the context
 		require.NotNil(t, qry.Where)
 		require.NotNil(t, qry.Where.Condition)
@@ -166,4 +158,10 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Equal(t, "Android", qry.Where.Condition.Expressions[1].Value)
 	})
 
+}
+
+func parseTestTime(tst *testing.T, t string) time.Time {
+	ts, err := time.Parse(time.RFC3339, t)
+	require.NoError(tst, err)
+	return ts
 }

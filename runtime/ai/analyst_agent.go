@@ -213,7 +213,7 @@ The user is actively viewing this dashboard, and it's what you they refer to if 
 The metrics view's definition and time range of available data has been provided in your tool calls.
 
 Here is an overview of the settings the user has currently applied to the dashboard:
-{{ if (and .time_start .time_end) }}start={{.time_start}}, end={{.time_end}}{{ end }}
+{{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
 {{ if .where }}Use where filters: "{{ .where }}"{{ end }}
 {{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
 {{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}

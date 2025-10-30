@@ -10,7 +10,7 @@ func ProjectOpenRTB(t TestingT) (int, map[string]string) {
 	auctionsParquet := DatasetPath(t, DatasetOpenRTBAuctions)
 	bidsParquet := DatasetPath(t, DatasetOpenRTBBids)
 
-	return 10, map[string]string{
+	return 9, map[string]string{
 		// Raw auctions data (NOTE: not materialized)
 		"models/auctions_data_raw.yaml": fmt.Sprintf(`
 type: model
@@ -28,38 +28,18 @@ sql: SELECT * FROM read_parquet('%s')
 type: model
 materialize: true
 sql: |
-  WITH time_shift AS (
-    SELECT 
-      MAX(__time) AS max_time
-    FROM auctions_data_raw
-  ),
-  shifted_data AS (
-    SELECT
-      __time + (CURRENT_TIMESTAMP - time_shift.max_time) AS __time,
-      * EXCLUDE (__time, device_region),
-      CASE WHEN device_region ILIKE '%/%' THEN SPLIT(device_region, '/')[2] ELSE 'Unknown' END AS device_state,
-      CASE WHEN device_region ILIKE '%/%' THEN SPLIT(device_region, '/')[1] ELSE 'Unknown' END AS device_country
-    FROM auctions_data_raw, time_shift
-  )
-  SELECT * FROM shifted_data
+  SELECT
+    * EXCLUDE (device_region),
+    CASE WHEN device_region ILIKE '%/%' THEN SPLIT(device_region, '/')[2] ELSE 'Unknown' END AS device_state,
+    CASE WHEN device_region ILIKE '%/%' THEN SPLIT(device_region, '/')[1] ELSE 'Unknown' END AS device_country
+  FROM auctions_data_raw
   `,
 		// Cleaned bids data (NOTE: materialized)
 		"models/bids_data.yaml": `
 type: model
 materialize: true
 sql: |
-  WITH time_shift AS (
-    SELECT 
-      MAX(__time) AS max_time
-    FROM bids_data_raw
-  ),
-  shifted_data AS (
-    SELECT
-      __time + (CURRENT_TIMESTAMP - time_shift.max_time) AS __time,
-      * EXCLUDE (__time)
-    FROM bids_data_raw, time_shift
-  )
-  SELECT * FROM shifted_data
+  SELECT * FROM bids_data_raw
 `,
 		// Auctions metrics
 		"metrics/auctions_metrics.yaml": `
@@ -187,13 +167,6 @@ measures:
     window:
       order: __time
       frame: RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW
-`,
-		// Bids explore
-		"dashboards/bids_explore.yaml": `
-type: explore
-metrics_view: bids_metrics
-dimensions: '*'
-measures: '*'
 `,
 	}
 }

@@ -130,13 +130,16 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	analystAgentArgs := &ai.AnalystAgentArgs{
-		Explore:    req.Explore,
-		Dimensions: req.Dimensions,
-		Measures:   req.Measures,
-		Where:      metricsview.NewExpressionFromProto(req.Where),
-		TimeStart:  req.TimeStart.AsTime(),
-		TimeEnd:    req.TimeEnd.AsTime(),
+	var analystAgentArgs *ai.AnalystAgentArgs
+	if req.Explore != "" {
+		analystAgentArgs = &ai.AnalystAgentArgs{
+			Explore:    req.Explore,
+			Dimensions: req.Dimensions,
+			Measures:   req.Measures,
+			Where:      metricsview.NewExpressionFromProto(req.Where),
+			TimeStart:  req.TimeStart.AsTime(),
+			TimeEnd:    req.TimeEnd.AsTime(),
+		}
 	}
 
 	// Make the call
@@ -237,13 +240,16 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
-	analystAgentArgs := &ai.AnalystAgentArgs{
-		Explore:    req.Explore,
-		Dimensions: req.Dimensions,
-		Measures:   req.Measures,
-		Where:      metricsview.NewExpressionFromProto(req.Where),
-		TimeStart:  req.TimeStart.AsTime(),
-		TimeEnd:    req.TimeEnd.AsTime(),
+	var analystAgentArgs *ai.AnalystAgentArgs
+	if req.Explore != "" {
+		analystAgentArgs = &ai.AnalystAgentArgs{
+			Explore:    req.Explore,
+			Dimensions: req.Dimensions,
+			Measures:   req.Measures,
+			Where:      metricsview.NewExpressionFromProto(req.Where),
+			TimeStart:  req.TimeStart.AsTime(),
+			TimeEnd:    req.TimeEnd.AsTime(),
+		}
 	}
 
 	// Make the call
