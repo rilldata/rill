@@ -50,6 +50,23 @@ def main():
     
     # Use all review comments
     doclaude_comments = review_comments
+    
+    # Debug: Print full comment details for troubleshooting
+    if doclaude_comments:
+        print("\n" + "="*80)
+        print("DEBUG: FULL REVIEW COMMENTS")
+        print("="*80)
+        for i, comment in enumerate(doclaude_comments, 1):
+            print(f"\n--- Comment {i} ---")
+            print(f"File: {comment.path}")
+            print(f"Line: {comment.line or comment.original_line or 'N/A'}")
+            print(f"Position: {comment.position or comment.original_position or 'N/A'}")
+            print(f"Author: @{comment.user.login}")
+            print(f"Created: {comment.created_at}")
+            print(f"Body:\n{comment.body}")
+            print(f"\nDiff hunk:\n{comment.diff_hunk}")
+            print("-" * 80)
+        print("="*80 + "\n")
 
     if not doclaude_comments:
         print("⚠️ No inline review comments found in this PR")
@@ -290,7 +307,7 @@ def resolve_comments_graphql(comments):
         print(f"\n✅ Resolved {len(resolved_threads)} review thread(s) via GraphQL")
 
 def apply_changes(claude_output):
-    """Parse Claude's output and write file changes."""
+    """Parse Claude's output and write file changes, including deletions."""
     
     # Extract summary
     summary_match = re.search(r'```summary\n(.*?)\n```', claude_output, re.DOTALL)
@@ -299,6 +316,26 @@ def apply_changes(claude_output):
         print("\n📝 SUMMARY OF CHANGES:")
         print(summary)
         print()
+
+    # Parse file deletions: DELETE_FILE: path/to/file.md
+    deletion_pattern = r'^DELETE_FILE:\s*(.+)$'
+    deletions = re.findall(deletion_pattern, claude_output, re.MULTILINE)
+    
+    files_deleted = 0
+    if deletions:
+        print("\n🗑️  Processing file deletions...")
+        for file_path in deletions:
+            file_path = file_path.strip()
+            if not Path(file_path).exists():
+                print(f"⚠️ File does not exist, skipping: {file_path}")
+                continue
+            
+            try:
+                Path(file_path).unlink()
+                print(f"✅ Deleted: {file_path}")
+                files_deleted += 1
+            except Exception as e:
+                print(f"❌ Failed to delete {file_path}: {e}")
 
     # Extract file blocks: ```file:path/to/file.md ... ```
     # Split by file markers, then find the end of each block
@@ -338,10 +375,16 @@ def apply_changes(claude_output):
         except Exception as e:
             print(f"❌ Failed to update {file_path}: {e}")
     
-    if changes_applied == 0:
-        print("⚠️ No file changes were applied")
+    # Summary of all operations
+    total_operations = changes_applied + files_deleted
+    if total_operations == 0:
+        print("\n⚠️ No file changes or deletions were applied")
     else:
-        print(f"\n✅ Successfully applied changes to {changes_applied} file(s)")
+        print(f"\n✅ Successfully completed {total_operations} operation(s):")
+        if changes_applied > 0:
+            print(f"   - {changes_applied} file(s) updated")
+        if files_deleted > 0:
+            print(f"   - {files_deleted} file(s) deleted")
 
 def update_instructions_from_comments(comments, anthropic):
     """Analyze review comments and update instructions.md with learnings."""
