@@ -5,6 +5,8 @@ on:
     types: [submitted]
   pull_request_review_comment: # trigger on review comment submission, must have @doclaude in the comment body.
     types: [created]
+  issue_comment: # trigger on issue comment submission, must have @doclaude in the comment body.
+    types: [created]
 
 
 permissions:
