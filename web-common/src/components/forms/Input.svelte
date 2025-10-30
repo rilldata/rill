@@ -1,7 +1,7 @@
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { slide } from "svelte/transition";
   import FieldSwitcher from "./FieldSwitcher.svelte";
   import InputLabel from "./InputLabel.svelte";
@@ -19,6 +19,9 @@
   export let placeholder = "";
   export let hint = "";
   export let claimFocusOnMount = false;
+  export let selectTextOnMount = false;
+  export let selectionStart: number | undefined = undefined;
+  export let selectionEnd: number | undefined = undefined;
   export let secret = false;
   export let autocomplete = false;
   export let alwaysShowError = false;
@@ -76,10 +79,25 @@
 
   $: hasValue = inputType === "number" ? !!value || value === 0 : !!value;
 
-  onMount(() => {
+  onMount(async () => {
     if (claimFocusOnMount) {
       if (inputElement) {
-        inputElement.focus();
+        if (selectTextOnMount && inputElement instanceof HTMLInputElement) {
+          await tick();
+          inputElement.focus();
+
+          setTimeout(() => {
+            if (inputElement instanceof HTMLInputElement) {
+              if (selectionStart !== undefined && selectionEnd !== undefined) {
+                inputElement.setSelectionRange(selectionStart, selectionEnd);
+              } else {
+                inputElement.select();
+              }
+            }
+          }, 10);
+        } else {
+          inputElement.focus();
+        }
       } else if (selectElement) {
         selectElement.focus();
       }

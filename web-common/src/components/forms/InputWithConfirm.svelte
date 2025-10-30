@@ -19,6 +19,19 @@
 
   $: editedValue = value;
 
+  let selectionStart: number | undefined = undefined;
+  let selectionEnd: number | undefined = undefined;
+  $: if (type === "File" && value) {
+    const lastDotIndex = value.lastIndexOf(".");
+    if (lastDotIndex > 0) {
+      selectionStart = 0;
+      selectionEnd = lastDotIndex;
+    } else {
+      selectionStart = undefined;
+      selectionEnd = undefined;
+    }
+  }
+
   async function triggerConfirm() {
     if (!editedValue) return;
     await onConfirm(editedValue);
@@ -43,6 +56,9 @@
       {id}
       bind:value={editedValue}
       claimFocusOnMount
+      selectTextOnMount
+      {selectionStart}
+      {selectionEnd}
       onEnter={triggerConfirm}
       onEscape={reset}
       {textClass}

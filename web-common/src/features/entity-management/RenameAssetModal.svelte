@@ -32,6 +32,17 @@
 
   const [folderName, fileName] = splitFolderAndFileName(filePath);
 
+  let selectionStart: number | undefined;
+  let selectionEnd: number | undefined;
+
+  if (!isDir && fileName) {
+    const lastDotIndex = fileName.lastIndexOf(".");
+    if (lastDotIndex > 0) {
+      selectionStart = 0;
+      selectionEnd = lastDotIndex;
+    }
+  }
+
   const validationSchema = object({
     newName: string()
       .required("Enter a name!")
@@ -143,6 +154,9 @@
       <Input
         bind:value={$superform.newName}
         claimFocusOnMount
+        selectTextOnMount
+        {selectionStart}
+        {selectionEnd}
         alwaysShowError
         id={isDir ? "folder-name" : "file-name"}
         label={isDir ? "Folder name" : "File name"}
