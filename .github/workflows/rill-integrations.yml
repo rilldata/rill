@@ -1,9 +1,9 @@
-name: Build and Release Extensions
+name: Build and Release Integrations
 on:
   pull_request:
     paths:
-      - '.github/workflows/rill-extensions.yml'
-      - 'extensions/gemini/**'
+      - '.github/workflows/rill-integrations.yml'
+      - 'integrations/gemini/**'
 
 jobs:
   build:
@@ -20,5 +20,5 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build extensions
-        run: npm run build -w extensions/gemini
+      - name: Build integrations
+        run: npm run build -w integrations/gemini

@@ -1,0 +1,23 @@
+{
+  "name": "rill",
+  "version": "0.1.0",
+  "description": "Data analysis using Rill's metrics layer",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'No build required'",
+    "link": "gemini extensions link .",
+    "unlink": "gemini extensions uninstall rill",
+    "format": "prettier --write \"**/*.{ts,js,json,md}\""
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rilldata/rill",
+    "directory": "integrations/gemini"
+  },
+  "author": {
+    "name": "Rill Data",
+    "email": "support@rilldata.com",
+    "url": "https://rilldata.com"
+  }
+}

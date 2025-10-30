@@ -1,0 +1,40 @@
+{
+  "name": "rill",
+  "description": "Professional data analysis using Rill's metrics layer",
+  "version": "0.1.0",
+  "displayName": "Rill Analytics",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "rill": {
+      "httpUrl": "https://api.rilldata.com/v1/orgs/${RILL_ORG}/projects/${RILL_PROJECT}/runtime/mcp",
+      "headers": {
+        "Authorization": "Bearer ${RILL_ACCESS_TOKEN}",
+        "X-Custom-Header": "rill-gemini-extension",
+        "Content-Type": "application/json"
+      },
+      "env": {
+        "RILL_ORG": "${RILL_ORG}",
+        "RILL_PROJECT": "${RILL_PROJECT}",
+        "RILL_ACCESS_TOKEN": "${RILL_ACCESS_TOKEN}"
+      }
+    }
+  },
+  "settings": [
+    {
+      "name": "Organization",
+      "description": "Your Rill organization name",
+      "envVar": "RILL_ORG"
+    },
+    {
+      "name": "Project",
+      "description": "Your Rill project name",
+      "envVar": "RILL_PROJECT"
+    },
+    {
+      "name": "Access Token",
+      "description": "Your Rill access token",
+      "envVar": "RILL_ACCESS_TOKEN",
+      "sensitive": true
+    }
+  ]
+}

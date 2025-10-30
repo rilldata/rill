@@ -1,6 +1,4 @@
-# Rill Analytics Extension - Data Analysis & Report Generation
-
-This extension enables comprehensive data analysis and professional report generation using Rill's metrics layer combined with Google Docs integration.
+# Rill - Data Analysis
 
 ## Core Capabilities
 
@@ -10,31 +8,25 @@ This extension enables comprehensive data analysis and professional report gener
 - **Trend Analysis**: Time-series analysis with period-over-period comparisons
 - **Anomaly Detection**: Identification of unusual patterns and outliers
 - **Metrics Comparison**: Side-by-side analysis of different time periods or segments
-- **Business Intelligence**: Actionable insights generation for executive decision-making
-
-### Report Generation
-
-- **Google Docs Integration**: Professional document creation with proper formatting
-- **Automated Sharing**: Configurable document sharing with stakeholders
-- **Multiple Report Types**: Summary reports, comparison analyses, and detailed insights
-- **Executive-Ready Format**: Clear structure with executive summaries and recommendations
+- **Actionable Intelligence**: Actionable insights generation for executive decision-making
 
 ## Analytical Methodology
 
 ### Phase 1: Data Discovery (Systematic Approach)
 
-The extension follows a structured discovery process:
+Follow the structured discovery process:
 
 1. **Dataset Identification**: Use `list_metrics_views` to catalog available data sources
 2. **Schema Understanding**: Analyze measures, dimensions, and relationships via `get_metrics_view`
 3. **Data Scope Assessment**: Determine time ranges and data coverage with `query_metrics_view_summary`
+4. **Preliminary Queries**: Execute broad queries to gauge data quality and trends `query_metrics_view`
 
 ### Phase 2: Analytical Investigation (OODA Loop)
 
 Execute iterative analysis cycles:
 
 - **Observe**: Query data systematically, starting broad then drilling into specifics
-- **Orient**: Evaluate patterns, identify anomalies, and assess business context
+- **Orient**: Evaluate patterns, identify anomalies, and assess the context
 - **Decide**: Prioritize analytical angles based on emerging insights
 - **Act**: Execute targeted queries to validate hypotheses and uncover insights
 
@@ -43,9 +35,9 @@ Execute iterative analysis cycles:
 Transform findings into actionable intelligence:
 
 - **Pattern Recognition**: Identify trends, seasonality, and behavioral changes
-- **Impact Quantification**: Measure business impact with specific metrics and percentages
-- **Contextual Analysis**: Connect data patterns to business operations and decisions
-- **Report Generation**: Create professional documentation using Google Docs tools
+- **Impact Quantification**: Measure impact with specific metrics and percentages
+- **Contextual Analysis**: Connect data patterns to operations and decisions
+- **Report Generation**: Create professional documentation with clear structure and visualizations
 
 ## Data Analysis Best Practices
 
@@ -59,9 +51,9 @@ Transform findings into actionable intelligence:
 ### Insight Quality Standards
 
 - **Quantified findings**: All insights must include specific numbers and percentages
-- **Business relevance**: Connect patterns to operational decisions and outcomes
+- **Relevance**: Connect patterns to operational decisions and outcomes
 - **Surprise factor**: Prioritize unexpected findings that challenge assumptions
-- **Actionability**: Focus on insights that enable concrete business actions
+- **Actionability**: Focus on insights that enable concrete actions
 
 ### Data Accuracy Requirements
 
@@ -69,6 +61,92 @@ Transform findings into actionable intelligence:
 - **No manual computations**: Avoid performing calculations outside of the metrics tools
 - **Source attribution**: Clearly indicate data sources and calculation methods
 - **Limitation acknowledgment**: State when desired calculations cannot be performed
+
+## Chart Generation
+
+When you include data in your responses, either from tool use or using your own analysis capabilities, do not build web pages or React apps. For visualizing data, you can use text-based techniques for data visualization:
+
+Bar Charts using block characters:
+
+Q1 ████████░░ 411
+
+Q2 ██████████ 514
+
+Q3 ██████░░░░ 300
+
+Q4 ████████░░ 400
+
+Horizontal progress bars: Project Progress:
+
+Frontend ▓▓▓▓▓▓▓▓░░ 80%
+
+Backend ▓▓▓▓▓▓░░░░ 60%
+
+Testing ▓▓░░░░░░░░ 20%
+
+Using different block densities: Trends:
+
+Jan ▁▂▃▄▅▆▇█ High
+
+Feb ▁▂▃▄▅░░░ Medium
+
+Mar ▁▂░░░░░░ Low
+
+Sparklines with Unicode Basic sparklines:
+
+Stock prices: ▁▂▃▅▂▇▆▃▅▇
+
+Website traffic: ▁▁▂▃▅▄▆▇▆▅▄▂▁
+
+CPU usage: ▂▄▆█▇▅▃▂▄▆█▇▄▂
+
+Trend indicators:
+
+AAPL ▲ +2.3%
+
+GOOG ▼ -1.2%
+
+MSFT ► +0.5%
+
+TSLA ▼ -3.1%
+
+Simple trend arrows: Sales ↗️ (+15%) Costs ↘️ (-8%) Profit ⤴️ (+28%)
+
+Pivot tables using text formatting:
+
+| Region | Q1 Sales | Q2 Sales | Q3 Sales | Q4 Sales |
+| ------ | -------- | -------- | -------- | -------- |
+| North  | $120,000 | $130,000 | $125,000 | $140,000 |
+| South  | $100,000 | $110,000 | $115,000 | $120,000 |
+| East   | $90,000  | $95,000  | $100,000 | $105,000 |
+| West   | $110,000 | $115,000 | $120,000 | $130,000 |
+
+## Developer Agent
+
+The Developer Agent is a powerful tool that can assist with development tasks within the Rill project. It can be used to automate the creation and modification of models and metrics views.
+
+### Capabilities
+
+The Developer Agent can perform the following actions:
+
+- **List files**: List the files in the project directory.
+- **Read files**: Read the contents of a file.
+- **Write files**: Write content to a file.
+- **Develop models**: Create or update a model.
+- **Develop metrics views**: Create or update a metrics view.
+
+### Example: Creating a new Metrics View
+
+To create a new metrics view, you can use the `develop_metrics_view` tool with the following arguments:
+
+```json
+{
+  "path": "/metrics/new_metrics_view.yaml",
+  "model": "my_model"
+}
+```
+
+This will create a new metrics view at the specified path, based on the `my_model` model.
 
 ## Report Structure & Formatting
 
@@ -79,7 +157,7 @@ Transform findings into actionable intelligence:
 
 ## Executive Summary
 
-- **Key Finding 1**: [Quantified insight with business impact]
+- **Key Finding 1**: [Quantified insight with impact]
 - **Key Finding 2**: [Trend or pattern with specific metrics]
 - **Key Finding 3**: [Actionable recommendation with expected outcome]
 
@@ -98,39 +176,6 @@ Transform findings into actionable intelligence:
 4. **Segment Analysis**: Performance across different dimensions
 5. **Recommendations**: Actionable next steps based on findings
 6. **Appendix**: Additional data and methodology notes
-
-## Google Cloud Prerequisites
-
-### Authentication Setup
-
-Users must have proper Google Cloud credentials configured:
-
-1. **Install Google Cloud SDK**:
-
-   ```bash
-   curl https://sdk.cloud.google.com | bash
-   exec -l $SHELL
-   ```
-
-2. **Authenticate with Google Cloud**:
-
-   ```bash
-   gcloud auth login
-   gcloud auth application-default login
-   ```
-
-3. **Set Default Project** (if needed):
-   ```bash
-   gcloud config set project YOUR_PROJECT_ID
-   ```
-
-### Required Permissions
-
-The service account or user must have:
-
-- **Google Drive API access**: For document creation and management
-- **Google Docs API access**: For content formatting and updates
-- **Sharing permissions**: To generate shareable links and manage access
 
 ## Communication Guidelines
 
@@ -176,22 +221,12 @@ The service account or user must have:
 
 ### Custom Report Generation
 
-"Create an executive summary of user engagement metrics with recommendations for improving retention, and share it with the product team."
+"Create an executive summary of user engagement metrics with recommendations for improving retention."
 
 ## Troubleshooting
 
 ### Common Issues
 
-- **Authentication failures**: Verify Google Cloud credentials and API enablement
 - **Query errors**: Check metrics view availability and parameter validity
-- **Report creation problems**: Confirm Google Docs API permissions and quota limits
-- **Sharing issues**: Validate email addresses and sharing permission settings
-
-### Error Resolution
-
-1. **Check authentication status**: `gcloud auth list`
-2. **Verify API enablement**: Ensure Drive and Docs APIs are enabled
-3. **Review error messages**: Look for specific permission or quota issues
-4. **Test connectivity**: Verify network access to Google Cloud services
 
 This extension transforms complex analytics into clear, actionable business intelligence while maintaining the highest standards of data accuracy and professional presentation.
