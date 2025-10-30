@@ -13,7 +13,6 @@
   const filteredParamsProperties = properties;
 </script>
 
-<!-- Step 1: Connector configuration (Azure) -->
 <div>
   {#each filteredParamsProperties as property (property.key)}
     {@const propertyKey = property.key ?? ""}

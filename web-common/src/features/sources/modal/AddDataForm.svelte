@@ -629,6 +629,7 @@
                 {handleFileUpload}
               />
             {:else if connector.name === "azure"}
+              <!-- TODO: GenericMultiStepForm -->
               <AzureMultiStepForm
                 properties={filteredParamsProperties}
                 {paramsForm}
