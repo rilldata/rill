@@ -106,13 +106,9 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		Fields: make([]*runtimev1.StructType_Field, 0, len(meta.Schema)),
 	}
 	for name, typ := range meta.Schema {
-		rtType, err := athenaTypeToRuntimeType(typ)
-		if err != nil {
-			return nil, err
-		}
 		runtimeSchema.Fields = append(runtimeSchema.Fields, &runtimev1.StructType_Field{
 			Name: name,
-			Type: rtType,
+			Type: athenaTypeToRuntimeType(typ),
 		})
 	}
 	return &drivers.OlapTable{
@@ -263,12 +259,8 @@ func (r *rows) runtimeSchema() (*runtimev1.StructType, error) {
 	for i, col := range r.columnInfo {
 		fields[i] = &runtimev1.StructType_Field{
 			Name: *col.Name,
+			Type: athenaTypeToRuntimeType(*col.Type),
 		}
-		colType, err := athenaTypeToRuntimeType(*col.Type)
-		if err != nil {
-			return nil, err
-		}
-		fields[i].Type = colType
 	}
 	res := &runtimev1.StructType{
 		Fields: fields,
@@ -276,7 +268,7 @@ func (r *rows) runtimeSchema() (*runtimev1.StructType, error) {
 	return res, nil
 }
 
-func athenaTypeToRuntimeType(colType string) (*runtimev1.Type, error) {
+func athenaTypeToRuntimeType(colType string) *runtimev1.Type {
 	t := &runtimev1.Type{}
 	switch strings.ToLower(colType) {
 	case "tinyint":
@@ -302,7 +294,7 @@ func athenaTypeToRuntimeType(colType string) (*runtimev1.Type, error) {
 	default:
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	}
-	return t, nil
+	return t
 }
 
 func convertValue(colType, val string) (any, error) {
@@ -390,7 +382,6 @@ func parseAthenaTimeWithLocation(layout, v string) (time.Time, error) {
 		return time.Parse(layout, v)
 	}
 	stamp, location := strings.TrimSpace(v[:idx]), v[idx:]
-	// check if location is offset like -06:00 by checking if it does not contain alphabets
 	var loc *time.Location
 	var err error
 	if isTimezoneOffset(location) {
@@ -432,7 +423,7 @@ func parseOffSet(offset string) (*time.Location, error) {
 
 // isTimezoneOffset checks if the string is a timezone offset like +05:30 or -06:00
 func isTimezoneOffset(s string) bool {
-	if len(s) == 0 {
+	if s == "" {
 		return false
 	}
 
