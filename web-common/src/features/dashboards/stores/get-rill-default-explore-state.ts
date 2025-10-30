@@ -28,7 +28,11 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { createAndExpression } from "./filter-utils";
 import { TDDChart } from "../time-dimension-details/types";
-import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  isGrainAllowed,
+  V1TimeGrainToAlias,
+  V1TimeGrainToOrder,
+} from "@rilldata/web-common/lib/time/new-grains";
 
 export function getRillDefaultExploreState(
   metricsViewSpec: V1MetricsViewSpec,
@@ -74,25 +78,33 @@ function getRillDefaultExploreTimeState(
     };
   }
 
+  const { smallestTimeGrain } = metricsViewSpec;
+
   const timeRangeName = getDefaultTimeRange(
-    metricsViewSpec.smallestTimeGrain,
+    smallestTimeGrain,
     timeRangeSummary,
   );
 
   const timeZone = getDefaultTimeZone(exploreSpec);
 
+  const grainForRange = getGrainForRange(
+    timeRangeName,
+    timeZone,
+    timeRangeSummary,
+  );
+
+  const interval = isGrainAllowed(grainForRange, smallestTimeGrain)
+    ? grainForRange
+    : smallestTimeGrain;
+
   return {
     selectedTimeRange: {
       name: timeRangeName,
-      interval: timeRangeName
-        ? getGrainForRange(timeRangeName, timeZone, timeRangeSummary)
-        : undefined,
+      interval,
     } as DashboardTimeControls,
     selectedTimezone: timeZone,
-
     showTimeComparison: false,
     selectedComparisonTimeRange: undefined,
-
     selectedScrubRange: undefined,
     lastDefinedScrubRange: undefined,
   };
@@ -162,7 +174,13 @@ export function getDefaultTimeRange(
     dayCount <= 180 &&
     timeGrainOrder <= V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER]
   ) {
-    preset = TimeRangePreset.QUARTER_TO_DATE;
+    if (timeGrainOrder > V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY]) {
+      const grainAlias = V1TimeGrainToAlias[smallestTimeGrain!];
+      preset =
+        `QTD as of latest/${grainAlias}+1${grainAlias}` as TimeRangePreset;
+    } else {
+      preset = TimeRangePreset.QUARTER_TO_DATE;
+    }
   } else {
     preset = getDefaultBasedOnSmallestTimeGrain(
       smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
@@ -193,10 +211,11 @@ function getDefaultBasedOnSmallestTimeGrain(smallestTimeGrain: V1TimeGrain) {
 }
 
 export function getGrainForRange(
-  timeRangeName: string,
+  timeRangeName: string | undefined,
   timezone: string | undefined,
   timeRangeSummary: V1TimeRangeSummary,
 ) {
+  if (!timeRangeName) return undefined;
   const fullTimeStart = new Date(timeRangeSummary.min!);
   const fullTimeEnd = new Date(timeRangeSummary.max!);
   const timeRange = isoDurationToFullTimeRange(
