@@ -6,6 +6,7 @@
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
