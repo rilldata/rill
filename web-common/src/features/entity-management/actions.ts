@@ -89,16 +89,6 @@ export async function waitForResourceReconciliation(
         continue;
       }
 
-      // Handle server timeouts (504 Gateway Timeout, etc.)
-      if (
-        error?.response?.status === 504 ||
-        error?.message?.includes("timeout")
-      ) {
-        throw new Error(
-          "Server timeout: Operation took longer than expected. Please try again.",
-        );
-      }
-
       // Re-throw other errors
       throw error;
     }
