@@ -470,6 +470,19 @@ export function getSmallestUnit(
   return null;
 }
 
+export function getSmallestUnitInDateTime(time: DateTime) {
+  if (time.millisecond) return "millisecond";
+  if (time.second) return "second";
+  if (time.minute) return "minute";
+  if (time.hour) return "hour";
+  if (time.day) return "day";
+  if (time.month) return "month";
+  if (time.quarter) return "quarter";
+  if (time.year) return "year";
+
+  return null;
+}
+
 export function isValidISODuration(duration: string) {
   const luxonDuration = Duration.fromISO(duration);
 

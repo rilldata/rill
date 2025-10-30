@@ -493,3 +493,20 @@ export function maybeConvertEqualityToInExpressions(expr: V1Expression) {
     expr.cond.op === V1Operation.OPERATION_NEQ,
   );
 }
+
+export function maybeUnnestInExpressions(expr: V1Expression) {
+  if (
+    !expr.cond?.op ||
+    (expr.cond.op !== V1Operation.OPERATION_IN &&
+      expr.cond.op !== V1Operation.OPERATION_NIN)
+  )
+    return expr;
+  const ident = expr.cond.exprs?.[0]?.ident;
+  const vals = expr.cond.exprs?.slice(1).flatMap((e) => e.val);
+  if (!ident || !vals) return expr;
+  return createInExpression(
+    ident,
+    vals,
+    expr.cond.op === V1Operation.OPERATION_NIN,
+  );
+}
