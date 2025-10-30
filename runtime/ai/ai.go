@@ -339,18 +339,8 @@ type Message struct {
 	ContentType MessageContentType `json:"content_type" yaml:"content_type"`
 	// Content is the content of the message.
 	Content string `json:"content" yaml:"content"`
-	// Context passed to the message that is used by different tool calls
-	Context MessageContext `json:"context" yaml:"context"`
 	// dirty is true if the Message has not yet been persisted.
 	dirty bool
-}
-
-type MessageContext struct {
-	Explore    string   `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	TimeRange  string   `json:"time_range" yaml:"time_range" jsonschema:"Optional time range for queries. If provided, the queries will be limited to this time range."`
-	Filters    string   `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	Measures   []string `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Dimensions []string `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
 }
 
 // sessionCtxKey is used for saving a session in a context.

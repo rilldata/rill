@@ -10804,12 +10804,14 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
+	// no validation rules for Explore
+
 	if all {
-		switch v := interface{}(m.GetContext()).(type) {
+		switch v := interface{}(m.GetWhere()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CompleteRequestValidationError{
-					field:  "Context",
+					field:  "Where",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -10817,21 +10819,23 @@ func (m *CompleteRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CompleteRequestValidationError{
-					field:  "Context",
+					field:  "Where",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetContext()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CompleteRequestValidationError{
-				field:  "Context",
+				field:  "Where",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
 		}
 	}
+
+	// no validation rules for TimeRange
 
 	if len(errors) > 0 {
 		return CompleteRequestMultiError(errors)
@@ -11077,12 +11081,14 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
+	// no validation rules for Explore
+
 	if all {
-		switch v := interface{}(m.GetContext()).(type) {
+		switch v := interface{}(m.GetWhere()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "Context",
+					field:  "Where",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -11090,21 +11096,23 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CompleteStreamingRequestValidationError{
-					field:  "Context",
+					field:  "Where",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetContext()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CompleteStreamingRequestValidationError{
-				field:  "Context",
+				field:  "Where",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
 		}
 	}
+
+	// no validation rules for TimeRange
 
 	if len(errors) > 0 {
 		return CompleteStreamingRequestMultiError(errors)

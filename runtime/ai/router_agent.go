@@ -10,6 +10,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 const RouterAgentName = "router_agent"
@@ -21,6 +22,14 @@ type RouterAgent struct {
 }
 
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
+
+type MessageContext struct {
+	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	TimeRange  string                  `json:"time_range" yaml:"time_range" jsonschema:"Optional time range for queries. If provided, the queries will be limited to this time range."`
+	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
+	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
+}
 
 type RouterAgentArgs struct {
 	Prompt      string         `json:"prompt"`

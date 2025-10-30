@@ -42,11 +42,3 @@ message CompletionMessage {
   string data = 2; // Deprecated in favor of content
   repeated ContentBlock content = 3;
 }
-
-message CompletionMessageContext {
-  string explore = 1;
-  string time_range = 2;
-  string filters = 3;
-  repeated string measures = 4;
-  repeated string dimensions = 5;
-}

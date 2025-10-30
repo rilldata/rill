@@ -10,6 +10,7 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 const AnalystAgentName = "analyst_agent"
@@ -85,13 +86,11 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 		metricsViewName = metricsView.Meta.Name.Name
 
-		if args.Context.TimeRange == "" {
-			_, err := s.CallTool(ctx, RoleAssistant, "query_metrics_view_summary", nil, &QueryMetricsViewSummaryArgs{
-				MetricsView: metricsViewName,
-			})
-			if err != nil {
-				return nil, err
-			}
+		_, err = s.CallTool(ctx, RoleAssistant, "query_metrics_view_summary", nil, &QueryMetricsViewSummaryArgs{
+			MetricsView: metricsViewName,
+		})
+		if err != nil {
+			return nil, err
 		}
 
 		_, err = s.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
@@ -155,12 +154,18 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 		"ai_instructions": session.ProjectInstructions(),
 		"metrics_view":    metricsViewName,
 		"explore":         context.Explore,
-		"time_range":      context.TimeRange,
-		"filters":         context.Filters,
-		"measures":        strings.Join(context.Measures, ""),
 		"dimensions":      strings.Join(context.Dimensions, ""),
+		"measures":        strings.Join(context.Measures, ""),
+		"time_range":      context.TimeRange,
 		"feature_flags":   ff,
 		"now":             time.Now(),
+	}
+
+	if context.Where != nil {
+		data["where"], err = metricsview.ExpressionToSQL(context.Where)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// Generate the system prompt

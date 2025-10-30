@@ -7,7 +7,8 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
-import { CompletionMessageContext, ContentBlock } from "../../ai/v1/ai_pb.js";
+import { ContentBlock } from "../../ai/v1/ai_pb.js";
+import { Expression } from "./expression_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -4511,9 +4512,29 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
   prompt = "";
 
   /**
-   * @generated from field: rill.ai.v1.CompletionMessageContext context = 4;
+   * @generated from field: string explore = 4;
    */
-  context?: CompletionMessageContext;
+  explore = "";
+
+  /**
+   * @generated from field: repeated string dimensions = 5;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * @generated from field: string time_range = 8;
+   */
+  timeRange = "";
 
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
@@ -4526,7 +4547,11 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "context", kind: "message", T: CompletionMessageContext },
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -4615,9 +4640,29 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
   prompt = "";
 
   /**
-   * @generated from field: rill.ai.v1.CompletionMessageContext context = 4;
+   * @generated from field: string explore = 4;
    */
-  context?: CompletionMessageContext;
+  explore = "";
+
+  /**
+   * @generated from field: repeated string dimensions = 5;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * @generated from field: string time_range = 8;
+   */
+  timeRange = "";
 
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
@@ -4630,7 +4675,11 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "context", kind: "message", T: CompletionMessageContext },
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -129,11 +130,18 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	var chatCtx ai.MessageContext
+	chatCtx.Explore = req.Explore
+	chatCtx.Dimensions = req.Dimensions
+	chatCtx.Measures = req.Measures
+	chatCtx.Where = metricsview.NewExpressionFromProto(req.Where)
+	chatCtx.TimeRange = req.TimeRange
+
 	// Make the call
 	var res *ai.RouterAgentResult
 	msg, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
 		Prompt:  req.Prompt,
-		Context: contextFromPb(req.Context),
+		Context: chatCtx,
 	})
 	if err != nil {
 		return nil, err
@@ -227,11 +235,18 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
+	var chatCtx ai.MessageContext
+	chatCtx.Explore = req.Explore
+	chatCtx.Dimensions = req.Dimensions
+	chatCtx.Measures = req.Measures
+	chatCtx.Where = metricsview.NewExpressionFromProto(req.Where)
+	chatCtx.TimeRange = req.TimeRange
+
 	// Make the call
 	var res *ai.RouterAgentResult
 	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
 		Prompt:  req.Prompt,
-		Context: contextFromPb(req.Context),
+		Context: chatCtx,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) {
 		return err
@@ -502,16 +517,4 @@ func messageContentToPB(msg *ai.Message) (*aiv1.ContentBlock, error) {
 	default:
 		return nil, fmt.Errorf("unexpected message type %q for message %q", msg.Type, msg.ID)
 	}
-}
-
-func contextFromPb(context *aiv1.CompletionMessageContext) ai.MessageContext {
-	var mc ai.MessageContext
-	if context != nil {
-		mc.Explore = context.Explore
-		mc.TimeRange = context.TimeRange
-		mc.Filters = context.Filters
-		mc.Measures = context.Measures
-		mc.Dimensions = context.Dimensions
-	}
-	return mc
 }

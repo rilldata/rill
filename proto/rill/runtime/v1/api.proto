@@ -7,6 +7,7 @@ import "google/protobuf/struct.proto";
 import "rill/ai/v1/ai.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
+import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
@@ -954,7 +955,11 @@ message CompleteRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2; // If not provided, creates a new conversation
   string prompt = 3;
-  rill.ai.v1.CompletionMessageContext context = 4;
+  string explore = 4;
+  repeated string dimensions = 5;
+  repeated string measures = 6;
+  rill.runtime.v1.Expression where = 7;
+  string time_range = 8;
 }
 
 // Response message for RuntimeService.Complete
@@ -968,7 +973,11 @@ message CompleteStreamingRequest {
   string instance_id = 1;
   string conversation_id = 2; // If not provided, creates a new conversation
   string prompt = 3;
-  rill.ai.v1.CompletionMessageContext context = 4;
+  string explore = 4;
+  repeated string dimensions = 5;
+  repeated string measures = 6;
+  rill.runtime.v1.Expression where = 7;
+  string time_range = 8;
 }
 
 // Response message for RuntimeService.CompleteStreaming
