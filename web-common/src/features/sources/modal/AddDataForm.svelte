@@ -47,6 +47,7 @@
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
+  import AzureMultiStepForm from "./AzureMultiStepForm.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -64,33 +65,37 @@
   const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
     connector.name ?? "",
   );
-  $: stepState = $connectorStepStore;
 
   // Reactive properties based on current step
   $: stepProperties =
-    isMultiStepConnector && stepState.step === "source"
+    isMultiStepConnector && $connectorStepStore.step === "source"
       ? (connector.sourceProperties ?? [])
       : properties;
 
   // Update form when transitioning to step 2
   $: if (
     isMultiStepConnector &&
-    stepState.step === "source" &&
-    stepState.connectorConfig
+    $connectorStepStore.step === "source" &&
+    $connectorStepStore.connectorConfig
   ) {
     // Initialize form with source properties and default values
     const sourceProperties = connector.sourceProperties ?? [];
     const initialValues = getInitialFormValuesFromProperties(sourceProperties);
 
     // Merge with stored connector config
-    const combinedValues = { ...stepState.connectorConfig, ...initialValues };
+    const combinedValues = {
+      ...($connectorStepStore.connectorConfig ?? {}),
+      ...initialValues,
+    };
 
     paramsForm.update(() => combinedValues, { taint: false });
   }
 
   // Determine effective form type
   $: effectiveFormType =
-    isMultiStepConnector && stepState.step === "source" ? "source" : formType;
+    isMultiStepConnector && $connectorStepStore.step === "source"
+      ? "source"
+      : formType;
 
   $: formHeight = ["clickhouse", "snowflake", "salesforce"].includes(
     connector.name ?? "",
@@ -101,11 +106,17 @@
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const properties =
-    (isSourceForm
-      ? connector.sourceProperties
-      : connector.configProperties?.filter(
-          (property) => property.key !== "dsn",
-        )) ?? [];
+    (isMultiStepConnector
+      ? $connectorStepStore.step === "source"
+        ? connector.sourceProperties
+        : connector.configProperties?.filter(
+            (property) => property.key !== "dsn",
+          )
+      : isSourceForm
+        ? connector.sourceProperties
+        : connector.configProperties?.filter(
+            (property) => property.key !== "dsn",
+          )) ?? [];
 
   // Filter properties based on connector type
   const filteredParamsProperties = (() => {
@@ -307,7 +318,7 @@
   function getSourceYamlPreview(values: Record<string, unknown>) {
     // For multi-step connectors in step 2, filter out connector properties
     let filteredValues = values;
-    if (isMultiStepConnector && stepState.step === "source") {
+    if (isMultiStepConnector && $connectorStepStore.step === "source") {
       // Get connector property keys to filter out
       const connectorPropertyKeys = new Set(
         connector.configProperties?.map((prop) => prop.key).filter(Boolean) ||
@@ -348,12 +359,15 @@
 
     // Multi-step connector special case - show different preview based on step
     if (isMultiStepConnector) {
-      if (stepState.step === "connector") {
+      if ($connectorStepStore.step === "connector") {
         // Step 1: Show connector preview
         return getConnectorYamlPreview($paramsForm);
       } else {
         // Step 2: Show source preview with stored connector config
-        const combinedValues = { ...stepState.connectorConfig, ...$paramsForm };
+        const combinedValues = {
+          ...($connectorStepStore.connectorConfig ?? {}),
+          ...$paramsForm,
+        };
         return getSourceYamlPreview(combinedValues);
       }
     }
@@ -406,11 +420,14 @@
     try {
       let processedValues = values;
 
-      if (isMultiStepConnector && stepState.step === "source") {
+      if (isMultiStepConnector && $connectorStepStore.step === "source") {
         // Step 2: Create source with stored connector config
         await submitAddSourceForm(queryClient, connector, processedValues);
         onClose();
-      } else if (isMultiStepConnector && stepState.step === "connector") {
+      } else if (
+        isMultiStepConnector &&
+        $connectorStepStore.step === "connector"
+      ) {
         // Step 1: Create connector and transition to step 2
         await submitAddConnectorForm(queryClient, connector, processedValues);
         setConnectorConfig(processedValues);
@@ -497,7 +514,8 @@
 
   // Handle skip button for multi-step connectors
   function handleSkip() {
-    if (!isMultiStepConnector || stepState.step !== "connector") return;
+    if (!isMultiStepConnector || $connectorStepStore.step !== "connector")
+      return;
 
     // Store current form values and transition to step 2
     setConnectorConfig($paramsForm);
@@ -505,7 +523,7 @@
   }
 
   function handleBack() {
-    if (isMultiStepConnector && stepState.step === "source") {
+    if (isMultiStepConnector && $connectorStepStore.step === "source") {
       // Go back to step 1 (connector configuration)
       setStep("connector");
     } else {
@@ -594,24 +612,41 @@
           />
         </form>
       {:else if isMultiStepConnector}
-        {#if stepState.step === "connector"}
-          <!-- GCS Step 1: Connector configuration -->
+        {#if $connectorStepStore.step === "connector"}
+          <!-- Step 1: Connector configuration -->
           <form
             id={paramsFormId}
             class="pb-5 flex-grow overflow-y-auto"
             use:paramsEnhance
             on:submit|preventDefault={paramsSubmit}
           >
-            <GCSMultiStepForm
-              properties={filteredParamsProperties}
-              {paramsForm}
-              paramsErrors={$paramsErrors}
-              {onStringInputChange}
-              {handleFileUpload}
-            />
+            {#if connector.name === "gcs"}
+              <GCSMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+              />
+            {:else if connector.name === "azure"}
+              <AzureMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+              />
+            {:else}
+              <FormRenderer
+                properties={filteredParamsProperties}
+                form={paramsForm}
+                errors={$paramsErrors}
+                {onStringInputChange}
+                uploadFile={handleFileUpload}
+              />
+            {/if}
           </form>
         {:else}
-          <!-- GCS Step 2: Source configuration -->
+          <!-- Step 2: Source configuration -->
           <form
             id={paramsFormId}
             class="pb-5 flex-grow overflow-y-auto"
@@ -652,7 +687,7 @@
       <Button onClick={handleBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
-        {#if isMultiStepConnector && stepState.step === "connector"}
+        {#if isMultiStepConnector && $connectorStepStore.step === "connector"}
           <Button onClick={handleSkip} type="secondary">Skip</Button>
         {/if}
 
@@ -683,13 +718,13 @@
               Test and Connect
             {/if}
           {:else if isConnectorForm}
-            {#if isMultiStepConnector && stepState.step === "connector"}
+            {#if isMultiStepConnector && $connectorStepStore.step === "connector"}
               {#if submitting}
                 Testing connection...
               {:else}
                 Test and Connect
               {/if}
-            {:else if isMultiStepConnector && stepState.step === "source"}
+            {:else if isMultiStepConnector && $connectorStepStore.step === "source"}
               {#if submitting}
                 Creating model...
               {:else}
@@ -727,7 +762,7 @@
 
     <YamlPreview
       title={isMultiStepConnector
-        ? stepState.step === "connector"
+        ? $connectorStepStore.step === "connector"
           ? "Connector preview"
           : "Model preview"
         : isSourceForm
