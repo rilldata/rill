@@ -116,8 +116,13 @@
 
   $: hasOverflow = estimatedTableWidth > parentElement?.clientWidth;
 
-  $: ({ title, description, time_filters, dimension_filters } =
-    leaderboardProperties);
+  $: ({
+    title,
+    description,
+    show_description_as_tooltip,
+    time_filters,
+    dimension_filters,
+  } = leaderboardProperties);
 
   $: filters = {
     time_filters,
@@ -133,7 +138,13 @@
 </script>
 
 {#if schema.isValid}
-  <ComponentHeader {component} {title} {description} {filters} />
+  <ComponentHeader
+    {component}
+    {title}
+    {description}
+    showDescriptionAsTooltip={show_description_as_tooltip}
+    {filters}
+  />
 
   <div
     class="h-fit p-0 grow relative"

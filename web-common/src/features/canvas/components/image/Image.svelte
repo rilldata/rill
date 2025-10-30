@@ -13,7 +13,8 @@
   $: ({ instanceId } = $runtime);
   $: imageProperties = $specStore;
 
-  $: ({ title, description, alignment, url } = imageProperties);
+  $: ({ title, description, show_description_as_tooltip, alignment, url } =
+    imageProperties);
 
   $: objectPosition = getImagePosition(alignment);
 
@@ -67,7 +68,12 @@
 {#if errorMessage}
   <ComponentError error={errorMessage} />
 {:else}
-  <ComponentHeader {component} {title} {description} />
+  <ComponentHeader
+    {component}
+    {title}
+    {description}
+    showDescriptionAsTooltip={show_description_as_tooltip}
+  />
   <img
     src={imageSrc || ""}
     alt={"Canvas Image"}
