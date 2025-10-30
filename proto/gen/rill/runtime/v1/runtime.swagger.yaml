@@ -3,9 +3,9 @@ info:
   title: rill/runtime/v1/schema.proto
   version: version not set
 tags:
-  - name: QueryService
   - name: RuntimeService
   - name: ConnectorService
+  - name: QueryService
 consumes:
   - application/json
 produces:
@@ -616,8 +616,12 @@ paths:
                   type: string
               where:
                 $ref: '#/definitions/v1Expression'
-              timeRange:
+              timeStart:
                 type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -668,8 +672,12 @@ paths:
                   type: string
               where:
                 $ref: '#/definitions/v1Expression'
-              timeRange:
+              timeStart:
                 type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService

@@ -959,7 +959,8 @@ message CompleteRequest {
   repeated string dimensions = 5;
   repeated string measures = 6;
   rill.runtime.v1.Expression where = 7;
-  string time_range = 8;
+  google.protobuf.Timestamp time_start = 8;
+  google.protobuf.Timestamp time_end = 9;
 }
 
 // Response message for RuntimeService.Complete
@@ -977,7 +978,8 @@ message CompleteStreamingRequest {
   repeated string dimensions = 5;
   repeated string measures = 6;
   rill.runtime.v1.Expression where = 7;
-  string time_range = 8;
+  google.protobuf.Timestamp time_start = 8;
+  google.protobuf.Timestamp time_end = 9;
 }
 
 // Response message for RuntimeService.CompleteStreaming

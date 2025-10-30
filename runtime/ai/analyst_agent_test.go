@@ -1,9 +1,14 @@
 package ai_test
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -110,6 +115,55 @@ func TestAnalystOpenRTB(t *testing.T) {
 		require.Len(t, calls, 2)
 		require.Equal(t, "query_metrics_view_summary", calls[0].Tool)
 		require.Equal(t, "query_metrics_view", calls[1].Tool)
+	})
+
+	t.Run("DashboardContext", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		// ProjectOpenRTB has times relative to "now". So send start and end within to avoid possible corrections by LLM.
+		timeEnd := timeutil.TruncateTime(time.Now(), timeutil.TimeGrainDay, time.UTC, 0, 0)
+		timeEnd = timeutil.OffsetTime(timeEnd, timeutil.TimeGrainDay, -2, time.UTC)
+		timeStart := timeutil.OffsetTime(timeEnd, timeutil.TimeGrainDay, -2, time.UTC)
+
+		// It should make three sub-calls: query_metrics_view_summary, get_metrics_view, query_metrics_view
+		res, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{
+			Prompt:    "Tell me which app_site_name has the most impressions",
+			Explore:   "bids_explore",
+			TimeStart: timeStart,
+			TimeEnd:   timeEnd,
+			Where: &metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorEq,
+					Expressions: []*metricsview.Expression{
+						{Name: "device_os"},
+						{Value: "Android"},
+					},
+				},
+			},
+		})
+		require.NoError(t, err)
+		calls := s.Messages(ai.FilterByParent(res.Call.ID), ai.FilterByType(ai.MessageTypeCall))
+		require.Len(t, calls, 3)
+		require.Equal(t, "query_metrics_view_summary", calls[0].Tool)
+		require.Equal(t, "get_metrics_view", calls[1].Tool)
+		require.Equal(t, "query_metrics_view", calls[2].Tool)
+
+		// Map the request sent and assert that context was honored.
+		var rawQry map[string]interface{}
+		err = json.Unmarshal([]byte(calls[2].Content), &rawQry)
+		require.NoError(t, err)
+		var qry metricsview.Query
+		err = mapstructureutil.WeakDecode(rawQry, &qry)
+		require.NoError(t, err)
+		// Assert that the time range is sent using the context
+		require.Equal(t, timeStart, qry.TimeRange.Start)
+		require.Equal(t, timeEnd, qry.TimeRange.End)
+		// Assert that the filter is sent using the context
+		require.NotNil(t, qry.Where)
+		require.NotNil(t, qry.Where.Condition)
+		require.Len(t, qry.Where.Condition.Expressions, 2)
+		require.Equal(t, "device_os", qry.Where.Condition.Expressions[0].Name)
+		require.Equal(t, "Android", qry.Where.Condition.Expressions[1].Value)
 	})
 
 }

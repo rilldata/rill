@@ -2541,7 +2541,8 @@ export type RuntimeServiceCompleteBody = {
   dimensions?: string[];
   measures?: string[];
   where?: V1Expression;
-  timeRange?: string;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2551,7 +2552,8 @@ export type RuntimeServiceCompleteStreamingBody = {
   dimensions?: string[];
   measures?: string[];
   where?: V1Expression;
-  timeRange?: string;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

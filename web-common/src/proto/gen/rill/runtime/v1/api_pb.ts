@@ -4532,9 +4532,14 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
   where?: Expression;
 
   /**
-   * @generated from field: string time_range = 8;
+   * @generated from field: google.protobuf.Timestamp time_start = 8;
    */
-  timeRange = "";
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 9;
+   */
+  timeEnd?: Timestamp;
 
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
@@ -4551,7 +4556,8 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "where", kind: "message", T: Expression },
-    { no: 8, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "time_start", kind: "message", T: Timestamp },
+    { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -4660,9 +4666,14 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
   where?: Expression;
 
   /**
-   * @generated from field: string time_range = 8;
+   * @generated from field: google.protobuf.Timestamp time_start = 8;
    */
-  timeRange = "";
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 9;
+   */
+  timeEnd?: Timestamp;
 
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
@@ -4679,7 +4690,8 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "where", kind: "message", T: Expression },
-    { no: 8, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "time_start", kind: "message", T: Timestamp },
+    { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

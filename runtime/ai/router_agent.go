@@ -10,7 +10,6 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 const RouterAgentName = "router_agent"
@@ -23,19 +22,11 @@ type RouterAgent struct {
 
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
-type MessageContext struct {
-	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	TimeRange  string                  `json:"time_range" yaml:"time_range" jsonschema:"Optional time range for queries. If provided, the queries will be limited to this time range."`
-	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
-	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
-}
-
 type RouterAgentArgs struct {
-	Prompt      string         `json:"prompt"`
-	Agent       string         `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
-	Context     MessageContext `json:"context,omitempty" jsonschema:"Optional context for explorations."`
-	SkipHandoff bool           `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
+	Prompt           string            `json:"prompt"`
+	Agent            string            `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
+	AnalystAgentArgs *AnalystAgentArgs `json:"analyst_agent_args,omitempty" jsonschema:"Arguments to pass to the analyst agent if the selected agent is analyst_agent."`
+	SkipHandoff      bool              `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
 type RouterAgentResult struct {
@@ -147,15 +138,18 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	// Call the selected agent.
 	switch args.Agent {
 	case AnalystAgentName:
+		analystAgentArgs := args.AnalystAgentArgs
+		if analystAgentArgs == nil {
+			analystAgentArgs = &AnalystAgentArgs{}
+		}
+		analystAgentArgs.Prompt = args.Prompt
+
 		var res *AnalystAgentResult
 		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
 			Role: RoleUser, // TODO: Handle better (can't be assistant since it would be serialized as a tool call)
 			Tool: args.Agent,
 			Out:  &res,
-			Args: &AnalystAgentArgs{
-				Prompt:  args.Prompt,
-				Context: args.Context,
-			},
+			Args: analystAgentArgs,
 		})
 		if err != nil {
 			return nil, err

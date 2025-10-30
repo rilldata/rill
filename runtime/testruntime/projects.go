@@ -10,7 +10,7 @@ func ProjectOpenRTB(t TestingT) (int, map[string]string) {
 	auctionsParquet := DatasetPath(t, DatasetOpenRTBAuctions)
 	bidsParquet := DatasetPath(t, DatasetOpenRTBBids)
 
-	return 9, map[string]string{
+	return 10, map[string]string{
 		// Raw auctions data (NOTE: not materialized)
 		"models/auctions_data_raw.yaml": fmt.Sprintf(`
 type: model
@@ -187,6 +187,13 @@ measures:
     window:
       order: __time
       frame: RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW
+`,
+		// Bids explore
+		"dashboards/bids_explore.yaml": `
+type: explore
+metrics_view: bids_metrics
+dimensions: '*'
+measures: '*'
 `,
 	}
 }

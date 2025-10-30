@@ -23,8 +23,13 @@ type AnalystAgent struct {
 var _ Tool[*AnalystAgentArgs, *AnalystAgentResult] = (*AnalystAgent)(nil)
 
 type AnalystAgentArgs struct {
-	Prompt  string         `json:"prompt"`
-	Context MessageContext `json:"context,omitempty" jsonschema:"Optional context for explorations."`
+	Prompt     string                  `json:"prompt"`
+	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
+	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
+	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
+	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -84,8 +89,8 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
 	// TODO: This uses `first`, but that may not be safe if the user has navigated to another dashboard. We probably need some more sophisticated de-duplication here.
 	var metricsViewName string
-	if first && args.Context.Explore != "" {
-		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Context.Explore)
+	if first && args.Explore != "" {
+		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +112,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if first && args.Context.Explore == "" {
+	if first && args.Explore == "" {
 		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", nil, &ListMetricsViewsArgs{})
 		if err != nil {
 			return nil, err
@@ -116,13 +121,13 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// Determine tools that can be used
 	tools := []string{}
-	if args.Context.Explore == "" {
+	if args.Explore == "" {
 		tools = append(tools, "list_metrics_views", "get_metrics_view")
 	}
 	tools = append(tools, "query_metrics_view_summary", "query_metrics_view", "create_chart")
 
 	// Build completion messages
-	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Context)
+	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +161,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	return &AnalystAgentResult{Response: response}, nil
 }
 
-func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string, context MessageContext) (string, error) {
+func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string, args *AnalystAgentArgs) (string, error) {
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
@@ -167,16 +172,20 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string,
 	data := map[string]any{
 		"ai_instructions": session.ProjectInstructions(),
 		"metrics_view":    metricsViewName,
-		"explore":         context.Explore,
-		"dimensions":      strings.Join(context.Dimensions, ""),
-		"measures":        strings.Join(context.Measures, ""),
-		"time_range":      context.TimeRange,
+		"explore":         args.Explore,
+		"dimensions":      strings.Join(args.Dimensions, ", "),
+		"measures":        strings.Join(args.Measures, ", "),
 		"feature_flags":   ff,
 		"now":             time.Now(),
 	}
 
-	if context.Where != nil {
-		data["where"], err = metricsview.ExpressionToSQL(context.Where)
+	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
+		data["time_start"] = args.TimeStart.Format(time.RFC3339)
+		data["time_end"] = args.TimeEnd.Format(time.RFC3339)
+	}
+
+	if args.Where != nil {
+		data["where"], err = metricsview.ExpressionToSQL(args.Where)
 		if err != nil {
 			return "", err
 		}
@@ -202,10 +211,13 @@ Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "200
 Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_view }}".
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
 The metrics view's definition and time range of available data has been provided in your tool calls.
-{{ if .time_range }}Use time range: "{{ .time_range }}"{{ end }}
-{{ if .filters }}Use filters: "{{ .filters }}"{{ end }}
+
+Here is an overview of the settings the user has currently applied to the dashboard:
+{{ if (and .time_start .time_end) }}start={{.time_start}}, end={{.time_end}}{{ end }}
+{{ if .where }}Use where filters: "{{ .where }}"{{ end }}
 {{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
 {{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
+
 You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.

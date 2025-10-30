@@ -130,18 +130,20 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var chatCtx ai.MessageContext
-	chatCtx.Explore = req.Explore
-	chatCtx.Dimensions = req.Dimensions
-	chatCtx.Measures = req.Measures
-	chatCtx.Where = metricsview.NewExpressionFromProto(req.Where)
-	chatCtx.TimeRange = req.TimeRange
+	analystAgentArgs := &ai.AnalystAgentArgs{
+		Explore:    req.Explore,
+		Dimensions: req.Dimensions,
+		Measures:   req.Measures,
+		Where:      metricsview.NewExpressionFromProto(req.Where),
+		TimeStart:  req.TimeStart.AsTime(),
+		TimeEnd:    req.TimeEnd.AsTime(),
+	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
 	msg, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt:  req.Prompt,
-		Context: chatCtx,
+		Prompt:           req.Prompt,
+		AnalystAgentArgs: analystAgentArgs,
 	})
 	if err != nil {
 		return nil, err
@@ -235,18 +237,20 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
-	var chatCtx ai.MessageContext
-	chatCtx.Explore = req.Explore
-	chatCtx.Dimensions = req.Dimensions
-	chatCtx.Measures = req.Measures
-	chatCtx.Where = metricsview.NewExpressionFromProto(req.Where)
-	chatCtx.TimeRange = req.TimeRange
+	analystAgentArgs := &ai.AnalystAgentArgs{
+		Explore:    req.Explore,
+		Dimensions: req.Dimensions,
+		Measures:   req.Measures,
+		Where:      metricsview.NewExpressionFromProto(req.Where),
+		TimeStart:  req.TimeStart.AsTime(),
+		TimeEnd:    req.TimeEnd.AsTime(),
+	}
 
 	// Make the call
 	var res *ai.RouterAgentResult
 	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt:  req.Prompt,
-		Context: chatCtx,
+		Prompt:           req.Prompt,
+		AnalystAgentArgs: analystAgentArgs,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) {
 		return err
