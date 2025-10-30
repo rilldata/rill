@@ -161,6 +161,11 @@ export function getDefaultTimeRange(
   ) {
     preset = TimeRangePreset.LAST_SIX_HOURS;
   } else if (
+    dayCount <= 7 &&
+    timeGrainOrder <= V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY]
+  ) {
+    preset = TimeRangePreset.LAST_24_HOURS;
+  } else if (
     dayCount <= 14 &&
     timeGrainOrder <= V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY]
   ) {
