@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import SynchedFiltersContext from "@rilldata/web-common/features/chat/core/context/SynchedFiltersContext.svelte";
+  import { getDashboardResourceFromPage } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { AlertCircleIcon } from "lucide-svelte";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
@@ -24,11 +29,14 @@
   $: canSend = !disabled && value.trim();
   $: canCancel = $isStreamingStore;
 
+  $: pageDashboardResource = getDashboardResourceFromPage($page);
+  $: onExplorePage = pageDashboardResource?.kind === ResourceKind.Explore;
+  $: showContext = !!currentConversation && onExplorePage;
+
   function handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
     const value = target.value;
     draftMessageStore.set(value);
-    autoResize();
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -53,7 +61,6 @@
 
     // Let the parent component manage the input value
     await tick();
-    autoResize();
     textarea?.focus();
   }
 
@@ -82,8 +89,12 @@
   });
 
   // Auto-resize when value changes
-  $: if (textarea && value !== undefined) {
-    autoResize();
+  $: if (value !== undefined) {
+    // There is an race condition where scrollHeight has not updated yet.
+    // Adding a timeout makes sure it is avoided.
+    setTimeout(() => {
+      autoResize();
+    }, 5);
   }
 </script>
 
@@ -92,44 +103,54 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <textarea
-    bind:this={textarea}
-    {value}
-    class="chat-input"
-    class:fixed-height={!!height}
-    style:height
-    {placeholder}
-    rows="1"
-    on:keydown={handleKeydown}
-    on:input={handleInput}
-  />
-  {#if canCancel}
-    <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
-      <span class="stop-icon">
-        <StopCircle size="1.2em" />
-      </span>
-    </IconButton>
-  {:else}
-    <IconButton
-      ariaLabel="Send message"
-      disabled={!canSend}
-      on:click={sendMessage}
-    >
-      <SendIcon size="1.3em" disabled={!canSend} />
-    </IconButton>
+  {#if showContext}
+    <SynchedFiltersContext conversation={currentConversation} />
   {/if}
+  <div class="w-full">
+    <textarea
+      bind:this={textarea}
+      {value}
+      class="chat-input"
+      class:fixed-height={!!height}
+      style:height
+      {placeholder}
+      rows="1"
+      on:keydown={handleKeydown}
+      on:input={handleInput}
+    />
+  </div>
+  <div class="chat-input-footer">
+    <div class="chat-input-dashboard-scope">
+      {#if showContext}
+        <!-- TODO: tooltip -->
+        <AlertCircleIcon size="16px" />
+        <span>Scoped to current dashboard</span>
+      {/if}
+    </div>
+    <div>
+      {#if canCancel}
+        <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+          <span class="stop-icon">
+            <StopCircle size="1.2em" />
+          </span>
+        </IconButton>
+      {:else}
+        <IconButton
+          ariaLabel="Send message"
+          disabled={!canSend}
+          on:click={sendMessage}
+        >
+          <SendIcon size="1.3em" disabled={!canSend} />
+        </IconButton>
+      {/if}
+    </div>
+  </div>
 </form>
 
 <style lang="postcss">
   .chat-input-form {
-    display: flex;
-    align-items: flex-end;
-    gap: 0.25rem;
-    background: var(--background);
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
-    padding: 0.25rem;
-    margin: 0 1rem;
+    @apply flex flex-col gap-1 p-1 mx-4;
+    @apply bg-background border rounded-md;
     transition: border-color 0.2s;
   }
 
@@ -142,6 +163,7 @@
   }
 
   .chat-input {
+    @apply w-full;
     flex: 1;
     border: none;
     background: transparent;
@@ -188,5 +210,14 @@
   }
   .stop-icon:active {
     transform: scale(0.97);
+  }
+
+  .chat-input-footer {
+    @apply flex flex-row;
+  }
+
+  .chat-input-dashboard-scope {
+    @apply flex flex-row items-center w-full mx-1 gap-1;
+    @apply text-muted-foreground;
   }
 </style>

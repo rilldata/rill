@@ -1,5 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { Button } from "@rilldata/web-common/components/button";
+  import * as Collapsible from "@rilldata/web-common/components/collapsible";
+  import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
+  import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
+  import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
+  import ReadonlyConversationContext from "@rilldata/web-common/features/chat/core/context/ReadonlyConversationContext.svelte";
   import {
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
@@ -25,6 +31,11 @@
       ? getCitationUrlRewriter($mapperStore.data!)
       : undefined;
 
+  $: context = ConversationContext.fromMessage(message);
+  $: contextRecord = context.record;
+  $: hasContext = Object.keys($contextRecord).length > 0;
+  let contextOpened = false;
+
   $: role = message.role;
 </script>
 
@@ -34,6 +45,24 @@
       <Markdown {content} converter={convertCitationUrls} />
     {:else}
       {content}
+    {/if}
+
+    {#if hasContext}
+      <Collapsible.Root bind:open={contextOpened}>
+        <Collapsible.Trigger asChild let:builder>
+          <Button type="link" builders={[builder]} class="ml-1">
+            {#if contextOpened}
+              <CaretDownFilledIcon size="12px" fillColor="white" />
+            {:else}
+              <CaretRightFilledIcon size="12px" fillColor="white" />
+            {/if}
+            <span class="text-white">Additional context</span>
+          </Button>
+        </Collapsible.Trigger>
+        <Collapsible.Content class="flex flex-wrap gap-1 items-center">
+          <ReadonlyConversationContext {context} />
+        </Collapsible.Content>
+      </Collapsible.Root>
     {/if}
   </div>
 </div>

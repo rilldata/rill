@@ -1,10 +1,19 @@
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+import {
+  getMetricsViewTimeRangeFromExploreQueryOptions,
+  useMetricsViewTimeRange,
+} from "@rilldata/web-common/features/dashboards/selectors";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import {
+  useExploreState,
+  useStableExploreState,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+import {
+  getExploreValidSpecQueryOptions,
+  useExploreValidSpec,
+} from "@rilldata/web-common/features/explores/selectors";
 import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -45,7 +54,7 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { createQuery, type QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
 import { derived, get } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
@@ -255,6 +264,39 @@ export function createTimeControlStoreFromName(
         timeRangeSummaryResp,
         dashboardStore,
       ]),
+  );
+}
+
+export function createStableTimeControlStoreFromName(
+  exploreNameStore: Readable<string>,
+) {
+  const validSpecQuery = createQuery(
+    getExploreValidSpecQueryOptions(exploreNameStore),
+  );
+  const metricsViewTimeRangeQuery = createQuery(
+    getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
+  );
+  const exploreStore = useStableExploreState(exploreNameStore);
+
+  return derived(
+    [validSpecQuery, metricsViewTimeRangeQuery, exploreStore],
+    ([validSpecResp, timeRangeSummaryResp, dashboardStore]) => {
+      // Without an access to isPending, the query is never fired.
+      // TODO: find a better way to handle this.
+      if (timeRangeSummaryResp.isPending)
+        return timeControlStateSelector([
+          validSpecResp.data?.metricsViewSpec,
+          validSpecResp.data?.exploreSpec,
+          timeRangeSummaryResp,
+          dashboardStore,
+        ]);
+      return timeControlStateSelector([
+        validSpecResp.data?.metricsViewSpec,
+        validSpecResp.data?.exploreSpec,
+        timeRangeSummaryResp,
+        dashboardStore,
+      ]);
+    },
   );
 }
 

@@ -4,6 +4,7 @@
  * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in error handling, ID generation, and cache management.
  */
+import type { V1Message } from "@rilldata/web-common/runtime-client";
 
 // =============================================================================
 // ID GENERATION
@@ -117,4 +118,8 @@ export function parseChartData(toolCall: any) {
     console.error("Failed to parse chart data:", error);
     return null;
   }
+}
+
+export function isUserMessage(message: V1Message) {
+  return message.type && message.type === "user";
 }
