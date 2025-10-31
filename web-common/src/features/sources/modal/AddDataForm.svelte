@@ -47,6 +47,7 @@
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
+  import { getSecretKeysFromConnector, sanitizeValuesByKeys } from "./helpers";
 
   const dispatch = createEventDispatcher();
 
@@ -415,23 +416,18 @@
         await submitAddConnectorForm(queryClient, connector, processedValues);
 
         // Remove secret fields from stored config and clear them from the form to avoid stale preview
-        const secretKeys =
-          connector.configProperties
-            ?.filter((property) => property.secret)
-            .map((property) => property.key)
-            .filter(Boolean) ?? [];
-
-        const cleanedValues = { ...processedValues } as Record<string, unknown>;
-        for (const key of secretKeys) {
-          delete cleanedValues[key as string];
-        }
+        const secretKeys = getSecretKeysFromConnector(connector);
+        const cleanedValues = sanitizeValuesByKeys(
+          processedValues as Record<string, unknown>,
+          secretKeys,
+        );
         setConnectorConfig(cleanedValues);
 
         // Clear secret inputs in the visible form without marking it tainted
         paramsForm.update(
           ($form) => {
             for (const key of secretKeys) {
-              $form[key as string] = "";
+              $form[key] = "";
             }
             return $form;
           },
