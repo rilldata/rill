@@ -205,103 +205,43 @@ func TestManagedConnectorPropagation(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: `
-olap_connector: duckdb
+olap_connector: managed_duckdb
 `,
-		"/connectors/duckdb.yaml": `
+		"/connectors/managed_duckdb.yaml": `
 type: connector
 driver: duckdb
 managed: true
 `,
-	})
-
-	p, err := Parse(ctx, repo, "", "", "duckdb")
-	require.NoError(t, err)
-
-	// Verify that the managed field is properly set in ConnectorSpec
-	require.Len(t, p.Resources, 1)
-
-	// Get the resource from the map
-	var r *Resource
-	for _, res := range p.Resources {
-		r = res
-		break
-	}
-	require.NotNil(t, r)
-	require.Equal(t, "duckdb", r.Name.Name)
-	require.True(t, r.ConnectorSpec.Provision, "Provision should be true when managed: true")
-
-	// Verify that the managed field is also in the Properties map so drivers can access it
-	require.NotNil(t, r.ConnectorSpec.Properties)
-	require.Equal(t, "true", r.ConnectorSpec.Properties["managed"], "managed field should be in Properties map for driver access")
-}
-
-func TestManagedConnectorFalse(t *testing.T) {
-	ctx := context.Background()
-	repo := makeRepo(t, map[string]string{
-		`rill.yaml`: `
-olap_connector: duckdb
-`,
-		"/connectors/duckdb.yaml": `
+		"/connectors/non_managed_duckdb.yaml": `
 type: connector
 driver: duckdb
 managed: false
 `,
-	})
-
-	p, err := Parse(ctx, repo, "", "", "duckdb")
-	require.NoError(t, err)
-
-	// Verify that the managed field is properly set in ConnectorSpec
-	require.Len(t, p.Resources, 1)
-
-	// Get the resource from the map
-	var r *Resource
-	for _, res := range p.Resources {
-		r = res
-		break
-	}
-	require.NotNil(t, r)
-	require.Equal(t, "duckdb", r.Name.Name)
-	require.False(t, r.ConnectorSpec.Provision, "Provision should be false when managed: false")
-
-	// Verify that the managed field is also in the Properties map
-	require.NotNil(t, r.ConnectorSpec.Properties)
-	require.Equal(t, "false", r.ConnectorSpec.Properties["managed"], "managed field should be in Properties map for driver access")
-}
-
-func TestManagedConnectorWithArgs(t *testing.T) {
-	ctx := context.Background()
-	repo := makeRepo(t, map[string]string{
-		`rill.yaml`: `
-olap_connector: duckdb
-`,
-		"/connectors/duckdb.yaml": `
+		"/connectors/managed_props_duckdb.yaml": `
 type: connector
 driver: duckdb
 managed:
-  arg1: value1
-  arg2: value2
+  hello: world
 `,
 	})
 
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
+	require.Len(t, p.Resources, 3)
 
-	// Verify that the managed field with args is properly set
-	require.Len(t, p.Resources, 1)
-
-	// Get the resource from the map
-	var r *Resource
-	for _, res := range p.Resources {
-		r = res
-		break
-	}
+	r := p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "managed_duckdb"}]
 	require.NotNil(t, r)
-	require.Equal(t, "duckdb", r.Name.Name)
-	require.True(t, r.ConnectorSpec.Provision, "Provision should be true when managed has args")
-	require.NotNil(t, r.ConnectorSpec.ProvisionArgs, "ProvisionArgs should be set when managed has args")
+	require.True(t, r.ConnectorSpec.Provision)
+	require.NotContains(t, r.ConnectorSpec.Properties, "managed")
 
-	// Verify that the managed field is also in the Properties map
-	require.NotNil(t, r.ConnectorSpec.Properties)
-	require.Equal(t, "true", r.ConnectorSpec.Properties["managed"], "managed field should be 'true' in Properties map when args are provided")
+	r = p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "non_managed_duckdb"}]
+	require.NotNil(t, r)
+	require.False(t, r.ConnectorSpec.Provision)
+	require.NotContains(t, r.ConnectorSpec.Properties, "managed")
+
+	r = p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "managed_props_duckdb"}]
+	require.NotNil(t, r)
+	require.True(t, r.ConnectorSpec.Provision)
+	require.NotContains(t, r.ConnectorSpec.Properties, "managed")
+	require.Equal(t, "world", r.ConnectorSpec.ProvisionArgs.AsMap()["hello"])
 }

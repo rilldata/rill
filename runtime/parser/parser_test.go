@@ -2102,9 +2102,8 @@ managed: true
 		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
 		Paths: []string{"/connectors/clickhouse.yaml"},
 		ConnectorSpec: &runtimev1.ConnectorSpec{
-			Driver:     "clickhouse",
-			Properties: map[string]string{"managed": "true"},
-			Provision:  true,
+			Driver:    "clickhouse",
+			Provision: true,
 		},
 	}
 	p, err = Parse(ctx, repo, "", "", "duckdb")
@@ -2124,7 +2123,7 @@ time_zone: America/Los_Angeles
 		Paths: []string{"/connectors/clickhouse.yaml"},
 		ConnectorSpec: &runtimev1.ConnectorSpec{
 			Driver:        "clickhouse",
-			Properties:    map[string]string{"managed": "true", "time_zone": "America/Los_Angeles"},
+			Properties:    map[string]string{"time_zone": "America/Los_Angeles"},
 			Provision:     true,
 			ProvisionArgs: must(structpb.NewStruct(map[string]any{"hello": "world"})),
 		},

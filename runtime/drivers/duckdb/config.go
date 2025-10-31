@@ -17,6 +17,9 @@ const (
 
 // config represents the DuckDB driver config
 type config struct {
+	// Managed is set internally if the connector has `managed: true`.
+	// This indicates to use an embedded DuckDB, and cannot be combined with the Path and Attach settings.
+	Managed bool `mapstructure:"managed"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
@@ -43,10 +46,6 @@ type config struct {
 	// CanScaleToZero indicates if the underlying duckdb service may scale to zero when idle.
 	// When set to true, we try to avoid too frequent non-user queries to the database (such as alert checks and fetching metrics).
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
-	// Managed indicates whether to use Rill-managed embedded DuckDB (true) or external DuckDB (false).
-	// When true, ignores Path and Attach settings and uses embedded database.
-	Managed bool `mapstructure:"managed"`
-
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
 	Path string `mapstructure:"path"`
 	// Attach allows user to pass a full ATTACH statement to attach a DuckDB database.
@@ -78,8 +77,13 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 
 	// Validate that managed cannot be combined with path or attach
-	if cfg.Managed && (cfg.Path != "" || cfg.Attach != "") {
+	hasExternalConfig := cfg.Path != "" || cfg.Attach != ""
+	if cfg.Managed && hasExternalConfig {
 		return nil, fmt.Errorf("'managed: true' cannot be combined with 'path' or 'attach' fields")
+	} else if !hasExternalConfig {
+		// Previously we did not require `managed: true` to use embedded DuckDB.
+		// For backward compatibility, we default to managed if no external config is provided.
+		cfg.Managed = true
 	}
 
 	// Set the mode for the connection
@@ -87,7 +91,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		// The default mode depends on the connection type:
 		// - For managed/embedded DuckDB, default to "readwrite" to maintain compatibility
 		// - For external connections (Path/Attach), default to "read"
-		if cfg.Managed || (cfg.Path == "" && cfg.Attach == "") {
+		if cfg.Managed {
 			cfg.Mode = modeReadWrite
 		} else {
 			cfg.Mode = modeReadOnly
