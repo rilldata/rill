@@ -32,7 +32,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
   import type { V1Project } from "@rilldata/web-admin/client";
-  import SelectionDropdown from "@rilldata/web-common/features/visual-editing/SelectionDropdown.svelte";
+  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
 
   export let open = false;
   export let email: string;
@@ -72,6 +72,7 @@
 
   let failedInvites: string[] = [];
   let selectedProjects: string[] = [];
+  let projectDropdownOpen = false;
 
   // List projects for project access multi-select
   $: projectsQuery = createAdminServiceListProjectsForOrganization(
@@ -324,23 +325,42 @@
           {:else if projects.length === 0}
             <div class="text-xs text-slate-500">No projects</div>
           {:else}
-            <SelectionDropdown
-              id="guest-projects"
-              type="projects"
-              widthClass="w-[340px]"
-              allItems={allProjectNamesSet}
-              selectedItems={selectedProjectsSet}
-              searchableItems={projectNames}
-              onSelect={(name) => {
-                const idx = selectedProjects.indexOf(name);
-                if (idx >= 0)
-                  selectedProjects = selectedProjects.filter((n) => n !== name);
-                else selectedProjects = [...selectedProjects, name];
-              }}
-              setItems={(items) => {
-                selectedProjects = items;
-              }}
-            />
+            <Dropdown.Root bind:open={projectDropdownOpen}>
+              <Dropdown.Trigger
+                class="min-w-[224px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {projectDropdownOpen
+                  ? 'bg-slate-200'
+                  : 'hover:bg-slate-100'} px-2 py-1"
+              >
+                <span class="capitalize">
+                  {selectedProjects.length > 0
+                    ? `${selectedProjects.length} Project${selectedProjects.length > 1 ? "s" : ""}`
+                    : "Select projects"}
+                </span>
+                {#if projectDropdownOpen}
+                  <CaretUpIcon size="12px" />
+                {:else}
+                  <CaretDownIcon size="12px" />
+                {/if}
+              </Dropdown.Trigger>
+              <Dropdown.Content align="start" class="w-[224px]">
+                {#each projects as p (p.id)}
+                  <Dropdown.CheckboxItem
+                    class="font-normal flex items-center"
+                    checked={selectedProjects.includes(p.name)}
+                    on:click={() => {
+                      const idx = selectedProjects.indexOf(p.name);
+                      if (idx >= 0)
+                        selectedProjects = selectedProjects.filter(
+                          (n) => n !== p.name,
+                        );
+                      else selectedProjects = [...selectedProjects, p.name];
+                    }}
+                  >
+                    <span>{p.name}</span>
+                  </Dropdown.CheckboxItem>
+                {/each}
+              </Dropdown.Content>
+            </Dropdown.Root>
           {/if}
         </div>
       {/if}
