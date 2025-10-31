@@ -69,11 +69,13 @@ const config = {
         specs: [
           {
             id: 'public',
-            spec: 'api/admin/v1/public.swagger.json',
+            spec: 'api/openapi.swagger.yaml',
             route: '/api/admin/',
           },
         ],
-        theme: {},
+        theme: {
+          primaryColor: '#3524c7',
+        },
       },
     ]
   ],

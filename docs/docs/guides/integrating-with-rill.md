@@ -20,12 +20,16 @@ Rill's Admin API allows you to programmatically manage your Rill organization, i
 This guide assumes you have completed the following prerequisites:
 
 1. Installed the Rill developer CLI - see [Install Rill Developer](/get-started/install)
-2. A Rill Cloud organization and workspace- see [Rill Quickstart Guide](https://docs.rilldata.com/quickstart)
+2. A Rill Cloud organization and workspace - see [Rill Quickstart Guide](https://docs.rilldata.com/quickstart)
 3. Administrative access to your Rill organization
 
 :::info
-This guide can be completed with User tokens. These tokens are tied to your personal user and access permissions. They are useful for local scripting and experimentation. We don't recommend for production use.
+This guide can be completed with user tokens. These tokens are tied to your personal user and access permissions. They are useful for local scripting and experimentation. We don't recommend for production use.
 :::
+
+- [Rill Admin OpenAPI Specification](/api/admin)
+- [Service Account CLI Reference](/reference/cli/service)
+- [Custom API Integration Guide](/integrate/custom-api)
 
 ## Example: Managing Users with a Rill Service Account
 
@@ -45,17 +49,7 @@ Service created: user-management-service
 Token: rill_svc_A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6
 ```
 
-### Step 2: Issue a Service Token
-
-Generate an authentication token for the service account:
-
-```bash
-# Issue a token for the service account
-rill service token issue user-management-service
-Token: rill_svc_A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6
-```
-
-### Step 3: Use Service Account to Add a User with Custom Attributes
+### Step 2: Use Service Account to Add a User with Custom Attributes
 
 Now use the service account token to add a user to your organization:
 
@@ -79,37 +73,7 @@ curl -X POST "https://admin.rilldata.com/v1/orgs/example/members" \
 
 The user will receive an email invitation to join the Rill organization as a viewer.
 
-### Step 4: Create Ephemeral User Tokens with Custom Attributes
-
-Use the service account to create short-lived tokens for specific users with custom attributes:
-
-```bash
-# Create an ephemeral user token with custom attributes
-curl -X POST "https://admin.rilldata.com/v1/orgs/example/projects/my-project/credentials" \
-     -H "Authorization: Bearer rill_svc_A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "userEmail": "newuser@example.com",
-           "ttlSeconds": 3600,
-           "attributes": {
-             "department": "marketing",
-             "role": "analyst",
-             "customField": "value123"
-           }
-         }'
-```
-
-**Expected Response:**
-```json
-{
-  "accessToken": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
-  "instanceId": "inst_1234567890abcdef",
-  "host": "runtime.rilldata.com",
-  "grpcPort": 443
-}
-```
-
-### Step 5: Verify User Access and Attributes
+### Step 4: Verify User Access and Attributes
 
 Check that the user was added successfully:
 
@@ -119,17 +83,7 @@ curl -X GET "https://admin.rilldata.com/v1/orgs/example/members" \
      -H "Authorization: Bearer rill_svc_A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6"
 ```
 
-### Step 6: Update Service Account Attributes
-
-Modify the service account's custom attributes:
-
-```bash
-# Update service account attributes
-rill service edit user-management-service \
-  --attributes '{"department": "engineering", "environment": "staging", "updated": "2024-01-15"}'
-```
-
-### Step 7: Clean Up Resources
+### Step 5: Clean Up Resources
 
 Remove the user and service account when done:
 
@@ -165,9 +119,3 @@ Service accounts have access to all Admin API endpoints based on their assigned 
 - _Monitoring and Logging_: Depending on your organization's security needs, you can also consider implementing monitoring and logging of all access and actions taken by service accounts to detect and respond to anomalous activities promptly.
 - _Use Custom Attributes_: Leverage custom attributes on service accounts to implement fine-grained access controls and security policies.
 - _Token Lifecycle Management_: Implement proper token lifecycle management, including regular rotation and revocation of unused tokens.
-
-## Helpful Links
-
-- [Rill Admin OpenAPI Specification](/api/admin)
-- [Service Account CLI Reference](/reference/cli/service)
-- [Custom API Integration Guide](/integrate/custom-api)

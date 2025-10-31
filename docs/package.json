@@ -6,8 +6,7 @@
     "dev": "npm install && docusaurus start --port 4002",
     "build": "docusaurus build --out-dir dist",
     "preview": "docusaurus serve --port 4002 --dir dist",
-    "docusaurus": "docusaurus ",
-    "generate-api": "cd ../proto && buf generate --template buf.gen.docusaurus-openapi.yaml && cd ../scripts && node filter-public-api.cjs"
+    "docusaurus": "docusaurus "
   },
   "devDependencies": {
     "@docusaurus/core": "^3.9.2",

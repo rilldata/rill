@@ -23,7 +23,6 @@ func DocsCmd(ch *cmdutil.Helper, rootCmd *cobra.Command) *cobra.Command {
 	}
 	docsCmd.AddCommand(GenerateCliDocsCmd(rootCmd, ch))
 	docsCmd.AddCommand(GenerateProjectDocsCmd(rootCmd, ch))
-	docsCmd.AddCommand(ConvertOpenAPIDocsCmd(rootCmd, ch))
 
 	return docsCmd
 }

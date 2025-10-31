@@ -2277,10 +2277,8 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return err
 	}
 
-	var inviterID interface{}
-	if opts.InviterID == "" {
-		inviterID = nil
-	} else {
+	var inviterID any
+	if opts.InviterID != "" {
 		inviterID = opts.InviterID
 	}
 
@@ -2363,10 +2361,8 @@ func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.Ins
 		return err
 	}
 
-	var inviterID interface{}
-	if opts.InviterID == "" {
-		inviterID = nil
-	} else {
+	var inviterID any
+	if opts.InviterID != "" {
 		inviterID = opts.InviterID
 	}
 

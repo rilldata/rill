@@ -1,8 +1,6 @@
 syntax = "proto3";
 package rill.admin.v1;
 
-option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
-
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";

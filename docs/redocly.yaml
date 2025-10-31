@@ -5,16 +5,25 @@ extends:
 
 decorators:
   remove-unused-components: on
-
-theme:
-  # See https://redocly.com/docs/redoc/config/
-  openapi:
-    disableSearch: true
-    # See https://redocly.com/docs/api-reference-docs/configuration/theming/
-    theme:
-      colors:
-        primary:
-          main: "#3524c7"
+  remove-unused-tags: on
+  filter-in:
+    property: operationId
+    value:
+      - AdminService_ListOrganizations
+      - AdminService_GetOrganization
+      - AdminService_CreateOrganization
+      - AdminService_UpdateOrganization
+      - AdminService_DeleteOrganization
+      - AdminService_ListProjectsForOrganization
+      - AdminService_GetProject
+      - AdminService_CreateProject
+      - AdminService_DeleteProject
+      - AdminService_UpdateProject
+      - AdminService_ListOrganizationMemberUsers
+      - AdminService_ListOrganizationInvites
+      - AdminService_AddOrganizationMemberUser
+      - AdminService_RemoveOrganizationMemberUser
+      - AdminService_GetProjectVariables
 
 openapi:
   schemasExpansionLevel: 2
@@ -22,5 +31,5 @@ openapi:
 
 # Point to the filtered public API spec
 apis:
-  public-api:
-    root: api/rill/admin/v1/public.swagger.yaml
+  public@v1:
+    root: api/openapi.swagger.yaml
