@@ -15,6 +15,7 @@
   export let id: string = "";
   export let onSelect: (item: string) => void;
   export let setItems: (items: string[], exclude?: boolean) => void;
+  export let widthClass: string = "";
 
   let open = false;
   let selectedProxy = new Set(selectedItems);
@@ -47,7 +48,7 @@
       {...builder}
       class:open
       class:small
-      class="dropdown-trigger"
+      class="dropdown-trigger {widthClass}"
     >
       {#if type}
         {selectedItems.size} {type}

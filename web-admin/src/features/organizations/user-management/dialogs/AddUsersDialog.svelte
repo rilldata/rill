@@ -2,10 +2,19 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceAddOrganizationMemberUser,
+    createAdminServiceAddProjectMemberUser,
+    createAdminServiceListProjectsForOrganization,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+  } from "@rilldata/web-common/components/dropdown-menu";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     Dialog,
@@ -22,6 +31,8 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
+  import type { V1Project } from "@rilldata/web-admin/client";
+  import SelectionDropdown from "@rilldata/web-common/features/visual-editing/SelectionDropdown.svelte";
 
   export let open = false;
   export let email: string;
@@ -33,8 +44,51 @@
   const queryClient = useQueryClient();
   const addOrganizationMemberUser =
     createAdminServiceAddOrganizationMemberUser();
+  const addProjectMemberUser = createAdminServiceAddProjectMemberUser();
+
+  // Org role options (includes Guest)
+  const ORG_ROLES_OPTIONS = [
+    {
+      value: OrgUserRoles.Admin,
+      label: "Admin",
+      description: "Full control over organization settings and members",
+    },
+    {
+      value: OrgUserRoles.Editor,
+      label: "Editor",
+      description: "Can manage projects and most org resources",
+    },
+    {
+      value: OrgUserRoles.Viewer,
+      label: "Viewer",
+      description: "Read-only access to organization and projects",
+    },
+    {
+      value: OrgUserRoles.Guest,
+      label: "Guest",
+      description: "Access only to selected projects",
+    },
+  ];
 
   let failedInvites: string[] = [];
+  let selectedProjects: string[] = [];
+
+  // List projects for project access multi-select
+  $: projectsQuery = createAdminServiceListProjectsForOrganization(
+    organization,
+    undefined,
+    {
+      query: {
+        enabled: !!organization,
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
+    },
+  );
+  $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
+  $: projectNames = projects.map((p) => p.name);
+  $: allProjectNamesSet = new Set(projectNames);
+  $: selectedProjectsSet = new Set(selectedProjects);
 
   async function handleCreate(
     newEmail: string,
@@ -50,6 +104,19 @@
       },
     });
 
+    // If inviting a guest, also add per-project access as Viewer
+    if (newRole === OrgUserRoles.Guest && selectedProjects.length > 0) {
+      await Promise.all(
+        selectedProjects.map((projectName) =>
+          $addProjectMemberUser.mutateAsync({
+            org: organization,
+            project: projectName,
+            data: { email: newEmail, role: "viewer" },
+          }),
+        ),
+      );
+    }
+
     await queryClient.invalidateQueries({
       queryKey:
         getAdminServiceListOrganizationMemberUsersQueryKey(organization),
@@ -62,6 +129,7 @@
     email = "";
     role = "";
     isSuperUser = false;
+    selectedProjects = [];
   }
 
   const formId = "add-user-form";
@@ -99,6 +167,9 @@
         const values = form.data;
         const emails = values.emails.map((e) => e.trim()).filter(Boolean);
         if (emails.length === 0) return;
+        // If inviting a guest without projects selected, do not proceed
+        if (values.role === OrgUserRoles.Guest && selectedProjects.length === 0)
+          return;
 
         const results = await Promise.all(
           emails.map(async (email, index) => {
@@ -167,6 +238,7 @@
       role = "";
       isSuperUser = false;
       failedInvites = [];
+      selectedProjects = [];
     }
   }}
 >
@@ -193,7 +265,38 @@
         plural="emails"
       >
         <div slot="within-input" class="flex items-center h-full">
-          <UserRoleSelect bind:value={$form.role} />
+          <DropdownMenu typeahead={false}>
+            <DropdownMenuTrigger
+              class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 hover:bg-slate-100"
+            >
+              <div class="text-xs">
+                {ORG_ROLES_OPTIONS.find((o) => o.value === $form.role)?.label}
+              </div>
+              <CaretDownIcon size="12px" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="bottom"
+              align="end"
+              class="w-[260px]"
+              strategy="fixed"
+            >
+              {#each ORG_ROLES_OPTIONS as { value, label, description } (value)}
+                <DropdownMenuItem
+                  on:click={() => ($form.role = value)}
+                  class="text-xs hover:bg-slate-100 {$form.role === value
+                    ? 'bg-slate-50'
+                    : ''}"
+                >
+                  <div class="flex flex-col">
+                    <div class="text-xs font-medium text-slate-700">
+                      {label}
+                    </div>
+                    <div class="text-slate-500 text-[11px]">{description}</div>
+                  </div>
+                </DropdownMenuItem>
+              {/each}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <svelte:fragment slot="beside-input" let:hasSomeValue>
           <Button
@@ -201,13 +304,46 @@
             type="primary"
             form={formId}
             loading={$submitting}
-            disabled={hasInvalidEmails || !hasSomeValue}
+            disabled={hasInvalidEmails ||
+              !hasSomeValue ||
+              ($form.role === OrgUserRoles.Guest &&
+                selectedProjects.length === 0)}
             forcedStyle="height: 32px !important;"
           >
             Invite
           </Button>
         </svelte:fragment>
       </MultiInput>
+      {#if $form.role === OrgUserRoles.Guest}
+        <div class="mt-3">
+          <div class="text-xs font-medium mb-1">Project access</div>
+          {#if $projectsQuery?.isLoading}
+            <div class="text-xs text-slate-500">Loading projects…</div>
+          {:else if $projectsQuery?.error}
+            <div class="text-xs text-red-500">Failed to load projects</div>
+          {:else if projects.length === 0}
+            <div class="text-xs text-slate-500">No projects</div>
+          {:else}
+            <SelectionDropdown
+              id="guest-projects"
+              type="projects"
+              widthClass="w-[340px]"
+              allItems={allProjectNamesSet}
+              selectedItems={selectedProjectsSet}
+              searchableItems={projectNames}
+              onSelect={(name) => {
+                const idx = selectedProjects.indexOf(name);
+                if (idx >= 0)
+                  selectedProjects = selectedProjects.filter((n) => n !== name);
+                else selectedProjects = [...selectedProjects, name];
+              }}
+              setItems={(items) => {
+                selectedProjects = items;
+              }}
+            />
+          {/if}
+        </div>
+      {/if}
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
           {failedInvites.length === 1
