@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -48,11 +49,8 @@ func newSession(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Sessio
 // - It records messages and LLM calls to the ./evals directory for later inspection.
 // - It ensures the test is skipped in CI (short mode).
 func newEval(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Session {
-	// Check the test is skipped in CI (short mode).
-	// Note that we error instead of skipping here since eval tests should be skipped before creating the runtime instance (which triggers data ingestion that especially for evals may be quite expensive).
-	if testing.Short() {
-		t.Fatal("eval test is not skipped in CI (short mode); did you forget to set EnableLLM in testruntime.InstanceOptions?")
-	}
+	// Mark as an expensive test
+	testmode.Expensive(t)
 
 	// Create test runtime instance and AI session
 	s := newSession(t, rt, instanceID)
