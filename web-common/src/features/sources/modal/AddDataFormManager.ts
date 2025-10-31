@@ -120,7 +120,13 @@ export class AddDataFormManager {
 
   destroy() {}
 
-  // Business logic methods (minimal extraction)
+  get isSourceForm(): boolean {
+    return this.formType === "source";
+  }
+
+  get isConnectorForm(): boolean {
+    return this.formType === "connector";
+  }
 
   makeOnUpdate(args: {
     onClose: () => void;

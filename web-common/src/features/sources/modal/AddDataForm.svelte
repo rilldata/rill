@@ -50,8 +50,8 @@
   let saveAnyway = false;
   let showSaveAnyway = false;
 
-  const isSourceForm = formType === "source";
-  const isConnectorForm = formType === "connector";
+  let isSourceForm: boolean;
+  let isConnectorForm: boolean;
 
   let connectionTab: ConnectorType = "parameters";
 
@@ -74,6 +74,9 @@
     onParamsUpdate: (e: any) => handleOnUpdate(e),
     onDsnUpdate: (e: any) => handleOnUpdate(e),
   });
+
+  $: isSourceForm = formManager.isSourceForm;
+  $: isConnectorForm = formManager.isConnectorForm;
 
   // Simple multi-step state management
   const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
