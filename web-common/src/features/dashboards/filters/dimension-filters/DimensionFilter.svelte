@@ -445,7 +445,7 @@
           showBorderOnFocus={false}
           retainValueOnMount
           placeholder={searchPlaceholder}
-          on:submit={onApply}
+          onSubmit={onApply}
           forcedInputStyle="rounded-l-none"
           multiline
         />
