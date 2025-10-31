@@ -33,6 +33,7 @@
   import { array, object, string } from "yup";
   import type { V1Project } from "@rilldata/web-admin/client";
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
+  import { ORG_ROLES_OPTIONS } from "../../constants";
 
   export let open = false;
   export let email: string;
@@ -45,30 +46,6 @@
   const addOrganizationMemberUser =
     createAdminServiceAddOrganizationMemberUser();
   const addProjectMemberUser = createAdminServiceAddProjectMemberUser();
-
-  // Org role options (includes Guest)
-  const ORG_ROLES_OPTIONS = [
-    {
-      value: OrgUserRoles.Admin,
-      label: "Admin",
-      description: "Full control over organization settings and members",
-    },
-    {
-      value: OrgUserRoles.Editor,
-      label: "Editor",
-      description: "Can manage projects and most org resources",
-    },
-    {
-      value: OrgUserRoles.Viewer,
-      label: "Viewer",
-      description: "Read-only access to organization and projects",
-    },
-    {
-      value: OrgUserRoles.Guest,
-      label: "Guest",
-      description: "Access only to selected projects",
-    },
-  ];
 
   let failedInvites: string[] = [];
   let selectedProjects: string[] = [];
@@ -88,8 +65,6 @@
   );
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
   $: projectNames = projects.map((p) => p.name);
-  $: allProjectNamesSet = new Set(projectNames);
-  $: selectedProjectsSet = new Set(selectedProjects);
 
   async function handleCreate(
     newEmail: string,
