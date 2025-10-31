@@ -17,7 +17,7 @@
     prepareSourceFormData,
     compileSourceYAML,
   } from "../sourceUtils";
-  import { humanReadableErrorMessage } from "../errors/errors";
+
   import {
     submitAddConnectorForm,
     submitAddSourceForm,
@@ -31,7 +31,7 @@
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { isEmpty } from "./utils";
+  import { isEmpty, normalizeConnectorError } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
@@ -54,6 +54,9 @@
   export let formType: AddDataFormType;
   export let onBack: () => void;
   export let onClose: () => void;
+
+  let saveAnyway = false;
+  let showSaveAnyway = false;
 
   const isSourceForm = formType === "source";
   const isConnectorForm = formType === "connector";
@@ -174,6 +177,8 @@
   let clickhouseConnectorType: ClickHouseConnectorType = "self-hosted";
   let clickhouseParamsForm;
   let clickhouseDsnForm;
+  let clickhouseShowSaveAnyway: boolean = false;
+  let clickhouseHandleSaveAnyway: () => Promise<void>;
 
   // Helper function to check if connector only has DSN (no tabs)
   function hasOnlyDsn() {
@@ -184,15 +189,29 @@
     );
   }
 
+  // Helper function to apply ClickHouse Cloud specific requirements
+  function applyClickHouseCloudRequirements(values: Record<string, unknown>) {
+    if (
+      connector.name === "clickhouse" &&
+      clickhouseConnectorType === "clickhouse-cloud"
+    ) {
+      (values as any).ssl = true;
+      (values as any).port = "8443";
+    }
+    return values;
+  }
+
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
     if (hasOnlyDsn() || connectionTab === "dsn") {
       // DSN form: check required DSN properties
       for (const property of dsnProperties) {
-        if (property.required) {
-          const key = String(property.key);
-          const value = $dsnForm[key];
-          if (isEmpty(value) || $dsnErrors[key]?.length) return true;
+        const key = String(property.key);
+        const value = $dsnForm[key];
+        // DSN should be present even if not marked required in metadata
+        const mustBePresent = property.required || key === "dsn";
+        if (mustBePresent && (isEmpty(value) || $dsnErrors[key]?.length)) {
+          return true;
         }
       }
       return false;
@@ -256,6 +275,57 @@
 
   // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
+
+  async function handleSaveAnyway() {
+    // Save Anyway should only work for connector forms
+    if (!isConnectorForm) {
+      return;
+    }
+
+    // For ClickHouse, delegate to the child component's handleSaveAnyway function
+    if (connector.name === "clickhouse") {
+      await clickhouseHandleSaveAnyway();
+      return;
+    }
+
+    // For other connectors, use the original logic
+    saveAnyway = true;
+
+    // Get the current form values based on the active form
+    const values =
+      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+
+    // Apply ClickHouse Cloud requirements if needed
+    const processedValues = applyClickHouseCloudRequirements(values);
+
+    try {
+      // Only call submitAddConnectorForm since Save Anyway is connector-only
+      await submitAddConnectorForm(
+        queryClient,
+        connector,
+        processedValues,
+        true,
+      );
+      onClose();
+    } catch (e) {
+      const { message, details } = normalizeConnectorError(
+        connector.name ?? "",
+        e,
+      );
+
+      // Keep error state for each form - match the display logic
+      if (hasOnlyDsn() || connectionTab === "dsn") {
+        dsnError = message;
+        dsnErrorDetails = details;
+      } else {
+        paramsError = message;
+        paramsErrorDetails = details;
+      }
+    } finally {
+      // Reset saveAnyway state after submission completes
+      saveAnyway = false;
+    }
+  }
 
   function getClickHouseYamlPreview(
     values: Record<string, unknown>,
@@ -370,7 +440,14 @@
     }
   })();
 
-  // YAML copy handled in YamlPreview component
+  $: isClickhouse = connector.name === "clickhouse";
+
+  $: shouldShowSaveAnywayButton =
+    isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
+
+  $: saveAnywayLoading = isClickhouse
+    ? clickhouseSubmitting && saveAnyway
+    : submitting && saveAnyway;
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -400,11 +477,18 @@
     cancel: () => void;
     result: Extract<ActionResult, { type: "success" | "failure" }>;
   }) {
-    if (!event.form.valid) return;
+    // Show Save Anyway button as soon as form submission starts - only for connector forms
+    if (isConnectorForm) {
+      showSaveAnyway = true;
+    }
+
+    if (!event.form.valid && !saveAnyway) return;
+
     const values = event.form.data;
 
     try {
-      let processedValues = values;
+      // Apply ClickHouse Cloud requirements if needed
+      let processedValues = applyClickHouseCloudRequirements(values);
 
       if (isMultiStepConnector && stepState.step === "source") {
         // Step 2: Create source with stored connector config
@@ -412,7 +496,12 @@
         onClose();
       } else if (isMultiStepConnector && stepState.step === "connector") {
         // Step 1: Create connector and transition to step 2
-        await submitAddConnectorForm(queryClient, connector, processedValues);
+        await submitAddConnectorForm(
+          queryClient,
+          connector,
+          processedValues,
+          true,
+        );
         setConnectorConfig(processedValues);
         setStep("source");
         return; // Don't close the modal, just transition to step 2
@@ -422,46 +511,31 @@
         onClose();
       } else {
         // Regular connector form
-        await submitAddConnectorForm(queryClient, connector, processedValues);
+        await submitAddConnectorForm(
+          queryClient,
+          connector,
+          processedValues,
+          true,
+        );
         onClose();
       }
     } catch (e) {
-      let error: string;
-      let details: string | undefined = undefined;
-
-      // Handle different error types
-      if (e instanceof Error) {
-        error = e.message;
-        details = undefined;
-      } else if (e?.message && e?.details) {
-        error = e.message;
-        details = e.details !== e.message ? e.details : undefined;
-      } else if (e?.response?.data) {
-        const originalMessage = e.response.data.message;
-        const humanReadable = humanReadableErrorMessage(
-          connector.name,
-          e.response.data.code,
-          originalMessage,
-        );
-        error = humanReadable;
-        details =
-          humanReadable !== originalMessage ? originalMessage : undefined;
-      } else if (e?.message) {
-        error = e.message;
-        details = undefined;
-      } else {
-        error = "Unknown error";
-        details = undefined;
-      }
+      const { message, details } = normalizeConnectorError(
+        connector.name ?? "",
+        e,
+      );
 
       // Keep error state for each form - match the display logic
       if (hasOnlyDsn() || connectionTab === "dsn") {
-        dsnError = error;
+        dsnError = message;
         dsnErrorDetails = details;
       } else {
-        paramsError = error;
+        paramsError = message;
         paramsErrorDetails = details;
       }
+    } finally {
+      // Reset saveAnyway state after submission completes
+      saveAnyway = false;
     }
   }
 
@@ -536,6 +610,8 @@
           bind:connectionTab
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
+          bind:showSaveAnyway={clickhouseShowSaveAnyway}
+          bind:handleSaveAnyway={clickhouseHandleSaveAnyway}
           on:submitting
         />
       {:else if hasDsnFormOption}
@@ -652,6 +728,18 @@
       <Button onClick={handleBack} type="secondary">Back</Button>
 
       <div class="flex gap-2">
+        {#if shouldShowSaveAnywayButton}
+          <Button
+            disabled={false}
+            loading={saveAnywayLoading}
+            loadingCopy="Saving..."
+            onClick={handleSaveAnyway}
+            type="secondary"
+          >
+            Save Anyway
+          </Button>
+        {/if}
+
         {#if isMultiStepConnector && stepState.step === "connector"}
           <Button onClick={handleSkip} type="secondary">Skip</Button>
         {/if}
