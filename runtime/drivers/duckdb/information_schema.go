@@ -52,7 +52,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	q := `
 	WITH attached AS (
 		SELECT
-			regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
+			DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
 		FROM duckdb_databases()
 		WHERE regexp_matches(database_name, '^.+__\d+__db$')
 	)
@@ -139,7 +139,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	q := `
     WITH attached AS (
         SELECT
-            regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
+            DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
         FROM duckdb_databases()
         WHERE regexp_matches(database_name, '^.+__\d+__db$')
     )
