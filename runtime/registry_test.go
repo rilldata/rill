@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/marcboeker/go-duckdb/v2"
+	"github.com/duckdb/duckdb-go/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"

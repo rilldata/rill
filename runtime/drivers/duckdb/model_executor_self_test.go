@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	_ "github.com/marcboeker/go-duckdb/v2"
+	_ "github.com/duckdb/duckdb-go/v2"
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
