@@ -6,12 +6,7 @@
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
   import { createEventDispatcher } from "svelte";
-  import {
-    defaults,
-    superForm,
-    type SuperValidated,
-  } from "sveltekit-superforms";
-  import { yup } from "sveltekit-superforms/adapters";
+  import type { SuperValidated } from "sveltekit-superforms";
   import {
     inferSourceName,
     prepareSourceFormData,
@@ -23,10 +18,6 @@
     submitAddSourceForm,
   } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
-  import {
-    dsnSchema as dsnValidation,
-    getValidationSchemaForConnector,
-  } from "./FormValidation";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
@@ -47,6 +38,7 @@
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
+  import { AddDataFormManager } from "./AddDataFormManager";
 
   const dispatch = createEventDispatcher();
 
@@ -62,6 +54,14 @@
   const isConnectorForm = formType === "connector";
 
   let connectionTab: ConnectorType = "parameters";
+
+  // Form Generation Manager (phase 1)
+  const formManager = new AddDataFormManager({
+    connector,
+    formType,
+    onParamsUpdate: handleOnUpdate,
+    onDsnUpdate: handleOnUpdate,
+  });
 
   // Simple multi-step state management
   const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
@@ -95,34 +95,12 @@
   $: effectiveFormType =
     isMultiStepConnector && stepState.step === "source" ? "source" : formType;
 
-  $: formHeight = ["clickhouse", "snowflake", "salesforce"].includes(
-    connector.name ?? "",
-  )
-    ? "max-h-[38.5rem] min-h-[38.5rem]"
-    : "max-h-[34.5rem] min-h-[34.5rem]";
+  $: formHeight = formManager.formHeight;
 
   // Form 1: Individual parameters
-  const paramsFormId = `add-data-${connector.name}-form`;
-  const properties =
-    (isSourceForm
-      ? connector.sourceProperties
-      : connector.configProperties?.filter(
-          (property) => property.key !== "dsn",
-        )) ?? [];
-
-  // Filter properties based on connector type
-  const filteredParamsProperties = (() => {
-    // FIXME: https://linear.app/rilldata/issue/APP-408/support-ducklake-in-the-ui
-    if (connector.name === "duckdb") {
-      return properties.filter(
-        (property) => property.key !== "attach" && property.key !== "mode",
-      );
-    }
-    // For other connectors, filter out noPrompt properties
-    return properties.filter((property) => !property.noPrompt);
-  })();
-  const schema = yup(getValidationSchemaForConnector(connector.name as string));
-  const initialFormValues = getInitialFormValuesFromProperties(properties);
+  const paramsFormId = formManager.paramsFormId;
+  const properties = formManager.properties;
+  const filteredParamsProperties = formManager.filteredParamsProperties;
   const {
     form: paramsForm,
     errors: paramsErrors,
@@ -130,28 +108,16 @@
     tainted: paramsTainted,
     submit: paramsSubmit,
     submitting: paramsSubmitting,
-  } = superForm(initialFormValues, {
-    SPA: true,
-    validators: schema,
-    onUpdate: handleOnUpdate,
-    resetForm: false,
-  });
+  } = formManager.params;
   let paramsError: string | null = null;
   let paramsErrorDetails: string | undefined = undefined;
 
   // Form 2: DSN
   // SuperForms are not meant to have dynamic schemas, so we use a different form instance for the DSN form
-  const hasDsnFormOption =
-    isConnectorForm &&
-    connector.configProperties?.some((property) => property.key === "dsn") &&
-    connector.configProperties?.some((property) => property.key !== "dsn");
-  const dsnFormId = `add-data-${connector.name}-dsn-form`;
-  const dsnProperties =
-    connector.configProperties?.filter((property) => property.key === "dsn") ??
-    [];
-
-  const filteredDsnProperties = dsnProperties;
-  const dsnYupSchema = yup(dsnValidation);
+  const hasDsnFormOption = formManager.hasDsnFormOption;
+  const dsnFormId = formManager.dsnFormId;
+  const dsnProperties = formManager.dsnProperties;
+  const filteredDsnProperties = formManager.filteredDsnProperties;
   const {
     form: dsnForm,
     errors: dsnErrors,
@@ -159,12 +125,7 @@
     tainted: dsnTainted,
     submit: dsnSubmit,
     submitting: dsnSubmitting,
-  } = superForm(defaults(dsnYupSchema), {
-    SPA: true,
-    validators: dsnYupSchema,
-    onUpdate: handleOnUpdate,
-    resetForm: false,
-  });
+  } = formManager.dsn;
   let dsnError: string | null = null;
   let dsnErrorDetails: string | undefined = undefined;
 
@@ -210,7 +171,10 @@
         const value = $dsnForm[key];
         // DSN should be present even if not marked required in metadata
         const mustBePresent = property.required || key === "dsn";
-        if (mustBePresent && (isEmpty(value) || $dsnErrors[key]?.length)) {
+        if (
+          mustBePresent &&
+          (isEmpty(value) || /**/ ($dsnErrors[key] as any)?.length)
+        ) {
           return true;
         }
       }
@@ -228,7 +192,8 @@
           const value = $paramsForm[key];
 
           // Normal validation for all properties
-          if (isEmpty(value) || $paramsErrors[key]?.length) return true;
+          if (isEmpty(value) || /**/ ($paramsErrors[key] as any)?.length)
+            return true;
         }
       }
       return false;
