@@ -91,7 +91,7 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Path",
 			Description: "Path to Motherduck database. Must be prefixed with `md:`",
-			Placeholder: "md:my_database",
+			Placeholder: "md:my_db",
 		},
 		{
 			Key:         "token",
