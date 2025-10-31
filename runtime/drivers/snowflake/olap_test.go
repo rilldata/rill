@@ -9,14 +9,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestOLAP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestSnowflake(t)
 	tests := []struct {
@@ -102,9 +101,7 @@ func TestOLAP(t *testing.T) {
 }
 
 func TestEmptyRows(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestSnowflake(t)
 	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT int32_col, float_col FROM integration_test.public.all_datatypes LIMIT 0"})
@@ -120,9 +117,7 @@ func TestEmptyRows(t *testing.T) {
 }
 
 func TestComplexTypes(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestSnowflake(t)
 
@@ -159,9 +154,7 @@ func TestComplexTypes(t *testing.T) {
 }
 
 func TestDryRun(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestSnowflake(t)
 	// Dry run query

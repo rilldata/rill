@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -36,9 +37,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestPriorityQueue(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
+	testmode.Expensive(t)
 
 	conn := prepareConn(t)
 	olap, _ := conn.AsOLAP("")
@@ -85,9 +84,7 @@ func TestPriorityQueue(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
+	testmode.Expensive(t)
 
 	conn := prepareConn(t)
 	olap, _ := conn.AsOLAP("")
@@ -162,9 +159,7 @@ func TestCancel(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
+	testmode.Expensive(t)
 
 	conn := prepareConn(t)
 	olap, _ := conn.AsOLAP("instanceID string")

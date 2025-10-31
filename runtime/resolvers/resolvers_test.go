@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
@@ -96,8 +97,8 @@ func TestResolvers(t *testing.T) {
 			if tf.Skip {
 				t.Skip("skipping test because it is marked skip: true")
 			}
-			if testing.Short() && tf.Expensive {
-				t.Skip("skipping test in short mode because it is marked expensive: true")
+			if tf.Expensive {
+				testmode.Expensive(t)
 			}
 
 			// Create a map of project files for the runtime instance.

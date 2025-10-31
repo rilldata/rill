@@ -11,15 +11,14 @@ import (
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestConversations(t *testing.T) {
 	// Skip in CI since we make real LLM calls.
-	if testing.Short() {
-		t.SkipNow()
-	}
+	testmode.Expensive(t)
 
 	// Setup test runtime and server with an LLM configured.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{

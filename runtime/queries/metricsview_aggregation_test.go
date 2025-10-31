@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -22,9 +23,8 @@ import (
 
 func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	// t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-	if testing.Short() {
-		t.Skip("clickhouse: skipping test in short mode")
-	}
+	testmode.Expensive(t)
+
 	rt, instanceID := testruntime.NewInstanceWithClickhouseProject(t, true)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })

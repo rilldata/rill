@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -130,10 +131,8 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	// If enabled, we skip the test in CI (short mode) to prevent running up costs.
 	var aiConnector string
 	if opts.EnableLLM {
-		// Skip AI tests in CI (short mode)
-		if testing.Short() {
-			t.SkipNow()
-		}
+		// Mark AI tests as expensive
+		testmode.Expensive(t)
 
 		// Add "openai" to the test connectors if not already present.
 		if !slices.Contains(opts.TestConnectors, "openai") {

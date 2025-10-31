@@ -8,14 +8,14 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestInformationSchema(t *testing.T) {
-	if testing.Short() {
-		t.Skip("druid: skipping test in short mode")
-	}
+	testmode.Expensive(t)
+
 	cfg := testruntime.AcquireConnector(t, "druid")
 	conn, err := drivers.Open("druid", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
