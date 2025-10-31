@@ -416,7 +416,6 @@ export async function submitAddConnectorForm(
             instanceId,
             newConnectorName,
             ResourceKind.Connector,
-            connector.name as string,
           );
         } catch (error) {
           // The connector file was already created, so we would delete it
