@@ -8,6 +8,7 @@ import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/proto
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { ContentBlock } from "../../ai/v1/ai_pb.js";
+import { Expression } from "./expression_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -4516,6 +4517,36 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   prompt = "";
 
+  /**
+   * @generated from field: string explore = 4;
+   */
+  explore = "";
+
+  /**
+   * @generated from field: repeated string dimensions = 5;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_start = 8;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 9;
+   */
+  timeEnd?: Timestamp;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4527,6 +4558,12 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "time_start", kind: "message", T: Timestamp },
+    { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -4614,6 +4651,36 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   prompt = "";
 
+  /**
+   * @generated from field: string explore = 4;
+   */
+  explore = "";
+
+  /**
+   * @generated from field: repeated string dimensions = 5;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_start = 8;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 9;
+   */
+  timeEnd?: Timestamp;
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4625,6 +4692,12 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "time_start", kind: "message", T: Timestamp },
+    { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

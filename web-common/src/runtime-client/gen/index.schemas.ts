@@ -2538,11 +2538,23 @@ export type RuntimeServiceEditInstanceBody = {
 export type RuntimeServiceCompleteBody = {
   conversationId?: string;
   prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
   conversationId?: string;
   prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

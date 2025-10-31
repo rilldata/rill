@@ -27,7 +27,7 @@ Make sure to replace `SPREADSHEET_ID` and `SHEET_ID` with the ID of your spreads
 
 :::
 
-<img src='/img/connect/data-sources/googlesheets.png' class='rounded-gif' />
+<img src='/img/build/connectors/data-sources/googlesheets.png' class='rounded-gif' />
 <br />
 
 :::tip `gsheets` DuckDB Community Extension

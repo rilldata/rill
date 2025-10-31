@@ -604,6 +604,24 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              explore:
+                type: string
+              dimensions:
+                type: array
+                items:
+                  type: string
+              measures:
+                type: array
+                items:
+                  type: string
+              where:
+                $ref: '#/definitions/v1Expression'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -642,6 +660,24 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              explore:
+                type: string
+              dimensions:
+                type: array
+                items:
+                  type: string
+              measures:
+                type: array
+                items:
+                  type: string
+              where:
+                $ref: '#/definitions/v1Expression'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService

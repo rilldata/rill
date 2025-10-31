@@ -10,7 +10,7 @@ sidebar_position: 25
 In Rill, partitions are a special type of state that allows you to explicitly partition the model into parts. Depending on whether your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. This is useful when a specific partition is failing to ingest; you can specify to reload only that specific partition.
 
 ### Defining a Partition in a Model
-Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/connect/templating) and can be used to separate `dev` and `prod` instances.
+Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/build/connectors/templating) and can be used to separate `dev` and `prod` instances.
 
 ### SQL
 When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, you might select a distinct customer_name per partition, or partition the SQL by a chronological partition, such as month.

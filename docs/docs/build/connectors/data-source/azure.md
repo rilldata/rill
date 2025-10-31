@@ -83,7 +83,7 @@ You've now configured Azure access from your local environment. Rill will automa
 
 :::tip Cloud Credentials Management
 
-If your project is already deployed to Rill Cloud with configured credentials, use `rill env pull` to [retrieve and sync these cloud credentials](/connect/credentials/#rill-env-pull) to your local `.env` file. **Warning**: This operation will overwrite any existing local credentials for this source.
+If your project is already deployed to Rill Cloud with configured credentials, use `rill env pull` to [retrieve and sync these cloud credentials](/build/connectors/credentials/#rill-env-pull) to your local `.env` file. **Warning**: This operation will overwrite any existing local credentials for this source.
 
 :::
 
@@ -98,6 +98,6 @@ rill env configure
 
 :::tip Did you know?
 
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This allows other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), use `rill env push` to [push these credentials](/build/connectors/credentials#rill-env-push) to your Rill Cloud project. This allows other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 
 :::
