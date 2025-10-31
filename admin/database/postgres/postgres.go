@@ -1686,6 +1686,17 @@ func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retent
 	return parseErr("authorization code", err)
 }
 
+func (c *connection) InsertAuthClient(ctx context.Context, displayName string) (*database.AuthClient, error) {
+	client := &database.AuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`INSERT INTO auth_clients (display_name) VALUES ($1) RETURNING *`,
+		displayName).StructScan(client)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return client, nil
+}
+
 func (c *connection) FindOrganizationRoles(ctx context.Context) ([]*database.OrganizationRole, error) {
 	var res []*database.OrganizationRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_roles")

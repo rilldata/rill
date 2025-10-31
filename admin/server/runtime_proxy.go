@@ -61,7 +61,6 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			jwt = strings.TrimSpace(authorizationHeader[6:])
 		}
 	}
-
 	// If a direct JWT was not provided, we rely on admin service auth to issue a new ephemeral runtime JWT for the proxied request.
 	// TODO: This mirrors logic in GetProject. Consider refactoring to avoid duplication.
 	if jwt == "" {
@@ -71,7 +70,11 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			permissions.ReadProd = true
 		}
 		if !permissions.ReadProd {
-			return httputil.Errorf(http.StatusForbidden, "does not have permission to access the production deployment")
+			if claims.OwnerType() == auth.OwnerTypeAnon {
+				// This means no token was provided, so initiate an OAuth flow
+				w.Header().Set("WWW-Authenticate", fmt.Sprintf("Bearer resource_metadata=%q", s.admin.URLs.OAuthProtectedResourceMetadata()))
+			}
+			return httputil.Errorf(http.StatusUnauthorized, "does not have permission to access the production deployment")
 		}
 
 		var attr map[string]any
@@ -166,9 +169,12 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 	}
 	defer res.Body.Close()
 
-	// Copy response headers
+	// Copy response headers except from "Access-Control-Allow-Origin" (which is also added by the admin server), thus causing browser CORS errors.
 	outHeader := w.Header()
 	for k, v := range res.Header {
+		if strings.EqualFold(k, "Access-Control-Allow-Origin") {
+			continue
+		}
 		for _, vv := range v {
 			outHeader.Add(k, vv)
 		}
