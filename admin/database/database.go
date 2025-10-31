@@ -122,6 +122,7 @@ type DB interface {
 	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
+	FindUserWithAttributes(ctx context.Context, userID, orgID string) (*User, map[string]any, error)
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)

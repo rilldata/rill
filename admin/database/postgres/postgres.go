@@ -777,6 +777,24 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
+func (c *connection) FindUserWithAttributes(ctx context.Context, userID, orgID string) (*database.User, map[string]any, error) {
+	var dto userWithAttributesDTO
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT u.*, uor.attributes
+		FROM users u
+		LEFT JOIN users_orgs_roles uor ON u.id = uor.user_id AND uor.org_id = $2
+		WHERE u.id = $1
+	`, userID, orgID).StructScan(&dto)
+	if err != nil {
+		return nil, nil, parseErr("user with org attributes", err)
+	}
+	user, attributes, err := dto.userWithAttributesFromDTO()
+	if err != nil {
+		return nil, nil, err
+	}
+	return user, attributes, nil
+}
+
 func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u
@@ -3367,6 +3385,41 @@ func (dto *organizationMemberUserDTO) organizationMemberUserFromDTO() (*database
 	user.Attributes = attrs
 
 	return user, nil
+}
+
+type userWithAttributesDTO struct {
+	*database.User
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (dto *userWithAttributesDTO) userWithAttributesFromDTO() (*database.User, map[string]any, error) {
+	user := &database.User{
+		ID:                    dto.ID,
+		Email:                 dto.Email,
+		DisplayName:           dto.DisplayName,
+		PhotoURL:              dto.PhotoURL,
+		GithubUsername:        dto.GithubUsername,
+		GithubRefreshToken:    dto.GithubRefreshToken,
+		CreatedOn:             dto.CreatedOn,
+		UpdatedOn:             dto.UpdatedOn,
+		ActiveOn:              dto.ActiveOn,
+		QuotaSingleuserOrgs:   dto.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:        dto.QuotaTrialOrgs,
+		CurrentTrialOrgsCount: dto.CurrentTrialOrgsCount,
+		PreferenceTimeZone:    dto.PreferenceTimeZone,
+		Superuser:             dto.Superuser,
+	}
+
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := dto.Attributes.AssignTo(&attrs); err != nil {
+		return nil, nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+
+	return user, attrs, nil
 }
 
 func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {

@@ -370,7 +370,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 }
 
 func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
-	user, err := s.admin.DB.FindUser(ctx, userID)
+	user, attributes, err := s.admin.DB.FindUserWithAttributes(ctx, userID, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -380,7 +380,6 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		return nil, err
 	}
 
-	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
 	groupNames := make([]any, len(groups))
 	for i, group := range groups {
 		groupNames[i] = group.Name
@@ -394,15 +393,8 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 		"admin":  projectPermissions.ManageProject,
 	}
 
-	member, err := s.admin.DB.FindOrganizationMemberUsers(ctx, orgID, "", false, "", 1, user.Email)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(member) > 0 {
-		for k, v := range member[0].Attributes {
-			attr[k] = v
-		}
+	for k, v := range attributes {
+		attr[k] = v
 	}
 
 	return attr, nil

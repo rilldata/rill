@@ -89,7 +89,7 @@ func SetAttributesCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	setAttributesCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	setAttributesCmd.Flags().StringVar(&email, "email", "", "Email of the user (required)")
-	setAttributesCmd.Flags().StringToStringVar(&attributes, "attributes", nil, "Attributes in key=value format (--attributes app=foo,dept=bar)")
+	setAttributesCmd.Flags().StringToStringVar(&attributes, "attribute", nil, "Attributes in key=value format (--attribute app=foo --attribute dept=bar)")
 	setAttributesCmd.Flags().StringVar(&attributesJSON, "json", "", "Attributes as JSON object (--json '{\"app\":\"foo\",\"dept\":\"bar\"}')")
 	setAttributesCmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt when overwriting existing attributes")
 

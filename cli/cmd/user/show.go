@@ -1,13 +1,11 @@
 package user
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -39,26 +37,11 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("Projects count: %d\n", member.Member.ProjectsCount)
 			ch.PrintfSuccess("Usergroups count: %d\n", member.Member.UsergroupsCount)
 
-			if member.Member.Attributes != nil && len(member.Member.Attributes.Fields) > 0 {
+			attrs := member.Member.Attributes.AsMap()
+			if len(attrs) > 0 {
 				ch.PrintfSuccess("Attributes:\n")
-				for key, value := range member.Member.Attributes.Fields {
-					var valueStr string
-					switch v := value.Kind.(type) {
-					case *structpb.Value_StringValue:
-						valueStr = v.StringValue
-					case *structpb.Value_NumberValue:
-						valueStr = fmt.Sprintf("%.0f", v.NumberValue)
-					case *structpb.Value_BoolValue:
-						valueStr = fmt.Sprintf("%t", v.BoolValue)
-					default:
-						jsonBytes, err := json.Marshal(value.AsInterface())
-						if err != nil {
-							valueStr = fmt.Sprintf("<error marshaling attribute: %v>", err)
-						} else {
-							valueStr = string(jsonBytes)
-						}
-					}
-					ch.PrintfSuccess("  %s: %s\n", key, valueStr)
+				for key, value := range attrs {
+					ch.PrintfSuccess("  %s: %v\n", key, value)
 				}
 			} else {
 				ch.PrintfSuccess("No custom attributes set\n")
