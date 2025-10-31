@@ -145,11 +145,11 @@ export class CanvasResolvedSpec {
 
     this.allDimensions = derived(validSpecStore, ($validSpecStore) => {
       if (!$validSpecStore.data) return [];
-      const dimensions = Object.values(
-        $validSpecStore.data.metricsViews || {},
-      ).flatMap(
-        (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
-      );
+      const dimensions = Object.values($validSpecStore.data.metricsViews || {})
+        .flatMap(
+          (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
+        )
+        .filter((d) => d.type !== "DIMENSION_TYPE_TIME");
       const uniqueByName = new Map<string, MetricsViewSpecDimension>();
       for (const dimension of dimensions) {
         uniqueByName.set(
