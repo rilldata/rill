@@ -456,6 +456,11 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
+	timeDimension := req.TimeDimension
+	if timeDimension == "" && mv.ValidSpec != nil {
+		timeDimension = mv.ValidSpec.TimeDimension
+	}
+
 	var tz *time.Location
 	if req.TimeZone != "" {
 		tz, err = time.LoadLocation(req.TimeZone)
@@ -490,7 +495,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			Start:         timestamppb.New(start),
 			End:           timestamppb.New(end),
 			Grain:         timeutil.TimeGrainToAPI(grain),
-			TimeDimension: req.TimeDimension,
+			TimeDimension: timeDimension,
 			TimeZone:      req.TimeZone,
 			Expression:    tr,
 		}
