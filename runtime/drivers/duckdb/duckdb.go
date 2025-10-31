@@ -38,7 +38,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "DuckDB",
 	Description: "DuckDB SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/duckdb",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/duckdb",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -83,7 +83,7 @@ var spec = drivers.Spec{
 var motherduckSpec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "MotherDuck SQL connector.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/motherduck",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
@@ -91,7 +91,7 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Path",
 			Description: "Path to Motherduck database. Must be prefixed with `md:`",
-			Placeholder: "md:my_database",
+			Placeholder: "md:my_db",
 		},
 		{
 			Key:         "token",
@@ -117,7 +117,7 @@ var motherduckSpec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Schema name",
-			Placeholder: "your_schema_name",
+			Placeholder: "main",
 			Hint:        "Set the default schema used by the MotherDuck database",
 		},
 	},

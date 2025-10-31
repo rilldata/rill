@@ -47,6 +47,9 @@ node_modules
 !/runtime/testruntime/**/*.csv
 !/runtime/drivers/file/testdata/**/*.parquet
 
+# Ignore cached data files
+/runtime/testruntime/testdata/cache/**
+
 # generated content
 log
 profile.log

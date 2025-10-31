@@ -4,11 +4,6 @@
  * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in error handling, ID generation, and cache management.
  */
-import {
-  V1AppContextType,
-  type V1AppContext,
-} from "@rilldata/web-common/runtime-client";
-import type { Page } from "@sveltejs/kit";
 
 // =============================================================================
 // ID GENERATION
@@ -59,6 +54,8 @@ export function formatChatError(error: unknown): string {
  * Detect app context based on current route
  * Determines what resources/context the chat can see
  */
+/*
+// Commented out since V1AppContext is no longer used.
 export function detectAppContext(page: Page): V1AppContext | null {
   const routeId = page.route.id;
 
@@ -84,5 +81,40 @@ export function detectAppContext(page: Page): V1AppContext | null {
       };
     default:
       return null;
+  }
+}
+*/
+
+// Helper to check if a tool result contains chart data
+export function isChartToolResult(toolResult: any, toolCall: any): boolean {
+  if (toolResult?.isError || toolCall?.name !== "create_chart") return false;
+  try {
+    // Check if input is already an object or needs parsing
+    const parsed =
+      typeof toolCall?.input === "string"
+        ? JSON.parse(toolCall.input)
+        : toolCall?.input;
+    return !!(parsed?.chart_type && parsed?.spec);
+  } catch {
+    return false;
+  }
+}
+
+// Helper to parse chart data from tool result
+export function parseChartData(toolCall: any) {
+  try {
+    // Check if input is already an object or needs parsing
+    const parsed =
+      typeof toolCall?.input === "string"
+        ? JSON.parse(toolCall.input)
+        : toolCall?.input;
+
+    return {
+      chartType: parsed.chart_type,
+      chartSpec: parsed.spec,
+    };
+  } catch (error) {
+    console.error("Failed to parse chart data:", error);
+    return null;
   }
 }

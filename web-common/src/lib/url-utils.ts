@@ -32,3 +32,14 @@ export function copyWithAdditionalArguments(
   }
   return newUrl;
 }
+
+export function unorderedParamsAreEqual(
+  src: URLSearchParams,
+  tar: URLSearchParams,
+) {
+  if (src.size !== tar.size) return false;
+  for (const [key, value] of src) {
+    if (value !== tar.get(key)) return false;
+  }
+  return true;
+}
