@@ -1,0 +1,22 @@
+{
+  "name": "rill-analytics",
+  "version": "0.1.0",
+  "displayName": "Rill Analytics",
+  "description": "Professional data analysis using Rill's metrics layer",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "rill": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "${RILL_MCP_SERVER_URL}",
+        "--header",
+        "Authorization: Bearer ${RILL_AUTH_TOKEN}"
+      ],
+      "env": {
+        "RILL_MCP_SERVER_URL": "${RILL_MCP_SERVER_URL}",
+        "RILL_AUTH_TOKEN": "${RILL_AUTH_TOKEN}"
+      }
+    }
+  }
+}
