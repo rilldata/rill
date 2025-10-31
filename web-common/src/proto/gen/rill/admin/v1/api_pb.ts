@@ -4687,6 +4687,13 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
    */
   superuserForceAccess = false;
 
+  /**
+   * Optional search pattern to filter users by email or display name
+   *
+   * @generated from field: string search_pattern = 7;
+   */
+  searchPattern = "";
+
   constructor(data?: PartialMessage<ListOrganizationMemberUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4701,6 +4708,7 @@ export class ListOrganizationMemberUsersRequest extends Message<ListOrganization
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "search_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationMemberUsersRequest {
@@ -9184,9 +9192,9 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   description = "";
 
   /**
-   * @generated from field: bytes data = 3;
+   * @generated from field: string url_search = 9;
    */
-  data = new Uint8Array(0);
+  urlSearch = "";
 
   /**
    * @generated from field: string resource_kind = 4;
@@ -9223,7 +9231,7 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 9, name: "url_search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -9305,9 +9313,9 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
   description = "";
 
   /**
-   * @generated from field: bytes data = 3;
+   * @generated from field: string url_search = 7;
    */
-  data = new Uint8Array(0);
+  urlSearch = "";
 
   /**
    * @generated from field: bool default = 5;
@@ -9330,7 +9338,7 @@ export class UpdateBookmarkRequest extends Message<UpdateBookmarkRequest> {
     { no: 1, name: "bookmark_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 7, name: "url_search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "shared", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
@@ -15763,6 +15771,11 @@ export class Bookmark extends Message<Bookmark> {
   data = new Uint8Array(0);
 
   /**
+   * @generated from field: string url_search = 13;
+   */
+  urlSearch = "";
+
+  /**
    * @generated from field: string resource_kind = 10;
    */
   resourceKind = "";
@@ -15814,6 +15827,7 @@ export class Bookmark extends Message<Bookmark> {
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 13, name: "url_search", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

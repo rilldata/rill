@@ -2,7 +2,7 @@ package metricsview
 
 import "slices"
 
-// AnalyzeExpression analyzes a metrics expression and returns the field names referenced in it.
+// AnalyzeExpressionFields analyzes a metrics expression and returns the field names referenced in it.
 func AnalyzeExpressionFields(e *Expression) []string {
 	fields := make(map[string]bool)
 	analyzeExpressionFieldsInner(e, fields)

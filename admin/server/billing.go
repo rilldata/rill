@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -811,11 +812,11 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         runtimeAccessTokenDefaultTTL,
-		InstancePermissions: map[string][]runtimeauth.Permission{
+		InstancePermissions: map[string][]runtime.Permission{
 			prodDepl.RuntimeInstanceID: {
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadAPI,
+				runtime.ReadObjects,
+				runtime.ReadMetrics,
+				runtime.ReadAPI,
 			},
 		},
 		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},

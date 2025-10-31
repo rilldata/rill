@@ -19,7 +19,8 @@ import (
 
 // ListInstances implements RuntimeService.
 func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstancesRequest) (*runtimev1.ListInstancesResponse, error) {
-	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+	claims := auth.GetClaims(ctx, "")
+	if !claims.Can(runtime.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
@@ -28,11 +29,9 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx).SecurityClaims()
-
 	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
-		featureFlags, err := runtime.ResolveFeatureFlags(inst, claims)
+		featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -47,15 +46,15 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
-
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	sensitiveAccess := auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance)
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	sensitiveAccess := claims.Can(runtime.ReadInstance)
 	if !sensitiveAccess {
 		// Regular project viewers can access non-sensitive instance information.
 		// NOTE: ReadObjects is not the right permission to use, but it's the closest permission that regular project viewers have.
 		// TODO: We should split ReadInstance into an admin-level and viewer-level permission instead.
-		if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		if !claims.Can(runtime.ReadObjects) {
 			return nil, ErrForbidden
 		}
 	}
@@ -72,7 +71,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -94,7 +93,8 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.StringSlice("args.connectors", connectorsStrings(req.Connectors)),
 	)
 
-	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+	claims := auth.GetClaims(ctx, "")
+	if !claims.Can(runtime.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
@@ -116,7 +116,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -146,7 +146,8 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", connectorsStrings(req.Connectors)))
 	}
 
-	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
@@ -206,7 +207,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		s.logger.Error("failed to acquire repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
-	featureFlags, err := runtime.ResolveFeatureFlags(inst, auth.GetClaims(ctx).SecurityClaims())
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -221,10 +222,9 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
-
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
@@ -246,7 +246,7 @@ func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*r
 		attribute.String("args.level", req.Level.String()),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
@@ -273,7 +273,7 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 		attribute.String("args.level", req.Level.String()),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadObjects) {
 		return ErrForbidden
 	}
 

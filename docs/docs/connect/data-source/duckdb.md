@@ -22,43 +22,32 @@ There are several limitations with deployment to Rill Cloud, so we do not recomm
 
 ## Attaching an External DuckDB
 
-In the default `connectors/duckdb.yaml` file, you can add `init_sql` or `attach` statements to attach an external database to Rill's embedded DuckDB. The `attach` statement runs before `init_sql`, allowing you to attach your database and execute subsequent initialization SQL queries. For more details on the YAML configuration, see the [DuckDB reference page](/reference/project-files/connectors#duckdb).
+In the default `connectors/duckdb.yaml` file, you can use the `init_sql` parameter to execute SQL statements during database initialization, such as attaching an external database to Rill's embedded DuckDB. For more details on the YAML configuration, see the [DuckDB reference page](/reference/project-files/connectors#duckdb).
 
 ```yaml
-# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
 type: connector
 
 driver: duckdb
 managed: true
 
-ATTACH: |
-  '/path/to/your/duckdb.db' AS external_duckdb;
-  use external_duckdb;
-
-database_name: external_duckdb
-schema: main
-
-init_sql: |
+init_sql: 
+  ATTACH '/path/to/your/duckdb.db' AS external_duckdb;
   INSTALL httpfs;
   LOAD httpfs;
 ```
 
-## Using DuckDB Extensions
-
-DuckDB supports a wide variety of extensions that can enhance its functionality. To use extensions with Rill's embedded DuckDB, configure them in your connector's `init_sql` parameter.
-
-
-### Popular Extensions
-
-For a complete list of available extensions, see the [DuckDB Extensions documentation](https://duckdb.org/docs/extensions/overview).
-
-
 ## Importing Data to Your External DuckDB
 
-After establishing a connection, you can import data through the connector UI. This process will write the data into your attached DuckDB database.
+After establishing a connection, you can import data through the connector UI. This process will write data from your attached database to [Rill's embedded DuckDB.](/connect/olap/duckdb#rill-managed-duckdb)
 
-<img src='/img/connect/data-sources/create-model.png' class='rounded-gif' />
-<br />
+```yaml
+# Model YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/models
 
+type: model
+materialize: true
+
+connector: duckdb
+
+sql: SELECT * from external_duckdb.local_table
+```

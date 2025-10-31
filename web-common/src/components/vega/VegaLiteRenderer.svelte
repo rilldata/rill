@@ -1,6 +1,6 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import type { ColorMapping } from "@rilldata/web-common/features/canvas/inspector/types";
+  import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
   import { onDestroy } from "svelte";
   import {
     type SignalListeners,

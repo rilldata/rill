@@ -8,12 +8,12 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import type { FieldConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import type {
-    ChartFieldInput,
-    ColorRangeMapping,
-  } from "@rilldata/web-common/features/canvas/inspector/types";
+  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type {
+    ColorRangeMapping,
+    FieldConfig,
+  } from "@rilldata/web-common/features/components/charts/types";
   import {
     defaultPrimaryColors,
     defaultSecondaryColors,

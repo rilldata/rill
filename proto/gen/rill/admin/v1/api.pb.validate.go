@@ -12171,6 +12171,8 @@ func (m *ListOrganizationMemberUsersRequest) validate(all bool) error {
 
 	// no validation rules for SuperuserForceAccess
 
+	// no validation rules for SearchPattern
+
 	if len(errors) > 0 {
 		return ListOrganizationMemberUsersRequestMultiError(errors)
 	}
@@ -26022,7 +26024,7 @@ func (m *CreateBookmarkRequest) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for Data
+	// no validation rules for UrlSearch
 
 	// no validation rules for ResourceKind
 
@@ -26273,7 +26275,7 @@ func (m *UpdateBookmarkRequest) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for Data
+	// no validation rules for UrlSearch
 
 	// no validation rules for Default
 
@@ -42312,6 +42314,8 @@ func (m *Bookmark) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for Data
+
+	// no validation rules for UrlSearch
 
 	// no validation rules for ResourceKind
 

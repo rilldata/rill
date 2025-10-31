@@ -722,9 +722,17 @@ message ThemeSpec {
   optional Color secondary_color = 2;
   string primary_color_raw = 3;
   string secondary_color_raw = 4;
+  optional ThemeColors light = 5;
+  optional ThemeColors dark = 6;
 }
 
 message ThemeState {}
+
+message ThemeColors {
+  string primary = 1;
+  string secondary = 2;
+  map<string, string> variables = 3;
+}
 
 message Component {
   ComponentSpec spec = 1;

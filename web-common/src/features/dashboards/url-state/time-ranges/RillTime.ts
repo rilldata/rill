@@ -93,6 +93,10 @@ export class RillTime {
     }
   }
 
+  public isAbsoluteTime() {
+    return this.interval instanceof RillIsoInterval;
+  }
+
   public toString() {
     let timeRange = this.interval.toString();
 
@@ -299,6 +303,10 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     let startOffset = this.start.offset.toObject();
     let endOffset = this.end.offset.toObject();
     const parentOffset = offset.toObject();
+
+    if (this.start?.parts?.[0]?.point instanceof RillAbsoluteTime) {
+      return ["Custom", true];
+    }
 
     if (
       Object.keys(startOffset).length > 1 ||

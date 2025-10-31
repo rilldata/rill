@@ -103,21 +103,18 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 		}
 
 		for email, token := range emailTokens {
-			if email == "" {
-				// For anonymous recipients, only provide OpenUrl
+			// For the owner and anonymous recipients (e.g. slack), provide OpenUrl with token and plain EditUrl
+			if email == "" || email == ownerEmail {
 				recipientURLs[email] = &adminv1.GetAlertMetaResponse_URLs{
 					OpenUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert, token),
+					EditUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, req.Alert),
 				}
 				continue
 			}
-			// For email recipients, provide all URLs
+			// For email recipients, provide open and unsubscribe links with token
 			recipientURLs[email] = &adminv1.GetAlertMetaResponse_URLs{
 				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertOpen(org.Name, proj.Name, req.Alert, token),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertUnsubscribe(org.Name, proj.Name, req.Alert, token),
-			}
-			// For the owner, provide plain edit link without token
-			if email == ownerEmail {
-				recipientURLs[email].EditUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).AlertEdit(org.Name, proj.Name, req.Alert)
 			}
 		}
 	}

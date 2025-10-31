@@ -89,7 +89,7 @@ tests:
       bytes_col,BLOB,YES,,,
       date_col,DATE,YES,,,
       datetime_col,TIMESTAMP,YES,,,
-      time_col,TIME WITH TIME ZONE,YES,,,
+      time_col,TIME,YES,,,
       timestamp_col,TIMESTAMP WITH TIME ZONE,YES,,,
       json_col,VARCHAR,YES,,,
       geography_col,VARCHAR,YES,,,
@@ -105,15 +105,15 @@ tests:
       array_bytes_col,BLOB[],YES,,,
       array_date_col,DATE[],YES,,,
       array_datetime_col,TIMESTAMP[],YES,,,
-      array_time_col,TIME WITH TIME ZONE[],YES,,,
+      array_time_col,TIME[],YES,,,
       array_timestamp_col,TIMESTAMP WITH TIME ZONE[],YES,,,
       array_json_col,VARCHAR[],YES,,,
       array_geography_col,VARCHAR[],YES,,,
       array_range_date_col,"STRUCT(""start"" DATE, ""end"" DATE)[]",YES,,,
       array_range_datetime_col,"STRUCT(""start"" TIMESTAMP, ""end"" TIMESTAMP)[]",YES,,,
       array_range_timestamp_col,"STRUCT(""start"" TIMESTAMP WITH TIME ZONE, ""end"" TIMESTAMP WITH TIME ZONE)[]",YES,,,
-      array_struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP, field_time TIME WITH TIME ZONE, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR)[]",YES,,,
-      struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP, field_time TIME WITH TIME ZONE, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR, field_array_int BIGINT[], field_array_float DOUBLE[], field_array_numeric DECIMAL(38,9)[], field_array_bignumeric DOUBLE[], field_array_bool BOOLEAN[], field_array_string VARCHAR[], field_array_bytes BLOB[], field_array_date DATE[], field_array_datetime TIMESTAMP[], field_array_time TIME WITH TIME ZONE[], field_array_timestamp TIMESTAMP WITH TIME ZONE[], field_array_json VARCHAR[], field_array_geography VARCHAR[])",YES,,,
+      array_struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP, field_time TIME, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR)[]",YES,,,
+      struct_col,"STRUCT(field_int BIGINT, field_float DOUBLE, field_numeric DECIMAL(38,9), field_bignumeric DOUBLE, field_bool BOOLEAN, field_string VARCHAR, field_bytes BLOB, field_date DATE, field_datetime TIMESTAMP, field_time TIME, field_timestamp TIMESTAMP WITH TIME ZONE, field_json VARCHAR, field_geography VARCHAR, field_array_int BIGINT[], field_array_float DOUBLE[], field_array_numeric DECIMAL(38,9)[], field_array_bignumeric DOUBLE[], field_array_bool BOOLEAN[], field_array_string VARCHAR[], field_array_bytes BLOB[], field_array_date DATE[], field_array_datetime TIMESTAMP[], field_array_time TIME[], field_array_timestamp TIMESTAMP WITH TIME ZONE[], field_array_json VARCHAR[], field_array_geography VARCHAR[])",YES,,,
   - name: query_all_result_clickhouse
     resolver: sql
     properties:

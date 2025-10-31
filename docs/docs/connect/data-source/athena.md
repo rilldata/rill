@@ -12,11 +12,38 @@ sidebar_position: 0
 [Amazon Athena](https://docs.aws.amazon.com/athena/) is an interactive query service that makes it easy to analyze data directly in Amazon S3 using standard SQL. It is serverless, so there is no infrastructure to manage, and you pay only for the queries you run, making it cost-effective for a wide range of data analysis tasks. Athena is designed for quick, ad-hoc querying of large datasets, enabling businesses to easily integrate it into their analytics and business intelligence tools for immediate insights from their data stored in S3. Rill supports natively connecting to and reading from Athena as a source by leveraging the [AWS SDK for Go](https://aws.github.io/aws-sdk-go-v2/docs/).
 
 
-<img src='/img/connect/data-sources/athena.png' class='rounded-gif' style={{width: '75%', display: 'block', margin: '0 auto'}}/>
-<br />
+## Connect to Athena
 
+To connect to Amazon Athena, you need to provide authentication credentials. You have two options:
 
-## Local credentials
+1. **Use Access Key/Secret Key** (recommended for cloud deployment)
+2. **Use Local AWS credentials** (local development only - not recommended for production)
+
+Choose the method that best fits your setup. For production deployments to Rill Cloud, use Access Key/Secret Key. Local AWS credentials only work for local development and will cause deployment failures.
+
+### Access Key and Secret Key
+
+Create a connector with your credentials to connect to Athena. Here's an example connector configuration file you can copy into your `connectors` directory to get started:
+
+```yaml
+type: connector
+
+driver: athena
+aws_access_key_id: "{{ .env.connector.athena.aws_access_key_id }}"
+aws_secret_access_key: "{{ .env.connector.athena.aws_secret_access_key }}"
+output_location: "s3://bucket/path/folder"
+region: "us-east-1"
+```
+
+:::tip Using the Add Data Form
+You can also use the Add Data form in Rill Developer, which will automatically create the `athena.yaml` file and populate the `.env` file with `connector.athena.aws_access_key_id` and `connector.athena.aws_secret_access_key`.
+:::
+
+### Local AWS Credentials (Local Development Only)
+
+:::warning Not recommended for production
+Local AWS credentials only work for local development. If you deploy to Rill Cloud using this method, your dashboards will fail. Use Method 1 above for production deployments.
+:::
 
 When using Rill Developer on your local machine (i.e., `rill start`), Rill can either use the credentials configured in your local environment using the AWS CLI or use the explicitly set credentials in a [connector](/reference/project-files/connectors#athena) file.
 
@@ -45,7 +72,7 @@ You have now configured AWS access from your local environment. Rill will detect
 
 :::tip Did you know?
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
+If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 

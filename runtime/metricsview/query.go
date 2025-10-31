@@ -369,6 +369,11 @@ func AnalyzeQueryFields(q *Query) []string {
 		fieldsMap[q.TimeRange.TimeDimension] = struct{}{}
 	}
 
+	exprFields := AnalyzeExpressionFields(q.Where)
+	for _, f := range exprFields {
+		fieldsMap[f] = struct{}{}
+	}
+
 	var fields []string
 	for f := range fieldsMap {
 		fields = append(fields, f)

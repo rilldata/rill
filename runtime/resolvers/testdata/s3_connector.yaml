@@ -36,6 +36,7 @@ project_files:
     type: model
     connector: duckdb
     materialize: true
+    pre_exec: "CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
     partitions:
       glob:
         path: s3://integration-test.rilldata.com/glob_test/y=202*/a*.csv

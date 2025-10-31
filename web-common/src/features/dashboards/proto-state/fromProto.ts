@@ -49,11 +49,9 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimension,
-  StructTypeField,
   V1ExploreSpec,
   V1Expression,
   V1MetricsViewSpec,
-  V1StructType,
 } from "@rilldata/web-common/runtime-client";
 
 // TODO: make a follow up PR to use the one from the proto directly
@@ -84,7 +82,6 @@ export function getDashboardStateFromUrl(
   urlState: string,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
-  schema: V1StructType,
 ): Partial<ExploreState> {
   // backwards compatibility for older urls that had encoded state
   urlState = urlState.includes("%") ? decodeURIComponent(urlState) : urlState;
@@ -92,7 +89,6 @@ export function getDashboardStateFromUrl(
     base64ToProto(urlState),
     metricsView,
     explore,
-    schema,
   );
 }
 
@@ -100,7 +96,6 @@ export function getDashboardStateFromProto(
   binary: Uint8Array,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
-  schema: V1StructType,
 ): Partial<ExploreState> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<ExploreState> = {};
@@ -111,11 +106,8 @@ export function getDashboardStateFromProto(
     // older values could be strings for non-string values,
     // so we correct them using metrics view schema
     entity.whereFilter =
-      correctFilterValues(
-        entity.whereFilter,
-        metricsView.dimensions ?? [],
-        schema,
-      ) ?? createAndExpression([]);
+      correctFilterValues(entity.whereFilter, metricsView.dimensions ?? []) ??
+      createAndExpression([]);
   } else if (dashboard.where) {
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
@@ -170,9 +162,13 @@ export function getDashboardStateFromProto(
     entity.leaderboardSortByMeasureName = dashboard.leaderboardMeasure;
   }
 
+  const isActivePageSet =
+    dashboard.activePage !== undefined &&
+    dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED;
+
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
-  } else {
+  } else if (isActivePageSet) {
     entity.selectedComparisonDimension = "";
   }
   if (dashboard.expandedMeasure) {
@@ -181,10 +177,7 @@ export function getDashboardStateFromProto(
       chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: dashboard.expandedMeasure,
     };
-  } else if (
-    dashboard.activePage !== undefined &&
-    dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED
-  ) {
+  } else if (isActivePageSet) {
     entity.tdd = {
       pinIndex: -1,
       chartType: TDDChart.DEFAULT,
@@ -278,21 +271,17 @@ export function fromExpressionProto(
 function correctFilterValues(
   filter: V1Expression,
   dimensions: MetricsViewSpecDimension[],
-  schema: V1StructType,
 ) {
   return filterIdentifiers(filter, (e, ident) => {
     const dim = dimensions?.find((d) => d.name === ident);
     // ignore if dimension is not present anymore
     if (!dim) return false;
-    const field = schema.fields?.find((f) => f.name === ident);
-    // ignore if field is not found
-    if (!field) return false;
 
     if (e.cond?.exprs) {
       e.cond.exprs =
         e.cond.exprs.map((e, i) => {
           if (i === 0) return e; // 1st expr is always the identifier
-          return correctFilterValue(e, field);
+          return correctFilterValue(e, dim);
         }) ?? [];
     }
     return true;
@@ -301,7 +290,7 @@ function correctFilterValues(
 
 function correctFilterValue(
   valueExpr: V1Expression,
-  field: StructTypeField,
+  dimension: MetricsViewSpecDimension,
 ): V1Expression {
   if (valueExpr.val === null) {
     return valueExpr;
@@ -309,20 +298,24 @@ function correctFilterValue(
   if (typeof valueExpr.val === "string") {
     // older filters were storing everything as strings
     return {
-      val: correctStringFilterValue(valueExpr.val, field),
+      val: correctStringFilterValue(valueExpr.val, dimension),
     };
   }
   return valueExpr;
 }
 
-function correctStringFilterValue(val: string, field: StructTypeField) {
-  if (!field.type?.code) return val;
+function correctStringFilterValue(
+  val: string,
+  dimension: MetricsViewSpecDimension,
+) {
+  const code = dimension?.dataType?.code;
+  if (!code) return val;
 
-  if (INTEGERS.has(field.type?.code)) {
+  if (INTEGERS.has(code)) {
     return Number.parseInt(val);
-  } else if (isFloat(field.type?.code)) {
+  } else if (isFloat(code)) {
     return Number.parseFloat(val);
-  } else if (BOOLEANS.has(field.type?.code)) {
+  } else if (BOOLEANS.has(code)) {
     return val === "true";
   } else {
     // TODO: other types
