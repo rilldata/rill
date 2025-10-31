@@ -133,6 +133,10 @@ export class AddDataFormManager {
     return this.formType === "connector";
   }
 
+  get isMultiStepConnector(): boolean {
+    return MULTI_STEP_CONNECTORS.includes(this.connector.name ?? "");
+  }
+
   makeOnUpdate(args: {
     onClose: () => void;
     queryClient: any;

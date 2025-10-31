@@ -21,7 +21,6 @@
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
-  import { MULTI_STEP_CONNECTORS } from "./constants";
   import {
     connectorStepStore,
     setStep,
@@ -58,7 +57,6 @@
     result: Extract<ActionResult, { type: "success" | "failure" }>;
   }) => Promise<void>;
 
-  // Form Generation Manager (phase 1)
   const formManager = new AddDataFormManager({
     connector,
     formType,
@@ -66,18 +64,14 @@
     onDsnUpdate: (e: any) => handleOnUpdate(e),
   });
 
-  const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
-    connector.name ?? "",
-  );
+  $: isMultiStepConnector = formManager.isMultiStepConnector;
+
+  $: dispatch("submitting", { submitting });
 
   $: isSourceForm = formManager.isSourceForm;
   $: isConnectorForm = formManager.isConnectorForm;
-
   $: onlyDsn = hasOnlyDsn(connector, isConnectorForm);
-
   $: stepState = $connectorStepStore;
-
-  // Reactive properties based on current step
   $: stepProperties =
     isMultiStepConnector && stepState.step === "source"
       ? (connector.sourceProperties ?? [])
@@ -98,7 +92,6 @@
 
     paramsForm.update(() => combinedValues, { taint: false });
   }
-
   $: formHeight = formManager.formHeight;
 
   // Form 1: Individual parameters
@@ -135,7 +128,6 @@
 
   let clickhouseError: string | null = null;
   let clickhouseErrorDetails: string | undefined = undefined;
-
   let clickhouseFormId: string = "";
   let clickhouseSubmitting: boolean;
   let clickhouseIsSubmitDisabled: boolean;
@@ -145,7 +137,6 @@
   let clickhouseShowSaveAnyway: boolean = false;
   let clickhouseHandleSaveAnyway: () => Promise<void>;
 
-  // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
       // DSN form: check required DSN properties
@@ -220,8 +211,6 @@
       }
     }
   })();
-
-  $: dispatch("submitting", { submitting });
 
   async function handleSaveAnyway() {
     // Save Anyway should only work for connector forms
