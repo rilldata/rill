@@ -137,6 +137,16 @@ export class AddDataFormManager {
     return MULTI_STEP_CONNECTORS.includes(this.connector.name ?? "");
   }
 
+  getActiveFormId(args: {
+    connectionTab: "parameters" | "dsn";
+    onlyDsn: boolean;
+  }): string {
+    const { connectionTab, onlyDsn } = args;
+    return onlyDsn || connectionTab === "dsn"
+      ? this.dsnFormId
+      : this.paramsFormId;
+  }
+
   handleSkip(): void {
     const stepState = get(connectorStepStore) as any;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;

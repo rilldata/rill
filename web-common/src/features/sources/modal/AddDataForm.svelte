@@ -170,13 +170,7 @@
     }
   })();
 
-  $: formId = (() => {
-    if (onlyDsn || connectionTab === "dsn") {
-      return dsnFormId;
-    } else {
-      return paramsFormId;
-    }
-  })();
+  $: formId = formManager.getActiveFormId({ connectionTab, onlyDsn });
 
   $: submitting = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -256,12 +250,9 @@
     clickhouseParamsValues: $clickhouseParamsForm,
     clickhouseDsnValues: $clickhouseDsnForm,
   });
-
   $: isClickhouse = connector.name === "clickhouse";
-
   $: shouldShowSaveAnywayButton =
     isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
-
   $: saveAnywayLoading = isClickhouse
     ? clickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
