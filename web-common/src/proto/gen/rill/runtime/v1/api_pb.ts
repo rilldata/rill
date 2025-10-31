@@ -444,6 +444,11 @@ export class Instance extends Message$1<Instance> {
   environment = "";
 
   /**
+   * @generated from field: string project_display_name = 25;
+   */
+  projectDisplayName = "";
+
+  /**
    * @generated from field: string olap_connector = 2;
    */
   olapConnector = "";
@@ -523,6 +528,7 @@ export class Instance extends Message$1<Instance> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 20, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 25, name: "project_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
