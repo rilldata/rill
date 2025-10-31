@@ -1103,6 +1103,7 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   environment?: string;
+  projectDisplayName?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;

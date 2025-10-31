@@ -305,12 +305,13 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
-		InstanceId:     inst.ID,
-		CreatedOn:      timestamppb.New(inst.CreatedOn),
-		UpdatedOn:      timestamppb.New(inst.UpdatedOn),
-		FeatureFlags:   featureFlags,
-		AiInstructions: inst.AIInstructions,
-		FrontendUrl:    inst.FrontendURL,
+		InstanceId:         inst.ID,
+		ProjectDisplayName: inst.ProjectDisplayName,
+		CreatedOn:          timestamppb.New(inst.CreatedOn),
+		UpdatedOn:          timestamppb.New(inst.UpdatedOn),
+		FeatureFlags:       featureFlags,
+		AiInstructions:     inst.AIInstructions,
+		FrontendUrl:        inst.FrontendURL,
 	}
 
 	if sensitive {

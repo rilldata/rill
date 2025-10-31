@@ -27,6 +27,8 @@ type Instance struct {
 	ID string
 	// Environment is the environment that the instance represents
 	Environment string
+	// ProjectDisplayName is the display name from rill.yaml
+	ProjectDisplayName string `db:"project_display_name"`
 	// Driver name to connect to for OLAP
 	OLAPConnector string
 	// ProjectOLAPConnector is an override of OLAPConnector that may be set in rill.yaml.
