@@ -55,12 +55,24 @@
 
   let connectionTab: ConnectorType = "parameters";
 
+  // Wire manager-provided onUpdate after declaration below
+  let handleOnUpdate: <
+    T extends Record<string, unknown>,
+    M = any,
+    In extends Record<string, unknown> = T,
+  >(event: {
+    form: SuperValidated<T, M, In>;
+    formEl: HTMLFormElement;
+    cancel: () => void;
+    result: Extract<ActionResult, { type: "success" | "failure" }>;
+  }) => Promise<void>;
+
   // Form Generation Manager (phase 1)
   const formManager = new AddDataFormManager({
     connector,
     formType,
-    onParamsUpdate: handleOnUpdate,
-    onDsnUpdate: handleOnUpdate,
+    onParamsUpdate: (e: any) => handleOnUpdate(e),
+    onDsnUpdate: (e: any) => handleOnUpdate(e),
   });
 
   // Simple multi-step state management
@@ -415,123 +427,26 @@
     : submitting && saveAnyway;
 
   function onStringInputChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    const { name, value } = target;
-
-    if (name === "path") {
-      if ($paramsTainted?.name) return;
-      const name = inferSourceName(connector, value);
-      if (name)
-        paramsForm.update(
-          ($form) => {
-            $form.name = name;
-            return $form;
-          },
-          { taint: false },
-        );
-    }
+    formManager.onStringInputChange(event);
   }
 
-  async function handleOnUpdate<
-    T extends Record<string, unknown>,
-    M = any,
-    In extends Record<string, unknown> = T,
-  >(event: {
-    form: SuperValidated<T, M, In>;
-    formEl: HTMLFormElement;
-    cancel: () => void;
-    result: Extract<ActionResult, { type: "success" | "failure" }>;
-  }) {
-    // Show Save Anyway button as soon as form submission starts - only for connector forms
-    if (isConnectorForm) {
-      showSaveAnyway = true;
-    }
-
-    if (!event.form.valid && !saveAnyway) return;
-
-    const values = event.form.data;
-
-    try {
-      // Apply ClickHouse Cloud requirements if needed
-      let processedValues = applyClickHouseCloudRequirements(values);
-
-      if (isMultiStepConnector && stepState.step === "source") {
-        // Step 2: Create source with stored connector config
-        await submitAddSourceForm(queryClient, connector, processedValues);
-        onClose();
-      } else if (isMultiStepConnector && stepState.step === "connector") {
-        // Step 1: Create connector and transition to step 2
-        await submitAddConnectorForm(
-          queryClient,
-          connector,
-          processedValues,
-          true,
-        );
-        setConnectorConfig(processedValues);
-        setStep("source");
-        return; // Don't close the modal, just transition to step 2
-      } else if (effectiveFormType === "source") {
-        // Regular source form
-        await submitAddSourceForm(queryClient, connector, processedValues);
-        onClose();
-      } else {
-        // Regular connector form
-        await submitAddConnectorForm(
-          queryClient,
-          connector,
-          processedValues,
-          true,
-        );
-        onClose();
-      }
-    } catch (e) {
-      const { message, details } = normalizeConnectorError(
-        connector.name ?? "",
-        e,
-      );
-
-      // Keep error state for each form - match the display logic
-      if (hasOnlyDsn() || connectionTab === "dsn") {
-        dsnError = message;
-        dsnErrorDetails = details;
-      } else {
-        paramsError = message;
-        paramsErrorDetails = details;
-      }
-    } finally {
-      // Reset saveAnyway state after submission completes
-      saveAnyway = false;
-    }
-  }
+  handleOnUpdate = formManager.makeOnUpdate({
+    onClose,
+    queryClient,
+    getConnectionTab: () => connectionTab,
+    setParamsError: (message: string | null, details?: string) => {
+      paramsError = message;
+      paramsErrorDetails = details;
+    },
+    setDsnError: (message: string | null, details?: string) => {
+      dsnError = message;
+      dsnErrorDetails = details;
+    },
+  });
 
   // Handle file upload for credential files
   async function handleFileUpload(file: File): Promise<string> {
-    try {
-      const content = await file.text();
-
-      // Parse and re-stringify JSON to sanitize whitespace
-      const parsedJson = JSON.parse(content);
-      const sanitizedJson = JSON.stringify(parsedJson);
-
-      // For BigQuery, try to extract project_id from the credentials JSON
-      if (connector.name === "bigquery" && parsedJson.project_id) {
-        // Update the project_id field in the form
-        paramsForm.update(
-          ($form) => {
-            $form.project_id = parsedJson.project_id;
-            return $form;
-          },
-          { taint: false },
-        );
-      }
-
-      return sanitizedJson;
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        throw new Error(`Invalid JSON file: ${error.message}`);
-      }
-      throw new Error(`Failed to read file: ${error.message}`);
-    }
+    return formManager.handleFileUpload(file);
   }
 
   // Handle skip button for multi-step connectors
