@@ -47,7 +47,11 @@
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
-  import { getSecretKeysFromConnector, sanitizeValuesByKeys } from "./helpers";
+  import {
+    getSecretKeysFromConnector,
+    getConnectorPropertyKeys,
+    sanitizeValuesByKeys,
+  } from "./helpers";
 
   const dispatch = createEventDispatcher();
 
@@ -415,17 +419,12 @@
         // Step 1: Create connector and transition to step 2
         await submitAddConnectorForm(queryClient, connector, processedValues);
 
-        // Remove secret fields from stored config and clear them from the form to avoid stale preview
-        const secretKeys = getSecretKeysFromConnector(connector);
-        const cleanedValues = sanitizeValuesByKeys(
-          processedValues as Record<string, unknown>,
-          secretKeys,
-        );
-        setConnectorConfig(cleanedValues);
+        setConnectorConfig({});
 
         // Clear secret inputs in the visible form without marking it tainted
         paramsForm.update(
           ($form) => {
+            const secretKeys = getSecretKeysFromConnector(connector);
             for (const key of secretKeys) {
               $form[key] = "";
             }
@@ -517,9 +516,7 @@
   // Handle skip button for multi-step connectors
   function handleSkip() {
     if (!isMultiStepConnector || stepState.step !== "connector") return;
-
-    // Store current form values and transition to step 2
-    setConnectorConfig($paramsForm);
+    setConnectorConfig({});
     setStep("source");
   }
 

@@ -9,12 +9,3 @@ export function getSecretKeysFromConnector(conn: {
       .filter(Boolean) as string[]) ?? []
   );
 }
-
-export function sanitizeValuesByKeys(
-  values: Record<string, unknown>,
-  keys: string[],
-): Record<string, unknown> {
-  const cleaned: Record<string, unknown> = { ...values };
-  for (const k of keys) delete cleaned[k];
-  return cleaned;
-}
