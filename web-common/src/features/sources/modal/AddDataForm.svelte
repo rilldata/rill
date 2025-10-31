@@ -47,11 +47,6 @@
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
-  import {
-    getSecretKeysFromConnector,
-    getConnectorPropertyKeys,
-    sanitizeValuesByKeys,
-  } from "./helpers";
 
   const dispatch = createEventDispatcher();
 
@@ -420,18 +415,6 @@
         await submitAddConnectorForm(queryClient, connector, processedValues);
 
         setConnectorConfig({});
-
-        // Clear secret inputs in the visible form without marking it tainted
-        paramsForm.update(
-          ($form) => {
-            const secretKeys = getSecretKeysFromConnector(connector);
-            for (const key of secretKeys) {
-              $form[key] = "";
-            }
-            return $form;
-          },
-          { taint: false },
-        );
         setStep("source");
         return; // Don't close the modal, just transition to step 2
       } else if (effectiveFormType === "source") {
