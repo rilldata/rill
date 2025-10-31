@@ -11,6 +11,76 @@ consumes:
 produces:
   - application/json
 paths:
+  /v1/bigquery/datasets:
+    get:
+      summary: BigQueryListDatasets list all datasets in a bigquery project
+      operationId: ConnectorService_BigQueryListDatasets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1BigQueryListDatasetsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/bigquery/tables:
+    get:
+      summary: BigQueryListTables list all tables in a bigquery project:dataset
+      operationId: ConnectorService_BigQueryListTables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1BigQueryListTablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: dataset
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/database_schemas:
     get:
       summary: ListDatabaseSchemas list all schemas across databases
@@ -3766,6 +3836,24 @@ definitions:
       - ASSERTION_STATUS_FAIL
       - ASSERTION_STATUS_ERROR
     default: ASSERTION_STATUS_UNSPECIFIED
+  v1BigQueryListDatasetsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      names:
+        type: array
+        items:
+          type: string
+  v1BigQueryListTablesResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      names:
+        type: array
+        items:
+          type: string
   v1BuiltinMeasure:
     type: string
     enum:

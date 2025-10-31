@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/bigquery"
 	"github.com/rilldata/rill/runtime/drivers/gcs"
 	"github.com/rilldata/rill/runtime/drivers/s3"
 )
@@ -267,6 +268,42 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 	}, nil
 }
 
+func (s *Server) BigQueryListDatasets(ctx context.Context, req *runtimev1.BigQueryListDatasetsRequest) (*runtimev1.BigQueryListDatasetsResponse, error) {
+	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	names, nextToken, err := bq.ListDatasets(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.BigQueryListDatasetsResponse{
+		Names:         names,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) BigQueryListTables(ctx context.Context, req *runtimev1.BigQueryListTablesRequest) (*runtimev1.BigQueryListTablesResponse, error) {
+	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	names, nextToken, err := bq.ListBigQueryTables(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.BigQueryListTablesResponse{
+		Names:         names,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func (s *Server) getGCSConn(ctx context.Context, connector, instanceID string) (*gcs.Connection, func(), error) {
 	conn, release, err := s.runtime.AcquireHandle(ctx, instanceID, connector)
 	if err != nil {
@@ -291,4 +328,17 @@ func (s *Server) getS3Conn(ctx context.Context, connector, instanceID string) (*
 		panic("conn is not s3 connection")
 	}
 	return s3Conn, release, nil
+}
+
+func (s *Server) getBigQueryConn(ctx context.Context, connector, instanceID string) (*bigquery.Connection, func(), error) {
+	conn, release, err := s.runtime.AcquireHandle(ctx, instanceID, connector)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bq, ok := conn.(*bigquery.Connection)
+	if !ok {
+		panic("conn is not bigquery connection")
+	}
+	return bq, release, nil
 }

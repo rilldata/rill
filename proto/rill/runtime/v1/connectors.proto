@@ -66,6 +66,16 @@ service ConnectorService {
   rpc GetTable(GetTableRequest) returns (GetTableResponse) {
     option (google.api.http) = {get: "/v1/connectors/table_metadata"};
   }
+
+  // BigQueryListDatasets list all datasets in a bigquery project
+  rpc BigQueryListDatasets(BigQueryListDatasetsRequest) returns (BigQueryListDatasetsResponse) {
+    option (google.api.http) = {get: "/v1/bigquery/datasets"};
+  }
+
+  // BigQueryListTables list all tables in a bigquery project:dataset
+  rpc BigQueryListTables(BigQueryListTablesRequest) returns (BigQueryListTablesResponse) {
+    option (google.api.http) = {get: "/v1/bigquery/tables"};
+  }
 }
 
 message S3Object {
@@ -262,4 +272,30 @@ message GetTableRequest {
 
 message GetTableResponse {
   map<string, string> schema = 1;
+}
+
+
+message BigQueryListDatasetsRequest {
+  string instance_id = 1;
+  string connector = 2;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4;
+}
+
+message BigQueryListDatasetsResponse {
+  string next_page_token = 1;
+  repeated string names = 2;
+}
+
+message BigQueryListTablesRequest {
+  string instance_id = 1;
+  string connector = 2;
+  string dataset = 3;
+  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 5;
+}
+
+message BigQueryListTablesResponse {
+  string next_page_token = 1;
+  repeated string names = 2;
 }

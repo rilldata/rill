@@ -347,6 +347,16 @@ export const V1AssertionStatus = {
   ASSERTION_STATUS_ERROR: "ASSERTION_STATUS_ERROR",
 } as const;
 
+export interface V1BigQueryListDatasetsResponse {
+  nextPageToken?: string;
+  names?: string[];
+}
+
+export interface V1BigQueryListTablesResponse {
+  nextPageToken?: string;
+  names?: string[];
+}
+
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -2420,6 +2430,21 @@ export interface V1WatchResourcesResponse {
   name?: V1ResourceName;
   resource?: V1Resource;
 }
+
+export type ConnectorServiceBigQueryListDatasetsParams = {
+  instanceId?: string;
+  connector?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceBigQueryListTablesParams = {
+  instanceId?: string;
+  connector?: string;
+  dataset?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
 
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;

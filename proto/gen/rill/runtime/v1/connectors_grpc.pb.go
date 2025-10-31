@@ -31,6 +31,8 @@ const (
 	ConnectorService_ListDatabaseSchemas_FullMethodName   = "/rill.runtime.v1.ConnectorService/ListDatabaseSchemas"
 	ConnectorService_ListTables_FullMethodName            = "/rill.runtime.v1.ConnectorService/ListTables"
 	ConnectorService_GetTable_FullMethodName              = "/rill.runtime.v1.ConnectorService/GetTable"
+	ConnectorService_BigQueryListDatasets_FullMethodName  = "/rill.runtime.v1.ConnectorService/BigQueryListDatasets"
+	ConnectorService_BigQueryListTables_FullMethodName    = "/rill.runtime.v1.ConnectorService/BigQueryListTables"
 )
 
 // ConnectorServiceClient is the client API for ConnectorService service.
@@ -61,6 +63,10 @@ type ConnectorServiceClient interface {
 	ListTables(ctx context.Context, in *ListTablesRequest, opts ...grpc.CallOption) (*ListTablesResponse, error)
 	// GetTable returns metadata about a table or view
 	GetTable(ctx context.Context, in *GetTableRequest, opts ...grpc.CallOption) (*GetTableResponse, error)
+	// BigQueryListDatasets list all datasets in a bigquery project
+	BigQueryListDatasets(ctx context.Context, in *BigQueryListDatasetsRequest, opts ...grpc.CallOption) (*BigQueryListDatasetsResponse, error)
+	// BigQueryListTables list all tables in a bigquery project:dataset
+	BigQueryListTables(ctx context.Context, in *BigQueryListTablesRequest, opts ...grpc.CallOption) (*BigQueryListTablesResponse, error)
 }
 
 type connectorServiceClient struct {
@@ -191,6 +197,26 @@ func (c *connectorServiceClient) GetTable(ctx context.Context, in *GetTableReque
 	return out, nil
 }
 
+func (c *connectorServiceClient) BigQueryListDatasets(ctx context.Context, in *BigQueryListDatasetsRequest, opts ...grpc.CallOption) (*BigQueryListDatasetsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BigQueryListDatasetsResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_BigQueryListDatasets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *connectorServiceClient) BigQueryListTables(ctx context.Context, in *BigQueryListTablesRequest, opts ...grpc.CallOption) (*BigQueryListTablesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BigQueryListTablesResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_BigQueryListTables_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConnectorServiceServer is the server API for ConnectorService service.
 // All implementations must embed UnimplementedConnectorServiceServer
 // for forward compatibility.
@@ -219,6 +245,10 @@ type ConnectorServiceServer interface {
 	ListTables(context.Context, *ListTablesRequest) (*ListTablesResponse, error)
 	// GetTable returns metadata about a table or view
 	GetTable(context.Context, *GetTableRequest) (*GetTableResponse, error)
+	// BigQueryListDatasets list all datasets in a bigquery project
+	BigQueryListDatasets(context.Context, *BigQueryListDatasetsRequest) (*BigQueryListDatasetsResponse, error)
+	// BigQueryListTables list all tables in a bigquery project:dataset
+	BigQueryListTables(context.Context, *BigQueryListTablesRequest) (*BigQueryListTablesResponse, error)
 	mustEmbedUnimplementedConnectorServiceServer()
 }
 
@@ -264,6 +294,12 @@ func (UnimplementedConnectorServiceServer) ListTables(context.Context, *ListTabl
 }
 func (UnimplementedConnectorServiceServer) GetTable(context.Context, *GetTableRequest) (*GetTableResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTable not implemented")
+}
+func (UnimplementedConnectorServiceServer) BigQueryListDatasets(context.Context, *BigQueryListDatasetsRequest) (*BigQueryListDatasetsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BigQueryListDatasets not implemented")
+}
+func (UnimplementedConnectorServiceServer) BigQueryListTables(context.Context, *BigQueryListTablesRequest) (*BigQueryListTablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BigQueryListTables not implemented")
 }
 func (UnimplementedConnectorServiceServer) mustEmbedUnimplementedConnectorServiceServer() {}
 func (UnimplementedConnectorServiceServer) testEmbeddedByValue()                          {}
@@ -502,6 +538,42 @@ func _ConnectorService_GetTable_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConnectorService_BigQueryListDatasets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BigQueryListDatasetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).BigQueryListDatasets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_BigQueryListDatasets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).BigQueryListDatasets(ctx, req.(*BigQueryListDatasetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConnectorService_BigQueryListTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BigQueryListTablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).BigQueryListTables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_BigQueryListTables_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).BigQueryListTables(ctx, req.(*BigQueryListTablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConnectorService_ServiceDesc is the grpc.ServiceDesc for ConnectorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -556,6 +628,14 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTable",
 			Handler:    _ConnectorService_GetTable_Handler,
+		},
+		{
+			MethodName: "BigQueryListDatasets",
+			Handler:    _ConnectorService_BigQueryListDatasets_Handler,
+		},
+		{
+			MethodName: "BigQueryListTables",
+			Handler:    _ConnectorService_BigQueryListTables_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
