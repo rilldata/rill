@@ -13,7 +13,7 @@ Rill supports connecting directly to your own OLAP engine via a "live connector"
 
 :::tip Models on Live Connectors
 
-Rill also offers the ability to ingest and create tables directly from a [data source](/connect/data-source) to your OLAP engine via the live connector, however you'll need to consider a few topics.
+Rill also offers the ability to ingest and create tables directly from a [data source](/build/connectors/data-source) to your OLAP engine via the live connector, however you'll need to consider a few topics.
 
 - **Use a test database** to avoid accidentally overwriting production data
 - **Incremental processing and related queries are not supported**
@@ -44,41 +44,41 @@ Rill supports the use of several different OLAP engines to power your dashboards
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-DuckDB.svg" alt="DuckDB" />}
+    icon={<img src="/img/build/connectors/icons/Logo-DuckDB.svg" alt="DuckDB" />}
     content="Add extra parameters to Rill's embedded DuckDB or connect your own."
-    link="/connect/olap/duckdb"
+    link="/build/connectors/olap/duckdb"
     linkLabel="Learn more"
     referenceLink="duckdb"
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Clickhouse.svg" alt="ClickHouse" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Clickhouse.svg" alt="ClickHouse" />}
     content="High-performance columnar database for real-time analytics and data warehousing."
-    link="/connect/olap/clickhouse"
+    link="/build/connectors/olap/clickhouse"
     linkLabel="Learn more"
     referenceLink="clickhouse"
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Motherduck.svg" alt="MotherDuck" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Motherduck.svg" alt="MotherDuck" />}
     content="Cloud-native DuckDB service for scalable analytics and data processing."
-    link="/connect/olap/motherduck"
+    link="/build/connectors/olap/motherduck"
     linkLabel="Learn more"
     referenceLink="motherduck"
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Druid.svg" alt="Druid" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Druid.svg" alt="Druid" />}
     content="Real-time analytics database designed for high-performance OLAP queries."
-    link="/connect/olap/druid"
+    link="/build/connectors/olap/druid"
     linkLabel="Learn more"
     referenceLink="druid"
   />
 
   <ConnectorIcon
-    icon={<img src="/img/connect/icons/Logo-Pinot.svg" alt="Pinot" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Pinot.svg" alt="Pinot" />}
     content="Distributed OLAP datastore for real-time analytics and business intelligence."
-    link="/connect/olap/pinot"
+    link="/build/connectors/olap/pinot"
     linkLabel="Learn more"
     referenceLink="pinot"
   />
@@ -86,12 +86,12 @@ Rill supports the use of several different OLAP engines to power your dashboards
 
 
 :::note Additional OLAP Engines
-Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/connect/olap) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
+Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, refer to our [OLAP Engines](/build/connectors/olap) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](/contact)!
 :::
 
 ## Multiple OLAP Engines in a Single Project
 
-Rill supports the use of multiple OLAP engines in a single project with some limitations. For more detailed information, see our reference on [multiple OLAP engines](/connect/olap/multiple-olap). The basic use cases for multiple engines in a single project are:
+Rill supports the use of multiple OLAP engines in a single project with some limitations. For more detailed information, see our reference on [multiple OLAP engines](/build/connectors/olap/multiple-olap). The basic use cases for multiple engines in a single project are:
 
 1. Using Rill on top of already created and optimized tables from different OLAP sources.
 2. Separating data based on size, as performance on different engines differs based on the size of the data.
@@ -122,9 +122,9 @@ Check [here](https://www.rilldata.com/case-studies) to see examples of use cases
 
 ### External OLAP tables
 
-Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](/connect/olap) that have been configured in a particular project. These tables are not managed by Rill—hence, external—but allow users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need to unnecessarily ingest this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allows Rill to connect to the data directly (and submit analytical queries).
+Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](/build/connectors/olap) that have been configured in a particular project. These tables are not managed by Rill—hence, external—but allow users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need to unnecessarily ingest this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allows Rill to connect to the data directly (and submit analytical queries).
 
-<img src = '/img/connect/external-tables/external-olap-db.png' class='rounded-gif' />
+<img src = '/img/build/connectors/external-tables/external-olap-db.png' class='rounded-gif' />
 <br />
 
 ## Performance Tips
@@ -155,7 +155,7 @@ If looking to track uniques, but with smaller datasets and significantly improve
 
 ### Lookups
 
-While joins can kill the performance of [OLAP engines](/connect/olap), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
+While joins can kill the performance of [OLAP engines](/build/connectors/olap), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
 
 **Static Lookups** 
 

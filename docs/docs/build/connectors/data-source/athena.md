@@ -61,7 +61,7 @@ If you do not have the AWS CLI installed and authenticated, follow these steps:
 
 3. If your organization does not have SSO configured:
 
-    a. Follow the steps described in [How to create an AWS service account using the AWS Management Console](./s3.md#how-to-create-an-aws-service-account-using-the-aws-management-console), which you will find below on this page.
+    a. Follow the steps described in [How to create an AWS service account using the AWS Management Console](./s3#how-to-create-an-aws-service-account-using-the-aws-management-console), which you will find below on this page.
 
     b. Run the following command and provide the access key, access secret, and default region when prompted (you can leave the "Default output format" blank):
     ```
@@ -72,7 +72,7 @@ You have now configured AWS access from your local environment. Rill will detect
 
 :::tip Did you know?
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/connect/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
+If this project has already been deployed to Rill Cloud and credentials have been set for this connector, you can use `rill env pull` to [pull these cloud credentials](/build/connectors/credentials#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 
@@ -80,7 +80,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
-For more details, see our [Dev/Prod setup docs](/connect/templating).
+For more details, see our [Dev/Prod setup docs](/build/connectors/templating).
 
 ## Cloud deployment
 
@@ -93,7 +93,7 @@ rill env configure
 
 :::tip Did you know?
 
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/connectors/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 
 :::
 

@@ -25,7 +25,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Postgres",
 	Description: "Connect to Postgres.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/postgres",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
