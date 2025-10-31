@@ -50,8 +50,6 @@ To minimize costs:
 - Consider materializing frequently accessed queries as models in DuckDB
 - Monitor your warehouse's query costs and usage patterns
 
-For more information on using these engines, see our [BigQuery OLAP](/connect/olap/bigquery) and [Snowflake OLAP](/connect/olap/snowflake) documentation.
-
 :::
 
 **When to use warehouse connectors for APIs:**
