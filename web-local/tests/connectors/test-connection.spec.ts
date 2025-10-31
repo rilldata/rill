@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { test } from "./setup/base";
+import { test } from "../setup/base";
 
 test.describe("Test Connection", () => {
   test.use({ project: "Blank" });

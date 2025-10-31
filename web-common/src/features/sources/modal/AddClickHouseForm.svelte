@@ -35,13 +35,16 @@
   export let submitting: boolean;
   export let isSubmitDisabled: boolean;
   export let connectorType: ClickHouseConnectorType = "self-hosted";
+  export let connectionTab: ConnectorType = "parameters";
+  export let showSaveAnyway: boolean = false;
   export let onClose: () => void;
   export let setError: (
     error: string | null,
     details?: string,
   ) => void = () => {};
-  export let connectionTab: ConnectorType = "parameters";
+
   export { paramsForm, dsnForm };
+  export { handleSaveAnyway };
 
   const dispatch = createEventDispatcher();
 
@@ -198,6 +201,26 @@
     }
   }
 
+  async function handleSaveAnyway() {
+    // Delegate to parent component's handleSaveAnyway function
+    // The parent will handle all the logic including form validation bypass
+    const values = connectionTab === "dsn" ? $dsnForm : $paramsForm;
+
+    try {
+      await submitAddConnectorForm(
+        queryClient,
+        connector,
+        values,
+        true, // saveAnyway = true
+      );
+
+      onClose();
+    } catch (e) {
+      // Delegate error handling to parent component
+      setError(e?.message || "Unknown error", e?.details);
+    }
+  }
+
   async function handleOnUpdate<
     T extends Record<string, unknown>,
     M = any,
@@ -210,7 +233,13 @@
       { type: "success" | "failure" }
     >;
   }) {
-    if (!event.form.valid) return;
+    // Show Save Anyway button as soon as form submission starts
+    showSaveAnyway = true;
+
+    // Form validation is handled by the parent component
+    if (!event.form.valid) {
+      return;
+    }
     const values = { ...event.form.data };
 
     // Ensure ClickHouse Cloud specific requirements are met
@@ -224,7 +253,12 @@
     }
 
     try {
-      await submitAddConnectorForm(queryClient, connector, values);
+      await submitAddConnectorForm(
+        queryClient,
+        connector,
+        values,
+        false, // Normal submission, not saveAnyway
+      );
       onClose();
     } catch (e) {
       let error: string;
