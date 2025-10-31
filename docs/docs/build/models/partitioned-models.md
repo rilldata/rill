@@ -61,22 +61,18 @@ output:
 
 ```yaml
 type: model
+connector: snowflake
 
 partitions:
   connector: snowflake
   sql: |
-    SELECT DISTINCT DATE_TRUNC('MONTH', event_time) AS partition_month
-    FROM database.schema.events_table
-    WHERE event_time >= '2025-01-01'
+    select 
+      DISTINCT date_trunc('YEAR', release_date) as "year" 
+    from 
+      rillqa.public.horror_movies 
+    where "year" > '1999-01-01' limit 3
 
-connector: snowflake
-sql: |
-  SELECT *
-  FROM database.schema.events_table
-  WHERE DATE_TRUNC('MONTH', event_time) = '{{ .partition.partition_month }}'
-
-output:
-  connector: duckdb  # Results stored in DuckDB for fast dashboard queries
+sql: select * from rillqa.public.horror_movies where date_trunc('YEAR', release_date) = '{{ .partition.year }}'
 ```
 
 :::tip Why use multiple connectors?
@@ -85,8 +81,6 @@ Using BigQuery or Snowflake for partition discovery and data extraction, then ou
 - **Best of both worlds**: Leverage your warehouse's partitioning and scale for extraction
 - **Fast dashboards**: DuckDB provides extremely fast query performance for end-user dashboards
 - **Cost optimization**: Only query what you need from your warehouse, reducing scan costs
-
-For more information on OLAP engines, see our [BigQuery OLAP](/connect/olap/bigquery) and [Snowflake OLAP](/connect/olap/snowflake) documentation.
 
 :::
 
