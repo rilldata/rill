@@ -377,7 +377,7 @@ export async function deriveInterval(
       staleTime: Infinity,
     });
 
-    const timeRange = response.timeRanges?.[0];
+    const timeRange = response.resolvedTimeRanges?.[0];
 
     if (!timeRange?.start || !timeRange?.end) {
       return { interval: Interval.invalid("Invalid time range") };

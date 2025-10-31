@@ -56,7 +56,7 @@ export async function resolveTimeRanges(
       staleTime: Infinity,
     });
 
-    timeRangesResp.timeRanges?.forEach((tr, index) => {
+    timeRangesResp.resolvedTimeRanges?.forEach((tr, index) => {
       const mappedIndex = rillTimeToTimeRange.get(index);
       if (mappedIndex === undefined || !timeRangesToReturn[mappedIndex]) return;
       timeRangesToReturn[mappedIndex].start = new Date(tr.start!);

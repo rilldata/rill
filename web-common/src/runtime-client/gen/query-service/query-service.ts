@@ -1534,7 +1534,8 @@ export function createQueryServiceMetricsViewSearch<
 }
 
 /**
- * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+Deprecated: use MetricsViewTimeRanges instead.
  */
 export const queryServiceMetricsViewTimeRange = (
   instanceId: string,
@@ -1617,7 +1618,8 @@ export type QueryServiceMetricsViewTimeRangeQueryResult = NonNullable<
 export type QueryServiceMetricsViewTimeRangeQueryError = ErrorType<RpcStatus>;
 
 /**
- * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+Deprecated: use MetricsViewTimeRanges instead.
  */
 
 export function createQueryServiceMetricsViewTimeRange<
@@ -1657,6 +1659,9 @@ export function createQueryServiceMetricsViewTimeRange<
   return query;
 }
 
+/**
+ * @summary MetricsViewTimeRanges resolves time ranges for a metrics view.
+ */
 export const queryServiceMetricsViewTimeRanges = (
   instanceId: string,
   metricsViewName: string,
@@ -1736,6 +1741,10 @@ export type QueryServiceMetricsViewTimeRangesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>
 >;
 export type QueryServiceMetricsViewTimeRangesQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary MetricsViewTimeRanges resolves time ranges for a metrics view.
+ */
 
 export function createQueryServiceMetricsViewTimeRanges<
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,

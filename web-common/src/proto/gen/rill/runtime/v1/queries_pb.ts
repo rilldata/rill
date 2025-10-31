@@ -3536,24 +3536,28 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
   metricsViewName = "";
 
   /**
+   * Optional time range expressions to resolve (uses the rilltime expression syntax).
+   *
    * @generated from field: repeated string expressions = 3;
    */
   expressions: string[] = [];
 
   /**
+   * Optional query priority.
+   *
    * @generated from field: int32 priority = 4;
    */
   priority = 0;
 
   /**
-   * Optional timezone param to easily override time-range expressions
+   * Optional time zone that overrides the time zones used when resolving the time range expressions.
    *
    * @generated from field: string time_zone = 5;
    */
   timeZone = "";
 
   /**
-   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   * Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension.
    *
    * @generated from field: string time_dimension = 6;
    */
@@ -3597,7 +3601,24 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
  */
 export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRangesResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.TimeRange time_ranges = 1;
+   * The full time range summary for the requested time dimension.
+   *
+   * @generated from field: rill.runtime.v1.TimeRangeSummary full_time_range = 1;
+   */
+  fullTimeRange?: TimeRangeSummary;
+
+  /**
+   * The resolved time ranges for the requested rilltime expressions.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResolvedTimeRange resolved_time_ranges = 3;
+   */
+  resolvedTimeRanges: ResolvedTimeRange[] = [];
+
+  /**
+   * The same values as resolved_time_ranges for backwards compatibility.
+   * Deprecated: use resolved_time_ranges instead.
+   *
+   * @generated from field: repeated rill.runtime.v1.TimeRange time_ranges = 2;
    */
   timeRanges: TimeRange[] = [];
 
@@ -3609,7 +3630,9 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
+    { no: 1, name: "full_time_range", kind: "message", T: TimeRangeSummary },
+    { no: 3, name: "resolved_time_ranges", kind: "message", T: ResolvedTimeRange, repeated: true },
+    { no: 2, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesResponse {
@@ -3626,6 +3649,85 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
 
   static equals(a: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined, b: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined): boolean {
     return proto3.util.equals(MetricsViewTimeRangesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolvedTimeRange
+ */
+export class ResolvedTimeRange extends Message<ResolvedTimeRange> {
+  /**
+   * The start of the resolved time range.
+   *
+   * @generated from field: google.protobuf.Timestamp start = 1;
+   */
+  start?: Timestamp;
+
+  /**
+   * The end of the resolved time range.
+   *
+   * @generated from field: google.protobuf.Timestamp end = 2;
+   */
+  end?: Timestamp;
+
+  /**
+   * The time grain of the resolved time range.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain grain = 3;
+   */
+  grain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * The time dimension that was used to resolve the time range.
+   *
+   * @generated from field: string time_dimension = 4;
+   */
+  timeDimension = "";
+
+  /**
+   * The time zone that was used to resolve the time range.
+   *
+   * @generated from field: string time_zone = 5;
+   */
+  timeZone = "";
+
+  /**
+   * The original expression used to resolve the time range.
+   *
+   * @generated from field: string expression = 6;
+   */
+  expression = "";
+
+  constructor(data?: PartialMessage<ResolvedTimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolvedTimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "start", kind: "message", T: Timestamp },
+    { no: 2, name: "end", kind: "message", T: Timestamp },
+    { no: 3, name: "grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 4, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolvedTimeRange {
+    return new ResolvedTimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolvedTimeRange {
+    return new ResolvedTimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolvedTimeRange {
+    return new ResolvedTimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolvedTimeRange | PlainMessage<ResolvedTimeRange> | undefined, b: ResolvedTimeRange | PlainMessage<ResolvedTimeRange> | undefined): boolean {
+    return proto3.util.equals(ResolvedTimeRange, a, b);
   }
 }
 

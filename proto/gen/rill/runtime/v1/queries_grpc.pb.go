@@ -108,12 +108,14 @@ type QueryServiceClient interface {
 	// | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
 	// | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
 	MetricsViewRows(ctx context.Context, in *MetricsViewRowsRequest, opts ...grpc.CallOption) (*MetricsViewRowsResponse, error)
-	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+	// Deprecated: use MetricsViewTimeRanges instead.
 	MetricsViewTimeRange(ctx context.Context, in *MetricsViewTimeRangeRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangeResponse, error)
 	// MetricsViewSchema Get the data types of measures and dimensions
 	MetricsViewSchema(ctx context.Context, in *MetricsViewSchemaRequest, opts ...grpc.CallOption) (*MetricsViewSchemaResponse, error)
 	// MetricsViewSearch Get the data types of measures and dimensions
 	MetricsViewSearch(ctx context.Context, in *MetricsViewSearchRequest, opts ...grpc.CallOption) (*MetricsViewSearchResponse, error)
+	// MetricsViewTimeRanges resolves time ranges for a metrics view.
 	MetricsViewTimeRanges(ctx context.Context, in *MetricsViewTimeRangesRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangesResponse, error)
 	MetricsViewAnnotations(ctx context.Context, in *MetricsViewAnnotationsRequest, opts ...grpc.CallOption) (*MetricsViewAnnotationsResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -523,12 +525,14 @@ type QueryServiceServer interface {
 	// | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
 	// | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
 	MetricsViewRows(context.Context, *MetricsViewRowsRequest) (*MetricsViewRowsResponse, error)
-	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+	// Deprecated: use MetricsViewTimeRanges instead.
 	MetricsViewTimeRange(context.Context, *MetricsViewTimeRangeRequest) (*MetricsViewTimeRangeResponse, error)
 	// MetricsViewSchema Get the data types of measures and dimensions
 	MetricsViewSchema(context.Context, *MetricsViewSchemaRequest) (*MetricsViewSchemaResponse, error)
 	// MetricsViewSearch Get the data types of measures and dimensions
 	MetricsViewSearch(context.Context, *MetricsViewSearchRequest) (*MetricsViewSearchResponse, error)
+	// MetricsViewTimeRanges resolves time ranges for a metrics view.
 	MetricsViewTimeRanges(context.Context, *MetricsViewTimeRangesRequest) (*MetricsViewTimeRangesResponse, error)
 	MetricsViewAnnotations(context.Context, *MetricsViewAnnotationsRequest) (*MetricsViewAnnotationsResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
