@@ -49,7 +49,7 @@ dimensions:
     column: domain
 measures:
   - name: total_records
-    label: Total records
+    display_name: Total records
     expression: COUNT(*)
 ```
 

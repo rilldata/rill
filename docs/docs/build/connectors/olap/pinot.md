@@ -76,7 +76,7 @@ When deploying a Pinot-backed project to Rill Cloud, you have the following opti
 Multi-valued dimensions need to be defined in the dashboard YAML as expressions using the `arrayToMv` function. For example, if `RandomAirports` is a multi-valued column in a Pinot table, then the dimension definition will look like:
 
 ```yaml
-- label: RandomAirports
+- display_name: RandomAirports
   expression: arrayToMv(RandomAirports)
   name: RandomAirports
   description: "Random Airports"
