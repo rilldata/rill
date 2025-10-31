@@ -21,6 +21,178 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/databases", http.NoBody)
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var databaseSchemas []string
+	if err := json.NewDecoder(resp.Body).Decode(&databaseSchemas); err != nil {
+		return nil, "", err
+	}
+
+	sort.Strings(databaseSchemas)
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	startIndex := 0
+	if pageToken != "" {
+		startIndex, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
+	endIndex := startIndex + limit
+	if endIndex > len(databaseSchemas) {
+		endIndex = len(databaseSchemas)
+	}
+	if startIndex >= len(databaseSchemas) {
+		return []*drivers.DatabaseSchemaInfo{}, "", nil
+	}
+
+	result := make([]*drivers.DatabaseSchemaInfo, 0, endIndex-startIndex)
+	for _, s := range databaseSchemas[startIndex:endIndex] {
+		result = append(result, &drivers.DatabaseSchemaInfo{Database: "", DatabaseSchema: s})
+	}
+
+	next := ""
+	if endIndex < len(databaseSchemas) {
+		next = strconv.Itoa(endIndex)
+	}
+	return result, next, nil
+}
+
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+	req.Header.Set("database", databaseSchema)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var tablesResp pinotTables
+	err = json.NewDecoder(resp.Body).Decode(&tablesResp)
+	if err != nil {
+		return nil, "", err
+	}
+
+	sort.Strings(tablesResp.Tables)
+
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+	startIndex := 0
+	if pageToken != "" {
+		startIndex, err = strconv.Atoi(pageToken)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+	endIndex := startIndex + limit
+	if endIndex > len(tablesResp.Tables) {
+		endIndex = len(tablesResp.Tables)
+	}
+	if startIndex >= len(tablesResp.Tables) {
+		return []*drivers.TableInfo{}, "", nil
+	}
+
+	names := tablesResp.Tables[startIndex:endIndex]
+	result := make([]*drivers.TableInfo, 0, len(names))
+	for _, n := range names {
+		result = append(result, &drivers.TableInfo{Name: n, View: false})
+	}
+
+	next := ""
+	if endIndex < len(tablesResp.Tables) {
+		next = strconv.Itoa(endIndex)
+	}
+	return result, next, nil
+}
+
+func (c *connection) GetTable(ctx context.Context, database, databaseSchema, name string) (*drivers.TableMetadata, error) {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+	req.Header.Set("database", databaseSchema)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var schemaResponse pinotSchema
+	err = json.NewDecoder(resp.Body).Decode(&schemaResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	schema := make(map[string]string)
+	for _, field := range schemaResponse.DateTimeFieldSpecs {
+		if field.DataType != "TIMESTAMP" && field.DataType != "LONG" {
+			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_DATE_TIME")
+			continue
+		}
+		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
+		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
+		} else {
+			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
+		}
+	}
+	for _, field := range schemaResponse.DimensionFieldSpecs {
+		// Skip fields where SingleValueField is false (i.e. arrays).
+		if field.SingleValueField != nil && !*field.SingleValueField {
+			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_ARRAY")
+			continue
+		}
+		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
+		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
+		} else {
+			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
+		}
+	}
+	for _, field := range schemaResponse.MetricFieldSpecs {
+		// Skip fields where SingleValueField is false (i.e. arrays).
+		if field.SingleValueField != nil && !*field.SingleValueField {
+			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType+"_ARRAY")
+			continue
+		}
+		pbType := databaseTypeToPB(field.DataType, !field.NotNull, true)
+		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			schema[field.Name] = fmt.Sprintf("UNKNOWN(%s)", field.DataType)
+		} else {
+			schema[field.Name] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
+		}
+	}
+
+	return &drivers.TableMetadata{Schema: schema, View: false}, nil
+}
+
 func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.schemaURL+"/tables", http.NoBody)
