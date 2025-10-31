@@ -139,11 +139,6 @@ require (
 )
 
 require (
-	github.com/duckdb/duckdb-go/arrowmapping v0.0.24 // indirect
-	github.com/duckdb/duckdb-go/mapping v0.0.24 // indirect
-)
-
-require (
 	cel.dev/expr v0.24.0 // indirect
 	cloud.google.com/go/auth v0.16.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -233,6 +228,8 @@ require (
 	github.com/duckdb/duckdb-go-bindings/linux-amd64 v0.1.22 // indirect
 	github.com/duckdb/duckdb-go-bindings/linux-arm64 v0.1.22 // indirect
 	github.com/duckdb/duckdb-go-bindings/windows-amd64 v0.1.22 // indirect
+	github.com/duckdb/duckdb-go/arrowmapping v0.0.24 // indirect
+	github.com/duckdb/duckdb-go/mapping v0.0.24 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.8.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
