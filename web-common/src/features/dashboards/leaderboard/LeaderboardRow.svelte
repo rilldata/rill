@@ -8,15 +8,15 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
-  import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
+  import { type LeaderboardItemData, makeHref } from "./leaderboard-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
     DEFAULT_COLUMN_WIDTH,
-    valueColumn,
     deltaColumn,
+    valueColumn,
   } from "./leaderboard-widths";
 
   export let itemData: LeaderboardItemData;

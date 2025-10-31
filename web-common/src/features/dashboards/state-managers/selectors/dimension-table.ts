@@ -5,7 +5,7 @@ import type {
   V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import { isSummableMeasure } from "../../dashboard-utils";
+import { isPercentageMeasure, isSummableMeasure } from "../../dashboard-utils";
 import type { DimensionTableRow } from "../../dimension-table/dimension-table-types";
 import {
   prepareDimensionTableRows,
@@ -55,6 +55,8 @@ export const virtualizedTableColumns =
           measureTotals[m.name] = totalsQuery.data?.data?.[0]?.[
             m.name
           ] as number;
+        } else if (isPercentageMeasure(m)) {
+          measureTotals[m.name] = 1;
         } else {
           const numericValues = tableRows
             .map((row) => {
