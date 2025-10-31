@@ -225,10 +225,13 @@
           await updateProperties({ theme: value });
         }
       }}
-      onColorChange={async (primary, secondary) => {
+      onColorChange={async (primary, secondary, isDarkMode) => {
+        // TODO: Update to support dark mode - currently always sets light mode
+        // Use new theme structure: theme.light or theme.dark
+        const modeKey = isDarkMode ? "dark" : "light";
         await updateProperties({
           theme: {
-            colors: {
+            [modeKey]: {
               primary,
               secondary,
             },

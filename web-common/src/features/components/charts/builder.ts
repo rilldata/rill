@@ -18,12 +18,17 @@ import {
   isFieldConfig,
   mergedVlConfig,
   resolveColor,
+  resolveCSSVariable,
   sanitizeSortFieldForVega,
 } from "@rilldata/web-common/features/components/charts/util";
 import {
   BarHighlightColorDark,
   BarHighlightColorLight,
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import {
+  getDivergingColorsAsHex,
+  getSequentialColorsAsHex,
+} from "@rilldata/web-common/features/themes/palette-store";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
@@ -44,6 +49,7 @@ export function createMultiLayerBaseSpec() {
     width: "container",
     data: { name: "metrics-view" },
     autosize: { type: "fit" },
+    background: "transparent",
     layer: [],
   };
   return baseSpec;
@@ -127,7 +133,10 @@ export function createColorEncoding(
 
     if (colorMapping?.length) {
       const domain = colorMapping.map((mapping) => mapping.value);
-      const range = colorMapping.map((mapping) => mapping.color);
+      // Resolve CSS variables for canvas rendering
+      const range = colorMapping.map((mapping) =>
+        resolveCSSVariable(mapping.color),
+      );
 
       baseEncoding.scale = {
         domain,
@@ -140,9 +149,23 @@ export function createColorEncoding(
       const colorRange = colorField.colorRange;
 
       if (colorRange.mode === "scheme") {
-        baseEncoding.scale = {
-          scheme: colorRange.scheme,
-        };
+        // Support palette scheme names
+        if (colorRange.scheme === "sequential") {
+          // Use our sequential palette (9 colors) as hex for Vega compatibility
+          baseEncoding.scale = {
+            range: getSequentialColorsAsHex(),
+          };
+        } else if (colorRange.scheme === "diverging") {
+          // Use our diverging palette (11 colors) as hex for Vega compatibility
+          baseEncoding.scale = {
+            range: getDivergingColorsAsHex(),
+          };
+        } else {
+          // Use Vega's built-in color schemes
+          baseEncoding.scale = {
+            scheme: colorRange.scheme,
+          };
+        }
       } else if (colorRange.mode === "gradient") {
         baseEncoding.scale = {
           range: [

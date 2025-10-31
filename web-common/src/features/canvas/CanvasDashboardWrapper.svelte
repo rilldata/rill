@@ -1,14 +1,15 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { unorderedParamsAreEqual } from "@rilldata/web-common/lib/url-utils.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy, onMount } from "svelte";
   import { get } from "svelte/store";
+  import { updateThemeVariables } from "../themes/actions";
+  import { themeControl } from "../themes/theme-control";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { page } from "$app/stores";
-  import { updateThemeVariables } from "../themes/actions";
 
   export let maxWidth: number;
   export let clientWidth = 0;
@@ -18,6 +19,8 @@
   export let embedded: boolean = false;
   export let homeBookmarkUrlSearch: string | undefined = undefined;
   export let onClick: () => void = () => {};
+
+  let themeBoundary: HTMLElement | null = null;
 
   let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
 
@@ -34,7 +37,10 @@
 
   $: ({ width: clientWidth } = contentRect);
 
-  $: updateThemeVariables($themeSpec);
+  $: if (themeBoundary) {
+    $themeControl;
+    updateThemeVariables($themeSpec, themeBoundary);
+  }
 
   onMount(async () => {
     await waitUntil(() => !get(defaultUrlParamsStore).isPending, 500);
@@ -54,6 +60,7 @@
 
 <main
   class="flex flex-col dashboard-theme-boundary overflow-hidden"
+  bind:this={themeBoundary}
   class:w-full={$dynamicHeight}
   class:size-full={!$dynamicHeight}
 >

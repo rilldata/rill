@@ -6,6 +6,8 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { type FieldConfig } from "@rilldata/web-common/features/components/charts/types";
   import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
+  import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
+  import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ColorPaletteSelector from "./field-config/ColorPaletteSelector.svelte";
   import FieldConfigPopover from "./field-config/FieldConfigPopover.svelte";
@@ -20,8 +22,11 @@
 
   $: ({ instanceId } = $runtime);
   $: ({
-    canvasEntity: { selectedComponent, theme },
+    canvasEntity: { selectedComponent, themeSpec },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: isThemeModeDark = $themeControl === "dark";
+  $: resolvedTheme = resolveThemeColors($themeSpec, isThemeModeDark);
 
   $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
 
@@ -99,14 +104,16 @@
   </div>
 {:else if selected === 0}
   <div class="pt-2">
-    <SingleColorSelector
-      small
-      theme={$theme}
-      markConfig={typeof markConfig === "string" ? markConfig : "primary"}
-      onChange={(newColor) => {
-        onChange(newColor);
-      }}
-    />
+    {#key `${isThemeModeDark}-${resolvedTheme.primary.hex()}-${resolvedTheme.secondary.hex()}`}
+      <SingleColorSelector
+        small
+        theme={resolvedTheme}
+        markConfig={typeof markConfig === "string" ? markConfig : "primary"}
+        onChange={(newColor) => {
+          onChange(newColor);
+        }}
+      />
+    {/key}
   </div>
 {:else if selected === 1}
   <SingleFieldInput
