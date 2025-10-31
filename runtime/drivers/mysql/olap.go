@@ -119,13 +119,9 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 
 	rtSchema := &runtimev1.StructType{}
 	for name, typ := range meta.Schema {
-		t, err := databaseTypeToPB(typ, true)
-		if err != nil {
-			return nil, err
-		}
 		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
 			Name: name,
-			Type: t,
+			Type: databaseTypeToPB(typ, true),
 		})
 	}
 	return &drivers.OlapTable{
@@ -156,21 +152,16 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 			nullable = true
 		}
 
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
 		fields[i] = &runtimev1.StructType_Field{
 			Name: ct.Name(),
-			Type: t,
+			Type: databaseTypeToPB(ct.DatabaseTypeName(), nullable),
 		}
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: nullable}
 	switch strings.ToUpper(dbt) {
 	case "DECIMAL":
@@ -214,9 +205,9 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "NULL":
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	default:
-		return nil, fmt.Errorf("unhandled MySQL type: %s", dbt)
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	}
-	return t, nil
+	return t
 }
 
 // mysqlRows wraps sqlx.Rows to provide MapScan method.

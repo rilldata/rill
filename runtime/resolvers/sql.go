@@ -132,6 +132,7 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	var sql string
 	if r.interactiveRowLimit != 0 {
 		if r.olap.Dialect() == drivers.DialectMySQL {
+			// subqueries in MySQL require an alias
 			sql = fmt.Sprintf("SELECT * FROM (\n%s\n) AS subquery LIMIT %d", r.sql, r.interactiveRowLimit+1)
 		} else {
 			sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
