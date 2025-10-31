@@ -2,7 +2,7 @@ export const MEASURE_CONFIG = {
   breakpoint: 960,
   chart: {
     height: 125,
-    fullHeight: 220,
+    fullHeight: 240,
   },
   bigNumber: {
     widthWithChart: 140,

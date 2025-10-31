@@ -5,7 +5,7 @@ import { DateTime, type DateTimeFormatOptions, Interval } from "luxon";
 // Formats a Luxon interval for human readable display throughout the application.
 export function prettyFormatTimeRange(
   interval: Interval | undefined,
-  grain: V1TimeGrain,
+  grain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
 ) {
   if (!interval?.isValid || !interval.start || !interval.end)
     return "Invalid interval";

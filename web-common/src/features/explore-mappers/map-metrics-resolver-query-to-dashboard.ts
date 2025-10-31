@@ -101,6 +101,59 @@ export function mapMetricsResolverQueryToDashboard(
   return partialExploreState;
 }
 
+const OperationMap: Record<string, V1Operation> = {
+  "": V1Operation.OPERATION_UNSPECIFIED,
+  eq: V1Operation.OPERATION_EQ,
+  neq: V1Operation.OPERATION_NEQ,
+  lt: V1Operation.OPERATION_LT,
+  lte: V1Operation.OPERATION_LTE,
+  gt: V1Operation.OPERATION_GT,
+  gte: V1Operation.OPERATION_GTE,
+  in: V1Operation.OPERATION_IN,
+  nin: V1Operation.OPERATION_NIN,
+  ilike: V1Operation.OPERATION_LIKE,
+  nilike: V1Operation.OPERATION_NLIKE,
+  or: V1Operation.OPERATION_OR,
+  and: V1Operation.OPERATION_AND,
+};
+export function mapResolverExpressionToV1Expression(
+  expr: Expression | undefined,
+): V1Expression | undefined {
+  if (!expr) return undefined;
+
+  if (expr.name) {
+    return { ident: expr.name };
+  }
+
+  if (expr.val) {
+    return { val: expr.val };
+  }
+
+  if (expr.cond) {
+    return maybeConvertEqualityToInExpressions({
+      cond: {
+        op: OperationMap[expr.cond.op] || V1Operation.OPERATION_UNSPECIFIED,
+        exprs: expr.cond.exprs
+          ?.map(mapResolverExpressionToV1Expression)
+          .filter(Boolean) as V1Expression[] | undefined,
+      },
+    });
+  }
+
+  if (expr.subquery) {
+    return {
+      subquery: {
+        dimension: expr.subquery.dimension.name,
+        measures: expr.subquery.measures.map((m) => m.name),
+        where: mapResolverExpressionToV1Expression(expr.subquery.where),
+        having: mapResolverExpressionToV1Expression(expr.subquery.having),
+      },
+    };
+  }
+
+  return {};
+}
+
 function getValidDimensions(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
@@ -151,59 +204,6 @@ function mapResolverTimeRangeToDashboardControls(
 
   // Fallback to all-time
   return { name: TimeRangePreset.ALL_TIME } as DashboardTimeControls;
-}
-
-const OperationMap: Record<string, V1Operation> = {
-  "": V1Operation.OPERATION_UNSPECIFIED,
-  eq: V1Operation.OPERATION_EQ,
-  neq: V1Operation.OPERATION_NEQ,
-  lt: V1Operation.OPERATION_LT,
-  lte: V1Operation.OPERATION_LTE,
-  gt: V1Operation.OPERATION_GT,
-  gte: V1Operation.OPERATION_GTE,
-  in: V1Operation.OPERATION_IN,
-  nin: V1Operation.OPERATION_NIN,
-  ilike: V1Operation.OPERATION_LIKE,
-  nilike: V1Operation.OPERATION_NLIKE,
-  or: V1Operation.OPERATION_OR,
-  and: V1Operation.OPERATION_AND,
-};
-function mapResolverExpressionToV1Expression(
-  expr: Expression | undefined,
-): V1Expression | undefined {
-  if (!expr) return undefined;
-
-  if (expr.name) {
-    return { ident: expr.name };
-  }
-
-  if (expr.val) {
-    return { val: expr.val };
-  }
-
-  if (expr.cond) {
-    return maybeConvertEqualityToInExpressions({
-      cond: {
-        op: OperationMap[expr.cond.op] || V1Operation.OPERATION_UNSPECIFIED,
-        exprs: expr.cond.exprs
-          ?.map(mapResolverExpressionToV1Expression)
-          .filter(Boolean) as V1Expression[] | undefined,
-      },
-    });
-  }
-
-  if (expr.subquery) {
-    return {
-      subquery: {
-        dimension: expr.subquery.dimension.name,
-        measures: expr.subquery.measures.map((m) => m.name),
-        where: mapResolverExpressionToV1Expression(expr.subquery.where),
-        having: mapResolverExpressionToV1Expression(expr.subquery.having),
-      },
-    };
-  }
-
-  return {};
 }
 
 function mapSort(

@@ -3,6 +3,7 @@
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     type DashboardTimeControls,
@@ -10,6 +11,7 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { DateTime, Interval } from "luxon";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
 
@@ -19,6 +21,8 @@
 
   let priorRange: DashboardTimeControls | null = null;
   let button: HTMLButtonElement;
+
+  $: ({ instanceId } = $runtime);
 
   const StateManagers = getStateManagers();
   const {
@@ -56,6 +60,7 @@
     }
 
     const isMac = window.navigator.userAgent.includes("Macintosh");
+    const isExplainKey = e.key === "e" && !e.metaKey && !e.ctrlKey;
 
     if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {
@@ -75,6 +80,8 @@
         e.key === "Escape"
       ) {
         metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
+      } else if (isExplainKey) {
+        measureSelection.startAnomalyExplanationChat(instanceId, exploreName);
       }
     } else if (
       priorRange &&
@@ -83,6 +90,8 @@
     ) {
       e.preventDefault();
       undoZoom();
+    } else if (isExplainKey) {
+      measureSelection.startAnomalyExplanationChat(instanceId, exploreName);
     }
   }
 
