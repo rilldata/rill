@@ -445,43 +445,9 @@
   $: shouldShowSaveAnywayButton =
     isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
 
-  $: primaryDisabled = isClickhouse
-    ? clickhouseSubmitting || clickhouseIsSubmitDisabled || saveAnyway
-    : submitting || isSubmitDisabled || saveAnyway;
-
-  $: primaryLoading = isClickhouse
-    ? clickhouseSubmitting && !saveAnyway
-    : submitting && !saveAnyway;
-
   $: saveAnywayLoading = isClickhouse
     ? clickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
-
-  $: primaryLoadingCopy = isClickhouse
-    ? saveAnyway
-      ? "Saving..."
-      : "Connecting..."
-    : "Testing connection...";
-
-  $: primaryLabel = (() => {
-    if (isClickhouse) {
-      if (clickhouseConnectorType === "rill-managed") {
-        if (clickhouseSubmitting && saveAnyway) return "Saving...";
-        if (clickhouseSubmitting && !saveAnyway) return "Connecting...";
-        return "Connect";
-      } else {
-        if (clickhouseSubmitting && saveAnyway) return "Saving...";
-        if (clickhouseSubmitting && !saveAnyway) return "Testing connection...";
-        return "Test and Connect";
-      }
-    } else if (isConnectorForm) {
-      if (submitting && !saveAnyway) return "Testing connection...";
-      return "Test and Connect";
-    } else {
-      if (submitting && !saveAnyway) return "Testing connection...";
-      return "Test and Add data";
-    }
-  })();
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
