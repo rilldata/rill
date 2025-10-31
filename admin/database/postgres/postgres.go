@@ -777,6 +777,24 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
+func (c *connection) FindUserWithAttributes(ctx context.Context, userID, orgID string) (*database.User, map[string]any, error) {
+	var dto userWithAttributesDTO
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT u.*, uor.attributes
+		FROM users u
+		LEFT JOIN users_orgs_roles uor ON u.id = uor.user_id AND uor.org_id = $2
+		WHERE u.id = $1
+	`, userID, orgID).StructScan(&dto)
+	if err != nil {
+		return nil, nil, parseErr("user with org attributes", err)
+	}
+	user, attributes, err := dto.userWithAttributesFromDTO()
+	if err != nil {
+		return nil, nil, err
+	}
+	return user, attributes, nil
+}
+
 func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u
@@ -1789,7 +1807,7 @@ func (c *connection) ResolveProjectRolesForService(ctx context.Context, serviceI
 func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*database.OrganizationMemberUser, error) {
 	args := []any{orgID, afterEmail, limit}
 	var qry strings.Builder
-	qry.WriteString("SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name")
+	qry.WriteString("SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes")
 	if withCounts {
 		qry.WriteString(`,
 			(
@@ -1824,9 +1842,17 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
 
 	var res []*database.OrganizationMemberUser
-	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	var dtos []*organizationMemberUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("org members", err)
+	}
+	for _, dto := range dtos {
+		user, err := dto.organizationMemberUserFromDTO()
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, user)
 	}
 	return res, nil
 }
@@ -1878,9 +1904,14 @@ func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, 
 	return isAdmin, isLastAdmin, nil
 }
 
-func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error) {
+func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]interface{}, ifNotExists bool) (bool, error) {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
+		return false, err
+	}
+
 	if !ifNotExists {
-		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id) VALUES ($1, $2, $3)", userID, orgID, roleID)
+		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4)", userID, orgID, roleID, attrs)
 		if err != nil {
 			return false, parseErr("org member", err)
 		}
@@ -1895,10 +1926,10 @@ func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, us
 	}
 
 	res, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO users_orgs_roles (user_id, org_id, org_role_id)
-		VAlUES ($1, $2, $3)
+		INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id, org_id) DO NOTHING
-	`, userID, orgID, roleID)
+	`, userID, orgID, roleID, attributes)
 	if err != nil {
 		return false, parseErr("org member", err)
 	}
@@ -1922,6 +1953,30 @@ func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID
 	return checkUpdateRow("org member", res, err)
 }
 
+func (c *connection) UpdateOrganizationMemberUserAttributes(ctx context.Context, orgID, userID string, attributes map[string]any) (bool, error) {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
+		return false, err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE users_orgs_roles
+		SET attributes = $1
+		WHERE user_id = $2 AND org_id = $3
+	`, attrs, userID, orgID)
+	if err != nil {
+		return false, parseErr("org member attributes", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if rows > 1 {
+		panic(fmt.Errorf("expected to update 0 or 1 row, but updated %d", rows))
+	}
+	return rows != 0, nil
+}
+
 func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
@@ -1939,8 +1994,9 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 
 func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.OrganizationMemberUser, error) {
 	var res []*database.OrganizationMemberUser
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name
+	var dtos []*organizationMemberUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes
 		FROM users u
 		JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
@@ -1949,6 +2005,13 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 	`, orgID)
 	if err != nil {
 		return nil, parseErr("org members", err)
+	}
+	for _, dto := range dtos {
+		user, err := dto.organizationMemberUserFromDTO()
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, user)
 	}
 	return res, nil
 }
@@ -3295,6 +3358,72 @@ func (d *projectMemberServiceWithProjectDTO) projectMemberServiceWithProjectFrom
 	return d.ProjectMemberServiceWithProject, nil
 }
 
+type organizationMemberUserDTO struct {
+	*database.OrganizationMemberUser
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (dto *organizationMemberUserDTO) organizationMemberUserFromDTO() (*database.OrganizationMemberUser, error) {
+	user := &database.OrganizationMemberUser{
+		ID:              dto.ID,
+		Email:           dto.Email,
+		DisplayName:     dto.DisplayName,
+		PhotoURL:        dto.PhotoURL,
+		RoleName:        dto.RoleName,
+		ProjectsCount:   dto.ProjectsCount,
+		UsergroupsCount: dto.UsergroupsCount,
+		CreatedOn:       dto.CreatedOn,
+		UpdatedOn:       dto.UpdatedOn,
+	}
+
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := dto.Attributes.AssignTo(&attrs); err != nil {
+		return nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+	user.Attributes = attrs
+
+	return user, nil
+}
+
+type userWithAttributesDTO struct {
+	*database.User
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (dto *userWithAttributesDTO) userWithAttributesFromDTO() (*database.User, map[string]any, error) {
+	user := &database.User{
+		ID:                    dto.ID,
+		Email:                 dto.Email,
+		DisplayName:           dto.DisplayName,
+		PhotoURL:              dto.PhotoURL,
+		GithubUsername:        dto.GithubUsername,
+		GithubRefreshToken:    dto.GithubRefreshToken,
+		CreatedOn:             dto.CreatedOn,
+		UpdatedOn:             dto.UpdatedOn,
+		ActiveOn:              dto.ActiveOn,
+		QuotaSingleuserOrgs:   dto.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:        dto.QuotaTrialOrgs,
+		CurrentTrialOrgsCount: dto.CurrentTrialOrgsCount,
+		PreferenceTimeZone:    dto.PreferenceTimeZone,
+		Superuser:             dto.Superuser,
+	}
+
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := dto.Attributes.AssignTo(&attrs); err != nil {
+		return nil, nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+
+	return user, attrs, nil
+}
+
 func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
 	for _, v := range res {
 		if v.ValueEncryptionKeyID == "" {
@@ -3481,4 +3610,41 @@ func decrypt(ciphertext, key []byte) ([]byte, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+// validateAttributes validates keys and values of an attributes map, handling nil input
+func (c *connection) validateAttributes(attributes map[string]any) (map[string]any, error) {
+	if attributes == nil {
+		return make(map[string]any), nil
+	}
+
+	if len(attributes) > 50 {
+		return nil, fmt.Errorf("too many attributes: maximum 50 allowed, got %d", len(attributes))
+	}
+
+	for key, value := range attributes {
+		// Validate key format
+		if !isValidAttributeKey(key) {
+			return nil, fmt.Errorf("invalid attribute key '%s': must contain only alphanumeric characters and underscores", key)
+		}
+
+		// Validate value length
+		if str, ok := value.(string); ok && len(str) > 256 {
+			return nil, fmt.Errorf("attribute value for key '%s' too long: maximum 256 characters, got %d", key, len(str))
+		}
+	}
+	return attributes, nil
+}
+
+// isValidAttributeKey checks if an attribute key contains only alphanumeric characters and underscores
+func isValidAttributeKey(key string) bool {
+	if key == "" {
+		return false
+	}
+	for _, r := range key {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_') {
+			return false
+		}
+	}
+	return true
 }

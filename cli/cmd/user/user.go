@@ -14,9 +14,11 @@ func UserCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	userCmd.AddCommand(ListCmd(ch))
+	userCmd.AddCommand(ShowCmd(ch))
 	userCmd.AddCommand(AddCmd(ch))
 	userCmd.AddCommand(RemoveCmd(ch))
 	userCmd.AddCommand(SetRoleCmd(ch))
+	userCmd.AddCommand(SetAttributesCmd(ch))
 	userCmd.AddCommand(whitelist.WhitelistCmd(ch))
 
 	return userCmd

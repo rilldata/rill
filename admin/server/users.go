@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	// Load time zone data for time.ParseInLocation
@@ -610,6 +611,13 @@ func userToPB(u *database.User) *adminv1.User {
 }
 
 func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.OrganizationMemberUser {
+	var attributes *structpb.Struct
+	if len(m.Attributes) > 0 {
+		if s, err := structpb.NewStruct(m.Attributes); err == nil {
+			attributes = s
+		}
+	}
+
 	return &adminv1.OrganizationMemberUser{
 		UserId:          m.ID,
 		UserEmail:       m.Email,
@@ -620,6 +628,7 @@ func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.Organization
 		UsergroupsCount: uint32(m.UsergroupsCount),
 		CreatedOn:       timestamppb.New(m.CreatedOn),
 		UpdatedOn:       timestamppb.New(m.UpdatedOn),
+		Attributes:      attributes,
 	}
 }
 
