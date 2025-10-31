@@ -453,39 +453,13 @@
           submitForm
           type="primary"
         >
-          {#if connector.name === "clickhouse"}
-            {#if clickhouseConnectorType === "rill-managed"}
-              {#if clickhouseSubmitting}
-                Connecting...
-              {:else}
-                Connect
-              {/if}
-            {:else if clickhouseSubmitting}
-              Testing connection...
-            {:else}
-              Test and Connect
-            {/if}
-          {:else if isConnectorForm}
-            {#if isMultiStepConnector && stepState.step === "connector"}
-              {#if submitting}
-                Testing connection...
-              {:else}
-                Test and Connect
-              {/if}
-            {:else if isMultiStepConnector && stepState.step === "source"}
-              {#if submitting}
-                Creating model...
-              {:else}
-                Test and Add data
-              {/if}
-            {:else if submitting}
-              Testing connection...
-            {:else}
-              Test and Connect
-            {/if}
-          {:else}
-            Test and Add data
-          {/if}
+          {formManager.getPrimaryButtonLabel({
+            isConnectorForm,
+            step: stepState.step,
+            submitting,
+            clickhouseConnectorType,
+            clickhouseSubmitting,
+          })}
         </Button>
       </div>
     </div>

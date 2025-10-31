@@ -163,6 +163,36 @@ export class AddDataFormManager {
     }
   }
 
+  getPrimaryButtonLabel(args: {
+    isConnectorForm: boolean;
+    step: "connector" | "source" | string;
+    submitting: boolean;
+    clickhouseConnectorType?: ClickHouseConnectorType;
+    clickhouseSubmitting?: boolean;
+  }): string {
+    const { isConnectorForm, step, submitting, clickhouseConnectorType, clickhouseSubmitting } = args;
+    const isClickhouse = this.connector.name === "clickhouse";
+
+    if (isClickhouse) {
+      if (clickhouseConnectorType === "rill-managed") {
+        return clickhouseSubmitting ? "Connecting..." : "Connect";
+      }
+      return clickhouseSubmitting ? "Testing connection..." : "Test and Connect";
+    }
+
+    if (isConnectorForm) {
+      if (this.isMultiStepConnector && step === "connector") {
+        return submitting ? "Testing connection..." : "Test and Connect";
+      }
+      if (this.isMultiStepConnector && step === "source") {
+        return submitting ? "Creating model..." : "Test and Add data";
+      }
+      return submitting ? "Testing connection..." : "Test and Connect";
+    }
+
+    return "Test and Add data";
+  }
+
   makeOnUpdate(args: {
     onClose: () => void;
     queryClient: any;
