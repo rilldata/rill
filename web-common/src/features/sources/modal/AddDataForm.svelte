@@ -78,7 +78,6 @@
   $: isSourceForm = formManager.isSourceForm;
   $: isConnectorForm = formManager.isConnectorForm;
 
-  // Simple multi-step state management
   const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
     connector.name ?? "",
   );
@@ -105,10 +104,6 @@
 
     paramsForm.update(() => combinedValues, { taint: false });
   }
-
-  // Determine effective form type
-  $: effectiveFormType =
-    isMultiStepConnector && stepState.step === "source" ? "source" : formType;
 
   $: formHeight = formManager.formHeight;
 
