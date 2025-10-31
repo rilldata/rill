@@ -345,7 +345,7 @@
               <Dropdown.Content align="start" class="w-[224px]">
                 {#each projects as p (p.id)}
                   <Dropdown.CheckboxItem
-                    class="font-normal flex items-center"
+                    class="font-normal flex items-center overflow-hidden"
                     checked={selectedProjects.includes(p.name)}
                     on:click={() => {
                       const idx = selectedProjects.indexOf(p.name);
@@ -356,7 +356,7 @@
                       else selectedProjects = [...selectedProjects, p.name];
                     }}
                   >
-                    <span>{p.name}</span>
+                    <span class="truncate w-full" title={p.name}>{p.name}</span>
                   </Dropdown.CheckboxItem>
                 {/each}
               </Dropdown.Content>
