@@ -18,12 +18,6 @@ var validModes = map[string]bool{
 	"expensive": true,
 }
 
-// TestingT is an interface that matches *testing.T and *testing.B.
-type TestingT interface {
-	SkipNow()
-	Errorf(format string, args ...any)
-}
-
 // Expensive marks the test as an expensive operation.
 // Expensive tests only run when the environment variable RILL_RUNTIME_TEST_MODE=expensive is set.
 // They will error if the environment variable is not set, unless the -short flag is used, in which case they are skipped.
@@ -52,6 +46,12 @@ func Mode(t TestingT) string {
 	}
 
 	return val
+}
+
+// TestingT is an interface that matches *testing.T and *testing.B.
+type TestingT interface {
+	SkipNow()
+	Errorf(format string, args ...any)
 }
 
 // loadDotEnv loads the .env file at the repo root (if any).

@@ -14,6 +14,7 @@ import (
 )
 
 func TestOLAP(t *testing.T) {
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 	tests := []struct {
 		query  string
@@ -118,6 +119,7 @@ func TestOLAP(t *testing.T) {
 }
 
 func TestEmptyRows(t *testing.T) {
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT int_col, float_col FROM `rilldata.integration_test.all_datatypes` LIMIT 0"})
 	require.NoError(t, err)
@@ -133,6 +135,7 @@ func TestEmptyRows(t *testing.T) {
 }
 
 func TestExec(t *testing.T) {
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
 	// create table with dry run
@@ -149,6 +152,7 @@ func TestExec(t *testing.T) {
 }
 
 func TestScan(t *testing.T) {
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
 	t.Run("successful scan with various types", func(t *testing.T) {
@@ -286,8 +290,6 @@ func TestScan(t *testing.T) {
 }
 
 func acquireTestBigQuery(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
-	testmode.Expensive(t)
-
 	cfg := testruntime.AcquireConnector(t, "bigquery")
 	conn, err := drivers.Open("bigquery", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
