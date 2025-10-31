@@ -7,16 +7,9 @@
   import type { ActionResult } from "@sveltejs/kit";
   import { createEventDispatcher } from "svelte";
   import type { SuperValidated } from "sveltekit-superforms";
-  import {
-    inferSourceName,
-    prepareSourceFormData,
-    compileSourceYAML,
-  } from "../sourceUtils";
+  import { prepareSourceFormData, compileSourceYAML } from "../sourceUtils";
 
-  import {
-    submitAddConnectorForm,
-    submitAddSourceForm,
-  } from "./submitAddDataForm";
+  import { submitAddConnectorForm } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
@@ -39,6 +32,7 @@
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
+  import { hasOnlyDsn, applyClickHouseCloudRequirements } from "./helpers";
 
   const dispatch = createEventDispatcher();
 
@@ -49,10 +43,8 @@
 
   let saveAnyway = false;
   let showSaveAnyway = false;
-
   let isSourceForm: boolean;
   let isConnectorForm: boolean;
-
   let connectionTab: ConnectorType = "parameters";
 
   // Wire manager-provided onUpdate after declaration below
@@ -75,12 +67,15 @@
     onDsnUpdate: (e: any) => handleOnUpdate(e),
   });
 
-  $: isSourceForm = formManager.isSourceForm;
-  $: isConnectorForm = formManager.isConnectorForm;
-
   const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
     connector.name ?? "",
   );
+
+  $: isSourceForm = formManager.isSourceForm;
+  $: isConnectorForm = formManager.isConnectorForm;
+
+  $: onlyDsn = hasOnlyDsn(connector, isConnectorForm);
+
   $: stepState = $connectorStepStore;
 
   // Reactive properties based on current step
@@ -151,30 +146,9 @@
   let clickhouseShowSaveAnyway: boolean = false;
   let clickhouseHandleSaveAnyway: () => Promise<void>;
 
-  // Helper function to check if connector only has DSN (no tabs)
-  function hasOnlyDsn() {
-    return (
-      isConnectorForm &&
-      connector.configProperties?.some((property) => property.key === "dsn") &&
-      !connector.configProperties?.some((property) => property.key !== "dsn")
-    );
-  }
-
-  // Helper function to apply ClickHouse Cloud specific requirements
-  function applyClickHouseCloudRequirements(values: Record<string, unknown>) {
-    if (
-      connector.name === "clickhouse" &&
-      clickhouseConnectorType === "clickhouse-cloud"
-    ) {
-      (values as any).ssl = true;
-      (values as any).port = "8443";
-    }
-    return values;
-  }
-
   // Compute disabled state for the submit button
   $: isSubmitDisabled = (() => {
-    if (hasOnlyDsn() || connectionTab === "dsn") {
+    if (onlyDsn || connectionTab === "dsn") {
       // DSN form: check required DSN properties
       for (const property of dsnProperties) {
         const key = String(property.key);
@@ -211,7 +185,7 @@
   })();
 
   $: formId = (() => {
-    if (hasOnlyDsn() || connectionTab === "dsn") {
+    if (onlyDsn || connectionTab === "dsn") {
       return dsnFormId;
     } else {
       return paramsFormId;
@@ -219,7 +193,7 @@
   })();
 
   $: submitting = (() => {
-    if (hasOnlyDsn() || connectionTab === "dsn") {
+    if (onlyDsn || connectionTab === "dsn") {
       return $dsnSubmitting;
     } else {
       return $paramsSubmitting;
@@ -228,7 +202,7 @@
 
   // Reset errors when form is modified
   $: (() => {
-    if (hasOnlyDsn() || connectionTab === "dsn") {
+    if (onlyDsn || connectionTab === "dsn") {
       if ($dsnTainted) dsnError = null;
     } else {
       if ($paramsTainted) paramsError = null;
@@ -267,11 +241,14 @@
     saveAnyway = true;
 
     // Get the current form values based on the active form
-    const values =
-      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+    const values = onlyDsn || connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
     // Apply ClickHouse Cloud requirements if needed
-    const processedValues = applyClickHouseCloudRequirements(values);
+    const processedValues = applyClickHouseCloudRequirements(
+      connector.name,
+      clickhouseConnectorType,
+      values,
+    );
 
     try {
       // Only call submitAddConnectorForm since Save Anyway is connector-only
@@ -289,7 +266,7 @@
       );
 
       // Keep error state for each form - match the display logic
-      if (hasOnlyDsn() || connectionTab === "dsn") {
+      if (onlyDsn || connectionTab === "dsn") {
         dsnError = message;
         dsnErrorDetails = details;
       } else {
@@ -320,7 +297,7 @@
       fieldFilter: (property) => {
         // When in DSN mode, don't filter out noPrompt properties
         // because the DSN field itself might have noPrompt: true
-        if (hasOnlyDsn() || connectionTab === "dsn") {
+        if (onlyDsn || connectionTab === "dsn") {
           return true; // Show all DSN properties
         }
         return !property.noPrompt;
@@ -337,13 +314,13 @@
       fieldFilter: (property) => {
         // When in DSN mode, don't filter out noPrompt properties
         // because the DSN field itself might have noPrompt: true
-        if (hasOnlyDsn() || connectionTab === "dsn") {
+        if (onlyDsn || connectionTab === "dsn") {
           return true; // Show all DSN properties
         }
         return !property.noPrompt;
       },
       orderedProperties:
-        hasOnlyDsn() || connectionTab === "dsn"
+        onlyDsn || connectionTab === "dsn"
           ? filteredDsnProperties
           : filteredParamsProperties,
     });
@@ -403,8 +380,7 @@
       }
     }
 
-    const values =
-      hasOnlyDsn() || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+    const values = onlyDsn || connectionTab === "dsn" ? $dsnForm : $paramsForm;
 
     if (isConnectorForm) {
       // Connector form
@@ -681,10 +657,10 @@
     {#if dsnError || paramsError || clickhouseError}
       <SubmissionError
         message={clickhouseError ??
-          (hasOnlyDsn() || connectionTab === "dsn" ? dsnError : paramsError) ??
+          (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
           ""}
         details={clickhouseErrorDetails ??
-          (hasOnlyDsn() || connectionTab === "dsn"
+          (onlyDsn || connectionTab === "dsn"
             ? dsnErrorDetails
             : paramsErrorDetails) ??
           ""}
