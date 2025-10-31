@@ -21,11 +21,7 @@
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
 
-  import {
-    connectorStepStore,
-    setStep,
-    setConnectorConfig,
-  } from "./connectorStepStore";
+  import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
@@ -270,10 +266,6 @@
     ? clickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
 
-  function onStringInputChange(event: Event) {
-    formManager.onStringInputChange(event);
-  }
-
   handleOnUpdate = formManager.makeOnUpdate({
     onClose,
     queryClient,
@@ -288,28 +280,12 @@
     },
   });
 
-  // Handle file upload for credential files
   async function handleFileUpload(file: File): Promise<string> {
     return formManager.handleFileUpload(file);
   }
 
-  // Handle skip button for multi-step connectors
-  function handleSkip() {
-    if (!isMultiStepConnector || stepState.step !== "connector") return;
-
-    // Store current form values and transition to step 2
-    setConnectorConfig($paramsForm);
-    setStep("source");
-  }
-
-  function handleBack() {
-    if (isMultiStepConnector && stepState.step === "source") {
-      // Go back to step 1 (connector configuration)
-      setStep("connector");
-    } else {
-      // Use the original back behavior for non-multi-step or step 1
-      onBack();
-    }
+  function onStringInputChange(event: Event) {
+    formManager.onStringInputChange(event);
   }
 </script>
 
@@ -449,7 +425,9 @@
     <div
       class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
     >
-      <Button onClick={handleBack} type="secondary">Back</Button>
+      <Button onClick={() => formManager.handleBack(onBack)} type="secondary"
+        >Back</Button
+      >
 
       <div class="flex gap-2">
         {#if shouldShowSaveAnywayButton}
@@ -465,7 +443,9 @@
         {/if}
 
         {#if isMultiStepConnector && stepState.step === "connector"}
-          <Button onClick={handleSkip} type="secondary">Skip</Button>
+          <Button onClick={() => formManager.handleSkip()} type="secondary"
+            >Skip</Button
+          >
         {/if}
 
         <Button

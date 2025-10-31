@@ -137,6 +137,22 @@ export class AddDataFormManager {
     return MULTI_STEP_CONNECTORS.includes(this.connector.name ?? "");
   }
 
+  handleSkip(): void {
+    const stepState = get(connectorStepStore) as any;
+    if (!this.isMultiStepConnector || stepState.step !== "connector") return;
+    setConnectorConfig(get(this.params.form) as any);
+    setStep("source");
+  }
+
+  handleBack(onBack: () => void): void {
+    const stepState = get(connectorStepStore) as any;
+    if (this.isMultiStepConnector && stepState.step === "source") {
+      setStep("connector");
+    } else {
+      onBack();
+    }
+  }
+
   makeOnUpdate(args: {
     onClose: () => void;
     queryClient: any;
