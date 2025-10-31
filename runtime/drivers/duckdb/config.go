@@ -76,14 +76,16 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		return nil, fmt.Errorf("invalid mode '%s': must be 'read' or 'readwrite'", cfg.Mode)
 	}
 
-	// Validate that managed cannot be combined with path or attach
+	// Previously we did not require `managed: true` to use embedded DuckDB.
+	// For backward compatibility, we default to managed if no external config is provided.
 	hasExternalConfig := cfg.Path != "" || cfg.Attach != ""
+	if !hasExternalConfig {
+		cfg.Managed = true
+	}
+
+	// Validate that managed is not combined with external config.
 	if cfg.Managed && hasExternalConfig {
 		return nil, fmt.Errorf("'managed: true' cannot be combined with 'path' or 'attach' fields")
-	} else if !hasExternalConfig {
-		// Previously we did not require `managed: true` to use embedded DuckDB.
-		// For backward compatibility, we default to managed if no external config is provided.
-		cfg.Managed = true
 	}
 
 	// Set the mode for the connection
