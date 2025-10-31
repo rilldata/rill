@@ -169,17 +169,18 @@ export const GrainToOrder: Record<DateTimeUnit, Order> = {
   year: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_YEAR],
 };
 
-export function isGrainWithinMinimum(
-  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit,
-  minimum: V1TimeGrain | TimeGrainAlias | DateTimeUnit,
+export function isGrainAllowed(
+  grain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | undefined,
+  minTimeGrain: V1TimeGrain | TimeGrainAlias | DateTimeUnit | undefined,
 ) {
+  if (!grain) return false;
+  if (!minTimeGrain) return true;
   const grainOrder = getGrainOrder(grain);
-  const minimumOrder = getGrainOrder(minimum);
+  const minimumOrder = getGrainOrder(minTimeGrain);
 
-  if (grainOrder === undefined || minimumOrder === undefined) {
-    return false;
-  }
-  return grainOrder <= minimumOrder;
+  if (grainOrder === -1) return false;
+
+  return grainOrder >= minimumOrder;
 }
 
 export function getGrainOrder(
