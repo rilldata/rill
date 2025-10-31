@@ -584,7 +584,7 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 
 	// not checking access if its primary time dimension
 	if name == a.MetricsView.TimeDimension {
-		// check if its defined in the dimensions list otherwise return a default dimension spec
+		// check if its defined in the dimensions or time dimension list otherwise return a default dimension spec
 		for _, dim := range a.MetricsView.Dimensions {
 			if dim.Name == name {
 				return dim, nil
