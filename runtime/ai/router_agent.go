@@ -23,10 +23,10 @@ type RouterAgent struct {
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
-	Prompt      string `json:"prompt"`
-	Agent       string `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
-	Explore     string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
-	SkipHandoff bool   `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
+	Prompt           string            `json:"prompt"`
+	Agent            string            `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
+	AnalystAgentArgs *AnalystAgentArgs `json:"analyst_agent_args,omitempty" jsonschema:"Arguments to pass to the analyst agent if the selected agent is analyst_agent."`
+	SkipHandoff      bool              `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
 }
 
 type RouterAgentResult struct {
@@ -138,15 +138,18 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 	// Call the selected agent.
 	switch args.Agent {
 	case AnalystAgentName:
+		analystAgentArgs := args.AnalystAgentArgs
+		if analystAgentArgs == nil {
+			analystAgentArgs = &AnalystAgentArgs{}
+		}
+		analystAgentArgs.Prompt = args.Prompt
+
 		var res *AnalystAgentResult
 		_, err := s.CallToolWithOptions(ctx, &CallToolOptions{
 			Role: RoleUser, // TODO: Handle better (can't be assistant since it would be serialized as a tool call)
 			Tool: args.Agent,
 			Out:  &res,
-			Args: &AnalystAgentArgs{
-				Prompt:  args.Prompt,
-				Explore: args.Explore,
-			},
+			Args: analystAgentArgs,
 		})
 		if err != nil {
 			return nil, err
