@@ -133,84 +133,58 @@ const qualitativeStore = writable<QualitativeColors>({
 });
 
 /**
- * Reads the computed CSS variable value from the document element
+ * Reads the computed CSS variable value
+ * Checks scoped theme boundary first (Canvas/dashboards), then falls back to document root
  */
 function getCSSVariableValue(variableName: string): string {
   if (typeof window === "undefined") return "";
+
+  // Check for scoped theme boundary first (Canvas/dashboards use this for theme isolation)
+  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+  if (themeBoundary) {
+    const scopedValue = getComputedStyle(themeBoundary as HTMLElement)
+      .getPropertyValue(variableName)
+      .trim();
+    if (scopedValue) return scopedValue;
+  }
+
+  // Fall back to document root
   return getComputedStyle(document.documentElement)
     .getPropertyValue(variableName)
     .trim();
 }
 
 /**
+ * Generic helper to build palette colors object from CSS variables
+ */
+function buildPaletteColors<T>(prefix: string, count: number): T {
+  const colors: Record<string, string> = {};
+  for (let i = 1; i <= count; i++) {
+    const key = `${prefix}${i}`;
+    colors[key] = getCSSVariableValue(`--color-${prefix}-${i}`);
+  }
+  return colors as T;
+}
+
+/**
  * Updates sequential palette colors from CSS variables
  */
 function updateSequentialColors() {
-  const colors: SequentialColors = {
-    sequential1: getCSSVariableValue("--color-sequential-1"),
-    sequential2: getCSSVariableValue("--color-sequential-2"),
-    sequential3: getCSSVariableValue("--color-sequential-3"),
-    sequential4: getCSSVariableValue("--color-sequential-4"),
-    sequential5: getCSSVariableValue("--color-sequential-5"),
-    sequential6: getCSSVariableValue("--color-sequential-6"),
-    sequential7: getCSSVariableValue("--color-sequential-7"),
-    sequential8: getCSSVariableValue("--color-sequential-8"),
-    sequential9: getCSSVariableValue("--color-sequential-9"),
-  };
-  sequentialStore.set(colors);
+  sequentialStore.set(buildPaletteColors<SequentialColors>("sequential", 9));
 }
 
 /**
  * Updates diverging palette colors from CSS variables
  */
 function updateDivergingColors() {
-  const colors: DivergingColors = {
-    diverging1: getCSSVariableValue("--color-diverging-1"),
-    diverging2: getCSSVariableValue("--color-diverging-2"),
-    diverging3: getCSSVariableValue("--color-diverging-3"),
-    diverging4: getCSSVariableValue("--color-diverging-4"),
-    diverging5: getCSSVariableValue("--color-diverging-5"),
-    diverging6: getCSSVariableValue("--color-diverging-6"),
-    diverging7: getCSSVariableValue("--color-diverging-7"),
-    diverging8: getCSSVariableValue("--color-diverging-8"),
-    diverging9: getCSSVariableValue("--color-diverging-9"),
-    diverging10: getCSSVariableValue("--color-diverging-10"),
-    diverging11: getCSSVariableValue("--color-diverging-11"),
-  };
-  divergingStore.set(colors);
+  divergingStore.set(buildPaletteColors<DivergingColors>("diverging", 11));
 }
 
 /**
  * Updates qualitative palette colors from CSS variables
  */
 function updateQualitativeColors() {
-  const colors: QualitativeColors = {
-    qualitative1: getCSSVariableValue("--color-qualitative-1"),
-    qualitative2: getCSSVariableValue("--color-qualitative-2"),
-    qualitative3: getCSSVariableValue("--color-qualitative-3"),
-    qualitative4: getCSSVariableValue("--color-qualitative-4"),
-    qualitative5: getCSSVariableValue("--color-qualitative-5"),
-    qualitative6: getCSSVariableValue("--color-qualitative-6"),
-    qualitative7: getCSSVariableValue("--color-qualitative-7"),
-    qualitative8: getCSSVariableValue("--color-qualitative-8"),
-    qualitative9: getCSSVariableValue("--color-qualitative-9"),
-    qualitative10: getCSSVariableValue("--color-qualitative-10"),
-    qualitative11: getCSSVariableValue("--color-qualitative-11"),
-    qualitative12: getCSSVariableValue("--color-qualitative-12"),
-    qualitative13: getCSSVariableValue("--color-qualitative-13"),
-    qualitative14: getCSSVariableValue("--color-qualitative-14"),
-    qualitative15: getCSSVariableValue("--color-qualitative-15"),
-    qualitative16: getCSSVariableValue("--color-qualitative-16"),
-    qualitative17: getCSSVariableValue("--color-qualitative-17"),
-    qualitative18: getCSSVariableValue("--color-qualitative-18"),
-    qualitative19: getCSSVariableValue("--color-qualitative-19"),
-    qualitative20: getCSSVariableValue("--color-qualitative-20"),
-    qualitative21: getCSSVariableValue("--color-qualitative-21"),
-    qualitative22: getCSSVariableValue("--color-qualitative-22"),
-    qualitative23: getCSSVariableValue("--color-qualitative-23"),
-    qualitative24: getCSSVariableValue("--color-qualitative-24"),
-  };
-  qualitativeStore.set(colors);
+  qualitativeStore.set(buildPaletteColors<QualitativeColors>("qualitative", 24));
 }
 
 /**
@@ -278,17 +252,7 @@ export const sequentialColors: Readable<SequentialColors> =
  */
 export const sequentialColorsArray: Readable<string[]> = derived(
   sequentialColors,
-  ($colors) => [
-    $colors.sequential1,
-    $colors.sequential2,
-    $colors.sequential3,
-    $colors.sequential4,
-    $colors.sequential5,
-    $colors.sequential6,
-    $colors.sequential7,
-    $colors.sequential8,
-    $colors.sequential9,
-  ],
+  ($colors) => Object.values($colors) as string[],
 );
 
 /**
@@ -303,19 +267,7 @@ export const divergingColors: Readable<DivergingColors> =
  */
 export const divergingColorsArray: Readable<string[]> = derived(
   divergingColors,
-  ($colors) => [
-    $colors.diverging1,
-    $colors.diverging2,
-    $colors.diverging3,
-    $colors.diverging4,
-    $colors.diverging5,
-    $colors.diverging6,
-    $colors.diverging7,
-    $colors.diverging8,
-    $colors.diverging9,
-    $colors.diverging10,
-    $colors.diverging11,
-  ],
+  ($colors) => Object.values($colors) as string[],
 );
 
 /**
@@ -330,139 +282,66 @@ export const qualitativeColors: Readable<QualitativeColors> =
  */
 export const qualitativeColorsArray: Readable<string[]> = derived(
   qualitativeColors,
-  ($colors) => [
-    $colors.qualitative1,
-    $colors.qualitative2,
-    $colors.qualitative3,
-    $colors.qualitative4,
-    $colors.qualitative5,
-    $colors.qualitative6,
-    $colors.qualitative7,
-    $colors.qualitative8,
-    $colors.qualitative9,
-    $colors.qualitative10,
-    $colors.qualitative11,
-    $colors.qualitative12,
-    $colors.qualitative13,
-    $colors.qualitative14,
-    $colors.qualitative15,
-    $colors.qualitative16,
-    $colors.qualitative17,
-    $colors.qualitative18,
-    $colors.qualitative19,
-    $colors.qualitative20,
-    $colors.qualitative21,
-    $colors.qualitative22,
-    $colors.qualitative23,
-    $colors.qualitative24,
-  ],
+  ($colors) => Object.values($colors) as string[],
 );
+
+/**
+ * Generic helper to get a specific palette color by index
+ */
+function getPaletteColor<T>(
+  store: Readable<T>,
+  prefix: string,
+  index: number,
+  max: number,
+): Readable<string> {
+  if (index < 1 || index > max) {
+    throw new Error(`${prefix} color index must be between 1 and ${max}`);
+  }
+  return derived(store, ($colors) => 
+    ($colors as Record<string, string>)[`${prefix}${index}`]
+  );
+}
 
 /**
  * Get a specific sequential color by index (1-9)
  */
 export function getSequentialColor(index: number): Readable<string> {
-  if (index < 1 || index > 9) {
-    throw new Error("Sequential color index must be between 1 and 9");
-  }
-  return derived(sequentialColors, ($colors) => {
-    const key = `sequential${index}` as keyof SequentialColors;
-    return $colors[key];
-  });
+  return getPaletteColor(sequentialColors, "sequential", index, 9);
 }
 
 /**
  * Get a specific diverging color by index (1-11)
  */
 export function getDivergingColor(index: number): Readable<string> {
-  if (index < 1 || index > 11) {
-    throw new Error("Diverging color index must be between 1 and 11");
-  }
-  return derived(divergingColors, ($colors) => {
-    const key = `diverging${index}` as keyof DivergingColors;
-    return $colors[key];
-  });
+  return getPaletteColor(divergingColors, "diverging", index, 11);
 }
 
 /**
  * Get a specific qualitative color by index (1-24)
  */
 export function getQualitativeColor(index: number): Readable<string> {
-  if (index < 1 || index > 24) {
-    throw new Error("Qualitative color index must be between 1 and 24");
-  }
-  return derived(qualitativeColors, ($colors) => {
-    const key = `qualitative${index}` as keyof QualitativeColors;
-    return $colors[key];
-  });
+  return getPaletteColor(qualitativeColors, "qualitative", index, 24);
 }
 
 /**
  * Get current sequential colors as a plain object (non-reactive)
  */
 export function getSequentialColorsSnapshot(): SequentialColors {
-  return {
-    sequential1: getCSSVariableValue("--color-sequential-1"),
-    sequential2: getCSSVariableValue("--color-sequential-2"),
-    sequential3: getCSSVariableValue("--color-sequential-3"),
-    sequential4: getCSSVariableValue("--color-sequential-4"),
-    sequential5: getCSSVariableValue("--color-sequential-5"),
-    sequential6: getCSSVariableValue("--color-sequential-6"),
-    sequential7: getCSSVariableValue("--color-sequential-7"),
-    sequential8: getCSSVariableValue("--color-sequential-8"),
-    sequential9: getCSSVariableValue("--color-sequential-9"),
-  };
+  return buildPaletteColors<SequentialColors>("sequential", 9);
 }
 
 /**
  * Get current diverging colors as a plain object (non-reactive)
  */
 export function getDivergingColorsSnapshot(): DivergingColors {
-  return {
-    diverging1: getCSSVariableValue("--color-diverging-1"),
-    diverging2: getCSSVariableValue("--color-diverging-2"),
-    diverging3: getCSSVariableValue("--color-diverging-3"),
-    diverging4: getCSSVariableValue("--color-diverging-4"),
-    diverging5: getCSSVariableValue("--color-diverging-5"),
-    diverging6: getCSSVariableValue("--color-diverging-6"),
-    diverging7: getCSSVariableValue("--color-diverging-7"),
-    diverging8: getCSSVariableValue("--color-diverging-8"),
-    diverging9: getCSSVariableValue("--color-diverging-9"),
-    diverging10: getCSSVariableValue("--color-diverging-10"),
-    diverging11: getCSSVariableValue("--color-diverging-11"),
-  };
+  return buildPaletteColors<DivergingColors>("diverging", 11);
 }
 
 /**
  * Get current qualitative colors as a plain object (non-reactive)
  */
 export function getQualitativeColorsSnapshot(): QualitativeColors {
-  return {
-    qualitative1: getCSSVariableValue("--color-qualitative-1"),
-    qualitative2: getCSSVariableValue("--color-qualitative-2"),
-    qualitative3: getCSSVariableValue("--color-qualitative-3"),
-    qualitative4: getCSSVariableValue("--color-qualitative-4"),
-    qualitative5: getCSSVariableValue("--color-qualitative-5"),
-    qualitative6: getCSSVariableValue("--color-qualitative-6"),
-    qualitative7: getCSSVariableValue("--color-qualitative-7"),
-    qualitative8: getCSSVariableValue("--color-qualitative-8"),
-    qualitative9: getCSSVariableValue("--color-qualitative-9"),
-    qualitative10: getCSSVariableValue("--color-qualitative-10"),
-    qualitative11: getCSSVariableValue("--color-qualitative-11"),
-    qualitative12: getCSSVariableValue("--color-qualitative-12"),
-    qualitative13: getCSSVariableValue("--color-qualitative-13"),
-    qualitative14: getCSSVariableValue("--color-qualitative-14"),
-    qualitative15: getCSSVariableValue("--color-qualitative-15"),
-    qualitative16: getCSSVariableValue("--color-qualitative-16"),
-    qualitative17: getCSSVariableValue("--color-qualitative-17"),
-    qualitative18: getCSSVariableValue("--color-qualitative-18"),
-    qualitative19: getCSSVariableValue("--color-qualitative-19"),
-    qualitative20: getCSSVariableValue("--color-qualitative-20"),
-    qualitative21: getCSSVariableValue("--color-qualitative-21"),
-    qualitative22: getCSSVariableValue("--color-qualitative-22"),
-    qualitative23: getCSSVariableValue("--color-qualitative-23"),
-    qualitative24: getCSSVariableValue("--color-qualitative-24"),
-  };
+  return buildPaletteColors<QualitativeColors>("qualitative", 24);
 }
 
 /**

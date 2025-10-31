@@ -234,6 +234,28 @@ export function getColorMappingForChart(
  * Checks scoped theme boundary first, then falls back to document root
  * For palette variables, explicitly resolves to light/dark variant based on current theme
  */
+/**
+ * Helper to read CSS variable from scoped theme boundary or document root
+ */
+function getCSSVarValue(varName: string): string {
+  // Check scoped theme boundary first (Canvas/dashboard context)
+  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
+  if (themeBoundary) {
+    const scopedValue = getComputedStyle(
+      themeBoundary as HTMLElement,
+    ).getPropertyValue(varName);
+    if (scopedValue && scopedValue.trim()) {
+      return scopedValue.trim();
+    }
+  }
+
+  // Fall back to document root
+  const computed = getComputedStyle(document.documentElement).getPropertyValue(
+    varName,
+  );
+  return computed && computed.trim() ? computed.trim() : "";
+}
+
 export function resolveCSSVariable(
   cssVar: string,
   isDarkMode?: boolean,
@@ -247,60 +269,29 @@ export function resolveCSSVariable(
     .split(",")[0]
     .trim();
 
-  // Determine dark mode if not explicitly provided
-  const darkMode =
-    isDarkMode ?? document.documentElement.classList.contains("dark");
+  // Try reading the variable directly - CSS scoping handles light/dark variants
+  const value = getCSSVarValue(varName);
+  if (value) return value;
 
-  // For theme palette variables (--color-theme-600, --color-primary-500, etc),
-  // these use light-dark() CSS function, so resolve to explicit light/dark variant
+  // Fallback: For theme palette variables, try explicit light/dark variants
+  // This handles cases where themes are applied dynamically to scoped elements
   const palettePattern =
     /^--color-(theme|primary|secondary|theme-secondary)-(\d+)$/;
   const match = varName.match(palettePattern);
 
   if (match) {
+    const darkMode =
+      isDarkMode ?? document.documentElement.classList.contains("dark");
     const [, colorType, shade] = match;
     const modeVariant = darkMode
       ? `--color-${colorType}-dark-${shade}`
       : `--color-${colorType}-light-${shade}`;
 
-    // Try scoped theme boundary first
-    const themeBoundary = document.querySelector(".dashboard-theme-boundary");
-    if (themeBoundary) {
-      const scopedValue = getComputedStyle(
-        themeBoundary as HTMLElement,
-      ).getPropertyValue(modeVariant);
-      if (scopedValue && scopedValue.trim()) {
-        return scopedValue.trim();
-      }
-    }
-
-    // Fall back to document root
-    const computed = getComputedStyle(
-      document.documentElement,
-    ).getPropertyValue(modeVariant);
-    if (computed && computed.trim()) {
-      return computed.trim();
-    }
+    const fallbackValue = getCSSVarValue(modeVariant);
+    if (fallbackValue) return fallbackValue;
   }
 
-  // For other variables, read directly from the appropriate context
-  // First check if there's a dashboard-theme-boundary element (scoped themes)
-  const themeBoundary = document.querySelector(".dashboard-theme-boundary");
-  if (themeBoundary) {
-    const scopedValue = getComputedStyle(
-      themeBoundary as HTMLElement,
-    ).getPropertyValue(varName);
-    if (scopedValue && scopedValue.trim()) {
-      return scopedValue.trim();
-    }
-  }
-
-  // Fall back to document root for global variables
-  const computed = getComputedStyle(document.documentElement).getPropertyValue(
-    varName,
-  );
-
-  return computed && computed.trim() ? computed.trim() : cssVar;
+  return cssVar;
 }
 
 /**

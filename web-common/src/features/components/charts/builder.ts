@@ -25,6 +25,10 @@ import {
   BarHighlightColorDark,
   BarHighlightColorLight,
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import {
+  getDivergingColorsAsHex,
+  getSequentialColorsAsHex,
+} from "@rilldata/web-common/features/themes/palette-store";
 import type { Color } from "chroma-js";
 import merge from "deepmerge";
 import type { VisualizationSpec } from "svelte-vega";
@@ -147,36 +151,14 @@ export function createColorEncoding(
       if (colorRange.mode === "scheme") {
         // Support palette scheme names
         if (colorRange.scheme === "sequential") {
-          // Use our sequential palette (9 colors) - resolve for canvas rendering
+          // Use our sequential palette (9 colors) as hex for Vega compatibility
           baseEncoding.scale = {
-            range: [
-              resolveCSSVariable("var(--color-sequential-1)"),
-              resolveCSSVariable("var(--color-sequential-2)"),
-              resolveCSSVariable("var(--color-sequential-3)"),
-              resolveCSSVariable("var(--color-sequential-4)"),
-              resolveCSSVariable("var(--color-sequential-5)"),
-              resolveCSSVariable("var(--color-sequential-6)"),
-              resolveCSSVariable("var(--color-sequential-7)"),
-              resolveCSSVariable("var(--color-sequential-8)"),
-              resolveCSSVariable("var(--color-sequential-9)"),
-            ],
+            range: getSequentialColorsAsHex(),
           };
         } else if (colorRange.scheme === "diverging") {
-          // Use our diverging palette (11 colors) - resolve for canvas rendering
+          // Use our diverging palette (11 colors) as hex for Vega compatibility
           baseEncoding.scale = {
-            range: [
-              resolveCSSVariable("var(--color-diverging-1)"),
-              resolveCSSVariable("var(--color-diverging-2)"),
-              resolveCSSVariable("var(--color-diverging-3)"),
-              resolveCSSVariable("var(--color-diverging-4)"),
-              resolveCSSVariable("var(--color-diverging-5)"),
-              resolveCSSVariable("var(--color-diverging-6)"),
-              resolveCSSVariable("var(--color-diverging-7)"),
-              resolveCSSVariable("var(--color-diverging-8)"),
-              resolveCSSVariable("var(--color-diverging-9)"),
-              resolveCSSVariable("var(--color-diverging-10)"),
-              resolveCSSVariable("var(--color-diverging-11)"),
-            ],
+            range: getDivergingColorsAsHex(),
           };
         } else {
           // Use Vega's built-in color schemes

@@ -1,4 +1,5 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/palette-store";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import chroma from "chroma-js";
 import type { Config } from "vega-lite";
@@ -205,17 +206,8 @@ export const getRillTheme: (
         return themeColors.length > 0 ? themeColors : defaultColors;
       })(),
       heatmap: (() => {
-        const defaultColors = [
-          resolveCSSVariable("var(--color-sequential-1)", isDarkMode),
-          resolveCSSVariable("var(--color-sequential-2)", isDarkMode),
-          resolveCSSVariable("var(--color-sequential-3)", isDarkMode),
-          resolveCSSVariable("var(--color-sequential-4)", isDarkMode),
-          resolveCSSVariable("var(--color-sequential-5)", isDarkMode),
-          resolveCSSVariable("var(--color-sequential-6)", isDarkMode),
-          resolveCSSVariable("var(--color-sequential-7)", isDarkMode),
-          resolveCSSVariable("var(--color-sequential-8)", isDarkMode),
-          resolveCSSVariable("var(--color-sequential-9)", isDarkMode),
-        ];
+        // Use palette store which respects scoped themes and converts to hex
+        const defaultColors = getSequentialColorsAsHex();
 
         if (!theme) return defaultColors;
 

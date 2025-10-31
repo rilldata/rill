@@ -164,7 +164,7 @@
       <!-- Mode Switcher -->
       <FieldSwitcher
         small
-        fields={["Scheme", "Graident"]}
+        fields={["Scheme", "Gradient"]}
         selected={currentMode === "scheme" ? 0 : 1}
         onClick={(i, value) =>
           handleModeSwitch(value === "Scheme" ? "scheme" : "gradient")}
@@ -183,7 +183,7 @@
           onChange={handleSchemeChange}
         />
       {:else}
-        <!-- Custom Graident Selectors -->
+        <!-- Custom Gradient Selectors -->
         {#key `${isThemeModeDark}-${resolvedTheme.primary.hex()}`}
           <ColorInput
             small
