@@ -390,7 +390,7 @@
         exclude={curExcludeMode}
         label={`${name} filter`}
         theme
-        on:remove={onRemove}
+        {onRemove}
         removable={!readOnly}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==

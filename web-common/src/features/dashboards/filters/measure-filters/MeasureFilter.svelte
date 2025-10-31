@@ -49,7 +49,7 @@
         builders={[builder]}
         {label}
         theme
-        on:remove={onRemove}
+        {onRemove}
         removable
         removeTooltipText="Remove {label}"
       >

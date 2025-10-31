@@ -43,7 +43,7 @@
         slideDuration={0}
         active={viewAsMenuOpen}
         removeTooltipText="Clear view"
-        on:remove={() => {
+        onRemove={() => {
           updateDevJWT(queryClient, null);
         }}
       >
