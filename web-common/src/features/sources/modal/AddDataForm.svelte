@@ -413,7 +413,30 @@
       } else if (isMultiStepConnector && stepState.step === "connector") {
         // Step 1: Create connector and transition to step 2
         await submitAddConnectorForm(queryClient, connector, processedValues);
-        setConnectorConfig(processedValues);
+
+        // Remove secret fields from stored config and clear them from the form to avoid stale preview
+        const secretKeys =
+          connector.configProperties
+            ?.filter((property) => property.secret)
+            .map((property) => property.key)
+            .filter(Boolean) ?? [];
+
+        const cleanedValues = { ...processedValues } as Record<string, unknown>;
+        for (const key of secretKeys) {
+          delete cleanedValues[key as string];
+        }
+        setConnectorConfig(cleanedValues);
+
+        // Clear secret inputs in the visible form without marking it tainted
+        paramsForm.update(
+          ($form) => {
+            for (const key of secretKeys) {
+              $form[key as string] = "";
+            }
+            return $form;
+          },
+          { taint: false },
+        );
         setStep("source");
         return; // Don't close the modal, just transition to step 2
       } else if (effectiveFormType === "source") {
