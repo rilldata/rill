@@ -120,12 +120,11 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		logger.Info("Dropping old stage.db file and rebuilding project")
 	}
 
+	// Create a local runtime with an in-memory metastore
 	metastoreProp, err := structpb.NewStruct(map[string]any{"dsn": "file:rill?mode=memory&cache=shared"})
 	if err != nil {
 		return nil, err
 	}
-
-	// Create a local runtime with an in-memory metastore
 	systemConnectors := []*runtimev1.Connector{
 		{
 			Type:       "sqlite",
@@ -200,15 +199,14 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
+	// Add default OLAP connector
 	olapProp, err := structpb.NewStruct(map[string]any{
-		"pool_size":   "4", // Default pool size for DuckDB
+		"pool_size":   "4",
 		"log_queries": strconv.FormatBool(opts.Debug),
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// Add default OLAP connector
 	olapConnector := &runtimev1.Connector{
 		Type:       "duckdb",
 		Name:       "duckdb",
@@ -216,11 +214,11 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 	connectors = append(connectors, olapConnector)
 
+	// The repo connector is the local project directory
 	repoProp, err := structpb.NewStruct(map[string]any{"dsn": projectPath})
 	if err != nil {
 		return nil, err
 	}
-	// The repo connector is the local project directory
 	repoConnector := &runtimev1.Connector{
 		Type:       "file",
 		Name:       "repo",
@@ -228,11 +226,11 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 	connectors = append(connectors, repoConnector)
 
+	// The catalog connector is a SQLite database in the project directory's tmp folder
 	catalogProp, err := structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))})
 	if err != nil {
 		return nil, err
 	}
-	// The catalog connector is a SQLite database in the project directory's tmp folder
 	catalogConnector := &runtimev1.Connector{
 		Type:       "sqlite",
 		Name:       "catalog",
@@ -240,6 +238,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 	connectors = append(connectors, catalogConnector)
 
+	// Use the admin service for AI
 	aiProp, err := structpb.NewStruct(map[string]any{
 		"admin_url":    opts.Ch.AdminURL(),
 		"access_token": opts.Ch.AdminToken(),
@@ -247,7 +246,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Use the admin service for AI
 	aiConnector := &runtimev1.Connector{
 		Name:       "admin",
 		Type:       "admin",
