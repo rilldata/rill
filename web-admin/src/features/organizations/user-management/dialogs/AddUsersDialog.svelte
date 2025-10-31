@@ -48,7 +48,7 @@
   const addProjectMemberUser = createAdminServiceAddProjectMemberUser();
 
   let failedInvites: string[] = [];
-  let selectedProjects: string[] = [];
+  let selectedProject: string = "";
   let projectDropdownOpen = false;
 
   // List projects for project access multi-select
@@ -64,7 +64,6 @@
     },
   );
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
-  $: projectNames = projects.map((p) => p.name);
 
   async function handleCreate(
     newEmail: string,
@@ -81,16 +80,12 @@
     });
 
     // If inviting a guest, also add per-project access as Viewer
-    if (newRole === OrgUserRoles.Guest && selectedProjects.length > 0) {
-      await Promise.all(
-        selectedProjects.map((projectName) =>
-          $addProjectMemberUser.mutateAsync({
-            org: organization,
-            project: projectName,
-            data: { email: newEmail, role: "viewer" },
-          }),
-        ),
-      );
+    if (newRole === OrgUserRoles.Guest && selectedProject) {
+      await $addProjectMemberUser.mutateAsync({
+        org: organization,
+        project: selectedProject,
+        data: { email: newEmail, role: "viewer" },
+      });
     }
 
     await queryClient.invalidateQueries({
@@ -105,7 +100,7 @@
     email = "";
     role = "";
     isSuperUser = false;
-    selectedProjects = [];
+    selectedProject = "";
   }
 
   const formId = "add-user-form";
@@ -143,9 +138,8 @@
         const values = form.data;
         const emails = values.emails.map((e) => e.trim()).filter(Boolean);
         if (emails.length === 0) return;
-        // If inviting a guest without projects selected, do not proceed
-        if (values.role === OrgUserRoles.Guest && selectedProjects.length === 0)
-          return;
+        // If inviting a guest without project selected, do not proceed
+        if (values.role === OrgUserRoles.Guest && !selectedProject) return;
 
         const results = await Promise.all(
           emails.map(async (email, index) => {
@@ -214,7 +208,7 @@
       role = "";
       isSuperUser = false;
       failedInvites = [];
-      selectedProjects = [];
+      selectedProject = "";
     }
   }}
 >
@@ -282,8 +276,7 @@
             loading={$submitting}
             disabled={hasInvalidEmails ||
               !hasSomeValue ||
-              ($form.role === OrgUserRoles.Guest &&
-                selectedProjects.length === 0)}
+              ($form.role === OrgUserRoles.Guest && !selectedProject)}
             forcedStyle="height: 32px !important;"
           >
             Invite
@@ -307,9 +300,7 @@
                   : 'hover:bg-slate-100'} px-2 py-1"
               >
                 <span class="capitalize">
-                  {selectedProjects.length > 0
-                    ? `${selectedProjects.length} Project${selectedProjects.length > 1 ? "s" : ""}`
-                    : "Select projects"}
+                  {selectedProject ? selectedProject : "Select project"}
                 </span>
                 {#if projectDropdownOpen}
                   <CaretUpIcon size="12px" />
@@ -319,20 +310,14 @@
               </Dropdown.Trigger>
               <Dropdown.Content align="start" class="w-[224px]">
                 {#each projects as p (p.id)}
-                  <Dropdown.CheckboxItem
+                  <Dropdown.Item
                     class="font-normal flex items-center overflow-hidden"
-                    checked={selectedProjects.includes(p.name)}
                     on:click={() => {
-                      const idx = selectedProjects.indexOf(p.name);
-                      if (idx >= 0)
-                        selectedProjects = selectedProjects.filter(
-                          (n) => n !== p.name,
-                        );
-                      else selectedProjects = [...selectedProjects, p.name];
+                      selectedProject = p.name;
                     }}
                   >
                     <span class="truncate w-full" title={p.name}>{p.name}</span>
-                  </Dropdown.CheckboxItem>
+                  </Dropdown.Item>
                 {/each}
               </Dropdown.Content>
             </Dropdown.Root>
