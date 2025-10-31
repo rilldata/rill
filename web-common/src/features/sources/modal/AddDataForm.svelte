@@ -7,7 +7,6 @@
   import type { ActionResult } from "@sveltejs/kit";
   import { createEventDispatcher } from "svelte";
   import type { SuperValidated } from "sveltekit-superforms";
-  import { prepareSourceFormData, compileSourceYAML } from "../sourceUtils";
 
   import { submitAddConnectorForm } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
@@ -21,7 +20,7 @@
     type ClickHouseConnectorType,
   } from "./constants";
   import { getInitialFormValuesFromProperties } from "../sourceUtils";
-  import { compileConnectorYAML } from "../../connectors/code-utils";
+
   import { MULTI_STEP_CONNECTORS } from "./constants";
   import {
     connectorStepStore,
@@ -32,7 +31,7 @@
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
-  import { hasOnlyDsn, applyClickHouseCloudRequirements } from "./helpers";
+  import { hasOnlyDsn } from "./helpers";
 
   const dispatch = createEventDispatcher();
 
@@ -222,7 +221,6 @@
     }
   })();
 
-  // Emit the submitting state to the parent
   $: dispatch("submitting", { submitting });
 
   async function handleSaveAnyway() {
@@ -237,159 +235,42 @@
       return;
     }
 
-    // For other connectors, use the original logic
+    // For other connectors, use manager helper
     saveAnyway = true;
-
-    // Get the current form values based on the active form
     const values = onlyDsn || connectionTab === "dsn" ? $dsnForm : $paramsForm;
-
-    // Apply ClickHouse Cloud requirements if needed
-    const processedValues = applyClickHouseCloudRequirements(
-      connector.name,
-      clickhouseConnectorType,
+    const result = await formManager.saveConnectorAnyway({
+      queryClient,
       values,
-    );
-
-    try {
-      // Only call submitAddConnectorForm since Save Anyway is connector-only
-      await submitAddConnectorForm(
-        queryClient,
-        connector,
-        processedValues,
-        true,
-      );
+      clickhouseConnectorType,
+    });
+    if (result.ok) {
       onClose();
-    } catch (e) {
-      const { message, details } = normalizeConnectorError(
-        connector.name ?? "",
-        e,
-      );
-
-      // Keep error state for each form - match the display logic
+    } else {
       if (onlyDsn || connectionTab === "dsn") {
-        dsnError = message;
-        dsnErrorDetails = details;
+        dsnError = result.message;
+        dsnErrorDetails = result.details;
       } else {
-        paramsError = message;
-        paramsErrorDetails = details;
-      }
-    } finally {
-      // Reset saveAnyway state after submission completes
-      saveAnyway = false;
-    }
-  }
-
-  function getClickHouseYamlPreview(
-    values: Record<string, unknown>,
-    connectorType: ClickHouseConnectorType,
-  ) {
-    // Convert connectorType to managed boolean for YAML compatibility
-    const managed = connectorType === "rill-managed";
-
-    // Ensure ClickHouse Cloud specific requirements are met in preview
-    const previewValues = { ...values, managed } as Record<string, unknown>;
-    if (connectorType === "clickhouse-cloud") {
-      previewValues.ssl = true;
-      previewValues.port = "8443";
-    }
-
-    return compileConnectorYAML(connector, previewValues, {
-      fieldFilter: (property) => {
-        // When in DSN mode, don't filter out noPrompt properties
-        // because the DSN field itself might have noPrompt: true
-        if (onlyDsn || connectionTab === "dsn") {
-          return true; // Show all DSN properties
-        }
-        return !property.noPrompt;
-      },
-      orderedProperties:
-        connectionTab === "dsn"
-          ? filteredDsnProperties
-          : filteredParamsProperties,
-    });
-  }
-
-  function getConnectorYamlPreview(values: Record<string, unknown>) {
-    return compileConnectorYAML(connector, values, {
-      fieldFilter: (property) => {
-        // When in DSN mode, don't filter out noPrompt properties
-        // because the DSN field itself might have noPrompt: true
-        if (onlyDsn || connectionTab === "dsn") {
-          return true; // Show all DSN properties
-        }
-        return !property.noPrompt;
-      },
-      orderedProperties:
-        onlyDsn || connectionTab === "dsn"
-          ? filteredDsnProperties
-          : filteredParamsProperties,
-    });
-  }
-
-  function getSourceYamlPreview(values: Record<string, unknown>) {
-    // For multi-step connectors in step 2, filter out connector properties
-    let filteredValues = values;
-    if (isMultiStepConnector && stepState.step === "source") {
-      // Get connector property keys to filter out
-      const connectorPropertyKeys = new Set(
-        connector.configProperties?.map((prop) => prop.key).filter(Boolean) ||
-          [],
-      );
-
-      // Filter out connector properties, keeping only source properties and other necessary fields
-      filteredValues = Object.fromEntries(
-        Object.entries(values).filter(
-          ([key]) => !connectorPropertyKeys.has(key),
-        ),
-      );
-    }
-
-    const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
-      connector,
-      filteredValues,
-    );
-
-    // Check if the connector was rewritten to DuckDB
-    const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
-
-    if (isRewrittenToDuckDb) {
-      return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
-    } else {
-      return getConnectorYamlPreview(rewrittenFormValues);
-    }
-  }
-
-  $: yamlPreview = (() => {
-    // ClickHouse special case
-    if (connector.name === "clickhouse") {
-      // Reactive form values
-      const values =
-        connectionTab === "dsn" ? $clickhouseDsnForm : $clickhouseParamsForm;
-      return getClickHouseYamlPreview(values, clickhouseConnectorType);
-    }
-
-    // Multi-step connector special case - show different preview based on step
-    if (isMultiStepConnector) {
-      if (stepState.step === "connector") {
-        // Step 1: Show connector preview
-        return getConnectorYamlPreview($paramsForm);
-      } else {
-        // Step 2: Show source preview with stored connector config
-        const combinedValues = { ...stepState.connectorConfig, ...$paramsForm };
-        return getSourceYamlPreview(combinedValues);
+        paramsError = result.message;
+        paramsErrorDetails = result.details;
       }
     }
+    saveAnyway = false;
+  }
 
-    const values = onlyDsn || connectionTab === "dsn" ? $dsnForm : $paramsForm;
-
-    if (isConnectorForm) {
-      // Connector form
-      return getConnectorYamlPreview(values);
-    } else {
-      // Source form
-      return getSourceYamlPreview(values);
-    }
-  })();
+  $: yamlPreview = formManager.computeYamlPreview({
+    connectionTab,
+    onlyDsn,
+    filteredParamsProperties,
+    filteredDsnProperties,
+    stepState,
+    isMultiStepConnector,
+    isConnectorForm,
+    paramsFormValues: $paramsForm,
+    dsnFormValues: $dsnForm,
+    clickhouseConnectorType,
+    clickhouseParamsValues: $clickhouseParamsForm,
+    clickhouseDsnValues: $clickhouseDsnForm,
+  });
 
   $: isClickhouse = connector.name === "clickhouse";
 

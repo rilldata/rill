@@ -19,6 +19,11 @@ import {
   setStep,
 } from "./connectorStepStore";
 import { get } from "svelte/store";
+import { compileConnectorYAML } from "../../connectors/code-utils";
+import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
+import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
+import type { ClickHouseConnectorType } from "./constants";
+import { applyClickHouseCloudRequirements } from "./helpers";
 
 export class AddDataFormManager {
   formHeight: string;
@@ -225,6 +230,161 @@ export class AddDataFormManager {
         throw new Error(`Invalid JSON file: ${error.message}`);
       }
       throw new Error(`Failed to read file: ${error.message}`);
+    }
+  }
+
+  /**
+   * Compute YAML preview for the current form state.
+   */
+  computeYamlPreview(ctx: {
+    connectionTab: "parameters" | "dsn";
+    onlyDsn: boolean;
+    filteredParamsProperties: ConnectorDriverProperty[];
+    filteredDsnProperties: ConnectorDriverProperty[];
+    stepState: any;
+    isMultiStepConnector: boolean;
+    isConnectorForm: boolean;
+    paramsFormValues: Record<string, unknown>;
+    dsnFormValues: Record<string, unknown>;
+    clickhouseConnectorType?: ClickHouseConnectorType;
+    clickhouseParamsValues?: Record<string, unknown>;
+    clickhouseDsnValues?: Record<string, unknown>;
+  }): string {
+    const connector = this.connector;
+    const {
+      connectionTab,
+      onlyDsn,
+      filteredParamsProperties,
+      filteredDsnProperties,
+      stepState,
+      isMultiStepConnector,
+      isConnectorForm,
+      paramsFormValues,
+      dsnFormValues,
+      clickhouseConnectorType,
+      clickhouseParamsValues,
+      clickhouseDsnValues,
+    } = ctx;
+
+    const getConnectorYamlPreview = (values: Record<string, unknown>) => {
+      return compileConnectorYAML(connector, values, {
+        fieldFilter: (property) => {
+          if (onlyDsn || connectionTab === "dsn") return true;
+          return !property.noPrompt;
+        },
+        orderedProperties:
+          onlyDsn || connectionTab === "dsn"
+            ? filteredDsnProperties
+            : filteredParamsProperties,
+      });
+    };
+
+    const getClickHouseYamlPreview = (
+      values: Record<string, unknown>,
+      chType: ClickHouseConnectorType | undefined,
+    ) => {
+      // Convert to managed boolean and apply CH Cloud requirements for preview
+      const managed = chType === "rill-managed";
+      const previewValues = { ...values, managed } as Record<string, unknown>;
+      const finalValues = applyClickHouseCloudRequirements(
+        connector.name,
+        chType as ClickHouseConnectorType,
+        previewValues,
+      );
+      return compileConnectorYAML(connector, finalValues, {
+        fieldFilter: (property) => {
+          if (onlyDsn || connectionTab === "dsn") return true;
+          return !property.noPrompt;
+        },
+        orderedProperties:
+          connectionTab === "dsn"
+            ? filteredDsnProperties
+            : filteredParamsProperties,
+      });
+    };
+
+    const getSourceYamlPreview = (values: Record<string, unknown>) => {
+      // For multi-step connectors in step 2, filter out connector properties
+      let filteredValues = values;
+      if (isMultiStepConnector && stepState?.step === "source") {
+        const connectorPropertyKeys = new Set(
+          connector.configProperties?.map((p) => p.key).filter(Boolean) || [],
+        );
+        filteredValues = Object.fromEntries(
+          Object.entries(values).filter(
+            ([key]) => !connectorPropertyKeys.has(key),
+          ),
+        );
+      }
+
+      const [rewrittenConnector, rewrittenFormValues] = prepareSourceFormData(
+        connector,
+        filteredValues,
+      );
+      const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
+      if (isRewrittenToDuckDb) {
+        return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+      }
+      return getConnectorYamlPreview(rewrittenFormValues);
+    };
+
+    // ClickHouse special-case
+    if (connector.name === "clickhouse") {
+      const values =
+        connectionTab === "dsn"
+          ? clickhouseDsnValues || {}
+          : clickhouseParamsValues || {};
+      return getClickHouseYamlPreview(values, clickhouseConnectorType);
+    }
+
+    // Multi-step connectors
+    if (isMultiStepConnector) {
+      if (stepState?.step === "connector") {
+        return getConnectorYamlPreview(paramsFormValues);
+      } else {
+        const combinedValues = {
+          ...(stepState?.connectorConfig || {}),
+          ...paramsFormValues,
+        } as Record<string, unknown>;
+        return getSourceYamlPreview(combinedValues);
+      }
+    }
+
+    const currentValues =
+      onlyDsn || connectionTab === "dsn" ? dsnFormValues : paramsFormValues;
+    if (isConnectorForm) return getConnectorYamlPreview(currentValues);
+    return getSourceYamlPreview(currentValues);
+  }
+
+  /**
+   * Save connector anyway (non-ClickHouse), returning a result object for the caller to handle.
+   */
+  async saveConnectorAnyway(args: {
+    queryClient: any;
+    values: Record<string, unknown>;
+    clickhouseConnectorType?: ClickHouseConnectorType;
+  }): Promise<{ ok: true } | { ok: false; message: string; details?: string }> {
+    const { queryClient, values, clickhouseConnectorType } = args;
+    const processedValues = applyClickHouseCloudRequirements(
+      this.connector.name,
+      (clickhouseConnectorType as ClickHouseConnectorType) ||
+        ("self-hosted" as ClickHouseConnectorType),
+      values,
+    );
+    try {
+      await submitAddConnectorForm(
+        queryClient,
+        this.connector,
+        processedValues,
+        true,
+      );
+      return { ok: true } as const;
+    } catch (e) {
+      const { message, details } = normalizeConnectorError(
+        this.connector.name ?? "",
+        e,
+      );
+      return { ok: false, message, details } as const;
     }
   }
 }
