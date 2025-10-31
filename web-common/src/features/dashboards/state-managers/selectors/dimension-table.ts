@@ -33,9 +33,10 @@ export const virtualizedTableColumns =
       V1MetricsViewAggregationResponse,
       RpcStatus
     >,
+    tableRows: Record<string, any>[],
     activeMeasures?: string[],
   ) => VirtualizedTableColumns[]) =>
-  (totalsQuery, activeMeasures) => {
+  (totalsQuery, tableRows, activeMeasures) => {
     const dimension = primaryDimension(dashData);
 
     if (!dimension) return [];
@@ -48,10 +49,22 @@ export const virtualizedTableColumns =
     const measureTotals: { [key: string]: number } = {};
     if (totalsQuery?.data?.data) {
       measures.map((m) => {
-        if (m.name && isSummableMeasure(m)) {
+        if (!m.name) return;
+
+        if (isSummableMeasure(m)) {
           measureTotals[m.name] = totalsQuery.data?.data?.[0]?.[
             m.name
           ] as number;
+        } else {
+          const numericValues = tableRows
+            .map((row) => {
+              const value = row[m.name!];
+              return typeof value === "number" && isFinite(value)
+                ? Math.abs(value)
+                : null;
+            })
+            .filter(Boolean) as number[];
+          measureTotals[m.name] = Math.max(...numericValues);
         }
       });
     }

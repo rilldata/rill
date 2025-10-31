@@ -2,84 +2,211 @@ package duckdb
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
+	goruntime "runtime"
+
+	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
-func TestInformationSchemaAll(t *testing.T) {
-	conn := prepareConn(t).(*connection)
-	olap, _ := conn.AsOLAP("")
+func TestInformationSchema(t *testing.T) {
+	conn, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
 
-	opts := &createTableOptions{
-		view: true,
+	olap, ok := conn.AsOLAP("")
+	require.True(t, ok)
+
+	prepareData(t, olap)
+	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
+	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
+	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap) })
+	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap) })
+}
+
+func TestInformationSchemaMotherduck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("motherduck: skipping test in short mode")
 	}
-	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+
+	_, currentFile, _, _ := goruntime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", "..", "..", ".env")
+	_, err := os.Stat(envPath)
+	if err == nil {
+		require.NoError(t, godotenv.Load(envPath))
+	}
+	token := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")
+	require.NotEmpty(t, token, "RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN not configured")
+
+	cfg := map[string]any{
+		"token":       token,
+		"path":        "md:rilldata",
+		"schema_name": "integration_test",
+	}
+	conn, err := Driver{name: "motherduck"}.Open("default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = conn.createTableAsSelect(context.Background(), "source", "select 4, 5, 6", &createTableOptions{})
-	require.NoError(t, err)
+	olap, ok := conn.AsOLAP("")
+	require.True(t, ok)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "")
-	require.NoError(t, err)
-	require.Equal(t, 4, len(tables))
-
-	require.Equal(t, "bar", tables[0].Name)
-	require.Equal(t, "foo", tables[1].Name)
-	require.Equal(t, "model", tables[2].Name)
-
-	require.Equal(t, 2, len(tables[1].Schema.Fields))
-	require.Equal(t, "bar", tables[1].Schema.Fields[0].Name)
-	require.Equal(t, runtimev1.Type_CODE_STRING, tables[1].Schema.Fields[0].Type.Code)
-	require.Equal(t, "baz", tables[1].Schema.Fields[1].Name)
-	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
-
-	require.Equal(t, true, tables[2].View)
-	require.Equal(t, false, tables[3].View)
-	require.Equal(t, int64(0), tables[2].PhysicalSizeBytes)
-	require.Greater(t, tables[3].PhysicalSizeBytes, int64(0))
+	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
+	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
+	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
+	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap) })
+	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap) })
 }
 
-func TestInformationSchemaAllLike(t *testing.T) {
-	conn := prepareConn(t).(*connection)
-	olap, _ := conn.AsOLAP("")
+func prepareData(t *testing.T, olap drivers.OLAPStore) {
 
-	opts := &createTableOptions{view: true}
-	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	_, err := olap.(*connection).createTableAsSelect(context.Background(), "all_datatypes", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "foo", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
+	require.NoError(t, err)
+
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "bar", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
+	require.NoError(t, err)
+
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "foz", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
+	require.NoError(t, err)
+
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "baz", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
+	require.NoError(t, err)
+
+	_, err = olap.(*connection).createTableAsSelect(context.Background(), "model", "SELECT 1,2,3", &createTableOptions{view: true})
+	require.NoError(t, err)
+
+}
+
+func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore) {
+
+	tables, _, err := olap.InformationSchema().All(context.Background(), "", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 6, len(tables))
+
+	require.Equal(t, "all_datatypes", tables[0].Name)
+	require.Equal(t, "bar", tables[1].Name)
+	require.Equal(t, "baz", tables[2].Name)
+	require.Equal(t, "foo", tables[3].Name)
+	require.Equal(t, "foz", tables[4].Name)
+	require.Equal(t, "model", tables[5].Name)
+
+	// add this condition to prevent size check for motherduck connector
+	if tables[1].DatabaseSchema != "integration_test" {
+		require.Greater(t, tables[1].PhysicalSizeBytes, int64(0))
+	}
+
+	model := tables[5]
+	require.Equal(t, 3, len(model.Schema.Fields))
+	require.Equal(t, true, model.View)
+	require.Equal(t, int64(0), model.PhysicalSizeBytes)
+}
+
+func testInformationSchemaAllLike(t *testing.T, olap drivers.OLAPStore) {
+	tables, _, err := olap.InformationSchema().All(context.Background(), "%odel", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
 
-	tables, err = olap.InformationSchema().All(context.Background(), "%model%")
+	tables, _, err = olap.InformationSchema().All(context.Background(), "%model%", 0, "")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, "model", tables[0].Name)
+
+	tables, _, err = olap.InformationSchema().All(context.Background(), "%nonexistent_table%", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 0, len(tables))
 }
 
-func TestInformationSchemaLookup(t *testing.T) {
-	conn := prepareConn(t).(*connection)
-	olap, _ := conn.AsOLAP("")
+func testInformationSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
-
-	opts := &createTableOptions{view: true}
-	_, err := conn.createTableAsSelect(context.Background(), "model", "select 1, 2, 3", opts)
+	bar, err := olap.InformationSchema().Lookup(ctx, "", "", "bar")
 	require.NoError(t, err)
+	require.Equal(t, "bar", bar.Name)
+	require.Equal(t, 2, len(bar.Schema.Fields))
+	require.Equal(t, "bar", bar.Schema.Fields[0].Name)
+	require.Equal(t, runtimev1.Type_CODE_STRING, bar.Schema.Fields[0].Type.Code)
+	require.Equal(t, "baz", bar.Schema.Fields[1].Name)
+	require.Equal(t, runtimev1.Type_CODE_INT32, bar.Schema.Fields[1].Type.Code)
+	require.Equal(t, false, bar.View)
 
-	table, err := olap.InformationSchema().Lookup(ctx, "", "", "foo")
-	require.NoError(t, err)
-	require.Equal(t, "foo", table.Name)
-
-	_, err = olap.InformationSchema().Lookup(ctx, "", "", "bad")
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", "nonexistent_table")
 	require.Equal(t, drivers.ErrNotFound, err)
 
-	table, err = olap.InformationSchema().Lookup(ctx, "", "", "model")
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", "model")
 	require.NoError(t, err)
 	require.Equal(t, "model", table.Name)
+}
+
+func testInformationSchemaAllPagination(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	pageSize := 2
+
+	// Test first page
+	tables1, nextToken1, err := olap.InformationSchema().All(ctx, "", uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables1))
+	require.NotEmpty(t, nextToken1)
+
+	// Test second page
+	tables2, nextToken2, err := olap.InformationSchema().All(ctx, "", uint32(pageSize), nextToken1)
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables2))
+	require.NotEmpty(t, nextToken2)
+
+	// Test third page
+	tables3, nextToken3, err := olap.InformationSchema().All(ctx, "", uint32(pageSize), nextToken2)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables3))
+	require.Empty(t, nextToken3)
+
+	// Test with page size 0
+	tables, nextToken, err := olap.InformationSchema().All(ctx, "", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 6, len(tables))
+	require.Empty(t, nextToken)
+
+	// Test with page size larger than total results
+	tables, nextToken, err = olap.InformationSchema().All(ctx, "", 1000, "")
+	require.NoError(t, err)
+	require.Equal(t, 6, len(tables))
+	require.Empty(t, nextToken)
+}
+
+func testInformationSchemaAllPaginationWithLike(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	pageSize := 1
+	// Test first page
+	tables1, nextToken1, err := olap.InformationSchema().All(ctx, "%ba%", uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables1))
+	require.NotEmpty(t, nextToken1)
+
+	// Test second page
+	tables2, nextToken2, err := olap.InformationSchema().All(ctx, "%ba%", uint32(pageSize), nextToken1)
+	require.NoError(t, err)
+	require.Equal(t, pageSize, len(tables2))
+	require.Empty(t, nextToken2)
+
+	// Test with page size 0
+	tables, nextToken, err := olap.InformationSchema().All(ctx, "%ba%", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables))
+	require.Empty(t, nextToken)
+
+	// Test with page size larger than total results
+	tables, nextToken, err = olap.InformationSchema().All(ctx, "%ba%", 1000, "")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tables))
+	require.Empty(t, nextToken)
 }
 
 func TestDatabaseTypeToPB(t *testing.T) {
@@ -112,6 +239,42 @@ func TestDatabaseTypeToPB(t *testing.T) {
 					{Name: `baz ,, \ \" " )`, Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32, Nullable: true}},
 				}}}},
 			}}},
+		},
+		// Array having struct
+		{
+			input: `STRUCT(id BIGINT, name VARCHAR)[]`,
+			output: &runtimev1.Type{
+				Code:     runtimev1.Type_CODE_ARRAY,
+				Nullable: true,
+				ArrayElementType: &runtimev1.Type{
+					Code:     runtimev1.Type_CODE_STRUCT,
+					Nullable: true,
+					StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
+						{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+						{Name: "name", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}},
+					}},
+				},
+			},
+		},
+		// Array of struct having array
+		{
+			input: `STRUCT(id BIGINT, tags VARCHAR[])[]`,
+			output: &runtimev1.Type{
+				Code:     runtimev1.Type_CODE_ARRAY,
+				Nullable: true,
+				ArrayElementType: &runtimev1.Type{
+					Code:     runtimev1.Type_CODE_STRUCT,
+					Nullable: true,
+					StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
+						{Name: "id", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64, Nullable: true}},
+						{Name: "tags", Type: &runtimev1.Type{
+							Code:             runtimev1.Type_CODE_ARRAY,
+							Nullable:         true,
+							ArrayElementType: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true},
+						}},
+					}},
+				},
+			},
 		},
 	}
 

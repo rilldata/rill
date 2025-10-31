@@ -184,7 +184,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         unfilteredTotals = createUnfilteredTotalsForMeasure(
           ctx,
-          measures,
+          measuresForTotals,
           dashboardStore?.selectedComparisonDimension,
         );
       }
@@ -200,7 +200,7 @@ export function createTimeSeriesDataStore(
           measuresForTimeSeries,
           true,
         );
-        comparisonTotals = createTotalsForMeasure(ctx, measures, true);
+        comparisonTotals = createTotalsForMeasure(ctx, measuresForTotals, true);
       }
 
       let dimensionTimeSeriesCharts:

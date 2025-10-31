@@ -1,0 +1,1 @@
+ALTER TABLE instances ADD COLUMN frontend_url TEXT NOT NULL DEFAULT ''; 

@@ -10,6 +10,8 @@
   import { DateTime, Interval } from "luxon";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
   import RangeDisplay from "./RangeDisplay.svelte";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 
   type Option = {
     name: TimeComparisonOption;
@@ -33,6 +35,7 @@
     end: Date,
   ) => void;
   export let allowCustomTimeRange: boolean = true;
+  export let minTimeGrain: V1TimeGrain | undefined;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   let open = false;
@@ -44,8 +47,6 @@
         DateTime.fromJSDate(selectedComparison.end).setZone(zone),
       )
     : undefined;
-
-  $: firstVisibleMonth = interval?.start ?? currentInterval.end;
 
   $: comparisonOption =
     (selectedComparison?.name as TimeComparisonOption | undefined) || null;
@@ -88,10 +89,7 @@
 <DropdownMenu.Root
   bind:open
   closeOnItemClick={false}
-  onOpenChange={(open) => {
-    if (open && interval && interval?.isValid) {
-      firstVisibleMonth = interval.start;
-    }
+  onOpenChange={() => {
     showSelector = !!(
       comparisonOption === TimeComparisonOption.CUSTOM && showComparison
     );
@@ -113,7 +111,7 @@
         {:else}
           <b class="line-clamp-1">{label}</b>
           {#if interval?.isValid && showFullRange}
-            <RangeDisplay {interval} />
+            <RangeDisplay {interval} timeGrain={selectedComparison?.interval} />
           {/if}
         {/if}
       </div>
@@ -169,15 +167,17 @@
         {/if}
       </div>
       {#if showSelector}
-        <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
+        <div class="bg-slate-50 flex flex-col w-60 p-3">
           {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
+              minTimeGrain={V1TimeGrainToDateTimeUnit[
+                minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
+              ]}
               {maxDate}
               {minDate}
-              {firstVisibleMonth}
               {interval}
               {zone}
-              {applyRange}
+              onApply={applyRange}
               closeMenu={() => (open = false)}
             />
           {/if}

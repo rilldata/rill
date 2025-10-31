@@ -239,6 +239,21 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		}
 	}
 
+	// check current branch matches deployed branch
+	headRef, err := repo.Head()
+	if err == nil {
+		if !headRef.Name().IsBranch() {
+			return fmt.Errorf("detached HEAD state detected. Checkout a branch")
+		}
+		branch := headRef.Name().Short()
+		if headRef.Name().Short() != config.DefaultBranch {
+			return fmt.Errorf("current branch %q does not match deployed branch %q", branch, config.DefaultBranch)
+		}
+	} else if !errors.Is(err, plumbing.ErrReferenceNotFound) {
+		// ErrReferenceNotFound happens when looking for HEAD on a fresh repo
+		return err
+	}
+
 	wt, err := repo.Worktree()
 	if err != nil {
 		return fmt.Errorf("failed to get worktree: %w", err)
@@ -274,22 +289,12 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, true)
 	}
 
-	pushOpts := &git.PushOptions{
-		RemoteName: config.RemoteName(),
-		RemoteURL:  config.Remote,
-		Force:      true,
-	}
-	if config.Username != "" && config.Password != "" {
-		pushOpts.Auth = &githttp.BasicAuth{
-			Username: config.Username,
-			Password: config.Password,
-		}
-	}
-	err = repo.PushContext(ctx, pushOpts)
+	u, err := url.Parse(config.Remote)
 	if err != nil {
-		return fmt.Errorf("failed to push to remote : %w", err)
+		return fmt.Errorf("failed to parse remote URL: %w", err)
 	}
-	return nil
+	u.User = url.UserPassword(config.Username, config.Password)
+	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch, true)
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
@@ -366,8 +371,9 @@ func SetRemote(path string, config *Config) error {
 		return fmt.Errorf("failed to get remote: %w", err)
 	}
 	if remote != nil {
-		if remote.Config().URLs[0] == config.Remote {
+		if remote.Config().URLs[0] == config.Remote || !config.ManagedRepo {
 			// remote already exists with the same URL, no need to create it again
+			// remote other than managed git exists, can't overwrite user's remote
 			return nil
 		}
 		// if the remote already exists with a different URL, delete it
@@ -385,7 +391,9 @@ func SetRemote(path string, config *Config) error {
 }
 
 func IsGitRepo(path string) bool {
-	_, err := git.PlainOpen(path)
+	_, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
+		DetectDotGit: true,
+	})
 	return err == nil
 }
 
@@ -407,8 +415,18 @@ func InferRepoRootAndSubpath(path string) (string, string, error) {
 		// should never happen because repoRoot is detected from path
 		return "", "", err
 	}
-	if subPath != "." {
-		return repoRoot, subPath, nil
+	if subPath == "." || subPath == "" {
+		// no subpath
+		return repoRoot, "", nil
 	}
-	return repoRoot, "", nil
+	// check if subpath is in .gitignore
+	ignored, err := isGitIgnored(repoRoot, subPath)
+	if err != nil {
+		return "", "", err
+	}
+	if ignored {
+		// if subpath is ignored this is not a valid git path
+		return "", "", ErrNotAGitRepository
+	}
+	return repoRoot, subPath, nil
 }

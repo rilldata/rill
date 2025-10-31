@@ -28,7 +28,7 @@
 
 <div align="center">
 
-[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/home/install) • [Quickstart](https://docs.rilldata.com/home/get-started) • [Guides](https://docs.rilldata.com/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
+[Docs](https://docs.rilldata.com/) • [Install](https://docs.rilldata.com/home/install) • [Quickstart](https://docs.rilldata.com/get-started/quickstart) • [Guides](https://docs.rilldata.com/guides) • [Reference](https://docs.rilldata.com/reference/project-files)
 
 </div>
 
@@ -181,7 +181,7 @@ A compilation of projects with deep dives into Rill's features using ClickHouse'
 
 ## Get in touch!
 
-- **[Discord Community](https://discord.gg/TatjVY32)** - Join discussions and get help
+- **[Discord Community](https://discord.gg/2ubRfjC7Rh)** - Join discussions and get help
 - **[GitHub Issues](https://github.com/rilldata/rill/issues)** - Report bugs and request features
 - **[Rill Guru](https://gurubase.io/g/rill)** - Ask questions and get expert answers
 

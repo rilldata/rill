@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
+	var name, description, prodVersion, prodBranch, subpath, path, provisioner, gitRemote string
 	var public bool
 	var prodTTL int64
 
@@ -33,8 +33,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			req := &adminv1.UpdateProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
+				Org:     ch.Org,
+				Project: name,
 			}
 
 			var flagSet bool
@@ -66,6 +66,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				flagSet = true
 				req.ProdTtlSeconds = &prodTTL
 			}
+			if cmd.Flags().Changed("remote-url") {
+				flagSet = true
+				req.GitRemote = &gitRemote
+			}
 
 			if !flagSet {
 				return fmt.Errorf("must specify at least one update flag")
@@ -89,6 +93,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	editCmd.Flags().StringVar(&gitRemote, "remote-url", "", "Github remote URL")
 	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Time-to-live in seconds for production deployment (0 means no expiration)")

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/server/auth"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 )
@@ -91,21 +92,21 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			return httputil.Errorf(http.StatusBadRequest, "runtime proxy not available for owner type %q", claims.OwnerType())
 		}
 
-		instancePermissions := []runtimeauth.Permission{
-			runtimeauth.ReadObjects,
-			runtimeauth.ReadMetrics,
-			runtimeauth.ReadAPI,
-			runtimeauth.UseAI,
+		instancePermissions := []runtime.Permission{
+			runtime.ReadObjects,
+			runtime.ReadMetrics,
+			runtime.ReadAPI,
+			runtime.UseAI,
 		}
 		if permissions.ManageProject {
-			instancePermissions = append(instancePermissions, runtimeauth.EditTrigger)
+			instancePermissions = append(instancePermissions, runtime.EditTrigger)
 		}
 
 		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{
 			AudienceURL: depl.RuntimeAudience,
 			Subject:     claims.OwnerID(),
 			TTL:         runtimeProxyAccessTokenTTL,
-			InstancePermissions: map[string][]runtimeauth.Permission{
+			InstancePermissions: map[string][]runtime.Permission{
 				depl.RuntimeInstanceID: instancePermissions,
 			},
 			Attributes: attr,
