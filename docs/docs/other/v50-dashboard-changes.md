@@ -95,7 +95,7 @@ first_month_of_year: #defines first month of year
 
 dimensions: #your dimensions, can be copied from dashboard.yaml
     - name:
-      label:
+      display_name:
       column/expression:
       property:
       description:
@@ -104,9 +104,9 @@ dimensions: #your dimensions, can be copied from dashboard.yaml
 
 measures: #your measures, can be copied from dashboard.yaml
     - name:
-      label:
+      display_name:
       type:
-      expressions:
+      expression:
       window:
       per:
       requires:
