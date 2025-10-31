@@ -333,7 +333,7 @@ tests:
 
 Tests run against the complete model output after all partitions are processed.
 
-## Common Patterns
+## Examples
 
 ### Checking for Duplicates
 
@@ -386,16 +386,11 @@ Tests run against the complete model output after all partitions are processed.
   assert: date >= CURRENT_DATE - INTERVAL '1 year'
 ```
 
-## Limitations
+:::warning Limitations
 
 - Tests only run when the model is refreshed
 - Failing tests do not prevent the model from being queryable
 - Tests cannot modify data - they are read-only validations
 - Test queries should complete reasonably quickly to avoid long refresh times
 
-## Related Topics
-
-- [Models 101](/build/models/models-101) - Introduction to models in Rill
-- [Incremental Models](/build/models/incremental-models) - Build incremental models
-- [Partitioned Models](/build/models/partitioned-models) - Work with partitioned data
-- [Data Refresh](/build/models/data-refresh) - Schedule model refreshes
+:::
