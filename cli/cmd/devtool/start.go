@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -33,6 +34,10 @@ const (
 	minNodeVersion = "18"
 	stateDirLocal  = "dev-project"
 	rillGitRemote  = "https://github.com/rilldata/rill.git"
+)
+
+const (
+	minimalProvisionerSet = `{"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}`
 )
 
 var (
@@ -183,6 +188,7 @@ type servicesCfg struct {
 	deps    bool
 	runtime bool
 	ui      bool
+	minimal bool
 	only    []string
 	except  []string
 }
@@ -190,9 +196,22 @@ type servicesCfg struct {
 func (s *servicesCfg) addFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&s.only, "only", []string{}, "Only start the listed services (options: admin, deps, runtime, ui)")
 	cmd.Flags().StringSliceVar(&s.except, "except", []string{}, "Start all except the listed services (options: admin, deps, runtime, ui)")
+	cmd.Flags().BoolVar(&s.minimal, "minimal", false, "Start minimal services: deps (postgres, redis), runtime, and admin")
 }
 
 func (s *servicesCfg) parse() error {
+	if s.minimal {
+		if len(s.only) > 0 || len(s.except) > 0 {
+			return errors.New("cannot use --minimal with --only or --except")
+		}
+		s.deps = true
+		s.runtime = true
+		s.admin = true
+		s.ui = false
+
+		return nil
+	}
+
 	if len(s.only) > 0 && len(s.except) > 0 {
 		return errors.New("cannot use both --only and --except")
 	}
@@ -269,7 +288,13 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
-		g.Go(func() error { return s.runDeps(ctx, verbose, preset) })
+		var profiles []string
+		if services.minimal {
+			profiles = []string{"minimal"}
+		} else {
+			profiles = []string{preset} // e.g., "cloud", "e2e"
+		}
+		g.Go(func() error { return s.runDeps(ctx, verbose, profiles) })
 	}
 
 	depsReadyCh := make(chan struct{})
@@ -293,7 +318,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			if err := awaitClose(ctx, depsReadyCh); err != nil {
 				return err
 			}
-			return s.runAdmin(ctx, verbose)
+			return s.runAdmin(ctx, verbose, services.minimal)
 		})
 	}
 
@@ -302,7 +327,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			if err := awaitClose(ctx, depsReadyCh); err != nil {
 				return err
 			}
-			return s.runRuntime(ctx, verbose)
+			return s.runRuntime(ctx, verbose, services.minimal)
 		})
 	}
 
@@ -400,17 +425,25 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "down", "--volumes").Run()
 }
 
-func (s cloud) runDeps(ctx context.Context, verbose bool, profile string) error {
+func (s cloud) runDeps(ctx context.Context, verbose bool, profiles []string) error {
 	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s --profile %s up\n", composeFile, profile)
+	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s --profile %v up\n", composeFile, profiles)
 	defer logInfo.Printf("Stopped dependencies\n")
 
-	err := prepareStripeConfig()
-	if err != nil {
-		return fmt.Errorf("failed to prepare stripe config: %w", err)
+	args := []string{"docker", "compose", "--env-file", ".env", "-f", composeFile}
+	for _, p := range profiles {
+		args = append(args, "--profile", p)
+	}
+	args = append(args, "up")
+
+	if len(profiles) != 1 || profiles[0] != "minimal" {
+		err := prepareStripeConfig()
+		if err != nil {
+			return fmt.Errorf("failed to prepare stripe config: %w", err)
+		}
 	}
 
-	cmd := newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "--profile", profile, "up")
+	cmd := newCmd(ctx, args[0], args[1:]...)
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout
@@ -467,14 +500,24 @@ func (s cloud) awaitRedis(ctx context.Context) error {
 	}
 }
 
-func (s cloud) runAdmin(ctx context.Context, verbose bool) (err error) {
+func (s cloud) runAdmin(ctx context.Context, verbose, minimal bool) (err error) {
 	logInfo.Printf("Starting admin\n")
 	defer logInfo.Printf("Stopped admin\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "admin", "start")
-	if verbose {
-		cmd.Env = append(os.Environ(), "RILL_ADMIN_LOG_LEVEL=debug")
+	env := os.Environ()
+	if minimal {
+		env = append(env,
+			"RILL_ADMIN_METRICS_EXPORTER="+string(observability.NoopExporter),
+			"RILL_ADMIN_TRACES_EXPORTER="+string(observability.NoopExporter),
+			"RILL_ADMIN_PROVISIONER_SET_JSON="+minimalProvisionerSet,
+		)
+		logInfo.Printf("Minimal mode: Disabled OTEL and Prometheus exporters\n")
 	}
+	if verbose {
+		env = append(env, "RILL_ADMIN_LOG_LEVEL=debug")
+	}
+	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
@@ -505,14 +548,22 @@ func (s cloud) awaitAdmin(ctx context.Context) error {
 	}
 }
 
-func (s cloud) runRuntime(ctx context.Context, verbose bool) (err error) {
+func (s cloud) runRuntime(ctx context.Context, verbose, minimal bool) (err error) {
 	logInfo.Printf("Starting runtime\n")
 	defer logInfo.Printf("Stopped runtime\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "runtime", "start")
-	if verbose {
-		cmd.Env = append(os.Environ(), "RILL_RUNTIME_LOG_LEVEL=debug")
+	env := os.Environ()
+	if minimal {
+		env = append(env,
+			"RILL_RUNTIME_METRICS_EXPORTER="+string(observability.NoopExporter),
+			"RILL_RUNTIME_TRACES_EXPORTER="+string(observability.NoopExporter),
+		)
 	}
+	if verbose {
+		env = append(env, "RILL_RUNTIME_LOG_LEVEL=debug")
+	}
+	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
