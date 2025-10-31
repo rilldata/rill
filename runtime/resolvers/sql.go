@@ -131,7 +131,12 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
 	var sql string
 	if r.interactiveRowLimit != 0 {
-		sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
+		if r.olap.Dialect() == drivers.DialectMySQL {
+			// subqueries in MySQL require an alias
+			sql = fmt.Sprintf("SELECT * FROM (\n%s\n) AS subquery LIMIT %d", r.sql, r.interactiveRowLimit+1)
+		} else {
+			sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
+		}
 	} else {
 		sql = r.sql
 	}

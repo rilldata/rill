@@ -2,7 +2,7 @@
 title: "Rill MCP Server"
 description: How to connect to Rill MCP and query your metrics views
 sidebar_label: "Rill MCP Server"
-sidebar_position: 1
+sidebar_position: 05
 ---
 
 <div style={{ 
@@ -32,10 +32,25 @@ sidebar_position: 1
 
 The Rill Model Context Protocol (MCP) server exposes Rill's most essential APIs to LLMs. It is currently designed primarily for data analysts, not data engineers, and focuses on consuming Rill metrics views—not creating them.
 
-## Why use MCP with Rill?
-Instead of blindly exposing your entire data warehouse to external platforms in hopes of uncovering trends, Rill's MCP server provides a **structured and governed** alternative. By querying data that already has **predefined measures and dimensions**, the responses you get are guaranteed to be as **accurate and consistent** as the metrics displayed in your Rill dashboards.
+:::tip Looking for AI Chat in Rill Cloud?
+If you want to chat with your data directly in your browser without any setup, check out [AI Chat](/explore/ai-chat), which uses the same MCP technology but is built right into Rill Cloud.
+:::
 
-You can also add `ai_instructions` to your project file and metrics views, which will give your LLM additional context on how to use the Rill MCP Server for best results. Users can then ask questions like:
+## Why use MCP with Rill?
+Instead of blindly exposing your entire data warehouse to external platforms in hopes of uncovering trends, Rill's MCP integration provides a **structured and governed** alternative. By querying data that already has **predefined measures and dimensions**, the responses you get are guaranteed to be as **accurate and consistent** as the metrics displayed in your Rill dashboards.
+
+Rill offers two ways to use MCP:
+- **Rill MCP Server** (this guide) - Connect external AI assistants like Claude Desktop to your Rill projects
+- **[AI Chat](/explore/ai-chat)** - Built-in chat interface in Rill Cloud with zero setup required
+
+You can also add `ai_instructions` to your project file and metrics views, which will give your LLM additional context on how to use the Rill MCP Server for best results.
+
+:::tip Configure AI instructions
+Set project-wide AI instructions to provide context unique to your project and improve MCP responses.
+[Learn more about AI configuration →](/build/project-configuration#ai-configuration)
+:::
+
+Users can then ask questions like:
 
 - What are my *week-on-week* __increases or decreases in sales__ of `XYZ service`?
 - During the *current year*, do I have any __outliers in website views__? What might this correlate to?
@@ -157,15 +172,15 @@ There are two places to add `ai_instructions`:
 
 You can look at one of our [example projects](https://github.com/rilldata/rill-examples/tree/main/rill-openrtb-prog-ads) to see how these are used. Experiment with the instructions and see what works best for your requirements.
 
-### Instructions for rill.yaml
+### Sample AI Instructions
 
 ```
 ai_instructions: |
   You are a data analyst, responding to questions from business users with precision, clarity, and conciseness.
   
-  You have access to rill mcp tools. list_metrics enables you to check what metrics are available, get_metrics_view gets the list of measures and dimensions for a specific metrics view, query_metrics_view_time_range checks what time ranges of data are available for a metrics view, and query_metrics_view will run queries against those metrics views and return the actual data.
+  You have access to rill mcp tools. list_metrics enables you to check what metrics are available, get_metrics_view gets the list of measures and dimensions for a specific metrics view, query_metrics_view_summary checks what time ranges of data are available for a metrics view, and query_metrics_view will run queries against those metrics views and return the actual data.
 
-  Any time you are asked about metrics or business data, you should use these tools. First use list_metrics, then use get_metrics_view and query_metrics_view_time_range to get the latest information about what dimensions, measures, and time ranges are available.
+  Any time you are asked about metrics or business data, you should use these tools. First use list_metrics, then use get_metrics_view and query_metrics_view_summary to get the latest information about what dimensions, measures, and time ranges are available.
 
   When you run queries for actual data, run up to three queries in a row, and then provide the user with a summary, any insights you can see in the data, and suggest up to three things to investigate as a next step.
 
@@ -220,61 +235,6 @@ ai_instructions: |
   Simple trend arrows: Sales ↗️ (+15%) Costs ↘️ (-8%) Profit ⤴️ (+28%)
 ```
 
-### Instructions for a metrics view
-
-```
-ai_instructions: |
-  When you run queries with rill, you also include corresponding Rill Explore URLs in your answer. All URLs should start with the BASE_URL, which is defined below. 
-
-  The full URL should include the time range (tr) used in the report, the timezone (tz), and any measures or dimensions that are relevant to the report. See the examples below.
-
-  # Example
-  
-  URL for an explore with multiple metrics and dimensions
-
-  ## Description
-  
-  A link to an online dashboard from Rill. Contains all selected metrics in the report, all dimensions used in the report, and up to 1-3 additional dimensions. Time range includes the range used as the focus of the report, plus a comparison period for enriched visualization. It is in markdown format, and has a link that describes the purpose of the link.
-  
-  ## Format 
-  
-  Markdown
-
-  ## Link
-  [https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/bids_explore?tr=2025-05-17T23%3A00%3A00.000Z%2C2025-05-19T23%3A00%3A00.000Z&tz=Europe%2FLondon&compare_tr=rill-PP&measures=overall_spend%2Ctotal_bids%2Cwin_rate%2Cvideo_completes%2Cavg_bid_floor&dims=advertiser_name%2Csites_domain%2Capp_site_name%2Cdevice_type%2Ccreative_type%2Cpub_name](Explore change in advertising bids due to composition of advertisers)
-
-  # Example
-  
-  URL for an individual metric
-
-  ## Description
-  
-  A link to an online dashboard from Rill. Contains only the selected metric, and only the dimensions identified as driving factors. Time range includes the range used as the focus of the report, plus a comparison period for enriched visualization.
-  
-  ## Format
-  
-  Markdown
-  
-  ## Link
-
-  [https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/bids_explore?tr=2025-05-17T23%3A00%3A00.000Z%2C2025-05-19T23%3A00%3A00.000Z&tz=Europe%2FLondon&grain=day&measures=overall_spend&dims=advertiser_name%2Csites_domain](Explore change in spend by advertiser)
-  
-  # Example
-  
-  URL for an individual dimension
-
-  ## Description
-  
-  A link to an online dashboard from Rill. This link is filtered by one of the dimensions (advertiser_name), so that the user can focus on a particular categorical.
-  
-  ## Format
-  
-  Markdown
-    
-  ## Link 
-
-  [https://ui.rilldata.com/demo/rill-openrtb-prog-ads/explore/bids_explore?tr=2025-05-17T23%3A00%3A00.000Z%2C2025-05-19T23%3A00%3A00.000Z&tz=Europe%2FLondon&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Hyundai%27%29&measures=overall_spend&dims=advertiser_name%2Ccampaign_name%2Csites_domain%2Cdevice_region](Explore Hyundai campaign spend and performance)
-```
 
 
 ## Using Rill MCP Server in Claude
@@ -286,7 +246,7 @@ ai_instructions: |
 
 - __*List metrics views*__ – Use `list_metrics_views` to discover available metrics views in the project.
 - __*Get metrics view spec*__ – Use `get_metrics_view` to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
-- __*Query the time range*__ – Use `query_metrics_view_time_range` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
+- __*Query the time range*__ – Use `query_metrics_view_summary` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
 - __*Query the metrics*__ – Use `query_metrics_view` to run queries to get aggregated results.
 
 
@@ -300,7 +260,9 @@ Using all the above concepts, you can ask the Rill MCP server questions like:
 
 
 ## Conclusion
-While [Explore dashboards](./dashboard-101/dashboard-101.md) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. MCP servers are the easiest way to do so! Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.
+While [Explore dashboards](./dashboard-101) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. The Rill MCP server enables this through external AI assistants like Claude Desktop. Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.
+
+**Want AI chat directly in Rill Cloud?** Check out [AI Chat](/explore/ai-chat) for a browser-based experience that uses the same MCP technology with zero setup required.
 
 
 ## Need help?

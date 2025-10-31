@@ -25,7 +25,9 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewTimeRange,
+  type V1CanvasPreset,
   V1ExploreComparisonMode,
+  type V1ExploreTimeRange,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -74,6 +76,14 @@ export class TimeControls {
   timeRangeStateStore: Writable<TimeRangeState | undefined> =
     writable(undefined);
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
+
+  defaultUrlParamsStore: Writable<{
+    data: URLSearchParams;
+    isPending: boolean;
+  }> = writable({
+    data: new URLSearchParams(),
+    isPending: true,
+  });
 
   constructor(
     private specStore: CanvasSpecResponseStore,
@@ -184,6 +194,20 @@ export class TimeControls {
           allTimeRange.end,
           timeZone,
         );
+
+        const hasTimeRangeDefaultParam = get(
+          this.defaultUrlParamsStore,
+        ).data.has(ExploreStateURLParams.TimeRange);
+        if (!hasTimeRangeDefaultParam) {
+          this.calculateAndSetDefaultTimeRanges({
+            allTimeRange,
+            timeRanges: timeRanges ?? [],
+            defaultTimeRange,
+            timeZone,
+            minTimeGrain,
+            defaultPreset,
+          });
+        }
 
         const timeRangeState = calculateTimeRangePartial(
           allTimeRange,
@@ -449,6 +473,78 @@ export class TimeControls {
   setSelectedComparisonRange = (comparisonTimeRange: DashboardTimeControls) => {
     this.selectedComparisonTimeRange.set(comparisonTimeRange);
   };
+
+  private calculateAndSetDefaultTimeRanges({
+    allTimeRange,
+    timeRanges,
+    defaultTimeRange,
+    timeZone,
+    minTimeGrain,
+    defaultPreset,
+  }: {
+    allTimeRange: AllTimeRange;
+    timeRanges: V1ExploreTimeRange[];
+    defaultTimeRange: DashboardTimeControls;
+    timeZone: string;
+    minTimeGrain: V1TimeGrain;
+    defaultPreset: V1CanvasPreset | undefined;
+  }) {
+    const defaultTimeRangePartial = calculateTimeRangePartial(
+      allTimeRange,
+      defaultTimeRange,
+      undefined,
+      timeZone,
+      defaultTimeRange,
+      minTimeGrain,
+    );
+    if (!defaultTimeRangePartial?.selectedTimeRange?.name) return;
+
+    // Make sure the default time grain is set. Otherwise, equality checks in some cases will not work.
+    this.set.grain(
+      defaultTimeRangePartial.selectedTimeRange?.interval ??
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+      true,
+    );
+
+    const newComparisonRange = getComparisonTimeRange(
+      timeRanges,
+      allTimeRange,
+      { name: defaultPreset?.timeRange } as DashboardTimeControls,
+      undefined,
+    );
+
+    this.defaultUrlParamsStore.update((state) => {
+      if (!defaultTimeRangePartial.selectedTimeRange?.name) return state; // type safety
+      const paramsCopy = new URLSearchParams(state.data);
+
+      let timeRange = defaultTimeRangePartial.selectedTimeRange.name;
+      if (timeRange === TimeRangePreset.CUSTOM) {
+        timeRange = `${defaultTimeRangePartial.selectedTimeRange.start.toISOString()}/${defaultTimeRangePartial.selectedTimeRange.end.toISOString()}`;
+      }
+      paramsCopy.set(ExploreStateURLParams.TimeRange, timeRange);
+
+      const mappedTimeGrain =
+        ToURLParamTimeGrainMapMap[
+          defaultTimeRangePartial.selectedTimeRange.interval ??
+            V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+        ];
+      if (mappedTimeGrain) {
+        paramsCopy.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
+      }
+
+      if (newComparisonRange?.name) {
+        paramsCopy.set(
+          ExploreStateURLParams.ComparisonTimeRange,
+          newComparisonRange.name,
+        );
+      }
+
+      return {
+        data: paramsCopy,
+        isPending: false,
+      };
+    });
+  }
 }
 
 export function parseSearchParams(urlParams: URLSearchParams) {

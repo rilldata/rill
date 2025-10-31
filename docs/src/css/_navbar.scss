@@ -6,11 +6,11 @@
   background: transparent;
   border: 0.5px solid #e5e7eb;
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 12px 12px;
   width: 250px; /* Adjust this value to change width */
   min-width: 150px; /* Minimum width */
   margin-left: 10px;
-  height: 40px;
+  height: 100%;
   position: relative;
   
   &::after {
@@ -31,20 +31,16 @@
     background: transparent;
     border: 0.5px solid var(--docsearch-muted-color);
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 12px 12px;
 }
 
-[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button:hover,
-[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button:active,
-[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button:focus {
+[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button:hover {
     box-shadow: none;
     color: var(--docsearch-muted-color);
     border: 0.5px solid var(--ifm-color-primary);
 } 
 
-.navbar .navbar__items--right .DocSearch-Button:hover,
-.navbar .navbar__items--right .DocSearch-Button:active,
-.navbar .navbar__items--right .DocSearch-Button:focus {
+.navbar .navbar__items--right .DocSearch-Button:hover {
   box-shadow: none;
   color: var(--docsearch-muted-color);
   border: 0.5px solid var(--ifm-color-primary);

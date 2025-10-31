@@ -29,8 +29,8 @@ import { getFilterWithNullHandling } from "../query-util";
 
 export type CircularChartSpec = {
   metrics_view: string;
-  measure?: FieldConfig;
-  color?: FieldConfig;
+  measure?: FieldConfig<"quantitative">;
+  color?: FieldConfig<"nominal">;
   innerRadius?: number;
 };
 
