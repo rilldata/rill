@@ -1,10 +1,16 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+  import { createTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { getPivotExploreParams } from "@rilldata/web-common/features/exports/get-pivot-explore-params.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import {
     createQueryServiceExport,
@@ -24,6 +30,8 @@
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
 
+  const { fullPageReportEditor } = featureFlags;
+
   let showScheduledReportDialog = false;
   let open = false;
 
@@ -40,13 +48,24 @@
   const exportDash = createQueryServiceExport();
   const { reports, adminServer, exportHeader } = featureFlags;
 
+  $: ({ instanceId } = $runtime);
+  $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName ?? "");
+  $: metricsViewSpec = $exploreSpecQuery.data?.metricsView ?? {};
+  $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
+  $: exploreState = useExploreState(exploreName ?? "");
+  $: timeControlStore = createTimeControlStoreFromName(
+    instanceId,
+    exploreSpec.metricsView ?? "",
+    exploreName ?? "",
+  );
+
   async function handleExport(options: {
     format: V1ExportFormat;
     includeHeader?: boolean;
   }) {
     const { format, includeHeader = false } = options;
     const result = await $exportDash.mutateAsync({
-      instanceId: get(runtime).instanceId,
+      instanceId,
       data: {
         query: exportQuery,
         format,
@@ -73,6 +92,28 @@
       ));
     }
   });
+
+  function createScheduledReport() {
+    if (!$fullPageReportEditor) {
+      showScheduledReportDialog = true;
+      return;
+    }
+
+    if (!exploreName) return;
+
+    const pageState = get(page);
+    const { organization, project } = pageState.params;
+    const searchParams = getPivotExploreParams(
+      $exploreState,
+      metricsViewSpec,
+      exploreSpec,
+      $timeControlStore,
+    );
+    searchParams.set("explore", exploreName);
+    void goto(
+      `/${organization}/${project}/-/reports/-/create/explore/${exploreName}?${searchParams.toString()}`,
+    );
+  }
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -145,7 +186,7 @@
     {/if}
     {#if includeScheduledReport && $reports && exploreName}
       <DropdownMenu.Item
-        on:click={() => (showScheduledReportDialog = true)}
+        on:click={createScheduledReport}
         disabled={!scheduledReportQuery}
       >
         Create scheduled report...

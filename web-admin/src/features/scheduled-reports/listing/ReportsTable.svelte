@@ -1,9 +1,12 @@
 <script lang="ts">
   import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
+  import ResourceListToolbar from "@rilldata/web-admin/features/resources/ResourceListToolbar.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import { resourceColorMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
@@ -12,6 +15,7 @@
   export let organization: string;
   export let project: string;
 
+  const { fullPageReportEditor } = featureFlags;
   const reportColor = resourceColorMapping[ResourceKind.Report];
 
   /**
@@ -71,6 +75,17 @@
 </script>
 
 <ResourceList {columns} {data} {columnVisibility} kind="report">
+  <div slot="toolbar" class="flex flex-row items-center w-full gap-x-2">
+    <ResourceListToolbar />
+    {#if $fullPageReportEditor}
+      <Button
+        type="primary"
+        href="/{organization}/{project}/-/reports/-/create"
+      >
+        Create Report
+      </Button>
+    {/if}
+  </div>
   <ResourceListEmptyState
     slot="empty"
     icon={ReportIcon}

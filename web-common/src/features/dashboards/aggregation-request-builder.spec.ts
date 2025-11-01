@@ -4,7 +4,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
 import { getDimensionTableAggregationRequestForTime } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export.ts";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column.ts";
-import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import {
@@ -512,8 +511,6 @@ describe("Report rows and columns", () => {
                 start: timeControlState.timeStart,
                 end: timeControlState.timeEnd,
               },
-              rows: exploreState.pivot.rows,
-              columns: splitPivotChips(exploreState.pivot.columns),
               comparisonTime: timeControlState.selectedComparisonTimeRange
                 ? {
                     start: timeControlState.comparisonTimeStart,
@@ -521,7 +518,6 @@ describe("Report rows and columns", () => {
                   }
                 : undefined,
               enableComparison: !!timeControlState.showTimeComparison,
-              isFlat: exploreState.pivot.tableMode === "flat",
               pivotState: exploreState.pivot,
             })!,
         );
