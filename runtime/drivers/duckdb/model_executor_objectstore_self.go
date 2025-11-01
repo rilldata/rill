@@ -111,18 +111,39 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 		if err != nil {
 			return "", fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
+
+		// Parse the bucket name from the optional URL to determine its scope, region, and visibility (public or private).
+		var bucketURL *globutil.URL
+		if optionalBucketURL != "" {
+			bucketURL, err = globutil.ParseBucketURL(optionalBucketURL)
+			if err != nil {
+				return "", fmt.Errorf("failed to parse path %q for bucket name: %w", optionalBucketURL, err)
+			}
+		}
+
+		var requiresAnonymous bool
+		if bucketURL != nil {
+			var err error
+			requiresAnonymous, err = s3.RequiresAnonymousS3Access(ctx, s3Config, bucketURL)
+			if err != nil {
+				return "", err
+			}
+		}
+
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE S3")
-		if s3Config.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
-		}
-		if s3Config.AccessKeyID != "" {
-			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
-		}
-		if s3Config.SessionToken != "" {
-			fmt.Fprintf(&sb, ", SESSION_TOKEN %s", safeSQLString(s3Config.SessionToken))
+		if !requiresAnonymous {
+			if s3Config.AllowHostAccess {
+				sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			}
+			if s3Config.AccessKeyID != "" {
+				fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
+			}
+			if s3Config.SessionToken != "" {
+				fmt.Fprintf(&sb, ", SESSION_TOKEN %s", safeSQLString(s3Config.SessionToken))
+			}
 		}
 		if s3Config.Endpoint != "" {
 			uri, err := url.Parse(s3Config.Endpoint)
@@ -140,18 +161,17 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")
 			sb.WriteString(safeSQLString(s3Config.Region))
-		} else if optionalBucketURL != "" {
-			// DuckDB does not automatically resolve the region as of 1.2.0 so we try to detect and set the region.
-			uri, err := globutil.ParseBucketURL(optionalBucketURL)
-			if err != nil {
-				return "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
-			}
-			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host)
+		} else if bucketURL != nil {
+			reg, err := s3.BucketRegion(ctx, s3Config, bucketURL.Host)
 			if err != nil {
 				return "", err
 			}
 			sb.WriteString(", REGION ")
 			sb.WriteString(safeSQLString(reg))
+		}
+		if bucketURL != nil {
+			sb.WriteString(", SCOPE ")
+			sb.WriteString(safeSQLString(fmt.Sprintf("%s://%s", bucketURL.Scheme, bucketURL.Host)))
 		}
 		sb.WriteRune(')')
 		return sb.String(), nil
