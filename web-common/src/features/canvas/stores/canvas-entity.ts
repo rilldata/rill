@@ -12,7 +12,6 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { Color } from "chroma-js";
 import {
   derived,
   get,
@@ -37,6 +36,8 @@ import {
 import { Filters } from "./filters";
 import { Grid } from "./grid";
 import { TimeControls } from "./time-control";
+import { Theme } from "../../themes/theme";
+import { createResolvedThemeStore } from "../../themes/selectors";
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
@@ -70,7 +71,8 @@ export class CanvasEntity {
   specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
-  theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
+  themeName = writable<string | undefined>(undefined);
+  theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
@@ -84,7 +86,7 @@ export class CanvasEntity {
     private instanceId: string,
   ) {
     this.specStore = useCanvas(
-      instanceId,
+      this.instanceId,
       name,
       {
         retry: 3,
@@ -129,7 +131,7 @@ export class CanvasEntity {
     });
 
     this.metricsView = new MetricsViewSelectors(
-      instanceId,
+      this.instanceId,
       derived(this.specStore, ($specStore) => {
         return $specStore.data?.metricsViews || {};
       }),
@@ -177,7 +179,17 @@ export class CanvasEntity {
 
     // TODO: merge more stores once we add support for defaults for those.
     this.defaultUrlParamsStore = this.timeControls.defaultUrlParamsStore;
+
+    this.theme = createResolvedThemeStore(
+      this.themeName,
+      this.specStore,
+      this.instanceId,
+    );
   }
+
+  onUrlParamsChange = (urlParams: URLSearchParams) => {
+    this.themeName.set(urlParams.get("theme") ?? undefined);
+  };
 
   // Not currently being used
   unsubscribe = () => {

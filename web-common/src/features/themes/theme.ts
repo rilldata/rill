@@ -5,26 +5,21 @@ import type {
 import chroma, { type Color } from "chroma-js";
 import { generateColorPalette } from "./palette-generator";
 import { TailwindColorSpacing } from "./color-config";
-import { writable, type Writable } from "svelte/store";
 import { primary } from "./colors";
 import { resolveThemeObject } from "./theme-utils";
 
-type Colors = Record<string, Color>;
-
 export class Theme {
   colors: { light: Colors; dark: Colors };
-  css = writable("");
-  resolvedThemeObject: Writable<
-    { dark: Record<string, string>; light: Record<string, string> } | undefined
-  > = writable(undefined);
+  spec: V1ThemeSpec;
+  css: string;
+  resolvedThemeObject: {
+    dark: Record<string, string>;
+    light: Record<string, string>;
+  };
 
-  constructor(
-    private scope: string,
-    spec?: V1ThemeSpec | undefined,
-  ) {
+  constructor(spec: V1ThemeSpec | undefined) {
     if (spec) {
-      this.colors = this.processTheme(spec);
-      this.css.set(this.generateCSS());
+      this.processThemeSpec(spec);
     }
   }
 
@@ -36,15 +31,16 @@ export class Theme {
     return color;
   }
 
-  updateThemeSpec(spec: V1ThemeSpec) {
+  processThemeSpec(spec: V1ThemeSpec) {
+    this.spec = spec;
     this.colors = this.processTheme(spec);
-    this.css.set(this.generateCSS());
+    this.css = this.generateCSS();
 
     // Compatibility with current implementation, this can eventually be removed
-    this.resolvedThemeObject.set({
+    this.resolvedThemeObject = {
       dark: resolveThemeObject(spec, true) ?? {},
       light: resolveThemeObject(spec, false) ?? {},
-    });
+    };
   }
 
   private stringifyVars(vars: Record<string, Color | undefined>) {
@@ -64,10 +60,10 @@ export class Theme {
     }
 
     return `
- :where([data-theme-scope="${this.scope}"]) {
+ .dashboard-theme-boundary {
   ${this.stringifyVars(lightColors)}
 }
-:where(.dark) :where([data-theme-scope="${this.scope}"]) {
+.dark .dashboard-theme-boundary {
   ${this.stringifyVars(darkColors)}
 }`.trim();
   }
@@ -84,17 +80,21 @@ export class Theme {
     const { primary, secondary, variables } = colors;
 
     if (primary) {
-      const primaryPalette = generateColorPalette(chroma(primary));
+      const primaryReference = chroma(primary);
+      const primaryPalette = generateColorPalette(primaryReference);
       for (const [i, color] of primaryPalette.entries()) {
         finalColors[`color-theme-${TailwindColorSpacing[i]}`] = color;
       }
+      finalColors.primary = primaryReference;
     }
 
     if (secondary) {
-      const secondaryPalette = generateColorPalette(chroma(secondary));
+      const secondaryReference = chroma(secondary);
+      const secondaryPalette = generateColorPalette(secondaryReference);
       for (const [i, color] of secondaryPalette.entries()) {
         finalColors[`color-theme-secondary-${TailwindColorSpacing[i]}`] = color;
       }
+      finalColors.secondary = secondaryReference;
     }
 
     for (const [k, v] of Object.entries(variables ?? {})) {
@@ -105,3 +105,77 @@ export class Theme {
     return finalColors;
   }
 }
+
+// Needs refinement and better generated types from the backend
+type Colors = {
+  primary?: Color;
+  secondary?: Color;
+
+  ring?: Color;
+  radius?: Color;
+  surface?: Color;
+  background?: Color;
+  foreground?: Color;
+
+  card?: Color;
+  "card-foreground"?: Color;
+  popover?: Color;
+  "popover-foreground"?: Color;
+  "primary-foreground"?: Color;
+  "secondary-foreground"?: Color;
+  muted?: Color;
+  "muted-foreground"?: Color;
+  accent?: Color;
+  "accent-foreground"?: Color;
+  destructive?: Color;
+  "destructive-foreground"?: Color;
+  border?: Color;
+  input?: Color;
+
+  "color-sequential-1"?: Color;
+  "color-sequential-2"?: Color;
+  "color-sequential-3"?: Color;
+  "color-sequential-4"?: Color;
+  "color-sequential-5"?: Color;
+  "color-sequential-6"?: Color;
+  "color-sequential-7"?: Color;
+  "color-sequential-8"?: Color;
+  "color-sequential-9"?: Color;
+
+  "color-diverging-1"?: Color;
+  "color-diverging-2"?: Color;
+  "color-diverging-3"?: Color;
+  "color-diverging-4"?: Color;
+  "color-diverging-5"?: Color;
+  "color-diverging-6"?: Color;
+  "color-diverging-7"?: Color;
+  "color-diverging-8"?: Color;
+  "color-diverging-9"?: Color;
+  "color-diverging-10"?: Color;
+  "color-diverging-11"?: Color;
+
+  "color-qualitative-1"?: Color;
+  "color-qualitative-2"?: Color;
+  "color-qualitative-3"?: Color;
+  "color-qualitative-4"?: Color;
+  "color-qualitative-5"?: Color;
+  "color-qualitative-6"?: Color;
+  "color-qualitative-7"?: Color;
+  "color-qualitative-8"?: Color;
+  "color-qualitative-9"?: Color;
+  "color-qualitative-10"?: Color;
+  "color-qualitative-11"?: Color;
+  "color-qualitative-12"?: Color;
+  "color-qualitative-13"?: Color;
+  "color-qualitative-14"?: Color;
+  "color-qualitative-15"?: Color;
+  "color-qualitative-16"?: Color;
+  "color-qualitative-17"?: Color;
+  "color-qualitative-18"?: Color;
+  "color-qualitative-19"?: Color;
+  "color-qualitative-20"?: Color;
+  "color-qualitative-21"?: Color;
+  "color-qualitative-22"?: Color;
+  "color-qualitative-23"?: Color;
+  "color-qualitative-24"?: Color;
+};

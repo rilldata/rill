@@ -6,19 +6,14 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { resolveThemeObject } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
   import type { BaseChart } from "./BaseChart";
   import { getChartDataForCanvas } from "./selector";
   import { validateChartSchema } from "./validate";
-  import { getContext } from "svelte";
-  import { Theme } from "@rilldata/web-common/features/themes/theme";
 
   export let component: BaseChart<CanvasChartSpec>;
-
-  const theme = getContext<Theme | undefined>("themeContext");
 
   // Theme mode (light/dark) - separate from which theme is selected
   $: isThemeModeDark = derived(
@@ -30,7 +25,7 @@
 
   $: ({
     specStore,
-    parent: { name: canvasName },
+    parent: { name: canvasName, theme },
     timeAndFilterStore,
     chartType: type,
   } = component);
@@ -56,9 +51,8 @@
 
   $: measures = getMeasuresForMetricView(metrics_view);
 
-  $: resolvedThemeObject = theme?.resolvedThemeObject;
-
-  $: currentTheme = $resolvedThemeObject?.[$isThemeModeDark ? "dark" : "light"];
+  $: currentTheme =
+    $theme?.resolvedThemeObject?.[$isThemeModeDark ? "dark" : "light"];
 
   $: chartData = getChartDataForCanvas(
     store,

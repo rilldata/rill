@@ -27,10 +27,14 @@
     canvasEntity: {
       saveSnapshot,
       restoreSnapshot,
-      spec,
+
       defaultUrlParamsStore,
+      onUrlParamsChange,
+      theme,
     },
   } = getCanvasStore(canvasName, instanceId));
+
+  $: onUrlParamsChange($page.url.searchParams);
 
   $: ({ width: clientWidth } = contentRect);
 
@@ -50,7 +54,7 @@
   });
 </script>
 
-<ThemeProvider theme={$spec?.theme ?? $spec?.embeddedTheme} scope="canvas">
+<ThemeProvider theme={$theme}>
   <main
     class="flex flex-col overflow-hidden"
     class:w-full={$dynamicHeight}

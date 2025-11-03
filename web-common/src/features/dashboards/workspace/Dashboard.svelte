@@ -22,6 +22,9 @@
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import ThemeProvider from "../ThemeProvider.svelte";
+  import { page } from "$app/stores";
+  import { createResolvedThemeStore } from "../../themes/selectors";
+  import { writable, type Writable } from "svelte/store";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -108,11 +111,16 @@
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 
   $: visibleMeasureNames = $visibleMeasures.map(({ name }) => name ?? "");
+
+  const urlThemeName: Writable<string | null> = writable(null);
+  $: urlThemeName.set($page.url.searchParams.get("theme"));
+
+  $: theme = createResolvedThemeStore(urlThemeName, exploreQuery, instanceId);
 </script>
 
-<ThemeProvider theme={exploreSpec?.theme || exploreSpec?.embeddedTheme}>
+<ThemeProvider theme={$theme}>
   <article
-    class="flex flex-col overflow-y-hidden dashboard-theme-boundary"
+    class="flex flex-col overflow-y-hidden"
     bind:clientWidth={exploreContainerWidth}
     class:w-full={$dynamicHeight}
     class:size-full={!$dynamicHeight}
