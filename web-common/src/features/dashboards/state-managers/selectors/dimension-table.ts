@@ -29,14 +29,10 @@ export const virtualizedTableColumns =
   (
     dashData: DashboardDataSources,
   ): ((
-    totalsQuery: QueryObserverResult<
-      V1MetricsViewAggregationResponse,
-      RpcStatus
-    >,
     tableRows: Record<string, any>[],
     activeMeasures?: string[],
   ) => VirtualizedTableColumns[]) =>
-  (totalsQuery, tableRows, activeMeasures) => {
+  (tableRows, activeMeasures) => {
     const dimension = primaryDimension(dashData);
 
     if (!dimension) return [];
@@ -46,33 +42,26 @@ export const virtualizedTableColumns =
       (m) => !m.window && !m.requiredDimensions?.length,
     );
 
-    const measureTotals: { [key: string]: number } = {};
-    if (totalsQuery?.data?.data) {
-      measures.map((m) => {
-        if (!m.name) return;
+    // We always use the max value as total for bar values
+    const maxValues: { [key: string]: number } = {};
+    measures.map((m) => {
+      if (!m.name) return;
 
-        if (isSummableMeasure(m)) {
-          measureTotals[m.name] = totalsQuery.data?.data?.[0]?.[
-            m.name
-          ] as number;
-        } else {
-          const numericValues = tableRows
-            .map((row) => {
-              const value = row[m.name!];
-              return typeof value === "number" && isFinite(value)
-                ? Math.abs(value)
-                : null;
-            })
-            .filter(Boolean) as number[];
-          measureTotals[m.name] = Math.max(...numericValues);
-        }
-      });
-    }
+      const numericValues = tableRows
+        .map((row) => {
+          const value = row[m.name!];
+          return typeof value === "number" && isFinite(value)
+            ? Math.abs(value)
+            : null;
+        })
+        .filter(Boolean) as number[];
+      maxValues[m.name] = Math.max(...numericValues);
+    });
 
     return prepareVirtualizedDimTableColumns(
       dashData.dashboard,
       measures,
-      measureTotals,
+      maxValues,
       dimension,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),

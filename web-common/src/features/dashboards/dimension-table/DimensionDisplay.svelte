@@ -182,7 +182,6 @@
   );
 
   $: columns = $virtualizedTableColumns(
-    $totalsQuery,
     tableRows,
     $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
   );
