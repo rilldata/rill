@@ -129,6 +129,11 @@ const config = {
         },
         items: [
           {
+            type: "html",
+            position: "left",
+            value: '<div id="persona-switcher-placeholder"></div>',
+          },
+          {
             type: "doc",
             docId: "get-started/get-started",
             position: "left",
@@ -172,7 +177,6 @@ const config = {
             position: "right",
             value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog">Blog</i></a>',
           },
-
           {
             type: "search",
             position: "right"
