@@ -730,7 +730,6 @@ Choose the appropriate chart type based on your data and analysis goals:
 ### Data Filtering
 - **'where'**: Apply filters to chart data
   - Uses same filtering syntax as 'query_metrics_view'
-  - Filters are applied before visualization
 
 ### Field Configuration
 - **Y-axis with multiple measures**: Use the 'fields' array in y-axis configuration
