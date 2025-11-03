@@ -2,7 +2,7 @@
 title: User Tokens
 description: Create and manage personal access tokens for development and scripting
 sidebar_label: User Tokens
-sidebar_position: 24
+sidebar_position: 26
 ---
 
 User tokens (also called personal access tokens or PATs) provide programmatic access to Rill Cloud tied to your personal user account. They inherit your user permissions and are ideal for local development, scripting, and integrations like MCP (Model Context Protocol).
