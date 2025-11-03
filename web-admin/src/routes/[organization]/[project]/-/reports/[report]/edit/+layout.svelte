@@ -6,8 +6,8 @@
   const { report, organization, project, reportName } = data;
 </script>
 
-<div class="flex flex-row w-screen h-full">
-  <div class="w-full">
+<div class="flex flex-row size-full max-w-full max-h-full overflow-auto">
+  <div class="w-full overflow-auto">
     <slot />
   </div>
   <ScheduledReportEditor

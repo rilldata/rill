@@ -15,8 +15,6 @@
   $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
   $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
-
-  $: console.log(exploreName, metricsViewName);
 </script>
 
 {#if exploreName && metricsViewName}

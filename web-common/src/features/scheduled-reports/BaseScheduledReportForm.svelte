@@ -31,6 +31,7 @@
   export let enhance;
   export let filters: Filters | undefined = undefined;
   export let timeControls: TimeControls | undefined = undefined;
+  export let height: string = "h-[600px]";
   export let submit: () => void;
   export let handleExploreChange: ((exploreName: string) => void) | undefined =
     undefined;
@@ -76,7 +77,7 @@
   on:submit|preventDefault={submit}
   use:enhance
 >
-  <div class="flex flex-col gap-y-3 w-full h-[600px] overflow-y-scroll">
+  <div class="flex flex-col gap-y-3 w-full overflow-y-scroll {height}">
     <Input
       bind:value={$data["title"]}
       errors={$errors["title"]}

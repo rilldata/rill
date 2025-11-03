@@ -6,6 +6,7 @@ export async function load({ parent, url }) {
   await parent();
 
   const view = url.searchParams.get(ExploreStateURLParams.WebView);
+  // Safeguard to make sure non-pivot is never visible
   if (view !== ExploreUrlWebView.Pivot) {
     const newUrl = new URL(url);
     newUrl.searchParams.set(

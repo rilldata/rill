@@ -232,15 +232,11 @@
   }
 
   function updateSidebarWidth(newWidth: number): void {
-    console.log("updateSidebarWidth", newWidth);
     width = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, newWidth));
   }
 </script>
 
-<div
-  class="flex flex-col border-l"
-  style="width: {width}px; position: relative;"
->
+<div class="flex flex-col border-l relative h-full" style="width: {width}px;">
   <Resizer
     min={MIN_SIDEBAR_WIDTH}
     max={MAX_SIDEBAR_WIDTH}
@@ -257,6 +253,7 @@
       {errors}
       {submit}
       {enhance}
+      height=""
       {handleExploreChange}
     />
 

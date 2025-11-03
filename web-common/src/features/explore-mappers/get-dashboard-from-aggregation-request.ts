@@ -259,7 +259,7 @@ function getPivotStateFromRequest(
     ...measureColumns.map(mapMeasure),
   ];
 
-  const isFlat = !req.pivotOn?.length;
+  const isFlat = req.pivotOn === undefined;
 
   const tableMode = isFlat ? "flat" : "nest";
 
