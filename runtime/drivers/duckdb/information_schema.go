@@ -23,12 +23,14 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		return nil, "", err
 	}
 	defer func() { _ = release() }()
-	//  for rduckdb implementation,the database schema changes with every ingestion
-	// we pin the read connection to the latest schema and set schema as `main` to give impression that everything is in the same schema
-	q := "SELECT current_database() as database, 'main' as schema"
+	var q string
 	if c.config.Path != "" || c.config.Attach != "" {
 		// for generic duckdb implementation, we use the current schema from the connection.
 		q = "SELECT current_database() as database, current_schema() as schema"
+	} else {
+		//  for rduckdb implementation,the database schema changes with every ingestion
+		// we pin the read connection to the latest schema and set schema as `main` to give impression that everything is in the same schema
+		q = "SELECT current_database() as database, 'main' as schema"
 	}
 	var database, schema string
 	err = conn.QueryRowxContext(ctx, q).Scan(&database, &schema)
@@ -46,28 +48,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	var args []any
-	// for rduckdb implementation, we use the current database and schema from the connection.
-	// due to external table storage the information_schema always returns table type as view
-	// so we look at attached tables to determine if it is a view or table
-	q := `
-	WITH attached AS (
-		SELECT
-			DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
-		FROM duckdb_databases()
-		WHERE regexp_matches(database_name, '^.+__\d+__db$')
-	)
-	SELECT
-		t.table_name,
-		CASE WHEN a.attached_table IS NOT NULL THEN FALSE
-			ELSE (t.table_type = 'VIEW')
-		END AS view
-	FROM information_schema.tables t
-	LEFT JOIN attached a
-		ON t.table_name = a.attached_table
-	WHERE
-		t.table_catalog = current_database()
-		AND t.table_schema = current_schema()
-	`
+	var q string
 	if c.config.Path != "" || c.config.Attach != "" {
 		// for generic duckdb implementation, we use the current schema from the connection.
 		q = `
@@ -78,8 +59,30 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
         WHERE t.table_catalog = ? AND t.table_schema = ?
         `
 		args = append(args, database, databaseSchema)
+	} else {
+		// for rduckdb implementation, we use the current database and schema from the connection.
+		// due to external table storage the information_schema always returns table type as view
+		// so we look at attached tables to determine if it is a view or table
+		q = `
+		WITH attached AS (
+			SELECT
+				DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
+			FROM duckdb_databases()
+			WHERE regexp_matches(database_name, '^.+__\d+__db$')
+		)
+		SELECT
+			t.table_name,
+			CASE WHEN a.attached_table IS NOT NULL THEN FALSE
+				ELSE (t.table_type = 'VIEW')
+			END AS view
+		FROM information_schema.tables t
+		LEFT JOIN attached a
+			ON t.table_name = a.attached_table
+		WHERE
+			t.table_catalog = current_database()
+			AND t.table_schema = current_schema()
+		`
 	}
-
 	if pageToken != "" {
 		var startAfter string
 		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
@@ -133,32 +136,9 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		return nil, err
 	}
 	defer func() { _ = release() }()
-	// for rduckdb implementation, we use the current database and schema from the connection.
-	// due to external table storage the information_schema always returns table type as view
-	// so we look at attached tables to determine if it is a view or table
-	q := `
-    WITH attached AS (
-        SELECT
-            DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
-        FROM duckdb_databases()
-        WHERE regexp_matches(database_name, '^.+__\d+__db$')
-    )
-    SELECT
-        CASE
-            WHEN a.attached_table IS NOT NULL THEN FALSE
-            ELSE t.table_type = 'VIEW'
-        END AS view,
-        c.column_name,
-        c.data_type
-    FROM information_schema.tables t
-    LEFT JOIN information_schema.columns c
-        ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-    LEFT JOIN attached a
-        ON t.table_name = a.attached_table
-    WHERE t.table_catalog = current_database() AND t.table_schema = current_schema() AND t.table_name = ?
-    ORDER BY c.ordinal_position;
-    `
-	args := []any{table}
+
+	var args []any
+	var q string
 	if c.config.Path != "" || c.config.Attach != "" {
 		// for generic duckdb implementation, we use the current schema from the connection.
 		q = `
@@ -173,6 +153,33 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
         ORDER BY c.ordinal_position
     	`
 		args = []any{database, databaseSchema, table}
+	} else {
+		// for rduckdb implementation, we use the current database and schema from the connection.
+		// due to external table storage the information_schema always returns table type as view
+		// so we look at attached tables to determine if it is a view or table
+		q = `
+		WITH attached AS (
+			SELECT
+				DISTINCT regexp_extract(database_name, '^(.*?)__\d+__db$', 1) AS attached_table
+			FROM duckdb_databases()
+			WHERE regexp_matches(database_name, '^.+__\d+__db$')
+		)
+		SELECT
+			CASE
+				WHEN a.attached_table IS NOT NULL THEN FALSE
+				ELSE t.table_type = 'VIEW'
+			END AS view,
+			c.column_name,
+			c.data_type
+		FROM information_schema.tables t
+		LEFT JOIN information_schema.columns c
+			ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+		LEFT JOIN attached a
+			ON t.table_name = a.attached_table
+		WHERE t.table_catalog = current_database() AND t.table_schema = current_schema() AND t.table_name = ?
+		ORDER BY c.ordinal_position;
+		`
+		args = []any{table}
 	}
 	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {

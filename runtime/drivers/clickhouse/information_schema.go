@@ -65,8 +65,8 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	defer rows.Close()
 
 	var res []*drivers.DatabaseSchemaInfo
+	var schema string
 	for rows.Next() {
-		var schema string
 		if err := rows.Scan(&schema); err != nil {
 			return nil, "", err
 		}
@@ -126,13 +126,12 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	defer rows.Close()
 
 	var res []*drivers.TableInfo
+	var name string
+	var view bool
 	for rows.Next() {
-		var name string
-		var view bool
 		if err := rows.Scan(&name, &view); err != nil {
 			return nil, "", err
 		}
-		// default unknown size to -1 to match API contract
 		res = append(res, &drivers.TableInfo{
 			Name: name,
 			View: view,
@@ -176,14 +175,12 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	defer rows.Close()
 
 	schemaMap := make(map[string]string)
-	var isView bool
+	var view bool
+	var colName, dataType string
 	for rows.Next() {
-		var view bool
-		var colName, dataType string
 		if err := rows.Scan(&view, &colName, &dataType); err != nil {
 			return nil, err
 		}
-		isView = view
 		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
 			if errors.Is(err, errUnsupportedType) {
 				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
@@ -203,7 +200,7 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 
 	return &drivers.TableMetadata{
 		Schema: schemaMap,
-		View:   isView,
+		View:   view,
 	}, nil
 }
 
