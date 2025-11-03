@@ -29,7 +29,7 @@ rill project edit --project my-project-name --prod-branch my-branch-name
 ```
 :::
 
-4. Provision a Rill Cloud [service account](/reference/cli/service/create.md) called `gitlab-ci` and copy its access token:
+4. Provision a Rill Cloud [service account](/reference/cli/service/create) called `gitlab-ci` and copy its access token:
 ```
 rill service create gitlab-ci
 ```

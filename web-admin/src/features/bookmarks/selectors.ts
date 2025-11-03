@@ -1,3 +1,4 @@
+import { page } from "$app/stores";
 import {
   createAdminServiceGetCurrentUser,
   createAdminServiceListBookmarks,
@@ -5,6 +6,10 @@ import {
   type V1Bookmark,
   type V1ListBookmarksResponse,
 } from "@rilldata/web-admin/client";
+import {
+  categorizeBookmarks,
+  parseBookmarks,
+} from "@rilldata/web-admin/features/bookmarks/utils.ts";
 import {
   getProjectIdQueryOptions,
   type OrgAndProjectNameStore,
@@ -128,4 +133,34 @@ export function getHomeBookmarkExploreState(
       return exploreStateFromHomeBookmark;
     },
   );
+}
+
+export function getCanvasCategorisedBookmarks(
+  orgAndProjectNameStore: OrgAndProjectNameStore,
+  canvasNameStore: Readable<string>,
+) {
+  const bookmarksQuery = createQuery(
+    getBookmarksQueryOptions(
+      orgAndProjectNameStore,
+      ResourceKind.Canvas,
+      canvasNameStore,
+    ),
+  );
+
+  return derived([bookmarksQuery, page], ([bookmarksResp, pageState]) => {
+    const bookmarks = bookmarksResp.data?.bookmarks ?? [];
+    const parsedBookmarks = parseBookmarks(
+      bookmarks,
+      pageState.url.searchParams,
+    );
+    const categorizedBookmarks = categorizeBookmarks(parsedBookmarks);
+    return {
+      data: {
+        bookmarks,
+        categorizedBookmarks,
+      },
+      isPending: bookmarksResp.isPending,
+      error: bookmarksResp.error,
+    };
+  });
 }

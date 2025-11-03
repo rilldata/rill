@@ -99,6 +99,9 @@ type InstanceConfig struct {
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
 	MetricsExactifyDruidTopN bool `mapstructure:"rill.metrics.exactify_druid_topn"`
+	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
+	// Can be "", "none", "new", "pushdown".
+	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
 	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`

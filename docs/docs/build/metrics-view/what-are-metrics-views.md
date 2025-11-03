@@ -44,12 +44,12 @@ timeseries: timestamp_column # Choose a timestamp column (if any) from your tabl
 
 dimensions:
   - column: category
-    label: "Category"
+    display_name: "Category"
     description: "Description of the dimension"
 
 measures:
   - expression: "SUM(revenue)"
-    label: "Total Revenue"
+    display_name: "Total Revenue"
     description: "Total revenue generated"
 ```
 

@@ -48,6 +48,7 @@
     categorizedBookmarks: Bookmarks;
     defaultUrlParams?: URLSearchParams;
     defaultHomeBookmarkUrl?: string;
+    showFiltersOnly?: boolean;
   };
   export let dashboardState: {
     metricsViewNames: string[];
@@ -61,6 +62,7 @@
     categorizedBookmarks,
     defaultUrlParams,
     defaultHomeBookmarkUrl,
+    showFiltersOnly,
   } = bookmarkData);
 
   let showDialog = false;
@@ -253,6 +255,7 @@
     {bookmark}
     {resource}
     {defaultUrlParams}
+    {showFiltersOnly}
     {dashboardState}
     onClose={() => {
       showDialog = false;
