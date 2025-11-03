@@ -160,6 +160,7 @@
     role = "";
     isSuperUser = false;
     failedInvites = [];
+    $form.emails = [""];
   }}
   onOpenChange={(open) => {
     if (!open) {
@@ -167,6 +168,7 @@
       role = "";
       isSuperUser = false;
       failedInvites = [];
+      $form.emails = [""];
     }
   }}
 >
