@@ -103,9 +103,59 @@
   background: none;
   box-shadow: none;
   transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+
+  
+  i {
+    margin-right: 6px;
+    font-size: 0.9em;
+  }
 }
+
 .navbar .navbar-icon-link:hover,
 .navbar .navbar-icon-link:focus {
   color: var(--ifm-menu-color-active);
   text-decoration: none;
+}
+
+/* Active state for navbar icon links */
+.navbar .navbar-icon-link.navbar__link--active {
+  color: var(--ifm-navbar-link-active-color);
+}
+
+/* Specific styling for left navbar items */
+.navbar .navbar__items--left .navbar-icon-link {
+  font-weight: var(--ifm-font-weight-semibold);
+}
+
+/* Specific styling for right navbar items */
+.navbar .navbar__items--right .navbar-icon-link {
+  padding: 0.25rem 0.5rem;
+  
+  i {
+    font-size: 1.1em;
+  }
+}
+
+/* Mobile menu styles */
+@media (max-width: 996px) {
+  .navbar .navbar__items--left .navbar-icon-link {
+    width: 100%;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* Hide text on very small screens for right-side items */
+@media (max-width: 480px) {
+  .navbar .navbar__items--right .navbar-icon-link {
+    font-size: 0;
+    padding: 0.25rem;
+    
+    i {
+      font-size: 1.2rem;
+      margin-right: 0;
+    }
+  }
 } 

@@ -129,17 +129,15 @@ const config = {
         },
         items: [
           {
-            type: "doc",
-            docId: "get-started/get-started",
+            type: "html",
             position: "left",
-            label: "Docs",
+            value: '<a href="/" class="navbar__link navbar-icon-link" aria-label="Docs"><i class="fa-solid fa-book"></i> Docs</a>',
           },
 
           {
-            type: "docSidebar",
-            sidebarId: "refSidebar",
+            type: "html",
             position: "left",
-            label: "Reference",
+            value: '<a href="/reference/rill-iso-extensions" class="navbar__link navbar-icon-link" aria-label="Reference"><i class="far fa-file-lines"></i> Reference</a>',
           },
 
           // {
@@ -149,22 +147,21 @@ const config = {
           // },
 
           {
-            type: "docSidebar",
-            sidebarId: "contactSidebar",
+            type: "html",
             position: "left",
-            label: "Contact Us",
+            value: '<a href="/contact/contact" class="navbar__link navbar-icon-link" aria-label="Contact Us"><i class="far fa-envelope"></i> Contact Us</a>',
           },
 
           // Right side items
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub">GitHub</i></a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog">Blog</i></a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
           },
 
           {
