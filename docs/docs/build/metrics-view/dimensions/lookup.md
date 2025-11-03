@@ -9,7 +9,7 @@ Query-time joins or more simply, lookup dimensions, provide a powerful way to in
 
 :::note
 
-The lookup function is dependent on the type of [OLAP engine](/connect/olap) that you are using for your project.
+The lookup function is dependent on the type of [OLAP engine](/build/connectors/olap) that you are using for your project.
 
 :::
 
@@ -78,7 +78,7 @@ Alternatively, you can use DuckDB's `map` function to create a lookup table by m
 
 ## Performance Implications
 
-While joins can kill the performance of [OLAP engines](/connect/olap), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
+While joins can kill the performance of [OLAP engines](/build/connectors/olap), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
 
 **Static Lookups** 
 

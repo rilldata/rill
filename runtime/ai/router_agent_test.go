@@ -9,8 +9,13 @@ import (
 )
 
 func TestRouterAgent(t *testing.T) {
-	// NOTE: We use a single session, so each subsequent prompt will have the context of the previous ones.
-	_, _, s := newEval(t, testruntime.InstanceOptions{})
+	// Setup empty project
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		EnableLLM: true,
+	})
+
+	// NOTE: We use a single eval session, so each subsequent prompt will have the context of the previous ones.
+	s := newEval(t, rt, instanceID)
 	cases := []struct {
 		prompt string
 		agent  string
