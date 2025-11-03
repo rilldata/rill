@@ -10,7 +10,7 @@ Rill's strategy for fast dashboards is threefold:
 
 2) *Use an integrated OLAP database* to drive dashboards, by orchestrating (and aggregating, per above) data out of cloud data warehouses, lakehouses, or object stores.
 
-3) *Implement BI-as-code* to bring version control, collaboration, and automation to your analytics stack. This approach allows engineering teams to maintain control while enabling business users to make UI-based adjustments when needed. [Learn more about BI-as-code](/home/concepts/bi-as-code).
+3) *Implement BI-as-code* to bring version control, collaboration, and automation to your analytics stack. This approach allows engineering teams to maintain control while enabling business users to make UI-based adjustments when needed. [Learn more about BI-as-code](#bi-as-code).
 
 The decoupling of BI applications and database servers served a purpose at one phase in the evolution of data stacks, but the cost and performance trade-offs have begun to shift in favor of consolidated analytics offerings.
 

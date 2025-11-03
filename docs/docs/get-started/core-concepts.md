@@ -9,7 +9,7 @@ Rill is built around a few key concepts that work together to create a complete 
 ## Core Concepts Overview
 
 1. **[OLAP Engine](#what-is-olap)** - Connect to your data sources and import data into Rill's embedded analytics engine or connect to your OLAP engine via a live connector
-2. **[BI-As-Code](#bi-as-code)** - Create Rill objects (models, metrics views, dashboards) with code components (YAML) to prepare your data for visualizations.
+2. **[BI-As-Code](/get-started/why-rill#bi-as-code)** - Create Rill objects (models, metrics views, dashboards) with code components (YAML) to prepare your data for visualizations.
 3. **[Rill Cloud vs Rill Developer](#what-is-rill-cloud-and-rill-developer)** - Deploy and share dashboards with your team for data-driven decision making
 
 ## What is OLAP?
@@ -18,7 +18,18 @@ OLAP (or Online Analytical Processing) is a computational approach designed to e
 
 Unlike traditional relational databases or data warehouses that are optimized for transaction processing (with a focus on CRUD operations), OLAP databases are designed for query speed and complex analysis. Rather than storing data in a row-oriented manner, optimizing for transactional efficiency and operational queries, most OLAP databases are columnar and use pre-aggregated multidimensional cubes to speed up analytical queries. This allows a broad range of ad hoc queries and analysis to be performed without needing predefined schemas that are tailored to specific queries, and it's this flexibility that enables the highly interactive slice-and-dice exploration of data that powers Rill dashboards. This paradigm allows OLAP to be particularly well-suited for organizations and teams that want to dive deep into and understand their data to support decision-making processes, where speed and flexibility in the actual data analysis are important. 
 
-See our dedicated [Connect Docs](/connect) for more information on [OLAP engines](/connect/olap) and available [data source connectors](/connect/data-source).
+See our dedicated [Connect Docs](/build/connectors) for more information on [OLAP engines](/build/connectors/olap) and available [data source connectors](/build/connectors/data-source).
+
+### Live Connectors in Rill
+
+Rill supports [live connectors](/build/connectors/olap) that allow you to connect directly to existing tables in external OLAP engines like ClickHouse, Druid, and Pinot. Instead of importing data into Rill, you can build metrics views and dashboards on top of your existing tables, keeping your data where it already lives.
+
+This approach is ideal when:
+- Your data is already in a production OLAP database
+- You need to query large datasets that are managed elsewhere
+- Your organization has existing data infrastructure you want to leverage
+
+With live connectors, you define your [metrics views](/build/metrics-view) that reference external tables, and Rill queries them directly to power your dashboards and visualizations.
 
 :::info Want to see OLAP in action?
 

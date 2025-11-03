@@ -16,7 +16,7 @@ There are times where you'll need to check downstream objects to find the true c
 
 ## Resource Level Errors
 
-If you have already created YAML alerts, when deploying to Rill Cloud for the first time, you'll get a notification if there are any [resource level errors](/build/alerts#project-status-alerts). 
+If you have already created YAML alerts, when deploying to Rill Cloud for the first time, you'll get a notification if there are any resource level errors. 
 
 Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/explore/alerts)!
 
