@@ -81,28 +81,7 @@ AI Chat provides rich, multi-layered responses to help you understand your data 
 
 ### Visual Components
 
-AI Chat in Rill Cloud automatically generates interactive visualizations to complement textual answers. After running queries against your metrics views, the AI intelligently selects the most appropriate chart type based on:
-
-- **Data structure** - Number of dimensions, measures, and their relationships
-- **Question context** - Whether you're asking about trends, comparisons, or distributions
-- **Best practices** - Following visualization principles to maximize clarity
-
-These visualizations are built using the same [canvas dashboard](/build/dashboards/canvas-widgets) technology used throughout Rill, ensuring:
-
-- **Consistency** - Visualizations match the style and behavior of your regular dashboards
-- **Interactivity** - Hover over data points to see detailed values and context
-- **Accuracy** - Charts are generated from the same governed data sources as your dashboards
-- **Clarity** - Complex data patterns become immediately visible
-
-#### When Charts Are Generated
-
-The AI will automatically create a chart after running queries, unless:
-- You explicitly request a table-only response
-- The query returns only a single scalar value
-- The data structure doesn't support visualization (e.g., text-heavy data)
-- There's no appropriate chart type for the underlying data
-
-This smart behavior ensures you always get the most useful visualization without cluttering responses with unnecessary charts.
+AI Chat automatically generates interactive visualizations to complement answers when appropriate. The AI intelligently selects chart types based on your data structure, question context, and visualization best practices—while skipping charts when a table or text-only response is more suitable.
 
 ### Linking Back to Dashboards
 
