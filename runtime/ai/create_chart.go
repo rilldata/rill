@@ -716,14 +716,29 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **Multi-measure comparison**: Prefer ` + "`stacked_bar`" + ` when comparing 3 or more related measures
 
 
-## Important Notes
+## Important Chart Configuration Notes and Requirements
 
-- The ` + "`time_range`" + ` parameter is **required** for all charts
-- Time range ` + "`start`" + ` is inclusive, ` + "`end`" + ` is exclusive
-- Use ` + "`time_grain`" + ` to control temporal aggregation granularity (defaults to "TIME_GRAIN_DAY")
-- Use ` + "`where`" + ` to filter data displayed in charts - this applies the same filtering as query_metrics_view
-- You do not always have to include a color field object for different bar chart and line charts. Use when required or when more than 1 dimensions has to be visualized.
-- Ensure the metrics_view name matches exactly with available views
-- Field names must match the exact field names in the metrics view
-- When using ` + "`__time`" + ` field, set type to ` + "`\"temporal\"`" + `
-- For multiple measures, use the ` + "`fields`" + ` array in the y-axis configuration`
+### Temporal Configuration
+- **'time_range'** (REQUIRED for all generated specifications): Defines the temporal bounds for the chart
+  - 'start': Inclusive timestamp
+  - 'end': Exclusive timestamp
+- **'time_grain'**: Controls temporal aggregation granularity
+  - Default: "TIME_GRAIN_DAY"
+  - Use to adjust time-based grouping (e.g., hour, day, week, month)
+- **'__time' field**: When referencing the time dimension, always set type to "temporal"
+
+### Data Filtering
+- **'where'**: Apply filters to chart data
+  - Uses same filtering syntax as 'query_metrics_view'
+  - Filters are applied before visualization
+
+### Field Configuration
+- **Y-axis with multiple measures**: Use the 'fields' array in y-axis configuration
+- **Field names**: Must exactly match field names in the metrics view (case-sensitive)
+- **Metrics view name**: Must exactly match available view names
+
+### Limitations
+- **No comparison support**: The following are NOT supported:
+  - 'comparison_time_range' parameter
+  - Comparison measures like 'measure_name__delta_abs' or 'measure_nam>__delta_rel'. Do not use such measures in the spec anywhere
+  - Period-over-period comparisons can be handled by calling two tool calls with the same spec but different time ranges`
