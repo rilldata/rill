@@ -1,9 +1,30 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config.ts";
   import { cn } from "@rilldata/web-common/lib/shadcn.ts";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
+  import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
 
   export let name: string;
   export let usersCount: number;
+  export let groupName: string;
+
+  let hovered = false;
+
+  $: organization = $page.params.organization;
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+    organization,
+    groupName,
+    { pageSize: 10 },
+    {
+      query: {
+        enabled: hovered && (usersCount ?? 0) > 0,
+      },
+    },
+  );
+  $: previewUsers = $listUsergroupMemberUsers.data?.members ?? [];
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -23,10 +44,48 @@
     <span class="text-sm font-medium text-gray-900 flex flex-row gap-x-1">
       {name}
     </span>
-    <div class="flex flex-row items-center gap-x-1">
-      <span class="text-xs text-gray-500">
-        {usersCount} user{usersCount > 1 ? "s" : ""}
-      </span>
-    </div>
+    <Tooltip location="right" alignment="middle" distance={8}>
+      <div
+        class="flex flex-row items-center gap-x-1"
+        role="button"
+        tabindex="0"
+        on:mouseenter={() => (hovered = true)}
+        on:focus={() => (hovered = true)}
+        on:blur={() => (hovered = false)}
+      >
+        <span class="text-xs text-gray-500">
+          {usersCount} user{usersCount === 1 ? "" : "s"}
+        </span>
+      </div>
+      <TooltipContent slot="tooltip-content">
+        {#if (usersCount ?? 0) === 0}
+          <div class="text-xs text-gray-300 px-1 py-0.5">No users</div>
+        {:else if $listUsergroupMemberUsers.isLoading}
+          <div class="text-xs text-gray-300 px-1 py-0.5">Loading…</div>
+        {:else if $listUsergroupMemberUsers.isError}
+          <div class="text-xs text-red-300 px-1 py-0.5">
+            Failed to load users
+          </div>
+        {:else}
+          <ul>
+            {#each previewUsers.slice(0, 6) as u}
+              <div class="flex items-center gap-1 py-1">
+                <Avatar
+                  src={u.userPhotoUrl}
+                  avatarSize="h-4 w-4"
+                  fontSize="text-[10px]"
+                  alt={u.userName || u.userEmail}
+                  bgColor={getRandomBgColor(u.userEmail || u.userName)}
+                />
+                <li>{u.userName || u.userEmail}</li>
+              </div>
+            {/each}
+            {#if (usersCount ?? 0) > 6}
+              <li>and {(usersCount ?? 0) - 6} more</li>
+            {/if}
+          </ul>
+        {/if}
+      </TooltipContent>
+    </Tooltip>
   </div>
 </div>
