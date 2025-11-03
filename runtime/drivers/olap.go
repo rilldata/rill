@@ -203,6 +203,7 @@ const (
 	DialectBigQuery
 	DialectSnowflake
 	DialectAthena
+	DialectRedshift
 	DialectMySQL
 )
 
@@ -224,6 +225,8 @@ func (d Dialect) String() string {
 		return "snowflake"
 	case DialectAthena:
 		return "athena"
+	case DialectRedshift:
+		return "redshift"
 	case DialectMySQL:
 		return "mysql"
 	default:

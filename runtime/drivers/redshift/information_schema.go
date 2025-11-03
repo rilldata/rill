@@ -41,10 +41,11 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 
 	client := redshiftdata.NewFromConfig(awsConfig)
 
-	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to list schemas: %w", err)
 	}
+	queryExecutionID := *out.Id
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
 		Id: aws.String(queryExecutionID),
@@ -105,10 +106,11 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	client := redshiftdata.NewFromConfig(awsConfig)
 
-	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to list schemas: %w", err)
 	}
+	queryExecutionID := *out.Id
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
 		Id: aws.String(queryExecutionID),
@@ -158,10 +160,11 @@ ORDER BY ordinal_position;
 
 	client := redshiftdata.NewFromConfig(awsConfig)
 
-	queryExecutionID, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get table metadata: %w", err)
 	}
+	queryExecutionID := *out.Id
 
 	result, err := client.GetStatementResult(ctx, &redshiftdata.GetStatementResultInput{
 		Id: aws.String(queryExecutionID),

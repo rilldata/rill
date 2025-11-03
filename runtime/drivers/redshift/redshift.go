@@ -141,7 +141,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
 	})
 
-	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier)
+	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	return err
 }
 
@@ -184,7 +184,7 @@ func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -256,24 +256,31 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	return config.LoadDefaultConfig(ctx, loadOptions...)
 }
 
-// executeQuery executes a query and waits for it to complete
-func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Client, sql, database, workgroup, clusterIdentifier string) (string, error) {
+// executeQuery executes a query with optional parameters and waits for it to complete
+func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Client, sql, database, workgroup, clusterIdentifier string, params []redshift_types.SqlParameter) (*redshiftdata.DescribeStatementOutput, error) {
 	executeParams := &redshiftdata.ExecuteStatementInput{
 		Sql:      aws.String(sql),
 		Database: aws.String(database),
 	}
 
-	if clusterIdentifier != "" { // ClusterIdentifier and Workgroup are interchangeable
-		executeParams.ClusterIdentifier = aws.String(clusterIdentifier)
+	// Only set Parameters if there are any (Redshift Data API requires non-empty array)
+	if len(params) > 0 {
+		executeParams.Parameters = params
 	}
 
+	// Set either ClusterIdentifier or WorkgroupName, but not both
+	// WorkgroupName is preferred for serverless
 	if workgroup != "" {
 		executeParams.WorkgroupName = aws.String(workgroup)
+	} else if clusterIdentifier != "" {
+		executeParams.ClusterIdentifier = aws.String(clusterIdentifier)
+	} else {
+		return nil, fmt.Errorf("either workgroup or cluster_identifier is required")
 	}
 
 	queryExecutionOutput, err := client.ExecuteStatement(ctx, executeParams)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -286,23 +293,23 @@ func (c *Connection) executeQuery(ctx context.Context, client *redshiftdata.Clie
 				Id: queryExecutionOutput.Id,
 			})
 			cancel()
-			return "", errors.Join(ctx.Err(), err)
+			return nil, errors.Join(ctx.Err(), err)
 		case <-ticker.C:
 			status, err := client.DescribeStatement(ctx, &redshiftdata.DescribeStatementInput{
 				Id: queryExecutionOutput.Id,
 			})
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
 			state := status.Status
 
 			if status.Error != nil {
-				return "", fmt.Errorf("Redshift query execution failed %s", *status.Error)
+				return nil, fmt.Errorf("Redshift query execution failed %s", *status.Error)
 			}
 
 			if state != redshift_types.StatusStringSubmitted && state != redshift_types.StatusStringStarted && state != redshift_types.StatusStringPicked {
-				return *queryExecutionOutput.Id, nil
+				return status, nil
 			}
 		}
 	}
