@@ -241,7 +241,7 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 	userID := refreshToken.OwnerID()
 	tknClientID := ""
 	if userToken.AuthClientID != nil {
-		clientID = *userToken.AuthClientID
+		tknClientID = *userToken.AuthClientID
 	}
 	if tknClientID != clientID {
 		http.Error(w, "client_id does not match token's client ID", http.StatusBadRequest)
