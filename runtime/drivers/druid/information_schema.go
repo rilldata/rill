@@ -55,9 +55,9 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	defer rows.Close()
 
 	var res []*drivers.TableInfo
+	var name string
+	var typ bool
 	for rows.Next() {
-		var name string
-		var typ bool
 		if err := rows.Scan(&name, &typ); err != nil {
 			return nil, "", err
 		}
@@ -116,14 +116,12 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	defer rows.Close()
 
 	schemaMap := make(map[string]string)
-	var isView bool
+	var view, nullable bool
+	var colName, dataType string
 	for rows.Next() {
-		var view, nullable bool
-		var colName, dataType string
 		if err := rows.Scan(&view, &colName, &dataType, &nullable); err != nil {
 			return nil, err
 		}
-		isView = view
 		pbType := databaseTypeToPB(dataType, nullable)
 		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
 			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
@@ -138,7 +136,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 
 	return &drivers.TableMetadata{
 		Schema: schemaMap,
-		View:   isView,
+		View:   view,
 	}, nil
 }
 
