@@ -204,6 +204,7 @@ const (
 	DialectSnowflake
 	DialectAthena
 	DialectMySQL
+	DialectPostgres
 )
 
 func (d Dialect) String() string {
@@ -226,6 +227,8 @@ func (d Dialect) String() string {
 		return "athena"
 	case DialectMySQL:
 		return "mysql"
+	case DialectPostgres:
+		return "postgres"
 	default:
 		panic("not implemented")
 	}
