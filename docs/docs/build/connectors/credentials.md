@@ -4,7 +4,7 @@ sidebar_label: Configure Local Credentials
 sidebar_position: 15
 ---
 
-Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid), or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](/connect) and [OLAP engine](/connect/olap) page for instructions to configure credentials accordingly.
+Rill requires credentials to connect to remote data sources such as private buckets (S3, GCS, Azure), data warehouses (Snowflake, BigQuery), OLAP engines (ClickHouse, Apache Druid), or other DuckDB sources (MotherDuck). Please refer to the appropriate [connector](/build/connectors) and [OLAP engine](/build/connectors/olap) page for instructions to configure credentials accordingly.
 
 At a high level, configuring credentials and credential management in Rill can be broken down into three categories:
 - Setting credentials for Rill Developer
@@ -23,10 +23,10 @@ While Rill **can** infer credentials from your local environment (AWS CLI, Azure
 :::
 
 1. **Credentials referenced in connection strings or DSN within YAML files (RECOMMENDED)** - The UI creates YAML configurations that reference credentials from your `.env` file using templating (see [Connector YAML](/reference/project-files/connectors) for more details)
-2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [templating](/connect/templating) for more details)
-3. **Credentials configured via CLI** - For [AWS](/connect/data-source/s3#local-aws-credentials-local-development-only) / [Azure](/connect/data-source/azure#azure-cli-authentication-local-development-only) / [Google Cloud](/connect/data-source/gcs#local-google-cloud-cli-credentials-local-development-only) - **NOT RECOMMENDED for production use**
+2. **Credentials passed in as variables** - When starting Rill Developer via `rill start --env key=value` (see [templating](/build/connectors/templating) for more details)
+3. **Credentials configured via CLI** - For [AWS](/build/connectors/data-source/s3#local-aws-credentials-local-development-only) / [Azure](/build/connectors/data-source/azure#azure-cli-authentication-local-development-only) / [Google Cloud](/build/connectors/data-source/gcs#local-google-cloud-cli-credentials-local-development-only) - **NOT RECOMMENDED for production use**
 
-For more details, please refer to the corresponding [connector](/connect) or [OLAP engine](/connect/olap) page.
+For more details, please refer to the corresponding [connector](/build/connectors) or [OLAP engine](/build/connectors/olap) page.
 
 :::note Ensuring security of credentials in use
 
@@ -65,11 +65,11 @@ my_custom_variable=some_value
 ```
 When creating any connector in Rill via the UI, these will be **automatically generated** in the `.env` file.
 
-Additional variables can then be usable and referenceable for [templating](/connect/templating) purposes in the local instance of your project. 
+Additional variables can then be usable and referenceable for [templating](/build/connectors/templating) purposes in the local instance of your project. 
 
 ### Credentials Naming Schema 
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard-coded project variables (that happen to correspond to the [Druid](/connect/olap/druid) and [ClickHouse](/connect/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hard-coded project variables (that happen to correspond to the [Druid](/build/connectors/olap/druid) and [ClickHouse](/build/connectors/olap/clickhouse) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!
 
 :::tip Avoid committing sensitive information to Git
 

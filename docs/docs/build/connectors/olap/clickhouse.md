@@ -12,7 +12,7 @@ import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as ne
 
 <LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' /> <br />
 
-Rill supports connecting to an existing ClickHouse cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/connect/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing ClickHouse cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 
 :::note Supported Versions
@@ -81,7 +81,7 @@ For more information about available DSN properties and setting an appropriate c
 
 If you are connecting to an existing [ClickHouse Cloud](https://clickhouse.com/cloud) instance, you can retrieve connection details about your instance by clicking on the `Connect` tab from within the admin settings navigation page. This will provide relevant information, such as the hostname, port, and username being used for your instance that you can then use to construct your DSN.
 
-<img src='/img/connect/olap-engines/clickhouse/clickhouse-cloud.png' class='rounded-gif' />
+<img src='/img/build/connectors/olap-engines/clickhouse/clickhouse-cloud.png' class='rounded-gif' />
 <br />
 
 Using the information in the ClickHouse UI, populate the parameters of your connection. 
@@ -155,7 +155,7 @@ olap_connector: clickhouse
 
 :::info Interested in using multiple OLAP engines in the same project?
 
-Please see our [Using Multiple OLAP Engines](/connect/olap/multiple-olap) page.
+Please see our [Using Multiple OLAP Engines](/build/connectors/olap/multiple-olap) page.
 
 :::
 

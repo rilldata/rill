@@ -38,7 +38,7 @@ init_sql:
 
 ## Importing Data to Your External DuckDB
 
-After establishing a connection, you can import data through the connector UI. This process will write data from your attached database to [Rill's embedded DuckDB.](/connect/olap/duckdb#rill-managed-duckdb)
+After establishing a connection, you can import data through the connector UI. This process will write data from your attached database to [Rill's embedded DuckDB.](/build/connectors/olap/duckdb#rill-managed-duckdb)
 
 ```yaml
 # Model YAML

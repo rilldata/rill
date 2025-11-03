@@ -48,7 +48,7 @@ You can also use the Add Data form in Rill Developer, which will automatically c
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
-For more details, see our [Dev/Prod setup docs](/connect/templating).
+For more details, see our [Dev/Prod setup docs](/build/connectors/templating).
 
 ## Deploy to Rill Cloud
 
@@ -62,6 +62,6 @@ rill env configure
 
 :::tip Did you know?
 
-If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/connect/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
+If you've already configured credentials locally (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/connectors/credentials#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve and reuse the same credentials automatically by running `rill env pull`.
 
 :::
