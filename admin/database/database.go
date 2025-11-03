@@ -151,7 +151,7 @@ type DB interface {
 	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
-	FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*UserAuthToken, error)
+	FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int, refresh *bool) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
@@ -712,6 +712,7 @@ type UserAuthToken struct {
 	AuthClientID          *string    `db:"auth_client_id"`
 	AuthClientDisplayName *string    `db:"auth_client_display_name"`
 	RepresentingUserID    *string    `db:"representing_user_id"`
+	Refresh               bool       `db:"refresh"`
 	CreatedOn             time.Time  `db:"created_on"`
 	ExpiresOn             *time.Time `db:"expires_on"`
 	UsedOn                time.Time  `db:"used_on"`
@@ -725,6 +726,7 @@ type InsertUserAuthTokenOptions struct {
 	DisplayName        string
 	AuthClientID       *string
 	RepresentingUserID *string
+	Refresh            bool // indicates if its refresh token
 	ExpiresOn          *time.Time
 }
 

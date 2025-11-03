@@ -8528,6 +8528,13 @@ export class ListUserAuthTokensRequest extends Message<ListUserAuthTokensRequest
    */
   superuserForceAccess = false;
 
+  /**
+   * Flag to filter only refresh tokens. If false, only returns access tokens (non-refresh).
+   *
+   * @generated from field: bool refresh = 5;
+   */
+  refresh = false;
+
   constructor(data?: PartialMessage<ListUserAuthTokensRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -8540,6 +8547,7 @@ export class ListUserAuthTokensRequest extends Message<ListUserAuthTokensRequest
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUserAuthTokensRequest {
@@ -15959,6 +15967,11 @@ export class UserAuthToken extends Message<UserAuthToken> {
    */
   usedOn?: Timestamp;
 
+  /**
+   * @generated from field: bool refresh = 10;
+   */
+  refresh = false;
+
   constructor(data?: PartialMessage<UserAuthToken>) {
     super();
     proto3.util.initPartial(data, this);
@@ -15976,6 +15989,7 @@ export class UserAuthToken extends Message<UserAuthToken> {
     { no: 6, name: "created_on", kind: "message", T: Timestamp },
     { no: 7, name: "expires_on", kind: "message", T: Timestamp },
     { no: 8, name: "used_on", kind: "message", T: Timestamp },
+    { no: 10, name: "refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserAuthToken {

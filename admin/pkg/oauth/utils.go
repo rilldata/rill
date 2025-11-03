@@ -7,10 +7,12 @@ const (
 
 // TokenResponse contains the information returned after fetching an access token from the OAuth server.
 type TokenResponse struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int64  `json:"expires_in"`
-	TokenType   string `json:"token_type"`
-	UserID      string `json:"user_id"`
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	TokenType    string `json:"token_type"`
+	Scope        string `json:"scope,omitempty"`
+	UserID       string `json:"user_id"`
 }
 
 // ProtectedResourceMetadata contains the OAuth 2.0 Protected Resource Metadata as per RFC 8414

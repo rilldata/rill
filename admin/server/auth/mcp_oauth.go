@@ -40,6 +40,9 @@ func (a *Authenticator) handleOAuthAuthorizationServerMetadata(w http.ResponseWr
 		TokenEndpoint:         a.admin.URLs.OAuthToken(),
 		RegistrationEndpoint:  a.admin.URLs.OAuthRegister(),
 		JWKSURI:               a.admin.URLs.OAuthJWKS(),
+		ScopesSupported: []string{
+			"offline_access", // Refresh token support
+		},
 		ResponseTypesSupported: []string{
 			"code", // Authorization code flow
 		},
@@ -49,6 +52,7 @@ func (a *Authenticator) handleOAuthAuthorizationServerMetadata(w http.ResponseWr
 		GrantTypesSupported: []string{
 			"authorization_code",                           // Authorization code grant
 			"urn:ietf:params:oauth:grant-type:device_code", // Device code grant
+			"refresh_token",                                // Refresh token grant
 		},
 		TokenEndpointAuthMethodsSupported: []string{
 			"none", // Public clients (PKCE)

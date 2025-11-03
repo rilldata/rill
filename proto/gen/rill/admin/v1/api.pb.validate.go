@@ -24037,6 +24037,8 @@ func (m *ListUserAuthTokensRequest) validate(all bool) error {
 
 	// no validation rules for SuperuserForceAccess
 
+	// no validation rules for Refresh
+
 	if len(errors) > 0 {
 		return ListUserAuthTokensRequestMultiError(errors)
 	}
@@ -42745,6 +42747,8 @@ func (m *UserAuthToken) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Refresh
 
 	if len(errors) > 0 {
 		return UserAuthTokenMultiError(errors)

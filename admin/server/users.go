@@ -192,7 +192,17 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize)
+	// Determine refresh filter: if RefreshTokensOnly is true, show only refresh tokens; otherwise show only access tokens
+	var refreshFilter *bool
+	if req.Refresh {
+		refreshFilter = &req.Refresh
+	} else {
+		// Default: only show access tokens (non-refresh tokens)
+		falseVal := false
+		refreshFilter = &falseVal
+	}
+
+	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize, refreshFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -236,6 +246,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 			ExpiresOn:             expiresOn,
 			UsedOn:                timestamppb.New(t.UsedOn),
 			Prefix:                prefix,
+			Refresh:               t.Refresh,
 		}
 	}
 
@@ -289,7 +300,7 @@ func (s *Server) IssueUserAuthToken(ctx context.Context, req *adminv1.IssueUserA
 		representingUserID = &u.ID
 	}
 
-	authToken, err := s.admin.IssueUserAuthToken(ctx, userID, req.ClientId, req.DisplayName, representingUserID, ttl)
+	authToken, err := s.admin.IssueUserAuthToken(ctx, userID, req.ClientId, req.DisplayName, representingUserID, ttl, false)
 	if err != nil {
 		return nil, err
 	}
@@ -391,7 +402,7 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 	ttl := time.Duration(req.TtlMinutes) * time.Minute
 	displayName := fmt.Sprintf("Support for %s", u.Email)
 
-	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl)
+	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl, false)
 	if err != nil {
 		return nil, err
 	}
@@ -692,7 +703,7 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 	}
 
 	// Find all tokens for the user and match by prefix
-	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000)
+	dbTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, "", 1000, nil)
 	if err != nil {
 		return nil, err
 	}

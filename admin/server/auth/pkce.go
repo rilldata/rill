@@ -17,7 +17,12 @@ import (
 	"go.uber.org/zap"
 )
 
-const authorizationCodeGrantType = "authorization_code"
+const (
+	authorizationCodeGrantType = "authorization_code"
+	refreshTokenGrantType      = "refresh_token"
+)
+
+var firstPartyAuthClients = []string{"12345678-0000-0000-0000-000000000001", "12345678-0000-0000-0000-000000000002"} // Rill Web, Rill CLI
 
 func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI string) {
 	// Generate a unique authorization code
@@ -123,10 +128,136 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
-	// ttl of 10 years
-	ttl := 10 * 365 * 24 * time.Hour
-	// Issue an access token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, &ttl)
+	// check if the client is a first-party auth client
+	isFirstParty := false
+	for _, fpClientID := range firstPartyAuthClients {
+		if clientID == fpClientID {
+			isFirstParty = true
+			break
+		}
+	}
+
+	var resp oauth.TokenResponse
+	// if the client is a first-party auth client then return long-lived auth token without a refresh token otherwise return short-lived access token with a refresh token
+	if isFirstParty {
+		authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, nil, false)
+		if err != nil {
+			if errors.Is(err, r.Context().Err()) {
+				http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+				return
+			}
+			internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
+			return
+		}
+		resp = oauth.TokenResponse{
+			AccessToken: authToken.Token().String(),
+			TokenType:   "Bearer",
+			ExpiresIn:   0, // never expires
+			UserID:      userID,
+		}
+	} else {
+		// Issue access token (60 minutes TTL)
+		accessTTL := 60 * time.Minute
+		accessToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Access Token", nil, &accessTTL, false)
+		if err != nil {
+			if errors.Is(err, r.Context().Err()) {
+				http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+				return
+			}
+			internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
+			return
+		}
+
+		// Issue refresh token (45 days TTL)
+		refreshTTL := 45 * 24 * time.Hour
+		refreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Refresh Token", nil, &refreshTTL, true)
+		if err != nil {
+			if errors.Is(err, r.Context().Err()) {
+				http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+				return
+			}
+			internalServerError(w, fmt.Errorf("failed to issue refresh token, %w", err))
+			return
+		}
+
+		resp = oauth.TokenResponse{
+			AccessToken:  accessToken.Token().String(),
+			ExpiresIn:    int64(accessTTL.Seconds()),
+			RefreshToken: refreshToken.Token().String(),
+			TokenType:    "Bearer",
+			Scope:        "offline_access",
+			UserID:       userID,
+		}
+	}
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("0082failed to marshal response, %w", err))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(respBytes)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
+		return
+	}
+	a.logger.Debug("Exchanged authorization code for access and refresh tokens", zap.String("userID", userID), zap.String("clientID", clientID))
+}
+
+// getAccessTokenForRefreshToken exchanges a refresh token for a new access token and refresh token
+func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *http.Request, values url.Values) {
+	// Extract the refresh token
+	refreshTokenStr := values.Get("refresh_token")
+	if refreshTokenStr == "" {
+		http.Error(w, "refresh_token is required", http.StatusBadRequest)
+		return
+	}
+
+	// Extract the client ID
+	clientID := values.Get("client_id")
+	if clientID == "" {
+		http.Error(w, "client_id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the refresh token
+	refreshToken, err := a.admin.ValidateAuthToken(r.Context(), refreshTokenStr)
+	if err != nil {
+		http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+		return
+	}
+
+	// Ensure it's actually a refresh token
+	userToken, ok := refreshToken.TokenModel().(*database.UserAuthToken)
+	if !ok {
+		http.Error(w, "invalid token type", http.StatusBadRequest)
+		return
+	}
+
+	if !userToken.Refresh {
+		http.Error(w, "token is not a refresh token", http.StatusBadRequest)
+		return
+	}
+
+	userID := refreshToken.OwnerID()
+	tknClientID := ""
+	if userToken.AuthClientID != nil {
+		clientID = *userToken.AuthClientID
+	}
+	if tknClientID != clientID {
+		http.Error(w, "client_id does not match token's client ID", http.StatusBadRequest)
+		return
+	}
+
+	// Delete the old refresh token
+	err = a.admin.RevokeAuthToken(r.Context(), refreshTokenStr)
+	if err != nil {
+		a.logger.Warn("failed to revoke old refresh token", zap.Error(err))
+		// Continue anyway - we still want to issue new tokens
+	}
+
+	// Issue new access token (60 minutes TTL)
+	accessTTL := 60 * time.Minute
+	accessToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Access Token", nil, &accessTTL, false)
 	if err != nil {
 		if errors.Is(err, r.Context().Err()) {
 			http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
@@ -136,11 +267,25 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
+	// Issue new refresh token (45 days TTL)
+	newRefreshTTL := 45 * 24 * time.Hour
+	newRefreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Refresh Token", nil, &newRefreshTTL, true)
+	if err != nil {
+		if errors.Is(err, r.Context().Err()) {
+			http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+			return
+		}
+		internalServerError(w, fmt.Errorf("failed to issue refresh token, %w", err))
+		return
+	}
+
 	resp := oauth.TokenResponse{
-		AccessToken: authToken.Token().String(),
-		TokenType:   "Bearer",
-		ExpiresIn:   int64(ttl.Seconds()),
-		UserID:      userID,
+		AccessToken:  accessToken.Token().String(),
+		ExpiresIn:    int64(accessTTL.Seconds()),
+		RefreshToken: newRefreshToken.Token().String(),
+		TokenType:    "Bearer",
+		Scope:        "offline_access",
+		UserID:       userID,
 	}
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
@@ -153,7 +298,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
 		return
 	}
-	a.logger.Debug("Exchanged authorization code for access token", zap.String("userID", userID), zap.String("clientID", clientID))
+	a.logger.Debug("Refreshed access and refresh tokens", zap.String("userID", userID), zap.String("clientID", clientID))
 }
 
 // verifyCodeChallenge validates the code verifier with the stored code challenge

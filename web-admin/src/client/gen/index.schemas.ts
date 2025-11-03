@@ -1496,6 +1496,7 @@ export interface V1UserAuthToken {
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
+  refresh?: boolean;
 }
 
 export interface V1UserPreferences {
@@ -2062,6 +2063,10 @@ export type AdminServiceListUserAuthTokensParams = {
    * Flag for superusers to override normal access checks.
    */
   superuserForceAccess?: boolean;
+  /**
+   * Flag to filter only refresh tokens. If false, only returns access tokens (non-refresh).
+   */
+  refresh?: boolean;
 };
 
 export type AdminServiceIssueUserAuthTokenBody = {

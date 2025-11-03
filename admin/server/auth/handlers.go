@@ -327,7 +327,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 		// Issue a short-lived nonce token (2-minute TTL) for browser auth callback
 		ttl := 2 * time.Minute
-		authNonceToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Nonce Token", nil, &ttl)
+		authNonceToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Nonce Token", nil, &ttl, false)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 			return
@@ -338,7 +338,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -401,7 +401,7 @@ func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil)
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -496,7 +496,7 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 
 	// Issue a new token for the representing user.
 	// We use mdl.UserID here instead of claims.OwnerID() because OwnerID() could return the representing user's ID if the token is already an assumed token.
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), mdl.UserID, database.AuthClientIDRillSupport, fmt.Sprintf("Support for %s", representEmail), representingUserID, ttl)
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), mdl.UserID, database.AuthClientIDRillSupport, fmt.Sprintf("Support for %s", representEmail), representingUserID, ttl, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -680,15 +680,17 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	grantType := values.Get("grant_type")
-	if !(grantType == deviceCodeGrantType || grantType == authorizationCodeGrantType) {
+	if !(grantType == deviceCodeGrantType || grantType == authorizationCodeGrantType || grantType == refreshTokenGrantType) {
 		http.Error(w, "invalid grant_type", http.StatusBadRequest)
 		return
 	}
 
 	if grantType == deviceCodeGrantType {
 		a.getAccessTokenForDeviceCode(w, r, values)
-	} else {
+	} else if grantType == authorizationCodeGrantType {
 		a.getAccessTokenForAuthorizationCode(w, r, values)
+	} else {
+		a.getAccessTokenForRefreshToken(w, r, values)
 	}
 }
 

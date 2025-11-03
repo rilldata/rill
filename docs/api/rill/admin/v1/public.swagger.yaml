@@ -3901,6 +3901,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: refresh
+          description: Flag to filter only refresh tokens. If false, only returns access tokens (non-refresh).
+          in: query
+          required: false
+          type: boolean
     post:
       summary: |-
         IssueUserAuthToken issues an access token for the current user.
@@ -6261,6 +6266,8 @@ definitions:
       usedOn:
         type: string
         format: date-time
+      refresh:
+        type: boolean
   v1UserPreferences:
     type: object
     properties:

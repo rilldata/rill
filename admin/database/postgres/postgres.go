@@ -1067,7 +1067,7 @@ func (c *connection) DeleteManagedUsergroupsMemberUser(ctx context.Context, orgI
 	return nil
 }
 
-func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*database.UserAuthToken, error) {
+func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int, refresh *bool) ([]*database.UserAuthToken, error) {
 	var qry strings.Builder
 	qry.WriteString(`
 		SELECT
@@ -1078,11 +1078,18 @@ func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID str
 		WHERE t.user_id = $1 AND (t.expires_on IS NULL OR t.expires_on > now())
 	`)
 	args := []any{userID}
+
+	// Filter by refresh token status if specified
+	if refresh != nil {
+		qry.WriteString(" AND t.refresh = $2")
+		args = append(args, *refresh)
+	}
+
 	if afterID != "" {
-		qry.WriteString(" AND t.id > $2 ORDER BY t.id LIMIT $3")
+		qry.WriteString(fmt.Sprintf(" AND t.id > $%d ORDER BY t.id LIMIT $%d", len(args)+1, len(args)+2))
 		args = append(args, afterID, limit)
 	} else {
-		qry.WriteString(" ORDER BY t.id LIMIT $2")
+		qry.WriteString(fmt.Sprintf(" ORDER BY t.id LIMIT $%d", len(args)+1))
 		args = append(args, limit)
 	}
 
@@ -1110,9 +1117,9 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expires_on)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpiresOn,
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, refresh, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.Refresh, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("auth token", err)
