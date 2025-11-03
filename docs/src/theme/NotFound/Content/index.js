@@ -6,8 +6,14 @@ import Heading from '@theme/Heading';
 export default function NotFoundContent({ className }) {
 
   return (
-    <main className={clsx('container margin-vert--xl', className)}>
-      <div className="col col--6 col--offset-3" style={{
+    <main className={clsx('container margin-vert--xl', className)} style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '60vh'
+    }}>
+      <div className="mx-auto text-center" style={{
+        maxWidth: '570px',
         textAlign: 'center',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
       }}>
@@ -17,9 +23,9 @@ export default function NotFoundContent({ className }) {
         }} />
         <Heading as="h3" className="hero__subtitle" style={{
           color: '#1a1a1a',
-          fontSize: '18px',
+          fontSize: '1.125rem',
           fontWeight: '600',
-          lineHeight: '28px',
+          lineHeight: '0.875rem',
           marginBottom: '1rem'
         }}>
           <Translate
@@ -30,8 +36,8 @@ export default function NotFoundContent({ className }) {
         </Heading>
         <p style={{
           color: '#71717A',
-          fontSize: '16px',
-          lineHeight: '24px'
+          fontSize: '1rem',
+          lineHeight: '1.5rem'
         }}>
           <Translate
             id="theme.NotFound.p1"
@@ -42,8 +48,8 @@ export default function NotFoundContent({ className }) {
 
         <p style={{
           color: '#71717A',
-          fontSize: '14px',
-          lineHeight: '20px',
+          fontSize: '0.875rem',
+          lineHeight: '1.25rem',
           marginBottom: '0'
         }}>
           Return to <a href="/" style={{
