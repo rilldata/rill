@@ -13,11 +13,13 @@
 
   let hovered = false;
 
+  const PREVIEW_COUNT = 6;
+
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     groupName,
-    { pageSize: 10 },
+    { pageSize: PREVIEW_COUNT },
     {
       query: {
         enabled: hovered && (usersCount ?? 0) > 0,
@@ -68,7 +70,7 @@
           </div>
         {:else}
           <ul>
-            {#each previewUsers.slice(0, 6) as u}
+            {#each previewUsers.slice(0, PREVIEW_COUNT) as u}
               <div class="flex items-center gap-1 py-1">
                 <Avatar
                   src={u.userPhotoUrl}
@@ -80,8 +82,8 @@
                 <li>{u.userName || u.userEmail}</li>
               </div>
             {/each}
-            {#if (usersCount ?? 0) > 6}
-              <li>and {(usersCount ?? 0) - 6} more</li>
+            {#if (usersCount ?? 0) > PREVIEW_COUNT}
+              <li>and {(usersCount ?? 0) - PREVIEW_COUNT} more</li>
             {/if}
           </ul>
         {/if}
