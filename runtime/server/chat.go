@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -129,10 +130,23 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	var analystAgentArgs *ai.AnalystAgentArgs
+	if req.Explore != "" {
+		analystAgentArgs = &ai.AnalystAgentArgs{
+			Explore:    req.Explore,
+			Dimensions: req.Dimensions,
+			Measures:   req.Measures,
+			Where:      metricsview.NewExpressionFromProto(req.Where),
+			TimeStart:  req.TimeStart.AsTime(),
+			TimeEnd:    req.TimeEnd.AsTime(),
+		}
+	}
+
 	// Make the call
 	var res *ai.RouterAgentResult
 	msg, err := session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt: req.Prompt,
+		Prompt:           req.Prompt,
+		AnalystAgentArgs: analystAgentArgs,
 	})
 	if err != nil {
 		return nil, err
@@ -226,10 +240,23 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		}
 	}()
 
+	var analystAgentArgs *ai.AnalystAgentArgs
+	if req.Explore != "" {
+		analystAgentArgs = &ai.AnalystAgentArgs{
+			Explore:    req.Explore,
+			Dimensions: req.Dimensions,
+			Measures:   req.Measures,
+			Where:      metricsview.NewExpressionFromProto(req.Where),
+			TimeStart:  req.TimeStart.AsTime(),
+			TimeEnd:    req.TimeEnd.AsTime(),
+		}
+	}
+
 	// Make the call
 	var res *ai.RouterAgentResult
 	_, err = session.CallTool(ctx, ai.RoleUser, "router_agent", &res, ai.RouterAgentArgs{
-		Prompt: req.Prompt,
+		Prompt:           req.Prompt,
+		AnalystAgentArgs: analystAgentArgs,
 	})
 	if err != nil && !errors.Is(err, context.Canceled) {
 		return err

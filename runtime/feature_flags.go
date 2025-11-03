@@ -47,7 +47,7 @@ var defaultFeatureFlags = map[string]string{
 	// Controls visibility of report creation functionality
 	"reports": "true",
 	// Controls visibility of theme switching between light/dark modes
-	"dark_mode": "false",
+	"dark_mode": "true",
 	// Controls visibility of project-level chat functionality
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality

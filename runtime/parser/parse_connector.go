@@ -69,6 +69,7 @@ func (p *Parser) parseConnector(node *Node) error {
 	r.ConnectorSpec.TemplatedProperties = templatedProps
 	r.ConnectorSpec.Provision = provision
 	r.ConnectorSpec.ProvisionArgs = provisionArgsPB
+
 	return nil
 }
 

@@ -7,6 +7,7 @@
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
     getAdminServiceListProjectMemberUsergroupsQueryKey,
+    createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { ProjectUserRoles } from "@rilldata/web-common/features/users/roles.ts";
@@ -22,6 +23,7 @@
   const queryClient = useQueryClient();
   const userInvite = createAdminServiceAddProjectMemberUser();
   const addUsergroup = createAdminServiceAddProjectMemberUsergroup();
+  const currentUser = createAdminServiceGetCurrentUser();
 
   async function processInvitations(emailsAndGroups: string[], role: string) {
     const succeededEmails = [];
@@ -144,7 +146,8 @@
     const options = getAdminServiceListOrganizationMemberUsersQueryOptions(
       organization,
       {
-        pageSize: 5,
+        // Request one extra to keep a consistent 5 after filtering out self
+        pageSize: 6,
         ...(query ? { searchPattern: `${query}%` } : {}),
       },
     );
@@ -157,8 +160,16 @@
       userPhotoUrl?: string;
     }>;
 
+    // Exclude the current user from suggestions
+    const myEmail = $currentUser.data?.user?.email?.toLowerCase();
+    const filtered = myEmail
+      ? users.filter((u) => u.userEmail?.toLowerCase() !== myEmail)
+      : users;
+
+    const trimmed = filtered.length > 5 ? filtered.slice(0, 5) : filtered;
+
     // Return only remote user results; SearchAndInviteInput merges with local searchList
-    return users.map((u) => ({
+    return trimmed.map((u) => ({
       identifier: u.userEmail,
       type: "user" as const,
       name: u.userName,

@@ -28,6 +28,12 @@ var (
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
 )
 
+type GithubToken struct {
+	AccessToken  string
+	Expiry       time.Time
+	RefreshToken string
+}
+
 // Github exposes the features we require from the Github API.
 type Github interface {
 	AppClient() *github.Client

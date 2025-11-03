@@ -1,0 +1,2 @@
+ALTER TABLE users ADD COLUMN github_token TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN github_token_expires_on TIMESTAMPTZ;
