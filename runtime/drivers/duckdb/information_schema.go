@@ -197,7 +197,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		// For views that depend on secrets, we have an inaccessible schema since
 		// the secret is only set at write time.
 		if strings.HasPrefix(colName, "error(") && dataType == "\"NULL\"" {
-			return nil, fmt.Errorf("failed to get schema: %s ", colName)
+			return nil, fmt.Errorf("failed to get schema (try setting `materialize: true` — this usually happens for non-materialized views): %s", colName)
 		}
 
 		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
@@ -300,7 +300,7 @@ func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 			// For views that depend on secrets, we have an inaccessible schema since
 			// the secret is only set at write time.
 			if strings.HasPrefix(colName.(string), "error(") && databaseType == "\"NULL\"" {
-				return nil, fmt.Errorf("failed to get schema: %s ", colName.(string))
+				return nil, fmt.Errorf("failed to get schema (try setting `materialize: true` — this usually happens for non-materialized views): %s", colName.(string))
 			}
 			colType, err := databaseTypeToPB(databaseType, nullable)
 			if err != nil {
