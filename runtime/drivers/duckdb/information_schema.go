@@ -194,6 +194,12 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		if err := rows.Scan(&view, &colName, &dataType); err != nil {
 			return nil, err
 		}
+		// For views that depend on secrets, we have an inaccessible schema since
+		// the secret is only set at write time.
+		if strings.HasPrefix(colName, "error(") && dataType == "\"NULL\"" {
+			return nil, fmt.Errorf("failed to get schema: %s ", colName)
+		}
+
 		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
 			if errors.Is(err, errUnsupportedType) {
 				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
@@ -291,6 +297,11 @@ func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 		for idx, colName := range row.ColumnNames {
 			databaseType := row.ColumnTypes[idx].(string)
 			nullable := row.ColumnNullable[idx].(bool)
+			// For views that depend on secrets, we have an inaccessible schema since
+			// the secret is only set at write time.
+			if strings.HasPrefix(colName.(string), "error(") && databaseType == "\"NULL\"" {
+				return nil, fmt.Errorf("failed to get schema: %s ", colName.(string))
+			}
 			colType, err := databaseTypeToPB(databaseType, nullable)
 			if err != nil {
 				return nil, err
