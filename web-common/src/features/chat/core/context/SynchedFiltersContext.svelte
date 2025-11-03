@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2/index.ts";
+  import { ConversationContextType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
   import {
-    ContextTypeData,
-    ConversationContextType,
-  } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+    formatV1Expression,
+    formatV1TimeRange,
+  } from "@rilldata/web-common/features/chat/core/context/formatters.ts";
   import { Conversation } from "@rilldata/web-common/features/chat/core/conversation.ts";
   import { getDashboardResourceFromPage } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
   import { useStableExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
@@ -15,13 +17,10 @@
   } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
   import { createStableTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { getAttrs, builderActions } from "bits-ui";
   import { writable } from "svelte/store";
 
   export let conversation: Conversation;
-
-  $: ({ instanceId } = $runtime);
 
   $: context = conversation.context;
   $: contextRecord = context.record;
@@ -43,24 +42,12 @@
     end: $timeControlsStore?.timeEnd,
   };
   $: timeRangeContext = $contextRecord[ConversationContextType.TimeRange];
-  const timeRangeFormatter =
-    ContextTypeData[ConversationContextType.TimeRange].formatter;
-  $: formattedTimeRange = timeRangeFormatter(
-    timeRange,
-    $contextRecord,
-    instanceId,
-  );
+  $: formattedTimeRange = formatV1TimeRange(timeRange);
 
   $: whereFilter = $exploreState?.whereFilter;
   $: filterIsAvailable = !isExpressionEmpty(whereFilter);
   $: availableFilters = 1 + (filterIsAvailable ? 1 : 0);
-  const whereFilterFormatter =
-    ContextTypeData[ConversationContextType.Where].formatter;
-  $: formattedWhereFilter = whereFilterFormatter(
-    whereFilter,
-    $contextRecord,
-    instanceId,
-  );
+  $: formattedWhereFilters = formatV1Expression(whereFilter);
 
   // Where filters is only set if not empty. But time range should always be there.
   // We do not support non-timestamp explore right now.
@@ -83,28 +70,41 @@
     }
   }
 
-  function toggleFilter() {
-    if (filtersActive) {
-      context.delete(ConversationContextType.TimeRange);
-      context.delete(ConversationContextType.Where);
-    } else {
-      context.set(ConversationContextType.TimeRange, timeRange);
-      if (filterIsAvailable) {
-        context.set(ConversationContextType.Where, whereFilter);
-      }
+  let open = false;
+
+  function setFilters() {
+    context.set(ConversationContextType.TimeRange, timeRange);
+    if (filterIsAvailable) {
+      context.set(ConversationContextType.Where, whereFilter);
     }
+    open = true;
   }
+
+  function clearFilters(e) {
+    e.stopPropagation();
+    context.delete(ConversationContextType.TimeRange);
+    context.delete(ConversationContextType.Where);
+  }
+
+  beforeNavigate(({ to }) => {
+    const toResource = to ? getDashboardResourceFromPage(to) : undefined;
+    if (!toResource) {
+      context.clear();
+    }
+  });
 </script>
 
+<svelte:window on:click={() => (open = false)} />
+
 {#if shouldShowFilters}
-  <Tooltip.Root>
+  <Tooltip.Root bind:open>
     <Tooltip.Trigger asChild let:builder>
       <button
         {...getAttrs([builder])}
         use:builderActions={{ builders: [builder] }}
         class="flex flex-row items-center gap-1 w-fit m-1 py-0.5 px-1 border border-input rounded-md"
         class:bg-primary-50={filtersActive}
-        on:click={toggleFilter}
+        on:click={setFilters}
         type="button"
       >
         <span
@@ -114,18 +114,24 @@
           @ {availableFilters} filter(s)
         </span>
         {#if filtersActive}
-          <Cancel className="text-primary-600" />
+          <button on:click={clearFilters}>
+            <Cancel className="text-primary-600" />
+          </button>
         {/if}
       </button>
     </Tooltip.Trigger>
 
     <Tooltip.Content
-      class="flex flex-col gap-y-2 rounded-md border bg-popover text-popover-foreground shadow-md text-sm"
+      class="flex flex-col gap-y-2 max-w-[250px] rounded-md border bg-popover text-popover-foreground shadow-md text-sm"
     >
-      <div>{$formattedTimeRange}</div>
-      {#if filterIsAvailable}
-        <div>{$formattedWhereFilter}</div>
-      {/if}
+      <div class="h-5 overflow-hidden whitespace-nowrap text-ellipsis">
+        {formattedTimeRange}
+      </div>
+      {#each formattedWhereFilters as filter, i (i)}
+        <div class="h-5 overflow-hidden whitespace-nowrap text-ellipsis">
+          {filter}
+        </div>
+      {/each}
     </Tooltip.Content>
   </Tooltip.Root>
 {/if}

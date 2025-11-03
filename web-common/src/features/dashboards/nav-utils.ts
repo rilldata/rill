@@ -4,14 +4,17 @@ import type { Page } from "@sveltejs/kit";
 const exploreRouteRegex = /\/explore\/(?:\[name]|\[dashboard])/;
 const canvasRouteRegex = /\/explore\/(?:\[name]|\[dashboard])/;
 
-export function getDashboardResourceFromPage(pageState: Page) {
+export function getDashboardResourceFromPage(pageLike: {
+  params: Page["params"] | null;
+  route: Page["route"] | null;
+}) {
   const dashboardName =
-    pageState.params.dashboard ?? pageState.params.name ?? "";
-  const isExplore = pageState.route?.id
-    ? exploreRouteRegex.test(pageState.route.id)
+    pageLike.params?.dashboard ?? pageLike.params?.name ?? "";
+  const isExplore = pageLike.route?.id
+    ? exploreRouteRegex.test(pageLike.route.id)
     : false;
-  const isCanvas = pageState.route?.id
-    ? canvasRouteRegex.test(pageState.route.id)
+  const isCanvas = pageLike.route?.id
+    ? canvasRouteRegex.test(pageLike.route.id)
     : false;
 
   if (isExplore) {

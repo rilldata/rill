@@ -1,18 +1,16 @@
 <script lang="ts">
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2/index.ts";
-  import {
-    ContextTypeData,
-    FILTER_CONTEXT_TYPES,
-  } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+  import { FILTER_CONTEXT_TYPES } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
   import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
+  import {
+    createTimeRangeFormatter,
+    createWhereFiltersFormatter,
+  } from "@rilldata/web-common/features/chat/core/context/formatters.ts";
   import { getAttrs, builderActions } from "bits-ui";
   import { ConversationContextType } from "web-common/src/features/chat/core/context/context-type-data.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
 
   export let context: ConversationContext;
-
-  $: ({ instanceId } = $runtime);
 
   $: contextRecord = context.record;
 
@@ -21,21 +19,9 @@
     FILTER_CONTEXT_TYPES.includes(t as ConversationContextType),
   ).length;
 
-  const timeRangeFormatter =
-    ContextTypeData[ConversationContextType.TimeRange].formatter;
-  $: formattedTimeRange = timeRangeFormatter(
-    $contextRecord[ConversationContextType.TimeRange],
-    $contextRecord,
-    instanceId,
-  );
+  $: formattedTimeRange = createTimeRangeFormatter(context);
 
-  const whereFilterFormatter =
-    ContextTypeData[ConversationContextType.Where].formatter;
-  $: formattedWhereFilter = whereFilterFormatter(
-    $contextRecord[ConversationContextType.Where],
-    $contextRecord,
-    instanceId,
-  );
+  $: formattedWhereFilters = createWhereFiltersFormatter(context);
 </script>
 
 <div class="flex flex-row items-center gap-2">
@@ -53,17 +39,22 @@
           {...getAttrs([builder])}
           use:builderActions={{ builders: [builder] }}
           class="text-white"
-          on:click
         >
           @ {filtersContextCount} filter(s)
         </button>
       </Tooltip.Trigger>
 
       <Tooltip.Content
-        class="flex flex-col gap-y-2 rounded-md border bg-popover text-popover-foreground shadow-md text-sm"
+        class="flex flex-col gap-y-2 max-w-[250px] rounded-md border bg-popover text-popover-foreground shadow-md text-sm"
       >
-        <div>{$formattedTimeRange}</div>
-        <div>{$formattedWhereFilter}</div>
+        <div class="h-5 overflow-hidden whitespace-nowrap text-ellipsis">
+          {$formattedTimeRange}
+        </div>
+        {#each $formattedWhereFilters as filter, i (i)}
+          <div class="h-5 overflow-hidden whitespace-nowrap text-ellipsis">
+            {filter}
+          </div>
+        {/each}
       </Tooltip.Content>
     </Tooltip.Root>
   {/if}

@@ -18,7 +18,11 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
+import {
+  getOptimisticMessageId,
+  isOptimisticMessageId,
+  NEW_CONVERSATION_ID,
+} from "./utils";
 
 /**
  * Individual conversation state management.
@@ -269,15 +273,6 @@ export class Conversation {
     }
 
     if (response.message) {
-      // Skip ALL user messages from the stream
-      // Server echoes back the user message (potentially as multiple content blocks)
-      // We've already added it optimistically, so we don't want duplicates
-      // Note: Server generates new IDs for streamed messages, can't match by ID
-      if (response.message.role === "user") {
-        console.log(response.message);
-        return;
-      }
-
       // Check if this is a tool result message
       const toolResult = response.message.content?.[0]?.toolResult;
       if (toolResult?.id) {
@@ -371,15 +366,28 @@ export class Conversation {
       const existingMessages = old.conversation.messages || [];
 
       // Handle messages with same ID (multiple content blocks)
-      const existingIndex = existingMessages.findIndex(
+      let existingIndex = existingMessages.findIndex(
         (m) => m.id === message.id,
       );
+      let replacingOptimisticMessage = false;
+      if (existingIndex === -1 && message.role === "user") {
+        // We add a user message optimistically. So we need to replace it with the message from server.
+        // The message from server has a lot more info that will be helpful for us.
+        existingIndex = existingMessages.findLastIndex((m) => {
+          const isOptimisticallyAddedUserMessage =
+            m.role === "user" && isOptimisticMessageId(m.id!);
+          const messageTextMatches =
+            m.content?.[0]?.text === message.content?.[0]?.text;
+          return isOptimisticallyAddedUserMessage && messageTextMatches;
+        });
+        replacingOptimisticMessage = true;
+      }
 
       if (existingIndex >= 0) {
         // Merge content blocks for messages with same ID
         const existing = existingMessages[existingIndex];
         const mergedContent = [
-          ...(existing.content || []),
+          ...(!replacingOptimisticMessage ? existing.content || [] : []),
           ...(message.content || []),
         ];
 
@@ -390,9 +398,8 @@ export class Conversation {
             messages: [
               ...existingMessages.slice(0, existingIndex),
               {
-                ...existing,
+                ...message,
                 content: mergedContent,
-                updatedOn: message.updatedOn,
               },
               ...existingMessages.slice(existingIndex + 1),
             ],

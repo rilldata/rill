@@ -18,6 +18,10 @@ export function getOptimisticMessageId(): string {
   return `${OPTIMISTIC_MESSAGE_ID_PREFIX}${Date.now()}`;
 }
 
+export function isOptimisticMessageId(id: string) {
+  return id.startsWith(OPTIMISTIC_MESSAGE_ID_PREFIX);
+}
+
 // =============================================================================
 // ERROR HANDLING
 // =============================================================================
