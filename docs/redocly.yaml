@@ -6,24 +6,6 @@ extends:
 decorators:
   remove-unused-components: on
   remove-unused-tags: on
-  filter-in:
-    property: operationId
-    value:
-      - AdminService_ListOrganizations
-      - AdminService_GetOrganization
-      - AdminService_CreateOrganization
-      - AdminService_UpdateOrganization
-      - AdminService_DeleteOrganization
-      - AdminService_ListProjectsForOrganization
-      - AdminService_GetProject
-      - AdminService_CreateProject
-      - AdminService_DeleteProject
-      - AdminService_UpdateProject
-      - AdminService_ListOrganizationMemberUsers
-      - AdminService_ListOrganizationInvites
-      - AdminService_AddOrganizationMemberUser
-      - AdminService_RemoveOrganizationMemberUser
-      - AdminService_GetProjectVariables
 
 openapi:
   schemasExpansionLevel: 2
@@ -32,4 +14,4 @@ openapi:
 # Point to the filtered public API spec
 apis:
   public@v1:
-    root: api/openapi.swagger.yaml
+    root: api/openapi.yaml

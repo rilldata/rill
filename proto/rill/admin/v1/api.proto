@@ -31,11 +31,27 @@ service AdminService {
   // ListOrganizations lists all the organizations currently managed by the admin
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
     option (google.api.http) = {get: "/v1/orgs"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // GetOrganization returns information about a specific organization
   rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // GetOrganizationNameForDomain finds the org name for a custom domain.
@@ -51,11 +67,27 @@ service AdminService {
       post: "/v1/orgs",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // DeleteOrganization deletes an organization
   rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // UpdateOrganization deletes an organizations
@@ -64,11 +96,27 @@ service AdminService {
       patch: "/v1/orgs/{org}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListProjectsForOrganization lists all the projects currently available for given organizations.
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
@@ -86,6 +134,14 @@ service AdminService {
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
@@ -109,11 +165,27 @@ service AdminService {
       post: "/v1/orgs/{org}/projects",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // DeleteProject deletes an project
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // UpdateProject updates a project
@@ -122,11 +194,27 @@ service AdminService {
       patch: "/v1/orgs/{org}/projects/{project}",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // GetProjectVariables returns project variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/variables"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // UpdateProjectVariables updates variables for a project.
@@ -247,11 +335,27 @@ service AdminService {
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListOrganizationInvites lists all the org invites
   rpc ListOrganizationInvites(ListOrganizationInvitesRequest) returns (ListOrganizationInvitesResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/invites"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // AddOrganizationMemberUser adds a user to the organization
@@ -260,11 +364,27 @@ service AdminService {
       post: "/v1/orgs/{org}/members",
       body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // RemoveOrganizationMemberUser removes member from the organization
   rpc RemoveOrganizationMemberUser(RemoveOrganizationMemberUserRequest) returns (RemoveOrganizationMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/orgs/{org}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // LeaveOrganization removes the current user from the organization

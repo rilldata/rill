@@ -69,7 +69,7 @@ const config = {
         specs: [
           {
             id: 'public',
-            spec: 'api/openapi.swagger.yaml',
+            spec: 'api/openapi.yaml',
             route: '/api/admin/',
           },
         ],

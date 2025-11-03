@@ -373,6 +373,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     post:
       summary: CreateOrganization creates a new organization
       operationId: AdminService_CreateOrganization
@@ -391,6 +392,7 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CreateOrganizationRequest'
+      x-visibility: public
   /v1/orgs/{org}:
     get:
       summary: GetOrganization returns information about a specific organization
@@ -413,6 +415,7 @@ paths:
           in: query
           required: false
           type: boolean
+      x-visibility: public
     delete:
       summary: DeleteOrganization deletes an organization
       operationId: AdminService_DeleteOrganization
@@ -430,6 +433,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     patch:
       summary: UpdateOrganization deletes an organizations
       operationId: AdminService_UpdateOrganization
@@ -469,6 +473,7 @@ paths:
                 type: string
               billingEmail:
                 type: string
+      x-visibility: public
   /v1/orgs/{org}/billing/issues:
     get:
       summary: ListOrganizationBillingIssues lists all the billing issues for the organization
@@ -706,6 +711,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
   /v1/orgs/{org}/members:
     get:
       summary: ListOrganizationMemberUsers lists all the org members
@@ -752,6 +758,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     post:
       summary: AddOrganizationMemberUser adds a user to the organization
       operationId: AdminService_AddOrganizationMemberUser
@@ -781,6 +788,7 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
+      x-visibility: public
   /v1/orgs/{org}/members/{email}:
     delete:
       summary: RemoveOrganizationMemberUser removes member from the organization
@@ -803,6 +811,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     put:
       summary: SetOrganizationMemberUserRole sets the role for the member
       operationId: AdminService_SetOrganizationMemberUserRole
@@ -915,6 +924,7 @@ paths:
           in: query
           required: false
           type: string
+      x-visibility: public
     post:
       summary: CreateProject creates a new project
       operationId: AdminService_CreateProject
@@ -971,6 +981,7 @@ paths:
                 type: string
               skipDeploy:
                 type: boolean
+      x-visibility: public
   /v1/orgs/{org}/projects-for-user:
     get:
       summary: |-
@@ -1039,6 +1050,7 @@ paths:
           in: query
           required: false
           type: boolean
+      x-visibility: public
     delete:
       summary: DeleteProject deletes an project
       operationId: AdminService_DeleteProject
@@ -1060,6 +1072,7 @@ paths:
           in: path
           required: true
           type: string
+      x-visibility: public
     patch:
       summary: UpdateProject updates a project
       operationId: AdminService_UpdateProject
@@ -1115,6 +1128,7 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
+      x-visibility: public
   /v1/orgs/{org}/projects/{project}/alerts:
     post:
       summary: CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
@@ -2296,6 +2310,7 @@ paths:
           in: query
           required: false
           type: boolean
+      x-visibility: public
     put:
       summary: UpdateProjectVariables updates variables for a project.
       operationId: AdminService_UpdateProjectVariables

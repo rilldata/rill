@@ -61,5 +61,6 @@ proto.generate:
 	cd proto && buf generate --template buf.gen.ui.yaml
 	npm run generate:runtime-client -w web-common
 	npm run generate:client -w web-admin
-	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" scripts/convert/convert.go --force \
-         proto/gen/rill/admin/v1/admin.swagger.yaml docs/api/openapi.swagger.yaml
+	go run -ldflags="-X main.Version=$(shell git describe --tags $(shell git rev-list --tags --max-count=1))" \
+		scripts/convert-openapi-v2-to-v3/convert.go --force --public-only \
+		proto/gen/rill/admin/v1/admin.swagger.yaml docs/api/openapi.yaml
