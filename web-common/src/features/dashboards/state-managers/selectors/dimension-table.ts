@@ -5,7 +5,6 @@ import type {
   V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import { isSummableMeasure } from "../../dashboard-utils";
 import type { DimensionTableRow } from "../../dimension-table/dimension-table-types";
 import {
   prepareDimensionTableRows,

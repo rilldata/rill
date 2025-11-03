@@ -1,4 +1,3 @@
-import { isSummableMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
