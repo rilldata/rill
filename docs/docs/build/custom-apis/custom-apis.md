@@ -53,7 +53,6 @@ To minimize costs:
 :::
 
 **When to use warehouse connectors for APIs:**
-- You need to query very large tables that aren't practical to ingest
 - Your data is already optimized in the warehouse
 - You want real-time access to the latest warehouse data
 - You're building internal tools where query costs are acceptable
