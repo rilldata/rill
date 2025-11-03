@@ -19,7 +19,9 @@ To connect to Google Cloud Storage, you need to provide authentication credentia
 2. **Use HMAC Keys** (alternative authentication method)
 3. **Use Local Google Cloud CLI credentials** (local development only - not recommended for production)
 
+:::tip Authentication Methods
 Choose the method that best fits your setup. For production deployments to Rill Cloud, use Service Account JSON or HMAC Keys. Local Google Cloud CLI credentials only work for local development and will cause deployment failures.
+:::
 
 ## Using the Add Data UI
 
@@ -253,31 +255,13 @@ SELECT * FROM read_parquet('gs://my-bucket/data/2024-*.parquet')
 
 When deploying your project to Rill Cloud, you must use either Service Account JSON or HMAC Keys. Local Google Cloud CLI credentials will not work in the cloud environment.
 
-### Prerequisites
-
-- Rill Cloud account
-- Service Account JSON or HMAC Keys configured locally
-- Connector and model files properly configured with environment variable references
-
-### Deployment Process
-
-Once your project is configured with credentials in your local `.env` file, deploying to Rill Cloud is straightforward:
-
-```bash
-rill deploy
-```
-
-During deployment, you'll be prompted to configure any missing credentials. Alternatively, you can configure credentials for your deployed project using:
+To manually configure your environment variables, run:
 
 ```bash
 rill env configure
 ```
 
 The CLI will interactively walk you through configuring all required credentials for your connectors.
-
-:::tip
-Credentials are stored encrypted in Rill Cloud and injected at runtime. You only need to configure them once per project.
-:::
 
 ---
 
