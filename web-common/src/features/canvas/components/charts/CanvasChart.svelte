@@ -18,6 +18,8 @@
 
   export let component: BaseChart<CanvasChartSpec>;
 
+  const theme = getContext<Theme | undefined>("themeContext");
+
   // Theme mode (light/dark) - separate from which theme is selected
   $: isThemeModeDark = derived(
     themeControl,
@@ -54,9 +56,9 @@
 
   $: measures = getMeasuresForMetricView(metrics_view);
 
-  // $: currentTheme = resolveThemeObject($themeSpec, $isThemeModeDark);
+  $: resolvedThemeObject = theme?.resolvedThemeObject;
 
-  const theme = getContext<Theme | undefined>("themeContext");
+  $: currentTheme = $resolvedThemeObject?.[$isThemeModeDark ? "dark" : "light"];
 
   $: chartData = getChartDataForCanvas(
     store,
@@ -97,7 +99,7 @@
         measures={$measures}
         isCanvas
         themeMode={$isThemeModeDark ? "dark" : "light"}
-        {theme}
+        theme={currentTheme}
       />
     {/if}
   {:else}

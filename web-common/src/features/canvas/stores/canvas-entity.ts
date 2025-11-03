@@ -71,7 +71,6 @@ export class CanvasEntity {
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
   theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
-  // themeSpec: Readable<V1ThemeSpec | undefined>;
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
@@ -293,10 +292,6 @@ export class CanvasEntity {
     }
     this.firstLoad = false;
   };
-
-  // private updateThemeColors = (themeSpec: V1ThemeSpec | undefined) => {
-  //   this.theme.set(resolveThemeColors(themeSpec, false));
-  // };
 
   generateId = (row: number | undefined, column: number | undefined) => {
     return `${this.name}--component-${row ?? 0}-${column ?? 0}`;

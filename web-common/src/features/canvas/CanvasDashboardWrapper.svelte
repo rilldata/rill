@@ -8,7 +8,6 @@
   import { get } from "svelte/store";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
-  import "./test.css";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
 
   export let maxWidth: number;

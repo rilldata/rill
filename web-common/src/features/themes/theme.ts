@@ -5,14 +5,18 @@ import type {
 import chroma, { type Color } from "chroma-js";
 import { generateColorPalette } from "./palette-generator";
 import { TailwindColorSpacing } from "./color-config";
-import { writable } from "svelte/store";
+import { writable, type Writable } from "svelte/store";
 import { primary } from "./colors";
+import { resolveThemeObject } from "./theme-utils";
 
 type Colors = Record<string, Color>;
 
 export class Theme {
   colors: { light: Colors; dark: Colors };
   css = writable("");
+  resolvedThemeObject: Writable<
+    { dark: Record<string, string>; light: Record<string, string> } | undefined
+  > = writable(undefined);
 
   constructor(
     private scope: string,
@@ -35,6 +39,12 @@ export class Theme {
   updateThemeSpec(spec: V1ThemeSpec) {
     this.colors = this.processTheme(spec);
     this.css.set(this.generateCSS());
+
+    // Compatibility with current implementation, this can eventually be removed
+    this.resolvedThemeObject.set({
+      dark: resolveThemeObject(spec, true) ?? {},
+      light: resolveThemeObject(spec, false) ?? {},
+    });
   }
 
   private stringifyVars(vars: Record<string, Color | undefined>) {
