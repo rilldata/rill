@@ -3395,23 +3395,6 @@ type userWithAttributesDTO struct {
 }
 
 func (dto *userWithAttributesDTO) userWithAttributesFromDTO() (*database.User, map[string]any, error) {
-	user := &database.User{
-		ID:                    dto.ID,
-		Email:                 dto.Email,
-		DisplayName:           dto.DisplayName,
-		PhotoURL:              dto.PhotoURL,
-		GithubUsername:        dto.GithubUsername,
-		GithubRefreshToken:    dto.GithubRefreshToken,
-		CreatedOn:             dto.CreatedOn,
-		UpdatedOn:             dto.UpdatedOn,
-		ActiveOn:              dto.ActiveOn,
-		QuotaSingleuserOrgs:   dto.QuotaSingleuserOrgs,
-		QuotaTrialOrgs:        dto.QuotaTrialOrgs,
-		CurrentTrialOrgsCount: dto.CurrentTrialOrgsCount,
-		PreferenceTimeZone:    dto.PreferenceTimeZone,
-		Superuser:             dto.Superuser,
-	}
-
 	// Handle Attributes: Normalize NULL JSONB to empty map
 	var attrs map[string]any
 	if err := dto.Attributes.AssignTo(&attrs); err != nil {
@@ -3421,7 +3404,7 @@ func (dto *userWithAttributesDTO) userWithAttributesFromDTO() (*database.User, m
 		attrs = make(map[string]any)
 	}
 
-	return user, attrs, nil
+	return dto.User, attrs, nil
 }
 
 func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {

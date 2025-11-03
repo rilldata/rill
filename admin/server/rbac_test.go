@@ -1375,6 +1375,15 @@ func TestRBAC(t *testing.T) {
 		})
 		require.Error(t, err) // Should fail due to insufficient permissions
 
+		// Verify attributes were set
+		resp, err := c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u1.Email,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "123", resp.Member.Attributes.Fields["restaurant_id"].GetStringValue())
+		require.Equal(t, "engineering", resp.Member.Attributes.Fields["department"].GetStringValue())
+
 		// Test updating attributes
 		newAttrs := map[string]interface{}{
 			"restaurant_id": "456",
@@ -1389,6 +1398,16 @@ func TestRBAC(t *testing.T) {
 			Attributes: newAttrStruct,
 		})
 		require.NoError(t, err)
+
+		// Verify updated attributes
+		updatedResp, err := c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u1.Email,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "456", updatedResp.Member.Attributes.Fields["restaurant_id"].GetStringValue())
+		require.Equal(t, "platform", updatedResp.Member.Attributes.Fields["team"].GetStringValue())
+		require.False(t, updatedResp.Member.Attributes.Fields["department"] != nil)
 	})
 
 }

@@ -664,7 +664,7 @@ func (s *Server) GetOrganizationMemberUser(ctx context.Context, req *adminv1.Get
 	}
 
 	// Find the organization member
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, "", true, user.Email, 1, "")
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, user.Email)
 	if err != nil {
 		return nil, err
 	}
