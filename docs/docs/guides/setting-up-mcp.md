@@ -24,7 +24,11 @@ For detailed steps, please refer to our documentation on [MCP Servers](/explore/
 <img src='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
 <br />
 
-In your project's AI tab, you'll be able to create a [user-based token] and copy the MCP config.json directly in the UI. Simply paste this into your application of choice.
+In your project's AI tab, you'll be able to create a user token (personal access token) and copy the MCP config.json directly in the UI. Simply paste this into your application of choice.
+
+:::tip Learn more about user tokens
+For details on creating, managing, and using personal access tokens, see [User Tokens](/manage/user-tokens).
+:::
 
 
 

@@ -41,9 +41,18 @@ There are three types of access tokens you can use with custom APIs.
 
 ### User tokens
 
-These tokens are tied to your personal user and access permissions. They are useful for local scripting and experimentation. Not recommended for production use. 
+These tokens are tied to your personal user and access permissions. They are useful for local development, scripting, and AI integrations (like MCP). Not recommended for production use.
 
-Use the `rill token issue` CLI command to obtain a personal access token. See the [CLI reference](../reference/cli/token) for details.
+**Creating a user token:**
+```bash
+# Basic creation
+rill token issue --display-name "Local Development"
+
+# With expiration (7 days)
+rill token issue --display-name "Testing" --ttl-minutes 10080
+```
+
+User tokens inherit your personal permissions and are automatically revoked if you leave the organization. For comprehensive documentation on user tokens, including management, use cases, and best practices, see [User Tokens](/manage/user-tokens). Also see the [CLI reference](../reference/cli/token) for command details.
 
 ### Service tokens
 
