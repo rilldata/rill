@@ -58,7 +58,13 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 Metrics views limit data access for all requests, including MCP integrations and custom APIs. When creating a token or copying from the AI tab, the user's attributes (such as email, domain, groups, and custom attributes) are automatically included in the request context. This ensures that the same security policies that apply to dashboard users also apply to programmatic access, maintaining consistent data governance across all access methods.
 
-You can also pass attributes into the `rill service create <token_name> --attributes` as a JSON object to create custom attributes.
+You can also pass custom attributes when creating service tokens:
+```bash
+rill service create <token_name> \
+  --attributes '{"department":"engineering","customer_id":"acme-corp"}'
+```
+
+For more details, see [Service Tokens](/manage/service-tokens).
 :::
 Typical use cases include:
 

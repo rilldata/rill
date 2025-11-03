@@ -47,15 +47,42 @@ Use the `rill token issue` CLI command to obtain a personal access token. See th
 
 ### Service tokens
 
-These tokens are tied to your Rill organization and persist even if the creating user is removed. They currently always have admin access to all projects in the organization. Service tokens are recommended for use cases that integrate Rill into production systems (such as scheduled jobs or backend APIs).
+These tokens are tied to your Rill organization and persist even if the creating user is removed. Service tokens can be assigned specific roles (organization-level or project-level) and custom attributes. They are recommended for use cases that integrate Rill into production systems (such as scheduled jobs or backend APIs).
 
-Since service tokens have admin permissions, they MUST NOT be embedded directly in your frontend or otherwise shared with end users. See "Ephemeral tokens" below for how to create safe, short-lived access tokens.
+Since service tokens can have broad permissions, they MUST NOT be embedded directly in your frontend or otherwise shared with end users. See "Ephemeral tokens" below for how to create safe, short-lived access tokens.
 
-Use the `rill service create` CLI command to create a service account and issue a token for it. See the [CLI reference](../reference/cli/service) for details.
+**Creating a service token:**
+```bash
+# Basic service token with organization role
+rill service create my-service --org-role admin
 
-:::note
-When using security policies with service accounts, the `{{ .user.admin }}` user attribute is `true`, but apart from that, the service account does not have any other user attributes. This means if your security policy uses templating like `{{ .user.email }}`, it must have fallback logic in place for when no `email` is present.
-:::
+# Service token with project role and custom attributes
+rill service create my-service \
+  --project my-project \
+  --project-role viewer \
+  --attributes '{"department":"engineering","region":"us-west"}'
+```
+
+**Using custom attributes with security policies:**
+
+Custom attributes allow you to implement fine-grained access control. For example, if you create a service token with a `customer_id` attribute:
+
+```bash
+rill service create customer-api \
+  --project-role viewer \
+  --attributes '{"customer_id":"acme-corp"}'
+```
+
+You can reference these attributes in your security policies:
+
+```yaml
+# In your metrics view
+security:
+  access: true
+  row_filter: customer_id = '{{ .user.customer_id }}'
+```
+
+For comprehensive documentation on service tokens, including roles, attributes, and management, see [Service Tokens](/manage/service-tokens). Also see the [CLI reference](../reference/cli/service) for command details.
 
 ### Ephemeral user tokens
 
