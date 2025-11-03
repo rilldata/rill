@@ -304,7 +304,12 @@ func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, s
 		return addNullsNew(data, nullRecords, start, end, d, tz)
 	}
 
+	i := 0
 	for start.Before(end) {
+		if i > 5000 {
+			break // safety break
+		}
+		i++
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
@@ -323,7 +328,12 @@ func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
 }
 
 func addNullsNew(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location) []*runtimev1.TimeSeriesValue {
+	i := 0
 	for start.Before(end) {
+		if i > 5000 {
+			break // safety break
+		}
+		i++
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
