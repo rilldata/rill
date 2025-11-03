@@ -638,12 +638,17 @@ test.describe("pivot run through", () => {
 
     // Change the time range
     await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+      await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
+    await page.waitForTimeout(100);
+
     // add measure and time week to column
-    const timeWeek = page.getByLabel("Time pivot chip", { exact: true });
     await totalRecords.dragTo(columnZone);
+
+    await expect(page.locator(".status.running")).toHaveCount(0);
+
+    const timeWeek = page.getByLabel("Time pivot chip", { exact: true });
     await timeWeek.dragTo(columnZone);
 
     // enable time comparison
@@ -660,7 +665,7 @@ test.describe("pivot run through", () => {
     );
     await firstColumnDeltaButton.click();
     await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
+      await page.getByRole("menuitem", { name: "Last 24 hours" }).click();
     });
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectSortedDeltaCol, 4);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+  import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import {
     createQueryServiceMetricsViewAggregation,
@@ -10,9 +10,9 @@
   import { DateTime, Interval } from "luxon";
   import type { Readable } from "svelte/motion";
   import type { KPISpec } from ".";
-  import { validateKPISchema } from "./selector";
   import { KPI } from ".";
   import { getCanvasStore } from "../../state-managers/state-managers";
+  import { validateKPISchema } from "./selector";
 
   export let spec: KPISpec;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
@@ -20,7 +20,7 @@
 
   $: ctx = getCanvasStore(canvasName, instanceId);
   $: ({
-    spec: { getMeasureForMetricView },
+    metricsView: { getMeasureForMetricView },
   } = ctx.canvasEntity);
 
   $: ({ instanceId } = $runtime);
@@ -30,6 +30,7 @@
     measure: measureName,
     sparkline,
     comparison: comparisonOptions,
+    hide_time_range: hideTimeRange,
   } = spec);
 
   $: ({
@@ -150,6 +151,7 @@
   {comparisonLabel}
   {interval}
   sparkline={spec.sparkline}
+  {hideTimeRange}
   comparisonOptions={spec.comparison}
   primaryTotalResult={$totalQuery}
   comparisonTotalResult={$comparisonTotalQuery}

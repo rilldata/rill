@@ -35,13 +35,41 @@ display_name: %s
 olap_connector: %s
 
 # These are example mock users to test your security policies.
-# Learn more: https://docs.rilldata.com/build/rill-project-file#mock-users
+# Learn more: https://docs.rilldata.com/build/rill-project-file#test-access-policies-in-rill-developer
 mock_users:
 - email: john@yourcompany.com
 - email: jane@partnercompany.com
 `, Version, displayName, olap)
 
 	err := repo.Put(ctx, "rill.yaml", strings.NewReader(rillYAML))
+	if err != nil {
+		return err
+	}
+
+	// Create the connector YAML
+	var connectorYAML string
+	switch olap {
+	case "duckdb":
+		connectorYAML = `type: connector
+
+driver: duckdb
+managed: true
+`
+	case "clickhouse":
+		connectorYAML = `type: connector
+
+driver: clickhouse
+managed: true
+`
+	default:
+		connectorYAML = fmt.Sprintf(`type: connector
+driver: %s
+
+# TODO: Configure the connection.
+`, olap)
+	}
+
+	err = repo.Put(ctx, fmt.Sprintf("connectors/%s.yaml", olap), strings.NewReader(connectorYAML))
 	if err != nil {
 		return err
 	}

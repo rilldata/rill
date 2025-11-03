@@ -100,3 +100,19 @@ tests:
         select publisher, dom1, "total impressions"
         from metrics_with_policy
     error_contains: 'metrics sql: selected column `dom1` not found in dimensions/measures in metrics view'
+  - name: metrics_sql_subquery
+    resolver: metrics_sql
+    properties:
+      sql: |
+        select
+          domain,
+          "total impressions"
+        FROM
+          metrics_with_policy
+        WHERE domain IN (SELECT domain FROM metrics_with_policy HAVING "total impressions" > 2)
+    user_attributes:
+      domain: msn.com
+      email: user@msn.com
+    result:
+      - domain: msn.com
+        total impressions: 3

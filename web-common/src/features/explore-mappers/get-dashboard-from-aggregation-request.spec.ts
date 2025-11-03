@@ -290,17 +290,20 @@ async function runTest({
   expectedAdditionalExploreState: Partial<ExploreState>;
   forceOpenPivot: boolean;
 }) {
-  const mapQueryStore = mapQueryToDashboard({
-    exploreName: AD_BIDS_EXPLORE_NAME,
-    queryName: "MetricsViewAggregation",
-    queryArgsJson: JSON.stringify({
-      metricsView: AD_BIDS_METRICS_NAME,
-      ...aggregationRequest,
-    }),
-    annotations: {},
-    executionTime: AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary!.max!,
-    forceOpenPivot,
-  });
+  const mapQueryStore = mapQueryToDashboard(
+    {
+      exploreName: AD_BIDS_EXPLORE_NAME,
+      queryName: "MetricsViewAggregation",
+      queryArgsJson: JSON.stringify({
+        metricsView: AD_BIDS_METRICS_NAME,
+        ...aggregationRequest,
+      }),
+      executionTime: AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary!.max!,
+    },
+    {
+      forceOpenPivot,
+    },
+  );
 
   let mapQueryResp: MapQueryResponse | undefined;
   const unsub = mapQueryStore.subscribe((r) => (mapQueryResp = r));

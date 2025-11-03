@@ -16,7 +16,7 @@ Policies are based on user attributes such as **email address**, **domain**, or 
 
 ## How Does It Work?
 
-Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
+Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/customization#define-dashboard-access)**.  
 There are three types of rules:
 
 **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
@@ -48,7 +48,7 @@ security:
 ```
 
 When a user loads a dashboard, the policies are resolved in two phases:
-  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
+  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/build/connectors/templating))
   2. The resulting expression is then evaluated contextually:
      - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
      - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
@@ -80,7 +80,12 @@ There are two locations that control data access in Rill.
 
 ### Project Level Defaults
 
-By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
+By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/customization#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
+
+:::tip Set project-wide security defaults
+Configure default security policies for all metrics views and dashboards in your project.
+[Learn more about security defaults →](/build/project-configuration#metrics-views-security-policy)
+:::
 
 ```yaml
 metrics_views:
@@ -118,7 +123,7 @@ When combining access policies from project defaults and object-specific policie
 
 ## Dashboard Access
 
-Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
+Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/customization#define-dashboard-access) and [canvas](/build/dashboards/customization#define-dashboard-access) dashboards can set the following:
 
 ```yaml
 security:
@@ -153,6 +158,11 @@ Note: Rill requires users to confirm their email address before letting them int
 ## Testing Policies in Rill Developer
 
 In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
+
+:::tip Test policies in Rill Developer
+Use `mock_users` in rill.yaml to test your security policies before deploying.
+[Learn more about testing security →](/build/project-configuration#testing-security)
+:::
 
 In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute and can optionally have `name` and `admin` attributes. For example:
 ```yaml
@@ -277,7 +287,7 @@ security:
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column, and external users should only be able to see data for the tenant they belong to.
 
-To support this, ingest a separate data [source](/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
+To support this, ingest a separate data [source](/build/connectors) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
 
 For example, a locally created `mappings.csv` file in the `data` directory of your Rill project with the following contents:
 ```csv

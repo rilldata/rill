@@ -25,7 +25,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Postgres",
 	Description: "Connect to Postgres.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/postgres",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -81,7 +81,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
-			Hint:        "Options include disable, require, verify-ca, and verify-full",
+			Hint:        "Options include disable, allow, prefer, require",
 		},
 	},
 	ImplementsSQLStore: true,

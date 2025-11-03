@@ -36,7 +36,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "ClickHouse",
 	Description: "Connect to ClickHouse.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/clickhouse",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/clickhouse",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -167,6 +167,8 @@ type configProperties struct {
 	// This is just a *quick hack* to avoid fetching all databases in the table list till we have a better solution.
 	// This does not list queries to other databases.
 	DatabaseWhitelist string `mapstructure:"database_whitelist"`
+	// OptimizeTemporaryTablesBeforePartitionReplace determines whether to optimize temporary tables before partition replacement.
+	OptimizeTemporaryTablesBeforePartitionReplace bool `mapstructure:"optimize_temporary_tables_before_partition_replace"`
 	// SSL determines whether secured connection need to be established. Should not be set if DSN is set.
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. If a cluster is configured, Rill will create all models in the cluster as distributed tables.
@@ -420,7 +422,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 	return nil
 }
 
-// Driver implements drivers.Connection.
+// Driver implements drivers.Handle.
 func (c *Connection) Driver() string {
 	return "clickhouse"
 }
@@ -432,7 +434,7 @@ func (c *Connection) Config() map[string]any {
 	return m
 }
 
-// Close implements drivers.Connection.
+// Close implements drivers.Handle.
 func (c *Connection) Close() error {
 	c.cancel()
 
@@ -456,17 +458,17 @@ func (c *Connection) Close() error {
 	return errors.Join(errReadDB, errWriteDB, errEmbed)
 }
 
-// Registry implements drivers.Connection.
+// Registry implements drivers.Handle.
 func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection.
+// Catalog implements drivers.Handle.
 func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Connection.
+// Repo implements drivers.Handle.
 func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
@@ -481,27 +483,27 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection.
+// OLAP implements drivers.Handle.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
 }
 
-// AsInformationSchema implements drivers.Connection.
+// AsInformationSchema implements drivers.Handle.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
 	return nil, false
 }
 
-// Migrate implements drivers.Connection.
+// Migrate implements drivers.Handle.
 func (c *Connection) Migrate(ctx context.Context) (err error) {
 	return nil
 }
 
-// MigrationStatus implements drivers.Connection.
+// MigrationStatus implements drivers.Handle.
 func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
-// AsObjectStore implements drivers.Connection.
+// AsObjectStore implements drivers.Handle.
 func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
@@ -535,7 +537,7 @@ func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 	return c, true
 }
 
-// AsFileStore implements drivers.Connection.
+// AsFileStore implements drivers.Handle.
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
@@ -545,7 +547,7 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsNotifier implements drivers.Connection.
+// AsNotifier implements drivers.Handle.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
@@ -583,11 +585,12 @@ func (c *Connection) periodicallyEmitStats() {
 	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
 	defer cacheInvalidationTicker.Stop()
 
+	skipEstimatedSizeEmission := false
 	for {
 		select {
 		case <-sensitiveTicker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.
-			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute {
+			if (c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) || skipEstimatedSizeEmission {
 				continue
 			}
 
@@ -599,6 +602,13 @@ func (c *Connection) periodicallyEmitStats() {
 				lvl := zap.WarnLevel
 				if c.config.Managed {
 					lvl = zap.ErrorLevel
+				}
+
+				var chErr *clickhouse.Exception
+				if errors.As(err, &chErr) && chErr.Code == 497 {
+					// Code 497 is "Not enough privileges" - downgrade to debug level and skip future emissions.
+					lvl = zap.DebugLevel
+					skipEstimatedSizeEmission = true
 				}
 
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
@@ -628,8 +638,9 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
 		case <-cacheInvalidationTicker.C:
-			// Invalidate the billing table existence cache every hour.
+			// Invalidate the billing table existence cache and skip size emission flag.
 			c.billingTableExists = nil
+			skipEstimatedSizeEmission = false
 		case <-c.ctx.Done():
 			return
 		}

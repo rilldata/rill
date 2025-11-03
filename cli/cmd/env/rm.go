@@ -37,7 +37,7 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				Organization:   ch.Org,
+				Org:            ch.Org,
 				Project:        projectName,
 				Environment:    environment,
 				UnsetVariables: []string{key},

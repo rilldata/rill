@@ -324,6 +324,7 @@ import {
   RillLegacyIsoInterval,
   RillPeriodToGrainInterval,
   RillShorthandInterval,
+  RillTimeLabel,
   RillTimeStartEndInterval,
   type RillTime,
 } from "../url-state/time-ranges/RillTime";
@@ -339,40 +340,11 @@ export async function deriveInterval(
   grain?: V1TimeGrain | undefined;
   error?: string;
 }> {
-  if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
+  if (name === CUSTOM_TIME_RANGE_ALIAS) {
     return {
       interval: allTimeRange,
       grain: undefined,
-      error: "Cannot derive interval for all time or custom range",
-    };
-  }
-
-  if (!allTimeRange.isValid || !allTimeRange.end) {
-    return {
-      interval: Interval.invalid("Invalid all time range"),
-      grain: undefined,
-      error: "Invalid all time range",
-    };
-  }
-
-  if (isRillPeriodToDate(name)) {
-    const period = RILL_TO_UNIT[name];
-    return {
-      interval: getPeriodToDate(allTimeRange.end, period),
-      grain: V1TimeGrain.TIME_GRAIN_DAY,
-    };
-  }
-
-  if (isRillPreviousPeriod(name)) {
-    const period = RILL_TO_UNIT[name];
-    return { interval: getPreviousPeriodComplete(allTimeRange.end, period, 1) };
-  }
-
-  const duration = isValidISODuration(name);
-
-  if (duration) {
-    return {
-      interval: getInterval(duration, allTimeRange.end),
+      error: "Cannot derive interval for custom range",
     };
   }
 
@@ -565,6 +537,10 @@ export function bucketYamlRanges(
 ): RangeBuckets {
   const showDefaults = !yamlRanges.length;
 
+  if (!minTimeGrain) {
+    minTimeGrain = V1TimeGrain.TIME_GRAIN_SECOND;
+  }
+
   if (showDefaults) {
     if (!usingRillTime) return defaultBuckets;
 
@@ -618,8 +594,6 @@ export function bucketYamlRanges(
       } else {
         skeleton.custom.push(parsed);
       }
-
-      console.log(parsed);
     } catch (e) {
       console.error("Error parsing RillTime", e);
     }
@@ -689,23 +663,23 @@ export function convertLegacyTime(timeString: string) {
 }
 
 export function constructAsOfString(
-  asOf: string,
+  asOf: RillTimeLabel | undefined,
   grain: V1TimeGrain | undefined | null,
   pad: boolean,
 ): string {
   if (!grain) {
-    return asOf;
+    return asOf ?? RillTimeLabel.Now;
   }
 
   const alias = V1TimeGrainToAlias[grain];
 
   let base: string;
 
-  if (asOf === "latest" || asOf === undefined) {
+  if (asOf === RillTimeLabel.Latest || asOf === undefined) {
     base = `latest/${alias}`;
-  } else if (asOf === "watermark") {
+  } else if (asOf === RillTimeLabel.Watermark) {
     base = `watermark/${alias}`;
-  } else if (asOf === "now") {
+  } else if (asOf === RillTimeLabel.Now) {
     base = `now/${alias}`;
   } else {
     base = `${asOf}/${alias}`;
@@ -736,7 +710,7 @@ export function constructNewString({
   currentString: string;
   truncationGrain: V1TimeGrain | undefined | null;
   snapToEnd: boolean;
-  ref: "watermark" | "latest" | "now" | string;
+  ref: RillTimeLabel | undefined;
 }): string {
   const legacy = isUsingLegacyTime(currentString);
 

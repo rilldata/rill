@@ -8,7 +8,7 @@ sidebar_position: 25
 Rill projects can go into an error state for many reasons, such as a malformed YAML file, missing credentials for a connector, or a breaking change in a data type.
 Regardless of the error, Rill Cloud takes various steps to surface, manage, and contain errors:
 
-- **Visibility:** Admins will always be able to view the project status at the individual resource level within Rill Cloud using the `Status` tab or by using the [rill project status](/reference/cli/project/status.md) CLI command.
+- **Visibility:** Admins will always be able to view the project status at the individual resource level within Rill Cloud using the `Status` tab or by using the [rill project status](/reference/cli/project/status) CLI command.
 - **Isolation:** Rill Cloud will handle errors at the individual resource level. For example, if a dashboard falls into an error state or fails to reconcile, all other dashboards should remain available. 
 - **Fallback:** Rill Cloud will attempt to fall back to the most recent valid state when possible. For example, if the underlying model for a dashboard fails to build, the dashboard will keep serving from the most recent valid state.
 
@@ -18,21 +18,61 @@ There are times where you'll need to check downstream objects to find the true c
 
 If you have already created YAML alerts, when deploying to Rill Cloud for the first time, you'll get a notification if there are any [resource level errors](/build/alerts#project-status-alerts). 
 
-You'll receive something similar to the below via email or slack, depending on your notify settings.
-```
-Project resource Status Alert
-Your alert triggered for Thu, 06 Feb 2025 23:28:00 UTC. The first row that matched your alert criteria is:
-• error: dependency error: resource "commits_metrics" (rill.runtime.v1.MetricsView) has an error
-• name: commits_explore
-• status: Idle
-• type: Explore
+Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/explore/alerts)!
+
+:::
+
+### Configure an email alert
+
+To configure an email alert for project errors, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `recipients` field to your desired alert recipients.
+
+```yaml
+type: alert
+
+# Check the alert every 10 minutes.
+refresh:
+  cron: "*/10 * * * *"
+
+# Query for all resources with a reconcile error.
+# The alert will trigger when the query result is not empty.
+data:
+  resource_status:
+    where_error: true
+
+# Send notifications by email
+notify:
+  email:
+    recipients: [john@example.com]
 ```
 
 This will give you a good idea of what object has an issue, and you can browse the [status page](/manage/project-management#checking-deployment-status) for more information.
 
-## Credentials Errors
+After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
-If this is a first deployment or your credentials expired, your source models may fail to load. Some common error messages are:
+:::
+
+### Configure a Slack alert
+
+To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](../explore/alerts/slack). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
+
+```yaml
+type: alert
+
+# Check the alert every 10 minutes.
+refresh:
+  cron: "*/10 * * * *"
+
+# Query for all resources with a reconcile error.
+# The alert will trigger when the query result is not empty.
+data:
+  resource_status:
+    where_error: true
+
+# Send notifications in Slack.
+# Follow these steps to configure a Slack token: https://docs.rilldata.com/explore/alerts/slack.
+notify:
+  slack:
+    channels: [rill-alerts]
 ```
 HTTP 401: Unauthorized
 HTTP 403: Forbidden
@@ -40,10 +80,7 @@ HTTP 403: Forbidden
 Insufficient privileges to operate on table 'SCHEMA.TABLE'
 Invalid username or password
 
-Access Denied: BigQuery BigQuery: Permission denied for table
-Invalid credentials provided
-```
-If these or similar errors are seen in your project's [status page](/manage/project-management/variables-and-credentials), you will need to make changes to your credentials. This can be done in your [project's setting page]/manage/project-management/variables-and-credentials) or via the CLI running `rill env configure`.
+After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
 
 ## Model Errors

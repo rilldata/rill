@@ -55,7 +55,7 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 	// Call fn with connection embedded in context
 	wrappedCtx := c.sessionAwareContext(contextWithConn(ctx, conn))
 	ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn))
-	return fn(wrappedCtx, ensuredCtx, conn.Conn)
+	return fn(wrappedCtx, ensuredCtx)
 }
 
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
@@ -215,8 +215,8 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 }
 
 func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema. describe_compact_output returns only name and type.
-	query = fmt.Sprintf("DESCRIBE (%s) SETTINGS describe_compact_output=1", query)
+	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema
+	query = fmt.Sprintf("DESCRIBE (%s)", query)
 
 	if c.config.LogQueries {
 		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args))
@@ -238,15 +238,23 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 	defer rows.Close()
 
 	schema := &runtimev1.StructType{}
-	var name, cType string
+	m := make(map[string]any)
 	for rows.Next() {
-		if err = rows.Scan(&name, &cType); err != nil {
+		if err = rows.MapScan(m); err != nil {
 			return nil, fmt.Errorf("failed to scan schema: %w", err)
 		}
 		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
+		cType, ok := m["type"].(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse clickHouse type from schema")
+		}
 		t, err := databaseTypeToPB(cType, false)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert clickHouse type '%s': %w", cType, err)
+			return nil, fmt.Errorf("failed to convert clickHouse type %q: %w", cType, err)
+		}
+		name, ok := m["name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse column name from schema")
 		}
 		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
 			Name: name,
@@ -257,7 +265,6 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error scanning schema: %w", err)
 	}
-
 	return schema, nil
 }
 

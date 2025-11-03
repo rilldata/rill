@@ -17,6 +17,9 @@ const (
 
 // config represents the DuckDB driver config
 type config struct {
+	// Managed is set internally if the connector has `managed: true`.
+	// This indicates to use an embedded DuckDB, and cannot be combined with the Path and Attach settings.
+	Managed bool `mapstructure:"managed"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
@@ -40,7 +43,9 @@ type config struct {
 	Secrets string `mapstructure:"secrets"`
 	// Mode specifies the mode in which to open the database.
 	Mode string `mapstructure:"mode"`
-
+	// CanScaleToZero indicates if the underlying duckdb service may scale to zero when idle.
+	// When set to true, we try to avoid too frequent non-user queries to the database (such as alert checks and fetching metrics).
+	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
 	// Path switches the implementation to use a generic rduckdb implementation backed by the db used in the Path
 	Path string `mapstructure:"path"`
 	// Attach allows user to pass a full ATTACH statement to attach a DuckDB database.
@@ -70,15 +75,27 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		return nil, fmt.Errorf("invalid mode '%s': must be 'read' or 'readwrite'", cfg.Mode)
 	}
 
+	// Previously we did not require `managed: true` to use embedded DuckDB.
+	// For backward compatibility, we default to managed if no external config is provided.
+	hasExternalConfig := cfg.Path != "" || cfg.Attach != ""
+	if !hasExternalConfig {
+		cfg.Managed = true
+	}
+
+	// Validate that managed is not combined with external config.
+	if cfg.Managed && hasExternalConfig {
+		return nil, fmt.Errorf("'managed: true' cannot be combined with 'path' or 'attach' fields")
+	}
+
 	// Set the mode for the connection
 	if cfg.Mode == "" {
 		// The default mode depends on the connection type:
-		// - For generic connections (Motherduck/DuckLake with Path/Attach), default to "read"
-		// - For connections using the embedded DuckDB, default to "readwrite" to maintain compatibility
-		if cfg.Path != "" || cfg.Attach != "" {
-			cfg.Mode = modeReadOnly
-		} else {
+		// - For managed/embedded DuckDB, default to "readwrite" to maintain compatibility
+		// - For external connections (Path/Attach), default to "read"
+		if cfg.Managed {
 			cfg.Mode = modeReadWrite
+		} else {
+			cfg.Mode = modeReadOnly
 		}
 	}
 
@@ -89,6 +106,11 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
+
+	// set can_scale_to_zero for motherduck by default
+	if _, ok := cfgMap["can_scale_to_zero"]; !ok && cfg.isMotherduck() {
+		cfg.CanScaleToZero = true
+	}
 
 	return cfg, nil
 }
@@ -114,4 +136,9 @@ func (c *config) secretConnectors() []string {
 		res[i] = strings.TrimSpace(s)
 	}
 	return res
+}
+
+// isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
+func (c *config) isMotherduck() bool {
+	return strings.HasPrefix(c.Path, "md:") || strings.HasPrefix(c.Attach, "'md:")
 }

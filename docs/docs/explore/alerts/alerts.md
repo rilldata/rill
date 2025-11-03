@@ -61,7 +61,7 @@ To avoid getting over alerted, consider adding a metric filter to avoid long tai
 - Creating a filter on customers with less than 100 logins <u>but</u> filtered to more than 100 users to alert on active user drops within active accounts.
 - Creating a filter against campaigns with a greater than 20% decrease in spend <u>but</u> filtered to spend greater than $1000 to avoid large percentage changes on small campaigns.
 
-For more information, refer to our documentation on [metric filters](/explore/filters/filters.md#filter-by-metrics).
+For more information, refer to our documentation on [metric filters](/explore/filters#filter-by-measures).
 :::
 
 ### Criteria
@@ -101,7 +101,7 @@ Email is the default notification target for alerts and is automatically enabled
 
 ### Configuring Slack targets
 
-Slack is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](slack.md) documentation.
+Slack is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](/build/connectors/data-source/slack) documentation.
 
 
 <img src = '/img/explore/alerts/slack-notifications.png' class='centered' />

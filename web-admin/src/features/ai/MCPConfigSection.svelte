@@ -8,7 +8,7 @@
   export let issuedToken: string | null = null;
 
   // Construct the API URL for the MCP server
-  $: apiUrl = `${CANONICAL_ADMIN_API_URL}/v1/organizations/${organization}/projects/${project}/runtime/mcp`;
+  $: apiUrl = `${CANONICAL_ADMIN_API_URL}/v1/orgs/${organization}/projects/${project}/runtime/mcp`;
 
   // Config snippets with exact formatting
   $: publicConfig = `{
@@ -41,9 +41,11 @@
 }`;
 </script>
 
-<div class="mb-2">
-  <h2 class="text-xl font-semibold mb-2">Configure your MCP client</h2>
-  <p class="mb-4 text-gray-600">
+<div class="flex flex-col gap-y-3">
+  <h3 class="text-sm font-bold uppercase tracking-wide text-gray-900">
+    Configure your MCP client
+  </h3>
+  <p class="text-sm text-gray-600">
     Use the below snippet to configure your AI client.
   </p>
   <CodeBlock code={isPublic ? publicConfig : privateConfig} language="json" />

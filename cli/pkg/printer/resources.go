@@ -651,7 +651,7 @@ func toBillingIssueRow(e *adminv1.BillingIssue) *billingIssue {
 		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
 	}
 	return &billingIssue{
-		Organization: e.Organization,
+		Organization: e.Org,
 		Type:         e.Type.String(),
 		Level:        e.Level.String(),
 		Metadata:     string(meta), // TODO pretty print
@@ -684,7 +684,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			rows[i] = make([]string, len(headers))
 			for j, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					rows[i][j] = fmt.Sprintf("%v", val.AsInterface())
+					rows[i][j] = p.FormatValue(val.AsInterface())
 				} else {
 					rows[i][j] = "null"
 				}
@@ -707,7 +707,7 @@ func (p *Printer) PrintQueryResponse(res *runtimev1.QueryResolverResponse) {
 			record := make([]string, len(headers))
 			for i, field := range headers {
 				if val, ok := row.GetFields()[field]; ok {
-					record[i] = fmt.Sprintf("%v", val.AsInterface())
+					record[i] = p.FormatValue(val.AsInterface())
 				} else {
 					record[i] = ""
 				}

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
   import type {
@@ -14,12 +13,13 @@
   } from "../../new-time-controls";
   import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
   import { parseRillTime } from "../../../url-state/time-ranges/parser";
   import {
+    RillAllTimeInterval,
     RillIsoInterval,
     RillPeriodToGrainInterval,
+    RillTimeLabel,
     type RillTime,
   } from "../../../url-state/time-ranges/RillTime";
   import {
@@ -27,6 +27,7 @@
     getLowerOrderGrain,
     getSmallestGrainFromISODuration,
     GrainAliasToV1TimeGrain,
+    V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
   import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
@@ -63,9 +64,7 @@
   export let showFullRange = true;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let onSelectRange: (range: string) => void;
-  export let onTimeGrainSelect: (grain: V1TimeGrain) => void;
 
-  let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let allTimeAllowed = true;
   let searchComponent: TimeRangeSearch;
@@ -74,6 +73,7 @@
   let showCalendarPicker = false;
   let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
+  let searchValue: string | undefined = timeString;
 
   $: if (timeString) {
     try {
@@ -83,12 +83,18 @@
     }
   }
 
-  $: hideTruncationSelector = parsedTime?.interval instanceof RillIsoInterval;
+  $: hideTruncationSelector =
+    parsedTime?.interval instanceof RillIsoInterval ||
+    parsedTime?.interval instanceof RillAllTimeInterval;
 
   $: usingLegacyTime = parsedTime?.isOldFormat;
 
+  $: hasAsOfClause = !!parsedTime?.asOfLabel;
+
   $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
-  $: ref = usingLegacyTime ? "latest" : (parsedTime?.asOfLabel?.label ?? "now");
+  $: ref = usingLegacyTime
+    ? RillTimeLabel.Latest
+    : parsedTime?.asOfLabel?.label;
 
   $: truncationGrain = usingLegacyTime
     ? timeString?.startsWith("rill") && !timeString.endsWith("C")
@@ -102,47 +108,55 @@
 
   $: selectedLabel = getRangeLabel(timeString);
 
-  $: if (truncationGrain) onTimeGrainSelect(truncationGrain);
-
   $: zoneAbbreviation = getAbbreviationForIANA(maxDate, zone);
 
+  $: smallestTimeGrainOrder = getGrainOrder(
+    smallestTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE,
+  );
+
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
-    if (range === ALL_TIME_RANGE_ALIAS) {
-      onSelectRange(ALL_TIME_RANGE_ALIAS);
-      closeMenu();
-    } else {
-      try {
-        const parsed = parseRillTime(range);
+    try {
+      const parsed = parseRillTime(range);
 
-        const isPeriodToDate =
-          parsed.interval instanceof RillPeriodToGrainInterval;
+      const isPeriodToDate =
+        parsed.interval instanceof RillPeriodToGrainInterval;
 
-        const rangeGrainOrder =
-          getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
-        const asOfGrainOrder = getGrainOrder(truncationGrain);
+      const rangeGrainOrder =
+        getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
 
-        if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-          truncationGrain = isPeriodToDate
-            ? getLowerOrderGrain(parsed.rangeGrain)
-            : parsed.rangeGrain;
-        }
+      const asOfGrainOrder = getGrainOrder(truncationGrain);
 
+      const shouldAppendAsOfString =
+        !parsed.asOfLabel && !(parsed.interval instanceof RillIsoInterval);
+
+      if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
+        truncationGrain = isPeriodToDate
+          ? getLowerOrderGrain(parsed.rangeGrain)
+          : parsed.rangeGrain;
+      }
+
+      if (shouldAppendAsOfString) {
+        const isTruncationGrainAllowed =
+          getGrainOrder(truncationGrain) >= smallestTimeGrainOrder;
         const newAsOfString = constructAsOfString(
-          ref,
+          ref ?? RillTimeLabel.Latest,
           ignoreSnap
             ? undefined
-            : (truncationGrain ??
-                smallestTimeGrain ??
-                V1TimeGrain.TIME_GRAIN_MINUTE),
-          snapToEnd,
+            : truncationGrain
+              ? isTruncationGrainAllowed
+                ? truncationGrain
+                : parsed.rangeGrain
+              : (smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE),
+          hasAsOfClause || snapToEnd ? snapToEnd : true,
         );
 
         overrideRillTimeRef(parsed, newAsOfString);
-        onSelectRange(parsed.toString());
-        closeMenu();
-      } catch {
-        // This function is called in a controlled manner and should not throw
       }
+
+      onSelectRange(parsed.toString());
+      closeMenu();
+    } catch {
+      // This function is called in a controlled manner and should not throw
     }
   }
 
@@ -160,7 +174,7 @@
   }
 
   function onSelectAsOfOption(
-    ref: "latest" | "watermark" | "now" | string,
+    ref: RillTimeLabel | undefined,
     inclusive: boolean,
   ) {
     if (!timeString) return;
@@ -175,7 +189,10 @@
   }
 
   // Zone is taken as a param to make it reactive
-  function returnAnchor(asOf: string, zone: string): DateTime | undefined {
+  function returnAnchor(
+    asOf: string | undefined,
+    zone: string,
+  ): DateTime | undefined {
     if (asOf === "latest") {
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
@@ -200,9 +217,9 @@
 
 <Popover.Root
   bind:open
-  onOpenChange={(open) => {
-    if (open) {
-      firstVisibleMonth = interval.start;
+  onOpenChange={(o) => {
+    if (o) {
+      searchValue = timeString;
     }
   }}
 >
@@ -218,6 +235,7 @@
           {...getAttrs([builder, tooltipBuilder])}
           class="flex gap-x-1.5"
           aria-label="Select time range"
+          type="button"
         >
           {#if timeString}
             <b class="line-clamp-1 flex-none">
@@ -261,9 +279,10 @@
       bind:this={searchComponent}
       {context}
       {timeString}
+      bind:searchValue
       onSelectRange={(range) => {
         open = false;
-        onSelectRange(range);
+        handleRangeSelect(range);
       }}
     />
 
@@ -277,17 +296,12 @@
       >
         <div class="overflow-x-hidden">
           {#if showDefaultItem && defaultTimeRange}
-            <DropdownMenu.Item
-              on:click={() => {
-                handleRangeSelect(defaultTimeRange);
-              }}
-            >
-              <div class:font-bold={timeString === defaultTimeRange}>
-                Last {humaniseISODuration(defaultTimeRange)}
-              </div>
-            </DropdownMenu.Item>
-
-            <div class="h-px w-full bg-gray-200" />
+            <TimeRangeOptionGroup
+              {filter}
+              {timeString}
+              options={[parseRillTime(defaultTimeRange)]}
+              onClick={handleRangeSelect}
+            />
           {/if}
 
           <TimeRangeOptionGroup
@@ -323,6 +337,8 @@
           {#if allTimeAllowed}
             <div class="w-full h-fit px-1">
               <button
+                type="button"
+                role="menuitem"
                 class="group h-7 px-2 overflow-hidden hover:bg-gray-100 rounded-sm w-full select-none flex items-center"
                 on:click={() => {
                   handleRangeSelect("inf");
@@ -340,6 +356,8 @@
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-gray-200 my-1" />
             <button
+              type="button"
+              role="menuitem"
               class:font-bold={false}
               on:click={() => {
                 showCalendarPicker = !showCalendarPicker;
@@ -347,7 +365,7 @@
               class="truncate w-full text-left gap-x-1 pr-1 hover:bg-accent flex items-center flex-shrink pl-2 h-7 rounded-sm"
             >
               <Calendar size="14px" />
-              <div class="mr-auto">Calendar</div>
+              <div class="mr-auto">Custom</div>
 
               <CaretDownIcon className="-rotate-90" size="14px" />
             </button>
@@ -370,6 +388,7 @@
                   class="group h-7 overflow-hidden hover:bg-gray-100 flex-none rounded-sm w-full select-none flex items-center"
                 >
                   <button
+                    type="button"
                     class:font-bold={false}
                     class="truncate w-full text-left gap-x-1 pr-1 flex items-center flex-shrink pl-2 h-full"
                   >
@@ -409,14 +428,18 @@
       {#if showCalendarPicker}
         <div class="bg-slate-50 border-l p-3 size-full">
           <CalendarPlusDateInput
-            {firstVisibleMonth}
             {interval}
             {zone}
+            minTimeGrain={V1TimeGrainToDateTimeUnit[
+              smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
+            ]}
             {maxDate}
             {minDate}
-            applyRange={(interval) => {
-              const string = `${interval.start.toFormat("yyyy-MM-dd")} to ${interval.end.toFormat("yyyy-MM-dd")}`;
-              onSelectRange(string);
+            onApply={() => {
+              if (searchValue) handleRangeSelect(searchValue);
+            }}
+            updateRange={(string) => {
+              searchValue = string;
             }}
             closeMenu={() => (open = false)}
           />

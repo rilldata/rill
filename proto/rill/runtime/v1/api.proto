@@ -7,6 +7,7 @@ import "google/protobuf/struct.proto";
 import "rill/ai/v1/ai.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
+import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
@@ -230,6 +231,16 @@ service RuntimeService {
 
   // AI
 
+  // ListConversations lists all AI chat conversations for an instance.
+  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
+  }
+
+  // GetConversation returns a specific AI chat conversation.
+  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
+  }
+
   // Complete runs a language model completion (LLM chat) using the configured AI connector.
   rpc Complete(CompleteRequest) returns (CompleteResponse) {
     option (google.api.http) = {
@@ -244,16 +255,6 @@ service RuntimeService {
       post: "/v1/instances/{instance_id}/ai/complete/stream",
       body: "*"
     };
-  }
-
-  // ListConversations lists all AI chat conversations for an instance.
-  rpc ListConversations(ListConversationsRequest) returns (ListConversationsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations"};
-  }
-
-  // GetConversation returns a specific AI chat conversation.
-  rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
   // Access management
@@ -339,6 +340,7 @@ message Instance {
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
   string ai_instructions = 23;
+  string frontend_url = 24;
 }
  
 message Connector {
@@ -393,6 +395,7 @@ message CreateInstanceRequest {
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
+  string frontend_url = 18;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -420,6 +423,7 @@ message EditInstanceRequest {
   repeated Connector connectors = 9;
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
+  optional string frontend_url = 19;
 }
 
 // Response message for RuntimeService.EditInstance
@@ -898,63 +902,30 @@ message ListNotifierConnectorsResponse {
 // AI
 // **********
 
-// Message exchanged in a conversation
-message Message {
-  string id = 1;
-  string role = 2;
-  repeated rill.ai.v1.ContentBlock content = 3;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
-}
-
-// Application context for AI conversations
-enum AppContextType {
-  APP_CONTEXT_TYPE_UNSPECIFIED = 0;
-  APP_CONTEXT_TYPE_PROJECT_CHAT = 1;
-  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD = 2;
-}
-
-message AppContext {
-  AppContextType context_type = 1;
-  google.protobuf.Struct context_metadata = 2;
-}
-
 // Conversation metadata and messages
 message Conversation {
   string id = 1;
   string owner_id = 2;
   string title = 3;
+  string user_agent = 6;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
-  repeated Message messages = 6;
+  repeated Message messages = 7; // NOTE: Deprecated.
 }
 
-// Request message for RuntimeService.Complete
-message CompleteRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional string conversation_id = 2; // If not provided, creates a new conversation
-  repeated Message messages = 3;
-  repeated string tool_names = 4;
-  optional AppContext app_context = 5;
-}
-
-// Response message for RuntimeService.Complete
-message CompleteResponse {
-  string conversation_id = 1;
-  repeated Message messages = 2;
-}
-
-// Request message for RuntimeService.CompleteStreaming
-message CompleteStreamingRequest {
-  string instance_id = 1;
-  string conversation_id = 2; // If not provided, creates a new conversation
-  string prompt = 3;
-}
-
-// Response message for RuntimeService.CompleteStreaming
-message CompleteStreamingResponse {
-  string conversation_id = 1;
-  Message message = 2;
+// Message exchanged in a conversation
+message Message {
+  string id = 1;
+  string parent_id = 2;
+  google.protobuf.Timestamp created_on = 3;
+  google.protobuf.Timestamp updated_on = 4;
+  uint32 index = 5;
+  string role = 6;
+  string type = 7;
+  string tool = 8;
+  string content_type = 9;
+  string content_data = 10;
+  repeated rill.ai.v1.ContentBlock content = 11; // Convenience field
 }
 
 // Request message for RuntimeService.ListConversations
@@ -971,13 +942,50 @@ message ListConversationsResponse {
 message GetConversationRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2;
-  // Whether to include system messages in the response (defaults to false for UI use)
-  bool include_system_messages = 3;
 }
 
 // Response message for RuntimeService.GetConversation
 message GetConversationResponse {
   Conversation conversation = 1;
+  repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.Complete
+message CompleteRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2; // If not provided, creates a new conversation
+  string prompt = 3;
+  string explore = 4;
+  repeated string dimensions = 5;
+  repeated string measures = 6;
+  rill.runtime.v1.Expression where = 7;
+  google.protobuf.Timestamp time_start = 8;
+  google.protobuf.Timestamp time_end = 9;
+}
+
+// Response message for RuntimeService.Complete
+message CompleteResponse {
+  string conversation_id = 1;
+  repeated Message messages = 2;
+}
+
+// Request message for RuntimeService.CompleteStreaming
+message CompleteStreamingRequest {
+  string instance_id = 1;
+  string conversation_id = 2; // If not provided, creates a new conversation
+  string prompt = 3;
+  string explore = 4;
+  repeated string dimensions = 5;
+  repeated string measures = 6;
+  rill.runtime.v1.Expression where = 7;
+  google.protobuf.Timestamp time_start = 8;
+  google.protobuf.Timestamp time_end = 9;
+}
+
+// Response message for RuntimeService.CompleteStreaming
+message CompleteStreamingResponse {
+  string conversation_id = 1;
+  Message message = 2;
 }
 
 // **********

@@ -5,7 +5,7 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { writable } from "svelte/store";
@@ -14,29 +14,21 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import TableIcon from "../../canvas/icons/TableIcon.svelte";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
-  import { featureFlags } from "../../feature-flags";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import { getPivotExportQuery } from "./pivot-export";
-  import type { PivotChipData, PivotTableMode } from "./types";
+  import type { PivotChipData, PivotState, PivotTableMode } from "./types";
 
+  export let pivotState: PivotState;
   export let showPanels = true;
   export let isFetching = false;
+  export let setTableMode: (
+    tableMode: PivotTableMode,
+    rows: PivotChipData[],
+    columns: PivotChipData[],
+  ) => void;
+  export let collapseAll: () => void;
 
-  const { adminServer, exports } = featureFlags;
-
-  const stateManagers = getStateManagers();
-  const {
-    exploreName,
-    dashboardStore,
-    timeRangeSummaryStore,
-    selectors: {
-      pivot: { rows, columns, isFlat },
-    },
-  } = stateManagers;
-
-  $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: exploreHasTimeDimension = !!$timeRangeSummaryStore.data;
+  $: ({ rows, columns, tableMode, expanded } = pivotState);
+  $: splitColumns = splitPivotChips(columns);
+  $: isFlat = tableMode === "flat";
 
   /**
    * This method stores the previous nest state and passes it to
@@ -44,123 +36,79 @@
    */
   function togglePivotType(newJoinState: PivotTableMode) {
     if (newJoinState === "flat") {
-      lastNestState.set($rows);
-      metricsExplorerStore.setPivotTableMode(
-        $exploreName,
+      lastNestState.set(rows);
+      setTableMode(
         "flat",
         [],
-        [...$columns.dimension, ...$rows, ...$columns.measure],
+        [...splitColumns.dimension, ...rows, ...splitColumns.measure],
       );
       return;
     }
 
     // Handle nest state
-    const updatedRows = $lastNestState ?? $columns.dimension;
+    const updatedRows = $lastNestState ?? splitColumns.dimension;
     const rowDimensionIds = new Set(updatedRows.map((d) => d.id));
 
-    metricsExplorerStore.setPivotTableMode($exploreName, "nest", updatedRows, [
+    setTableMode("nest", updatedRows, [
       ...($lastNestState
-        ? $columns.dimension.filter((d) => !rowDimensionIds.has(d.id))
+        ? splitColumns.dimension.filter((d) => !rowDimensionIds.has(d.id))
         : []),
-      ...$columns.measure,
+      ...splitColumns.measure,
     ]);
   }
 
   function blurCurrentTarget(e: MouseEvent) {
     (e.currentTarget as HTMLButtonElement | null)?.blur();
   }
-
-  // function expandVisible() {
-  //   // const lowestVisibleRow = 0;
-  //   const nestedLevels = 4;
-  //   const maxNestedLevelsToExpand = Math.max(3, nestedLevels);
-  //   const maxExpandPerLevel = 3;
-
-  //   // Helper function to recursively expand rows
-  //   function expandRow(rowId: string, level: number) {
-  //     if (level > maxNestedLevelsToExpand) {
-  //       return;
-  //     }
-
-  //     expanded[rowId] = true; // Expand the current row
-
-  //     // Generate and expand child rows
-  //     for (let i = 0; i < maxExpandPerLevel; i++) {
-  //       let childRowId = `${rowId}.${i}`;
-  //       expandRow(childRowId, level + 1);
-  //     }
-  //   }
-
-  //   // Expand rows starting from the lowest visible row
-  //   for (let i = 0; i < maxExpandPerLevel; i++) {
-  //     expandRow(i.toString(), 1); // Start from level 1
-  //   }
-
-  //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
-  // }
 </script>
 
 <div class="flex items-center gap-x-4 select-none pointer-events-none">
-  <Button
-    square
-    type="secondary"
-    theme
-    selected={showPanels}
-    onClick={(e) => {
-      showPanels = !showPanels;
-      blurCurrentTarget(e);
-    }}
-  >
-    <PivotPanel size="18px" open={showPanels} colorClass="fill-theme-800" />
-  </Button>
+  <Tooltip location="bottom" alignment="start" distance={8}>
+    <Button
+      square
+      type="secondary"
+      theme
+      selected={showPanels}
+      onClick={(e) => {
+        showPanels = !showPanels;
+        blurCurrentTarget(e);
+      }}
+    >
+      <PivotPanel size="18px" open={showPanels} colorClass="fill-theme-800" />
+    </Button>
+    <TooltipContent slot="tooltip-content">
+      {showPanels ? "Hide panels" : "Show panels"}
+    </TooltipContent>
+  </Tooltip>
 
   <div class="flex items-center gap-x-1">
     <Tooltip location="bottom" alignment="start" distance={8}>
       <Button
         type="toolbar"
-        onClick={() => togglePivotType($isFlat ? "nest" : "flat")}
+        onClick={() => togglePivotType(isFlat ? "nest" : "flat")}
       >
-        {#if $isFlat}
+        {#if isFlat}
           <TableIcon size="16px" />
         {:else}
           <Pivot size="16px" />
         {/if}
-        <span>{$isFlat ? "Flat table" : "Pivot table"}</span>
+        <span>{isFlat ? "Flat table" : "Pivot table"}</span>
       </Button>
       <TooltipContent slot="tooltip-content">
-        {$isFlat ? "Switch to a pivot table" : "Switch to a flat table"}
+        {isFlat ? "Switch to a pivot table" : "Switch to a flat table"}
       </TooltipContent>
     </Tooltip>
 
-    <!-- <Button
-    compact
-    type="text"
-    onClick={() => {
-      expandVisible();
-    }}
-  >
-    Expand Visible
-  </Button> -->
     <Button
       type="toolbar"
-      onClick={() => {
-        metricsExplorerStore.setPivotExpanded($exploreName, {});
-      }}
+      onClick={collapseAll}
       disabled={Object.keys(expanded).length === 0}
     >
       <Collapse size="16px" />
       Collapse All
     </Button>
 
-    {#if $exports}
-      <ExportMenu
-        label="Export pivot data"
-        includeScheduledReport={$adminServer && exploreHasTimeDimension}
-        getQuery={(isScheduled) =>
-          getPivotExportQuery(stateManagers, isScheduled)}
-        exploreName={$exploreName}
-      />
-    {/if}
+    <slot name="export-menu" />
 
     {#if isFetching}
       <Spinner size="18px" status={EntityStatus.Running} />

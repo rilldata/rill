@@ -328,23 +328,6 @@ export interface V1AnalyzedVariable {
   usedBy?: V1ResourceName[];
 }
 
-export type V1AppContextContextMetadata = { [key: string]: unknown };
-
-export interface V1AppContext {
-  contextType?: V1AppContextType;
-  contextMetadata?: V1AppContextContextMetadata;
-}
-
-export type V1AppContextType =
-  (typeof V1AppContextType)[keyof typeof V1AppContextType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1AppContextType = {
-  APP_CONTEXT_TYPE_UNSPECIFIED: "APP_CONTEXT_TYPE_UNSPECIFIED",
-  APP_CONTEXT_TYPE_PROJECT_CHAT: "APP_CONTEXT_TYPE_PROJECT_CHAT",
-  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD",
-} as const;
-
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 
 export interface V1AssertionResult {
@@ -738,8 +721,10 @@ export interface V1Conversation {
   id?: string;
   ownerId?: string;
   title?: string;
+  userAgent?: string;
   createdOn?: string;
   updatedOn?: string;
+  /** NOTE: Deprecated. */
   messages?: V1Message[];
 }
 
@@ -765,6 +750,7 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
+  frontendUrl?: string;
 }
 
 export interface V1CreateInstanceResponse {
@@ -1040,6 +1026,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
+  messages?: V1Message[];
 }
 
 export interface V1GetExploreResponse {
@@ -1129,6 +1116,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
+  frontendUrl?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1232,10 +1220,16 @@ export interface V1MapType {
 
 export interface V1Message {
   id?: string;
-  role?: string;
-  content?: V1ContentBlock[];
+  parentId?: string;
   createdOn?: string;
   updatedOn?: string;
+  index?: number;
+  role?: string;
+  type?: string;
+  tool?: string;
+  contentType?: string;
+  contentData?: string;
+  content?: V1ContentBlock[];
 }
 
 export interface V1MetricsView {
@@ -2171,24 +2165,55 @@ export interface V1SecurityRule {
   access?: V1SecurityRuleAccess;
   fieldAccess?: V1SecurityRuleFieldAccess;
   rowFilter?: V1SecurityRuleRowFilter;
+  transitiveAccess?: V1SecurityRuleTransitiveAccess;
 }
 
 export interface V1SecurityRuleAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
+  /** Whether to allow or deny access to the resources covered by the conditions. */
   allow?: boolean;
+  /** If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
 }
 
 export interface V1SecurityRuleFieldAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   allow?: boolean;
+  /** If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
   fields?: string[];
   allFields?: boolean;
 }
 
 export interface V1SecurityRuleRowFilter {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   sql?: string;
   expression?: V1Expression;
+}
+
+export interface V1SecurityRuleTransitiveAccess {
+  resource?: V1ResourceName;
 }
 
 export interface V1Source {
@@ -2288,11 +2313,21 @@ export interface V1Theme {
   state?: V1ThemeState;
 }
 
+export type V1ThemeColorsVariables = { [key: string]: string };
+
+export interface V1ThemeColors {
+  primary?: string;
+  secondary?: string;
+  variables?: V1ThemeColorsVariables;
+}
+
 export interface V1ThemeSpec {
   primaryColor?: V1Color;
   secondaryColor?: V1Color;
   primaryColorRaw?: string;
   secondaryColorRaw?: string;
+  light?: V1ThemeColors;
+  dark?: V1ThemeColors;
 }
 
 export interface V1ThemeState {
@@ -2496,30 +2531,34 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
+  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
   conversationId?: string;
-  messages?: V1Message[];
-  toolNames?: string[];
-  appContext?: V1AppContext;
+  prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
   conversationId?: string;
   prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {
   result?: V1CompleteStreamingResponse;
   error?: RpcStatus;
-};
-
-export type RuntimeServiceGetConversationParams = {
-  /**
-   * Whether to include system messages in the response (defaults to false for UI use)
-   */
-  includeSystemMessages?: boolean;
 };
 
 export type RuntimeServiceListFilesParams = {
@@ -2719,6 +2758,8 @@ export type QueryServiceExportBody = {
   /** Optional UI URL that the export originates from.
 Only used if include_header is true. */
   originUrl?: string;
+  /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {

@@ -38,7 +38,8 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		attribute.Bool("args.skip_security_checks", req.SkipSecurityChecks),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
@@ -65,7 +66,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	})
 
 	if req.SkipSecurityChecks {
-		if !auth.GetClaims(ctx).SecurityClaims().Admin() {
+		if !claims.Admin() {
 			return nil, ErrForbidden
 		}
 		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
@@ -74,7 +75,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	i := 0
 	for i < len(rs) {
 		r := rs[i]
-		r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
+		r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -99,7 +100,8 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 		attribute.String("args.kind", req.Kind),
 	)
 
-	if !auth.GetClaims(ss.Context()).CanInstance(req.InstanceId, auth.ReadObjects) {
+	claims := auth.GetClaims(ss.Context(), req.InstanceId)
+	if !claims.Can(runtime.ReadObjects) {
 		return ErrForbidden
 	}
 
@@ -115,7 +117,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 		}
 
 		for _, r := range rs {
-			r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ss.Context()).SecurityClaims(), r)
+			r, access, err := s.runtime.ApplySecurityPolicy(ss.Context(), req.InstanceId, claims, r)
 			if err != nil {
 				return status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -137,7 +139,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 		if r != nil { // r is nil for deletion events
 			var access bool
 			var err error
-			r, access, err = s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ss.Context()).SecurityClaims(), r)
+			r, access, err = s.runtime.ApplySecurityPolicy(ss.Context(), req.InstanceId, claims, r)
 			if err != nil {
 				s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
 				return
@@ -168,7 +170,8 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		attribute.Bool("args.skip_security_checks", req.SkipSecurityChecks),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
@@ -186,13 +189,13 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	}
 
 	if req.SkipSecurityChecks {
-		if !auth.GetClaims(ctx).SecurityClaims().Admin() {
+		if !claims.Admin() {
 			return nil, ErrForbidden
 		}
 		return &runtimev1.GetResourceResponse{Resource: r}, nil
 	}
 
-	r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
+	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -211,7 +214,8 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		attribute.String("args.name", req.Name),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
@@ -229,7 +233,7 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	e, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), e)
+	e, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, e)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -253,7 +257,7 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	m, access, err = s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), m)
+	m, access, err = s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, m)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -275,7 +279,8 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		attribute.String("args.model", req.Model),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
@@ -293,7 +298,7 @@ func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModel
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	r, access, err := s.runtime.ApplySecurityPolicy(req.InstanceId, auth.GetClaims(ctx).SecurityClaims(), r)
+	r, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, r)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -355,7 +360,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditTrigger) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditTrigger) {
 		return nil, ErrForbidden
 	}
 
@@ -425,7 +430,8 @@ func (s *Server) WatchResourcesHandler(w http.ResponseWriter, r *http.Request) {
 	kind := r.URL.Query().Get("kind")
 	replay := r.URL.Query().Get("replay") == "true"
 
-	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadObjects) {
+	claims := auth.GetClaims(ctx, instanceID)
+	if !claims.Can(runtime.ReadObjects) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}

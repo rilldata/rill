@@ -18,10 +18,13 @@ export const getYupSchema = {
   }),
 
   gcs: yup.object().shape({
+    google_application_credentials: yup.string().optional(),
+    key_id: yup.string().optional(),
+    secret: yup.string().optional(),
     path: yup
       .string()
       .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
-      .required("GS URI is required"),
+      .optional(),
   }),
 
   https: yup.object().shape({
@@ -36,12 +39,8 @@ export const getYupSchema = {
   }),
 
   duckdb: yup.object().shape({
-    db: yup.string().required("db is required"),
-    sql: yup.string().required("sql is required"),
-    name: yup
-      .string()
-      .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-      .required("Source name is required"),
+    path: yup.string().required("path is required"),
+    attach: yup.string().optional(),
   }),
 
   motherduck: yup.object().shape({
@@ -60,8 +59,10 @@ export const getYupSchema = {
   }),
 
   bigquery: yup.object().shape({
-    google_application_credentials: yup.string().optional(),
-    project_id: yup.string().optional(),
+    project_id: yup.string(),
+    google_application_credentials: yup
+      .string()
+      .required("Google application credentials is required"),
   }),
 
   azure: yup.object().shape({

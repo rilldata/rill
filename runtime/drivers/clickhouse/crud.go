@@ -143,6 +143,16 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
+
+		// run 'OPTIMIZE' before partition replacement if configured
+		if c.config.OptimizeTemporaryTablesBeforePartitionReplace {
+			err = c.optimizeTable(ctx, tempName)
+			if err != nil {
+				c.logger.Warn("clickhouse: failed to optimize temporary table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
+				// Don't fail the entire operation if optimize fails - just log and continue
+			}
+		}
+
 		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
@@ -642,6 +652,20 @@ func (c *Connection) replacePartition(ctx context.Context, src, dest, part strin
 	return c.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", safeSQLName(dest), onClusterClause, safeSQLName(src)),
 		Args:     []any{part},
+		Priority: 1,
+	})
+}
+
+func (c *Connection) optimizeTable(ctx context.Context, tableName string) error {
+	var onClusterClause string
+	if c.config.Cluster != "" {
+		onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		// For clustered tables, optimize the local table
+		tableName = localTableName(tableName)
+	}
+
+	return c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("OPTIMIZE TABLE %s %s", safeSQLName(tableName), onClusterClause),
 		Priority: 1,
 	})
 }

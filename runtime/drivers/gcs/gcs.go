@@ -7,6 +7,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/storage"
@@ -26,12 +27,31 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Google Cloud Storage",
 	Description: "Connect to Google Cloud Storage.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/gcs",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:  "google_application_credentials",
-			Type: drivers.FilePropertyType,
-			Hint: "Enter path of file to load from.",
+			Key:         "google_application_credentials",
+			Type:        drivers.FilePropertyType,
+			DisplayName: "GCP Credentials",
+			Description: "GCP credentials as JSON string",
+			Placeholder: "Paste your GCP service account JSON here",
+			Secret:      true,
+		},
+		{
+			Key:         "key_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Access Key ID",
+			Description: "HMAC access key ID for S3-compatible authentication",
+			Hint:        "Optional S3-compatible Key ID when used in compatibility mode",
+			Secret:      true,
+		},
+		{
+			Key:         "secret",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Secret Access Key",
+			Description: "HMAC secret access key for S3-compatible authentication",
+			Hint:        "Optional S3-compatible Secret when used in compatibility mode",
+			Secret:      true,
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -66,9 +86,9 @@ type ConfigProperties struct {
 	Secret string `mapstructure:"secret"`
 }
 
-func NewConfigProperties(in map[string]any) (*ConfigProperties, error) {
+func NewConfigProperties(prop map[string]any) (*ConfigProperties, error) {
 	gcsConfig := &ConfigProperties{}
-	err := mapstructure.WeakDecode(in, gcsConfig)
+	err := mapstructure.WeakDecode(prop, gcsConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +104,34 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
+	}
+
+	if conf.SecretJSON == "" && conf.KeyID != "" && conf.Secret != "" {
+		// open s3 connection to be used in case of S3 compatible mode
+		s3Config := s3.ConfigProperties{
+			AccessKeyID:     conf.KeyID,
+			SecretAccessKey: conf.Secret,
+			Endpoint:        "storage.googleapis.com",
+			AllowHostAccess: conf.AllowHostAccess,
+		}
+		config := make(map[string]any)
+		err := mapstructure.WeakDecode(s3Config, &config)
+		if err != nil {
+			return nil, err
+		}
+		handle, err := drivers.Open("s3", instanceID, config, st, ac, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open s3 connection for gcs in s3 compatible mode: %w", err)
+		}
+		s3Conn, ok := handle.(*s3.Connection)
+		if !ok {
+			return nil, fmt.Errorf("internal error: expected s3 connector handle")
+		}
+		conn := &s3CompatibleConn{
+			s3Conn,
+			conf,
+		}
+		return conn, nil
 	}
 
 	conn := &Connection{
@@ -130,7 +178,8 @@ func (c *Connection) Ping(ctx context.Context) error {
 	}
 
 	if c.config.KeyID != "" && c.config.Secret != "" {
-		// TODO: handle in case of HMAC key secret
+		// If both secret json and hmac keys are set it only validates the secret json
+		// If only hmac keys are set then it validates them by pinging using s3 connection via s3CompatibleConn
 		return nil
 	}
 

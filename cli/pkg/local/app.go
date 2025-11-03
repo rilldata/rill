@@ -70,6 +70,7 @@ type AppOptions struct {
 	Variables      map[string]string
 	LocalURL       string
 	AllowedOrigins []string
+	ServeUI        bool
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -237,6 +238,16 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		sugarLogger.Infof("Hydrating project '%s'", projectPath)
 	}
 
+	// Determine the frontend URL based on whether we're serving the UI
+	var frontendURL string
+	if opts.ServeUI {
+		// In production: The runtime serves the UI
+		frontendURL = opts.LocalURL // e.g., "http://localhost:9009"
+	} else {
+		// In development: Vite serves the frontend on a separate port (3001)
+		frontendURL = "http://localhost:3001"
+	}
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:                               DefaultInstanceID,
@@ -249,6 +260,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		Variables:                        vars,
 		Annotations:                      map[string]string{},
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
+		FrontendURL:                      frontendURL,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
@@ -403,10 +415,9 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 		// We sleep before the first health check as a slightly hacky way to protect against the situation where
 		// another Rill server is already running, which will pass the health check as a false positive.
 		// By sleeping first, the ctx is in practice sure to have been cancelled with a "port taken" error at that point.
-		time.Sleep(250 * time.Millisecond)
-
-		// Check for cancellation
-		if ctx.Err() != nil {
+		select {
+		case <-time.After(250 * time.Millisecond):
+		case <-ctx.Done():
 			return
 		}
 
