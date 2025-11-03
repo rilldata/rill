@@ -137,7 +137,7 @@ func databaseTypeToPB(dbt string) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: true}
 
 	// Handle array types (prefixed with underscore)
-	if len(dbt) > 0 && dbt[0] == '_' {
+	if dbt != "" && dbt[0] == '_' {
 		t.Code = runtimev1.Type_CODE_ARRAY
 		return t
 	}
