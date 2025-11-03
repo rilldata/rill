@@ -13,6 +13,8 @@
   import type { BaseChart } from "./BaseChart";
   import { getChartDataForCanvas } from "./selector";
   import { validateChartSchema } from "./validate";
+  import { getContext } from "svelte";
+  import { Theme } from "@rilldata/web-common/features/themes/theme";
 
   export let component: BaseChart<CanvasChartSpec>;
 
@@ -26,7 +28,7 @@
 
   $: ({
     specStore,
-    parent: { name: canvasName, themeSpec },
+    parent: { name: canvasName },
     timeAndFilterStore,
     chartType: type,
   } = component);
@@ -52,7 +54,9 @@
 
   $: measures = getMeasuresForMetricView(metrics_view);
 
-  $: currentTheme = resolveThemeObject($themeSpec, $isThemeModeDark);
+  // $: currentTheme = resolveThemeObject($themeSpec, $isThemeModeDark);
+
+  const theme = getContext<Theme | undefined>("themeContext");
 
   $: chartData = getChartDataForCanvas(
     store,
@@ -93,7 +97,7 @@
         measures={$measures}
         isCanvas
         themeMode={$isThemeModeDark ? "dark" : "light"}
-        theme={currentTheme}
+        {theme}
       />
     {/if}
   {:else}

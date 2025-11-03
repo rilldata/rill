@@ -308,7 +308,7 @@ const stone = {
   950: chroma.oklch(0.147, 0.004, 49.25),
 };
 
-const primary = {
+export const primary = {
   50: chroma.oklch(0.96, 0.0206, 274.04),
   100: chroma.oklch(0.92, 0.0375, 274.1),
   200: chroma.oklch(0.86, 0.0707, 275.12),
