@@ -311,16 +311,6 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func quotedValue(val string) string {
-	// Quote if it contains special characters
-	if strings.ContainsAny(val, " \t\r\n'\\=") {
-		val = strings.ReplaceAll(val, `\`, `\\`)
-		val = strings.ReplaceAll(val, `'`, `\'`)
-		return fmt.Sprintf("'%s'", val)
-	}
-	return val
-}
-
 func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 	err := c.dbMu.Acquire(ctx, 1)
 	if err != nil {
@@ -333,4 +323,14 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 
 	c.db, c.dbErr = sqlx.Connect("pgx", c.config.ResolveDSN())
 	return c.db, c.dbErr
+}
+
+func quotedValue(val string) string {
+	// Quote if it contains special characters
+	if strings.ContainsAny(val, " \t\r\n'\\=") {
+		val = strings.ReplaceAll(val, `\`, `\\`)
+		val = strings.ReplaceAll(val, `'`, `\'`)
+		return fmt.Sprintf("'%s'", val)
+	}
+	return val
 }
