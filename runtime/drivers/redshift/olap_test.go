@@ -73,6 +73,12 @@ func TestQuery(t *testing.T) {
 			args:   nil,
 			result: map[string]any{"val": time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)},
 		},
+		{
+			name:   "timestamp",
+			query:  "SELECT TIMESTAMP '2021-01-01 12:30:45' AS val",
+			args:   nil,
+			result: map[string]any{"val": time.Date(2021, 1, 1, 12, 30, 45, 0, time.UTC)},
+		},
 	}
 
 	for _, test := range tests {
@@ -90,6 +96,31 @@ func TestQuery(t *testing.T) {
 			require.NoError(t, result.Err())
 		})
 	}
+
+	// Test timestamp with timezone separately since it returns a time.Time with FixedZone location
+	t.Run("timestamp with timezone", func(t *testing.T) {
+		result, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT TIMESTAMPTZ '2021-01-01 12:30:45.666666-08:00' AS val",
+		})
+		require.NoError(t, err)
+		defer result.Close()
+
+		require.True(t, result.Next(), "expected at least one row, scan error: %v", result.Err())
+		res := make(map[string]any)
+		err = result.MapScan(res)
+		require.NoError(t, err)
+
+		// Check that we got a time.Time value
+		actualTime, ok := res["val"].(time.Time)
+		require.True(t, ok, "expected time.Time value")
+
+		// The time should be converted to UTC: 12:30:45-08:00 = 20:30:45 UTC
+		expectedTime := time.Date(2021, 1, 1, 20, 30, 45, 666666000, time.UTC)
+		require.True(t, actualTime.Equal(expectedTime), "expected %v, got %v", expectedTime, actualTime)
+
+		require.False(t, result.Next())
+		require.NoError(t, result.Err())
+	})
 }
 
 func TestQueryWithParameters(t *testing.T) {

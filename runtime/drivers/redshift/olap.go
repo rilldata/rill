@@ -10,11 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
 	redshift_types "github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
-	"github.com/aws/smithy-go/tracing/smithyoteltracing"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/sqlconvert"
-	"go.opentelemetry.io/otel"
 )
 
 var _ drivers.OLAPStore = &Connection{}
@@ -45,14 +43,10 @@ func (c *Connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // Query implements drivers.OLAPStore.
 func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, err
 	}
-
-	client := redshiftdata.NewFromConfig(awsConfig, func(o *redshiftdata.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
 
 	if stmt.DryRun {
 		stmt.Query = fmt.Sprintf("EXPLAIN %s", stmt.Query)
@@ -381,38 +375,28 @@ func convertStringValue(colType, val string) (any, error) {
 			return nil, err
 		}
 		return t, nil
-	case "time", "timetz":
+	case "time":
 		t, err := time.Parse(time.TimeOnly, val)
 		if err != nil {
-			// Try parsing with timezone
-			t, err = time.Parse("15:04:05-07", val)
-			if err != nil {
-				return nil, err
-			}
+			return nil, err
+		}
+		return t, nil
+	case "timetz":
+		t, err := time.Parse("15:04:05-07", val)
+		if err != nil {
+			return nil, err
 		}
 		return t, nil
 	case "timestamp":
 		t, err := time.Parse(time.DateTime, val)
 		if err != nil {
-			// Try with microseconds
-			t, err = time.Parse("2006-01-02 15:04:05.999999", val)
-			if err != nil {
-				return nil, err
-			}
+			return nil, err
 		}
 		return t, nil
 	case "timestamptz":
-		// Parse timestamp with timezone
-		t, err := time.Parse(time.RFC3339, val)
+		t, err := time.Parse("2006-01-02 15:04:05-07", val)
 		if err != nil {
-			// Try alternative formats
-			t, err = time.Parse("2006-01-02 15:04:05.999999-07", val)
-			if err != nil {
-				t, err = time.Parse("2006-01-02 15:04:05-07", val)
-				if err != nil {
-					return nil, err
-				}
-			}
+			return nil, err
 		}
 		return t, nil
 	default:

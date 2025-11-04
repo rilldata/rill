@@ -34,12 +34,10 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	LIMIT %d 
 	`, condFilter, limit+1)
 
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, "", err
 	}
-
-	client := redshiftdata.NewFromConfig(awsConfig)
 
 	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {
@@ -99,12 +97,10 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 	LIMIT %d 
 	`, escapeStringValue(database), escapeStringValue(databaseSchema), condFilter, limit+1)
 
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, "", err
 	}
-
-	client := redshiftdata.NewFromConfig(awsConfig)
 
 	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {
@@ -153,12 +149,10 @@ WHERE database_name = %s AND schema_name = %s AND table_name = %s
 ORDER BY ordinal_position;
 `, escapeStringValue(database), escapeStringValue(databaseSchema), escapeStringValue(table))
 
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, err
 	}
-
-	client := redshiftdata.NewFromConfig(awsConfig)
 
 	out, err := c.executeQuery(ctx, client, q, c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	if err != nil {

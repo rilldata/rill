@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -101,9 +102,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config:  conf,
-		logger:  logger,
-		storage: st,
+		config:   conf,
+		logger:   logger,
+		storage:  st,
+		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
 }
@@ -124,22 +126,20 @@ type Connection struct {
 	config  *configProperties
 	logger  *zap.Logger
 	storage *storage.Client
+
+	client    *redshiftdata.Client
+	clientErr error
+	clientMu  *semaphore.Weighted
 }
 
 var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	// Get AWS config with configured region
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get AWS config: %w", err)
+		return err
 	}
-
-	// Create Redshift client
-	client := redshiftdata.NewFromConfig(awsConfig, func(o *redshiftdata.Options) {
-		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
-	})
 
 	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Database, c.config.Workgroup, c.config.ClusterIdentifier, nil)
 	return err
@@ -254,6 +254,28 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	}
 
 	return config.LoadDefaultConfig(ctx, loadOptions...)
+}
+
+func (c *Connection) getClient(ctx context.Context) (*redshiftdata.Client, error) {
+	if err := c.clientMu.Acquire(ctx, 1); err != nil {
+		return nil, err
+	}
+	defer c.clientMu.Release(1)
+
+	if c.client != nil || c.clientErr != nil {
+		return c.client, c.clientErr
+	}
+
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		c.clientErr = fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, c.clientErr
+	}
+
+	c.client = redshiftdata.NewFromConfig(awsConfig, func(o *redshiftdata.Options) {
+		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
+	})
+	return c.client, nil
 }
 
 // executeQuery executes a query with optional parameters and waits for it to complete
