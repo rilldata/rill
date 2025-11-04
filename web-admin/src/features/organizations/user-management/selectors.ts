@@ -39,6 +39,11 @@ export function getUserGroupsForUsersInOrg(
         {
           userId,
         },
+        {
+          query: {
+            enabled: !!userId,
+          },
+        },
       ),
     ],
     combine: ([allOrgGroupsResp, groupsForUserResp]) => {

@@ -12,10 +12,15 @@
 
   let isDropdownOpen = false;
 
-  const userProjectsQuery =
-    createAdminServiceListProjectsForOrganizationAndUser(organization, {
-      userId,
-    });
+  $: userProjectsQuery = createAdminServiceListProjectsForOrganizationAndUser(
+    organization,
+    { userId },
+    {
+      query: {
+        enabled: !!userId,
+      },
+    },
+  );
   $: ({ data, isPending, error } = $userProjectsQuery);
   let projects: V1Project[];
   $: projects = data?.projects ?? [];
