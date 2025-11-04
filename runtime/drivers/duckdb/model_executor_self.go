@@ -67,13 +67,10 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	// The handling can now be done with duckdb's native connectors by setting a SQL that creates secret to access the object store.
 	// However duckdb does not support GCS's native credentials(google_application_credentials) so we still maintain the hack for the same.
 	// We expect to remove this rewriting once all users start using GCS's s3 compatibility API support.
-	if scheme, secretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
-		if secretSQL != "" {
-			if inputProps.PreExec == "" {
-				inputProps.PreExec = secretSQL
-			} else {
-				inputProps.PreExec += ";" + secretSQL
-			}
+	if scheme, createSecretSQL, dropSecretSQL, ast, ok := objectStoreRef(ctx, inputProps, opts); ok {
+		if createSecretSQL != "" {
+			inputProps.InternalCreateSecretSQL = createSecretSQL
+			inputProps.InternalDropSecretSQL = dropSecretSQL
 		} else if scheme == "gcs" {
 			// rewrite duckdb sql with locally downloaded files
 			handle, release, err := opts.Env.AcquireConnector(ctx, scheme)
@@ -98,17 +95,65 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 	// Add PreExec statements that create temporary secrets for object store connectors.
 	for _, connector := range e.c.config.secretConnectors() {
-		secretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
+		createSecretSQL, dropSecretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
 		}
+		inputProps.InternalCreateSecretSQL = createSecretSQL
+		inputProps.InternalDropSecretSQL = dropSecretSQL
+	}
+
+	originalPreExec := inputProps.PreExec
+	if inputProps.InternalCreateSecretSQL != "" {
 		if inputProps.PreExec == "" {
-			inputProps.PreExec = secretSQL
+			inputProps.PreExec = inputProps.InternalCreateSecretSQL
 		} else {
-			inputProps.PreExec += ";" + secretSQL
+			inputProps.PreExec += ";" + inputProps.InternalCreateSecretSQL
+		}
+	}
+	duration, err := e.createOrInsertIntoDuckDB(ctx, opts, inputProps, outputProps, tableName, asView)
+	if err != nil {
+		// On failure, try cleaning up secrets and retry without secrets for anonymous bucket access
+		if inputProps.InternalDropSecretSQL != "" && (strings.Contains(err.Error(), "HTTP 403") || strings.Contains(err.Error(), "region being set incorrectly")) {
+			if originalPreExec == "" {
+				inputProps.PreExec = inputProps.InternalDropSecretSQL
+			} else {
+				inputProps.PreExec = originalPreExec + ";" + inputProps.InternalDropSecretSQL
+			}
+			var anonymErr error
+			duration, anonymErr = e.createOrInsertIntoDuckDB(ctx, opts, inputProps, outputProps, tableName, asView)
+			if anonymErr != nil {
+				return nil, errors.Join(err, anonymErr)
+			}
+		} else {
+			return nil, err
 		}
 	}
 
+	// Build result props
+	resultProps := &ModelResultProperties{
+		Table:         tableName,
+		View:          asView,
+		UsedModelName: usedModelName,
+	}
+	resultPropsMap := map[string]interface{}{}
+	err = mapstructure.WeakDecode(resultProps, &resultPropsMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode result properties: %w", err)
+	}
+
+	// Done
+	return &drivers.ModelResult{
+		Connector:    opts.OutputConnector,
+		Properties:   resultPropsMap,
+		Table:        tableName,
+		ExecDuration: duration,
+	}, nil
+}
+
+func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts *drivers.ModelExecuteOptions, inputProps *ModelInputProperties,
+	outputProps *ModelOutputProperties, tableName string, asView bool,
+) (time.Duration, error) {
 	var duration time.Duration
 	if !opts.IncrementalRun {
 		// Prepare for ingesting into the staging view/table.
@@ -125,17 +170,17 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			//
 			// not handling incremental use cases since ingesting from an external database is mostly for small,experimental use cases
 			if opts.Incremental {
-				return nil, fmt.Errorf("`incremental` models are not supported when ingesting data from external db files")
+				return 0, fmt.Errorf("`incremental` models are not supported when ingesting data from external db files")
 			}
 			var err error
 			inputProps.Database, err = fileutil.ResolveLocalPath(inputProps.Database, opts.Env.RepoRoot, opts.Env.AllowHostAccess)
 			if err != nil {
-				return nil, err
+				return 0, err
 			}
 			res, err := e.createFromExternalDuckDB(ctx, inputProps, stagingTableName)
 			if err != nil {
 				_ = e.c.dropTable(ctx, stagingTableName)
-				return nil, fmt.Errorf("failed to create model: %w", err)
+				return 0, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.Duration
 		} else {
@@ -150,7 +195,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			res, err := e.c.createTableAsSelect(ctx, stagingTableName, inputProps.SQL, createTableOpts)
 			if err != nil {
 				_ = e.c.dropTable(ctx, stagingTableName)
-				return nil, fmt.Errorf("failed to create model: %w", err)
+				return 0, fmt.Errorf("failed to create model: %w", err)
 			}
 			duration = res.duration
 		}
@@ -159,7 +204,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if stagingTableName != tableName {
 			err := e.c.forceRenameTable(ctx, stagingTableName, asView, tableName)
 			if err != nil {
-				return nil, fmt.Errorf("failed to rename staged model: %w", err)
+				return 0, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
 	} else {
@@ -177,30 +222,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 		res, err := e.c.insertTableAsSelect(ctx, tableName, inputProps.SQL, insertTableOpts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
+			return 0, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
 		duration = res.duration
 	}
-
-	// Build result props
-	resultProps := &ModelResultProperties{
-		Table:         tableName,
-		View:          asView,
-		UsedModelName: usedModelName,
-	}
-	resultPropsMap := map[string]interface{}{}
-	err := mapstructure.WeakDecode(resultProps, &resultPropsMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode result properties: %w", err)
-	}
-
-	// Done
-	return &drivers.ModelResult{
-		Connector:    opts.OutputConnector,
-		Properties:   resultPropsMap,
-		Table:        tableName,
-		ExecDuration: duration,
-	}, nil
+	return duration, nil
 }
 
 func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, inputProps *ModelInputProperties, tbl string) (*rduckdb.TableWriteMetrics, error) {
@@ -256,31 +282,34 @@ func (e *selfToSelfExecutor) createFromExternalDuckDB(ctx context.Context, input
 	})
 }
 
-func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *drivers.ModelExecuteOptions) (string, string, *duckdbsql.AST, bool) {
-	// We take an assumption that if there is a pre_exec query, the user has already set the secret SQL.
-	if props.PreExec != "" || opts.InputConnector != "duckdb" {
-		return "", "", nil, false
+func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *drivers.ModelExecuteOptions) (string, string, string, *duckdbsql.AST, bool) {
+	// Skip path parsing and secret creation in the following cases:
+	// 1. InternalCreateSecretSQL is already set.
+	// 2. pre_exec is set we assume user have set the secret.
+	// 3. non-DuckDB connectors which typically don't require secrets, and if they do, the secret is already defined in InternalCreateSecretSQL
+	if props.InternalCreateSecretSQL != "" || props.PreExec != "" || opts.InputConnector != "duckdb" {
+		return "", props.InternalCreateSecretSQL, props.InternalDropSecretSQL, nil, false
 	}
 	// Parse AST
 	ast, err := duckdbsql.Parse(props.SQL)
 	if err != nil {
 		// If we can't parse the SQL just let duckdb run on it and give a sql parse error.
-		return "", "", nil, false
+		return "", "", "", nil, false
 	}
 
 	// If there is a single table reference check if it is an object store reference.
 	refs := ast.GetTableRefs()
 	if len(refs) != 1 {
-		return "", "", nil, false
+		return "", "", "", nil, false
 	}
 	ref := refs[0]
 	// Parse the path as a URL (also works for local paths)
 	if len(ref.Paths) == 0 {
-		return "", "", nil, false
+		return "", "", "", nil, false
 	}
 	uri, err := url.Parse(ref.Paths[0])
 	if err != nil {
-		return "", "", nil, false
+		return "", "", "", nil, false
 	}
 
 	if uri.Scheme == "s3" || uri.Scheme == "azure" || uri.Scheme == "gcs" || uri.Scheme == "gs" {
@@ -288,20 +317,20 @@ func objectStoreRef(ctx context.Context, props *ModelInputProperties, opts *driv
 			uri.Scheme = "gcs"
 		}
 		// for s3 and azure we can just set a duckdb secret and ingest data using duckdb's native support for s3 and azure
-		secretSQL, err := objectStoreSecretSQL(ctx, opts, uri.Scheme, ref.Paths[0], opts.InputProperties)
+		createSecretSQL, dropSecretSQL, err := objectStoreSecretSQL(ctx, opts, uri.Scheme, ref.Paths[0], opts.InputProperties)
 		if err != nil {
 			if errors.Is(err, errGCSUsesNativeCreds) {
-				return uri.Scheme, "", ast, true
+				return uri.Scheme, "", "", ast, true
 			}
-			return "", "", nil, false
+			return "", "", "", nil, false
 		}
-		return uri.Scheme, secretSQL, ast, true
+		return uri.Scheme, createSecretSQL, dropSecretSQL, ast, true
 	}
 	if uri.Scheme == "" && uri.Host == "" {
 		// local file reference
-		return "local_file", "", ast, true
+		return "local_file", "", "", ast, true
 	}
-	return "", "", nil, false
+	return "", "", "", nil, false
 }
 
 func rewriteDuckDBSQL(ctx context.Context, props *ModelInputProperties, inputHandle drivers.Handle, path string, ast *duckdbsql.AST) (release func(), retErr error) {
