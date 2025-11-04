@@ -419,7 +419,7 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 
 	defer parquetwriter.Close()
 
-	rec := recordBuilder.NewRecord()
+	rec := recordBuilder.NewRecordBatch()
 	err = parquetwriter.Write(rec)
 	return err
 }

@@ -22,7 +22,7 @@ Within Rill Developer, from the left-hand side (file explorer), you should be ab
 
 For backward compatibility purposes, any resource that belongs in the `sources`, `models`, and `dashboards` native folders is assumed to be a source, model, or dashboard respectively (including nested folders that belong within a native folder). 
 
-However, if you'd like to create a resource outside one of these native folders, make sure to include the `type` property in the resource definition, or Rill will not be able to properly resolve the resource type! For more details, see our [reference documentation](/reference/project-files/rill-yaml.md).
+However, if you'd like to create a resource outside one of these native folders, make sure to include the `type` property in the resource definition, or Rill will not be able to properly resolve the resource type! For more details, see our [reference documentation](/reference/project-files/rill-yaml).
 
 :::
 
