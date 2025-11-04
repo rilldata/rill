@@ -5,7 +5,6 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
-  import { createEventDispatcher } from "svelte";
   import type { SuperValidated } from "sveltekit-superforms";
 
   import type { AddDataFormType, ConnectorType } from "./types";
@@ -27,10 +26,9 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./helpers";
 
-  const dispatch = createEventDispatcher();
-
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
+  export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
 
@@ -60,8 +58,6 @@
   });
 
   $: isMultiStepConnector = formManager.isMultiStepConnector;
-
-  $: dispatch("submitting", { submitting });
 
   $: isSourceForm = formManager.isSourceForm;
   $: isConnectorForm = formManager.isConnectorForm;
@@ -179,6 +175,8 @@
     }
   })();
 
+  $: isSubmitting = submitting;
+
   // Reset errors when form is modified
   $: (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -294,7 +292,7 @@
             clickhouseErrorDetails = details;
           }}
           bind:formId={clickhouseFormId}
-          bind:submitting={clickhouseSubmitting}
+          bind:isSubmitting={clickhouseSubmitting}
           bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
           bind:connectorType={clickhouseConnectorType}
           bind:connectionTab
@@ -302,7 +300,6 @@
           bind:dsnForm={clickhouseDsnForm}
           bind:showSaveAnyway={clickhouseShowSaveAnyway}
           bind:handleSaveAnyway={clickhouseHandleSaveAnyway}
-          on:submitting
         />
       {:else if hasDsnFormOption}
         <Tabs

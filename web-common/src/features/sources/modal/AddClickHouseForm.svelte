@@ -32,7 +32,7 @@
 
   export let connector: V1ConnectorDriver;
   export let formId: string;
-  export let submitting: boolean;
+  export let isSubmitting: boolean;
   export let isSubmitDisabled: boolean;
   export let connectorType: ClickHouseConnectorType = "self-hosted";
   export let connectionTab: ConnectorType = "parameters";
@@ -93,6 +93,7 @@
 
   $: submitting =
     connectionTab === "parameters" ? $paramsSubmitting : $dsnSubmitting;
+  $: isSubmitting = submitting;
   $: formId = connectionTab === "parameters" ? paramsFormId : dsnFormId;
 
   // Reset connectionTab if switching to Rill-managed
@@ -115,9 +116,6 @@
     dsnError = null;
     dsnErrorDetails = undefined;
   }
-
-  // Emit the submitting state to the parent
-  $: dispatch("submitting", { submitting });
 
   let prevConnectorType = connectorType;
   $: {
