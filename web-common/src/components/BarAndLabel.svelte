@@ -60,7 +60,7 @@
     --width: 0%;
     content: "";
     display: inline-block;
-    width: calc((100% - 32px) * var(--width));
+    width: calc(100% * var(--width));
     position: absolute;
     top: 0;
     height: 100%;

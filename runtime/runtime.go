@@ -136,6 +136,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	tmp := *inst
 	inst = &tmp
 
+	inst.ProjectDisplayName = rillYAML.DisplayName
 	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
 
 	// Dedupe connectors

@@ -73,7 +73,8 @@ func (c *jwtClaims) Claims(instanceID string) *runtime.SecurityClaims {
 // It is used for mimicking user attributes on local when auth is disabled.
 type devJWTClaims struct {
 	jwt.RegisteredClaims
-	Attrs map[string]any `json:"attr,omitempty"`
+	Attrs       map[string]any       `json:"attr,omitempty"`
+	Permissions []runtime.Permission `json:"perm,omitempty"`
 }
 
 var _ ClaimsProvider = (*devJWTClaims)(nil)
@@ -81,7 +82,7 @@ var _ ClaimsProvider = (*devJWTClaims)(nil)
 func (c *devJWTClaims) Claims(instanceID string) *runtime.SecurityClaims {
 	return &runtime.SecurityClaims{
 		UserAttributes: c.Attrs,
-		Permissions:    runtime.AllPermissions,
+		Permissions:    c.Permissions,
 	}
 }
 
