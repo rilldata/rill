@@ -13,6 +13,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
+  type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
@@ -31,6 +32,7 @@ import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
 import { fileArtifacts } from "../../entity-management/file-artifacts";
 import { ResourceKind } from "../../entity-management/resource-selectors";
+import { MetricsViewSelectors } from "../../metrics-views/metrics-view-selectors";
 import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
 import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
@@ -41,7 +43,6 @@ import {
 } from "../components/util";
 import { Filters } from "./filters";
 import { Grid } from "./grid";
-import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
 
 // Store for managing URL search parameters
@@ -65,20 +66,26 @@ export class CanvasEntity {
   // Dimension and measure filter state
   filters: Filters;
 
-  /**
-   * Spec store containing selectors derived from ResolveCanvas query
-   */
-  spec: CanvasResolvedSpec;
+  // Metrics view selectors
+  metricsView: MetricsViewSelectors;
+
+  // Canvas resource infered from YAML spec
+  spec: Readable<V1CanvasSpec | undefined>;
   selectedComponent = writable<string | null>(null);
   fileArtifact: FileArtifact | undefined;
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
-  firstLoad = true;
+  firstLoad = writable(true);
   theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
   themeSpec: Writable<V1ThemeSpec | undefined> = writable(undefined);
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
+
+  defaultUrlParamsStore: Readable<{
+    data: URLSearchParams;
+    isPending: boolean;
+  }>;
 
   constructor(
     name: string,
@@ -125,14 +132,24 @@ export class CanvasEntity {
       };
     })();
 
-    this.spec = new CanvasResolvedSpec(this.specStore);
+    this.spec = derived(this.specStore, ($specStore) => {
+      return $specStore.data?.canvas;
+    });
+
+    this.metricsView = new MetricsViewSelectors(
+      instanceId,
+      derived(this.specStore, ($specStore) => {
+        return $specStore.data?.metricsViews || {};
+      }),
+    );
+
     this.timeControls = new TimeControls(
       this.specStore,
       searchParamsStore,
       undefined,
       this.name,
     );
-    this.filters = new Filters(this.spec, searchParamsStore);
+    this.filters = new Filters(this.metricsView, searchParamsStore);
 
     searchParamsStore.subscribe((searchParams) => {
       const themeFromUrl = searchParams.get("theme");
@@ -176,6 +193,9 @@ export class CanvasEntity {
         this.processRows(spec.data);
       }
     });
+
+    // TODO: merge more stores once we add support for defaults for those.
+    this.defaultUrlParamsStore = this.timeControls.defaultUrlParamsStore;
   }
 
   // Not currently being used
@@ -187,11 +207,11 @@ export class CanvasEntity {
     this.lastVisitedState.set(filterState);
   };
 
-  restoreSnapshot = async () => {
-    const lastVisitedState = get(this.lastVisitedState);
+  restoreSnapshot = async (initState: string | undefined) => {
+    const stateToRestore = get(this.lastVisitedState) ?? initState;
 
-    if (lastVisitedState) {
-      await goto(`?${lastVisitedState}`, {
+    if (stateToRestore) {
+      await goto(`?${stateToRestore}`, {
         replaceState: true,
       });
     }
@@ -214,7 +234,7 @@ export class CanvasEntity {
     }
 
     const metricsViewSpec = get(
-      this.spec.getMetricsViewFromName(metricsViewName),
+      this.metricsView.getMetricsViewFromName(metricsViewName),
     ).metricsView;
 
     if (!metricsViewSpec) {
@@ -237,11 +257,14 @@ export class CanvasEntity {
   processRows = (canvasData: Partial<CanvasResponse>) => {
     const newComponents = canvasData.components;
     const existingKeys = new Set(this.components.keys());
-    const rows = canvasData.canvas?.rows ?? [];
+    const rows = canvasData.canvas?.rows;
+
+    if (!rows) return;
 
     const set = new Set<string>();
 
     let createdNewComponent = false;
+    const isFirstLoad = get(this.firstLoad);
 
     rows.forEach((row, rowIndex) => {
       const items = row.items ?? [];
@@ -286,10 +309,10 @@ export class CanvasEntity {
 
     // Calling this function triggers the rows to rerender, ensuring they're up to date
     // with the components Map, which is not reactive
-    if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+    if ((!didUpdateRowCount && createdNewComponent) || isFirstLoad) {
       this._rows.refresh();
+      this.firstLoad.set(false);
     }
-    this.firstLoad = false;
   };
 
   processTheme = async (

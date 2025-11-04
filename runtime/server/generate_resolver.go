@@ -31,7 +31,7 @@ func (s *Server) GenerateResolver(ctx context.Context, req *runtimev1.GenerateRe
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	// Must have edit permissions on the repo
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -177,7 +177,7 @@ func (s *Server) generateResolverForTable(ctx context.Context, instanceID, userP
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil)
+	res, err := ai.Complete(ctx, msgs, nil, nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -260,7 +260,7 @@ func (s *Server) generateResolverForMetricsView(ctx context.Context, instanceID,
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil)
+	res, err := ai.Complete(ctx, msgs, nil, nil)
 	if err != nil {
 		return "", nil, err
 	}

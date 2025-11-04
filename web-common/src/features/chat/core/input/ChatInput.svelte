@@ -3,15 +3,17 @@
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
-  import type { Chat } from "../chat";
+  import type { ConversationManager } from "../conversation-manager";
 
-  export let chat: Chat;
-  export let onSend: () => void;
+  export let conversationManager: ConversationManager;
+  export let onSend: (() => void) | undefined = undefined;
+  export let noMargin = false;
+  export let height: string | undefined = undefined;
 
   let textarea: HTMLTextAreaElement;
   let placeholder = "Ask about your data...";
 
-  $: currentConversationStore = chat.getCurrentConversation();
+  $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
   $: draftMessageStore = currentConversation.draftMessage;
@@ -44,7 +46,7 @@
     // Message handling with input focus
     try {
       await currentConversation.sendMessage();
-      onSend();
+      onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -60,7 +62,7 @@
   }
 
   function autoResize() {
-    if (textarea) {
+    if (textarea && !height) {
       textarea.style.height = "auto";
       textarea.style.height = textarea.scrollHeight + "px";
     }
@@ -85,57 +87,58 @@
   }
 </script>
 
-<form class="chat-input-form" on:submit|preventDefault={sendMessage}>
-  <div class="chat-input-container">
-    <textarea
-      bind:this={textarea}
-      {value}
-      class="chat-input"
-      {placeholder}
-      rows="1"
-      on:keydown={handleKeydown}
-      on:input={handleInput}
-    />
-    {#if canCancel}
-      <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
-        <span class="stop-icon">
-          <StopCircle size="1.2em" />
-        </span>
-      </IconButton>
-    {:else}
-      <IconButton
-        ariaLabel="Send message"
-        disabled={!canSend}
-        on:click={sendMessage}
-      >
-        <SendIcon
-          size="1.3em"
-          className={canSend ? "text-primary-400" : "text-gray-400"}
-        />
-      </IconButton>
-    {/if}
-  </div>
+<form
+  class="chat-input-form"
+  class:no-margin={noMargin}
+  on:submit|preventDefault={sendMessage}
+>
+  <textarea
+    bind:this={textarea}
+    {value}
+    class="chat-input"
+    class:fixed-height={!!height}
+    style:height
+    {placeholder}
+    rows="1"
+    on:keydown={handleKeydown}
+    on:input={handleInput}
+  />
+  {#if canCancel}
+    <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+      <span class="stop-icon">
+        <StopCircle size="1.2em" />
+      </span>
+    </IconButton>
+  {:else}
+    <IconButton
+      ariaLabel="Send message"
+      disabled={!canSend}
+      on:click={sendMessage}
+    >
+      <SendIcon size="1.3em" disabled={!canSend} />
+    </IconButton>
+  {/if}
 </form>
 
 <style lang="postcss">
   .chat-input-form {
-    padding: 1rem 1rem 0rem 1rem;
-    background: #fafafa;
-  }
-
-  .chat-input-container {
     display: flex;
     align-items: flex-end;
     gap: 0.25rem;
-    background: #ffffff;
-    border: 1px solid #d1d5db;
+    background: var(--background);
+    border: 1px solid var(--border);
     border-radius: 0.75rem;
     padding: 0.25rem;
+    margin: 0 1rem;
     transition: border-color 0.2s;
   }
 
-  .chat-input-container:focus-within {
+  .chat-input-form:focus-within {
     @apply border-primary-400;
+  }
+
+  .chat-input-form.no-margin {
+    margin: 0;
   }
 
   .chat-input {
@@ -151,6 +154,11 @@
     padding: 0.25rem;
     font-family: inherit;
     overflow-y: auto;
+  }
+
+  .chat-input.fixed-height {
+    min-height: unset;
+    max-height: unset;
   }
 
   .chat-input::placeholder {

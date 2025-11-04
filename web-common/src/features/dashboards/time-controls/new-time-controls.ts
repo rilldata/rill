@@ -324,6 +324,7 @@ import {
   RillLegacyIsoInterval,
   RillPeriodToGrainInterval,
   RillShorthandInterval,
+  RillTimeLabel,
   RillTimeStartEndInterval,
   type RillTime,
 } from "../url-state/time-ranges/RillTime";
@@ -376,7 +377,7 @@ export async function deriveInterval(
       staleTime: Infinity,
     });
 
-    const timeRange = response.timeRanges?.[0];
+    const timeRange = response.resolvedTimeRanges?.[0];
 
     if (!timeRange?.start || !timeRange?.end) {
       return { interval: Interval.invalid("Invalid time range") };
@@ -465,6 +466,19 @@ export function getSmallestUnit(
   if (units.months) return "month";
   if (units.quarters) return "quarter";
   if (units.years) return "year";
+
+  return null;
+}
+
+export function getSmallestUnitInDateTime(time: DateTime): DateTimeUnit | null {
+  if (time.millisecond) return "millisecond";
+  if (time.second) return "second";
+  if (time.minute) return "minute";
+  if (time.hour) return "hour";
+  if (time.day) return "day";
+  if (time.month) return "month";
+  if (time.quarter) return "quarter";
+  if (time.year) return "year";
 
   return null;
 }
@@ -593,8 +607,6 @@ export function bucketYamlRanges(
       } else {
         skeleton.custom.push(parsed);
       }
-
-      console.log(parsed);
     } catch (e) {
       console.error("Error parsing RillTime", e);
     }
@@ -664,23 +676,23 @@ export function convertLegacyTime(timeString: string) {
 }
 
 export function constructAsOfString(
-  asOf: string,
+  asOf: RillTimeLabel | undefined,
   grain: V1TimeGrain | undefined | null,
   pad: boolean,
 ): string {
   if (!grain) {
-    return asOf;
+    return asOf ?? RillTimeLabel.Now;
   }
 
   const alias = V1TimeGrainToAlias[grain];
 
   let base: string;
 
-  if (asOf === "latest" || asOf === undefined) {
+  if (asOf === RillTimeLabel.Latest || asOf === undefined) {
     base = `latest/${alias}`;
-  } else if (asOf === "watermark") {
+  } else if (asOf === RillTimeLabel.Watermark) {
     base = `watermark/${alias}`;
-  } else if (asOf === "now") {
+  } else if (asOf === RillTimeLabel.Now) {
     base = `now/${alias}`;
   } else {
     base = `${asOf}/${alias}`;
@@ -711,7 +723,7 @@ export function constructNewString({
   currentString: string;
   truncationGrain: V1TimeGrain | undefined | null;
   snapToEnd: boolean;
-  ref: "watermark" | "latest" | "now" | string;
+  ref: RillTimeLabel | undefined;
 }): string {
   const legacy = isUsingLegacyTime(currentString);
 

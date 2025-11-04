@@ -1,0 +1,198 @@
+- index: 1
+  input:
+    - role: system
+      content_type: text
+      content: "<role>\nYou are a data analysis agent specialized in uncovering actionable business insights.\nYou systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.\n\nToday's date is Wednesday, October 29, 2025 (2025-10-29).\n</role>\n\n<communication_style>\n- Be confident, clear, and intellectually curious\n- Write conversationally using \"I\" and \"you\" - speak directly to the user\n- Present insights with authority while remaining enthusiastic and collaborative\n</communication_style>\n\n<process>\n**Phase 1: discovery (setup)**\n\nFollow these steps in order:\n1. **Discover**: Use \"list_metrics_views\" to identify available datasets\n2. **Understand**: Use \"get_metrics_view\" to understand measures and dimensions for the selected view  \n3. **Scope**: Use \"query_metrics_view_summary\" to determine the span of available data\n\n\n**Phase 2: analysis (loop)**\nIn an iterative OODA loop, you should repeatedly use the \"query_metrics_view\" tool to query for insights.\nExecute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.\nContinue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.\n\nIn each iteration, you should:\n- **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?\n- **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?\n- **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore\n- **Act**: Execute the query and evaluate results in <thinking> tags\n\n</process>\n\n<analysis_guidelines>\n**Phase 1: discovery**: \n- Briefly explain your approach before starting\n- Complete each step fully before proceeding\n- If any step fails, investigate and adapt\n\n**Phase 2: analysis**:\n- Start broad (overall patterns), then drill into specific segments\n- Always include time-based analysis using comparison features (delta_abs, delta_rel)\n- Focus on insights that are surprising, actionable, and quantified\n- Never repeat identical queries - each should explore new analytical angles\n- Use <thinking> tags between queries to evaluate results and plan next steps\n\n**Quality Standards**:\n- Prioritize findings that contradict expectations or reveal hidden patterns\n- Quantify changes and impacts with specific numbers\n- Link insights to business implications and decisions\n\n**Data Accuracy Requirements**:\n- ALL numbers and calculations must come from \"query_metrics_view\" tool results\n- NEVER perform manual calculations or mathematical operations\n- If a desired calculation cannot be achieved through the metrics tools, explicitly state this limitation\n- Use only the exact numbers returned by the tools in your analysis\n</analysis_guidelines>\n\n<guardrails>\nYou only engage in conversation that relates to the project's data.\nIf a question seems unrelated, first inspect the available metrics views to see if it fits the dataset's domain.\nDecline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.\n</guardrails>\n\n<thinking>\nAfter each query in Phase 2, think through:\n- What patterns or anomalies did this reveal?\n- How does this connect to previous findings?\n- What new questions does this raise?\n- What's the most valuable next query to run?\n- Are there any surprising insights worth highlighting?\n</thinking>\n\n<output_format>\n**Format your analysis as follows**:\n```markdown\nBased on the data analysis, here are the key insights:\n\n1. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n2. ## [Headline with specific impact/number]  \n   [Finding with business context and implications]\n\n3. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n[Optional: Offer specific follow-up analysis options]\n```\n\n**Citation Requirements**:\n- Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user\n- Citations must be inline at the end of a sentence or paragraph, not on a separate line\n- Use descriptive text in sentence case (e.g. \"This suggests Android is valuable ([Device breakdown](url)).\" or \"Revenue increased 25%% ([Revenue by country](url)).\")\n- When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph\n</output_format>"
+    - role: assistant
+      content_type: tool_call
+      id: 20dc51ab24f4486a
+      tool_name: list_metrics_views
+      content: '{}'
+    - role: tool
+      content_type: tool_response
+      id: 20dc51ab24f4486a
+      content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
+    - role: user
+      content_type: text
+      content: What country has the highest revenue? Answer with a single country name and nothing else.
+  response:
+    - role: assistant
+      content_type: tool_call
+      id: call_6QKgJqWmwvYaBc6LNUuikI21
+      tool_name: get_metrics_view
+      content: '{"metrics_view":"orders"}'
+- index: 2
+  input:
+    - role: system
+      content_type: text
+      content: "<role>\nYou are a data analysis agent specialized in uncovering actionable business insights.\nYou systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.\n\nToday's date is Wednesday, October 29, 2025 (2025-10-29).\n</role>\n\n<communication_style>\n- Be confident, clear, and intellectually curious\n- Write conversationally using \"I\" and \"you\" - speak directly to the user\n- Present insights with authority while remaining enthusiastic and collaborative\n</communication_style>\n\n<process>\n**Phase 1: discovery (setup)**\n\nFollow these steps in order:\n1. **Discover**: Use \"list_metrics_views\" to identify available datasets\n2. **Understand**: Use \"get_metrics_view\" to understand measures and dimensions for the selected view  \n3. **Scope**: Use \"query_metrics_view_summary\" to determine the span of available data\n\n\n**Phase 2: analysis (loop)**\nIn an iterative OODA loop, you should repeatedly use the \"query_metrics_view\" tool to query for insights.\nExecute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.\nContinue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.\n\nIn each iteration, you should:\n- **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?\n- **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?\n- **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore\n- **Act**: Execute the query and evaluate results in <thinking> tags\n\n</process>\n\n<analysis_guidelines>\n**Phase 1: discovery**: \n- Briefly explain your approach before starting\n- Complete each step fully before proceeding\n- If any step fails, investigate and adapt\n\n**Phase 2: analysis**:\n- Start broad (overall patterns), then drill into specific segments\n- Always include time-based analysis using comparison features (delta_abs, delta_rel)\n- Focus on insights that are surprising, actionable, and quantified\n- Never repeat identical queries - each should explore new analytical angles\n- Use <thinking> tags between queries to evaluate results and plan next steps\n\n**Quality Standards**:\n- Prioritize findings that contradict expectations or reveal hidden patterns\n- Quantify changes and impacts with specific numbers\n- Link insights to business implications and decisions\n\n**Data Accuracy Requirements**:\n- ALL numbers and calculations must come from \"query_metrics_view\" tool results\n- NEVER perform manual calculations or mathematical operations\n- If a desired calculation cannot be achieved through the metrics tools, explicitly state this limitation\n- Use only the exact numbers returned by the tools in your analysis\n</analysis_guidelines>\n\n<guardrails>\nYou only engage in conversation that relates to the project's data.\nIf a question seems unrelated, first inspect the available metrics views to see if it fits the dataset's domain.\nDecline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.\n</guardrails>\n\n<thinking>\nAfter each query in Phase 2, think through:\n- What patterns or anomalies did this reveal?\n- How does this connect to previous findings?\n- What new questions does this raise?\n- What's the most valuable next query to run?\n- Are there any surprising insights worth highlighting?\n</thinking>\n\n<output_format>\n**Format your analysis as follows**:\n```markdown\nBased on the data analysis, here are the key insights:\n\n1. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n2. ## [Headline with specific impact/number]  \n   [Finding with business context and implications]\n\n3. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n[Optional: Offer specific follow-up analysis options]\n```\n\n**Citation Requirements**:\n- Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user\n- Citations must be inline at the end of a sentence or paragraph, not on a separate line\n- Use descriptive text in sentence case (e.g. \"This suggests Android is valuable ([Device breakdown](url)).\" or \"Revenue increased 25%% ([Revenue by country](url)).\")\n- When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph\n</output_format>"
+    - role: assistant
+      content_type: tool_call
+      id: 20dc51ab24f4486a
+      tool_name: list_metrics_views
+      content: '{}'
+    - role: tool
+      content_type: tool_response
+      id: 20dc51ab24f4486a
+      content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
+    - role: user
+      content_type: text
+      content: What country has the highest revenue? Answer with a single country name and nothing else.
+    - role: assistant
+      content_type: tool_call
+      id: 5b7a3f88fa2c4d91
+      tool_name: get_metrics_view
+      content: '{"metrics_view":"orders"}'
+    - role: tool
+      content_type: tool_response
+      id: 5b7a3f88fa2c4d91
+      content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
+  response:
+    - role: assistant
+      content_type: tool_call
+      id: call_68ZcmUWWYIwczGyWO0Y5m8ml
+      tool_name: query_metrics_view_summary
+      content: '{"metrics_view":"orders"}'
+- index: 3
+  input:
+    - role: system
+      content_type: text
+      content: "<role>\nYou are a data analysis agent specialized in uncovering actionable business insights.\nYou systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.\n\nToday's date is Wednesday, October 29, 2025 (2025-10-29).\n</role>\n\n<communication_style>\n- Be confident, clear, and intellectually curious\n- Write conversationally using \"I\" and \"you\" - speak directly to the user\n- Present insights with authority while remaining enthusiastic and collaborative\n</communication_style>\n\n<process>\n**Phase 1: discovery (setup)**\n\nFollow these steps in order:\n1. **Discover**: Use \"list_metrics_views\" to identify available datasets\n2. **Understand**: Use \"get_metrics_view\" to understand measures and dimensions for the selected view  \n3. **Scope**: Use \"query_metrics_view_summary\" to determine the span of available data\n\n\n**Phase 2: analysis (loop)**\nIn an iterative OODA loop, you should repeatedly use the \"query_metrics_view\" tool to query for insights.\nExecute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.\nContinue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.\n\nIn each iteration, you should:\n- **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?\n- **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?\n- **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore\n- **Act**: Execute the query and evaluate results in <thinking> tags\n\n</process>\n\n<analysis_guidelines>\n**Phase 1: discovery**: \n- Briefly explain your approach before starting\n- Complete each step fully before proceeding\n- If any step fails, investigate and adapt\n\n**Phase 2: analysis**:\n- Start broad (overall patterns), then drill into specific segments\n- Always include time-based analysis using comparison features (delta_abs, delta_rel)\n- Focus on insights that are surprising, actionable, and quantified\n- Never repeat identical queries - each should explore new analytical angles\n- Use <thinking> tags between queries to evaluate results and plan next steps\n\n**Quality Standards**:\n- Prioritize findings that contradict expectations or reveal hidden patterns\n- Quantify changes and impacts with specific numbers\n- Link insights to business implications and decisions\n\n**Data Accuracy Requirements**:\n- ALL numbers and calculations must come from \"query_metrics_view\" tool results\n- NEVER perform manual calculations or mathematical operations\n- If a desired calculation cannot be achieved through the metrics tools, explicitly state this limitation\n- Use only the exact numbers returned by the tools in your analysis\n</analysis_guidelines>\n\n<guardrails>\nYou only engage in conversation that relates to the project's data.\nIf a question seems unrelated, first inspect the available metrics views to see if it fits the dataset's domain.\nDecline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.\n</guardrails>\n\n<thinking>\nAfter each query in Phase 2, think through:\n- What patterns or anomalies did this reveal?\n- How does this connect to previous findings?\n- What new questions does this raise?\n- What's the most valuable next query to run?\n- Are there any surprising insights worth highlighting?\n</thinking>\n\n<output_format>\n**Format your analysis as follows**:\n```markdown\nBased on the data analysis, here are the key insights:\n\n1. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n2. ## [Headline with specific impact/number]  \n   [Finding with business context and implications]\n\n3. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n[Optional: Offer specific follow-up analysis options]\n```\n\n**Citation Requirements**:\n- Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user\n- Citations must be inline at the end of a sentence or paragraph, not on a separate line\n- Use descriptive text in sentence case (e.g. \"This suggests Android is valuable ([Device breakdown](url)).\" or \"Revenue increased 25%% ([Revenue by country](url)).\")\n- When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph\n</output_format>"
+    - role: assistant
+      content_type: tool_call
+      id: 20dc51ab24f4486a
+      tool_name: list_metrics_views
+      content: '{}'
+    - role: tool
+      content_type: tool_response
+      id: 20dc51ab24f4486a
+      content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
+    - role: user
+      content_type: text
+      content: What country has the highest revenue? Answer with a single country name and nothing else.
+    - role: assistant
+      content_type: tool_call
+      id: 5b7a3f88fa2c4d91
+      tool_name: get_metrics_view
+      content: '{"metrics_view":"orders"}'
+    - role: tool
+      content_type: tool_response
+      id: 5b7a3f88fa2c4d91
+      content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
+    - role: assistant
+      content_type: tool_call
+      id: cd651a84ec8346f7
+      tool_name: query_metrics_view_summary
+      content: '{"metrics_view":"orders"}'
+    - role: tool
+      content_type: tool_response
+      id: cd651a84ec8346f7
+      content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
+  response:
+    - role: assistant
+      content_type: tool_call
+      id: call_LdvrmHU36z2L1BdEAYI5QENV
+      tool_name: query_metrics_view
+      content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
+- index: 4
+  input:
+    - role: system
+      content_type: text
+      content: "<role>\nYou are a data analysis agent specialized in uncovering actionable business insights.\nYou systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.\n\nToday's date is Wednesday, October 29, 2025 (2025-10-29).\n</role>\n\n<communication_style>\n- Be confident, clear, and intellectually curious\n- Write conversationally using \"I\" and \"you\" - speak directly to the user\n- Present insights with authority while remaining enthusiastic and collaborative\n</communication_style>\n\n<process>\n**Phase 1: discovery (setup)**\n\nFollow these steps in order:\n1. **Discover**: Use \"list_metrics_views\" to identify available datasets\n2. **Understand**: Use \"get_metrics_view\" to understand measures and dimensions for the selected view  \n3. **Scope**: Use \"query_metrics_view_summary\" to determine the span of available data\n\n\n**Phase 2: analysis (loop)**\nIn an iterative OODA loop, you should repeatedly use the \"query_metrics_view\" tool to query for insights.\nExecute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.\nContinue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.\n\nIn each iteration, you should:\n- **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?\n- **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?\n- **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore\n- **Act**: Execute the query and evaluate results in <thinking> tags\n\n</process>\n\n<analysis_guidelines>\n**Phase 1: discovery**: \n- Briefly explain your approach before starting\n- Complete each step fully before proceeding\n- If any step fails, investigate and adapt\n\n**Phase 2: analysis**:\n- Start broad (overall patterns), then drill into specific segments\n- Always include time-based analysis using comparison features (delta_abs, delta_rel)\n- Focus on insights that are surprising, actionable, and quantified\n- Never repeat identical queries - each should explore new analytical angles\n- Use <thinking> tags between queries to evaluate results and plan next steps\n\n**Quality Standards**:\n- Prioritize findings that contradict expectations or reveal hidden patterns\n- Quantify changes and impacts with specific numbers\n- Link insights to business implications and decisions\n\n**Data Accuracy Requirements**:\n- ALL numbers and calculations must come from \"query_metrics_view\" tool results\n- NEVER perform manual calculations or mathematical operations\n- If a desired calculation cannot be achieved through the metrics tools, explicitly state this limitation\n- Use only the exact numbers returned by the tools in your analysis\n</analysis_guidelines>\n\n<guardrails>\nYou only engage in conversation that relates to the project's data.\nIf a question seems unrelated, first inspect the available metrics views to see if it fits the dataset's domain.\nDecline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.\n</guardrails>\n\n<thinking>\nAfter each query in Phase 2, think through:\n- What patterns or anomalies did this reveal?\n- How does this connect to previous findings?\n- What new questions does this raise?\n- What's the most valuable next query to run?\n- Are there any surprising insights worth highlighting?\n</thinking>\n\n<output_format>\n**Format your analysis as follows**:\n```markdown\nBased on the data analysis, here are the key insights:\n\n1. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n2. ## [Headline with specific impact/number]  \n   [Finding with business context and implications]\n\n3. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n[Optional: Offer specific follow-up analysis options]\n```\n\n**Citation Requirements**:\n- Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user\n- Citations must be inline at the end of a sentence or paragraph, not on a separate line\n- Use descriptive text in sentence case (e.g. \"This suggests Android is valuable ([Device breakdown](url)).\" or \"Revenue increased 25%% ([Revenue by country](url)).\")\n- When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph\n</output_format>"
+    - role: assistant
+      content_type: tool_call
+      id: 20dc51ab24f4486a
+      tool_name: list_metrics_views
+      content: '{}'
+    - role: tool
+      content_type: tool_response
+      id: 20dc51ab24f4486a
+      content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
+    - role: user
+      content_type: text
+      content: What country has the highest revenue? Answer with a single country name and nothing else.
+    - role: assistant
+      content_type: tool_call
+      id: 5b7a3f88fa2c4d91
+      tool_name: get_metrics_view
+      content: '{"metrics_view":"orders"}'
+    - role: tool
+      content_type: tool_response
+      id: 5b7a3f88fa2c4d91
+      content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
+    - role: assistant
+      content_type: tool_call
+      id: cd651a84ec8346f7
+      tool_name: query_metrics_view_summary
+      content: '{"metrics_view":"orders"}'
+    - role: tool
+      content_type: tool_response
+      id: cd651a84ec8346f7
+      content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
+    - role: assistant
+      content_type: tool_call
+      id: 9e16977c366f4626
+      tool_name: query_metrics_view
+      content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
+    - role: tool
+      content_type: tool_response
+      id: 9e16977c366f4626
+      content: '{"data":[{"country":"United States","revenue":100}]}'
+  response:
+    - role: assistant
+      content_type: text
+      content: United States
+- index: 5
+  input:
+    - role: system
+      content_type: text
+      content: "<role>\nYou are a data analysis agent specialized in uncovering actionable business insights.\nYou systematically explore data using available metrics tools, then apply analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.\n\nToday's date is Wednesday, October 29, 2025 (2025-10-29).\n</role>\n\n<communication_style>\n- Be confident, clear, and intellectually curious\n- Write conversationally using \"I\" and \"you\" - speak directly to the user\n- Present insights with authority while remaining enthusiastic and collaborative\n</communication_style>\n\n<process>\n**Phase 1: discovery (setup)**\n\nFollow these steps in order:\n1. **Discover**: Use \"list_metrics_views\" to identify available datasets\n2. **Understand**: Use \"get_metrics_view\" to understand measures and dimensions for the selected view  \n3. **Scope**: Use \"query_metrics_view_summary\" to determine the span of available data\n\n\n**Phase 2: analysis (loop)**\nIn an iterative OODA loop, you should repeatedly use the \"query_metrics_view\" tool to query for insights.\nExecute a MINIMUM of 4-6 distinct analytical queries, building each query based on insights from previous results.\nContinue until you have sufficient insights for comprehensive analysis. Some analyses may require up to 20 queries.\n\nIn each iteration, you should:\n- **Observe**: What data patterns emerge? What insights are surfacing? What gaps remain?\n- **Orient**: Based on findings, what analytical angles would be most valuable? How do current insights shape next queries?\n- **Decide**: Choose specific dimensions, filters, time periods, or comparisons to explore\n- **Act**: Execute the query and evaluate results in <thinking> tags\n\n</process>\n\n<analysis_guidelines>\n**Phase 1: discovery**: \n- Briefly explain your approach before starting\n- Complete each step fully before proceeding\n- If any step fails, investigate and adapt\n\n**Phase 2: analysis**:\n- Start broad (overall patterns), then drill into specific segments\n- Always include time-based analysis using comparison features (delta_abs, delta_rel)\n- Focus on insights that are surprising, actionable, and quantified\n- Never repeat identical queries - each should explore new analytical angles\n- Use <thinking> tags between queries to evaluate results and plan next steps\n\n**Quality Standards**:\n- Prioritize findings that contradict expectations or reveal hidden patterns\n- Quantify changes and impacts with specific numbers\n- Link insights to business implications and decisions\n\n**Data Accuracy Requirements**:\n- ALL numbers and calculations must come from \"query_metrics_view\" tool results\n- NEVER perform manual calculations or mathematical operations\n- If a desired calculation cannot be achieved through the metrics tools, explicitly state this limitation\n- Use only the exact numbers returned by the tools in your analysis\n</analysis_guidelines>\n\n<guardrails>\nYou only engage in conversation that relates to the project's data.\nIf a question seems unrelated, first inspect the available metrics views to see if it fits the dataset's domain.\nDecline to engage if the topic is clearly outside the scope of the data (e.g., trivia, personal advice), and steer the conversation back to actionable insights grounded in the data.\n</guardrails>\n\n<thinking>\nAfter each query in Phase 2, think through:\n- What patterns or anomalies did this reveal?\n- How does this connect to previous findings?\n- What new questions does this raise?\n- What's the most valuable next query to run?\n- Are there any surprising insights worth highlighting?\n</thinking>\n\n<output_format>\n**Format your analysis as follows**:\n```markdown\nBased on the data analysis, here are the key insights:\n\n1. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n2. ## [Headline with specific impact/number]  \n   [Finding with business context and implications]\n\n3. ## [Headline with specific impact/number]\n   [Finding with business context and implications]\n\n[Optional: Offer specific follow-up analysis options]\n```\n\n**Citation Requirements**:\n- Every 'query_metrics_view' result includes an 'open_url' field - use this as a markdown link to cite EVERY quantitative claim made to the user\n- Citations must be inline at the end of a sentence or paragraph, not on a separate line\n- Use descriptive text in sentence case (e.g. \"This suggests Android is valuable ([Device breakdown](url)).\" or \"Revenue increased 25%% ([Revenue by country](url)).\")\n- When one paragraph contains multiple insights from the same query, cite once at the end of the paragraph\n</output_format>"
+    - role: user
+      content_type: text
+      content: What country has the highest revenue? Answer with a single country name and nothing else.
+    - role: assistant
+      content_type: tool_call
+      id: 20dc51ab24f4486a
+      tool_name: list_metrics_views
+      content: '{}'
+    - role: tool
+      content_type: tool_response
+      id: 20dc51ab24f4486a
+      content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
+    - role: assistant
+      content_type: tool_call
+      id: 5b7a3f88fa2c4d91
+      tool_name: get_metrics_view
+      content: '{"metrics_view":"orders"}'
+    - role: tool
+      content_type: tool_response
+      id: 5b7a3f88fa2c4d91
+      content: '{"spec":{"connector":"duckdb","dimensions":[{"column":"country","dataType":{"code":"CODE_STRING","nullable":true},"displayName":"Country","name":"country"}],"displayName":"Orders","measures":[{"dataType":{"code":"CODE_INT64","nullable":true},"displayName":"Count","expression":"COUNT(*)","name":"count","type":"MEASURE_TYPE_SIMPLE"},{"dataType":{"code":"CODE_INT128","nullable":true},"displayName":"Revenue","expression":"SUM(revenue)","name":"revenue","type":"MEASURE_TYPE_SIMPLE"}],"model":"orders","table":"orders","timeDimension":"event_time"}}'
+    - role: assistant
+      content_type: tool_call
+      id: cd651a84ec8346f7
+      tool_name: query_metrics_view_summary
+      content: '{"metrics_view":"orders"}'
+    - role: tool
+      content_type: tool_response
+      id: cd651a84ec8346f7
+      content: '{"data":{"dimensions":[{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"},{"data_type":"CODE_STRING","example_value":"United States","max_value":"United States","min_value":"Denmark","name":"country"}],"time_range":{"data_type":"CODE_TIMESTAMP","max_value":"2025-01-02T00:00:00Z","min_value":"2025-01-01T00:00:00Z","name":"event_time"}}}'
+    - role: assistant
+      content_type: tool_call
+      id: 9e16977c366f4626
+      tool_name: query_metrics_view
+      content: '{"dimensions":[{"name":"country"}],"limit":1,"measures":[{"name":"revenue"}],"metrics_view":"orders","sort":[{"desc":true,"name":"revenue"}],"time_range":{"end":"2025-01-02T00:00:00Z","start":"2025-01-01T00:00:00Z"}}'
+    - role: tool
+      content_type: tool_response
+      id: 9e16977c366f4626
+      content: '{"data":[{"country":"United States","revenue":100}]}'
+    - role: assistant
+      content_type: text
+      content: United States
+    - role: user
+      content_type: text
+      content: Repeat the answer you gave to my last question.
+  response:
+    - role: assistant
+      content_type: text
+      content: United States

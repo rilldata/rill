@@ -13,7 +13,7 @@ export function validateKPISchema(
 }> {
   const { metrics_view } = kpiSpec;
   return derived(
-    ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
+    ctx.canvasEntity.metricsView.getMetricsViewFromName(metrics_view),
     (metricsViewQuery) => {
       const measure = kpiSpec.measure;
       if (metricsViewQuery.isLoading) {

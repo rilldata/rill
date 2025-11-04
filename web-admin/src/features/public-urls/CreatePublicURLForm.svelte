@@ -40,7 +40,7 @@
 
   const {
     dashboardStore,
-    exploreName,
+    metricsViewName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
@@ -96,7 +96,7 @@
 
         try {
           const { url: _url } = await $issueMagicAuthToken.mutateAsync({
-            organization,
+            org: organization,
             project,
             data: {
               resourceType: ResourceKind.Explore as string,
@@ -246,12 +246,10 @@
           </p>
           <div class="flex flex-row gap-1 mt-2">
             <ExploreFilterChipsReadOnly
-              exploreName={$exploreName}
+              metricsViewNames={[$metricsViewName]}
               filters={$dashboardStore.whereFilter}
               dimensionsWithInlistFilter={$dashboardStore.dimensionsWithInlistFilter}
               dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-              displayTimeRange={undefined}
-              displayComparisonTimeRange={undefined}
               queryTimeStart={$timeControlStore.timeStart}
               queryTimeEnd={$timeControlStore.timeEnd}
             />

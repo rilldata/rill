@@ -91,7 +91,7 @@
 
   async function handleDeleteReport() {
     await $deleteReport.mutateAsync({
-      organization,
+      org: organization,
       project,
       name: $reportQuery.data.resource.meta.name.name,
     });
@@ -222,7 +222,7 @@
   </div>
 {/if}
 
-{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending}
+{#if reportSpec && $exploreIsValid && !$validSpecResp.isPending && showEditReportDialog}
   <ScheduledReportDialog
     bind:open={showEditReportDialog}
     props={{

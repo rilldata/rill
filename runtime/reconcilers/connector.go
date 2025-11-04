@@ -105,6 +105,10 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	return runtime.ReconcileResult{}
 }
 
+func (r *ConnectorReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
+}
+
 func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runtimev1.ConnectorSpec) (string, error) {
 	hash := md5.New()
 

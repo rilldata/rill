@@ -142,11 +142,6 @@
         $leaderboardSortByMeasureName
       ] as number) ?? 0);
 
-  $: columns = $virtualizedTableColumns(
-    $totalsQuery,
-    $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
-  );
-
   $: sort = getSort(
     $sortedAscending,
     $sortType,
@@ -184,6 +179,11 @@
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
     $selectedValues.data?.includes(row[dimensionName] as string),
+  );
+
+  $: columns = $virtualizedTableColumns(
+    tableRows,
+    $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
   );
 
   function onSelectItem(event) {

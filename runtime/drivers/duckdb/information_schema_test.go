@@ -1,30 +1,32 @@
-package duckdb
+package duckdb_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
-	goruntime "runtime"
-
-	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	activity "github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestInformationSchema(t *testing.T) {
-	conn, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"models/all_datatypes.sql": "-- @materialize: true\n SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)",
+			"models/foo.sql":           "-- @materialize: true\n SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)",
+			"models/bar.sql":           "-- @materialize: true\n SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)",
+			"models/foz.sql":           "-- @materialize: true\n SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)",
+			"models/baz.sql":           "-- @materialize: true\n SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)",
+			"models/model.sql":         "SELECT 1,2,3",
+		},
+	})
+
+	olap, release, err := rt.OLAP(t.Context(), instanceID, "")
 	require.NoError(t, err)
+	t.Cleanup(func() { release() })
 
-	olap, ok := conn.AsOLAP("")
-	require.True(t, ok)
-
-	prepareData(t, olap)
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
@@ -33,57 +35,34 @@ func TestInformationSchema(t *testing.T) {
 }
 
 func TestInformationSchemaMotherduck(t *testing.T) {
-	if testing.Short() {
-		t.Skip("motherduck: skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
-	_, currentFile, _, _ := goruntime.Caller(0)
-	envPath := filepath.Join(currentFile, "..", "..", "..", "..", ".env")
-	_, err := os.Stat(envPath)
-	if err == nil {
-		require.NoError(t, godotenv.Load(envPath))
-	}
-	token := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")
-	require.NotEmpty(t, token, "RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN not configured")
+	cfg := testruntime.AcquireConnector(t, "motherduck")
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		TestConnectors: []string{"motherduck"},
+		Variables: map[string]string{
+			"motherduck_token": cfg["token"].(string),
+		},
+		Files: map[string]string{
+			"connectors/motherduck.yaml": `
+type: connector
+driver: motherduck
+token: "{{ .env.motherduck_token }}"
+path: md:rilldata
+schema_name: integration_test
+`,
+		},
+	})
 
-	cfg := map[string]any{
-		"token":       token,
-		"path":        "md:rilldata",
-		"schema_name": "integration_test",
-	}
-	conn, err := Driver{name: "motherduck"}.Open("default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	olap, release, err := rt.OLAP(t.Context(), instanceID, "motherduck")
 	require.NoError(t, err)
-
-	olap, ok := conn.AsOLAP("")
-	require.True(t, ok)
+	t.Cleanup(func() { release() })
 
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, olap) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, olap) })
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, olap) })
 	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, olap) })
 	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, olap) })
-}
-
-func prepareData(t *testing.T, olap drivers.OLAPStore) {
-
-	_, err := olap.(*connection).createTableAsSelect(context.Background(), "all_datatypes", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
-	require.NoError(t, err)
-
-	_, err = olap.(*connection).createTableAsSelect(context.Background(), "foo", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
-	require.NoError(t, err)
-
-	_, err = olap.(*connection).createTableAsSelect(context.Background(), "bar", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
-	require.NoError(t, err)
-
-	_, err = olap.(*connection).createTableAsSelect(context.Background(), "foz", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
-	require.NoError(t, err)
-
-	_, err = olap.(*connection).createTableAsSelect(context.Background(), "baz", "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", &createTableOptions{})
-	require.NoError(t, err)
-
-	_, err = olap.(*connection).createTableAsSelect(context.Background(), "model", "SELECT 1,2,3", &createTableOptions{view: true})
-	require.NoError(t, err)
-
 }
 
 func testInformationSchemaAll(t *testing.T, olap drivers.OLAPStore) {
@@ -207,44 +186,4 @@ func testInformationSchemaAllPaginationWithLike(t *testing.T, olap drivers.OLAPS
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tables))
 	require.Empty(t, nextToken)
-}
-
-func TestDatabaseTypeToPB(t *testing.T) {
-	tests := []struct {
-		input  string
-		output *runtimev1.Type
-	}{
-		{
-			input:  "DECIMAL(10,20)",
-			output: &runtimev1.Type{Code: runtimev1.Type_CODE_DECIMAL, Nullable: true},
-		},
-		{
-			input: `STRUCT(foo HUGEINT, "bar" STRUCT(a INTEGER, b MAP(INTEGER, BOOLEAN)), baz VARCHAR[])`,
-			output: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
-				{Name: "foo", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT128, Nullable: true}},
-				{Name: "bar", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
-					{Name: "a", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32, Nullable: true}},
-					{Name: "b", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_MAP, Nullable: true, MapType: &runtimev1.MapType{
-						KeyType:   &runtimev1.Type{Code: runtimev1.Type_CODE_INT32, Nullable: true},
-						ValueType: &runtimev1.Type{Code: runtimev1.Type_CODE_BOOL, Nullable: true},
-					}}},
-				}}}},
-				{Name: "baz", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_ARRAY, Nullable: true, ArrayElementType: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: true}}},
-			}}},
-		},
-		{
-			input: `STRUCT("foo ""("" bar" STRUCT("baz ,, \ \"" "" )" INTEGER))`,
-			output: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
-				{Name: `foo "(" bar`, Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT, Nullable: true, StructType: &runtimev1.StructType{Fields: []*runtimev1.StructType_Field{
-					{Name: `baz ,, \ \" " )`, Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32, Nullable: true}},
-				}}}},
-			}}},
-		},
-	}
-
-	for _, test := range tests {
-		output, err := databaseTypeToPB(test.input, true)
-		require.NoError(t, err)
-		require.Equal(t, test.output, output)
-	}
 }

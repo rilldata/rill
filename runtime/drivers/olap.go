@@ -183,9 +183,10 @@ type OlapTable struct {
 	IsDefaultDatabaseSchema bool
 	Name                    string
 	View                    bool
-	Schema                  *runtimev1.StructType
-	UnsupportedCols         map[string]string
-	PhysicalSizeBytes       int64
+	// Schema is the table schema. It is only set when only single table is looked up. It is not set when listing all tables.
+	Schema            *runtimev1.StructType
+	UnsupportedCols   map[string]string
+	PhysicalSizeBytes int64
 }
 
 // Dialect enumerates OLAP query languages.
@@ -197,6 +198,14 @@ const (
 	DialectDruid
 	DialectClickHouse
 	DialectPinot
+
+	// Below dialects are not fully supported dialects.
+	DialectBigQuery
+	DialectSnowflake
+	DialectAthena
+	DialectRedshift
+	DialectMySQL
+	DialectPostgres
 )
 
 func (d Dialect) String() string {
@@ -211,6 +220,18 @@ func (d Dialect) String() string {
 		return "clickhouse"
 	case DialectPinot:
 		return "pinot"
+	case DialectBigQuery:
+		return "bigquery"
+	case DialectSnowflake:
+		return "snowflake"
+	case DialectAthena:
+		return "athena"
+	case DialectRedshift:
+		return "redshift"
+	case DialectMySQL:
+		return "mysql"
+	case DialectPostgres:
+		return "postgres"
 	default:
 		panic("not implemented")
 	}

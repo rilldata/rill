@@ -41,7 +41,10 @@ interface AddDataFormValues {
   [key: string]: unknown;
 }
 
-async function beforeSubmitForm(instanceId: string) {
+async function beforeSubmitForm(
+  instanceId: string,
+  connector?: V1ConnectorDriver,
+) {
   // Emit telemetry
   behaviourEvent?.fireSourceTriggerEvent(
     BehaviourEventAction.SourceAdd,
@@ -53,8 +56,17 @@ async function beforeSubmitForm(instanceId: string) {
   // If project is uninitialized, initialize an empty project
   const projectInitialized = await isProjectInitialized(instanceId);
   if (!projectInitialized) {
+    // Determine the OLAP engine based on the connector being added
+    let olapEngine = "duckdb"; // Default for data sources
+
+    if (connector && OLAP_ENGINES.includes(connector.name as string)) {
+      // For OLAP engines, use the connector name as the OLAP engine
+      olapEngine = connector.name as string;
+    }
+
     await runtimeServiceUnpackEmpty(instanceId, {
       displayName: EMPTY_PROJECT_TITLE,
+      olap: olapEngine, // Explicitly set OLAP based on connector type
     });
 
     // Race condition: invalidate("init") must be called before we navigate to
@@ -135,7 +147,7 @@ export async function submitAddSourceForm(
   formValues: AddDataFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
-  await beforeSubmitForm(instanceId);
+  await beforeSubmitForm(instanceId, connector);
 
   const newSourceName = formValues.name as string;
 
@@ -181,7 +193,6 @@ export async function submitAddSourceForm(
       instanceId,
       newSourceName,
       ResourceKind.Model,
-      connector.name as string,
     );
   } catch (error) {
     // The source file was already created, so we need to delete it
@@ -218,7 +229,7 @@ export async function submitAddConnectorForm(
   formValues: AddDataFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
-  await beforeSubmitForm(instanceId);
+  await beforeSubmitForm(instanceId, connector);
 
   const newConnectorName = getName(
     connector.name as string,
@@ -271,7 +282,6 @@ export async function submitAddConnectorForm(
       instanceId,
       newConnectorName,
       ResourceKind.Connector,
-      connector.name as string,
     );
   } catch (error) {
     // The connector file was already created, so we need to delete it

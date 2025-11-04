@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -536,7 +537,7 @@ func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
 		AudienceURL:       aud,
 		Subject:           "admin-service",
 		TTL:               time.Hour,
-		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.EditTrigger, auth.ReadObjects},
+		SystemPermissions: []runtime.Permission{runtime.ManageInstances, runtime.ReadInstance, runtime.EditInstance, runtime.EditTrigger, runtime.ReadObjects},
 	})
 	if err != nil {
 		return "", err

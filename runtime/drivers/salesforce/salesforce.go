@@ -27,7 +27,7 @@ func (silentLogger) Info(args ...any) {
 var spec = drivers.Spec{
 	DisplayName: "Salesforce",
 	Description: "Connect to Salesforce.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/salesforce",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/salesforce",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "username",
@@ -97,6 +97,7 @@ var spec = drivers.Spec{
 			DisplayName: "Salesforce Password",
 			Required:    false,
 			Hint:        "Your Salesforce password, optionally followed by a security token if required.",
+			Placeholder: "your_password",
 			Secret:      true,
 		},
 		{
@@ -105,6 +106,7 @@ var spec = drivers.Spec{
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
 			Hint:        "Paste your JWT private key for token-based authentication. Used with Connected App and Client ID.",
+			Placeholder: "your_jwt_key",
 			Secret:      true,
 		},
 		{
