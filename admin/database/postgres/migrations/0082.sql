@@ -1,1 +1,2 @@
-ALTER TABLE user_auth_tokens ADD COLUMN refresh BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN github_token TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN github_token_expires_on TIMESTAMPTZ;

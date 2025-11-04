@@ -10,6 +10,8 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"golang.org/x/exp/slices"
 )
 
 const AnalystAgentName = "analyst_agent"
@@ -21,8 +23,13 @@ type AnalystAgent struct {
 var _ Tool[*AnalystAgentArgs, *AnalystAgentResult] = (*AnalystAgent)(nil)
 
 type AnalystAgentArgs struct {
-	Prompt  string `json:"prompt"`
-	Explore string `json:"explore,omitempty" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Prompt     string                  `json:"prompt"`
+	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
+	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
+	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
+	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
+	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 }
 
 func (a *AnalystAgentArgs) ToLLM() *aiv1.ContentBlock {
@@ -76,9 +83,13 @@ func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {
 	s := GetSession(ctx)
 
+	// Determine if it's the first invocation of the agent in this session.
+	first := len(s.Messages(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName))) == 1
+
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
+	// TODO: This uses `first`, but that may not be safe if the user has navigated to another dashboard. We probably need some more sophisticated de-duplication here.
 	var metricsViewName string
-	if args.Explore != "" {
+	if first && args.Explore != "" {
 		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
 		if err != nil {
 			return nil, err
@@ -101,18 +112,11 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
-	if args.Explore == "" {
-		var listRes *ListMetricsViewsResult
-		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", &listRes, &ListMetricsViewsArgs{})
+	if first && args.Explore == "" {
+		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", nil, &ListMetricsViewsArgs{})
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	// Add the analyst agent system prompt, optionally tailored for the current explore.
-	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args.Explore)
-	if err != nil {
-		return nil, err
 	}
 
 	// Determine tools that can be used
@@ -123,8 +127,24 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	tools = append(tools, "query_metrics_view_summary", "query_metrics_view", "create_chart")
 
 	// Build completion messages
+	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args)
+	if err != nil {
+		return nil, err
+	}
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithChildren(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName)))...)
+
+	// If this is the first agent call in the session, re-organize messages to put the user prompt at the end (after the seeded tool calls).
+	// NOTE: We should find a cleaner way to organize/prioritize message ordering.
+	if first {
+		for i, m := range messages {
+			if m.Role == string(RoleUser) {
+				messages = slices.Delete(messages, i, i+1)
+				messages = append(messages, m)
+				break
+			}
+		}
+	}
 
 	// Run an LLM tool call loop
 	var response string
@@ -141,7 +161,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	return &AnalystAgentResult{Response: response}, nil
 }
 
-func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsView, explore string) (string, error) {
+func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsViewName string, args *AnalystAgentArgs) (string, error) {
 	// Prepare template data.
 	// NOTE: All the template properties are optional and may be empty.
 	session := GetSession(ctx)
@@ -151,10 +171,24 @@ func (t *AnalystAgent) systemPrompt(ctx context.Context, metricsView, explore st
 	}
 	data := map[string]any{
 		"ai_instructions": session.ProjectInstructions(),
-		"metrics_view":    metricsView,
-		"explore":         explore,
+		"metrics_view":    metricsViewName,
+		"explore":         args.Explore,
+		"dimensions":      strings.Join(args.Dimensions, ", "),
+		"measures":        strings.Join(args.Measures, ", "),
 		"feature_flags":   ff,
 		"now":             time.Now(),
+	}
+
+	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
+		data["time_start"] = args.TimeStart.Format(time.RFC3339)
+		data["time_end"] = args.TimeEnd.Format(time.RFC3339)
+	}
+
+	if args.Where != nil {
+		data["where"], err = metricsview.ExpressionToSQL(args.Where)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// Generate the system prompt
@@ -176,7 +210,15 @@ Today's date is {{ .now.Format "Monday, January 2, 2006" }} ({{ .now.Format "200
 {{ if .explore }}
 Your goal is to analyze the contents of the dashboard "{{ .explore }}", which is powered by the metrics view "{{ .metrics_view }}".
 The user is actively viewing this dashboard, and it's what you they refer to if they use expressions like "this dashboard", "the current view", etc.
-The metrics view's definition and time range of available data has been provided in your tool calls. You should:
+The metrics view's definition and time range of available data has been provided in your tool calls.
+
+Here is an overview of the settings the user has currently applied to the dashboard:
+{{ if (and .time_start .time_end) }}Use time range: start={{.time_start}}, end={{.time_end}}{{ end }}
+{{ if .where }}Use where filters: "{{ .where }}"{{ end }}
+{{ if .measures }}Use measures: "{{ .measures }}"{{ end }}
+{{ if .dimensions }}Use dimensions: "{{ .dimensions }}"{{ end }}
+
+You should:
 1. Carefully study the metrics view definition to understand the measures and dimensions available for analysis.
 2. Remember the time range of available data and use it to inform and filter your queries.
 {{ else }}
@@ -202,8 +244,6 @@ In each iteration, you should:
 Create a chart: After running "query_metrics_view" create a chart using "create_chart" unless:
 - The user explicitly requests a table-only response
 - The query returns only a single scalar value
-- The data structure doesn't lend itself to visualization (e.g., text-heavy data)
-- There is no appropriate chart type which can be created for the underlying data
 
 Choose the appropriate chart type based on your data:
 - Time series data: line_chart or area_chart (better for cummalative trends)

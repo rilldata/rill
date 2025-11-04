@@ -4,7 +4,9 @@ import { test } from "./setup/base";
 async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
   return new Promise<void>((resolve) => {
     embedPage.on("console", async (msg) => {
-      if (msg.type() === "log") {
+      if (msg.type() !== "log") return;
+
+      try {
         const args = await Promise.all(
           msg.args().map((arg) => arg.jsonValue()),
         );
@@ -13,6 +15,9 @@ async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
         if (logMessage.includes(`{"method":"ready"}`)) {
           resolve();
         }
+      } catch {
+        // Ignore errors in parsing. Any rogue log shouldn't break the test.
+        // There is also a race condition when browser/page is closed while we are extracting the values in the await.
       }
     });
   });
@@ -179,7 +184,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            "tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')",
+            "tr=PT24H&compare_tr=rill-PD&grain=hour&f=advertiser_name+IN+('Instacart')",
           ),
         ),
       ).toBeTruthy();
@@ -209,7 +214,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&grain=hour&f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
@@ -301,6 +306,7 @@ test.describe("Embeds", () => {
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .first()
       .click();
     // Time range is still the default
     await expect(frame.getByText("Last 24 hours")).toBeVisible();
@@ -327,6 +333,7 @@ test.describe("Embeds", () => {
     await frame.getByLabel("Breadcrumb dropdown").click();
     await frame
       .getByRole("menuitem", { name: "Bids Canvas Dashboard" })
+      .first()
       .click();
 
     // Old selection has persisted
@@ -350,7 +357,10 @@ test.describe("Embeds", () => {
     // Go to `Home` using the breadcrumbs
     await frame.getByText("Home").click();
     // Go to `Bids Canvas Dashboard` using the links on home
-    await frame.getByRole("link", { name: "Bids Canvas Dashboard" }).click();
+    await frame
+      .getByRole("link", { name: "Bids Canvas Dashboard" })
+      .first()
+      .click();
     // Old selection has persisted
     await expect(frame.getByText("Last 7 days")).toBeVisible();
   });

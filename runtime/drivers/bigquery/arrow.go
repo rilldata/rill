@@ -37,7 +37,7 @@ func (f *fileIterator) AsArrowRecordReader(ctx context.Context) (array.RecordRea
 		refCount:    atomic.Int64{},
 		allocator:   allocator,
 		logger:      f.logger,
-		records:     make([]arrow.Record, 0),
+		records:     make([]arrow.RecordBatch, 0),
 		ctx:         ctx,
 		buf:         &bytes.Buffer{},
 	}
@@ -48,8 +48,8 @@ func (f *fileIterator) AsArrowRecordReader(ctx context.Context) (array.RecordRea
 // some impl details are copied from array.simpleRecords
 type arrowRecordReader struct {
 	bqIter      bigquery.ArrowIterator
-	records     []arrow.Record
-	cur         arrow.Record
+	records     []arrow.RecordBatch
+	cur         arrow.RecordBatch
 	arrowSchema *arrow.Schema
 	refCount    atomic.Int64
 	err         error
@@ -96,7 +96,11 @@ func (rs *arrowRecordReader) Schema() *arrow.Schema {
 }
 
 // Record returns the current record. Call Next before consuming another record.
-func (rs *arrowRecordReader) Record() arrow.Record {
+func (rs *arrowRecordReader) Record() arrow.RecordBatch {
+	return rs.RecordBatch()
+}
+
+func (rs *arrowRecordReader) RecordBatch() arrow.RecordBatch {
 	return rs.cur
 }
 
@@ -136,7 +140,7 @@ func (rs *arrowRecordReader) Err() error {
 	return rs.err
 }
 
-func (rs *arrowRecordReader) nextArrowRecords(r *bigquery.ArrowRecordBatch) ([]arrow.Record, error) {
+func (rs *arrowRecordReader) nextArrowRecords(r *bigquery.ArrowRecordBatch) ([]arrow.RecordBatch, error) {
 	t := time.Now()
 	defer func() {
 		rs.ipcread += time.Since(t)
@@ -150,9 +154,9 @@ func (rs *arrowRecordReader) nextArrowRecords(r *bigquery.ArrowRecordBatch) ([]a
 		return nil, err
 	}
 	defer rdr.Release()
-	records := make([]arrow.Record, 0)
+	records := make([]arrow.RecordBatch, 0)
 	for rdr.Next() {
-		rec := rdr.Record()
+		rec := rdr.RecordBatch()
 		rec.Retain()
 		records = append(records, rec)
 	}

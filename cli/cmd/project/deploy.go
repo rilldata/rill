@@ -429,8 +429,12 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 		if ch.Interactive {
 			ch.PrintfSuccess("Opening project in browser...\n")
-			time.Sleep(3 * time.Second)
-			_ = browser.Open(res.Project.FrontendUrl)
+			select {
+			case <-time.After(3 * time.Second):
+				_ = browser.Open(res.Project.FrontendUrl)
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)

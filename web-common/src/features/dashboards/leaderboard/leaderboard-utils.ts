@@ -1,4 +1,3 @@
-import { isSummableMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -363,18 +362,11 @@ export function makeHref(
 
 export function getLeaderboardMaxValues(
   allData: LeaderboardItemData[],
-  leaderboardTotals: Record<string, number>,
   leaderboardMeasures: MetricsViewSpecMeasure[],
 ) {
   return Object.fromEntries(
     leaderboardMeasures.map((measure) => {
       const measureName = measure.name!;
-      // For valid percent of total measures use the total directly as max width.
-      if (isSummableMeasure(measure)) {
-        return [measureName, leaderboardTotals[measureName]];
-      }
-
-      // Else use the max from the visible values
       const numericValues = allData
         .map((item) => {
           const value = item.values[measureName];
