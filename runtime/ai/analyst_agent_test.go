@@ -1,12 +1,35 @@
 package ai_test
 
 import (
+	"net/http"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
+
+// newSessionWithHeaders creates a test AI session with optional headers.
+func newSessionWithHeaders(t *testing.T, rt *runtime.Runtime, instanceID string, userAgent string, headers http.Header) *ai.Session {
+	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
+	r := ai.NewRunner(rt, activity.NewNoopClient())
+	s, err := r.Session(t.Context(), &ai.SessionOptions{
+		InstanceID: instanceID,
+		Claims:     claims,
+		UserAgent:  userAgent,
+		Headers:    headers,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := s.Flush(t.Context())
+		require.NoError(t, err)
+	})
+
+	return s
+}
 
 func TestAnalystBasic(t *testing.T) {
 	// Setup a basic metrics view with an "event_time" time dimension, "country" dimension, and "count" and "revenue" measures.
@@ -123,32 +146,45 @@ func TestAnalystCheckAccess(t *testing.T) {
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
 
-	// Test access control
-	t.Run("CheckAccess Denied", func(t *testing.T) {
-		s := newEval(t, rt, instanceID)
-
-		// Modify the session to have a non-rill user agent
+	t.Run("CheckAccess Denied - non-rill user agent", func(t *testing.T) {
+		s := newSession(t, rt, instanceID)
 		s.CatalogSession().UserAgent = "some-other-agent/1.0"
 
-		// It should deny access
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
-			Prompt: "What metrics views are available?",
-		})
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "access denied")
+		agent := &ai.AnalystAgent{Runtime: rt}
+
+		require.False(t, agent.CheckAccess(ai.WithSession(t.Context(), s)))
 	})
 
-	// Test access control for rill-gemini-extension user agent
-	t.Run("CheckAccess Rill Gemini Extension", func(t *testing.T) {
-		s := newEval(t, rt, instanceID)
+	t.Run("CheckAccess Denied - no X-Rill-Agent header and non-rill user agent", func(t *testing.T) {
+		s := newSession(t, rt, instanceID)
+		s.CatalogSession().UserAgent = "some-other-agent/1.0"
 
-		// Modify the session to have a rill-gemini-extension user agent
-		s.CatalogSession().UserAgent = "rill-gemini-extension/1.0"
+		agent := &ai.AnalystAgent{Runtime: rt}
 
-		// It should allow access
-		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
-			Prompt: "What metrics views are available?",
-		})
-		require.NoError(t, err)
+		ctx := ai.WithSession(t.Context(), s)
+		require.False(t, agent.CheckAccess(ctx))
+	})
+
+	t.Run("CheckAccess Allowed - rill user agent", func(t *testing.T) {
+		s := newSession(t, rt, instanceID)
+
+		s.CatalogSession().UserAgent = "rill-evals/1.0"
+
+		agent := &ai.AnalystAgent{Runtime: rt}
+
+		ctx := ai.WithSession(t.Context(), s)
+		require.True(t, agent.CheckAccess(ctx))
+	})
+
+	t.Run("CheckAccess Allowed - X-Rill-Agent header", func(t *testing.T) {
+		headers := http.Header{}
+		headers.Set("X-Rill-Agent", "gemini")
+
+		s := newSessionWithHeaders(t, rt, instanceID, "node", headers)
+
+		agent := &ai.AnalystAgent{Runtime: rt}
+
+		ctx := ai.WithSession(t.Context(), s)
+		require.True(t, agent.CheckAccess(ctx))
 	})
 }

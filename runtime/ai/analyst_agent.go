@@ -67,12 +67,12 @@ func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
 	}
 
 	// Allow for rill user agents and rill integrations
-	// TODO: Consider a more robust way to identify trusted integrations
-	userAgent := s.CatalogSession().UserAgent
-	isRillAgent := strings.HasPrefix(userAgent, "rill")
-	isRillExtension := strings.Contains(userAgent, "rill-gemini-extension")
+	// TODO: This is a temporary measure until we have a proper authentication mechanism for integrations.
+	agent := s.CatalogSession().UserAgent
+	isRillAgent := strings.HasPrefix(agent, "rill")
+	isRillIntegration := s.Headers().Get("X-Rill-Agent") != ""
 
-	if !isRillAgent && !isRillExtension {
+	if !isRillAgent && !isRillIntegration {
 		return false
 	}
 

@@ -6,10 +6,10 @@
   "contextFileName": "GEMINI.md",
   "mcpServers": {
     "rill": {
-      "httpUrl": "https://api.rilldata.com/v1/orgs/${RILL_ORG}/projects/${RILL_PROJECT}/runtime/mcp",
+      "httpUrl": "http://localhost:8080/v1/orgs/${RILL_ORG}/projects/${RILL_PROJECT}/runtime/mcp",
       "headers": {
         "Authorization": "Bearer ${RILL_ACCESS_TOKEN}",
-        "X-Custom-Header": "rill-gemini-extension",
+        "X-Rill-Agent": "gemini",
         "Content-Type": "application/json"
       },
       "env": {
