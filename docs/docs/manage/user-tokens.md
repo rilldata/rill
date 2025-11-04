@@ -49,16 +49,6 @@ rill token issue --display-name "MCP Token" --ttl-minutes 1440
 rill token issue --display-name "Testing Token" --ttl-minutes 10080
 ```
 
-### Via the UI
-
-You can also create user tokens through the Rill Cloud UI:
-
-1. Navigate to your project's **AI tab**
-2. Click **"Create Token"** or **"Copy MCP Config"**
-3. The token will be automatically created and included in the configuration
-
-<img src='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
-
 :::warning Store tokens securely
 User tokens provide access to your data with your permissions. Store them securely and never commit them to version control. Treat them like passwords.
 :::
@@ -112,28 +102,6 @@ curl https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/
 
 For more details, see [Custom API Integration](/integrate/custom-api).
 
-### With MCP (AI Assistants)
-
-User tokens are the primary authentication method for connecting AI assistants to Rill via MCP:
-
-**Automatic setup via UI:**
-1. Go to your project's AI tab in Rill Cloud
-2. Click "Copy MCP Config" - this creates a token automatically
-3. Paste the config into your AI assistant (Claude Desktop, ChatGPT, etc.)
-
-**Manual setup:**
-```bash
-# Create a token
-rill token issue --display-name "Claude Desktop MCP"
-
-# Configure your MCP client with the token
-# (see MCP documentation for client-specific setup)
-```
-
-For comprehensive MCP setup, see:
-- [MCP Server Documentation](/explore/mcp)
-- [MCP Setup Guide](/guides/setting-up-mcp)
-
 ## Token Permissions
 
 Service tokens can be assigned roles at both the organization and project levels. For more details on using attributes with security policies, see the [security policies](/build/metrics-view/security) documentation.
@@ -155,29 +123,6 @@ source ~/.bashrc
 # Use in your development workflow
 rill project list
 ```
-
-### AI Assistant Integration (MCP)
-
-Set up AI assistants to query your Rill metrics:
-
-**Via UI (recommended):**
-1. Open your project in Rill Cloud
-2. Navigate to the AI tab
-3. Click "Copy MCP Config"
-4. Paste into Claude Desktop, ChatGPT, or other MCP clients
-
-**Via CLI:**
-```bash
-# Create token for AI assistant
-rill token issue --display-name "Claude Desktop" --ttl-minutes 10080
-
-# Configure your MCP client with the token
-```
-
-Then ask your AI assistant questions like:
-- "What were my top products by revenue last month?"
-- "Show me week-over-week growth in user signups"
-- "Are there any anomalies in website traffic this week?"
 
 ### Personal Data Analysis Scripts
 
