@@ -56,7 +56,7 @@ func TestManagedDeploy(t *testing.T) {
 		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
 		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %w", owner, repo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, repo, err)
 	})
 
 	// redeploy the same project with changes
@@ -71,9 +71,8 @@ func TestManagedDeploy(t *testing.T) {
 	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes)
 }
 
-// This test require a Github personal access token and refresh token to work
-// Those can be generated using command `rill devtool gh-token` command
-// The refresh token can only be used once to generate a new personal access token and refresh token so the command should be executed everytime before running this test
+// This test require gh cli to be installed on the system.
+// Alternatively a personal access token can be set via RILL_TEST_GH_TOKEN environment variable.
 func TestGithubDeploy(t *testing.T) {
 	testmode.Expensive(t)
 	personalAccessToken := getGithubAuthToken(t)
@@ -119,16 +118,13 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
 		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
-		require.NoError(t, err, "failed to delete github repo %s/%s: %w", owner, ghrepo, err)
+		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
 	})
 
-	// push to github
-	require.NoError(t, err)
 	author := &object.Signature{
 		Name:  "Rill test user",
 		Email: "test.user@rilldata.com",
 	}
-	require.NoError(t, err)
 	err = gitutil.CommitAndForcePush(t.Context(), tempDir, &gitutil.Config{
 		Remote:        *repo.CloneURL,
 		DefaultBranch: "main",
@@ -146,7 +142,7 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	})
 	require.NoError(t, err)
 	require.Equal(t, "self-hosted-deploy", resp.Project.Name)
-	require.True(t, resp.Project.ManagedGitId == "")
+	require.Empty(t, resp.Project.ManagedGitId)
 
 	// check remote configured in directory
 	remote, err := gitutil.ExtractGitRemote(tempDir, "origin", false)
@@ -183,6 +179,10 @@ func verifyGithubRepoContents(t *testing.T, client *github.Client, remote string
 }
 
 func getGithubAuthToken(t *testing.T) string {
+	// check if token is set via environment variable
+	if token := os.Getenv("RILL_TEST_GH_TOKEN"); token != "" {
+		return token
+	}
 	// exec gh auth token and extract token
 	// throw error if gh cli is not installed
 	t.Helper()
