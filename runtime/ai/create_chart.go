@@ -738,6 +738,6 @@ Choose the appropriate chart type based on your data and analysis goals:
 
 ### Limitations
 - **No comparison support**: The following are NOT supported:
-  - 'comparison_time_range' parameter
-  - Comparison measures like 'measure_name__delta_abs' or 'measure_nam>__delta_rel'. Do not use such measures in the spec anywhere
+  - 'comparison_time_range' parameter is not allowed
+  - Comparison measures like 'measure_name__delta_abs' or 'measure_name__delta_rel' are not allowed. Do not use such measures in the spec anywhere
   - Period-over-period comparisons can be handled by calling two tool calls with the same spec but different time ranges`
