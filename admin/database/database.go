@@ -156,6 +156,7 @@ type DB interface {
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
+	DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error)
 	DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 	DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error
@@ -211,6 +212,7 @@ type DB interface {
 	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
 
 	InsertAuthClient(ctx context.Context, displayName string) (*AuthClient, error)
+	FindAuthClientByDisplayName(ctx context.Context, displayName string) (*AuthClient, error)
 
 	FindOrganizationRoles(ctx context.Context) ([]*OrganizationRole, error)
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)

@@ -344,6 +344,35 @@ func (s *Server) RevokeUserAuthToken(ctx context.Context, req *adminv1.RevokeUse
 	return &adminv1.RevokeUserAuthTokenResponse{}, nil
 }
 
+func (s *Server) RevokeAllUserAuthTokens(ctx context.Context, req *adminv1.RevokeAllUserAuthTokensRequest) (*adminv1.RevokeAllUserAuthTokensResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.user_id", req.UserId),
+	)
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
+
+	userID := req.UserId
+	if userID == "current" { // Special alias for the current user
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+		userID = claims.OwnerID()
+	}
+	if userID != claims.OwnerID() && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to revoke auth tokens for other users")
+	}
+
+	tokensRevoked, err := s.admin.DB.DeleteAllUserAuthTokens(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.RevokeAllUserAuthTokensResponse{
+		TokensRevoked: int32(tokensRevoked),
+	}, nil
+}
+
 func (s *Server) RevokeRepresentativeAuthTokens(ctx context.Context, req *adminv1.RevokeRepresentativeAuthTokensRequest) (*adminv1.RevokeRepresentativeAuthTokensResponse, error) {
 	claims := auth.GetClaims(ctx)
 

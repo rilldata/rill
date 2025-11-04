@@ -488,7 +488,13 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
   }
 
-  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+  // RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+  // You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+  rpc RevokeAllUserAuthTokens(RevokeAllUserAuthTokensRequest) returns (RevokeAllUserAuthTokensResponse) {
+    option (google.api.http) = {delete: "/v1/users/{user_id}/tokens"};
+  }
+
+  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
   // This is primarily used for "unassume" flows.
   rpc RevokeRepresentativeAuthTokens(RevokeRepresentativeAuthTokensRequest) returns (RevokeRepresentativeAuthTokensResponse) {
     option (google.api.http) = {
@@ -2083,6 +2089,19 @@ message RevokeUserAuthTokenRequest {
 }
 
 message RevokeUserAuthTokenResponse {
+}
+
+message RevokeAllUserAuthTokensRequest {
+  // User ID to revoke all tokens for.
+  // Set to "current" to revoke all tokens for the current user.
+  string user_id = 1 [(validate.rules).string.min_len = 1];
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 2;
+}
+
+message RevokeAllUserAuthTokensResponse {
+  // Number of tokens revoked.
+  int32 tokens_revoked = 1;
 }
 
 message RevokeRepresentativeAuthTokensRequest {

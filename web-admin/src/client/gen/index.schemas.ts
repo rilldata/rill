@@ -1176,6 +1176,11 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RevokeAllUserAuthTokensResponse {
+  /** Number of tokens revoked. */
+  tokensRevoked?: number;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   [key: string]: unknown;
 }
@@ -2067,6 +2072,17 @@ export type AdminServiceListUserAuthTokensParams = {
    * Flag to filter only refresh tokens. If false, only returns access tokens (non-refresh).
    */
   refresh?: boolean;
+};
+
+export type AdminServiceRevokeAllUserAuthTokensParams = {
+  /**
+   * Optional client name to revoke tokens for specific client only.
+   */
+  clientName?: string;
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceIssueUserAuthTokenBody = {

@@ -8814,6 +8814,101 @@ export class RevokeUserAuthTokenResponse extends Message<RevokeUserAuthTokenResp
 }
 
 /**
+ * @generated from message rill.admin.v1.RevokeAllUserAuthTokensRequest
+ */
+export class RevokeAllUserAuthTokensRequest extends Message<RevokeAllUserAuthTokensRequest> {
+  /**
+   * User ID to revoke all tokens for.
+   * Set to "current" to revoke all tokens for the current user.
+   *
+   * @generated from field: string user_id = 1;
+   */
+  userId = "";
+
+  /**
+   * Optional client name to revoke tokens for specific client only.
+   *
+   * @generated from field: string client_name = 3;
+   */
+  clientName = "";
+
+  /**
+   * Flag for superusers to override normal access checks.
+   *
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
+  constructor(data?: PartialMessage<RevokeAllUserAuthTokensRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RevokeAllUserAuthTokensRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "client_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevokeAllUserAuthTokensRequest {
+    return new RevokeAllUserAuthTokensRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevokeAllUserAuthTokensRequest {
+    return new RevokeAllUserAuthTokensRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevokeAllUserAuthTokensRequest {
+    return new RevokeAllUserAuthTokensRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevokeAllUserAuthTokensRequest | PlainMessage<RevokeAllUserAuthTokensRequest> | undefined, b: RevokeAllUserAuthTokensRequest | PlainMessage<RevokeAllUserAuthTokensRequest> | undefined): boolean {
+    return proto3.util.equals(RevokeAllUserAuthTokensRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RevokeAllUserAuthTokensResponse
+ */
+export class RevokeAllUserAuthTokensResponse extends Message<RevokeAllUserAuthTokensResponse> {
+  /**
+   * Number of tokens revoked.
+   *
+   * @generated from field: int32 tokens_revoked = 1;
+   */
+  tokensRevoked = 0;
+
+  constructor(data?: PartialMessage<RevokeAllUserAuthTokensResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RevokeAllUserAuthTokensResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tokens_revoked", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevokeAllUserAuthTokensResponse {
+    return new RevokeAllUserAuthTokensResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevokeAllUserAuthTokensResponse {
+    return new RevokeAllUserAuthTokensResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevokeAllUserAuthTokensResponse {
+    return new RevokeAllUserAuthTokensResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevokeAllUserAuthTokensResponse | PlainMessage<RevokeAllUserAuthTokensResponse> | undefined, b: RevokeAllUserAuthTokensResponse | PlainMessage<RevokeAllUserAuthTokensResponse> | undefined): boolean {
+    return proto3.util.equals(RevokeAllUserAuthTokensResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.RevokeRepresentativeAuthTokensRequest
  */
 export class RevokeRepresentativeAuthTokensRequest extends Message<RevokeRepresentativeAuthTokensRequest> {

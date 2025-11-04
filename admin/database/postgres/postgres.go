@@ -1140,6 +1140,21 @@ func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	return checkDeleteRow("auth token", res, err)
 }
 
+func (c *connection) DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error) {
+	qry := "DELETE FROM user_auth_tokens WHERE user_id=$1"
+	args := []any{userID}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, qry, args...)
+	if err != nil {
+		return 0, parseErr("delete all auth tokens", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, parseErr("delete all auth tokens", err)
+	}
+	return int(n), nil
+}
+
 func (c *connection) DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE user_id = $1 AND representing_user_id = $2", userID, representingUserID)
 	return parseErr("auth token", err)
@@ -1695,6 +1710,17 @@ func (c *connection) InsertAuthClient(ctx context.Context, displayName string) (
 	client := &database.AuthClient{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
 		`INSERT INTO auth_clients (display_name) VALUES ($1) RETURNING *`,
+		displayName).StructScan(client)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return client, nil
+}
+
+func (c *connection) FindAuthClientByDisplayName(ctx context.Context, displayName string) (*database.AuthClient, error) {
+	client := &database.AuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`SELECT * FROM auth_clients WHERE display_name = $1`,
 		displayName).StructScan(client)
 	if err != nil {
 		return nil, parseErr("auth client", err)
