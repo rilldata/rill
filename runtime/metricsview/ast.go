@@ -274,7 +274,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 
 	// Build underlying SELECT
 	tbl := ast.Dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
-	where, err := ast.buildUnderlyingWhere()
+	where, err := ast.buildWhereForUnderlyingTable(ast.Query.Where)
 	if err != nil {
 		return nil, err
 	}
@@ -986,11 +986,12 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 	return nil
 }
 
-// buildUnderlyingWhere constructs the base WHERE clause for the query.
-func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
+// buildWhereForUnderlyingTable constructs an expression for a WHERE clause for the underlying table.
+// It combines the provided where expression with any security policy filters.
+func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error) {
 	var res *ExprNode
 
-	expr, args, err := a.SQLForExpression(a.Query.Where, nil, false, true)
+	expr, args, err := a.SQLForExpression(where, nil, false, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile 'where': %w", err)
 	}
@@ -1068,20 +1069,24 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.Where != nil {
-		expr, args, err := a.SQLForExpression(spine.Where.Expression, nil, false, true)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
+		var where *ExprNode
+		if spine.Where.Expression != nil {
+			var err error
+			where, err = a.buildWhereForUnderlyingTable(spine.Where.Expression)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
+			}
 		}
 
 		n := &SelectNode{
 			Alias:     alias,
 			DimFields: a.dimFields,
+			FromTable: a.underlyingTable,
 			Unnests:   a.unnests,
 			Group:     true,
-			FromTable: a.underlyingTable,
+			Where:     where,
 		}
-		n.Where = n.Where.And(expr, args)
-		err = a.AddTimeRange(n, tr)
+		err := a.AddTimeRange(n, tr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add time range: %w", err)
 		}
