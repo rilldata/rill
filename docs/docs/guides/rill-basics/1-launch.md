@@ -2,7 +2,7 @@
 title: "1. Source to Dashboard on Rill Cloud in 6 Steps"
 sidebar_label: "1. Launch Rill Developer"
 position: 1
-collapsed: false
+collapsed: true
 sidebar_position: 1
 tags:
   - Tutorial
