@@ -2076,10 +2076,6 @@ export type AdminServiceListUserAuthTokensParams = {
 
 export type AdminServiceRevokeAllUserAuthTokensParams = {
   /**
-   * Optional client name to revoke tokens for specific client only.
-   */
-  clientName?: string;
-  /**
    * Flag for superusers to override normal access checks.
    */
   superuserForceAccess?: boolean;

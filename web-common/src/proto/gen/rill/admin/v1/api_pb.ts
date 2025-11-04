@@ -8826,13 +8826,6 @@ export class RevokeAllUserAuthTokensRequest extends Message<RevokeAllUserAuthTok
   userId = "";
 
   /**
-   * Optional client name to revoke tokens for specific client only.
-   *
-   * @generated from field: string client_name = 3;
-   */
-  clientName = "";
-
-  /**
    * Flag for superusers to override normal access checks.
    *
    * @generated from field: bool superuser_force_access = 2;
@@ -8848,7 +8841,6 @@ export class RevokeAllUserAuthTokensRequest extends Message<RevokeAllUserAuthTok
   static readonly typeName = "rill.admin.v1.RevokeAllUserAuthTokensRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "client_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

@@ -3930,11 +3930,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: clientName
-          description: Optional client name to revoke tokens for specific client only.
-          in: query
-          required: false
-          type: string
         - name: superuserForceAccess
           description: Flag for superusers to override normal access checks.
           in: query
