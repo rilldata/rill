@@ -6,7 +6,7 @@
   "contextFileName": "GEMINI.md",
   "mcpServers": {
     "rill": {
-      "httpUrl": "http://localhost:8080/v1/orgs/${RILL_ORG}/projects/${RILL_PROJECT}/runtime/mcp",
+      "httpUrl": "https://api.rilldata.com/v1/orgs/${RILL_ORG}/projects/${RILL_PROJECT}/runtime/mcp",
       "headers": {
         "Authorization": "Bearer ${RILL_ACCESS_TOKEN}",
         "X-Rill-Agent": "gemini",
