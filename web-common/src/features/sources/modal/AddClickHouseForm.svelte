@@ -6,7 +6,6 @@
     ConnectorDriverPropertyType,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import {
     defaults,
     superForm,
@@ -42,8 +41,6 @@
   ) => void = () => {};
   export let connectionTab: ConnectorType = "parameters";
   export { paramsForm, dsnForm };
-
-  const dispatch = createEventDispatcher();
 
   // ClickHouse schema includes the 'managed' property for backend compatibility
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
@@ -90,6 +87,9 @@
 
   $: submitting =
     connectionTab === "parameters" ? $paramsSubmitting : $dsnSubmitting;
+
+  $: isSubmitting = submitting;
+
   $: formId = connectionTab === "parameters" ? paramsFormId : dsnFormId;
 
   // Reset connectionTab if switching to Rill-managed
@@ -112,9 +112,6 @@
     dsnError = null;
     dsnErrorDetails = undefined;
   }
-
-  // Emit the submitting state to the parent
-  $: dispatch("submitting", { submitting });
 
   let prevConnectorType = connectorType;
   $: {
