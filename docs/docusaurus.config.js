@@ -131,13 +131,13 @@ const config = {
           {
             type: "html",
             position: "left",
-            value: '<a href="/" class="navbar__link navbar-icon-link" aria-label="Docs"><i class="fa-solid fa-book"></i> Docs</a>',
+            value: '<a href="/" class="navbar__link navbar-icon-link" aria-label="Docs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Docs</a>',
           },
 
           {
             type: "html",
             position: "left",
-            value: '<a href="/reference/rill-iso-extensions" class="navbar__link navbar-icon-link" aria-label="Reference"><i class="far fa-file-lines"></i> Reference</a>',
+            value: '<a href="/reference/rill-iso-extensions" class="navbar__link navbar-icon-link" aria-label="Reference"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reference</a>',
           },
 
           // {
@@ -149,7 +149,7 @@ const config = {
           {
             type: "html",
             position: "left",
-            value: '<a href="/contact/contact" class="navbar__link navbar-icon-link" aria-label="Contact Us"><i class="far fa-envelope"></i> Contact Us</a>',
+            value: '<a href="/contact/contact" class="navbar__link navbar-icon-link" aria-label="Contact Us"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Contact Us</a>',
           },
 
           // Right side items
