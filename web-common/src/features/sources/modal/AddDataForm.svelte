@@ -8,13 +8,12 @@
   import { createEventDispatcher } from "svelte";
   import type { SuperValidated } from "sveltekit-superforms";
 
-  import { submitAddConnectorForm } from "./submitAddDataForm";
   import type { AddDataFormType, ConnectorType } from "./types";
   import AddClickHouseForm from "./AddClickHouseForm.svelte";
   import NeedHelpText from "./NeedHelpText.svelte";
   import Tabs from "@rilldata/web-common/components/forms/Tabs.svelte";
   import { TabsContent } from "@rilldata/web-common/components/tabs";
-  import { isEmpty, normalizeConnectorError } from "./utils";
+  import { isEmpty } from "./utils";
   import {
     CONNECTION_TAB_OPTIONS,
     type ClickHouseConnectorType,
