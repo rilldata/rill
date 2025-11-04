@@ -41,15 +41,21 @@ Rill APIs require authentication tokens. Choose the appropriate token type for y
 
 ### Quick Start
 
-**For local testing:**
+**For local testing (No authentication required when running locally):**  
 ```bash
-# Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>
-# No authentication required when running locally
+# Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>-
+
+# Test your API endpoint locally (no auth required)
+curl http://localhost:9009/v1/instances/default/api/<filename>
 ```
 
 **For Rill Cloud testing:**
 ```bash
 rill token issue --display-name "API Testing"
+# Returns: rill_usr_...
+
+curl https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/api/<api-name> \
+  -H "Authorization: Bearer rill_usr_..."
 ```
 
 **For production systems:**
@@ -57,6 +63,7 @@ rill token issue --display-name "API Testing"
 rill service create my-api \
   --project-role viewer \
   --attributes '{"customer_id":"acme-corp"}'
+# Returns: rill_svc_...
 ```
 
 :::tip Token Documentation

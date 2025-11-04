@@ -53,6 +53,15 @@ rill token issue --display-name "Testing Token" --ttl-minutes 10080
 User tokens provide access to your data with your permissions. Store them securely and never commit them to version control. Treat them like passwords.
 :::
 
+## Token Permissions
+
+User tokens inherit your personal permissions from your user account:
+- **Organization permissions** - Your role in the organization (admin, editor, viewer, guest)
+- **Project permissions** - Your role in specific projects (admin, editor, viewer)
+- **Security policies** - Applied based on your user attributes (email, domain, groups)
+
+For more details on roles, see [Roles and Permissions](/manage/roles-permissions).
+
 ## Managing User Tokens
 
 ### Listing Your Tokens
@@ -102,6 +111,3 @@ curl https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/
 
 For more details, see [Custom API Integration](/integrate/custom-api).
 
-## Token Permissions
-
-Service tokens can be assigned roles at both the organization and project levels. For more details on using attributes with security policies, see the [security policies](/build/metrics-view/security) documentation.

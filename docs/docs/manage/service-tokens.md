@@ -2,7 +2,7 @@
 title: Service Tokens
 description: Create and manage service tokens for programmatic access to Rill
 sidebar_label: Service Tokens
-sidebar_position: 25
+sidebar_position: 27
 ---
 
 Service tokens (also called service accounts) provide programmatic access to Rill Cloud for production systems, scheduled jobs, backend APIs, and other automated workflows. Unlike [user tokens](/manage/user-tokens), service tokens persist even if the creating user is removed from the organization.
