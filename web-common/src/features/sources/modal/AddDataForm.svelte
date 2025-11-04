@@ -25,6 +25,7 @@
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./helpers";
+  import FormSection from "./FormSection.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -308,11 +309,10 @@
           disableMarginTop
         >
           <TabsContent value="parameters">
-            <form
+            <FormSection
               id={paramsFormId}
-              class="pb-5 flex-grow overflow-y-auto"
-              use:paramsEnhance
-              on:submit|preventDefault={paramsSubmit}
+              enhance={paramsEnhance}
+              onSubmit={paramsSubmit}
             >
               <FormRenderer
                 properties={filteredParamsProperties}
@@ -321,14 +321,13 @@
                 {onStringInputChange}
                 uploadFile={handleFileUpload}
               />
-            </form>
+            </FormSection>
           </TabsContent>
           <TabsContent value="dsn">
-            <form
+            <FormSection
               id={dsnFormId}
-              class="pb-5 flex-grow overflow-y-auto"
-              use:dsnEnhance
-              on:submit|preventDefault={dsnSubmit}
+              enhance={dsnEnhance}
+              onSubmit={dsnSubmit}
             >
               <FormRenderer
                 properties={filteredDsnProperties}
@@ -337,17 +336,12 @@
                 {onStringInputChange}
                 uploadFile={handleFileUpload}
               />
-            </form>
+            </FormSection>
           </TabsContent>
         </Tabs>
       {:else if isConnectorForm && connector.configProperties?.some((property) => property.key === "dsn")}
         <!-- Connector with only DSN - show DSN form directly -->
-        <form
-          id={dsnFormId}
-          class="pb-5 flex-grow overflow-y-auto"
-          use:dsnEnhance
-          on:submit|preventDefault={dsnSubmit}
-        >
+        <FormSection id={dsnFormId} enhance={dsnEnhance} onSubmit={dsnSubmit}>
           <FormRenderer
             properties={filteredDsnProperties}
             form={dsnForm}
@@ -355,15 +349,14 @@
             {onStringInputChange}
             uploadFile={handleFileUpload}
           />
-        </form>
+        </FormSection>
       {:else if isMultiStepConnector}
         {#if stepState.step === "connector"}
           <!-- GCS Step 1: Connector configuration -->
-          <form
+          <FormSection
             id={paramsFormId}
-            class="pb-5 flex-grow overflow-y-auto"
-            use:paramsEnhance
-            on:submit|preventDefault={paramsSubmit}
+            enhance={paramsEnhance}
+            onSubmit={paramsSubmit}
           >
             <GCSMultiStepForm
               properties={filteredParamsProperties}
@@ -372,14 +365,13 @@
               {onStringInputChange}
               {handleFileUpload}
             />
-          </form>
+          </FormSection>
         {:else}
           <!-- GCS Step 2: Source configuration -->
-          <form
+          <FormSection
             id={paramsFormId}
-            class="pb-5 flex-grow overflow-y-auto"
-            use:paramsEnhance
-            on:submit|preventDefault={paramsSubmit}
+            enhance={paramsEnhance}
+            onSubmit={paramsSubmit}
           >
             <FormRenderer
               properties={stepProperties}
@@ -388,14 +380,13 @@
               {onStringInputChange}
               uploadFile={handleFileUpload}
             />
-          </form>
+          </FormSection>
         {/if}
       {:else}
-        <form
+        <FormSection
           id={paramsFormId}
-          class="pb-5 flex-grow overflow-y-auto"
-          use:paramsEnhance
-          on:submit|preventDefault={paramsSubmit}
+          enhance={paramsEnhance}
+          onSubmit={paramsSubmit}
         >
           <FormRenderer
             properties={filteredParamsProperties}
@@ -404,7 +395,7 @@
             {onStringInputChange}
             uploadFile={handleFileUpload}
           />
-        </form>
+        </FormSection>
       {/if}
     </div>
 
