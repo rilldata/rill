@@ -34,7 +34,7 @@ select * from orders
 
 ### Specifying the Data Source Connector
 
-The `@connector` annotation explicitly defines which data source connector to use when executing the SQL query. This parameter is essential when working with multiple connectors of the same type, as it determines which connection credentials and source path to utilize. By default, query results are written to the project's default [OLAP engine](/connect/olap#olap-engines).
+The `@connector` annotation explicitly defines which data source connector to use when executing the SQL query. This parameter is essential when working with multiple connectors of the same type, as it determines which connection credentials and source path to utilize. By default, query results are written to the project's default [OLAP engine](/build/connectors/olap#olap-engines).
 
 ```sql
 -- @connector: bigquery
@@ -46,7 +46,7 @@ SELECT * FROM project_id.dataset_name.table_name
 SELECT * FROM mydb.public.users
 ```
 
-For projects configured with [multiple OLAP engines](/connect/olap/multiple-olap), you can specify both input and output connectors for a SQL model. Nested parameter syntax uses dot notation (e.g., `output.connector`).
+For projects configured with [multiple OLAP engines](/build/connectors/olap/multiple-olap), you can specify both input and output connectors for a SQL model. Nested parameter syntax uses dot notation (e.g., `output.connector`).
 
 ```sql
 -- @connector: clickhouse

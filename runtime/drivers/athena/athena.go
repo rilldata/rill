@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 )
 
 func init() {
@@ -31,7 +32,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Amazon Athena",
 	Description: "Connect to Amazon Athena database.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/athena",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/athena",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "aws_access_key_id",
@@ -90,9 +91,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config:  conf,
-		logger:  logger,
-		storage: st,
+		config:   conf,
+		logger:   logger,
+		storage:  st,
+		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
 }
@@ -113,6 +115,10 @@ type Connection struct {
 	config  *configProperties
 	logger  *zap.Logger
 	storage *storage.Client
+
+	client    *athena.Client
+	clientErr error
+	clientMu  *semaphore.Weighted
 }
 
 var _ drivers.Handle = &Connection{}
@@ -125,7 +131,7 @@ func (c *Connection) Ping(ctx context.Context) error {
 	}
 
 	// Execute a simple query to verify connection
-	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation)
+	_, err = c.executeQuery(ctx, client, "SELECT 1", c.config.Workgroup, c.config.OutputLocation, nil)
 	return err
 }
 
@@ -173,7 +179,7 @@ func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -263,31 +269,42 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 }
 
 func (c *Connection) getClient(ctx context.Context) (*athena.Client, error) {
-	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get AWS config: %w", err)
+	if err := c.clientMu.Acquire(ctx, 1); err != nil {
+		return nil, err
+	}
+	defer c.clientMu.Release(1)
+
+	if c.client != nil || c.clientErr != nil {
+		return c.client, c.clientErr
 	}
 
-	client := athena.NewFromConfig(awsConfig, func(o *athena.Options) {
+	awsConfig, err := c.awsConfig(ctx, c.config.AWSRegion)
+	if err != nil {
+		c.clientErr = fmt.Errorf("failed to get AWS config: %w", err)
+		return nil, c.clientErr
+	}
+
+	c.client = athena.NewFromConfig(awsConfig, func(o *athena.Options) {
 		o.TracerProvider = smithyoteltracing.Adapt(otel.GetTracerProvider())
 	})
-	return client, nil
+	return c.client, nil
 }
 
-func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string) (*string, error) {
+func (c *Connection) executeQuery(ctx context.Context, client *athena.Client, sql, workgroup, outputLocation string, args []string) (*string, error) {
 	executeParams := &athena.StartQueryExecutionInput{
 		QueryString: aws.String(sql),
 	}
-
 	// this is not required be can be infer auto from workgroup if configure in it.
 	if outputLocation != "" {
 		executeParams.ResultConfiguration = &types2.ResultConfiguration{
 			OutputLocation: aws.String(outputLocation),
 		}
 	}
-
 	if workgroup != "" { // primary is used if nothing is set
 		executeParams.WorkGroup = aws.String(workgroup)
+	}
+	if len(args) > 0 {
+		executeParams.ExecutionParameters = args
 	}
 
 	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)

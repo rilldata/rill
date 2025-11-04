@@ -6,7 +6,6 @@
     ConnectorDriverPropertyType,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import {
     defaults,
     superForm,
@@ -45,8 +44,6 @@
 
   export { paramsForm, dsnForm };
   export { handleSaveAnyway };
-
-  const dispatch = createEventDispatcher();
 
   // ClickHouse schema includes the 'managed' property for backend compatibility
   const clickhouseSchema = yup(getYupSchema["clickhouse"]);
