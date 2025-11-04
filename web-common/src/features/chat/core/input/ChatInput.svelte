@@ -123,7 +123,7 @@
     <div class="chat-input-dashboard-scope">
       {#if showContext}
         <!-- TODO: tooltip -->
-        <AlertCircleIcon size="16px" />
+        <AlertCircleIcon size="14px" />
         <span>Scoped to current dashboard</span>
       {/if}
     </div>
@@ -218,6 +218,6 @@
 
   .chat-input-dashboard-scope {
     @apply flex flex-row items-center w-full mx-1 gap-1;
-    @apply text-muted-foreground;
+    @apply text-xs text-muted-foreground;
   }
 </style>

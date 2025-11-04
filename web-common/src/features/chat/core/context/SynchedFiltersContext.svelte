@@ -94,8 +94,6 @@
   });
 </script>
 
-<svelte:window on:click={() => (open = false)} />
-
 {#if shouldShowFilters}
   <Tooltip.Root bind:open>
     <Tooltip.Trigger asChild let:builder>

@@ -22,23 +22,26 @@
   $: formattedTimeRange = createTimeRangeFormatter(context);
 
   $: formattedWhereFilters = createWhereFiltersFormatter(context);
+
+  let open = false;
 </script>
 
-<div class="flex flex-row items-center gap-2">
+<div class="context-container">
   {#if dashboardContextEntry}
-    <div class="flex flex-row items-center gap-1 text-white">
+    <div class="context-entry">
       <ExploreIcon size="16px" />
       <span>{dashboardContextEntry}</span>
     </div>
   {/if}
 
   {#if filtersContextCount}
-    <Tooltip.Root>
+    <Tooltip.Root bind:open>
       <Tooltip.Trigger asChild let:builder>
         <button
           {...getAttrs([builder])}
           use:builderActions={{ builders: [builder] }}
-          class="text-white"
+          class="context-entry hover:bg-primary-100"
+          on:click={() => (open = true)}
         >
           @ {filtersContextCount} filter(s)
         </button>
@@ -59,3 +62,15 @@
     </Tooltip.Root>
   {/if}
 </div>
+
+<style lang="postcss">
+  .context-container {
+    @apply flex flex-row items-center gap-2;
+  }
+
+  .context-entry {
+    @apply flex flex-row items-center gap-1;
+    @apply p-1 rounded-sm;
+    @apply text-sm text-muted-foreground;
+  }
+</style>

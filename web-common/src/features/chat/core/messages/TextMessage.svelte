@@ -2,14 +2,13 @@
   import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Collapsible from "@rilldata/web-common/components/collapsible";
-  import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
-  import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
   import ReadonlyConversationContext from "@rilldata/web-common/features/chat/core/context/ReadonlyConversationContext.svelte";
   import {
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
   } from "@rilldata/web-common/features/chat/core/messages/rewrite-citation-urls.ts";
+  import { ChevronDownIcon, ChevronRightIcon } from "lucide-svelte";
   import { derived } from "svelte/store";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
@@ -50,13 +49,19 @@
     {#if hasContext}
       <Collapsible.Root bind:open={contextOpened}>
         <Collapsible.Trigger asChild let:builder>
-          <Button type="link" builders={[builder]} class="ml-1">
+          <Button
+            type="link"
+            builders={[builder]}
+            class="mt-0.5 text-muted-foreground"
+          >
             {#if contextOpened}
-              <CaretDownFilledIcon size="12px" fillColor="white" />
+              <ChevronDownIcon size="12px" />
             {:else}
-              <CaretRightFilledIcon size="12px" fillColor="white" />
+              <ChevronRightIcon size="12px" />
             {/if}
-            <span class="text-white">Additional context</span>
+            <span class="text-sm text-muted-foreground">
+              Additional context
+            </span>
           </Button>
         </Collapsible.Trigger>
         <Collapsible.Content class="flex flex-wrap gap-1 items-center">
@@ -81,15 +86,14 @@
   }
 
   .chat-message-content {
-    padding: 0.375rem 0.5rem;
+    @apply px-4 py-2;
+    @apply text-sm;
     border-radius: 1rem;
-    font-size: 0.875rem;
-    line-height: 1.5;
     word-break: break-word;
   }
 
   .chat-message--user .chat-message-content {
-    @apply bg-primary-400 text-white rounded-br-lg;
+    @apply bg-primary-100/50 text-foreground rounded-br-lg;
   }
 
   .chat-message--assistant .chat-message-content {
