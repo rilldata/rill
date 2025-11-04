@@ -79,7 +79,7 @@ func (b exprSQLBuilder) writeSubquery(s *Subquery) error {
 		if err != nil {
 			return err
 		}
-		err = b.writeCondition(s.Where.Condition)
+		err = b.writeExpression(s.Where)
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func (b exprSQLBuilder) writeSubquery(s *Subquery) error {
 		if err != nil {
 			return err
 		}
-		err = b.writeCondition(s.Having.Condition)
+		err = b.writeExpression(s.Having)
 		if err != nil {
 			return err
 		}
