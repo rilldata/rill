@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -17,10 +18,7 @@ import (
 )
 
 func TestPgxOLAP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
-
+	testmode.Expensive(t)
 	_, olap := acquireTestPostgres(t)
 
 	t.Run("test map scan", func(t *testing.T) {
