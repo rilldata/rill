@@ -1,5 +1,8 @@
 import { getSmallestUnitInDateTime } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types.ts";
+import {
+  type DashboardTimeControls,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types.ts";
 import {
   type V1Expression,
   V1Operation,
@@ -7,22 +10,34 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { DateTime } from "luxon";
 
+/**
+ * Parses time range from filter expressions containing time dimension filters.
+ * This is a best effort attempt only, there are a lot more possibility with multiple instances of time dimension filters.
+ *
+ * Strategy:
+ * - Traverses filter tree to find time dimension comparisons
+ * - Sets start/end boundaries from first matching gt/gte/eq (start) and lt/lte/eq (end)
+ * - Falls back to timeRangeSummary min/max if one boundary is missing
+ * - Ignores OR expressions (conservative approach - only handles AND chains)
+ * - Ignores any other complex combinations of time dimension filters.
+ */
 export function parseTimeRangeFromFilters(
   filter: V1Expression,
   timeDimension: string,
   timezone: string,
   timeRangeSummary: V1TimeRangeSummary,
-) {
+): DashboardTimeControls | undefined {
   let start: DateTime | undefined = undefined;
   let end: DateTime | undefined = undefined;
 
-  const maybeSetTime = (expr: V1Expression, isStart: boolean) => {
+  const maybeSetStartOrEnd = (expr: V1Expression, isStart: boolean) => {
     if (!expr.cond?.exprs) return false;
     const ident = expr.cond.exprs[0]?.ident;
     if (ident !== timeDimension) return false;
 
     const val = expr.cond.exprs?.[1]?.val;
-    const valDt = DateTime.fromISO(val as string).setZone(timezone);
+    if (!(typeof val === "string")) return false;
+    const valDt = DateTime.fromISO(val).setZone(timezone);
     if (!valDt.isValid) return false;
 
     if (isStart && !start) {
@@ -53,27 +68,27 @@ export function parseTimeRangeFromFilters(
         break;
 
       case V1Operation.OPERATION_EQ:
-        if (maybeSetTime(f, true) && start) {
+        if (maybeSetStartOrEnd(f, true) && start) {
           end = offsetMinUnit(start);
         }
         break;
 
       case V1Operation.OPERATION_GT:
-        if (maybeSetTime(f, true) && start) {
+        if (maybeSetStartOrEnd(f, true) && start) {
           start = offsetMinUnit(start);
         }
         break;
 
       case V1Operation.OPERATION_GTE:
-        maybeSetTime(f, true);
+        maybeSetStartOrEnd(f, true);
         break;
 
       case V1Operation.OPERATION_LT:
-        maybeSetTime(f, false);
+        maybeSetStartOrEnd(f, false);
         break;
 
       case V1Operation.OPERATION_LTE:
-        if (maybeSetTime(f, false) && end) {
+        if (maybeSetStartOrEnd(f, false) && end) {
           end = offsetMinUnit(end);
         }
         break;
@@ -102,5 +117,5 @@ export function parseTimeRangeFromFilters(
 function offsetMinUnit(time: DateTime): DateTime {
   const smallestUnit = getSmallestUnitInDateTime(time);
   if (!smallestUnit) return time;
-  return time.minus({ [smallestUnit]: -1 });
+  return time.plus({ [smallestUnit]: 1 });
 }

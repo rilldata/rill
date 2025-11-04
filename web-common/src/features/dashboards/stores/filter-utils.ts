@@ -494,19 +494,23 @@ export function maybeConvertEqualityToInExpressions(expr: V1Expression) {
   );
 }
 
-export function maybeUnnestInExpressions(expr: V1Expression) {
-  if (
+/**
+ * Flattens the value part of in/nin expression. Eg,
+ * [ {ident}, {val: [a,b]} ] ==> [ {ident}, {val: a}, {val: b} ]
+ * This is needed to correct possibly correct filter sent by LLM.
+ */
+export function flattenInExpressionValues(expr: V1Expression) {
+  const notInExpr =
     !expr.cond?.op ||
     (expr.cond.op !== V1Operation.OPERATION_IN &&
-      expr.cond.op !== V1Operation.OPERATION_NIN)
-  )
-    return expr;
-  const ident = expr.cond.exprs?.[0]?.ident;
-  const vals = expr.cond.exprs?.slice(1).flatMap((e) => e.val);
+      expr.cond.op !== V1Operation.OPERATION_NIN);
+  if (notInExpr) return expr;
+  const ident = expr.cond!.exprs?.[0]?.ident;
+  const vals = expr.cond!.exprs?.slice(1).flatMap((e) => e.val);
   if (!ident || !vals) return expr;
   return createInExpression(
     ident,
     vals,
-    expr.cond.op === V1Operation.OPERATION_NIN,
+    expr.cond!.op === V1Operation.OPERATION_NIN,
   );
 }

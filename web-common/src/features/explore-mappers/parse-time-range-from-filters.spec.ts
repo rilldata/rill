@@ -96,7 +96,8 @@ describe("parseTimeRangeFromFilters", () => {
       },
     },
     {
-      title: ">= time and <= time with additional filters",
+      title:
+        "greater than or equals and less than or equals time with additional filters",
       expression: createAndExpression([
         createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook", "Google"]),
         createBinaryExpression(

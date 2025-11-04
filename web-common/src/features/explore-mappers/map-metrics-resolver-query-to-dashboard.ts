@@ -8,7 +8,7 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import {
   filterIdentifiers,
   maybeConvertEqualityToInExpressions,
-  maybeUnnestInExpressions,
+  flattenInExpressionValues,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { parseTimeRangeFromFilters } from "@rilldata/web-common/features/explore-mappers/parse-time-range-from-filters.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
@@ -151,7 +151,7 @@ export function mapResolverExpressionToV1Expression(
           .filter(Boolean) as V1Expression[] | undefined,
       },
     });
-    return maybeUnnestInExpressions(condExpr);
+    return flattenInExpressionValues(condExpr);
   }
 
   if (expr.subquery) {
@@ -239,7 +239,7 @@ function maybeGetTimeRangeFromFilter(
     timeRangeSummary,
   );
   if (!tr) return;
-  partialExploreState.selectedTimeRange = tr as DashboardTimeControls;
+  partialExploreState.selectedTimeRange = tr;
   // Remove any filter that apply on time dimension
   partialExploreState.whereFilter = filterIdentifiers(
     partialExploreState.whereFilter,

@@ -470,7 +470,7 @@ export function getSmallestUnit(
   return null;
 }
 
-export function getSmallestUnitInDateTime(time: DateTime) {
+export function getSmallestUnitInDateTime(time: DateTime): DateTimeUnit | null {
   if (time.millisecond) return "millisecond";
   if (time.second) return "second";
   if (time.minute) return "minute";
