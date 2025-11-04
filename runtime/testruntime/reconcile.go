@@ -269,6 +269,7 @@ type RequireResolveOptions struct {
 	Properties         map[string]any
 	Args               map[string]any
 	UserAttributes     map[string]any
+	AdditionalRules    []*runtimev1.SecurityRule
 	SkipSecurityChecks bool
 
 	Result        []map[string]any
@@ -286,8 +287,9 @@ func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireR
 		ResolverProperties: opts.Properties,
 		Args:               opts.Args,
 		Claims: &runtime.SecurityClaims{
-			UserAttributes: opts.UserAttributes,
-			SkipChecks:     opts.SkipSecurityChecks,
+			UserAttributes:  opts.UserAttributes,
+			AdditionalRules: opts.AdditionalRules,
+			SkipChecks:      opts.SkipSecurityChecks,
 		},
 	})
 
@@ -307,7 +309,10 @@ func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireR
 	// The caller can then access the updated values.
 	if opts.Update {
 		opts.Result = rows
-		opts.ResultCSV = resultToCSV(t, rows, res.Schema())
+		opts.ResultCSV = ""
+		if res != nil {
+			opts.ResultCSV = resultToCSV(t, rows, res.Schema())
+		}
 		opts.ErrorContains = ""
 		if err != nil {
 			opts.ErrorContains = err.Error()
