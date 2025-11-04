@@ -911,6 +911,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for Environment
 
+	// no validation rules for ProjectDisplayName
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
@@ -10804,6 +10806,95 @@ func (m *CompleteRequest) validate(all bool) error {
 
 	// no validation rules for Prompt
 
+	// no validation rules for Explore
+
+	if all {
+		switch v := interface{}(m.GetWhere()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteRequestValidationError{
+				field:  "Where",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeStart()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "TimeStart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "TimeStart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeStart()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteRequestValidationError{
+				field:  "TimeStart",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeEnd()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "TimeEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteRequestValidationError{
+					field:  "TimeEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeEnd()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteRequestValidationError{
+				field:  "TimeEnd",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return CompleteRequestMultiError(errors)
 	}
@@ -11047,6 +11138,95 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 	// no validation rules for ConversationId
 
 	// no validation rules for Prompt
+
+	// no validation rules for Explore
+
+	if all {
+		switch v := interface{}(m.GetWhere()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteStreamingRequestValidationError{
+				field:  "Where",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeStart()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "TimeStart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "TimeStart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeStart()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteStreamingRequestValidationError{
+				field:  "TimeStart",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeEnd()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "TimeEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CompleteStreamingRequestValidationError{
+					field:  "TimeEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeEnd()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CompleteStreamingRequestValidationError{
+				field:  "TimeEnd",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return CompleteStreamingRequestMultiError(errors)

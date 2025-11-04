@@ -37,13 +37,12 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		args = append(args, limit+1)
 	}
 
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
-	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q, args...)
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -98,13 +97,12 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, limit+1)
 	}
 
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
-	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q, args...)
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -133,19 +131,19 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := `
 	SELECT 
-		column_name, 
-		data_type
-	FROM information_schema.columns
-	WHERE table_schema = $1 AND table_name = $2
+		CASE WHEN t.table_type = 'view' THEN true ELSE false END AS view,
+		c.column_name, 
+		c.data_type
+	FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema
+	WHERE c.table_schema = $1 AND c.table_name = $2
 	ORDER BY ordinal_position
 	`
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
-	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
+	rows, err := db.QueryContext(ctx, q, databaseSchema, table)
 	if err != nil {
 		return nil, err
 	}
@@ -153,13 +151,15 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 
 	columns := make(map[string]string)
 	var name, typ string
+	var view bool
 	for rows.Next() {
-		if err := rows.Scan(&name, &typ); err != nil {
+		if err := rows.Scan(&view, &name, &typ); err != nil {
 			return nil, err
 		}
 		columns[name] = typ
 	}
 	return &drivers.TableMetadata{
+		View:   view,
 		Schema: columns,
 	}, rows.Err()
 }

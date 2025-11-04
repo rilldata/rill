@@ -8,15 +8,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestOLAP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
-
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 	tests := []struct {
 		query  string
@@ -121,10 +119,7 @@ func TestOLAP(t *testing.T) {
 }
 
 func TestEmptyRows(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
-
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT int_col, float_col FROM `rilldata.integration_test.all_datatypes` LIMIT 0"})
 	require.NoError(t, err)
@@ -140,10 +135,7 @@ func TestEmptyRows(t *testing.T) {
 }
 
 func TestExec(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
-
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
 	// create table with dry run
@@ -160,10 +152,7 @@ func TestExec(t *testing.T) {
 }
 
 func TestScan(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
-
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
 	t.Run("successful scan with various types", func(t *testing.T) {

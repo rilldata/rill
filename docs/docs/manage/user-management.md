@@ -11,7 +11,7 @@ In Rill Cloud, there are several levels of user management:
 
 :::info
 
-For a detailed breakdown of access permissions at different levels, see the [Roles and Permissions](roles-permissions.md) page!
+For a detailed breakdown of access permissions at different levels, see the [Roles and Permissions](roles-permissions) page!
 
 :::
 
@@ -30,7 +30,7 @@ At the organization-level, users can have one of the following roles:
 - **Viewers** can browse the projects they have been given direct access to or indirect access to through user group memberships.
 - **Guests** are similar to viewers, but not part of the "all members" usergroup which is added to projects by default.
 
-For a detailed list of permissions, please refer to the [Roles and Permissions](roles-permissions.md).
+For a detailed list of permissions, please refer to the [Roles and Permissions](roles-permissions).
 
 ### How to Add an Organization User
 Admins can be invited to an organization from the *users* page, or via the CLI.
@@ -99,7 +99,7 @@ Project users can have one of three roles:
 - **Editors** can add and remove non-admin project members
 - **Admins** can manage the project by updating the project files, configuring environment variables, and accessing the status page
 
-For a detailed list of permissions, please refer to the [Roles and Permissions](roles-permissions.md).
+For a detailed list of permissions, please refer to the [Roles and Permissions](roles-permissions).
 
 ### How to add a Project User
 There are a few ways to add a project user to Rill Cloud.
@@ -154,7 +154,7 @@ Another way to manage access is via user groups. You use the Rill CLI to create 
 
 User groups are scoped to an organization. They cannot be created only for a single project. Only organization members can be added to user groups, and user groups can only be added to projects within the organization they were created.
 
-For more information on setting up user groups, see [user group permissions](usergroup-management.md).
+For more information on setting up user groups, see [user group permissions](usergroup-management).
 
 ### How to add a user to a Usergroup
 There are two ways to add a user to a user group.

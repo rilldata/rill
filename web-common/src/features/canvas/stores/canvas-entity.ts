@@ -70,7 +70,7 @@ export class CanvasEntity {
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
-  firstLoad = true;
+  firstLoad = writable(true);
   themeName = writable<string | undefined>(undefined);
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
@@ -250,11 +250,14 @@ export class CanvasEntity {
   processRows = (canvasData: Partial<CanvasResponse>) => {
     const newComponents = canvasData.components;
     const existingKeys = new Set(this.components.keys());
-    const rows = canvasData.canvas?.rows ?? [];
+    const rows = canvasData.canvas?.rows;
+
+    if (!rows) return;
 
     const set = new Set<string>();
 
     let createdNewComponent = false;
+    const isFirstLoad = get(this.firstLoad);
 
     rows.forEach((row, rowIndex) => {
       const items = row.items ?? [];
@@ -299,10 +302,10 @@ export class CanvasEntity {
 
     // Calling this function triggers the rows to rerender, ensuring they're up to date
     // with the components Map, which is not reactive
-    if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+    if ((!didUpdateRowCount && createdNewComponent) || isFirstLoad) {
       this._rows.refresh();
+      this.firstLoad.set(false);
     }
-    this.firstLoad = false;
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {

@@ -454,7 +454,7 @@ export async function runTests(metricsViewName: string) {
       end: interval.end?.toISO({ suppressMilliseconds: true }),
     };
 
-    if (response?.timeRanges?.[i]?.start !== apiFormat.start) {
+    if (response?.resolvedTimeRanges?.[i]?.start !== apiFormat.start) {
       console.log(testCases[i].description);
       console.log(
         `${failures.toLocaleString("en-US", {
@@ -463,7 +463,7 @@ export async function runTests(metricsViewName: string) {
         })}. FAIL (start) // ${testCases[i].syntax.padEnd(36)} // Expected: ${String(apiFormat.start).padEnd(20)} // Got: ${response?.timeRanges?.[i]?.start}`,
       );
       failures++;
-    } else if (response?.timeRanges?.[i]?.end !== apiFormat.end) {
+    } else if (response?.resolvedTimeRanges?.[i]?.end !== apiFormat.end) {
       console.log(testCases[i].description);
       console.log(
         `${failures.toLocaleString("en-US", {
