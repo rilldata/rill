@@ -1,4 +1,4 @@
-package snowflake
+package postgres
 
 import (
 	"context"
@@ -15,7 +15,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectSnowflake
+	return drivers.DialectPostgres
 }
 
 // Exec implements drivers.OLAPStore.
@@ -37,13 +37,13 @@ func (c *connection) InformationSchema() drivers.OLAPInformationSchema {
 
 // MayBeScaledToZero implements drivers.OLAPStore.
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
-	return true
+	return false
 }
 
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	if c.configProperties.LogQueries {
-		c.logger.Info("Snowflake query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+	if c.logger != nil {
+		c.logger.Info("Postgres query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -62,7 +62,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
-		_ = rows.Close()
+		rows.Close()
 		return nil, err
 	}
 
@@ -99,10 +99,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 
 	rtSchema := &runtimev1.StructType{}
 	for name, typ := range meta.Schema {
-		t, err := databaseTypeToPB(typ, true)
-		if err != nil {
-			return nil, err
-		}
+		t := databaseTypeToPB(typ)
 		rtSchema.Fields = append(rtSchema.Fields, &runtimev1.StructType_Field{
 			Name: name,
 			Type: t,
@@ -120,79 +117,81 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
-	if r == nil {
-		return nil, nil
-	}
-
-	cts, err := r.ColumnTypes()
+	fds, err := r.ColumnTypes()
 	if err != nil {
 		return nil, err
 	}
 
-	fields := make([]*runtimev1.StructType_Field, len(cts))
-	for i, ct := range cts {
-		nullable, ok := ct.Nullable()
-		if !ok {
-			nullable = true
-		}
-
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
+	fields := make([]*runtimev1.StructType_Field, len(fds))
+	for i, fd := range fds {
+		rt := databaseTypeToPB(fd.DatabaseTypeName())
 		fields[i] = &runtimev1.StructType_Field{
-			Name: ct.Name(),
-			Type: t,
+			Name: fd.Name(),
+			Type: rt,
 		}
 	}
-
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
-	t := &runtimev1.Type{Nullable: nullable}
+func databaseTypeToPB(dbt string) *runtimev1.Type {
+	t := &runtimev1.Type{Nullable: true}
+
+	// Handle array types (prefixed with underscore)
+	if dbt != "" && dbt[0] == '_' {
+		t.Code = runtimev1.Type_CODE_ARRAY
+		return t
+	}
+
 	switch dbt {
-	case "NUMBER", "DECIMAL", "NUMERIC":
+	case "NUMERIC", "DECIMAL":
 		t.Code = runtimev1.Type_CODE_DECIMAL
-	case "INT", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "BYTEINT": // All integers have same range in Snowflake
-		t.Code = runtimev1.Type_CODE_INT256
-	case "FLOAT", "FLOAT4", "FLOAT8": // All floats have same range in Snowflake
+	case "INT2", "SMALLINT", "SMALLSERIAL":
+		t.Code = runtimev1.Type_CODE_INT64 // sql driver returns int64 for smallint
+	case "INT4", "INTEGER", "SERIAL":
+		t.Code = runtimev1.Type_CODE_INT64 // sql driver returns int64 for INT4
+	case "INT8", "BIGINT", "BIGSERIAL":
+		t.Code = runtimev1.Type_CODE_INT64
+	case "FLOAT4", "REAL":
+		t.Code = runtimev1.Type_CODE_FLOAT64 // sql driver returns float64 for FLOAT4
+	case "FLOAT8", "DOUBLE PRECISION":
 		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "DOUBLE", "DOUBLE PRECISION", "REAL":
-		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "FIXED":
+	case "VARCHAR", "CHAR", "CHARACTER", "CHARACTER VARYING", "TEXT", "BPCHAR", "NAME":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "VARCHAR", "STRING", "TEXT", "CHAR", "CHARACTER":
-		t.Code = runtimev1.Type_CODE_STRING
-	case "BINARY", "VARBINARY":
+	case "BYTEA":
 		t.Code = runtimev1.Type_CODE_BYTES
-	case "BOOLEAN":
+	case "BOOL", "BOOLEAN":
 		t.Code = runtimev1.Type_CODE_BOOL
 	case "DATE":
 		t.Code = runtimev1.Type_CODE_DATE
-	case "DATETIME", "TIMESTAMP_NTZ": // ideally there should be a separate type signifying no timezone but runtime doesn't have one
+	case "TIME", "TIME WITHOUT TIME ZONE":
+		t.Code = runtimev1.Type_CODE_STRING // TIME is returned as string by pgx
+	case "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case "TIME":
-		t.Code = runtimev1.Type_CODE_TIME
-	case "TIMESTAMP_LTZ", "TIMESTAMP_TZ", "TIMESTAMP":
+	case "TIMESTAMPTZ", "TIMESTAMP WITH TIME ZONE":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "INTERVAL":
 		t.Code = runtimev1.Type_CODE_INTERVAL
-	case "HUGEINT":
-		t.Code = runtimev1.Type_CODE_INT128
-	case "ENUM":
-		t.Code = runtimev1.Type_CODE_STRING // TODO - Consider how to handle enums
 	case "UUID":
 		t.Code = runtimev1.Type_CODE_UUID
-	case "VARIANT", "OBJECT", "ARRAY", "STRUCT":
+	case "JSON", "JSONB":
 		t.Code = runtimev1.Type_CODE_JSON
-	case "GEOMETRY":
+	case "ARRAY":
+		t.Code = runtimev1.Type_CODE_ARRAY
+	case "INET", "CIDR", "MACADDR", "MACADDR8":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "NULL":
-		t.Code = runtimev1.Type_CODE_UNSPECIFIED
+	case "BIT", "BIT VARYING", "VARBIT":
+		t.Code = runtimev1.Type_CODE_STRING
+	case "POINT", "LINE", "LSEG", "BOX", "PATH", "POLYGON", "CIRCLE":
+		t.Code = runtimev1.Type_CODE_STRING
+	case "MONEY":
+		t.Code = runtimev1.Type_CODE_DECIMAL
+	case "XML":
+		t.Code = runtimev1.Type_CODE_STRING
+	case "TSVECTOR", "TSQUERY":
+		t.Code = runtimev1.Type_CODE_STRING
 	default:
-		return nil, fmt.Errorf("unhandled snowflake type: %s", dbt)
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED
+		return t
 	}
-	return t, nil
+	return t
 }
