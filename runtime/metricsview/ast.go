@@ -988,6 +988,7 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 
 // buildWhereForUnderlyingTable constructs an expression for a WHERE clause for the underlying table.
 // It combines the provided where expression with any security policy filters.
+// It allows the input `where` to be nil, and returns nil if there are no conditions to apply.
 func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error) {
 	var res *ExprNode
 
@@ -1069,13 +1070,11 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.Where != nil {
-		var where *ExprNode
-		if spine.Where.Expression != nil {
-			var err error
-			where, err = a.buildWhereForUnderlyingTable(spine.Where.Expression)
-			if err != nil {
-				return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
-			}
+		// Using buildWhereForUnderlyingTable to include security filters.
+		// Note that buildWhereForUnderlyingTable handles nil expressions gracefully.
+		where, err := a.buildWhereForUnderlyingTable(spine.Where.Expression)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
 		}
 
 		n := &SelectNode{
@@ -1086,7 +1085,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			Group:     true,
 			Where:     where,
 		}
-		err := a.AddTimeRange(n, tr)
+		err = a.AddTimeRange(n, tr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add time range: %w", err)
 		}
