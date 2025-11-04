@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import ColumnHeader from "../core/ColumnHeader.svelte";
   import type {
     VirtualizedTableColumns,
     VirtualizedTableConfig,
   } from "../types";
-
-  const dispatch = createEventDispatcher();
 
   export let columns: VirtualizedTableColumns[];
   export let pinnedColumns: VirtualizedTableColumns[] = [];
@@ -14,6 +12,8 @@
   export let noPin = false;
   export let showDataIcon = false;
   export let sortByMeasure: string | null = null;
+  export let onClickColumn: (columnName: string) => void = () => {};
+  export let onPin: (column: VirtualizedTableColumns) => void = () => {};
 
   const config: VirtualizedTableConfig = getContext("config");
 
@@ -43,17 +43,15 @@
   {#each virtualColumnItems as header (header.key)}
     {@const props = getColumnHeaderProps(header)}
     <ColumnHeader
-      on:resize-column
-      on:reset-column-width
       {...props}
       {header}
       {noPin}
       {showDataIcon}
-      on:pin={() => {
-        dispatch("pin", columns[header.index]);
+      onPin={() => {
+        onPin(columns[header.index]);
       }}
-      on:click-column={() => {
-        dispatch("click-column", columns[header.index]?.name);
+      onClickColumn={() => {
+        onClickColumn(columns[header.index].name);
       }}
     />
   {/each}
