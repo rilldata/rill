@@ -1,15 +1,23 @@
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import {
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_TIME_RANGE_SUMMARY,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
-import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
+import {
+  mapMetricsResolverQueryToDashboard,
+  mapResolverExpressionToV1Expression,
+} from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import {
   type DashboardTimeControls,
   TimeRangePreset,
@@ -19,8 +27,14 @@ import {
   DashboardState_LeaderboardSortDirection,
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { Schema as MetricsResolverQuery } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import {
+  type V1Expression,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
+import type {
+  Expression,
+  Schema as MetricsResolverQuery,
+} from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 import { describe, expect, it } from "vitest";
 
 describe("mapMetricsResolverQueryToDashboard", () => {
@@ -169,6 +183,65 @@ describe("mapMetricsResolverQueryToDashboard", () => {
         },
       },
     },
+
+    {
+      title: "time dimension filter",
+      query: {
+        measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+        dimensions: [{ name: AD_BIDS_PUBLISHER_DIMENSION }],
+        where: {
+          cond: {
+            op: "and",
+            exprs: [
+              {
+                cond: {
+                  op: "in",
+                  exprs: [
+                    { name: AD_BIDS_PUBLISHER_DIMENSION },
+                    { val: "Facebook" as any },
+                  ],
+                },
+              },
+              {
+                cond: {
+                  op: "gt",
+                  exprs: [
+                    { name: AD_BIDS_TIMESTAMP_DIMENSION },
+                    { val: "2022-02-10T00:00:00Z" as any },
+                  ],
+                },
+              },
+              {
+                cond: {
+                  op: "lt",
+                  exprs: [
+                    { name: AD_BIDS_TIMESTAMP_DIMENSION },
+                    { val: "2022-03-20T00:00:00Z" as any },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+      expectedPartialExplore: {
+        activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+        selectedTimeRange: {
+          name: TimeRangePreset.CUSTOM,
+          start: new Date("2022-02-11T00:00:00.000Z"),
+          end: new Date("2022-03-20T00:00:00.000Z"),
+        },
+        whereFilter: createAndExpression([
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook"]),
+        ]),
+
+        visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+        allMeasuresVisible: false,
+        visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+        allDimensionsVisible: false,
+        selectedDimensionName: AD_BIDS_PUBLISHER_DIMENSION,
+      },
+    },
   ];
 
   for (const { title, query, expectedPartialExplore } of TestCases) {
@@ -177,9 +250,75 @@ describe("mapMetricsResolverQueryToDashboard", () => {
         mapMetricsResolverQueryToDashboard(
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
           AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
           query,
         ),
       ).toEqual(expectedPartialExplore);
+    });
+  }
+});
+
+describe("mapResolverExpressionToV1Expression", () => {
+  const TestCases: {
+    title: string;
+    expression: Expression;
+    expectedExpression: V1Expression;
+  }[] = [
+    {
+      title: "array of values for in expression",
+      expression: {
+        cond: {
+          op: "in",
+          exprs: [
+            { name: AD_BIDS_PUBLISHER_DIMENSION },
+            { val: ["Facebook", "Google"] as any },
+          ],
+        },
+      },
+      expectedExpression: createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+        "Facebook",
+        "Google",
+      ]),
+    },
+    {
+      title: "separate values for in expression",
+      expression: {
+        cond: {
+          op: "in",
+          exprs: [
+            { name: AD_BIDS_PUBLISHER_DIMENSION },
+            { val: "Facebook" as any },
+            { val: "Google" as any },
+          ],
+        },
+      },
+      expectedExpression: createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+        "Facebook",
+        "Google",
+      ]),
+    },
+    {
+      title: "eq expression",
+      expression: {
+        cond: {
+          op: "eq",
+          exprs: [
+            { name: AD_BIDS_PUBLISHER_DIMENSION },
+            { val: "Facebook" as any },
+          ],
+        },
+      },
+      expectedExpression: createInExpression(AD_BIDS_PUBLISHER_DIMENSION, [
+        "Facebook",
+      ]),
+    },
+  ];
+
+  for (const { title, expression, expectedExpression } of TestCases) {
+    it(title, () => {
+      expect(mapResolverExpressionToV1Expression(expression)).toEqual(
+        expectedExpression,
+      );
     });
   }
 });

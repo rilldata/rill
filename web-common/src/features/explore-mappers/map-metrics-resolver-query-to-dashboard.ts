@@ -5,7 +5,12 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
-import { maybeConvertEqualityToInExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import {
+  filterIdentifiers,
+  maybeConvertEqualityToInExpressions,
+  flattenInExpressionValues,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { parseTimeRangeFromFilters } from "@rilldata/web-common/features/explore-mappers/parse-time-range-from-filters.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
 import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
@@ -21,6 +26,7 @@ import {
   type V1Expression,
   type V1MetricsViewSpec,
   V1Operation,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type {
   Dimension,
@@ -35,6 +41,7 @@ import type { SortingState } from "@tanstack/svelte-table";
 export function mapMetricsResolverQueryToDashboard(
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
   query: MetricsResolverQuery,
 ) {
   // Build partial ExploreState directly from Query
@@ -86,6 +93,12 @@ export function mapMetricsResolverQueryToDashboard(
     );
   }
 
+  maybeGetTimeRangeFromFilter(
+    partialExploreState,
+    metricsViewSpec,
+    timeRangeSummary,
+  );
+
   // Convert sort
   if (query.sort) {
     mapSort(query.measures ?? [], query.sort, partialExploreState);
@@ -99,6 +112,60 @@ export function mapMetricsResolverQueryToDashboard(
   mapActivePage(query, partialExploreState, timeDimensions);
 
   return partialExploreState;
+}
+
+const OperationMap: Record<string, V1Operation> = {
+  "": V1Operation.OPERATION_UNSPECIFIED,
+  eq: V1Operation.OPERATION_EQ,
+  neq: V1Operation.OPERATION_NEQ,
+  lt: V1Operation.OPERATION_LT,
+  lte: V1Operation.OPERATION_LTE,
+  gt: V1Operation.OPERATION_GT,
+  gte: V1Operation.OPERATION_GTE,
+  in: V1Operation.OPERATION_IN,
+  nin: V1Operation.OPERATION_NIN,
+  ilike: V1Operation.OPERATION_LIKE,
+  nilike: V1Operation.OPERATION_NLIKE,
+  or: V1Operation.OPERATION_OR,
+  and: V1Operation.OPERATION_AND,
+};
+export function mapResolverExpressionToV1Expression(
+  expr: Expression | undefined,
+): V1Expression | undefined {
+  if (!expr) return undefined;
+
+  if (expr.name) {
+    return { ident: expr.name };
+  }
+
+  if (expr.val) {
+    return { val: expr.val };
+  }
+
+  if (expr.cond) {
+    const condExpr = maybeConvertEqualityToInExpressions({
+      cond: {
+        op: OperationMap[expr.cond.op] || V1Operation.OPERATION_UNSPECIFIED,
+        exprs: expr.cond.exprs
+          ?.map(mapResolverExpressionToV1Expression)
+          .filter(Boolean) as V1Expression[] | undefined,
+      },
+    });
+    return flattenInExpressionValues(condExpr);
+  }
+
+  if (expr.subquery) {
+    return {
+      subquery: {
+        dimension: expr.subquery.dimension.name,
+        measures: expr.subquery.measures.map((m) => m.name),
+        where: mapResolverExpressionToV1Expression(expr.subquery.where),
+        having: mapResolverExpressionToV1Expression(expr.subquery.having),
+      },
+    };
+  }
+
+  return {};
 }
 
 function getValidDimensions(
@@ -153,57 +220,31 @@ function mapResolverTimeRangeToDashboardControls(
   return { name: TimeRangePreset.ALL_TIME } as DashboardTimeControls;
 }
 
-const OperationMap: Record<string, V1Operation> = {
-  "": V1Operation.OPERATION_UNSPECIFIED,
-  eq: V1Operation.OPERATION_EQ,
-  neq: V1Operation.OPERATION_NEQ,
-  lt: V1Operation.OPERATION_LT,
-  lte: V1Operation.OPERATION_LTE,
-  gt: V1Operation.OPERATION_GT,
-  gte: V1Operation.OPERATION_GTE,
-  in: V1Operation.OPERATION_IN,
-  nin: V1Operation.OPERATION_NIN,
-  ilike: V1Operation.OPERATION_LIKE,
-  nilike: V1Operation.OPERATION_NLIKE,
-  or: V1Operation.OPERATION_OR,
-  and: V1Operation.OPERATION_AND,
-};
-function mapResolverExpressionToV1Expression(
-  expr: Expression | undefined,
-): V1Expression | undefined {
-  if (!expr) return undefined;
-
-  if (expr.name) {
-    return { ident: expr.name };
+function maybeGetTimeRangeFromFilter(
+  partialExploreState: Partial<ExploreState>,
+  metricsViewSpec: V1MetricsViewSpec,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+) {
+  if (
+    !partialExploreState.whereFilter ||
+    !metricsViewSpec.timeDimension ||
+    !timeRangeSummary
+  ) {
+    return;
   }
-
-  if (expr.val) {
-    return { val: expr.val };
-  }
-
-  if (expr.cond) {
-    return maybeConvertEqualityToInExpressions({
-      cond: {
-        op: OperationMap[expr.cond.op] || V1Operation.OPERATION_UNSPECIFIED,
-        exprs: expr.cond.exprs
-          ?.map(mapResolverExpressionToV1Expression)
-          .filter(Boolean) as V1Expression[] | undefined,
-      },
-    });
-  }
-
-  if (expr.subquery) {
-    return {
-      subquery: {
-        dimension: expr.subquery.dimension.name,
-        measures: expr.subquery.measures.map((m) => m.name),
-        where: mapResolverExpressionToV1Expression(expr.subquery.where),
-        having: mapResolverExpressionToV1Expression(expr.subquery.having),
-      },
-    };
-  }
-
-  return {};
+  const tr = parseTimeRangeFromFilters(
+    partialExploreState.whereFilter,
+    metricsViewSpec.timeDimension,
+    partialExploreState.selectedTimezone ?? "UTC",
+    timeRangeSummary,
+  );
+  if (!tr) return;
+  partialExploreState.selectedTimeRange = tr;
+  // Remove any filter that apply on time dimension
+  partialExploreState.whereFilter = filterIdentifiers(
+    partialExploreState.whereFilter,
+    (_, i) => i !== metricsViewSpec.timeDimension,
+  );
 }
 
 function mapSort(

@@ -13,17 +13,76 @@ In Rill, partitions are a special type of state that allows you to explicitly pa
 Under the `partitions:` parameter, you will define the pattern in which your data is stored. Both SQL and glob patterns support [templating](/build/connectors/templating) and can be used to separate `dev` and `prod` instances.
 
 ### SQL
-When defining your SQL, it is important to understand the data that you are querying and creating a partition that makes sense. For example, you might select a distinct customer_name per partition, or partition the SQL by a chronological partition, such as month.
+When defining your SQL partitions, it is important to understand the data that you are querying and creating a partition that makes sense. For example, you might select a distinct customer_name per partition, or partition the SQL by a chronological partition, such as month.
+
+#### Using DuckDB for Partition Queries
+
+By default, partition queries use DuckDB (Rill's embedded OLAP engine):
 
 ```yaml
 partitions:
   sql: SELECT range AS num FROM range(0,100) #num is the partition variable and can be referenced as {{partition.num}}
   #sql: SELECT DISTINCT customer_name as cust_name from table #results in {{partition.cust_name}}
-dev: 
+dev:
   partitions:
     sql: SELECT range AS num FROM range(0,10)
 sql: SELECT * from table where column = {{partition.num}}
 ```
+
+#### Using Other OLAP Engines for Partition Queries
+
+You can now use **BigQuery** or **Snowflake** as the OLAP engine for your partition queries by specifying a `connector` in the `partitions` section. This is particularly useful when:
+- Your source data is already in these warehouses
+- You want to leverage native partitioning features (like BigQuery's `_PARTITIONTIME`)
+- You need to query large tables that benefit from the warehouse's optimization
+
+**BigQuery Example:**
+
+```yaml
+type: model
+
+partitions:
+  connector: bigquery
+  sql: |
+    SELECT DISTINCT _PARTITIONTIME AS partition_time
+    FROM `project.dataset.table`
+    WHERE TIMESTAMP_TRUNC(_PARTITIONTIME, MONTH) = TIMESTAMP("2025-08-01")
+
+connector: bigquery
+sql: |
+  SELECT * FROM `project.dataset.table`
+  WHERE _PARTITIONTIME = '{{ .partition.partition_time }}'
+
+output:
+  connector: duckdb  # Results stored in DuckDB for fast dashboard queries
+```
+
+**Snowflake Example:**
+
+```yaml
+type: model
+connector: snowflake
+
+partitions:
+  connector: snowflake
+  sql: |
+    select 
+      DISTINCT date_trunc('YEAR', release_date) as "year" 
+    from 
+      rillqa.public.horror_movies 
+    where "year" > '1999-01-01' limit 3
+
+sql: select * from rillqa.public.horror_movies where date_trunc('YEAR', release_date) = '{{ .partition.year }}'
+```
+
+:::tip Why use multiple connectors?
+
+Using BigQuery or Snowflake for partition discovery and data extraction, then outputting to DuckDB, gives you:
+- **Best of both worlds**: Leverage your warehouse's partitioning and scale for extraction
+- **Fast dashboards**: DuckDB provides extremely fast query performance for end-user dashboards
+- **Cost optimization**: Only query what you need from your warehouse, reducing scan costs
+
+:::
 
 :::tip Using the SQL partition in the YAML
 Depending on the column name of the partition, you can reference the partition using `{{ .partition.<column_name> }}` in the model's SQL query.

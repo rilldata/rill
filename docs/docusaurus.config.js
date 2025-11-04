@@ -155,12 +155,6 @@ const config = {
             label: "Contact Us",
           },
 
-          {
-            type: "html",
-            position: "right",
-            value: '<a href="https://docs.rilldata.com/notes" class="navbar-release-notes-mobile navbar-icon-link" aria-label="Release Notes">Release Notes</i></a>',
-          },
-
           // Right side items
           {
             type: "html",
@@ -177,22 +171,6 @@ const config = {
             type: "search",
             position: "right"
           },
-          {
-            type: "html",
-            position: "right",
-            value: '<span class="navbar-divider"></span>',
-          },
-          // {
-          //   type: "html",
-          //   position: "right",
-          //   value: '<button id="dark-mode-toggle" class="navbar-icon-link" aria-label="Toggle dark mode"><div class="icon-container"></div></button>',
-          // },
-
-          // {
-          //   type: "html",
-          //   position: "right",
-          //   value: '<a href="https://ui.rilldata.com" class="navbar-cloud-btn" target="_blank" rel="noopener">Rill Cloud</a>',
-          // },
         ],
       },
       footer: {
