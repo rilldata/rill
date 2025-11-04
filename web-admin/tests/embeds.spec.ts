@@ -87,7 +87,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29"}}`,
+            `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
