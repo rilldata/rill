@@ -31,10 +31,11 @@ sql: SELECT * from table where column = {{partition.num}}
 
 #### Using Other OLAP Engines for Partition Queries
 
-You can now use **BigQuery** or **Snowflake** as the OLAP engine for your partition queries by specifying a `connector` in the `partitions` section. This is particularly useful when:
-- Your source data is already in these warehouses
+You can use **BigQuery**, **Snowflake**, **MySQL**, **Postgres**, **Redshift**, or **Athena** as the OLAP engine for your partition queries by specifying a `connector` in the `partitions` section. This is particularly useful when:
+- Your source data is already in these data warehouses or databases
 - You want to leverage native partitioning features (like BigQuery's `_PARTITIONTIME`)
 - You need to query large tables that benefit from the warehouse's optimization
+- You want to avoid duplicating data by querying directly from the source
 
 **BigQuery Example:**
 
@@ -75,9 +76,94 @@ partitions:
 sql: select * from rillqa.public.horror_movies where date_trunc('YEAR', release_date) = '{{ .partition.year }}'
 ```
 
+**MySQL Example:**
+
+```yaml
+type: model
+
+partitions:
+  connector: mysql
+  sql: |
+    SELECT DISTINCT DATE(order_date) AS order_day
+    FROM orders
+    WHERE order_date >= '2025-01-01'
+
+connector: mysql
+sql: |
+  SELECT * FROM orders
+  WHERE DATE(order_date) = '{{ .partition.order_day }}'
+
+output:
+  connector: duckdb
+```
+
+**Postgres Example:**
+
+```yaml
+type: model
+
+partitions:
+  connector: postgres
+  sql: |
+    SELECT DISTINCT DATE_TRUNC('day', created_at) AS partition_day
+    FROM events
+    WHERE created_at >= '2025-01-01'
+
+connector: postgres
+sql: |
+  SELECT * FROM events
+  WHERE DATE_TRUNC('day', created_at) = '{{ .partition.partition_day }}'
+
+output:
+  connector: duckdb
+```
+
+**Redshift Example:**
+
+```yaml
+type: model
+
+partitions:
+  connector: redshift
+  sql: |
+    SELECT DISTINCT DATE_TRUNC('month', transaction_date) AS month
+    FROM transactions
+    WHERE transaction_date >= '2024-01-01'
+
+connector: redshift
+sql: |
+  SELECT * FROM transactions
+  WHERE DATE_TRUNC('month', transaction_date) = '{{ .partition.month }}'
+
+output:
+  connector: duckdb
+```
+
+**Athena Example:**
+
+```yaml
+type: model
+
+partitions:
+  connector: athena
+  sql: |
+    SELECT DISTINCT year, month
+    FROM s3_data_partitioned
+    WHERE year >= 2024
+
+connector: athena
+sql: |
+  SELECT * FROM s3_data_partitioned
+  WHERE year = {{ .partition.year }}
+    AND month = {{ .partition.month }}
+
+output:
+  connector: duckdb
+```
+
 :::tip Why use multiple connectors?
 
-Using BigQuery or Snowflake for partition discovery and data extraction, then outputting to DuckDB, gives you:
+Using BigQuery, Snowflake, MySQL, Postgres, Redshift, or Athena for partition discovery and data extraction, then outputting to DuckDB, gives you:
 - **Best of both worlds**: Leverage your warehouse's partitioning and scale for extraction
 - **Fast dashboards**: DuckDB provides extremely fast query performance for end-user dashboards
 - **Cost optimization**: Only query what you need from your warehouse, reducing scan costs

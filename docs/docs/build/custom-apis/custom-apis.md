@@ -18,9 +18,9 @@ type: api
 sql: SELECT abc FROM my_model
 ```
 
-### Using BigQuery or Snowflake as the OLAP Engine
+### Using Alternative OLAP Engines
 
-By default, SQL APIs execute queries against your default OLAP engine (typically DuckDB). However, you can specify a different OLAP engine using the `connector` parameter. This allows you to query data directly from BigQuery or Snowflake tables without ingesting them into Rill.
+By default, SQL APIs execute queries against your default OLAP engine (typically DuckDB). However, you can specify a different OLAP engine using the `connector` parameter. This allows you to query data directly from **BigQuery**, **Snowflake**, **MySQL**, **Postgres**, **Redshift**, or **Athena** without ingesting them into Rill.
 
 **BigQuery Example:**
 
@@ -38,11 +38,46 @@ connector: snowflake
 sql: SELECT * FROM database.schema.table LIMIT 100
 ```
 
-:::warning Data Warehouse Costs
+**MySQL Example:**
 
-When using `connector: bigquery` or `connector: snowflake`, queries execute directly on your data warehouse and will **incur costs based on your warehouse's billing model**:
+```yaml
+type: api
+connector: mysql
+sql: SELECT * FROM orders WHERE order_date >= '2025-01-01' LIMIT 100
+```
+
+**Postgres Example:**
+
+```yaml
+type: api
+connector: postgres
+sql: SELECT * FROM events WHERE created_at >= '2025-01-01' LIMIT 100
+```
+
+**Redshift Example:**
+
+```yaml
+type: api
+connector: redshift
+sql: SELECT * FROM transactions WHERE transaction_date >= '2024-01-01' LIMIT 100
+```
+
+**Athena Example:**
+
+```yaml
+type: api
+connector: athena
+sql: SELECT * FROM s3_data_table LIMIT 100
+```
+
+:::warning Data Warehouse and Database Costs
+
+When using alternative connectors (BigQuery, Snowflake, Redshift, Athena, MySQL, Postgres), queries execute directly on your data source and will **incur costs based on your provider's billing model**:
 - **BigQuery**: Charges based on data scanned (per TB)
 - **Snowflake**: Charges based on warehouse compute time
+- **Redshift**: Charges based on cluster compute time
+- **Athena**: Charges based on data scanned (per TB)
+- **MySQL/Postgres**: May incur costs based on instance compute time and IOPS
 
 To minimize costs:
 - Use `LIMIT` clauses to restrict result set sizes
@@ -52,16 +87,19 @@ To minimize costs:
 
 :::
 
-**When to use warehouse connectors for APIs:**
-- Your data is already optimized in the warehouse
-- You want real-time access to the latest warehouse data
+**When to use alternative connectors for APIs:**
+- Your data is already in the source database/warehouse
+- You want real-time access to the latest data from the source
 - You're building internal tools where query costs are acceptable
+- Your data is too large to ingest into DuckDB
+- You need to leverage source-specific features or optimizations
 
 **When to use DuckDB (default):**
 - You need fast, low-cost queries for end-user facing APIs
 - Your data is already in Rill models
 - You want predictable performance and costs
 - You're serving external customers or high-volume requests
+- You need the fastest possible query response times
 
 
 ## Metrics SQL API
