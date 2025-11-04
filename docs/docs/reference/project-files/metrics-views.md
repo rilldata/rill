@@ -18,7 +18,7 @@ _[string]_ - Refers to the resource type and must be `metrics_view` _(required)_
 
 ### `connector`
 
-_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/connect/olap) for more information 
+_[string]_ - Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information 
 
 ### `display_name`
 
