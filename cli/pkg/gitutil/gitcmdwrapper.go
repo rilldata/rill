@@ -196,7 +196,7 @@ func isGitIgnored(repoRoot, subpath string) (bool, error) {
 			// any other exit code is an error
 			return false, fmt.Errorf("git check-ignore failed for path %q, subpath: %q : %s", repoRoot, subpath, string(execErr.Stderr))
 		}
-		return false, fmt.Errorf("git check-ignore failed for path %q, subpath: %q : %w", repoRoot, subpath, err)
+		return false, fmt.Errorf("git check-ignore failed for path %q, subpath %q: %w", repoRoot, subpath, err)
 	}
 	// exit code 0 means the file is ignored
 	return true, nil

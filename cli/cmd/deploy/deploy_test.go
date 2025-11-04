@@ -3,29 +3,27 @@ package deploy_test
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/go-github/v71/github"
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/testadmin"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/testcli"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 )
 
 func TestManagedDeploy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
-	err := godotenv.Load("../../../.env")
-	require.NoError(t, err)
-
+	testmode.Expensive(t)
 	adm := testadmin.New(t)
 
 	_, c := adm.NewUser(t)
@@ -35,18 +33,15 @@ func TestManagedDeploy(t *testing.T) {
 	require.Equal(t, 0, result.ExitCode)
 
 	// deploy the project
-	tempDir := t.TempDir()
-	os.WriteFile(filepath.Join(tempDir, "rill.yaml"), []byte(`compiler: rillv1
-display_name: Untitled Rill Project
-olap_connector: duckdb`), 0644)
+	tempDir := initRillProject(t)
 
 	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=github-test", "--project=rill-mgd-deploy", "--skip-deploy=true", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
 	// verify the project is correctly created
 	resp, err := c.GetProject(t.Context(), &adminv1.GetProjectRequest{
-		OrganizationName: "github-test",
-		Name:             "rill-mgd-deploy",
+		Org:     "github-test",
+		Project: "rill-mgd-deploy",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "rill-mgd-deploy", resp.Project.Name)
@@ -65,43 +60,23 @@ olap_connector: duckdb`), 0644)
 	})
 
 	// redeploy the same project with changes
-	err = os.Mkdir(filepath.Join(tempDir, "models"), 0755)
-	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tempDir, "models/model.sql"), []byte(`SELECT 1 AS one`), 0644)
-	require.NoError(t, err)
+	changes := map[string]string{
+		"models/model.sql": `SELECT 1 AS one`,
+	}
+	putFiles(t, tempDir, changes)
 	result = u1.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=rill-mgd-deploy", "--skip-deploy=true", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
 	// verify changes are pushed to Github repo
-	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote)
+	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes)
 }
 
 // This test require a Github personal access token and refresh token to work
 // Those can be generated using command `rill devtool gh-token` command
 // The refresh token can only be used once to generate a new personal access token and refresh token so the command should be executed everytime before running this test
 func TestGithubDeploy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
-	err := godotenv.Load("../../../.env")
-	require.NoError(t, err)
-
-	err = godotenv.Load("../../../.github_env")
-	require.NoError(t, err)
-
-	personalAccessToken := os.Getenv("GH_ACCESS_TOKEN")
-	if personalAccessToken == "" {
-		t.Fatal("Personal access token not found. Run `rill devtool gh-token` to generate one")
-	}
-	refreshToken := os.Getenv("GH_REFRESH_TOKEN")
-	if refreshToken == "" {
-		t.Fatal("Refresh token not found. Run `rill devtool gh-token` to generate one")
-	}
-
-	// remove .github_env since refresh token can only be used once
-	err = os.Remove("../../../.github_env")
-	require.NoError(t, err)
-
+	testmode.Expensive(t)
+	personalAccessToken := getGithubAuthToken(t)
 	// github client
 	ghClient := github.NewTokenClient(t.Context(), personalAccessToken)
 	ghUser, _, err := ghClient.Users.Get(t.Context(), "")
@@ -110,11 +85,13 @@ func TestGithubDeploy(t *testing.T) {
 	// test service
 	adm := testadmin.New(t)
 	user, c := adm.NewUser(t)
+	expiry := time.Now().Add(time.Hour * 24 * 30)
 	adm.Admin.DB.UpdateUser(t.Context(), user.ID, &database.UpdateUserOptions{
-		DisplayName:        user.DisplayName,
-		PhotoURL:           user.PhotoURL,
-		GithubUsername:     *ghUser.Login,
-		GithubRefreshToken: refreshToken,
+		DisplayName:          user.DisplayName,
+		PhotoURL:             user.PhotoURL,
+		GithubUsername:       *ghUser.Login,
+		GithubToken:          personalAccessToken,
+		GithubTokenExpiresOn: &expiry,
 	})
 	u1 := testcli.New(t, adm, c.Token)
 
@@ -128,11 +105,7 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 	require.Equal(t, 0, result.ExitCode)
 
 	// create a rill project
-	tempDir := t.TempDir()
-	err := os.WriteFile(filepath.Join(tempDir, "rill.yaml"), []byte(`compiler: rillv1
-display_name: Untitled Rill Project
-olap_connector: duckdb`), 0644)
-	require.NoError(t, err)
+	tempDir := initRillProject(t)
 
 	// create a github repo
 	repo, _, err := ghClient.Repositories.Create(t.Context(), "", &github.Repository{
@@ -168,8 +141,8 @@ olap_connector: duckdb`), 0644)
 
 	// verify the project is correctly created
 	resp, err := adminClient.GetProject(t.Context(), &adminv1.GetProjectRequest{
-		OrganizationName: "github-test",
-		Name:             "self-hosted-deploy",
+		Org:     "github-test",
+		Project: "self-hosted-deploy",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "self-hosted-deploy", resp.Project.Name)
@@ -180,25 +153,82 @@ olap_connector: duckdb`), 0644)
 	require.NoError(t, err)
 	require.Equal(t, *repo.CloneURL, remote.URL)
 
+	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=self-hosted-deploy", "--skip-deploy=true", "--path="+tempDir)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	changes := map[string]string{
+		"models/model.sql": `SELECT 1 AS one`,
+	}
+	putFiles(t, tempDir, changes)
 	// redeploy the same project with changes
-	err = os.Mkdir(filepath.Join(tempDir, "models"), 0755)
-	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tempDir, "models/model.sql"), []byte(`SELECT 1 AS one`), 0644)
-	require.NoError(t, err)
 	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-test", "--project=self-hosted-deploy", "--skip-deploy=true", "--path="+tempDir)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
 	// verify changes are pushed to Github repo
-	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote)
+	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes)
 }
 
-func verifyGithubRepoContents(t *testing.T, client *github.Client, remote string) {
+func verifyGithubRepoContents(t *testing.T, client *github.Client, remote string, changes map[string]string) {
 	owner, repo, ok := gitutil.SplitGithubRemote(remote)
 	require.True(t, ok, "invalid github remote: %s", remote)
 
-	con, _, _, err := client.Repositories.GetContents(t.Context(), owner, repo, "models/model.sql", nil)
-	require.NoError(t, err)
-	contents, err := con.GetContent()
-	require.NoError(t, err)
-	require.Equal(t, "SELECT 1 AS one", contents)
+	// TODO: consider downloading the repo and checking the files locally instead of making multiple API calls
+	for path, expectedContent := range changes {
+		con, _, _, err := client.Repositories.GetContents(t.Context(), owner, repo, path, nil)
+		require.NoError(t, err)
+		contents, err := con.GetContent()
+		require.NoError(t, err)
+		require.Equal(t, expectedContent, contents)
+	}
+}
+
+func getGithubAuthToken(t *testing.T) string {
+	// exec gh auth token and extract token
+	// throw error if gh cli is not installed
+	t.Helper()
+
+	// Try to find gh in PATH first
+	ghPath, err := exec.LookPath("gh")
+	if err != nil {
+		// Fallback to common installation paths
+		commonPaths := []string{
+			"/opt/homebrew/bin/gh",
+			"/usr/local/bin/gh",
+			"/usr/bin/gh",
+		}
+		for _, path := range commonPaths {
+			if _, err := os.Stat(path); err == nil {
+				ghPath = path
+				break
+			}
+		}
+		if ghPath == "" {
+			t.Fatal("gh cli not found in PATH or common installation paths. For installation instructions, visit: https://github.com/cli/cli#installation")
+		}
+	}
+
+	cmd := exec.CommandContext(t.Context(), ghPath, "auth", "token")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, "failed to get github auth token: %s", string(output))
+	return strings.TrimSpace(string(output))
+}
+
+func putFiles(t *testing.T, baseDir string, files map[string]string) {
+	for path, content := range files {
+		path = filepath.Join(baseDir, path)
+		dir := filepath.Dir(path)
+		err := os.MkdirAll(dir, 0755)
+		require.NoError(t, err)
+		err = os.WriteFile(path, []byte(content), 0644)
+		require.NoError(t, err)
+	}
+}
+
+func initRillProject(t *testing.T) string {
+	tempDir := t.TempDir()
+	putFiles(t, tempDir, map[string]string{"rill.yaml": `compiler: rillv1
+display_name: Untitled Rill Project
+olap_connector: duckdb`,
+	})
+	return tempDir
 }

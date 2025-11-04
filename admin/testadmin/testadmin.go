@@ -53,23 +53,6 @@ type Fixture struct {
 	ServerOpts *server.Options
 }
 
-// NewGithub creates a new Github client. In short testing mode this is a mock client which has no-op implementations of all methods.
-// Otherwise it creates a real implementation that makes real API calls to Github.
-func NewGithub(t *testing.T) admin.Github {
-	if testing.Short() {
-		return &mockGithub{}
-	}
-	err := godotenv.Load("../../../.env")
-	require.NoError(t, err, "failed to load env file. Run `rill devtool dotenv refresh` to create one")
-
-	githubAppID, err := strconv.ParseInt(os.Getenv("RILL_ADMIN_GITHUB_APP_ID"), 10, 64)
-	require.NoError(t, err)
-
-	github, err := admin.NewGithub(t.Context(), githubAppID, os.Getenv("RILL_ADMIN_GITHUB_APP_PRIVATE_KEY"), os.Getenv("RILL_ADMIN_GITHUB_MANAGED_ACCOUNT"), zap.Must(zap.NewDevelopment()))
-	require.NoError(t, err)
-	return github
-}
-
 // New creates an ephemeral admin service and server for testing.
 // See the docstring for the returned Fixture for details.
 func New(t *testing.T) *Fixture {
@@ -140,7 +123,7 @@ func New(t *testing.T) *Fixture {
 		AutoscalerCron:            "",
 		ScaleDownConstraint:       0,
 	}
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, NewGithub(t), ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, newGithub(t), ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
 	require.NoError(t, err)
 	t.Cleanup(func() { adm.Close() })
 
@@ -223,6 +206,23 @@ func (f *Fixture) NewClient(t *testing.T, token string) *client.Client {
 // ExternalURL returns the localhost URL of the fixture's server.
 func (f *Fixture) ExternalURL() string {
 	return fmt.Sprintf("http://localhost:%d", f.ServerOpts.GRPCPort)
+}
+
+// newGithub creates a new Github client. In short testing mode this is a mock client which has no-op implementations of all methods.
+// Otherwise it creates a real implementation that makes real API calls to Github.
+func newGithub(t *testing.T) admin.Github {
+	if testing.Short() {
+		return &mockGithub{}
+	}
+	err := godotenv.Load("../../../.env")
+	require.NoError(t, err, "failed to load env file. Run `rill devtool dotenv refresh` to create one")
+
+	githubAppID, err := strconv.ParseInt(os.Getenv("RILL_ADMIN_TEST_GITHUB_APP_ID"), 10, 64)
+	require.NoError(t, err)
+
+	github, err := admin.NewGithub(t.Context(), githubAppID, os.Getenv("RILL_ADMIN_TEST_GITHUB_APP_PRIVATE_KEY"), os.Getenv("RILL_ADMIN_TEST_GITHUB_MANAGED_ACCOUNT"), zap.Must(zap.NewDevelopment()))
+	require.NoError(t, err)
+	return github
 }
 
 // mockGithub provides a mock implementation of admin.Github.
