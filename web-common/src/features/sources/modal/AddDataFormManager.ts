@@ -170,14 +170,22 @@ export class AddDataFormManager {
     clickhouseConnectorType?: ClickHouseConnectorType;
     clickhouseSubmitting?: boolean;
   }): string {
-    const { isConnectorForm, step, submitting, clickhouseConnectorType, clickhouseSubmitting } = args;
+    const {
+      isConnectorForm,
+      step,
+      submitting,
+      clickhouseConnectorType,
+      clickhouseSubmitting,
+    } = args;
     const isClickhouse = this.connector.name === "clickhouse";
 
     if (isClickhouse) {
       if (clickhouseConnectorType === "rill-managed") {
         return clickhouseSubmitting ? "Connecting..." : "Connect";
       }
-      return clickhouseSubmitting ? "Testing connection..." : "Test and Connect";
+      return clickhouseSubmitting
+        ? "Testing connection..."
+        : "Test and Connect";
     }
 
     if (isConnectorForm) {

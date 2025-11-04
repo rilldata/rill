@@ -22,5 +22,3 @@ export function applyClickHouseCloudRequirements(
   }
   return values;
 }
-
-
