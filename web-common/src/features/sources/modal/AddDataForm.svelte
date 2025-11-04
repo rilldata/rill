@@ -527,7 +527,7 @@
             clickhouseErrorDetails = details;
           }}
           bind:formId={clickhouseFormId}
-          bind:submitting={clickhouseSubmitting}
+          bind:isSubmitting={clickhouseSubmitting}
           bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
           bind:connectorType={clickhouseConnectorType}
           bind:connectionTab
