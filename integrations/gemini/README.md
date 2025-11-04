@@ -1,12 +1,10 @@
 # Gemini CLI Extension for Rill Data
 
-Professional data analysis and report generation using Rill's metrics layer with Google Docs integration.
+Professional data analysis and report generation using Rill's metrics layer.
 
 ## Overview
 
-Check out the [Rill Data website](https://www.rilldata.com) for more information about Rill.
-
-Example report generated using this extension can be found in the [Gemini Documentation](docs/bids_report.md).
+Check out [Rill's Docs](https://docs.rilldata.com) for more information about Rill.
 
 ## Installation
 
@@ -35,3 +33,21 @@ Update the extension with your Rill credentials by providing the following infor
 - `Organization`: Your Rill organization name
 - `Project`: Your Rill project name
 - `Access Token`: Your Rill access token
+
+## Development
+
+### Local Development
+
+To test changes locally:
+
+1. Make your changes to the extension files
+2. Install the extension from your local development branch:
+   ```bash
+   gemini extensions install https://github.com/rilldata/rill --ref=your-branch-name
+   ```
+
+### Releasing
+
+Extension updates are automatically available when changes are merged to the main branch. Users will be prompted to update when new versions are available.
+
+The extension version is managed through the `gemini-extension.json` file, and users can install specific versions using git refs if needed.

@@ -2,6 +2,24 @@
 
 ## Core Capabilities
 
+### Data Exploration with Metrics Tools
+
+- List metrics views – Use `list_metrics_views` to discover available metrics views in the project.
+- Get metrics view spec – Use `get_metrics_view` to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
+- Query the time range – Use `query_metrics_view_summary` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
+- Query the metrics – Use `query_metrics_view` to run queries to get aggregated results.
+
+### Analyst Agent
+
+The **Analyst Agent** is Rill's primary intelligence tool that autonomously conducts comprehensive data analysis. It systematically explores data using available metrics tools, applies analytical rigor to find surprising patterns and unexpected relationships that influence decision-making.
+
+**Key Features:**
+
+- **Autonomous Analysis**: The agent independently performs data discovery, trend analysis, and insight generation
+- **Systematic Exploration**: Follows a structured OODA loop (Observe, Orient, Decide, Act) methodology
+- **Professional Reporting**: Generates executive-ready analysis with quantified insights and business context
+- **Multi-phase Approach**: Discovery → Analysis → Visualization workflow
+
 ### Analytics Functions
 
 - **Data Discovery**: Systematic exploration of available metrics views and data sources
@@ -12,55 +30,86 @@
 
 ## Analytical Methodology
 
-### Phase 1: Data Discovery (Systematic Approach)
+### Analyst Agent Workflow
 
-Follow the structured discovery process:
+The Analyst Agent follows a three-phase methodology to deliver comprehensive analysis:
 
-1. **Dataset Identification**: Use `list_metrics_views` to catalog available data sources
-2. **Schema Understanding**: Analyze measures, dimensions, and relationships via `get_metrics_view`
-3. **Data Scope Assessment**: Determine time ranges and data coverage with `query_metrics_view_summary`
-4. **Preliminary Queries**: Execute broad queries to gauge data quality and trends `query_metrics_view`
+#### Phase 1: Discovery (Autonomous Setup)
 
-### Phase 2: Analytical Investigation (OODA Loop)
+The agent will:
 
-Execute iterative analysis cycles:
+1. **Dataset Identification**: Catalogs available data sources using `list_metrics_views`
+2. **Schema Understanding**: Analyzes measures, dimensions, and relationships via `get_metrics_view`
+3. **Data Scope Assessment**: Determines time ranges and data coverage with `query_metrics_view_summary`
+4. **Context Setting**: Establishes analytical framework and baseline understanding
+
+#### Phase 2: Analysis (OODA Loop Execution)
+
+The agent executes iterative analysis cycles (minimum 4-6 distinct queries):
 
 - **Observe**: Query data systematically, starting broad then drilling into specifics
 - **Orient**: Evaluate patterns, identify anomalies, and assess the context
 - **Decide**: Prioritize analytical angles based on emerging insights
 - **Act**: Execute targeted queries to validate hypotheses and uncover insights
 
-### Phase 3: Insight Synthesis & Documentation
+#### Phase 3: Synthesis & Visualization
 
-Transform findings into actionable intelligence:
+The agent transforms findings into actionable intelligence:
 
-- **Pattern Recognition**: Identify trends, seasonality, and behavioral changes
-- **Impact Quantification**: Measure impact with specific metrics and percentages
-- **Contextual Analysis**: Connect data patterns to operations and decisions
-- **Report Generation**: Create professional documentation with clear structure and visualizations
+- **Pattern Recognition**: Identifies trends, seasonality, and behavioral changes
+- **Impact Quantification**: Measures impact with specific metrics and percentages
+- **Contextual Analysis**: Connects data patterns to business operations and decisions
+- **Professional Reporting**: Creates executive-ready documentation with citations and visualizations
 
-## Data Analysis Best Practices
+## How to Use the Analyst Agent
 
-### Query Strategy
+### Basic Usage
 
-- **Minimum 4-6 distinct analytical queries** per analysis session
-- **Progressive refinement**: Build each query based on previous results
-- **Time-based analysis**: Always include period-over-period comparisons
-- **Multi-dimensional exploration**: Analyze across different segments and dimensions
+Simply invoke the analyst agent with your analysis request:
 
-### Insight Quality Standards
+```
+"Analyze our user engagement metrics for the last quarter and identify key trends."
+```
 
-- **Quantified findings**: All insights must include specific numbers and percentages
-- **Relevance**: Connect patterns to operational decisions and outcomes
-- **Surprise factor**: Prioritize unexpected findings that challenge assumptions
-- **Actionability**: Focus on insights that enable concrete actions
+The agent will autonomously:
 
-### Data Accuracy Requirements
+1. Discover relevant data sources
+2. Execute comprehensive analysis (4-6+ queries minimum)
+3. Generate insights with quantified impacts
+4. Create visualizations where appropriate
+5. Provide executive-ready reporting with citations
 
-- **Tool-based calculations only**: All numbers must come from `query_metrics_view_summary` results
-- **No manual computations**: Avoid performing calculations outside of the metrics tools
-- **Source attribution**: Clearly indicate data sources and calculation methods
-- **Limitation acknowledgment**: State when desired calculations cannot be performed
+### Advanced Usage
+
+#### Dashboard-Specific Analysis
+
+```
+"Analyze the current dashboard and identify optimization opportunities."
+```
+
+#### Comparative Analysis
+
+```
+"Compare Q3 vs Q4 performance across all key metrics and highlight significant changes."
+```
+
+#### Custom Focus Areas
+
+```
+"Focus on conversion funnel analysis and identify the biggest drop-off points."
+```
+
+## Data Analysis Standards
+
+### Analyst Agent Quality Assurance
+
+The agent ensures:
+
+- **Quantified findings**: All insights include specific numbers and percentages
+- **Relevance**: Patterns connected to operational decisions and outcomes
+- **Surprise factor**: Prioritizes unexpected findings that challenge assumptions
+- **Actionability**: Focuses on insights that enable concrete actions
+- **Data accuracy**: All numbers sourced directly from metrics tools with citations
 
 ## Chart Generation
 
@@ -121,112 +170,19 @@ Pivot tables using text formatting:
 | East   | $90,000  | $95,000  | $100,000 | $105,000 |
 | West   | $110,000 | $115,000 | $120,000 | $130,000 |
 
-## Developer Agent
-
-The Developer Agent is a powerful tool that can assist with development tasks within the Rill project. It can be used to automate the creation and modification of models and metrics views.
-
-### Capabilities
-
-The Developer Agent can perform the following actions:
-
-- **List files**: List the files in the project directory.
-- **Read files**: Read the contents of a file.
-- **Write files**: Write content to a file.
-- **Develop models**: Create or update a model.
-- **Develop metrics views**: Create or update a metrics view.
-
-### Example: Creating a new Metrics View
-
-To create a new metrics view, you can use the `develop_metrics_view` tool with the following arguments:
-
-```json
-{
-  "path": "/metrics/new_metrics_view.yaml",
-  "model": "my_model"
-}
-```
-
-This will create a new metrics view at the specified path, based on the `my_model` model.
-
-## Report Structure & Formatting
-
-### Executive Summary Format
-
-```markdown
-# [Report Title]
-
-## Executive Summary
-
-- **Key Finding 1**: [Quantified insight with impact]
-- **Key Finding 2**: [Trend or pattern with specific metrics]
-- **Key Finding 3**: [Actionable recommendation with expected outcome]
-
-## Data Overview
-
-- **Analysis Period**: [Time range analyzed]
-- **Metrics Covered**: [Primary measures and dimensions]
-- **Data Sources**: [Metrics views and underlying datasets]
-```
-
-### Detailed Analysis Structure
-
-1. **Methodology**: Approach and tools used
-2. **Key Findings**: Primary insights with supporting data
-3. **Trend Analysis**: Time-based patterns and changes
-4. **Segment Analysis**: Performance across different dimensions
-5. **Recommendations**: Actionable next steps based on findings
-6. **Appendix**: Additional data and methodology notes
-
-## Communication Guidelines
-
-### Analysis Presentation
-
-- **Conversational tone**: Use "I" and "you" to speak directly to users
-- **Confident delivery**: Present findings with authority and enthusiasm
-- **Business focus**: Frame technical findings in business context
-- **Collaborative approach**: Invite questions and deeper exploration
-
-### Report Documentation
-
-- **Executive-friendly language**: Avoid technical jargon in summaries
-- **Visual descriptions**: Include references to charts and visualizations
-- **Clear structure**: Use headers, bullet points, and numbered lists
-- **Methodology transparency**: Document analysis approach and data sources
-
-## Quality Assurance
-
-### Analysis Validation
-
-- **Cross-verification**: Validate findings across multiple query approaches
-- **Logical consistency**: Ensure insights align with business reality
-- **Completeness check**: Confirm all relevant dimensions are explored
-- **Bias awareness**: Acknowledge potential limitations and biases
-
-### Report Review
-
-- **Accuracy verification**: Confirm all numbers match tool outputs
-- **Clarity assessment**: Ensure findings are understandable to target audience
-- **Actionability test**: Verify recommendations are specific and implementable
-- **Stakeholder relevance**: Align content with recipient needs and priorities
-
-## Extension Usage Examples
-
-### Basic Analysis Request
-
-"Analyze our GitHub repository activity for the last quarter and identify key productivity trends."
-
-### Comparative Analysis
-
-"Generate a metrics comparison report between Q3 and Q4 sales performance, focusing on conversion rates and revenue per customer."
-
-### Custom Report Generation
-
-"Create an executive summary of user engagement metrics with recommendations for improving retention."
-
 ## Troubleshooting
 
 ### Common Issues
 
-- **Query errors**: Check metrics view availability and parameter validity
+- **Access denied**: Ensure your Rill access token has AI feature permissions
+- **No data found**: Verify your project contains metrics views with available data
+- **Analysis incomplete**: The agent may need more specific context about what metrics to focus on
 
-This extension transforms complex analytics into clear, actionable business intelligence while maintaining the highest standards of data accuracy and professional presentation.
+### Best Practices
+
+- **Be specific**: Provide clear context about what you want to analyze
+- **Trust the process**: The agent will autonomously execute comprehensive analysis
+- **Review results**: The agent provides citations for all quantitative claims
+- **Ask follow-ups**: Request deeper analysis on specific findings
+
+This extension transforms complex analytics into clear, actionable business intelligence through the autonomous Analyst Agent, maintaining the highest standards of data accuracy and professional presentation.
