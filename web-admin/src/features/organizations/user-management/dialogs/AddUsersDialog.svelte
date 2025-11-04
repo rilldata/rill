@@ -2,8 +2,6 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceAddOrganizationMemberUser,
-    createAdminServiceAddProjectMemberUser,
-    createAdminServiceListProjectsForOrganization,
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
@@ -13,7 +11,6 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -31,8 +28,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
-  import type { V1Project } from "@rilldata/web-admin/client";
-  import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
+
   import { ORG_ROLES_OPTIONS } from "../../constants";
 
   export let open = false;
@@ -45,25 +41,8 @@
   const queryClient = useQueryClient();
   const addOrganizationMemberUser =
     createAdminServiceAddOrganizationMemberUser();
-  const addProjectMemberUser = createAdminServiceAddProjectMemberUser();
 
   let failedInvites: string[] = [];
-  let selectedProject: string = "";
-  let projectDropdownOpen = false;
-
-  // List projects for project access multi-select
-  $: projectsQuery = createAdminServiceListProjectsForOrganization(
-    organization,
-    undefined,
-    {
-      query: {
-        enabled: !!organization,
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-      },
-    },
-  );
-  $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
 
   async function handleCreate(
     newEmail: string,
@@ -79,15 +58,6 @@
       },
     });
 
-    // If inviting a guest, also add per-project access as Viewer
-    if (newRole === OrgUserRoles.Guest && selectedProject) {
-      await $addProjectMemberUser.mutateAsync({
-        org: organization,
-        project: selectedProject,
-        data: { email: newEmail, role: "viewer" },
-      });
-    }
-
     await queryClient.invalidateQueries({
       queryKey:
         getAdminServiceListOrganizationMemberUsersQueryKey(organization),
@@ -100,7 +70,6 @@
     email = "";
     role = "";
     isSuperUser = false;
-    selectedProject = "";
   }
 
   const formId = "add-user-form";
@@ -138,8 +107,6 @@
         const values = form.data;
         const emails = values.emails.map((e) => e.trim()).filter(Boolean);
         if (emails.length === 0) return;
-        // If inviting a guest without project selected, do not proceed
-        if (values.role === OrgUserRoles.Guest && !selectedProject) return;
 
         const results = await Promise.all(
           emails.map(async (email, index) => {
@@ -208,7 +175,6 @@
       role = "";
       isSuperUser = false;
       failedInvites = [];
-      selectedProject = "";
     }
   }}
 >
@@ -274,56 +240,14 @@
             type="primary"
             form={formId}
             loading={$submitting}
-            disabled={hasInvalidEmails ||
-              !hasSomeValue ||
-              ($form.role === OrgUserRoles.Guest && !selectedProject)}
+            disabled={hasInvalidEmails || !hasSomeValue}
             forcedStyle="height: 32px !important;"
           >
             Invite
           </Button>
         </svelte:fragment>
       </MultiInput>
-      {#if $form.role === OrgUserRoles.Guest}
-        <div class="mt-3">
-          <div class="text-xs font-medium mb-1">Project access</div>
-          {#if $projectsQuery?.isLoading}
-            <div class="text-xs text-slate-500">Loading projects…</div>
-          {:else if $projectsQuery?.error}
-            <div class="text-xs text-red-500">Failed to load projects</div>
-          {:else if projects.length === 0}
-            <div class="text-xs text-slate-500">No projects</div>
-          {:else}
-            <Dropdown.Root bind:open={projectDropdownOpen}>
-              <Dropdown.Trigger
-                class="min-w-[224px] flex flex-row justify-between gap-1 items-center rounded-sm border border-gray-300 {projectDropdownOpen
-                  ? 'bg-slate-200'
-                  : 'hover:bg-slate-100'} px-2 py-1"
-              >
-                <span>
-                  {selectedProject ? selectedProject : "Select project"}
-                </span>
-                {#if projectDropdownOpen}
-                  <CaretUpIcon size="12px" />
-                {:else}
-                  <CaretDownIcon size="12px" />
-                {/if}
-              </Dropdown.Trigger>
-              <Dropdown.Content align="start" class="w-[224px]">
-                {#each projects as p (p.id)}
-                  <Dropdown.Item
-                    class="font-normal flex items-center overflow-hidden"
-                    on:click={() => {
-                      selectedProject = p.name;
-                    }}
-                  >
-                    <span class="truncate w-full" title={p.name}>{p.name}</span>
-                  </Dropdown.Item>
-                {/each}
-              </Dropdown.Content>
-            </Dropdown.Root>
-          {/if}
-        </div>
-      {/if}
+
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
           {failedInvites.length === 1

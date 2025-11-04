@@ -16,9 +16,4 @@ export const ORG_ROLES_OPTIONS = [
     label: "Viewer",
     description: "Read-only access to organization and projects",
   },
-  {
-    value: OrgUserRoles.Guest,
-    label: "Guest",
-    description: "Access only to selected projects",
-  },
 ];
