@@ -7,6 +7,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 // In druid there are multiple schemas but all user tables are in druid schema.
@@ -15,53 +16,66 @@ import (
 // While querying druid does not support db name just use schema.table
 //
 // Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
-
-func (c *connection) ListDatabaseSchemas(ctx context.Context) ([]*drivers.DatabaseSchemaInfo, error) {
-	return nil, nil
-}
-
-func (c *connection) ListTables(ctx context.Context, database, schema string) ([]*drivers.TableInfo, error) {
-	return nil, nil
-}
-
-func (c *connection) GetTable(ctx context.Context, database, schema, table string) (*drivers.TableMetadata, error) {
-	return nil, nil
-}
-
-func (c *connection) All(ctx context.Context, like string) ([]*drivers.OlapTable, error) {
-	var likeClause string
+func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
+	var filter string
 	var args []any
 	if like != "" {
-		likeClause = "AND LOWER(T.TABLE_NAME) LIKE LOWER(?)"
+		filter = " AND LOWER(T.TABLE_NAME) LIKE LOWER(?)"
 		args = []any{like}
 	}
 
+	// Add pagination clause
+	if pageToken != "" {
+		var startAfterName string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfterName); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		filter += " AND T.TABLE_NAME > ?"
+		args = append(args, startAfterName)
+	}
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
 	q := fmt.Sprintf(`
 		SELECT
-			T.TABLE_SCHEMA AS SCHEMA,
-			T.TABLE_NAME AS NAME,
-			T.TABLE_TYPE AS TABLE_TYPE, 
+			LT.TABLE_SCHEMA AS SCHEMA,
+			LT.TABLE_NAME AS NAME,
+			LT.TABLE_TYPE AS TABLE_TYPE, 
 			C.COLUMN_NAME AS COLUMNS,
 			C.DATA_TYPE AS COLUMN_TYPE,
 			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
-		FROM INFORMATION_SCHEMA.TABLES T 
-		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA = 'druid'
-		%s
+		FROM (
+			SELECT
+				T.TABLE_SCHEMA,
+				T.TABLE_NAME,
+				T.TABLE_TYPE
+			FROM INFORMATION_SCHEMA.TABLES T
+			WHERE T.TABLE_SCHEMA = 'druid' %s
+			ORDER BY TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE
+			LIMIT %d
+		) LT
+		JOIN INFORMATION_SCHEMA.COLUMNS C ON LT.TABLE_SCHEMA = C.TABLE_SCHEMA AND LT.TABLE_NAME = C.TABLE_NAME		
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
-	`, likeClause)
+	`, filter, (limit + 1))
 
 	rows, err := c.db.QueryxContext(ctx, q, args...)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer rows.Close()
 
 	tables, err := scanTables(rows)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return tables, nil
+
+	next := ""
+	if len(tables) > limit {
+		tables = tables[:limit]
+		lastTable := tables[len(tables)-1]
+		next = pagination.MarshalPageToken(lastTable.Name)
+	}
+
+	return tables, next, nil
 }
 
 func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {

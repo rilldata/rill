@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -12,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 
 	// Load postgres driver
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -25,7 +27,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Postgres",
 	Description: "Connect to Postgres.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/postgres",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/postgres",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
@@ -81,7 +83,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
-			Hint:        "Options include disable, require, verify-ca, and verify-full",
+			Hint:        "Options include disable, allow, prefer, require",
 		},
 	},
 	ImplementsSQLStore: true,
@@ -179,6 +181,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 
 	return &connection{
 		config: conf,
+		logger: logger,
+		dbMu:   semaphore.NewWeighted(1),
 	}, nil
 }
 
@@ -196,16 +200,20 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	config *ConfigProperties
+	logger *zap.Logger
+
+	db    *sqlx.DB // lazily populated using getDB
+	dbErr error
+	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
 	// Open DB handle
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open connection: %w", err)
 	}
-	defer db.Close()
 	return db.PingContext(ctx)
 }
 
@@ -233,6 +241,9 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	if c.db != nil {
+		c.db.Close()
+	}
 	return nil
 }
 
@@ -263,7 +274,7 @@ func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
 
 // AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsInformationSchema implements drivers.Connection.
@@ -277,8 +288,8 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsModelExecutor implements drivers.Handle.
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
@@ -301,18 +312,22 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// getDB opens a new sqlx.DB connection using the config.
-func (c *connection) getDB() (*sqlx.DB, error) {
-	dsn := c.config.ResolveDSN()
-	if dsn == "" {
-		return nil, fmt.Errorf("missing required fields. When using individual fields, host, user, and dbname are required")
+func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
+	err := c.dbMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	defer c.dbMu.Release(1)
+	if c.db != nil || c.dbErr != nil {
+		return c.db, c.dbErr
 	}
 
-	db, err := sqlx.Open("pgx", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open connection: %w", err)
+	c.db, c.dbErr = sqlx.Connect("pgx", c.config.ResolveDSN())
+	if c.dbErr != nil {
+		return nil, c.dbErr
 	}
-	return db, nil
+	c.db.SetConnMaxIdleTime(time.Minute)
+	return c.db, c.dbErr
 }
 
 func quotedValue(val string) string {

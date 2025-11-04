@@ -24,37 +24,39 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func UnassumeUser(ctx context.Context, ch *cmdutil.Helper) error {
-	client, err := ch.Client()
-	if err != nil {
-		return err
-	}
-
-	// Revoke the current token if it's not expired
-	expiryTime, err := ch.DotRill.GetRepresentingUserAccessTokenExpiry()
-	if err == nil && time.Now().Before(expiryTime) {
-		_, err = client.RevokeUserAuthToken(ctx, &adminv1.RevokeUserAuthTokenRequest{TokenId: "current"})
-		if err != nil {
-			ch.Printf("Failed to revoke token. Clearing local token anyway.\n")
-		}
-	}
-
-	// Clear local token and expiry
-	err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(time.Time{})
-	if err != nil {
-		return err
-	}
-
+	// we reverted to original user first because we want to call RevokeRepresentativeAuthTokens api with Original User
 	// Fetch the original token
 	originalToken, err := ch.DotRill.GetBackupToken()
 	if err != nil {
 		return err
 	}
-	if originalToken == "" {
-		return fmt.Errorf("original token is not available, you are not assuming any user")
+	representingUser, err := ch.DotRill.GetRepresentingUser()
+	if err != nil {
+		return err
+	}
+	if originalToken == "" || representingUser == "" {
+		return fmt.Errorf("you are not assuming any user")
 	}
 
 	// Restore the original token as the access token
 	err = ch.DotRill.SetAccessToken(originalToken)
+	if err != nil {
+		return err
+	}
+
+	client, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
+	// Revoke all tokens issued by the current user for acting as the given representing user.
+	_, err = client.RevokeRepresentativeAuthTokens(ctx, &adminv1.RevokeRepresentativeAuthTokensRequest{Email: representingUser})
+	if err != nil {
+		ch.Printf("Failed to revoke token. Clearing local token anyway.\n")
+	}
+
+	// Clear local token and expiry
+	err = ch.DotRill.SetRepresentingUserAccessTokenExpiry(time.Time{})
 	if err != nil {
 		return err
 	}

@@ -14,7 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -46,7 +46,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	// Must have edit permissions on the repo
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.EditRepo) {
 		return nil, ErrForbidden
 	}
 
@@ -238,7 +238,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil)
+	res, err := ai.Complete(ctx, msgs, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +320,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		})
 	}
 
-	e, err := metricsview.NewExecutor(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
 	if err != nil {
 		return nil, err
 	}

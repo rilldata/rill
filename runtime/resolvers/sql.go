@@ -2,6 +2,7 @@ package resolvers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -130,7 +131,12 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
 	var sql string
 	if r.interactiveRowLimit != 0 {
-		sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
+		if r.olap.Dialect() == drivers.DialectMySQL {
+			// subqueries in MySQL require an alias
+			sql = fmt.Sprintf("SELECT * FROM (\n%s\n) AS subquery LIMIT %d", r.sql, r.interactiveRowLimit+1)
+		} else {
+			sql = fmt.Sprintf("SELECT * FROM (%s\n) LIMIT %d", r.sql, r.interactiveRowLimit+1)
+		}
 	} else {
 		sql = r.sql
 	}
@@ -170,6 +176,11 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 	default:
 		return fmt.Errorf("export not available for dialect %q", r.olap.Dialect().String())
 	}
+}
+
+func (r *sqlResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	// NOTE - This is the regular SQL resolver, so the only refs would be to models, which don't have security policies / access checks
+	return nil, errors.New("security rule inference not implemented")
 }
 
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {

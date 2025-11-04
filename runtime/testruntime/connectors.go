@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	goruntime "runtime"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/joho/godotenv"
@@ -17,6 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azurite"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // AcquireConnector acquires a test connector by name.
@@ -62,14 +64,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// - BigQuery Read Session User
 	// The test dataset is pre-populated with tables defined in testdata/init_data/bigquery_init_data.sql.
 	"bigquery": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
-
+		loadDotEnv(t)
 		gac := os.Getenv("RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, gac, "Bigquery RILL_RUNTIME_BIGQUERY_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
 		return map[string]string{"google_application_credentials": gac}
@@ -77,40 +72,23 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// Snowflake connector connects to a real snowflake cloud using dsn in RILL_RUNTIME_SNOWFLAKE_TEST_DSN
 	// The test dataset is pre-populated with tables defined in testdata/init_data/snowflake_init_data.sql:
 	"snowflake": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
-
+		loadDotEnv(t)
 		dsn := os.Getenv("RILL_RUNTIME_SNOWFLAKE_TEST_DSN")
 		require.NotEmpty(t, dsn, "RILL_RUNTIME_SNOWFLAKE_TEST_DSN not configured")
 		return map[string]string{"dsn": dsn}
 	},
 	"motherduck": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
-
+		loadDotEnv(t)
+		path := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_PATH")
+		require.NotEmpty(t, path)
 		token := os.Getenv("RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN")
-		require.NotEmpty(t, token, "RILL_RUNTIME_MOTHERDUCK_TEST_TOKEN not configured")
-		return map[string]string{"token": token}
+		require.NotEmpty(t, token)
+
+		return map[string]string{"path": path, "token": token}
 	},
 	// gcs connector uses an actual gcs bucket with data populated from testdata/init_data/azure.
 	"gcs": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
+		loadDotEnv(t)
 		gac := os.Getenv("RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON")
 		require.NotEmpty(t, gac, "GCS RILL_RUNTIME_GCS_TEST_GOOGLE_APPLICATION_CREDENTIALS_JSON not configured")
 		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
@@ -125,13 +103,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		}
 	},
 	"gcs_s3_compat": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
+		loadDotEnv(t)
 		hmacKey := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_KEY")
 		hmacSecret := os.Getenv("RILL_RUNTIME_GCS_TEST_HMAC_SECRET")
 		require.NotEmpty(t, hmacKey, "GCS RILL_RUNTIME_GCS_TEST_HMAC_KEY not configured")
@@ -144,13 +116,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	},
 	// S3 connector uses an actual S3 bucket with data populated from testdata/init_data/azure.
 	"s3": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
+		loadDotEnv(t)
 		accessKeyID := os.Getenv("RILL_RUNTIME_S3_TEST_AWS_ACCESS_KEY_ID")
 		secretAccessKey := os.Getenv("RILL_RUNTIME_S3_TEST_AWS_SECRET_ACCESS_KEY")
 		require.NotEmpty(t, accessKeyID, "S3 RILL_RUNTIME_S3_TEST_AWS_ACCESS_KEY_ID not configured")
@@ -164,13 +130,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// The test dataset is pre-populated with table definitions in testdata/init_data/athena_init_data.sql,
 	// and the actual data is stored on S3, which matches the data in testdata/init_data/azure/parquet_test.
 	"athena": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
+		loadDotEnv(t)
 		accessKeyID := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_ACCESS_KEY_ID")
 		secretAccessKey := os.Getenv("RILL_RUNTIME_ATHENA_TEST_AWS_SECRET_ACCESS_KEY")
 		require.NotEmpty(t, accessKeyID, "Athena RILL_RUNTIME_ATHENA_TEST_AWS_ACCESS_KEY_ID not configured")
@@ -183,13 +143,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// Redshift connector connects to an actual Redshift Serverless Service.
 	// The test dataset is pre-populated with table definitions in testdata/init_data/redshift_init_data.sql,
 	"redshift": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
+		loadDotEnv(t)
 		accessKeyID := os.Getenv("RILL_RUNTIME_REDSHIFT_TEST_AWS_ACCESS_KEY_ID")
 		secretAccessKey := os.Getenv("RILL_RUNTIME_REDSHIFT_TEST_AWS_SECRET_ACCESS_KEY")
 		require.NotEmpty(t, accessKeyID, "RILL_RUNTIME_REDSHIFT_TEST_AWS_ACCESS_KEY_ID not configured")
@@ -202,14 +156,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	// druid connects to a real Druid cluster using the connection string in RILL_RUNTIME_DRUID_TEST_DSN.
 	// This usually uses the master.in cluster.
 	"druid": func(t TestingT) map[string]string {
-		// Load .env file at the repo root (if any)
-		_, currentFile, _, _ := goruntime.Caller(0)
-		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
-		_, err := os.Stat(envPath)
-		if err == nil {
-			require.NoError(t, godotenv.Load(envPath))
-		}
-
+		loadDotEnv(t)
 		dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 		require.NotEmpty(t, dsn, "Druid test DSN not configured")
 		return map[string]string{"dsn": dsn}
@@ -314,6 +261,41 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"azure_storage_account":              azurite.AccountName,
 		}
 	},
+	"pinot": func(t TestingT) map[string]string {
+		ctx := context.Background()
+		pinot, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:        "apachepinot/pinot:latest",
+				ExposedPorts: []string{"9000/tcp", "8000/tcp"},
+				Cmd:          []string{"QuickStart", "-type", "batch"},
+				WaitingFor:   wait.ForLog("You can always go to http://localhost:9000").WithStartupTimeout(2 * time.Minute),
+			},
+			Started: true,
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			err := pinot.Terminate(ctx)
+			require.NoError(t, err)
+		})
+
+		host, err := pinot.Host(ctx)
+		require.NoError(t, err)
+		brokerPort, err := pinot.MappedPort(ctx, "8000")
+		require.NoError(t, err)
+		controllerPort, err := pinot.MappedPort(ctx, "9000")
+		require.NoError(t, err)
+
+		dsn := fmt.Sprintf("http://%s:%s?controller=http://%s:%s",
+			host, brokerPort.Port(), host, controllerPort.Port())
+
+		return map[string]string{"dsn": dsn}
+	},
+	"openai": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		apiKey := os.Getenv("RILL_RUNTIME_OPENAI_TEST_API_KEY")
+		require.NotEmpty(t, apiKey)
+		return map[string]string{"api_key": apiKey}
+	},
 }
 
 func uploadDirectory(ctx context.Context, client *azblob.Client, containerName, localDir string) error {
@@ -343,4 +325,14 @@ func uploadDirectory(ctx context.Context, client *azblob.Client, containerName, 
 
 		return nil
 	})
+}
+
+// loadDotEnv loads the .env file at the repo root (if any).
+func loadDotEnv(t TestingT) {
+	_, currentFile, _, _ := goruntime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+	_, err := os.Stat(envPath)
+	if err == nil {
+		require.NoError(t, godotenv.Load(envPath))
+	}
 }

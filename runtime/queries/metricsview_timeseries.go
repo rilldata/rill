@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/executor"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
@@ -93,7 +94,21 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
+	cfg, err := rt.InstanceConfig(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	if cfg.MetricsNullFillingImplementation == "pushdown" && qry.TimeRange != nil && !qry.TimeRange.Start.IsZero() && !qry.TimeRange.End.IsZero() {
+		qry.Spine = &metricsview.Spine{
+			TimeRange: &metricsview.TimeSpine{
+				Start: qry.TimeRange.Start,
+				End:   qry.TimeRange.End,
+			},
+		}
+	}
+
+	e, err := executor.New(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
@@ -105,7 +120,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer res.Close()
 
-	return q.populateResult(res, timeDim, mv.ValidSpec)
+	return q.populateResult(res, timeDim, mv.ValidSpec, cfg.MetricsNullFillingImplementation)
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
@@ -159,7 +174,7 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias string, mv *runtimev1.MetricsViewSpec) error {
+func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias string, mv *runtimev1.MetricsViewSpec, nullFillingImplementation string) error {
 	// Omit the time value from the result schema
 	schema := rows.Schema
 	if schema != nil {
@@ -225,13 +240,15 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 			return err
 		}
 
-		if zeroTime.Equal(start) {
-			if q.TimeStart != nil {
-				start = timeutil.TruncateTime(q.TimeStart.AsTime(), timeutil.TimeGrainFromAPI(q.TimeGranularity), tz, int(fdow), int(fmoy))
-				data = addNulls(data, nullRecords, start, t, dur, tz)
+		if nullFillingImplementation == "" || nullFillingImplementation == "new" {
+			if zeroTime.Equal(start) {
+				if q.TimeStart != nil {
+					start = timeutil.TruncateTime(q.TimeStart.AsTime(), timeutil.TimeGrainFromAPI(q.TimeGranularity), tz, int(fdow), int(fmoy))
+					data = addNulls(data, nullRecords, start, t, dur, tz, nullFillingImplementation == "new")
+				}
+			} else {
+				data = addNulls(data, nullRecords, start, t, dur, tz, nullFillingImplementation == "new")
 			}
-		} else {
-			data = addNulls(data, nullRecords, start, t, dur, tz)
 		}
 
 		data = append(data, &runtimev1.TimeSeriesValue{
@@ -249,8 +266,10 @@ func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias str
 			start = q.TimeStart.AsTime()
 		}
 
-		if !start.Equal(zeroTime) {
-			data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), dur, tz)
+		if nullFillingImplementation == "" || nullFillingImplementation == "new" {
+			if !start.Equal(zeroTime) {
+				data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), dur, tz, nullFillingImplementation == "new")
+			}
 		}
 	}
 
@@ -280,8 +299,17 @@ func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
 	return &nullStruct
 }
 
-func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location) []*runtimev1.TimeSeriesValue {
+func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location, newImplementation bool) []*runtimev1.TimeSeriesValue {
+	if newImplementation {
+		return addNullsNew(data, nullRecords, start, end, d, tz)
+	}
+
+	i := 0
 	for start.Before(end) {
+		if i > 5000 {
+			break // safety break
+		}
+		i++
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
@@ -296,6 +324,40 @@ func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
 	if sd.Hour > 0 || sd.Minute > 0 || sd.Second > 0 {
 		return d.Add(t)
 	}
+	return d.Add(t.In(tz)).In(time.UTC)
+}
+
+func addNullsNew(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location) []*runtimev1.TimeSeriesValue {
+	i := 0
+	for start.Before(end) {
+		if i > 5000 {
+			break // safety break
+		}
+		i++
+		data = append(data, &runtimev1.TimeSeriesValue{
+			Ts:      timestamppb.New(start),
+			Records: nullRecords,
+		})
+		newStart := addToNew(start, d, tz)
+		// Defensive check: ensure time is progressing forward to prevent infinite loops
+		// This can happen during DST transitions if timezone handling is incorrect
+		if !newStart.After(start) {
+			// Time didn't progress - break to prevent infinite loop and memory exhaustion
+			break
+		}
+		start = newStart
+	}
+	return data
+}
+
+func addToNew(t time.Time, d duration.Duration, tz *time.Location) time.Time {
+	sd := d.(duration.StandardDuration)
+	if sd.Hour > 0 || sd.Minute > 0 || sd.Second > 0 {
+		// For hours/minutes/seconds, add in UTC to get elapsed time
+		// But ensure the input time is in UTC first to avoid DST issues
+		return d.Add(t.In(time.UTC))
+	}
+	// For days/weeks/months, respect timezone to handle DST transitions
 	return d.Add(t.In(tz)).In(time.UTC)
 }
 

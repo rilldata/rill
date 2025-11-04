@@ -5,6 +5,8 @@
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+
+  export let multipleDashboards: boolean = false;
 </script>
 
 <CtaLayoutContainer>
@@ -13,7 +15,9 @@
       <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
     </div>
     <CtaHeader variant="bold">
-      Hang tight! We're building your dashboard...
+      Hang tight! We're building your dashboard{multipleDashboards
+        ? "s"
+        : ""}...
     </CtaHeader>
     <CtaNeedHelp />
   </CtaContentContainer>

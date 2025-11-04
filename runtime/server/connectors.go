@@ -23,7 +23,7 @@ func (s *Server) ListConnectorDrivers(ctx context.Context, req *runtimev1.ListCo
 }
 
 func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeConnectorsRequest) (*runtimev1.AnalyzeConnectorsResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadInstance) {
 		return nil, ErrForbidden
 	}
 
@@ -99,7 +99,7 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 }
 
 func (s *Server) ListNotifierConnectors(ctx context.Context, req *runtimev1.ListNotifierConnectorsRequest) (*runtimev1.ListNotifierConnectorsResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ReadObjects) {
 		return nil, ErrForbidden
 	}
 

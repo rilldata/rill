@@ -220,7 +220,7 @@
           If the issue persists, please contact us on <a
             target="_blank"
             rel="noopener noreferrer"
-            href="https://discord.gg/TatjVY32">Discord</a
+            href="https://discord.gg/2ubRfjC7Rh">Discord</a
           >.
         </div>
       </div>

@@ -13,17 +13,17 @@ Data models are built using SQL SELECT statements applied to your source data. T
 
 By default, data transformations in Rill Developer are powered by DuckDB and its dialect of SQL (DuckDB SQL). Please visit the [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn how to write your queries.
 
-You can change the default [OLAP engine](https://docs.rilldata.com/connect/olap) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
+You can change the default [OLAP engine](https://docs.rilldata.com/build/connectors/olap) for [the entire project](https://docs.rilldata.com/reference/project-files/rill-yaml#configuring-the-default-olap-engine) or [a specific metrics view](https://docs.rilldata.com/reference/project-files/metrics-views). You will need to define the connector credentials within your Rill project or via environment variables.
 
 :::tip Supported OLAP engines for modeling
 
-We support modeling on [ClickHouse\*](/connect/olap/clickhouse), [DuckDB](/connect/olap/duckdb), and [MotherDuck\*](/connect/olap/motherduck). For more information, see each OLAP engine page for further details.
+We support modeling on [ClickHouse\*](/build/connectors/olap/clickhouse), [DuckDB](/build/connectors/olap/duckdb), and [MotherDuck\*](/build/connectors/olap/motherduck). For more information, see each OLAP engine page for further details.
 
 \* indicates some caveats with modeling, and we encourage you to read the documentation before getting started.
 
 :::
 
-For additional tips on advanced expressions (either in models or measure definitions), visit our [advanced expressions page](/build/metrics-view/advanced-expressions/advanced-expressions.md).
+For additional tips on advanced expressions (either in models or measure definitions), visit our [advanced expressions page](/build/metrics-view).
 
 ### Intermediate Processing
 
@@ -32,6 +32,7 @@ Models can also be cross-referenced with each other to produce the final output 
 - Lookups for id/name joins
 - Unnesting and merging complex data types
 - Combining multiple sources with data cleansing or transformation requirements
+
 
 ## Data Preview and Validation
 
@@ -59,7 +60,7 @@ This information helps you validate your model configuration and ensure data qua
 
 The power of this approach lies in translating many ad hoc questions into a data framework that can answer a class of questions at scale. For example, high-level company insights (how much revenue did we make last week?) become more actionable for employees when contextualized to their role (how did my campaign increase revenue last week?).
 
-To experience the full potential of Rill, model your data sources into "One Big Table" – a granular resource that contains as much information as possible and can be rolled up in a meaningful way. This flexible OBT can be combined with a generalizable [metrics definition](/build/dashboards) to enable ad hoc slice-and-dice discovery through Rill's interactive dashboard.
+To experience the full potential of Rill, model your data sources into "One Big Table" – a granular resource that contains as much information as possible and can be rolled up in a meaningful way. This flexible OBT can be combined with a generalizable [metrics definition](/build/metrics-view) to enable ad hoc slice-and-dice discovery through Rill's interactive dashboard.
 
 :::tip Materializing metrics-powered models
 

@@ -53,7 +53,7 @@ func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 	}
 	defer release()
 
-	region, err := s3Conn.BucketRegion(ctx, req.Bucket)
+	region, err := s3.BucketRegion(ctx, s3Conn.ParsedConfig(), req.Bucket)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	defer release()
 
 	i := olap.InformationSchema()
-	tables, err := i.All(ctx, req.SearchPattern)
+	tables, next, err := i.All(ctx, req.SearchPattern, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,8 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 		}
 	}
 	return &runtimev1.OLAPListTablesResponse{
-		Tables: res,
+		Tables:        res,
+		NextPageToken: next,
 	}, nil
 }
 

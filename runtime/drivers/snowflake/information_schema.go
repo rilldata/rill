@@ -12,11 +12,10 @@ import (
 )
 
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
-	defer db.Close()
 
 	curDBName, curSchemaName, err := getCurrentDatabaseAndSchema(ctx, db.DB)
 	if err != nil {
@@ -47,6 +46,10 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		})
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	start := 0
 	if pageToken != "" {
@@ -58,9 +61,19 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	}
 	end := start + limit
 	if end >= len(res) {
-		return res[start:], "", rows.Err()
+		end = len(res)
 	}
-	return res[start:end], fmt.Sprintf("%d", end), rows.Err()
+
+	if start >= len(res) {
+		return []*drivers.DatabaseSchemaInfo{}, "", nil
+	}
+
+	next := ""
+	if end < len(res) {
+		next = fmt.Sprintf("%d", end)
+	}
+
+	return res[start:end], next, nil
 }
 
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
@@ -92,11 +105,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, limit+1)
 	}
 
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
-	defer db.Close()
 	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, "", err
@@ -130,18 +142,20 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := fmt.Sprintf(`
 		SELECT
-			column_name,
-			data_type
-		FROM %s.INFORMATION_SCHEMA.COLUMNS
-		WHERE table_schema = ? AND table_name = ?
-		ORDER BY ordinal_position
-	`, sqlSafeName(database))
+			CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END as is_view,
+			c.column_name,
+			c.data_type
+		FROM %s.INFORMATION_SCHEMA.TABLES t
+		JOIN %s.INFORMATION_SCHEMA.COLUMNS c
+		ON t.table_schema = c.table_schema AND t.table_name = c.table_name 
+		WHERE t.table_schema = ? AND t.table_name = ?
+		ORDER BY c.ordinal_position
+	`, sqlSafeName(database), sqlSafeName(database))
 
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
 	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
 	if err != nil {
@@ -149,21 +163,25 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}
 	defer rows.Close()
 
-	schemaMap := make(map[string]string)
-	var colName, colType string
+	t := &drivers.TableMetadata{
+		Schema: make(map[string]string),
+	}
+	var (
+		colName, colType string
+		isView           bool
+	)
 	for rows.Next() {
-		if err := rows.Scan(&colName, &colType); err != nil {
+		if err := rows.Scan(&isView, &colName, &colType); err != nil {
 			return nil, err
 		}
-		schemaMap[colName] = colType
+		t.Schema[colName] = colType
+		t.View = isView
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-	}, nil
+	return t, nil
 }
 
 func getCurrentDatabaseAndSchema(ctx context.Context, db *sql.DB) (string, string, error) {

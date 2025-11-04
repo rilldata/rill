@@ -27,6 +27,8 @@ import type {
 import type {
   RpcStatus,
   RuntimeServiceCompleteBody,
+  RuntimeServiceCompleteStreaming200,
+  RuntimeServiceCompleteStreamingBody,
   RuntimeServiceCreateDirectoryBody,
   RuntimeServiceCreateTriggerBody,
   RuntimeServiceDeleteFileParams,
@@ -35,7 +37,6 @@ import type {
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
   RuntimeServiceGenerateResolverBody,
-  RuntimeServiceGetConversationParams,
   RuntimeServiceGetExploreParams,
   RuntimeServiceGetFileParams,
   RuntimeServiceGetInstanceParams,
@@ -1085,6 +1086,94 @@ export const createRuntimeServiceComplete = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+ */
+export const runtimeServiceCompleteStreaming = (
+  instanceId: string,
+  runtimeServiceCompleteStreamingBody: RuntimeServiceCompleteStreamingBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<RuntimeServiceCompleteStreaming200>({
+    url: `/v1/instances/${instanceId}/ai/complete/stream`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceCompleteStreamingBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceCompleteStreamingMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceCompleteStreaming"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+    { instanceId: string; data: RuntimeServiceCompleteStreamingBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceCompleteStreaming(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceCompleteStreamingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>
+>;
+export type RuntimeServiceCompleteStreamingMutationBody =
+  RuntimeServiceCompleteStreamingBody;
+export type RuntimeServiceCompleteStreamingMutationError = ErrorType<RpcStatus>;
+
+/**
+ * @summary CompleteStreaming runs an AI-powered chat completion, optionally invoking agents or tool calls available in Rill.
+ */
+export const createRuntimeServiceCompleteStreaming = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+      TError,
+      { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceCompleteStreaming>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceCompleteStreamingBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceCompleteStreamingMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary ListConversations lists all AI chat conversations for an instance.
  */
 export const runtimeServiceListConversations = (
@@ -1189,13 +1278,11 @@ export function createRuntimeServiceListConversations<
 export const runtimeServiceGetConversation = (
   instanceId: string,
   conversationId: string,
-  params?: RuntimeServiceGetConversationParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetConversationResponse>({
     url: `/v1/instances/${instanceId}/ai/conversations/${conversationId}`,
     method: "GET",
-    params,
     signal,
   });
 };
@@ -1203,11 +1290,9 @@ export const runtimeServiceGetConversation = (
 export const getRuntimeServiceGetConversationQueryKey = (
   instanceId: string,
   conversationId: string,
-  params?: RuntimeServiceGetConversationParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/ai/conversations/${conversationId}`,
-    ...(params ? [params] : []),
   ] as const;
 };
 
@@ -1217,7 +1302,6 @@ export const getRuntimeServiceGetConversationQueryOptions = <
 >(
   instanceId: string,
   conversationId: string,
-  params?: RuntimeServiceGetConversationParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1232,16 +1316,12 @@ export const getRuntimeServiceGetConversationQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetConversationQueryKey(
-      instanceId,
-      conversationId,
-      params,
-    );
+    getRuntimeServiceGetConversationQueryKey(instanceId, conversationId);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetConversation>>
   > = ({ signal }) =>
-    runtimeServiceGetConversation(instanceId, conversationId, params, signal);
+    runtimeServiceGetConversation(instanceId, conversationId, signal);
 
   return {
     queryKey,
@@ -1270,7 +1350,6 @@ export function createRuntimeServiceGetConversation<
 >(
   instanceId: string,
   conversationId: string,
-  params?: RuntimeServiceGetConversationParams,
   options?: {
     query?: Partial<
       CreateQueryOptions<
@@ -1287,7 +1366,6 @@ export function createRuntimeServiceGetConversation<
   const queryOptions = getRuntimeServiceGetConversationQueryOptions(
     instanceId,
     conversationId,
-    params,
     options,
   );
 

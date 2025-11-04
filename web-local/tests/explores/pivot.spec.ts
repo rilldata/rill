@@ -524,7 +524,7 @@ const expectSortedDeltaCol = [
 
 const expectedFlatTable = [
   [],
-  ["", "", "100.0k", "300.6k"],
+  ["Total", "", "100.0k", "300.6k"],
   ["facebook.com", "Facebook", "10.5k", "32.9k"],
   ["msn.com", "Microsoft", "10.4k", "32.5k"],
   ["google.com", "Google", "10.1k", "31.3k"],
@@ -638,12 +638,17 @@ test.describe("pivot run through", () => {
 
     // Change the time range
     await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+      await page.getByRole("menuitem", { name: "Last 4 weeks" }).click();
     });
 
+    await page.waitForTimeout(100);
+
     // add measure and time week to column
-    const timeWeek = page.getByLabel("Time pivot chip", { exact: true });
     await totalRecords.dragTo(columnZone);
+
+    await expect(page.locator(".status.running")).toHaveCount(0);
+
+    const timeWeek = page.getByLabel("Time pivot chip", { exact: true });
     await timeWeek.dragTo(columnZone);
 
     // enable time comparison
@@ -660,7 +665,7 @@ test.describe("pivot run through", () => {
     );
     await firstColumnDeltaButton.click();
     await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
+      await page.getByRole("menuitem", { name: "Last 24 hours" }).click();
     });
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectSortedDeltaCol, 4);

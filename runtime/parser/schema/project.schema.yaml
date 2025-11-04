@@ -11,7 +11,7 @@ description: |
 
   :::
 
-  Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.
+  Projects can simply be rehydrated from Rill project files into an explorable data application as long as there is sufficient access and credentials to the source data - figuring out the dependencies, pulling down data, & validating your model queries and metrics view configurations. The result is a set of functioning exploratory dashboards.
 
   You can see a few different example projects by visiting our [example github repository](https://github.com/rilldata/rill-examples).
 
@@ -68,13 +68,14 @@ definitions:
       - [**S3**](#s3) - Amazon S3 storage
 
       ### _Other_
+      - [**Extenral DuckDB**](#external-duckdb) - External DuckDB database
       - [**HTTPS**](#https) - Public files via HTTP/HTTPS
-      - [**OpenAPI**](#openapi) - OpenAPI data
+      - [**OpenAI**](#openai) - OpenAI data
       - [**Salesforce**](#salesforce) - Salesforce data
       - [**Slack**](#slack) - Slack data
 
       :::warning Security Recommendation
-      For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/connect/credentials/) for complete setup instructions.
+      For all credential parameters (passwords, tokens, keys), use environment variables with the syntax `{{.env.connector.<connector_driver>.<parameter_name>}}`. This keeps sensitive data out of your YAML files and version control. See our [credentials documentation](/build/connectors/credentials/) for complete setup instructions.
       :::
     allOf:
       - title: Properties
@@ -176,15 +177,14 @@ definitions:
               type: connector                                  # Must be `connector` (required)
               driver: azure                                    # Must be `azure` _(required)_
 
-              azure_storage_account: "mystorageaccount"        # Azure storage account name  
-              azure_storage_key: "credentialjsonstring"        # Azure storage access key  
-              azure_storage_sas_token: "optionaltoken"         # Optional SAS token for authentication  
-              azure_storage_connection_string: "optionalconnectionstring" # Optional connection string  
-              azure_storage_bucket: "mycontainer"              # Azure Blob Storage container name _(required)_  
-              allow_host_access: true                          # Allow host environment access
+              azure_storage_account: "mystorageaccount"        # Azure storage account name   _(required)_
+              azure_storage_key: "credentialstring"            # Azure storage access key   _(required)_
+              azure_storage_bucket: "azure://..."              # Azure Blob Storage container name  
           required:
             - driver
-            - azure_storage_bucket
+            - azure_storage_account
+            - azure_storage_key
+
         - type: object
           title: BigQuery
           properties:
@@ -351,45 +351,110 @@ definitions:
         - type: object
           title: DuckDB
           properties:
+            # Core Properties
             driver:
               type: string
-              description: Refers to the driver type and must be driver `duckdb`
+              description: Must be "duckdb"
               const: duckdb
+            mode:
+              type: string
+              description: Connection mode
+              enum: ["read", "readwrite"]
+              default: "read"
+            path:
+              type: string
+              description: Path to external DuckDB database
+            attach:
+              type: string
+              description: Full ATTACH statement to attach a DuckDB database
+            # Resource Management
             pool_size:
               type: integer
               description: Number of concurrent connections and queries allowed
-            allow_host_access:
-              type: boolean
-              description: Whether access to the local environment and file system is allowed
+              minimum: 1
             cpu:
               type: integer
               description: Number of CPU cores available to the database
+              minimum: 1
             memory_limit_gb:
               type: integer
               description: Amount of memory in GB available to the database
+              minimum: 1
             read_write_ratio:
               type: number
-              description: Ratio of resources allocated to the read database; used to divide CPU and memory
+              description: Ratio of resources allocated to read vs write operations
+              minimum: 0
+              maximum: 1
+              default: 0.5
+            allow_host_access:
+              type: boolean
+              description: Whether access to local environment and file system is allowed
+            # SQL Configuration
             init_sql:
               type: string
-              description: is executed during database initialization.
-            secrets:
+              description: SQL executed during database initialization
+            conn_init_sql:
               type: string
-              description: Comma-separated list of other connector names to create temporary secrets for in DuckDB before executing a model.
+              description: SQL executed when a new connection is initialized
+            boot_queries:
+              type: string
+              description: Deprecated - Use init_sql instead
+            # Advanced Properties
             log_queries:
               type: boolean
               description: Whether to log raw SQL queries executed through OLAP
+            secrets:
+              type: string
+              description: Comma-separated list of connector names to create temporary secrets for
+            database_name:
+              type: string
+              description: Name of the attached DuckDB database (auto-detected if not set)
+            schema_name:
+              type: string
+              description: Default schema used by the DuckDB database
+            mode:
+              description: Set the mode for the DuckDB connection. 
+              enum: ["read", "readwrite"]
+              default: "read"
           examples:
             - # Example: DuckDB connector configuration
               type: connector                                  # Must be `connector` (required)
               driver: duckdb                                   # Must be `duckdb` _(required)_
-
+              mode: "readwrite"                                # Set the mode for the DuckDB connection. 
               allow_host_access: true                          # Whether access to the local environment and file system is allowed  
               cpu: 4                                          # Number of CPU cores available to the database  
               memory_limit_gb: 16                              # Amount of memory in GB available to the database
-
+              pool_size: 5                                    # Number of concurrent connections and queries allowed
+              read_write_ratio: 0.7                           # Ratio of resources allocated to read vs write operations
+              init_sql: "INSTALL httpfs; LOAD httpfs;"        # SQL executed during database initialization
+              log_queries: true                               # Whether to log raw SQL queries executed through OLAP
           required:
             - driver
+        - type: object
+          title: External DuckDB
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `duckdb`
+              const: duckdb
+            path:
+              type: string
+              description: Path to the DuckDB database
+            mode:
+              type: string
+              description: Set the mode for the DuckDB connection.
+              enum: ["read", "readwrite"]
+              default: "read"
+          examples:
+            - # Example: DuckDB as a source connector configuration
+              type: connector                                  # Must be `connector` (required)
+              driver: duckdb                                   # Must be `duckdb` _(required)_
+
+              path: "/path/to/my-duckdb-database.db"           # Name of the DuckDB database  
+              mode: "read"                                     # Set the mode for the DuckDB connection. 
+          required:
+            - driver
+            - db
         - type: object
           title: GCS
           properties:
@@ -453,7 +518,7 @@ definitions:
           properties:
             driver:
               type: string
-              description: Refers to the driver type and must be driver `motherduck`
+              description: Refers to the driver type and must be driver `duckdb`.
               const: duckdb
             path:
               type: string
@@ -467,10 +532,15 @@ definitions:
             init_sql:
               type: string
               description: SQL executed during database initialization.
+            mode:
+              type: string
+              description: Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.
+              enum: ["read", "readwrite"]
+              default: "read"
           examples:
             - # Example: MotherDuck connector configuration
               type: connector                                  # Must be `connector` (required)
-              driver: motherduck                               # Must be `motherduck` _(required)_
+              driver: duckdb                               # Must be `duckdb` _(required)_
               token: '{{ .env.connector.motherduck.token }}'    # Set the MotherDuck token from your .env file _(required)_
               path: "md:my_database"                           # Path to your MD database  
               schema_name: "my_schema"                        # Define your schema if not main, uses main by default  
@@ -486,7 +556,19 @@ definitions:
               description: Refers to the driver type and must be driver `mysql`
             dsn:
               type: string
-              description: DSN(Data Source Name) for the mysql connection 
+              description: |
+                **Data Source Name (DSN)** for the MySQL connection, provided in [MySQL URI format](https://dev.mysql.com/doc/refman/8.4/en/connecting-using-uri-or-key-value-pairs.html#connecting-using-uri).
+                The DSN must follow the standard MySQL URI scheme:
+                ```text
+                mysql://user:password@host:3306/my-db
+                ```
+                Rules for special characters in password:
+                - The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+                - All other special characters must be percent-encoded (`%XX` format).
+                ```text
+                mysql://user:pa%40ss@localhost:3306/my-db   # password contains '@'
+                mysql://user:pa%3Ass@localhost:3306/my-db   # password contains ':'
+                ```
             host:
               type: string
               description: Hostname of the MySQL server
@@ -502,28 +584,31 @@ definitions:
             password:
               type: string
               description: Password for authentication
-            ssl_mode:
+            ssl-mode:
               type: string
-              description: SSL mode can be DISABLED, PREFERRED or REQUIRED        
+              description: "ssl mode options: `disabled`, `preferred`, or `required`."       
           examples:
-            - # Example: MySQL connector configuration
-              type: connector                                  # Must be `connector` (required)
-              driver: mysql                                    # Must be `mysql` _(required)_
-
-              host: "localhost"                              # Hostname of the MySQL server  
-              port: 3306                                     # Port number for the MySQL server  
-              database: "mydatabase"                         # Name of the MySQL database  
-              user: "myusername"                             # Username for authentication  
-              password: "mypassword"                         # Password for authentication  
-              ssl_mode: "DISABLED"                           # SSL mode can be DISABLED, PREFERRED or REQUIRED
+            - # Example: MySQL connector configured using individual properties
+              type: connector
+              driver: mysql
+              host: localhost
+              port: 3306
+              database: mydb
+              user: user
+              password: p@ss
+              ssl-mode: preferred
+            - # Example: MySQL connector configured using dsn
+              type: connector
+              driver: mysql
+              dsn: mysql://user:p%40ss@localhost:3306/mydb?ssl-mode=preferred   # '@' in password is encoded as %40
           required:
             - driver
         - type: object
-          title: OpenAPI
+          title: OpenAI
           properties:
             driver:
               type: string
-              description: The driver type, must be set to "openapi"
+              description: The driver type, must be set to "openai"
             api_key:
               type: string
               description: API key for connecting to OpenAI
@@ -540,9 +625,9 @@ definitions:
               type: string
               description: The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
           examples:
-            - # Example: OpenAPI connector configuration
+            - # Example: OpenAI connector configuration
               type: connector                                  # Must be `connector` (required)
-              driver: openapi                                  # Must be `openapi` _(required)_
+              driver: openai                                  # Must be `openai` _(required)_
 
               api_key: "my-api-key"                            # API key for connecting to OpenAI  
               model: "gpt-4o"                                  # The OpenAI model to use (e.g., 'gpt-4o')  
@@ -616,7 +701,33 @@ definitions:
               description: Refers to the driver type and must be driver `postgres`
             dsn:
               type: string
-              description: DSN(Data Source Name) for the postgres connection
+              description: |
+                **Data Source Name (DSN)** for the PostgreSQL connection, provided in
+                [PostgreSQL connection string format](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+                PostgreSQL supports both **key=value format** and **URI format**.
+                
+                key=value format example:
+                ```text
+                user=user password=password host=host port=5432 dbname=mydb
+                ```
+                Rules for key=value format for special characters:
+                - To write an empty value, or a value containing spaces, `=`, single quotes, or backslashes, surround it with single quotes.
+                - Single quotes and backslashes inside a value must be escaped with a backslash (`\'` and `\\`).
+
+                URI format example:
+                ```text
+                postgres://user:password@host:5432/mydb
+                ```
+
+                Rules for URI format:
+                - The following characters are allowed [unescaped in the URI](https://datatracker.ietf.org/doc/html/rfc3986#section-2.3): `~` `.` `_` `-`
+                - All other special characters must be percent-encoded (`%XX` format).
+
+                Examples (URI format with encoded characters):
+                ```text
+                postgres://user:pa%40ss@localhost:5432/my-db   # '@' is encoded as %40
+                postgres://user:pa%3Ass@localhost:5432/my-db   # ':' is encoded as %3A
+                ```
             host:
               type: string
               description: Hostname of the Postgres server
@@ -634,18 +745,25 @@ definitions:
               description: Password for authentication
             sslmode:
               type: string
-              description: SSL mode can be disable, allow, prefer or require
+              description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
           examples:
-            - # Example: Postgres connector configuration
-              type: connector                                  # Must be `connector` (required)
-              driver: postgres                                 # Must be `postgres` _(required)_
-
-              host: "localhost"                              # Hostname of the Postgres server  
-              port: 5432                                     # Port number for the Postgres server  
-              dbname: "mydatabase"                           # Name of the Postgres database  
-              user: "myusername"                             # Username for authentication  
-              password: "mypassword"                         # Password for authentication  
-              sslmode: "disable"                             # SSL mode can be disable, allow, prefer or require
+            - # Example: Postgres connector configured using individual properties
+              type: connector
+              driver: postgres
+              host: localhost
+              port: 5432  
+              dbname: mydatabase
+              user: myusername
+              password: mypassword  
+              sslmode: prefer
+            - # Example: Postgres connector configured using dsn key=value format
+              type: connector
+              driver: postgres
+              dsn: user=myusername password='my pass\'word' host=localhost port=5432 dbname=mydatabase sslmode=prefer # password is "my pass'word": space is quoted, single quote escaped with \'
+            - # Example: Postgres connector configured using dsn URI format
+              type: connector
+              driver: postgres 
+              dsn: postgres://myusername:p%40ss@localhost:5432/mydatabase?sslmode=prefer  # '@' in password: p@ss is encoded as %40
           required:
             - driver
         - type: object
@@ -821,7 +939,7 @@ definitions:
                 openssl genrsa 2048 | openssl pkcs8 -topk8 -inform PEM -out rsa_key.p8 -nocrypt
 
                 # Convert URL safe format for Snowflake
-                cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_' | tr -d '='
+                cat rsa_key.p8 | grep -v "\----" | tr -d '\n' | tr '+/' '-_'
                 ```
                 See: https://docs.snowflake.com/en/user-guide/key-pair-auth
                 :::
@@ -1053,6 +1171,33 @@ definitions:
             description: Refers to a SQL query that is run after the main query, available for DuckDB-based models. (optional). Ensure post_exec queries are idempotent. Use IF EXISTS statements when applicable.
             examples: 
               - post_exec: DETACH DATABASE IF EXISTS postgres_db
+          retry:
+            type: object
+            description: Refers to the retry configuration for the model. (optional)
+            properties:
+              attempts:
+                type: integer
+                description: The number of attempts to retry the model.
+              delay:
+                type: string
+                description: The delay between attempts.
+              exponential_backoff:
+                type: boolean
+                description: Whether to use exponential backoff.
+              if_error_matches:
+                type: array
+                items:
+                  type: string
+                description: The error messages to match.
+            examples:
+              - retry:
+                  attempts: 5
+                  delay: 10s
+                  exponential_backoff: true
+                  if_error_matches:
+                    - ".*OvercommitTracker.*"
+                    - ".*Timeout.*"
+                    - ".*Bad Gateway.*"
           timeout:
             type: string
             description: The maximum time to wait for model ingestion
@@ -1267,7 +1412,7 @@ definitions:
       - type: object
         allOf:
           - if:
-              title: Additional properties when `connector` is `athena` or [named connector](./connectors.md#athena) for athena
+              title: Additional properties when `connector` is `athena` or [named connector](./connectors#athena) for athena
               properties:
                 connector:
                   const: athena
@@ -1276,7 +1421,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/athena'
           - if:
-              title: Additional properties when `connector` is `azure` or [named connector](./connectors.md#azure) of azure
+              title: Additional properties when `connector` is `azure` or [named connector](./connectors#azure) of azure
               properties:
                 connector:
                   const: azure
@@ -1285,7 +1430,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/azure'
           - if:
-              title: Additional properties when `connector` is `bigquery` or [named connector](./connectors.md#bigquery) of bigquery
+              title: Additional properties when `connector` is `bigquery` or [named connector](./connectors#bigquery) of bigquery
               properties:
                 connector:
                   const: bigquery
@@ -1294,7 +1439,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/bigquery'
           - if:
-              title: Additional properties when `connector` is `duckdb` or [named connector](./connectors.md#duckdb) of duckdb
+              title: Additional properties when `connector` is `duckdb` or [named connector](./connectors#duckdb) of duckdb
               properties:
                 connector:
                   const: duckdb
@@ -1303,7 +1448,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/duckdb'
           - if:
-              title: Additional properties when `connector` is `gcs` or [named connector](./connectors.md#gcs) of gcs
+              title: Additional properties when `connector` is `gcs` or [named connector](./connectors#gcs) of gcs
               properties:
                 connector:
                   const: gcs
@@ -1312,7 +1457,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/gcs'
           - if:
-              title: Additional properties when `connector` is `local_file` or [named connector](/connect/data-source/local-file) of local_file
+              title: Additional properties when `connector` is `local_file` or [named connector](/build/connectors/data-source/local-file) of local_file
               properties:
                 connector:
                   const: local_file
@@ -1321,7 +1466,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/local_file'
           - if:
-              title: Additional properties when `connector` is `redshift` or [named connector](./connectors.md#redshift) of redshift
+              title: Additional properties when `connector` is `redshift` or [named connector](./connectors#redshift) of redshift
               properties:
                 connector:
                   const: redshift
@@ -1330,7 +1475,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/redshift'
           - if:
-              title: Additional properties when `connector` is `s3` or [named connector](./connectors.md#s3) of s3
+              title: Additional properties when `connector` is `s3` or [named connector](./connectors#s3) of s3
               properties:
                 connector:
                   const: s3
@@ -1339,7 +1484,7 @@ definitions:
             then:
               $ref: '#/definitions/models/definitions/s3'
           - if:
-              title: Additional properties when `connector` is `salesforce` or [named connector](./connectors.md#salesforce) of salesforce
+              title: Additional properties when `connector` is `salesforce` or [named connector](./connectors#salesforce) of salesforce
               properties:
                 connector:
                   const: salesforce
@@ -1629,7 +1774,7 @@ definitions:
             description: Refers to the resource type and must be `metrics_view`
           connector:
             type: string
-            description: Refers to the connector type for the metrics view, see [OLAP engines](/connect/olap) for more information
+            description: Refers to the connector type for the metrics view, see [OLAP engines](/build/connectors/olap) for more information
           display_name:
             type: string
             description: Refers to the display name for the metrics view
@@ -1656,7 +1801,7 @@ definitions:
             description: Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear
           watermark:
             type: string
-            description: A SQL expression that tells us the max timestamp that the metrics are considered valid for. Usually does not need to be overwritten
+            description: A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten
           smallest_time_grain:
             type: string
             description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
@@ -1725,7 +1870,7 @@ definitions:
                   type: string
                   description: a combination of operators and functions for aggregations
                 window:
-                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/advanced-expressions/windows) documentation.
+                  description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/build/metrics-view/measures/windows) documentation.
                   anyOf:
                     - type: string
                       enum:
@@ -1752,7 +1897,7 @@ definitions:
                   description: for per dimensions
                 requires:
                   $ref: '#/definitions/field_selectors_properties'
-                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/advanced-expressions/referencing) for more information.
+                  description: using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures. See [referencing measures](/build/metrics-view/measures/referencing) for more information.
                 valid_percent_of_total:
                   type: boolean
                   description: a boolean indicating whether percent-of-total values should be rendered for this measure
@@ -1890,6 +2035,9 @@ definitions:
           display_name:
             type: string
             description: Refers to the display name for the canvas
+          title:
+            type: string
+            description: "Deprecated: use display_name instead. Refers to the display name for the canvas"
           description:
             type: string
             description: Description for the canvas dashboard
@@ -1950,7 +2098,6 @@ definitions:
           filters:
             type: object
             description: Indicates if filters should be enabled for the canvas.
-            additionalProperties: true
             properties:
               enable:
                 type: boolean
@@ -1958,6 +2105,9 @@ definitions:
           allow_custom_time_range:
             type: boolean
             description: Defaults to true, when set to false it will hide the ability to set a custom time range for the user.
+          allow_filter_add:
+            type: boolean
+            description: Whether users can add new filters to the canvas dashboard.
           time_ranges:
             type: array
             description: |
@@ -1989,6 +2139,15 @@ definitions:
                   time_range: P1M
                   comparison_mode: dimension #time, none
                   comparison_dimension: filename
+                  filters:
+                    dimensions:
+                      - dimension: country
+                        values: ["US", "CA"]
+                        mode: in_list
+                    measures:
+                      - measure: revenue
+                        operator: gt
+                        values: ["1000"]
                 ```
             properties:
               time_range:
@@ -2004,7 +2163,72 @@ definitions:
               comparison_dimension:
                 description: 'for dimension mode, specify the comparison dimension by name'
                 type: string
-            additionalProperties: false
+              filters:
+                type: object
+                description: Default filter configuration
+                properties:
+                  dimensions:
+                    type: array
+                    description: List of default dimension filters
+                    items:
+                      type: object
+                      properties:
+                        dimension:
+                          type: string
+                          description: Name of the dimension to filter on
+                        values:
+                          type: array
+                          items:
+                            type: string
+                          description: List of values to filter by
+                        limit:
+                          type: integer
+                          description: Maximum number of values to show in the filter
+                        removable:
+                          type: boolean
+                          description: Whether the filter can be removed by the user
+                        locked:
+                          type: boolean
+                          description: Whether the filter is locked and cannot be modified
+                        hidden:
+                          type: boolean
+                          description: Whether the filter is hidden from the UI
+                        mode:
+                          type: string
+                          enum: [select, in_list, contains]
+                          description: Filter mode - select for dropdown, in_list for multi-select, contains for text search
+                        exclude:
+                          type: boolean
+                          description: Whether to exclude the specified values instead of including them
+                  measures:
+                    type: array
+                    description: List of default measure filters
+                    items:
+                      type: object
+                      properties:
+                        measure:
+                          type: string
+                          description: Name of the measure to filter on
+                        by_dimension:
+                          type: string
+                          description: Dimension to group the measure filter by
+                        operator:
+                          type: string
+                          description: Operator for the measure filter (e.g., eq, gt, lt, gte, lte)
+                        values:
+                          type: array
+                          items:
+                            type: string
+                          description: List of values to filter by
+                        removable:
+                          type: boolean
+                          description: Whether the filter can be removed by the user
+                        locked:
+                          type: boolean
+                          description: Whether the filter is locked and cannot be modified
+                        hidden:
+                          type: boolean
+                          description: Whether the filter is hidden from the UI
           theme:
             oneOf:
               - type: string
@@ -2025,7 +2249,7 @@ definitions:
     title: Explore Dashboard YAML
     id: explore-dashboards
     type: object
-    description: Explore dashboards provide an interactive way to explore data with predefined metrics and dimensions.
+    description: Explore dashboards provide an interactive way to explore data with predefined measures and dimensions.
     allOf:
       - title: Properties
         type: object
@@ -2183,7 +2407,7 @@ definitions:
         # Check the alert every hour.
         refresh:
           cron: 0 * * * *
-        # Query that returns non-empty results if the metrics lag by more than 1 day.
+        # Query that returns non-empty results if the measures lag by more than 1 day.
         data:
           sql: |-
             SELECT  *
@@ -2324,9 +2548,9 @@ definitions:
             type: string
             const: api
             description: Refers to the resource type and must be `api`
-          openapi:
+          openai:
             type: object
-            description: OpenAPI specification for the API endpoint
+            description: OpenAI specification for the API endpoint
             properties:
               summary:
                 type: string
@@ -2424,8 +2648,210 @@ definitions:
           output:
             description: Output variable that the component produces
             $ref: '#/definitions/component_variable_properties'
+          # Renderer properties - exactly one must be specified
+          line_chart:
+            $ref: '#/definitions/chart_properties'
+          bar_chart:
+            $ref: '#/definitions/chart_properties'
+          stacked_bar_chart:
+            $ref: '#/definitions/chart_properties'
+          vega_lite:
+            type: object
+            properties:
+              spec:
+                type: string
+                description: Vega-Lite specification as a string
+            required:
+              - spec
+            additionalProperties: false
+          kpi:
+            $ref: '#/definitions/kpi_properties'
+          table:
+            $ref: '#/definitions/table_properties'
+          markdown:
+            $ref: '#/definitions/markdown_properties'
+          image:
+            $ref: '#/definitions/image_properties'
         required:
           - type
+        additionalProperties: false
+
+  # Chart Properties
+  chart_properties:
+    type: object
+    properties:
+      config:
+        $ref: '#/definitions/chart_config'
+      title:
+        type: string
+        description: Chart title
+      description:
+        type: string
+        description: Chart description
+    required:
+      - config
+    additionalProperties: false
+
+  # Chart Config
+  chart_config:
+    type: object
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      x:
+        $ref: '#/definitions/field_config'
+      y:
+        $ref: '#/definitions/field_config'
+      color:
+        oneOf:
+          - $ref: '#/definitions/field_config'
+          - type: string
+      tooltip:
+        $ref: '#/definitions/field_config'
+    required:
+      - metrics_view
+    additionalProperties: false
+
+  # Field Config
+  field_config:
+    type: object
+    properties:
+      field:
+        type: string
+        description: Field name from the metrics view
+      title:
+        type: string
+        description: Display title for the field
+      format:
+        type: string
+        description: Format string for the field
+      type:
+        type: string
+        enum: ["quantitative", "ordinal", "nominal", "temporal", "geojson"]
+        description: Data type of the field
+      timeUnit:
+        type: string
+        description: Time unit for temporal fields
+    required:
+      - field
+      - type
+    additionalProperties: false
+
+  # KPI Properties
+  kpi_properties:
+    type: object
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      measure:
+        type: string
+        description: Measure to display
+      time_range:
+        type: string
+        description: Time range for the KPI
+      comparison_range:
+        type: string
+        description: Comparison time range
+      filter:
+        type: string
+        description: Filter expression
+      title:
+        type: string
+        description: KPI title
+      description:
+        type: string
+        description: KPI description
+    required:
+      - metrics_view
+      - measure
+      - time_range
+    additionalProperties: false
+
+  # Table Properties
+  table_properties:
+    type: object
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      measures:
+        type: array
+        items:
+          type: string
+        description: List of measures to display
+      time_range:
+        type: string
+        description: Time range for the table
+      row_dimensions:
+        type: array
+        items:
+          type: string
+        description: Dimensions for table rows
+      col_dimensions:
+        type: array
+        items:
+          type: string
+        description: Dimensions for table columns
+      comparison_range:
+        type: string
+        description: Comparison time range
+      filter:
+        type: string
+        description: Filter expression
+      title:
+        type: string
+        description: Table title
+      description:
+        type: string
+        description: Table description
+    required:
+      - metrics_view
+      - measures
+      - time_range
+    additionalProperties: false
+
+  # Markdown Properties
+  markdown_properties:
+    type: object
+    properties:
+      content:
+        type: string
+        description: Markdown content
+      css:
+        type: object
+        description: CSS styles
+      title:
+        type: string
+        description: Markdown title
+      description:
+        type: string
+        description: Markdown description
+    required:
+      - content
+    additionalProperties: false
+
+  # Image Properties
+  image_properties:
+    type: object
+    properties:
+      url:
+        type: string
+        description: Image URL
+      css:
+        type: object
+        description: CSS styles
+      title:
+        type: string
+        description: Image title
+      description:
+        type: string
+        description: Image description
+    required:
+      - url
+    additionalProperties: false
+
 
   # Common Properties
   common_properties:
@@ -2935,24 +3361,3 @@ definitions:
   
   
 
-    # component_variable_properties:
-    #   type: object
-    #   properties:
-    #     name:
-    #       type: string
-    #       description: Unique identifier for the variable
-    #     type:
-    #       type: string
-    #       description: Data type of the variable (e.g., string, number, boolean)
-    #     value:
-    #       description: Default value for the variable. Can be any valid JSON value type
-    #       type:
-    #         - string
-    #         - number
-    #         - boolean
-    #         - object
-    #         - array
-    #   required:
-    #     - name
-    #     - type
-    #   additionalProperties: false 

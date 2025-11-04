@@ -52,14 +52,14 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Cli
 	}
 
 	rt := &Runtime{
-		Email:          emailClient,
-		opts:           opts,
-		Logger:         logger,
-		storage:        st,
-		activity:       ac,
-		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
-		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
+		Email:      emailClient,
+		opts:       opts,
+		Logger:     logger,
+		storage:    st,
+		activity:   ac,
+		queryCache: newQueryCache(opts.QueryCacheSizeBytes),
 	}
+	rt.securityEngine = newSecurityEngine(opts.SecurityEngineCacheSize, logger, rt)
 
 	rt.connCache = rt.newConnectionCache()
 
@@ -99,13 +99,13 @@ func (r *Runtime) Close() error {
 	return errors.Join(err1, err2)
 }
 
-func (r *Runtime) ResolveSecurity(instanceID string, claims *SecurityClaims, res *runtimev1.Resource) (*ResolvedSecurity, error) {
-	inst, err := r.Instance(context.Background(), instanceID)
+func (r *Runtime) ResolveSecurity(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) (*ResolvedSecurity, error) {
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 	vars := inst.ResolveVariables(false)
-	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, vars, claims, res)
+	return r.securityEngine.resolveSecurity(ctx, instanceID, inst.Environment, vars, claims, res)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
@@ -136,6 +136,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	tmp := *inst
 	inst = &tmp
 
+	inst.ProjectDisplayName = rillYAML.DisplayName
 	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
 
 	// Dedupe connectors

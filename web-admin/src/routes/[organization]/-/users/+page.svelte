@@ -1,25 +1,28 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import type { V1OrganizationInvite } from "@rilldata/web-admin/client";
-  import {
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListOrganizationInvitesInfinite,
-    createAdminServiceListOrganizationMemberUsersInfinite,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
-  import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
-  import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/users/ChangingBillingContactRoleDialog.svelte";
-  import OrgUsersFilters from "@rilldata/web-admin/features/organizations/users/OrgUsersFilters.svelte";
-  import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
-  import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/users/RemovingBillingContactDialog.svelte";
+  import AddUsersDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddUsersDialog.svelte";
+  import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ChangingBillingContactRoleDialog.svelte";
+  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
+  import OrgUsersFilters from "@rilldata/web-admin/features/organizations/user-management/OrgUsersFilters.svelte";
+  import OrgUsersTable from "@rilldata/web-admin/features/organizations/user-management/table/users/OrgUsersTable.svelte";
+  import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemovingBillingContactDialog.svelte";
+  import {
+    getOrgUserInvites,
+    getOrgUserMembers,
+  } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Plus } from "lucide-svelte";
+  import type { PageData } from "./$types";
 
-  const PAGE_SIZE = 12;
+  export let data: PageData;
+  $: ({ organizationPermissions } = data);
 
   let userEmail = "";
   let userRole = "";
@@ -29,6 +32,8 @@
   let isRemovingBillingContactDialogOpen = false;
   let isChangingBillingContactRoleDialogOpen = false;
   let isUpdateBillingContactDialogOpen = false;
+  let isEditUserGroupDialogOpen = false;
+  let editingUserGroupName = "";
 
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
@@ -41,40 +46,11 @@
 
   $: organization = $page.params.organization;
 
-  $: orgMemberUsersInfiniteQuery =
-    createAdminServiceListOrganizationMemberUsersInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
-  $: orgInvitesInfiniteQuery =
-    createAdminServiceListOrganizationInvitesInfinite(
-      organization,
-      {
-        pageSize: PAGE_SIZE,
-      },
-      {
-        query: {
-          getNextPageParam: (lastPage) => {
-            if (lastPage.nextPageToken !== "") {
-              return lastPage.nextPageToken;
-            }
-            return undefined;
-          },
-        },
-      },
-    );
+  $: orgMemberUsersInfiniteQuery = getOrgUserMembers({
+    organization,
+    guestOnly: false,
+  });
+  $: orgInvitesInfiniteQuery = getOrgUserInvites(organization);
 
   $: allOrgMemberUsersRows =
     $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
@@ -98,14 +74,12 @@
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
-  $: currentUserRole = allOrgMemberUsersRows.find(
-    (member) => member.userEmail === $currentUser.data?.user.email,
-  )?.roleName;
-
   // Filter by role
   // Filter by search text
   $: filteredUsers = combinedRows
     .filter((user) => {
+      if (user.roleName === OrgUserRoles.Guest) return false;
+
       const searchLower = searchText.toLowerCase();
       const matchesSearch =
         (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
@@ -124,9 +98,6 @@
           (user.roleName === OrgUserRoles.Admin ||
             user.roleName === OrgUserRoles.Editor ||
             user.roleName === OrgUserRoles.Viewer);
-      } else if (filterSelection === "guests") {
-        // Only guests
-        matchesRole = user.roleName === OrgUserRoles.Guest;
       } else if (filterSelection === "pending") {
         // Only users with pending invites
         matchesRole = "invitedBy" in user;
@@ -179,28 +150,26 @@
       </div>
       <div class="mt-6">
         <OrgUsersTable
+          {organization}
           data={filteredUsers}
           usersQuery={$orgMemberUsersInfiniteQuery}
           invitesQuery={$orgInvitesInfiniteQuery}
           currentUserEmail={$currentUser.data?.user.email}
-          {currentUserRole}
+          {organizationPermissions}
           billingContact={$billingContactUser?.email}
           {scrollToTopTrigger}
+          guestOnly={false}
           onAttemptRemoveBillingContactUser={() =>
             (isRemovingBillingContactDialogOpen = true)}
           onAttemptChangeBillingContactUserRole={() =>
             (isChangingBillingContactRoleDialogOpen = true)}
+          onEditUserGroup={(groupName) => {
+            editingUserGroupName = groupName;
+            isEditUserGroupDialogOpen = true;
+          }}
+          onConvertToMember={() => {}}
         />
       </div>
-      {#if filteredUsers.length > 0}
-        <div class="px-2 py-3">
-          <span class="font-medium text-sm text-gray-500">
-            {filteredUsers.length} total user{filteredUsers.length === 1
-              ? ""
-              : "s"}
-          </span>
-        </div>
-      {/if}
     </div>
   {/if}
 </div>
@@ -227,3 +196,11 @@
   {organization}
   currentBillingContact={$billingContactUser?.email}
 />
+
+{#if editingUserGroupName}
+  <EditUserGroupDialog
+    bind:open={isEditUserGroupDialogOpen}
+    groupName={editingUserGroupName}
+    currentUserEmail={$currentUser.data?.user.email}
+  />
+{/if}

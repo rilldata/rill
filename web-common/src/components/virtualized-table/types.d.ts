@@ -27,7 +27,7 @@ export interface VirtualizedTableColumns {
   largestStringLength?: number;
   summary?: ProfileColumnSummary | any;
   label?: string | typeof SvelteComponent<any>;
-  total?: number;
+  max?: number;
   description?: string;
   enableResize?: boolean;
   enableSorting?: boolean;

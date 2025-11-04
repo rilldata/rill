@@ -204,6 +204,18 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}", proxyHandler) // Backwards compatibility
 	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)
 
+	// Add backwards compatibility alias for iframe endpoint
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/iframe", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)
+		transcoder.ServeHTTP(w, r)
+	}))
+
+	// Add backwards compatibility alias for credentials endpoint
+	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/credentials", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)
+		transcoder.ServeHTTP(w, r)
+	}))
+
 	// Add Prometheus
 	if s.opts.ServePrometheus {
 		mux.Handle("/metrics", promhttp.Handler())
@@ -244,6 +256,8 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Temporary endpoint for testing headers.
 	// NOTE: Commented out since it is unsafe, but keeping the code since it's been helpful for debugging on several occasions.
 	// mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Content-Type", "text/plain")
+	// 	fmt.Fprintf(w, "r.Host: %s\n", r.Host)
 	// 	for k, v := range r.Header {
 	// 		fmt.Fprintf(w, "%s: %v\n", k, v)
 	// 	}

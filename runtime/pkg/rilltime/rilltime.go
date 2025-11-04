@@ -25,6 +25,8 @@ var (
 		{"Now", "now"},
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
+		{"PreviousPeriod", "(?i)p"},
+		{"Offset", `(?i)offset`},
 		// this needs to be after Now and Latest to match to them
 		{"PeriodToGrain", `[sSmhHdDwWqQMyY]TD`},
 		{"Grain", `[sSmhHdDwWqQMyY]`},
@@ -48,6 +50,7 @@ var (
 	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
+		participle.UseLookahead(2), // Needed to disambiguate `offset -1P` vs `offset -1M`
 	)
 	daxNotations = map[string]string{
 		// Mapping for our old rill-<DAX> syntax
@@ -63,11 +66,11 @@ var (
 		"PYC": "-1Y/Y to ref/Y as of watermark",
 		// TODO: previous period is contextual. should be handled in UI
 		"PP": "",
-		"PD": "-1D^ to D^",
-		"PW": "-1W^ to W^",
-		"PM": "-1M^ to M^",
-		"PQ": "-1Q^ to Q^",
-		"PY": "-1Y^ to Y^",
+		"PD": "-1D/D to ref/D as of watermark",
+		"PW": "-1W/W to ref/W as of watermark",
+		"PM": "-1M/M to ref/M as of watermark",
+		"PQ": "-1Q/Q to ref/Q as of watermark",
+		"PY": "-1Y/Y to ref/Y as of watermark",
 	}
 	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
@@ -84,6 +87,18 @@ var (
 		"M": timeutil.TimeGrainMonth,
 		"y": timeutil.TimeGrainYear,
 		"Y": timeutil.TimeGrainYear,
+	}
+	reverseGrainMap = map[timeutil.TimeGrain]string{
+		timeutil.TimeGrainUnspecified: "s",
+		timeutil.TimeGrainMillisecond: "s",
+		timeutil.TimeGrainSecond:      "s",
+		timeutil.TimeGrainMinute:      "m",
+		timeutil.TimeGrainHour:        "h",
+		timeutil.TimeGrainDay:         "D",
+		timeutil.TimeGrainWeek:        "W",
+		timeutil.TimeGrainMonth:       "M",
+		timeutil.TimeGrainQuarter:     "Q",
+		timeutil.TimeGrainYear:        "Y",
 	}
 	higherOrderMap = map[timeutil.TimeGrain]timeutil.TimeGrain{
 		timeutil.TimeGrainSecond:  timeutil.TimeGrainMinute,
@@ -111,6 +126,7 @@ type Expression struct {
 	AnchorOverrides []*PointInTime `parser:"(As Of @@)*"`
 	Grain           *string        `parser:"(By @Grain)?"`
 	TimeZone        *string        `parser:"(Tz @Whitespace @TimeZone)?"`
+	Offset          *Offset        `parser:"(Offset @@)?"`
 
 	isNewFormat bool
 	tz          *time.Location
@@ -202,6 +218,16 @@ type ISOPointInTime struct {
 	tg timeutil.TimeGrain
 }
 
+type Offset struct {
+	PreviousPeriod *PreviousPeriod       `parser:"( @@"`
+	Grain          *GrainPointInTimePart `parser:"| @@)"`
+}
+
+type PreviousPeriod struct {
+	Prefix string `parser:"@Prefix"`
+	Num    int    `parser:"@Number PreviousPeriod"`
+}
+
 type Ordinal struct {
 	Grain string `parser:"@Grain"`
 	Num   int    `parser:"@Number"`
@@ -220,16 +246,17 @@ type GrainDurationPart struct {
 type ParseOptions struct {
 	DefaultTimeZone  *time.Location
 	TimeZoneOverride *time.Location
+	// TODO: the correct way is perhaps add a keyword in syntax to reference smallest grain.
+	SmallestGrain timeutil.TimeGrain
 }
 
 type EvalOptions struct {
-	Now           time.Time
-	MinTime       time.Time
-	MaxTime       time.Time
-	Watermark     time.Time
-	FirstDay      int
-	FirstMonth    int
-	SmallestGrain timeutil.TimeGrain
+	Now        time.Time
+	MinTime    time.Time
+	MaxTime    time.Time
+	Watermark  time.Time
+	FirstDay   int
+	FirstMonth int
 
 	ref          time.Time
 	truncatedRef bool
@@ -332,7 +359,11 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 		tg := timeutil.TimeGrainUnspecified
 		if e.Grain != nil {
 			tg = grainMap[*e.Grain]
+
+			// ISO durations are mapped to `ref-iso to ref as of watermark/grain+1grain`
+			isoStart = timeutil.OffsetTime(isoStart, tg, 1, e.tz)
 			isoStart = timeutil.TruncateTime(isoStart, tg, e.tz, evalOpts.FirstDay, evalOpts.FirstMonth)
+			isoEnd = timeutil.OffsetTime(isoEnd, tg, 1, e.tz)
 			isoEnd = timeutil.TruncateTime(isoEnd, tg, e.tz, evalOpts.FirstDay, evalOpts.FirstMonth)
 		}
 
@@ -340,6 +371,10 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, timeutil.
 	}
 
 	start, end, tg := e.Interval.eval(evalOpts, evalOpts.ref, e.tz)
+
+	if e.Offset != nil {
+		start, end = e.Offset.eval(evalOpts, start, end, e.Interval, e.tz)
+	}
 
 	if e.Grain != nil {
 		tg = grainMap[*e.Grain]
@@ -376,6 +411,22 @@ func (i *Interval) eval(evalOpts EvalOptions, start time.Time, tz *time.Location
 		return i.Iso.eval(tz)
 	}
 	return start, start, timeutil.TimeGrainUnspecified
+}
+
+func (i *Interval) previousPeriod(evalOpts EvalOptions, tm time.Time, tz *time.Location) (time.Time, time.Time) {
+	var start time.Time
+	end := tm
+	if i.Ordinal != nil {
+		o := i.Ordinal.Ordinals[0]
+		tg := grainMap[o.Grain]
+		start = timeutil.OffsetTime(tm, tg, -1, tz)
+	} else if i.StartEnd != nil {
+		evalOpts.ref = tm
+		start, _, _ = i.StartEnd.eval(evalOpts, tm, tz)
+	} else if i.Iso != nil {
+		return i.Iso.previousPeriod(tm, tz)
+	}
+	return start, end
 }
 
 func (s *ShorthandInterval) expand() *StartEndInterval {
@@ -488,6 +539,21 @@ func (i *IsoInterval) eval(tz *time.Location) (time.Time, time.Time, timeutil.Ti
 		end, _, _ = i.End.eval(tz)
 	}
 	return start, end, tg
+}
+
+func (i *IsoInterval) previousPeriod(tm time.Time, tz *time.Location) (time.Time, time.Time) {
+	if i.End != nil {
+		start, end, _ := i.eval(tz)
+		diff := end.Sub(start)
+
+		end = start
+		start = end.Add(-diff)
+		return start, end
+	}
+
+	end := tm
+	start := timeutil.OffsetTime(end, i.Start.tg, -1, tz)
+	return start, end
 }
 
 /* Points in time */
@@ -646,6 +712,22 @@ func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil
 	return absStart, absEnd, a.tg
 }
 
+func (o *Offset) eval(evalOpts EvalOptions, start, end time.Time, mainInterval *Interval, tz *time.Location) (time.Time, time.Time) {
+	if o.PreviousPeriod != nil {
+		start, end = o.PreviousPeriod.eval(evalOpts, start, mainInterval, tz)
+	} else if o.Grain != nil {
+		start, _ = o.Grain.eval(start, tz)
+		end, _ = o.Grain.eval(end, tz)
+	}
+
+	return start, end
+}
+
+func (p *PreviousPeriod) eval(evalOpts EvalOptions, start time.Time, mainInterval *Interval, tz *time.Location) (time.Time, time.Time) {
+	// TODO: things other than -1 period
+	return mainInterval.previousPeriod(evalOpts, start, tz)
+}
+
 /* Durations */
 
 func (o *Ordinal) eval(evalOpts EvalOptions, start time.Time, tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
@@ -681,6 +763,7 @@ func (g *GrainDurationPart) offset(tm time.Time, dir int, tz *time.Location) (ti
 func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
+		grainAlias := reverseGrainMap[parseOpts.SmallestGrain]
 		return &Expression{
 			Interval: &Interval{
 				StartEnd: &StartEndInterval{
@@ -699,13 +782,14 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 								Labeled: &LabeledPointInTime{
 									Latest: true,
 								},
+								Snap: &grainAlias,
 							},
 							{
 								Grain: &GrainPointInTime{
 									Parts: []*GrainPointInTimePart{
 										{
 											Prefix:   "+",
-											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: "s", Num: 1}}},
+											Duration: &GrainDuration{Parts: []*GrainDurationPart{{Grain: grainAlias, Num: 1}}},
 										},
 									},
 								},

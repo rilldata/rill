@@ -49,7 +49,7 @@
 
   const newPicker = featureFlags.rillTime;
 
-  $: rangeBuckets = bucketYamlRanges(timeRanges);
+  $: rangeBuckets = bucketYamlRanges(timeRanges, minTimeGrain, $newPicker);
 
   $: v2TimeString = normalizeRangeString(selectedRangeAlias);
 
@@ -70,20 +70,22 @@
     <RangePickerV2
       {context}
       smallestTimeGrain={minTimeGrain}
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      minDate={DateTime.fromJSDate(allTimeRange.start).setZone(activeTimeZone)}
+      maxDate={DateTime.fromJSDate(allTimeRange.end).setZone(activeTimeZone)}
       {watermark}
       {showDefaultItem}
       {defaultTimeRange}
+      {rangeBuckets}
       timeString={v2TimeString || selectedRangeAlias}
       {interval}
+      {allowCustomTimeRange}
+      timeGrain={activeTimeGrain}
       zone={activeTimeZone}
       {lockTimeZone}
       {availableTimeZones}
       {showFullRange}
       {onSelectTimeZone}
       {onSelectRange}
-      {onTimeGrainSelect}
     />
   {:else if interval.isValid && activeTimeGrain}
     <Elements.RangePicker
@@ -94,6 +96,7 @@
       {showFullRange}
       {defaultTimeRange}
       {allowCustomTimeRange}
+      smallestTimeGrain={minTimeGrain}
       selected={selectedRangeAlias ?? ""}
       {side}
       {interval}

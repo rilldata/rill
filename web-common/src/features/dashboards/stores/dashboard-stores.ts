@@ -22,10 +22,7 @@ import type {
   V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import {
-  V1Operation,
-  type V1StructType,
-} from "@rilldata/web-common/runtime-client";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { derived, writable, type Readable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
@@ -170,17 +167,11 @@ const metricsViewReducers = {
     urlState: string,
     metricsView: V1MetricsViewSpec,
     explore: V1ExploreSpec,
-    schema: V1StructType,
   ) {
     if (!urlState || !metricsView) return;
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(
-      urlState,
-      metricsView,
-      explore,
-      schema,
-    );
+    const partial = getDashboardStateFromUrl(urlState, metricsView, explore);
     if (!partial) return;
 
     updateMetricsExplorerByName(name, (exploreState) => {

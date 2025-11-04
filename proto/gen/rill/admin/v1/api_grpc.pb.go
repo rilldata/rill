@@ -86,6 +86,7 @@ const (
 	AdminService_ListUserAuthTokens_FullMethodName                    = "/rill.admin.v1.AdminService/ListUserAuthTokens"
 	AdminService_IssueUserAuthToken_FullMethodName                    = "/rill.admin.v1.AdminService/IssueUserAuthToken"
 	AdminService_RevokeUserAuthToken_FullMethodName                   = "/rill.admin.v1.AdminService/RevokeUserAuthToken"
+	AdminService_RevokeRepresentativeAuthTokens_FullMethodName        = "/rill.admin.v1.AdminService/RevokeRepresentativeAuthTokens"
 	AdminService_IssueRepresentativeAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
@@ -93,7 +94,6 @@ const (
 	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_ConnectProjectToGithub_FullMethodName                = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
 	AdminService_CreateManagedGitRepo_FullMethodName                  = "/rill.admin.v1.AdminService/CreateManagedGitRepo"
-	AdminService_DisconnectProjectFromGithub_FullMethodName           = "/rill.admin.v1.AdminService/DisconnectProjectFromGithub"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
@@ -186,7 +186,7 @@ type AdminServiceClient interface {
 	GetOrganizationNameForDomain(ctx context.Context, in *GetOrganizationNameForDomainRequest, opts ...grpc.CallOption) (*GetOrganizationNameForDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(ctx context.Context, in *CreateOrganizationRequest, opts ...grpc.CallOption) (*CreateOrganizationResponse, error)
-	// DeleteOrganization deletes an organizations
+	// DeleteOrganization deletes an organization
 	DeleteOrganization(ctx context.Context, in *DeleteOrganizationRequest, opts ...grpc.CallOption) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
@@ -321,6 +321,9 @@ type AdminServiceClient interface {
 	// RevokeUserAuthToken revokes a user access token.
 	// You can optionally pass "current" instead of the token ID to revoke the current token.
 	RevokeUserAuthToken(ctx context.Context, in *RevokeUserAuthTokenRequest, opts ...grpc.CallOption) (*RevokeUserAuthTokenResponse, error)
+	// RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
+	// This is primarily used for "unassume" flows.
+	RevokeRepresentativeAuthTokens(ctx context.Context, in *RevokeRepresentativeAuthTokensRequest, opts ...grpc.CallOption) (*RevokeRepresentativeAuthTokensResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email.
 	// Deprecated: Use IssueUserAuthToken with the represent_email option instead.
 	IssueRepresentativeAuthToken(ctx context.Context, in *IssueRepresentativeAuthTokenRequest, opts ...grpc.CallOption) (*IssueRepresentativeAuthTokenResponse, error)
@@ -339,8 +342,6 @@ type AdminServiceClient interface {
 	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
 	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
 	CreateManagedGitRepo(ctx context.Context, in *CreateManagedGitRepoRequest, opts ...grpc.CallOption) (*CreateManagedGitRepoResponse, error)
-	// Converts a project connected to github to a rill managed project.
-	DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -1168,6 +1169,16 @@ func (c *adminServiceClient) RevokeUserAuthToken(ctx context.Context, in *Revoke
 	return out, nil
 }
 
+func (c *adminServiceClient) RevokeRepresentativeAuthTokens(ctx context.Context, in *RevokeRepresentativeAuthTokensRequest, opts ...grpc.CallOption) (*RevokeRepresentativeAuthTokensResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeRepresentativeAuthTokensResponse)
+	err := c.cc.Invoke(ctx, AdminService_RevokeRepresentativeAuthTokens_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) IssueRepresentativeAuthToken(ctx context.Context, in *IssueRepresentativeAuthTokenRequest, opts ...grpc.CallOption) (*IssueRepresentativeAuthTokenResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IssueRepresentativeAuthTokenResponse)
@@ -1232,16 +1243,6 @@ func (c *adminServiceClient) CreateManagedGitRepo(ctx context.Context, in *Creat
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateManagedGitRepoResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateManagedGitRepo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) DisconnectProjectFromGithub(ctx context.Context, in *DisconnectProjectFromGithubRequest, opts ...grpc.CallOption) (*DisconnectProjectFromGithubResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DisconnectProjectFromGithubResponse)
-	err := c.cc.Invoke(ctx, AdminService_DisconnectProjectFromGithub_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2004,7 +2005,7 @@ type AdminServiceServer interface {
 	GetOrganizationNameForDomain(context.Context, *GetOrganizationNameForDomainRequest) (*GetOrganizationNameForDomainResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error)
-	// DeleteOrganization deletes an organizations
+	// DeleteOrganization deletes an organization
 	DeleteOrganization(context.Context, *DeleteOrganizationRequest) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
@@ -2139,6 +2140,9 @@ type AdminServiceServer interface {
 	// RevokeUserAuthToken revokes a user access token.
 	// You can optionally pass "current" instead of the token ID to revoke the current token.
 	RevokeUserAuthToken(context.Context, *RevokeUserAuthTokenRequest) (*RevokeUserAuthTokenResponse, error)
+	// RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
+	// This is primarily used for "unassume" flows.
+	RevokeRepresentativeAuthTokens(context.Context, *RevokeRepresentativeAuthTokensRequest) (*RevokeRepresentativeAuthTokensResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email.
 	// Deprecated: Use IssueUserAuthToken with the represent_email option instead.
 	IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error)
@@ -2157,8 +2161,6 @@ type AdminServiceServer interface {
 	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
 	// CreateManagedGitRepo creates a new rill managed git repo for the organization.
 	CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error)
-	// Converts a project connected to github to a rill managed project.
-	DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -2517,6 +2519,9 @@ func (UnimplementedAdminServiceServer) IssueUserAuthToken(context.Context, *Issu
 func (UnimplementedAdminServiceServer) RevokeUserAuthToken(context.Context, *RevokeUserAuthTokenRequest) (*RevokeUserAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeUserAuthToken not implemented")
 }
+func (UnimplementedAdminServiceServer) RevokeRepresentativeAuthTokens(context.Context, *RevokeRepresentativeAuthTokensRequest) (*RevokeRepresentativeAuthTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeRepresentativeAuthTokens not implemented")
+}
 func (UnimplementedAdminServiceServer) IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueRepresentativeAuthToken not implemented")
 }
@@ -2537,9 +2542,6 @@ func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *
 }
 func (UnimplementedAdminServiceServer) CreateManagedGitRepo(context.Context, *CreateManagedGitRepoRequest) (*CreateManagedGitRepoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateManagedGitRepo not implemented")
-}
-func (UnimplementedAdminServiceServer) DisconnectProjectFromGithub(context.Context, *DisconnectProjectFromGithubRequest) (*DisconnectProjectFromGithubResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DisconnectProjectFromGithub not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
@@ -3990,6 +3992,24 @@ func _AdminService_RevokeUserAuthToken_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_RevokeRepresentativeAuthTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeRepresentativeAuthTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeRepresentativeAuthTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RevokeRepresentativeAuthTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeRepresentativeAuthTokens(ctx, req.(*RevokeRepresentativeAuthTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_IssueRepresentativeAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IssueRepresentativeAuthTokenRequest)
 	if err := dec(in); err != nil {
@@ -4112,24 +4132,6 @@ func _AdminService_CreateManagedGitRepo_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).CreateManagedGitRepo(ctx, req.(*CreateManagedGitRepoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_DisconnectProjectFromGithub_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DisconnectProjectFromGithubRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).DisconnectProjectFromGithub(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_DisconnectProjectFromGithub_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).DisconnectProjectFromGithub(ctx, req.(*DisconnectProjectFromGithubRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5742,6 +5744,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_RevokeUserAuthToken_Handler,
 		},
 		{
+			MethodName: "RevokeRepresentativeAuthTokens",
+			Handler:    _AdminService_RevokeRepresentativeAuthTokens_Handler,
+		},
+		{
 			MethodName: "IssueRepresentativeAuthToken",
 			Handler:    _AdminService_IssueRepresentativeAuthToken_Handler,
 		},
@@ -5768,10 +5774,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateManagedGitRepo",
 			Handler:    _AdminService_CreateManagedGitRepo_Handler,
-		},
-		{
-			MethodName: "DisconnectProjectFromGithub",
-			Handler:    _AdminService_DisconnectProjectFromGithub_Handler,
 		},
 		{
 			MethodName: "GetCloneCredentials",
