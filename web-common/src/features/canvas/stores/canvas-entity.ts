@@ -5,17 +5,13 @@ import {
   type CanvasResponse,
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  createRuntimeServiceGetResource,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
-  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import type { Color } from "chroma-js";
 import {
   derived,
   get,
@@ -40,6 +36,8 @@ import {
 import { Filters } from "./filters";
 import { Grid } from "./grid";
 import { TimeControls } from "./time-control";
+import { Theme } from "../../themes/theme";
+import { createResolvedThemeStore } from "../../themes/selectors";
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
@@ -73,8 +71,8 @@ export class CanvasEntity {
   specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
   firstLoad = true;
-  theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
-  themeSpec: Readable<V1ThemeSpec | undefined>;
+  themeName = writable<string | undefined>(undefined);
+  theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
@@ -88,7 +86,7 @@ export class CanvasEntity {
     private instanceId: string,
   ) {
     this.specStore = useCanvas(
-      instanceId,
+      this.instanceId,
       name,
       {
         retry: 3,
@@ -133,7 +131,7 @@ export class CanvasEntity {
     });
 
     this.metricsView = new MetricsViewSelectors(
-      instanceId,
+      this.instanceId,
       derived(this.specStore, ($specStore) => {
         return $specStore.data?.metricsViews || {};
       }),
@@ -146,42 +144,6 @@ export class CanvasEntity {
       this.name,
     );
     this.filters = new Filters(this.metricsView, searchParamsStore);
-
-    const themeName = derived([page, this.specStore], ([$page, $specStore]) => {
-      const themeFromUrl = $page.url.searchParams.get("theme");
-      const themeFromSpec = $specStore.data?.canvas?.theme;
-      return themeFromUrl || themeFromSpec;
-    });
-
-    this.themeSpec = derived<
-      [Readable<string | undefined>, typeof this.specStore],
-      V1ThemeSpec | undefined
-    >(
-      [themeName, this.specStore],
-      ([$themeName, $specStore], set) => {
-        if ($themeName) {
-          const themeQuery = createRuntimeServiceGetResource(
-            instanceId,
-            {
-              "name.kind": ResourceKind.Theme,
-              "name.name": $themeName,
-            },
-            {},
-            queryClient,
-          );
-          return themeQuery.subscribe(($themeQuery) => {
-            const themeSpec = $themeQuery.data?.resource?.theme?.spec;
-            set(themeSpec);
-            this.updateThemeColors(themeSpec);
-          });
-        } else {
-          const embeddedTheme = $specStore.data?.canvas?.embeddedTheme;
-          set(embeddedTheme);
-          this.updateThemeColors(embeddedTheme);
-        }
-      },
-      undefined as V1ThemeSpec | undefined,
-    );
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
@@ -217,7 +179,17 @@ export class CanvasEntity {
 
     // TODO: merge more stores once we add support for defaults for those.
     this.defaultUrlParamsStore = this.timeControls.defaultUrlParamsStore;
+
+    this.theme = createResolvedThemeStore(
+      this.themeName,
+      this.specStore,
+      this.instanceId,
+    );
   }
+
+  onUrlParamsChange = (urlParams: URLSearchParams) => {
+    this.themeName.set(urlParams.get("theme") ?? undefined);
+  };
 
   // Not currently being used
   unsubscribe = () => {
@@ -331,10 +303,6 @@ export class CanvasEntity {
       this._rows.refresh();
     }
     this.firstLoad = false;
-  };
-
-  private updateThemeColors = (themeSpec: V1ThemeSpec | undefined) => {
-    this.theme.set(resolveThemeColors(themeSpec, false));
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {

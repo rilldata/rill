@@ -9,12 +9,13 @@
   import { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
   import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { Color } from "chroma-js";
+
   import type { Readable } from "svelte/store";
   import { derived, readable } from "svelte/store";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
   import type { ChartProvider, ChartSpec, ChartType } from "./types";
+  import { Theme } from "../../themes/theme";
 
   export let chartType: ChartType;
   export let spec: Readable<ChartSpec>;
@@ -25,8 +26,7 @@
    * If not provided, chart will fall back to defaults
    */
   export let theme: Record<string, string> | undefined = undefined;
-  export let themeStore: Readable<{ primary?: Color; secondary?: Color }> =
-    readable({});
+  export let themeStore: Readable<Theme> = readable(new Theme(undefined));
   export let showExploreLink: boolean = false;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;

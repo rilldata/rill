@@ -10,7 +10,7 @@ import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
-import chroma, { type Color } from "chroma-js";
+import chroma from "chroma-js";
 import { derived, type Readable } from "svelte/store";
 import type {
   ChartDataQuery,
@@ -20,13 +20,14 @@ import type {
   TimeDimensionDefinition,
 } from "./types";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";
+import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
 
 export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   config: T;
   chartDataQuery: ChartDataQuery;
   metricsView: MetricsViewSelectors;
   /** Theme colors (primary/secondary) - updates when theme changes */
-  themeStore: Readable<{ primary?: Color; secondary?: Color }>;
+  themeStore: CanvasEntity["theme"];
   timeAndFilterStore: Readable<TimeAndFilterStore>;
   /** Reactive theme mode (light/dark toggle) - used in canvas context */
   themeModeStore?: Readable<boolean>;
@@ -126,9 +127,12 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         domainValues,
         isDarkMode: isThemeModeDark,
         theme: {
-          primary: theme.primary || chroma(`hsl(${defaultPrimaryColors[500]})`),
+          primary:
+            theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.primary ||
+            chroma(`hsl(${defaultPrimaryColors[500]})`),
           secondary:
-            theme.secondary || chroma(`hsl(${defaultSecondaryColors[500]})`),
+            theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.secondary ||
+            chroma(`hsl(${defaultSecondaryColors[500]})`),
         },
       };
     },

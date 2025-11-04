@@ -184,7 +184,9 @@ function updateDivergingColors() {
  * Updates qualitative palette colors from CSS variables
  */
 function updateQualitativeColors() {
-  qualitativeStore.set(buildPaletteColors<QualitativeColors>("qualitative", 24));
+  qualitativeStore.set(
+    buildPaletteColors<QualitativeColors>("qualitative", 24),
+  );
 }
 
 /**
@@ -297,8 +299,9 @@ function getPaletteColor<T>(
   if (index < 1 || index > max) {
     throw new Error(`${prefix} color index must be between 1 and ${max}`);
   }
-  return derived(store, ($colors) => 
-    ($colors as Record<string, string>)[`${prefix}${index}`]
+  return derived(
+    store,
+    ($colors) => ($colors as Record<string, string>)[`${prefix}${index}`],
   );
 }
 

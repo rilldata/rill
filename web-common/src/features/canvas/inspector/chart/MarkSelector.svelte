@@ -22,11 +22,11 @@
 
   $: ({ instanceId } = $runtime);
   $: ({
-    canvasEntity: { selectedComponent, themeSpec },
+    canvasEntity: { selectedComponent, theme },
   } = getCanvasStore(canvasName, instanceId));
 
   $: isThemeModeDark = $themeControl === "dark";
-  $: resolvedTheme = resolveThemeColors($themeSpec, isThemeModeDark);
+  $: resolvedTheme = resolveThemeColors($theme?.spec, isThemeModeDark);
 
   $: selected = !markConfig || typeof markConfig === "string" ? 0 : 1;
 

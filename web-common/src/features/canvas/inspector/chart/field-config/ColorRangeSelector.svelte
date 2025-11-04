@@ -56,11 +56,11 @@
 
   $: ({ instanceId } = $runtime);
   $: ({
-    canvasEntity: { themeSpec },
+    canvasEntity: { theme },
   } = getCanvasStore(canvasName, instanceId));
 
   $: isThemeModeDark = $themeControl === "dark";
-  $: resolvedTheme = resolveThemeColors($themeSpec, isThemeModeDark);
+  $: resolvedTheme = resolveThemeColors($theme?.spec, isThemeModeDark);
 
   $: currentColorRange =
     colorRange ||

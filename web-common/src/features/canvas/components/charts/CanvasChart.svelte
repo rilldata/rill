@@ -6,7 +6,6 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
-  import { resolveThemeObject } from "@rilldata/web-common/features/themes/theme-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
@@ -26,7 +25,7 @@
 
   $: ({
     specStore,
-    parent: { name: canvasName, themeSpec },
+    parent: { name: canvasName, theme },
     timeAndFilterStore,
     chartType: type,
   } = component);
@@ -52,7 +51,8 @@
 
   $: measures = getMeasuresForMetricView(metrics_view);
 
-  $: currentTheme = resolveThemeObject($themeSpec, $isThemeModeDark);
+  $: currentTheme =
+    $theme?.resolvedThemeObject?.[$isThemeModeDark ? "dark" : "light"];
 
   $: chartData = getChartDataForCanvas(
     store,
