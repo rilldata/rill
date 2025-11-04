@@ -9,14 +9,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestQuery(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestRedshift(t)
 	tests := []struct {
@@ -124,9 +123,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQueryWithParameters(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestRedshift(t)
 
@@ -150,12 +147,9 @@ func TestQueryWithParameters(t *testing.T) {
 }
 
 func TestEmptyRows(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestRedshift(t)
-
 	result, err := olap.Query(t.Context(), &drivers.Statement{
 		Query: "SELECT 1 AS val LIMIT 0",
 	})
@@ -168,12 +162,9 @@ func TestEmptyRows(t *testing.T) {
 }
 
 func TestScanAllRows(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestRedshift(t)
-
 	result, err := olap.Query(t.Context(), &drivers.Statement{
 		Query: "SELECT generate_series(1, 10) AS val",
 	})
@@ -192,9 +183,7 @@ func TestScanAllRows(t *testing.T) {
 }
 
 func TestQueryScan(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestRedshift(t)
 
@@ -294,9 +283,7 @@ func TestQueryScan(t *testing.T) {
 }
 
 func TestExec(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	_, olap := acquireTestRedshift(t)
 
