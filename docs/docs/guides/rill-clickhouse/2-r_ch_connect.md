@@ -21,7 +21,7 @@ You have two options for your ClickHouse server:
 1. Use a [local running ClickHouse server](https://clickhouse.com/docs/en/install)
 2. Use [ClickHouse Cloud](https://clickhouse.com/docs/en/cloud/overview)
 
-Depending what you choose, the contents of your connection will change and I recommend looking through [our ClickHouse documentation](https://docs.rilldata.com/connect/olap/clickhouse) for further information.
+Depending what you choose, the contents of your connection will change and I recommend looking through [our ClickHouse documentation](https://docs.rilldata.com/build/connectors/olap/clickhouse) for further information.
 
 :::
 
@@ -40,7 +40,7 @@ You can obtain the credentials from your ClickHouse Cloud account by clicking th
 ```
 
 :::
-Once this is created, a `clickhouse.yaml` file will appear in the `connectors` folder and the following will be added to your rill.yaml.
+Once this is created, a `clickhouse.yaml` file will appear in the `connectors` directory and the following will be added to your rill.yaml.
 
 ```yaml
 compiler: rillv1
@@ -63,7 +63,7 @@ dsn: "clickhouse://localhost:9000"
  You can either add the credentials in plain text or dsn via the yaml file or add the credentials via the CLI.
 
 
-Please see our documentation to find the DSN for [your ClickHouse Cloud instance](https://docs.rilldata.com/connect/olap/clickhouse#connecting-to-clickhouse-cloud). 
+Please see our documentation to find the DSN for [your ClickHouse Cloud instance](https://docs.rilldata.com/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud). 
 
 ### How to pass the credentials to Rill
 There are a few way to define the credentials within Rill.

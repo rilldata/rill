@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"math"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 
@@ -34,7 +32,7 @@ var (
 // It also provides pointers to the actual database/sql and database/sql/driver connections.
 // It's called with two contexts: wrappedCtx wraps the input context (including cancellation),
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
-type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
+type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context) error
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 type OLAPStore interface {
@@ -77,9 +75,18 @@ type Statement struct {
 	ExecutionTimeout time.Duration
 }
 
-// Result wraps the results of query.
+// Rows is an iterator for rows returned by a query. It mimics the behavior of sqlx.Rows.
+type Rows interface {
+	Next() bool
+	Err() error
+	Close() error
+	Scan(dest ...any) error
+	MapScan(dest map[string]any) error
+}
+
+// Result is the result of a query. It wraps a Rows iterator with additional functionality.
 type Result struct {
-	*sqlx.Rows
+	Rows
 	Schema    *runtimev1.StructType
 	cleanupFn func() error
 	cap       int64
@@ -160,7 +167,7 @@ func (r *Result) Close() error {
 type OLAPInformationSchema interface {
 	// All returns metadata about all tables and views.
 	// The like argument can optionally be passed to filter the tables by name.
-	All(ctx context.Context, like string) ([]*OlapTable, error)
+	All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*OlapTable, string, error)
 	// Lookup returns metadata about a specific tables and views.
 	Lookup(ctx context.Context, db, schema, name string) (*OlapTable, error)
 	// LoadPhysicalSize populates the PhysicalSizeBytes field of table metadata.
@@ -176,9 +183,10 @@ type OlapTable struct {
 	IsDefaultDatabaseSchema bool
 	Name                    string
 	View                    bool
-	Schema                  *runtimev1.StructType
-	UnsupportedCols         map[string]string
-	PhysicalSizeBytes       int64
+	// Schema is the table schema. It is only set when only single table is looked up. It is not set when listing all tables.
+	Schema            *runtimev1.StructType
+	UnsupportedCols   map[string]string
+	PhysicalSizeBytes int64
 }
 
 // Dialect enumerates OLAP query languages.
@@ -190,6 +198,14 @@ const (
 	DialectDruid
 	DialectClickHouse
 	DialectPinot
+
+	// Below dialects are not fully supported dialects.
+	DialectBigQuery
+	DialectSnowflake
+	DialectAthena
+	DialectRedshift
+	DialectMySQL
+	DialectPostgres
 )
 
 func (d Dialect) String() string {
@@ -204,6 +220,18 @@ func (d Dialect) String() string {
 		return "clickhouse"
 	case DialectPinot:
 		return "pinot"
+	case DialectBigQuery:
+		return "bigquery"
+	case DialectSnowflake:
+		return "snowflake"
+	case DialectAthena:
+		return "athena"
+	case DialectRedshift:
+		return "redshift"
+	case DialectMySQL:
+		return "mysql"
+	case DialectPostgres:
+		return "postgres"
 	default:
 		panic("not implemented")
 	}
@@ -276,7 +304,7 @@ func (d Dialect) GetRegexMatchFunction() string {
 	}
 }
 
-// EscapeTable returns an esacped fully qualified table name
+// EscapeTable returns an escaped table name with database, schema and table.
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	if d == DialectDuckDB {
 		return d.EscapeIdentifier(table)
@@ -292,6 +320,14 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	}
 	sb.WriteString(d.EscapeIdentifier(table))
 	return sb.String()
+}
+
+// EscapeMember returns an escaped member name with table alias and column name.
+func (d Dialect) EscapeMember(tbl, name string) string {
+	if tbl == "" {
+		return d.EscapeIdentifier(name)
+	}
+	return fmt.Sprintf("%s.%s", d.EscapeIdentifier(tbl), d.EscapeIdentifier(name))
 }
 
 func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
@@ -385,6 +421,11 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
 	// In that case `column` will not be present.
 	return d.EscapeIdentifier(dimension.Name), nil
+}
+
+// AnyValueExpression applies the ANY_VALUE aggregation function (or equivalent) to the given expression.
+func (d Dialect) AnyValueExpression(expr string) string {
+	return fmt.Sprintf("ANY_VALUE(%s)", expr)
 }
 
 func (d Dialect) GetTimeDimensionParameter() string {

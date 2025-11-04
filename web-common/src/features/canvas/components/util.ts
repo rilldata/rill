@@ -1,8 +1,8 @@
 import {
-  getChartComponent,
-  type ChartSpec,
+  getCanvasChartComponent,
+  type CanvasChartSpec,
 } from "@rilldata/web-common/features/canvas/components/charts";
-import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/cartesian-charts/CartesianChart";
+import { CartesianChartComponent } from "@rilldata/web-common/features/canvas/components/charts/variants/CartesianChart";
 import { KPIGridComponent } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type {
   ComponentInputParam,
@@ -44,6 +44,15 @@ export const commonOptions: Record<
     label: "Description",
     meta: {
       placeholder: "Add additional context for this component",
+    },
+  },
+  show_description_as_tooltip: {
+    type: "boolean",
+    optional: true,
+    showInUI: true,
+    label: "Show description as tooltip",
+    meta: {
+      layout: "grouped",
     },
   },
 };
@@ -115,8 +124,8 @@ const baseComponentMap = {
 } as const;
 
 const chartComponentMap = Object.fromEntries(
-  CHART_TYPES.map((type) => [type, getChartComponent(type)]),
-) as Record<ChartType, BaseCanvasComponentConstructor<ChartSpec>>;
+  CHART_TYPES.map((type) => [type, getCanvasChartComponent(type)]),
+) as Record<ChartType, BaseCanvasComponentConstructor<CanvasChartSpec>>;
 
 export const COMPONENT_CLASS_MAP = {
   ...baseComponentMap,

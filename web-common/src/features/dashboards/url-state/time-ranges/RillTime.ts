@@ -49,7 +49,8 @@ export class RillTime {
     this.rangeGrain = this.interval.getGrain();
     this.isOldFormat =
       interval instanceof RillLegacyIsoInterval ||
-      interval instanceof RillLegacyDaxInterval;
+      interval instanceof RillLegacyDaxInterval ||
+      interval instanceof RillAllTimeInterval;
   }
 
   public withGrain(grain: string) {
@@ -90,6 +91,10 @@ export class RillTime {
     } else {
       this.withAnchorOverrides([...this.anchorOverrides, override]);
     }
+  }
+
+  public isAbsoluteTime() {
+    return this.interval instanceof RillIsoInterval;
   }
 
   public toString() {
@@ -299,6 +304,10 @@ export class RillTimeStartEndInterval implements RillTimeInterval {
     let endOffset = this.end.offset.toObject();
     const parentOffset = offset.toObject();
 
+    if (this.start?.parts?.[0]?.point instanceof RillAbsoluteTime) {
+      return ["Custom", true];
+    }
+
     if (
       Object.keys(startOffset).length > 1 ||
       Object.keys(endOffset).length > 1 ||
@@ -394,6 +403,24 @@ export class RillIsoInterval implements RillTimeInterval {
       timeRange += ` to ${this.end.toString()}`;
     }
     return timeRange;
+  }
+}
+
+export class RillAllTimeInterval implements RillTimeInterval {
+  public isComplete() {
+    return false;
+  }
+
+  public getLabel(): [label: string, supported: boolean] {
+    return ["All time", true];
+  }
+
+  public getGrain() {
+    return undefined;
+  }
+
+  public toString() {
+    return "inf";
   }
 }
 

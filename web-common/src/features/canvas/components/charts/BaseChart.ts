@@ -1,5 +1,5 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import { CHART_CONFIG } from "@rilldata/web-common/features/canvas/components/charts";
+import { CANVAS_CHART_CONFIG } from "@rilldata/web-common/features/canvas/components/charts";
 import {
   CanvasChartTypeToTDDChartType,
   getLinkStateForTimeDimensionDetail,
@@ -9,16 +9,16 @@ import {
   createComponent,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
-import { getPivotStateFromChartSpec } from "@rilldata/web-common/features/canvas/explore-link/canvas-explore-transformer";
 import type {
   AllKeys,
   ComponentInputParam,
   InputParams,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/canvas/stores/types";
+import { transformChartSpecToPivotState } from "@rilldata/web-common/features/components/charts/explore-transformer";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1Expression,
@@ -26,12 +26,6 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable, type Writable } from "svelte/store";
-import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
-import type {
-  ComponentCommonProperties,
-  ComponentFilterProperties,
-} from "../types";
-import Chart from "./Chart.svelte";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -39,7 +33,13 @@ import type {
   ChartType,
   CommonChartProperties,
   FieldConfig,
-} from "./types";
+} from "../../../components/charts/types";
+import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
+import type {
+  ComponentCommonProperties,
+  ComponentFilterProperties,
+} from "../types";
+import Chart from "./CanvasChart.svelte";
 
 // Base interface for all chart configurations
 export type BaseChartConfig = ComponentFilterProperties &
@@ -52,7 +52,7 @@ export abstract class BaseChart<
   minSize = { width: 4, height: 4 };
   defaultSize = { width: 6, height: 4 };
   resetParams = [];
-  combinedWhere: V1Expression | undefined;
+  componentFilters: V1Expression | undefined;
   type: ChartType;
   chartType: Writable<ChartType>;
   component = Chart;
@@ -115,7 +115,7 @@ export abstract class BaseChart<
   getExploreTransformerProperties(): Partial<ExploreState> {
     const spec = get(this.specStore);
     const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      this.combinedWhere,
+      this.componentFilters,
     );
 
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
@@ -128,7 +128,7 @@ export abstract class BaseChart<
       activePage: tddLink.canLink
         ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
         : DashboardState_ActivePage.PIVOT,
-      pivot: getPivotStateFromChartSpec(spec, timeGrain),
+      pivot: transformChartSpecToPivotState(spec, timeGrain),
       ...(tddLink.canLink &&
         tddLink.measureName && {
           tdd: {
@@ -156,7 +156,7 @@ export abstract class BaseChart<
     const parsedDocument = get(parseDocumentStore);
     const { updateEditorContent } = this.parent.fileArtifact;
 
-    const newSpecForKey = CHART_CONFIG[key].component.newComponentSpec(
+    const newSpecForKey = CANVAS_CHART_CONFIG[key].component.newComponentSpec(
       currentSpec.metrics_view,
       metricsViewSpec,
     );
@@ -215,9 +215,9 @@ export abstract class BaseChart<
     } = spec;
 
     const sourceChartParams =
-      CHART_CONFIG[sourceType].component.chartInputParams || {};
+      CANVAS_CHART_CONFIG[sourceType].component.chartInputParams || {};
     const targetChartParams =
-      CHART_CONFIG[targetType].component.chartInputParams || {};
+      CANVAS_CHART_CONFIG[targetType].component.chartInputParams || {};
 
     // Check for common keys and type match first
     const commonProps = Object.keys(sourceChartParams).filter((key) => {

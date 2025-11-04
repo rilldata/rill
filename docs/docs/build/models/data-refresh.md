@@ -11,7 +11,7 @@ When creating or updating a model in Rill Cloud, you also have the option to con
 
 :::tip Configuring model refreshes for Cloud deployments
 
-It is generally strongly recommended to configure model refreshes when [deploying a project](/deploy/deploy-dashboard) to Rill Cloud to ensure that your production data (and dashboards) _remains up-to-date_. The interval that you should set really depends on how often your own data is being refreshed. Furthermore, while it is technically possible to configure model refreshes for Rill Developer as well, Rill Developer is primarily used for local development and thus typically does not require working with the most up-to-date data (local model refreshes that occur too often could also lead to resource constraints on your local machine). For more details, please see our pages on [environments](/connect/credentials#variables), [templating](/connect/templating), and [performance optimization](/build/models/performance).
+It is generally strongly recommended to configure model refreshes when [deploying a project](/deploy/deploy-dashboard) to Rill Cloud to ensure that your production data (and dashboards) _remains up-to-date_. The interval that you should set really depends on how often your own data is being refreshed. Furthermore, while it is technically possible to configure model refreshes for Rill Developer as well, Rill Developer is primarily used for local development and thus typically does not require working with the most up-to-date data (local model refreshes that occur too often could also lead to resource constraints on your local machine). For more details, please see our pages on [environments](/build/connectors/credentials#variables), [templating](/build/connectors/templating), and [performance optimization](/build/models/performance).
 
 :::
 
@@ -40,6 +40,11 @@ For more details about available model configurations and properties, check our 
 ## Configuring a Project-Wide Default
 
 You can also specify a project-wide refresh schedule that will apply to all models by default. This can be done through the `rill.yaml` file. More details can be found [here](/reference/project-files/rill-yaml#project-wide-defaults).
+
+:::tip Set project-wide defaults
+You can set a default refresh schedule for all models in your project.
+[Learn more about project defaults →](/build/project-configuration#model-refresh-schedule)
+:::
 
 Using the same example as above, the following sets a project-wide default of refreshing models every 24 hours:
 

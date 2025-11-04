@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	goruntime "runtime"
+	"slices"
 	"strconv"
 	"testing"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -33,6 +35,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
+	_ "github.com/rilldata/rill/runtime/drivers/openai"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
@@ -46,6 +49,7 @@ type TestingT interface {
 	Name() string
 	TempDir() string
 	FailNow()
+	SkipNow()
 	Errorf(format string, args ...interface{})
 	Cleanup(f func())
 	Context() context.Context
@@ -94,7 +98,9 @@ type InstanceOptions struct {
 	WatchRepo         bool
 	StageChanges      bool
 	DisableHostAccess bool
+	EnableLLM         bool
 	TestConnectors    []string
+	FrontendURL       string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -121,6 +127,23 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		vars["rill.watch_repo"] = strconv.FormatBool(opts.WatchRepo)
 	}
 
+	// Making LLM completions in tests is disabled by default.
+	// If enabled, we skip the test in CI (short mode) to prevent running up costs.
+	var aiConnector string
+	if opts.EnableLLM {
+		// Mark AI tests as expensive
+		testmode.Expensive(t)
+
+		// Add "openai" to the test connectors if not already present.
+		if !slices.Contains(opts.TestConnectors, "openai") {
+			opts.TestConnectors = append(opts.TestConnectors, "openai")
+		}
+
+		// Set the "openai" test connector as the instance's default AI connector.
+		// This enables LLM completions.
+		aiConnector = "openai"
+	}
+
 	for _, conn := range opts.TestConnectors {
 		acquire, ok := Connectors[conn]
 		require.True(t, ok, "unknown test connector %q", conn)
@@ -136,6 +159,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		Environment:      "test",
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
+		AIConnector:      aiConnector,
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
@@ -156,9 +180,13 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		Variables: vars,
+		Variables:   vars,
+		FrontendURL: opts.FrontendURL,
 	}
 
+	if opts.Files == nil {
+		opts.Files = make(map[string]string)
+	}
 	if _, ok := opts.Files["rill.yaml"]; !ok {
 		opts.Files["rill.yaml"] = ""
 	}

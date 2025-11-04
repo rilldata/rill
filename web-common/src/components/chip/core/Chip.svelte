@@ -1,6 +1,6 @@
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slideRight } from "../../../lib/transitions";
   import CancelCircle from "../../icons/CancelCircle.svelte";
@@ -25,8 +25,7 @@
   export let removeTooltipText: string | undefined = undefined;
   export let allowPointerEvents = false;
   export let theme = false;
-
-  const dispatch = createEventDispatcher();
+  export let onRemove: () => void = () => {};
 
   const tooltipSuppression = getContext<Writable<boolean>>(
     "rill:app:childRequestedTooltipSuppression",
@@ -67,7 +66,7 @@
           on:focus={focusOnRemove}
           on:mouseleave={blurOnRemove}
           on:blur={blurOnRemove}
-          on:click|stopPropagation={() => dispatch("remove")}
+          on:click|stopPropagation={onRemove}
           type="button"
         >
           <CancelCircle size="16px" />

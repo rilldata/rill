@@ -2,13 +2,13 @@
 title: Who Can Access Your Data
 description: Control who can view your metrics and data
 sidebar_label: Data Access Control
-sidebar_position: 10
+sidebar_position: 20
 ---
 
 Rill supports **granular access policies** that let you control:
 
-- **Who can open a dashboard**
-- **What data rows they can see**
+- **Who can access your data**
+- **What rows they can see**
 - **Which dimensions and measures are visible**
 
 Policies are based on user attributes such as **email address**, **domain**, or **custom attributes**.  This avoids dashboard sprawl — instead of creating multiple dashboards for each audience, you can build _**one dashboard**_ and tailor it for many teams and use cases.
@@ -16,39 +16,53 @@ Policies are based on user attributes such as **email address**, **domain**, or 
 
 ## How Does It Work?
 
-Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/#define-dashboard-access)**.  
+Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/customization#define-dashboard-access)**.  
 There are three types of rules:
 
- **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
-  ```yaml
-  security:
-    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
-  ```
+**General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
+```yaml
+security:
+  access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
+```
 
- **Row-level access** (`row_filter`) – a SQL expression that will be injected into the WHERE clause of all dashboard queries to restrict access to a subset of rows
-  ```yaml
-  security:
-    row_filter: region = '{{ .user.region }}'
-  ```
-**Column-level access**: (`include` or `exclude`) – lists of boolean expressions that determine which dimension and measure names will be available to the user
-  ```yaml
-  security:
-    exclude:
-      - if: "'{{ .user.domain }}' != 'example.com'"
-        names:
-          - ssn
-          - id
-  ```
+:::info Dashboard access
+
+`access` can be set on both the dashboard YAML and metrics view YAML and policies are combined using logical AND operations. If no policies are defined on the dashboard, they are derived from the metrics view. For most set-ups, setting the access on the metrics view is sufficient.
+
+:::
+
+**Row-level access** (`row_filter`) – a SQL expression that will be injected into the WHERE clause of all dashboard queries to restrict access to a subset of rows
+```yaml
+security:
+  row_filter: region = '{{ .user.region }}'
+```
+
+**Column-level access** (`include` or `exclude`) – lists of boolean expressions that determine which dimension and measure names will be available to the user
+```yaml
+security:
+  exclude:
+    - if: "'{{ .user.domain }}' != 'example.com'"
+      names:
+        - ssn
+        - id
+```
 
 When a user loads a dashboard, the policies are resolved in two phases:
-  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
+  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/build/connectors/templating))
   2. The resulting expression is then evaluated contextually:
      - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
      - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
 
+
+:::info What about MCP, and APIs?
+
+Metrics views limit data access for all requests, including MCP integrations and custom APIs. When creating a token or copying from the AI tab, the user's attributes (such as email, domain, groups, and custom attributes) are automatically included in the request context. This ensures that the same security policies that apply to dashboard users also apply to programmatic access, maintaining consistent data governance across all access methods.
+
+You can also pass attributes into the `rill service create <token_name> --attributes` as a JSON object to create custom attributes.
+:::
 Typical use cases include:
 
-- [**Granting or Restricting Access**](#restrict-dashboard-access-to-users-matching-specific-criteria) to data and, as a result, dashboards
+- [**Granting or Restricting Access**](#restrict-data-access-to-users-matching-specific-criteria) to data and, as a result, dashboards
 - [**Hiding specific dimensions and measures**](#conditionally-hide-a-dashboard-dimension-or-measure) from specific groups of users, creating a tailored dashboard experience
 - [**Restricting Access to Internal users**](#hide-dimensions-or-measures-for-members-of-a-certain-group) of your organization, allowing specific dashboards to be viewed by internal users only
 - [**Partner-filtered Dashboards**](#show-only-data-from-the-users-own-domain) where external users can only access the subset of their data
@@ -66,7 +80,12 @@ There are two locations that control data access in Rill.
 
 ### Project Level Defaults
 
-By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
+By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/customization#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
+
+:::tip Set project-wide security defaults
+Configure default security policies for all metrics views and dashboards in your project.
+[Learn more about security defaults →](/build/project-configuration#metrics-views-security-policy)
+:::
 
 ```yaml
 metrics_views:
@@ -97,30 +116,29 @@ security:
 
 :::tip Access Policy Behavior
 
-When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics ciew policies are binary logically ANDed.
+When combining access policies from project defaults and object-specific policies, remember that the object level policies will overwrite the project level ones. Dashboard and metrics view policies are combined using logical AND operations.
  
-<!-- Not behaving as you're expecting? See our [troubleshooting guide.](/build/debugging/dashboard-access) -->
 
 :::
 
 ## Dashboard Access
 
-Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/#define-dashboard-access) and [canvas](/build/canvas/#define-dashboard-access) dashboards can set the following:
+Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/customization#define-dashboard-access) and [canvas](/build/dashboards/customization#define-dashboard-access) dashboards can set the following:
 
 ```yaml
 security:
-  access: true
+  access: "'{{ .user.domain }}' == 'example.com'"
 ```
 
 This will logically AND with your metrics view's access so ensure that a user who needs access to the dashboard passes **both** conditions.
 
 :::tip complicated set-ups
 
-Access Policies can get quite complicated as your use case grows and having to navigate mulitple files to figure out why a user is able to or unable to access certain dashboards. 
+Access Policies can get quite complicated as your use case grows and having to navigate multiple files to figure out why a user is able to or unable to access certain dashboards. 
 
 A few recommendations:
 1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
-2. Dashboard access is controlled in the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets logically ANDed with the metrics view anyway.
+2. Dashboard access can be derived from the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets combined with the metrics view using logical AND operations anyway.
 3. Solve project access issues higher up in the [user](/manage/user-management) / [usergroup](/manage/usergroup-management) settings, and keep default project security rules.
 
 :::
@@ -140,6 +158,11 @@ Note: Rill requires users to confirm their email address before letting them int
 ## Testing Policies in Rill Developer
 
 In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
+
+:::tip Test policies in Rill Developer
+Use `mock_users` in rill.yaml to test your security policies before deploying.
+[Learn more about testing security →](/build/project-configuration#testing-security)
+:::
 
 In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute and can optionally have `name` and `admin` attributes. For example:
 ```yaml
@@ -168,11 +191,12 @@ When [requesting an embedded dashboard from Rill](/integrate/embedding) from you
 
 For more information, see [our embedding docs](/integrate/embedding#backend-build-an-iframe-url).
 
+
 ## Examples
 
-### Restrict dashboard access to users matching specific criteria
+### Restrict data access to users matching specific criteria
 
-Let's say you want to restrict dashboard access to admin users or users whose email domain is `example.com`. Add the following clause to your dashboard's YAML:
+Let's say you want to restrict dashboard access to admin users or users whose email domain is `example.com`. Add the following clause to your metrics view's YAML:
 ```yaml
 security:
   access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
@@ -263,7 +287,7 @@ security:
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column, and external users should only be able to see data for the tenant they belong to.
 
-To support this, ingest a separate data [source](/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
+To support this, ingest a separate data [source](/build/connectors) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
 
 For example, a locally created `mappings.csv` file in the `data` directory of your Rill project with the following contents:
 ```csv

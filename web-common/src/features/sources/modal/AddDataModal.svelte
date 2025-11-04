@@ -1,8 +1,5 @@
 <script lang="ts">
   import * as Dialog from "@rilldata/web-common/components/dialog";
-  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
-  import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
-  import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import {
@@ -10,21 +7,6 @@
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
-  import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
-  import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
-  import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
-  import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
-  import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
-  import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
-  import Https from "../../../components/icons/connectors/HTTPS.svelte";
-  import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
-  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
-  import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
-  import Postgres from "../../../components/icons/connectors/Postgres.svelte";
-  import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
-  import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
-  import SQLite from "../../../components/icons/connectors/SQLite.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -40,32 +22,13 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
+  import { ICONS } from "./icons";
+  import { resetConnectorStep } from "./connectorStepStore";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
   let isSubmittingForm = false;
-
-  const ICONS = {
-    gcs: GoogleCloudStorage,
-    s3: AmazonS3,
-    azure: MicrosoftAzureBlobStorage,
-    bigquery: GoogleBigQuery,
-    athena: AmazonAthena,
-    redshift: AmazonRedshift,
-    duckdb: DuckDB,
-    motherduck: MotherDuck,
-    postgres: Postgres,
-    mysql: MySQL,
-    sqlite: SQLite,
-    snowflake: Snowflake,
-    salesforce: Salesforce,
-    local_file: LocalFile,
-    https: Https,
-    clickhouse: ClickHouse,
-    druid: ApacheDruid,
-    pinot: ApachePinot,
-  };
 
   const connectorsQuery = createRuntimeServiceListConnectorDrivers({
     query: {
@@ -124,11 +87,13 @@
   }
 
   function back() {
-    window.history.back();
-  }
-
-  function handleSubmittingChange(event: CustomEvent) {
-    isSubmittingForm = event.detail.submitting;
+    // Try to go back in browser history
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // If no history to go back to, close the modal
+      resetModal();
+    }
   }
 
   function resetModal() {
@@ -136,6 +101,7 @@
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
+    resetConnectorStep();
   }
 
   async function onCancelDialog() {
@@ -155,6 +121,7 @@
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
+    selectedConnector?.name === "gcs" ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
@@ -174,8 +141,8 @@
   >
     <Dialog.Content
       class={cn(
-        "overflow-hidden",
-        step === 2 ? "max-w-4xl p-0 gap-0" : "p-6 gap-4",
+        "overflow-hidden max-w-4xl",
+        step === 2 ? "p-0 gap-0" : "p-6 gap-4",
       )}
       noClose={step === 1}
     >
@@ -183,15 +150,17 @@
         {#if isModelingSupported}
           <Dialog.Title>Add a source</Dialog.Title>
           <section class="mb-1">
-            <div class="connector-grid">
+            <div
+              class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+            >
               {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
                     on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button"
+                    class="connector-tile-button size-full"
                   >
-                    <div class="connector-wrapper">
+                    <div class="connector-wrapper px-6 py-4">
                       <svelte:component this={ICONS[connector.name]} />
                     </div>
                   </button>
@@ -206,15 +175,17 @@
         <section>
           <Dialog.Title>Connect an OLAP engine</Dialog.Title>
 
-          <div class="connector-grid">
+          <div
+            class="connector-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2"
+          >
             {#each connectors?.filter((c) => c.name && OLAP_ENGINES.includes(c.name)) as connector (connector.name)}
               {#if connector.name}
                 <button
                   id={connector.name}
-                  class="connector-tile-button"
+                  class="connector-tile-button size-full"
                   on:click={() => goToConnectorForm(connector)}
                 >
-                  <div class="connector-wrapper">
+                  <div class="connector-wrapper px-6 py-4">
                     <svelte:component this={ICONS[connector.name]} />
                   </div>
                 </button>
@@ -265,7 +236,7 @@
             formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}
-            on:submitting={handleSubmittingChange}
+            bind:isSubmitting={isSubmittingForm}
           />
         {/if}
       {/if}
@@ -283,10 +254,6 @@
 <style lang="postcss">
   section {
     @apply flex flex-col gap-y-3;
-  }
-
-  .connector-grid {
-    @apply grid grid-cols-3 gap-4;
   }
 
   .connector-tile-button {

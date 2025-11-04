@@ -1,5 +1,4 @@
 import {
-  currencyHumanizer,
   getLocaleFromConfig,
   includesCurrencySymbol,
   isValidD3Locale,
@@ -13,6 +12,7 @@ import {
 import memoize from "memoizee";
 import {
   FormatPreset,
+  type LocaleConfig,
   NumberKind,
   type ContextOptions,
   type FormatterContext,
@@ -50,11 +50,13 @@ import {
  * @param value The number to format
  * @param preset The format preset to use
  * @param type The format context type (e.g., tooltip, big-number)
+ * @param locale Optional locale configuration for custom thousand/decimal separators
  */
-function humanizeDataType(
+export function humanizeDataType(
   value: number,
   preset: FormatPreset,
   type: FormatterContextSurface,
+  locale?: LocaleConfig,
 ): string {
   if (typeof value !== "number") {
     console.warn(
@@ -98,20 +100,27 @@ function humanizeDataType(
 
   switch (preset) {
     case FormatPreset.NONE:
-      return new PerRangeFormatter(selectedOptions.none).stringFormat(value);
+      return new PerRangeFormatter(selectedOptions.none, locale).stringFormat(
+        value,
+      );
 
     case FormatPreset.CURRENCY_USD:
-      return new PerRangeFormatter(selectedOptions.currencyUsd).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(
+        selectedOptions.currencyUsd,
+        locale,
+      ).stringFormat(value);
 
     case FormatPreset.CURRENCY_EUR:
-      return new PerRangeFormatter(selectedOptions.currencyEur).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(
+        selectedOptions.currencyEur,
+        locale,
+      ).stringFormat(value);
 
     case FormatPreset.PERCENTAGE:
-      return new PerRangeFormatter(selectedOptions.percent).stringFormat(value);
+      return new PerRangeFormatter(
+        selectedOptions.percent,
+        locale,
+      ).stringFormat(value);
 
     case FormatPreset.INTERVAL:
       return type === "tooltip"
@@ -119,15 +128,18 @@ function humanizeDataType(
         : formatMsInterval(value);
 
     case FormatPreset.HUMANIZE:
-      return new PerRangeFormatter(selectedOptions.humanize).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(
+        selectedOptions.humanize,
+        locale,
+      ).stringFormat(value);
 
     default:
       console.warn(
         "Unknown format preset, using none formatter. All number kinds should be handled.",
       );
-      return new PerRangeFormatter(selectedOptions.none).stringFormat(value);
+      return new PerRangeFormatter(selectedOptions.none, locale).stringFormat(
+        value,
+      );
   }
 }
 
@@ -149,7 +161,10 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
   return value.toString();
 }
 
-const memoizedHumanizeDataType = memoize(humanizeDataType, { primitive: true });
+const memoizedHumanizeDataType = memoize(humanizeDataType, {
+  primitive: true,
+  max: 1000,
+});
 const memoizedHumanizeDataTypeUnabridged = memoize(humanizeDataTypeUnabridged, {
   primitive: true,
 });
@@ -177,12 +192,22 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   const isAxis = type === "axis";
   const isTooltip = type === "tooltip";
 
+  // Extract locale configuration from d3_locale
+  const localeConfig: LocaleConfig | undefined =
+    measureSpec.formatD3Locale && isValidD3Locale(measureSpec.formatD3Locale)
+      ? {
+          decimal: measureSpec.formatD3Locale.decimal as string | undefined,
+          thousands: measureSpec.formatD3Locale.thousands as string | undefined,
+          grouping: measureSpec.formatD3Locale.grouping as number[] | undefined,
+        }
+      : undefined;
+
   let humanizer: (value: number, type: FormatPreset) => string;
   if (useUnabridged) {
     humanizer = memoizedHumanizeDataTypeUnabridged;
   } else {
     humanizer = (value, preset) =>
-      memoizedHumanizeDataType(value, preset, type);
+      memoizedHumanizeDataType(value, preset, type, localeConfig);
   }
 
   // Return and empty string if measureSpec is not provided.
@@ -216,6 +241,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
         if (typeof value !== "number") return value;
 
         // For the Big Number, Axis and Tooltips, override the d3formatter
+        // with humanized values that respect the locale configuration
         if (isBigNumber || isTooltip || isAxis) {
           if (hasCurrencySymbol) {
             if (isValidLocale && measureSpec?.formatD3Locale?.currency) {
@@ -223,10 +249,9 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
                 string,
                 string,
               ];
-              return currencyHumanizer(
-                currency,
-                humanizer(value, FormatPreset.HUMANIZE),
-              );
+              // Use custom currency symbol from locale
+              const humanized = humanizer(value, FormatPreset.HUMANIZE);
+              return `${currency[0]}${humanized}${currency[1]}`;
             }
             return humanizer(value, FormatPreset.CURRENCY_USD);
           } else if (hasPercentSymbol) {

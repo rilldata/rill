@@ -6,9 +6,9 @@
     getIsOrgOnTrial,
     getPlanUpgradeUrl,
   } from "@rilldata/web-common/features/organization/utils.ts";
+  import { getDeployLandingPage } from "@rilldata/web-common/features/project/deploy/route-utils.ts";
   import { GithubRepoNoAccessError } from "@rilldata/web-common/features/project/deploy/deploy-errors.ts";
   import { getLocalGitRepoStatus } from "@rilldata/web-common/features/project/selectors.ts";
-  import { addPosthogSessionIdToUrl } from "@rilldata/web-common/lib/analytics/posthog.ts";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics.ts";
   import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
@@ -90,10 +90,8 @@
     if (!resp.frontendUrl) return;
 
     // projectUrl: https://ui.rilldata.com/<org>/<project>
-    const projectInviteUrl = resp.frontendUrl + "/-/invite";
-    const projectInviteUrlWithSessionId =
-      addPosthogSessionIdToUrl(projectInviteUrl);
-    window.open(projectInviteUrlWithSessionId, "_self");
+    const projectInviteUrl = getDeployLandingPage(resp.frontendUrl);
+    window.open(projectInviteUrl, "_self");
   }
 
   function onRetry() {

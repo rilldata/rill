@@ -49,7 +49,7 @@
     supressTooltip
     on:mousedown
     on:click
-    on:remove={onRemove}
+    {onRemove}
   >
     <div slot="body" class="flex gap-x-1 items-center">
       {#if item.type === PivotChipType.Time}

@@ -38,7 +38,7 @@ Organization
 
 ### User Management
 
-From the User page, you can view and manage your users with organizational. Note that users with specific project access will not appear on this page and can be managed via each individual project. For more information, please review our [User Management documentation](user-management.md).
+From the User page, you can view and manage your users with organizational. Note that users with specific project access will not appear on this page and can be managed via each individual project. For more information, please review our [User Management documentation](user-management).
 
 
 ### Org Settings via Rill Cloud

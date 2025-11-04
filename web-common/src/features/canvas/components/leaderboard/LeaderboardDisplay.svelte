@@ -1,8 +1,8 @@
 <script lang="ts">
-  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import type { LeaderboardComponent } from "@rilldata/web-common/features/canvas/components/leaderboard";
   import { validateLeaderboardSchema } from "@rilldata/web-common/features/canvas/components/leaderboard/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import ComponentError from "@rilldata/web-common/features/components/ComponentError.svelte";
   import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import {
     COMPARISON_COLUMN_WIDTH,
@@ -12,6 +12,7 @@
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import {
@@ -43,7 +44,7 @@
   $: store = getCanvasStore(canvasName, instanceId);
   $: ({
     canvasEntity: {
-      spec: {
+      metricsView: {
         getMetricsViewFromName,
         getDimensionsForMetricView,
         getMeasuresForMetricView,
@@ -81,9 +82,9 @@
     )
     .filter((d) => d !== undefined);
 
-  $: visibleMeasures = $allMeasures.filter((m) =>
-    leaderboardMeasureNames.includes(m.name as string),
-  );
+  $: visibleMeasures = leaderboardMeasureNames
+    .map((lm) => $allMeasures.find((m) => m.name === lm))
+    .filter(Boolean) as MetricsViewSpecMeasure[];
 
   $: measureFormatters = Object.fromEntries(
     visibleMeasures.map((m) => [
@@ -115,8 +116,13 @@
 
   $: hasOverflow = estimatedTableWidth > parentElement?.clientWidth;
 
-  $: ({ title, description, time_filters, dimension_filters } =
-    leaderboardProperties);
+  $: ({
+    title,
+    description,
+    show_description_as_tooltip,
+    time_filters,
+    dimension_filters,
+  } = leaderboardProperties);
 
   $: filters = {
     time_filters,
@@ -132,7 +138,13 @@
 </script>
 
 {#if schema.isValid}
-  <ComponentHeader {component} {title} {description} {filters} />
+  <ComponentHeader
+    {component}
+    {title}
+    {description}
+    showDescriptionAsTooltip={show_description_as_tooltip}
+    {filters}
+  />
 
   <div
     class="h-fit p-0 grow relative"
@@ -160,7 +172,7 @@
                 {metricsViewName}
                 leaderboardSortByMeasureName={$leaderboardState.leaderboardSortByMeasureName ??
                   leaderboardMeasureNames?.[0]}
-                {leaderboardMeasureNames}
+                leaderboardMeasures={visibleMeasures}
                 leaderboardShowContextForAllMeasures={true}
                 {whereFilter}
                 {dimensionThresholdFilters}

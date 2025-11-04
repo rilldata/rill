@@ -28,7 +28,7 @@
       value,
       formattedValue: rows[virtRow.index]["__formatted_" + columnName],
       type: column.type,
-      barValue: column.total ? value / column.total : 0,
+      barValue: column.max ? value / column.max : 0,
       rowSelected: selectedIndex.findIndex((tgt) => virtRow.index === tgt) >= 0,
       colSelected: column.highlight,
     };

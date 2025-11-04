@@ -2,6 +2,7 @@ import { expect, type Locator } from "@playwright/test";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions.ts";
 import { test } from "./setup/base";
 
+// These tests are highly dependent on comparisons. So we need to fix that with rill time. Will be in a separate PR
 test.describe.serial("Alerts", () => {
   test.describe.serial("Alerts with filters", () => {
     test("Should create alert with filters", async ({ adminPage }) => {
@@ -11,9 +12,9 @@ test.describe.serial("Alerts", () => {
 
       const alertForm = adminPage.locator("form#create-alert-form");
 
-      // Select "Last 6 Hours" as time range
+      // Select "Last 6 hours" as time range
       await interactWithTimeRangeMenu(alertForm, async () => {
-        await alertForm.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+        await alertForm.getByRole("menuitem", { name: "Last 6 hours" }).click();
       });
       // Enable time comparison
       await alertForm.getByLabel("Toggle time comparison").click();
@@ -112,7 +113,7 @@ test.describe.serial("Alerts", () => {
       );
       // Assert alert filters
       await expect(adminPage.getByLabel("Alert filters")).toHaveText(
-        /Filters \(1\)\s*Last 6 Hours\s*vs\s*Previous period/m,
+        /Filters \(1\)\s*Last 6 hours\s*vs\s*Previous period/m,
       );
       // Assert alert criteria
       await expect(adminPage.getByLabel("Alert criteria")).toHaveText(
@@ -134,10 +135,10 @@ test.describe.serial("Alerts", () => {
 
       const alertForm = adminPage.locator("form#edit-alert-form");
 
-      // Select "Last 24 Hours" as time range
+      // Select "Last 24 hours" as time range
       await interactWithTimeRangeMenu(alertForm, async () => {
         await alertForm
-          .getByRole("menuitem", { name: "Last 24 Hours" })
+          .getByRole("menuitem", { name: "Last 24 hours" })
           .click();
       });
 
@@ -224,11 +225,11 @@ test.describe.serial("Alerts", () => {
       );
       // Assert alert filters
       await expect(adminPage.getByLabel("Alert filters")).toHaveText(
-        /Filters \(2\)\s*Last 24 Hours\s*vs\s*Previous day\s*Ad Size\s*1024x768\s*\+2 others/m,
+        /Filters \(2\)\s*Last 24 hours\s*vs\s*Previous period\s*Ad Size\s*1024x768\s*\+2 others/m,
       );
       // Assert alert criteria
       await expect(adminPage.getByLabel("Alert criteria")).toHaveText(
-        /Criteria\s*requests\s*% change from previous day\s*< 0%\s*requests\s*% change from previous day\s*> 100%/m,
+        /Criteria\s*requests\s*% change from previous period\s*< 0%\s*requests\s*% change from previous period\s*> 100%/m,
       );
     });
 

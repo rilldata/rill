@@ -335,7 +335,7 @@ func (h *Helper) ProjectNamesByGitRemote(ctx context.Context, org, remote, subPa
 	}
 
 	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
-		OrganizationName: org,
+		Org: org,
 	})
 	if err != nil {
 		return nil, err
@@ -399,18 +399,14 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 	remote, err := gitutil.ExtractRemotes(repoRoot, false)
 	if err == nil {
 		for _, r := range remote {
-			if r.Name == "origin" {
-				// if origin is set, use it as the git remote
-				// rill managed projects are detected using directory name so it is fine to ignore __rill_remote
-				// this leaves an edge case where older rill managed projects did not set `directory_name`
-				// so if the directory had both `origin` and `__rill_remote` set rill managed projects would not be detected
-				req.GitRemote = r.URL
-				break
+			if r.Name == "__rill_remote" {
+				req.RillMgdGitRemote = r.URL
+			} else {
+				gitRemote, err := r.Github()
+				if err == nil {
+					req.GitRemote = gitRemote
+				}
 			}
-		}
-		// if no remote is set, use the first one
-		if req.GitRemote == "" && len(remote) > 0 {
-			req.GitRemote = remote[0].URL
 		}
 	}
 	c, err := h.Client()
@@ -438,6 +434,13 @@ func (h *Helper) InferProjects(ctx context.Context, org, path string) ([]*adminv
 	if len(orgFiltered) == 0 {
 		return nil, ErrNoMatchingProject
 	}
+	// cleanup rill managed remote
+	if len(orgFiltered) == 1 && orgFiltered[0].ManagedGitId == "" && req.RillMgdGitRemote != "" {
+		err := h.HandleRepoTransfer(repoRoot, req.GitRemote)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return orgFiltered, nil
 }
 
@@ -458,8 +461,8 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 		}
 
 		proj, err := adm.GetProject(ctx, &adminv1.GetProjectRequest{
-			OrganizationName: org,
-			Name:             project,
+			Org:     org,
+			Project: project,
 		})
 		if err != nil {
 			return nil, "", err
@@ -533,6 +536,42 @@ func (h *Helper) GitSignature(ctx context.Context, path string) (*object.Signatu
 		Email: userResp.User.Email,
 		When:  time.Now(),
 	}, nil
+}
+
+func (h *Helper) HandleRepoTransfer(path, remote string) error {
+	// clear cache
+	h.gitHelperMu.Lock()
+	h.gitHelper = nil
+	h.gitHelperMu.Unlock()
+
+	// remove rill managed remote
+	err := removeRemote(path, "__rill_remote")
+	if err != nil {
+		return err
+	}
+
+	// set origin to remote
+	err = gitutil.SetRemote(path, &gitutil.Config{
+		Remote: remote,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removeRemote(path, remoteName string) error {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository: %w", err)
+	}
+
+	err = repo.DeleteRemote(remoteName)
+	if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+		return err
+	}
+	return nil
 }
 
 func hashStr(ss ...string) string {

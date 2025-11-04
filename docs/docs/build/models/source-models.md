@@ -4,7 +4,7 @@ sidebar_label: Source Models
 sidebar_position: 10
 ---
 
-After [creating a connector to your data source](/connect/data-source), you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#specifying-the-data-source-connector) or as a YAML configuration file. This guide focuses on YAML-based source models, which are auto-generated when using the UI.
+After [creating a connector to your data source](/build/connectors/data-source), you'll need to create a model to bring that data into Rill. This can be implemented as either a SQL model with [defined connector parameters](/build/models/sql-models#specifying-the-data-source-connector) or as a YAML configuration file. This guide focuses on YAML-based source models, which are auto-generated when using the UI.
 
 ```yaml
 # Model YAML
@@ -27,6 +27,32 @@ The YAML configuration file contains several key parameters:
 - **`connector`**: Defines the connector type used to create the model (e.g., `bigquery`, `athena`, `snowflake`, etc.).
 - **`sql`**: The actual SQL query to be executed. When nested under `dev:`, the query runs in the Rill Developer environment.
 - **`dev`**: Configuration for development mode. Rill Developer runs in dev mode by default, but when deployed to Rill Cloud, the root-level SQL configuration executes. See [Environment Templating](/build/models/templating) for more information.
+
+
+## Retry Configuration
+
+By default, a model will retry if the initial load fails. This helps ensure reliable data processing by automatically retrying failed operations. The default retry settings are:
+
+```yaml
+retry:
+  attempts: 3 
+  delay: 5s
+  exponential_backoff: true
+```
+
+You can customize the retry behavior to better suit your specific needs. For example, you might want to increase the number of attempts for critical models, adjust the delay between retries, or only retry on specific error types. Use the following configuration in your source YAML:
+
+```yaml
+retry:
+  attempts: 5
+  delay: 10s
+  exponential_backoff: true
+  if_error_matches:
+    - ".*OvercommitTracker.*"
+    - ".*Timeout.*"
+    - ".*Bad Gateway.*"
+```
+
 
 ## Examples
 

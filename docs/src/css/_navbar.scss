@@ -1,0 +1,111 @@
+
+/* =========================
+   Search Bar Custom Styles
+   ========================= */
+.navbar .navbar__items--right .DocSearch-Button {
+  background: transparent;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 12px;
+  width: 250px; /* Adjust this value to change width */
+  min-width: 150px; /* Minimum width */
+  height: 100%;
+  position: relative;
+  
+  &::after {
+    content: "⌘K";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: var(--docsearch-muted-color);
+    font-family: monospace;
+    pointer-events: none;
+  }
+}
+
+/* Dark mode specific fixes */
+[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button {
+    background: transparent;
+    border: 0.5px solid var(--docsearch-muted-color);
+    border-radius: 8px;
+    padding: 12px 12px;
+}
+
+[data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button:hover {
+    box-shadow: none;
+    color: var(--docsearch-muted-color);
+    border: 0.5px solid var(--ifm-color-primary);
+} 
+
+.navbar .navbar__items--right .DocSearch-Button:hover {
+  box-shadow: none;
+  color: var(--docsearch-muted-color);
+  border: 0.5px solid var(--ifm-color-primary);
+}
+
+.navbar .navbar__items--right .DocSearch-Search-Icon {
+  height: 16px;
+  width: 16px;
+  color: var(--docsearch-muted-color);
+}
+
+.navbar .navbar__items--right .DocSearch-Button-Placeholder {
+  font-size: 0.875rem;
+}
+
+.navbar .navbar__items--right .DocSearch-Button-Keys {  
+    display: none;
+}
+
+.DocSearch--active .DocSearch-Footer {
+    display: none;
+}
+
+@media (max-width: 600px) {
+  .navbar .navbar__items--right .DocSearch-Button {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    height: 36px;
+    box-sizing: border-box;
+  }
+  .navbar .navbar__items--right  .DocSearch-Button::after {
+    display: none;
+  }
+
+}
+
+@media (max-width: 996px) {
+  /* Make custom HTML navbar items look like menu__link in mobile menu */
+  .navbar .menu__list .navbar-icon-link {
+    display: block;
+    width: 100%;
+    padding: 2.5px 9px;
+    color: var(--ifm-menu-color);
+    font-size: var(--default-font);
+    text-decoration: none;
+    border-radius: 4px;
+    margin: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+} 
+
+/* =========================
+   Navbar Icon Link Styles
+   ========================= */
+.navbar .navbar-icon-link {
+  color: var(--ifm-menu-color);
+  text-decoration: none;
+  background: none;
+  box-shadow: none;
+  transition: color 0.2s;
+}
+.navbar .navbar-icon-link:hover,
+.navbar .navbar-icon-link:focus {
+  color: var(--ifm-menu-color-active);
+  text-decoration: none;
+} 

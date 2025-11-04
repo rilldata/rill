@@ -10,7 +10,9 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let hasBoldTimeRange: boolean = true;
 
-  $: selectedLabel = getRangeLabel(timeRange.isoDuration);
+  $: selectedLabel = getRangeLabel(
+    timeRange.isoDuration ?? timeRange.expression,
+  );
 
   $: showRange =
     selectedLabel === "Custom" ||
@@ -34,6 +36,7 @@
             DateTime.fromISO(timeRange.start).setZone(timeRange.timeZone),
             DateTime.fromISO(timeRange.end).setZone(timeRange.timeZone),
           )}
+          timeGrain={timeRange.roundToGrain}
         />
       {/if}
     </div>

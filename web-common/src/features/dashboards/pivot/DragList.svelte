@@ -146,7 +146,8 @@
   }
 
   function handleDrop() {
-    if (zoneStartedDrag) $controllerStore?.abort();
+    if (zoneStartedDrag)
+      $controllerStore?.abort("Drag cancelled - item dropped");
 
     if (isValidDropZone) {
       if (dragChip && ghostIndex !== null) {
@@ -359,7 +360,7 @@
     item={dragChip}
     position={dragStart}
     removable={isDropLocation}
-    on:release={() => dragDataStore.set(null)}
+    onRelease={() => dragDataStore.set(null)}
   />
 {/if}
 

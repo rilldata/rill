@@ -9,7 +9,7 @@
 
   $: ({
     parent: {
-      spec: { getMetricsViewFromName },
+      metricsView: { getMetricsViewFromName },
     },
     specStore,
     config,
@@ -19,7 +19,13 @@
 
   $: tableSpec = $specStore;
 
-  $: ({ title, description, dimension_filters, time_filters } = tableSpec);
+  $: ({
+    title,
+    description,
+    show_description_as_tooltip,
+    dimension_filters,
+    time_filters,
+  } = tableSpec);
 
   $: hasHeader = !!title || !!description;
 
@@ -58,7 +64,13 @@
   }
 </script>
 
-<ComponentHeader {component} {title} {description} {filters} />
+<ComponentHeader
+  {component}
+  {title}
+  {description}
+  showDescriptionAsTooltip={show_description_as_tooltip}
+  {filters}
+/>
 
 <CanvasPivotRenderer
   {hasHeader}

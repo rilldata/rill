@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
+  import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
+  import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
@@ -41,6 +42,7 @@
   export let manageProjectMembers: boolean;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readProjects: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
@@ -83,7 +85,7 @@
     },
     {
       query: {
-        enabled: !!organization,
+        enabled: !!organization && readProjects,
         retry: 2,
         refetchOnMount: true,
       },
@@ -241,7 +243,9 @@
               <ChatToggle />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-              <Bookmarks
+              <ExploreBookmarks
+                {organization}
+                {project}
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
@@ -255,6 +259,7 @@
       {/if}
     {/if}
     {#if onCanvasDashboardPage}
+      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}
     {#if $user.isSuccess}

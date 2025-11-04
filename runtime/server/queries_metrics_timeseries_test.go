@@ -792,7 +792,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, 3, strings.Count(string(buf.Bytes()), "\n"))
+	require.Equal(t, 3, strings.Count(buf.String(), "\n"))
 }
 
 func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity) {
@@ -808,7 +808,7 @@ func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metrics
 	mv := mvRes.State.ValidSpec
 	require.NoError(t, err)
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).SecurityClaims(), res)
+	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, auth.GetClaims(ctx, instanceID), res)
 	require.NoError(t, err)
 
 	return mv, resolvedSecurity
