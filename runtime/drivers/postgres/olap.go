@@ -190,9 +190,7 @@ func databaseTypeToPB(dbt string) *runtimev1.Type {
 	case "TSVECTOR", "TSQUERY":
 		t.Code = runtimev1.Type_CODE_STRING
 	default:
-		// Handle user-defined types (like ENUMs) which come as numeric OIDs
-		// Treat them as strings
-		t.Code = runtimev1.Type_CODE_STRING
+		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 		return t
 	}
 	return t

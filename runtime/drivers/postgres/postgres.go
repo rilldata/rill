@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -322,6 +323,10 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 	}
 
 	c.db, c.dbErr = sqlx.Connect("pgx", c.config.ResolveDSN())
+	if c.dbErr != nil {
+		return nil, c.dbErr
+	}
+	c.db.SetConnMaxIdleTime(time.Minute)
 	return c.db, c.dbErr
 }
 
