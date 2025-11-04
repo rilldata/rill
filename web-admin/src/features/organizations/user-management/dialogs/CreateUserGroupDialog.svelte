@@ -50,6 +50,7 @@
   $: organization = $page.params.organization;
 
   // Query organization users when user types (debounced)
+  // Also fetch a small default list when there's no search to show suggestions
   $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
     organization,
     debouncedSearchText
@@ -57,10 +58,11 @@
           pageSize: 50,
           searchPattern: `${debouncedSearchText}%`,
         }
-      : undefined,
+      : { pageSize: 5 },
     {
       query: {
-        enabled: debouncedSearchText.length > 0,
+        // Enable while dialog is open so we can show default suggestions
+        enabled: open,
       },
     },
   );
