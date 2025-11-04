@@ -8,15 +8,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestOLAP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
-
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 	tests := []struct {
 		query  string
@@ -121,10 +119,7 @@ func TestOLAP(t *testing.T) {
 }
 
 func TestEmptyRows(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
-
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT int_col, float_col FROM `rilldata.integration_test.all_datatypes` LIMIT 0"})
 	require.NoError(t, err)
@@ -140,10 +135,7 @@ func TestEmptyRows(t *testing.T) {
 }
 
 func TestExec(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
-
+	testmode.Expensive(t)
 	_, olap := acquireTestBigQuery(t)
 
 	// create table with dry run
@@ -157,6 +149,144 @@ func TestExec(t *testing.T) {
 	// drop table
 	err = olap.Exec(t.Context(), &drivers.Statement{Query: "DROP TABLE `rilldata.integration_test.exec_test`"})
 	require.NoError(t, err)
+}
+
+func TestScan(t *testing.T) {
+	testmode.Expensive(t)
+	_, olap := acquireTestBigQuery(t)
+
+	t.Run("successful scan with various types", func(t *testing.T) {
+		rows, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT CAST(42 AS INT64) AS int_col, 'hello' AS str_col, TRUE AS bool_col, 3.14 AS float_col",
+		})
+		require.NoError(t, err)
+		defer rows.Close()
+
+		require.True(t, rows.Next())
+
+		var intVal int64
+		var strVal string
+		var boolVal bool
+		var floatVal float64
+
+		err = rows.Scan(&intVal, &strVal, &boolVal, &floatVal)
+		require.NoError(t, err)
+		require.Equal(t, int64(42), intVal)
+		require.Equal(t, "hello", strVal)
+		require.Equal(t, true, boolVal)
+		require.Equal(t, 3.14, floatVal)
+
+		require.False(t, rows.Next())
+		require.NoError(t, rows.Err())
+	})
+
+	t.Run("scan with wrong number of destinations", func(t *testing.T) {
+		rows, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT 1 AS col1, 2 AS col2",
+		})
+		require.NoError(t, err)
+		defer rows.Close()
+
+		require.True(t, rows.Next())
+
+		// Try to scan 2 columns into 1 destination
+		var val int64
+		err = rows.Scan(&val)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "expected 2 destination arguments in Scan, got 1")
+
+		// Try to scan 2 columns into 3 destinations
+		var val1, val2, val3 int64
+		err = rows.Scan(&val1, &val2, &val3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "expected 2 destination arguments in Scan, got 3")
+	})
+
+	t.Run("scan without calling Next first", func(t *testing.T) {
+		rows, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT 1 AS col1",
+		})
+		require.NoError(t, err)
+		defer rows.Close()
+
+		// Try to scan without calling Next first
+		var val int64
+		err = rows.Scan(&val)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "must call Next before Scan")
+	})
+
+	t.Run("scan with NULL values", func(t *testing.T) {
+		rows, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT CAST(NULL AS INT64) AS null_int, CAST(NULL AS STRING) AS null_str",
+		})
+		require.NoError(t, err)
+		defer rows.Close()
+
+		require.True(t, rows.Next())
+
+		var nullInt *int64
+		var nullStr *string
+
+		err = rows.Scan(&nullInt, &nullStr)
+		require.NoError(t, err)
+		require.Nil(t, nullInt)
+		require.Nil(t, nullStr)
+	})
+
+	t.Run("scan multiple rows", func(t *testing.T) {
+		rows, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT * FROM UNNEST([1, 2, 3]) AS val",
+		})
+		require.NoError(t, err)
+		defer rows.Close()
+
+		expectedVals := []int64{1, 2, 3}
+		actualVals := []int64{}
+
+		for rows.Next() {
+			var val int64
+			err = rows.Scan(&val)
+			require.NoError(t, err)
+			actualVals = append(actualVals, val)
+		}
+
+		require.NoError(t, rows.Err())
+		require.Equal(t, expectedVals, actualVals)
+	})
+
+	t.Run("scan with type conversion", func(t *testing.T) {
+		rows, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT CAST(123 AS INT64) AS int_col",
+		})
+		require.NoError(t, err)
+		defer rows.Close()
+
+		require.True(t, rows.Next())
+
+		// Test scanning int64 into different compatible types
+		var intVal int
+		err = rows.Scan(&intVal)
+		require.NoError(t, err)
+		require.Equal(t, 123, intVal)
+	})
+
+	t.Run("scan complex types as JSON strings", func(t *testing.T) {
+		rows, err := olap.Query(t.Context(), &drivers.Statement{
+			Query: "SELECT STRUCT(1 AS a, 'test' AS b) AS struct_col, [1, 2, 3] AS array_col",
+		})
+		require.NoError(t, err)
+		defer rows.Close()
+
+		require.True(t, rows.Next())
+
+		var structVal, arrayVal string
+		err = rows.Scan(&structVal, &arrayVal)
+		require.NoError(t, err)
+		require.Contains(t, structVal, `"a":1`)
+		require.Contains(t, structVal, `"b":"test"`)
+		require.Equal(t, "[1,2,3]", arrayVal)
+	})
 }
 
 func acquireTestBigQuery(t *testing.T) (drivers.Handle, drivers.OLAPStore) {

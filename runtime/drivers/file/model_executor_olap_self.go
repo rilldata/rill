@@ -401,7 +401,7 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 		}
 		rows++
 		if rows == 1000 {
-			rec := recordBuilder.NewRecord()
+			rec := recordBuilder.NewRecordBatch()
 			if err := parquetwriter.WriteBuffered(rec); err != nil {
 				rec.Release()
 				return err
@@ -420,7 +420,7 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 	if rows == 0 {
 		return nil
 	}
-	rec := recordBuilder.NewRecord()
+	rec := recordBuilder.NewRecordBatch()
 	err = parquetwriter.Write(rec)
 	// release the record before returning the error
 	rec.Release()

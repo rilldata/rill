@@ -66,7 +66,7 @@
     allTimeRange,
     timeRangeStateStore,
     comparisonRangeStateStore,
-    minTimeGrain,
+    minTimeGrain: _minTimeGrain,
     setTimeZone,
     selectTimeRange,
     setSelectedComparisonRange,
@@ -93,6 +93,8 @@
   $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
   $: availableTimeZones = exploreSpec.timeZones ?? [];
   $: timeRanges = exploreSpec.timeRanges ?? [];
+
+  $: minTimeGrain = $_minTimeGrain;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -253,10 +255,11 @@
         canPanLeft={false}
         canPanRight={false}
         onPan={() => {}}
-        minTimeGrain={$minTimeGrain}
+        {minTimeGrain}
         {side}
       />
       <CanvasComparisonPill
+        {minTimeGrain}
         allTimeRange={$allTimeRange}
         {selectedTimeRange}
         {selectedComparisonTimeRange}

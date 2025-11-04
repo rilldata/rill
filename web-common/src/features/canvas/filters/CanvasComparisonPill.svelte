@@ -9,6 +9,7 @@
     type DashboardTimeControls,
     type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
 
   export let allTimeRange: TimeRange;
@@ -17,10 +18,11 @@
   export let showFullRange = true;
   export let showTimeComparison = false;
   export let activeTimeZone: string;
+  export let allowCustomTimeRange: boolean = true;
+  export let minTimeGrain: V1TimeGrain | undefined;
+  export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onDisplayTimeComparison: (show: boolean) => void;
   export let onSetSelectedComparisonRange: (range: TimeRange) => void;
-  export let allowCustomTimeRange: boolean = true;
-  export let side: "top" | "right" | "bottom" | "left" = "bottom";
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -84,18 +86,19 @@
   </button>
   {#if activeTimeGrain && interval.isValid}
     <Comparison
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
+      {minTimeGrain}
+      maxDate={DateTime.fromJSDate(allTimeRange.end).setZone(activeTimeZone)}
+      minDate={DateTime.fromJSDate(allTimeRange.start).setZone(activeTimeZone)}
       timeComparisonOptionsState={comparisonOptions}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
       currentInterval={interval}
       zone={activeTimeZone}
-      {onSelectComparisonRange}
       {showFullRange}
       disabled={disabled ?? false}
       {allowCustomTimeRange}
       {side}
+      {onSelectComparisonRange}
     />
   {/if}
 </div>

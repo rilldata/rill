@@ -37,7 +37,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "ClickHouse",
 	Description: "Connect to ClickHouse.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/clickhouse",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/clickhouse",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -586,11 +586,12 @@ func (c *Connection) periodicallyEmitStats() {
 	cacheInvalidationTicker := time.NewTicker(60 * time.Minute)
 	defer cacheInvalidationTicker.Stop()
 
+	skipEstimatedSizeEmission := false
 	for {
 		select {
 		case <-sensitiveTicker.C:
 			// Skip if it hasn't been used recently and may be scaled to zero.
-			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute {
+			if (c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) || skipEstimatedSizeEmission {
 				continue
 			}
 
@@ -602,6 +603,13 @@ func (c *Connection) periodicallyEmitStats() {
 				lvl := zap.WarnLevel
 				if c.config.Managed {
 					lvl = zap.ErrorLevel
+				}
+
+				var chErr *clickhouse.Exception
+				if errors.As(err, &chErr) && chErr.Code == 497 {
+					// Code 497 is "Not enough privileges" - downgrade to debug level and skip future emissions.
+					lvl = zap.DebugLevel
+					skipEstimatedSizeEmission = true
 				}
 
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
@@ -631,8 +639,9 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
 		case <-cacheInvalidationTicker.C:
-			// Invalidate the billing table existence cache every hour.
+			// Invalidate the billing table existence cache and skip size emission flag.
 			c.billingTableExists = nil
+			skipEstimatedSizeEmission = false
 		case <-c.ctx.Done():
 			return
 		}

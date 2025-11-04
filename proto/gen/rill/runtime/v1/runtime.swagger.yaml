@@ -602,17 +602,26 @@ paths:
               conversationId:
                 type: string
                 title: If not provided, creates a new conversation
-              messages:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1Message'
-              toolNames:
+              prompt:
+                type: string
+              explore:
+                type: string
+              dimensions:
                 type: array
                 items:
                   type: string
-              appContext:
-                $ref: '#/definitions/v1AppContext'
+              measures:
+                type: array
+                items:
+                  type: string
+              where:
+                $ref: '#/definitions/v1Expression'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -651,6 +660,24 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              explore:
+                type: string
+              dimensions:
+                type: array
+                items:
+                  type: string
+              measures:
+                type: array
+                items:
+                  type: string
+              where:
+                $ref: '#/definitions/v1Expression'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -696,11 +723,6 @@ paths:
           in: path
           required: true
           type: string
-        - name: includeSystemMessages
-          description: Whether to include system messages in the response (defaults to false for UI use)
-          in: query
-          required: false
-          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/connectors/analyze:
@@ -3833,21 +3855,6 @@ definitions:
           type: object
           $ref: '#/definitions/v1ResourceName'
         description: List of resources that appear to use the connector.
-  v1AppContext:
-    type: object
-    properties:
-      contextType:
-        $ref: '#/definitions/v1AppContextType'
-      contextMetadata:
-        type: object
-  v1AppContextType:
-    type: string
-    enum:
-      - APP_CONTEXT_TYPE_UNSPECIFIED
-      - APP_CONTEXT_TYPE_PROJECT_CHAT
-      - APP_CONTEXT_TYPE_EXPLORE_DASHBOARD
-    default: APP_CONTEXT_TYPE_UNSPECIFIED
-    title: Application context for AI conversations
   v1AssertionResult:
     type: object
     properties:
@@ -4543,6 +4550,8 @@ definitions:
         type: string
       title:
         type: string
+      userAgent:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -4554,6 +4563,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Message'
+        description: 'NOTE: Deprecated.'
     title: Conversation metadata and messages
   v1CreateDirectoryResponse:
     type: object
@@ -4989,6 +4999,11 @@ definitions:
     properties:
       conversation:
         $ref: '#/definitions/v1Conversation'
+      messages:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.GetConversation
   v1GetExploreResponse:
     type: object
@@ -5070,6 +5085,8 @@ definitions:
       instanceId:
         type: string
       environment:
+        type: string
+      projectDisplayName:
         type: string
       olapConnector:
         type: string
@@ -5291,19 +5308,33 @@ definitions:
     properties:
       id:
         type: string
-      role:
+      parentId:
         type: string
-      content:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ContentBlock'
       createdOn:
         type: string
         format: date-time
       updatedOn:
         type: string
         format: date-time
+      index:
+        type: integer
+        format: int64
+      role:
+        type: string
+      type:
+        type: string
+      tool:
+        type: string
+      contentType:
+        type: string
+      contentData:
+        type: string
+      content:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ContentBlock'
+        title: Convenience field
     title: Message exchanged in a conversation
   v1MetricsView:
     type: object
@@ -7178,6 +7209,17 @@ definitions:
         $ref: '#/definitions/v1ThemeSpec'
       state:
         $ref: '#/definitions/v1ThemeState'
+  v1ThemeColors:
+    type: object
+    properties:
+      primary:
+        type: string
+      secondary:
+        type: string
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1ThemeSpec:
     type: object
     properties:
@@ -7189,6 +7231,10 @@ definitions:
         type: string
       secondaryColorRaw:
         type: string
+      light:
+        $ref: '#/definitions/v1ThemeColors'
+      dark:
+        $ref: '#/definitions/v1ThemeColors'
   v1ThemeState:
     type: object
   v1TimeGrain:

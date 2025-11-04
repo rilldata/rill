@@ -328,23 +328,6 @@ export interface V1AnalyzedVariable {
   usedBy?: V1ResourceName[];
 }
 
-export type V1AppContextContextMetadata = { [key: string]: unknown };
-
-export interface V1AppContext {
-  contextType?: V1AppContextType;
-  contextMetadata?: V1AppContextContextMetadata;
-}
-
-export type V1AppContextType =
-  (typeof V1AppContextType)[keyof typeof V1AppContextType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1AppContextType = {
-  APP_CONTEXT_TYPE_UNSPECIFIED: "APP_CONTEXT_TYPE_UNSPECIFIED",
-  APP_CONTEXT_TYPE_PROJECT_CHAT: "APP_CONTEXT_TYPE_PROJECT_CHAT",
-  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD",
-} as const;
-
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 
 export interface V1AssertionResult {
@@ -738,8 +721,10 @@ export interface V1Conversation {
   id?: string;
   ownerId?: string;
   title?: string;
+  userAgent?: string;
   createdOn?: string;
   updatedOn?: string;
+  /** NOTE: Deprecated. */
   messages?: V1Message[];
 }
 
@@ -1041,6 +1026,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
+  messages?: V1Message[];
 }
 
 export interface V1GetExploreResponse {
@@ -1117,6 +1103,7 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   environment?: string;
+  projectDisplayName?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
@@ -1234,10 +1221,16 @@ export interface V1MapType {
 
 export interface V1Message {
   id?: string;
-  role?: string;
-  content?: V1ContentBlock[];
+  parentId?: string;
   createdOn?: string;
   updatedOn?: string;
+  index?: number;
+  role?: string;
+  type?: string;
+  tool?: string;
+  contentType?: string;
+  contentData?: string;
+  content?: V1ContentBlock[];
 }
 
 export interface V1MetricsView {
@@ -2321,11 +2314,21 @@ export interface V1Theme {
   state?: V1ThemeState;
 }
 
+export type V1ThemeColorsVariables = { [key: string]: string };
+
+export interface V1ThemeColors {
+  primary?: string;
+  secondary?: string;
+  variables?: V1ThemeColorsVariables;
+}
+
 export interface V1ThemeSpec {
   primaryColor?: V1Color;
   secondaryColor?: V1Color;
   primaryColorRaw?: string;
   secondaryColorRaw?: string;
+  light?: V1ThemeColors;
+  dark?: V1ThemeColors;
 }
 
 export interface V1ThemeState {
@@ -2534,26 +2537,29 @@ export type RuntimeServiceEditInstanceBody = {
 
 export type RuntimeServiceCompleteBody = {
   conversationId?: string;
-  messages?: V1Message[];
-  toolNames?: string[];
-  appContext?: V1AppContext;
+  prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
   conversationId?: string;
   prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {
   result?: V1CompleteStreamingResponse;
   error?: RpcStatus;
-};
-
-export type RuntimeServiceGetConversationParams = {
-  /**
-   * Whether to include system messages in the response (defaults to false for UI use)
-   */
-  includeSystemMessages?: boolean;
 };
 
 export type RuntimeServiceListFilesParams = {

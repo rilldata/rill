@@ -12,7 +12,7 @@ import (
 )
 
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -105,7 +105,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, limit+1)
 	}
 
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -152,7 +152,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		ORDER BY c.ordinal_position
 	`, sqlSafeName(database), sqlSafeName(database))
 
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}

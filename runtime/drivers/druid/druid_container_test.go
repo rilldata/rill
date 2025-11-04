@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -82,9 +83,7 @@ var testIngestSpec = fmt.Sprintf(`{
 // Unfortunately starting a Druid cluster with test containers is extremely slow.
 // If you have access to our Druid test cluster, consider using the test_druid.go file instead.
 func TestContainer(t *testing.T) {
-	if testing.Short() {
-		t.Skip("druid: skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

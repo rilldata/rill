@@ -26,24 +26,24 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/bigquery",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
-		{
-			Key:         "google_application_credentials",
-			Type:        drivers.InformationalPropertyType,
-			DisplayName: "GCP credentials",
-			Description: "GCP credentials inferred from your local environment.",
-			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs#local-google-cloud-cli-credentials-local-development-only",
-		},
 		{
 			Key:         "project_id",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
 			Placeholder: "my-project",
 			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
+		},
+		{
+			Key:         "google_application_credentials",
+			Type:        drivers.FilePropertyType,
+			DisplayName: "GCP Credentials",
+			Description: "GCP credentials as JSON string",
+			Placeholder: "Paste your GCP service account JSON here",
+			Secret:      true,
+			Required:    true,
 		},
 	},
 	ImplementsWarehouse: true,
@@ -266,7 +266,7 @@ func (c *Connection) createClient(ctx context.Context, projectID string) (*bigqu
 	client, err := bigquery.NewClient(ctx, projectID, opts...)
 	if err != nil {
 		if strings.Contains(err.Error(), "unable to detect projectID") {
-			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in the connector YAML")
 		}
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
