@@ -113,3 +113,42 @@ func TestAnalystOpenRTB(t *testing.T) {
 	})
 
 }
+
+func TestAnalystCheckAccess(t *testing.T) {
+	// Setup runtime instance with the OpenRTB dataset
+	n, files := testruntime.ProjectOpenRTB(t)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		EnableLLM: true,
+		Files:     files,
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
+
+	// Test access control
+	t.Run("CheckAccess Denied", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		// Modify the session to have a non-rill user agent
+		s.CatalogSession().UserAgent = "some-other-agent/1.0"
+
+		// It should deny access
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
+			Prompt: "What metrics views are available?",
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "access denied")
+	})
+
+	// Test access control for rill-gemini-extension user agent
+	t.Run("CheckAccess Rill Gemini Extension", func(t *testing.T) {
+		s := newEval(t, rt, instanceID)
+
+		// Modify the session to have a rill-gemini-extension user agent
+		s.CatalogSession().UserAgent = "rill-gemini-extension/1.0"
+
+		// It should allow access
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.RouterAgentArgs{
+			Prompt: "What metrics views are available?",
+		})
+		require.NoError(t, err)
+	})
+}

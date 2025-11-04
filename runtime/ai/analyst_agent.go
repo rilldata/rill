@@ -66,8 +66,13 @@ func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
 		return false
 	}
 
-	// Only allow for rill user agents since it's not useful in MCP contexts.
-	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+	// Allow for rill user agents and rill integrations
+	// TODO: Consider a more robust way to identify trusted integrations
+	userAgent := s.CatalogSession().UserAgent
+	isRillAgent := strings.HasPrefix(userAgent, "rill")
+	isRillExtension := strings.Contains(userAgent, "rill-gemini-extension")
+
+	if !isRillAgent && !isRillExtension {
 		return false
 	}
 
