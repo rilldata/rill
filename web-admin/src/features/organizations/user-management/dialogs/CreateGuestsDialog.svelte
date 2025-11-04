@@ -44,7 +44,11 @@
     organization,
     undefined,
     {
-      query: { enabled: !!organization, refetchOnMount: true, refetchOnWindowFocus: true },
+      query: {
+        enabled: !!organization,
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+      },
     },
   );
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
@@ -67,7 +71,10 @@
   const schema = yup(
     object({
       emails: array(
-        string().matches(RFC5322EmailRegex, { excludeEmptyString: true, message: "Invalid email" }),
+        string().matches(RFC5322EmailRegex, {
+          excludeEmptyString: true,
+          message: "Invalid email",
+        }),
       ),
     }),
   );
@@ -100,7 +107,9 @@
         const failed: string[] = [];
         results
           .sort((a, b) => a.index - b.index)
-          .forEach(({ email, success }) => (success ? succeeded.push(email) : failed.push(email)));
+          .forEach(({ email, success }) =>
+            success ? succeeded.push(email) : failed.push(email),
+          );
 
         if (succeeded.length > 0) {
           eventBus.emit("notification", {
@@ -113,10 +122,12 @@
 
         // Invalidate lists
         await queryClient.invalidateQueries({
-          queryKey: getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+          queryKey:
+            getAdminServiceListOrganizationMemberUsersQueryKey(organization),
         });
         await queryClient.invalidateQueries({
-          queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+          queryKey:
+            getAdminServiceListOrganizationInvitesQueryKey(organization),
         });
 
         if (failedInvites.length === 0) {
@@ -129,7 +140,9 @@
     },
   );
 
-  $: hasInvalidEmails = $form.emails.some((e, i) => e.length > 0 && $errors.emails?.[i] !== undefined);
+  $: hasInvalidEmails = $form.emails.some(
+    (e, i) => e.length > 0 && $errors.emails?.[i] !== undefined,
+  );
 
   function roleLabel(role: string) {
     if (role === "admin") return "Admin";
@@ -162,7 +175,12 @@
     <DialogHeader>
       <DialogTitle>Create guest users</DialogTitle>
     </DialogHeader>
-    <form id={formId} on:submit|preventDefault={submit} class="w-full" use:enhance>
+    <form
+      id={formId}
+      on:submit|preventDefault={submit}
+      class="w-full"
+      use:enhance
+    >
       <MultiInput
         id="emails"
         placeholder="Add emails, separated by commas"
@@ -207,7 +225,10 @@
                   checked={selectedProjects.includes(p.name)}
                   on:click={() => {
                     const idx = selectedProjects.indexOf(p.name);
-                    if (idx >= 0) selectedProjects = selectedProjects.filter((n) => n !== p.name);
+                    if (idx >= 0)
+                      selectedProjects = selectedProjects.filter(
+                        (n) => n !== p.name,
+                      );
                     else selectedProjects = [...selectedProjects, p.name];
                   }}
                 >
@@ -236,9 +257,15 @@
             {/if}
           </Dropdown.Trigger>
           <Dropdown.Content align="start" class="w-[180px]">
-            <Dropdown.Item on:click={() => (selectedRole = "admin")}>Admin</Dropdown.Item>
-            <Dropdown.Item on:click={() => (selectedRole = "editor")}>Editor</Dropdown.Item>
-            <Dropdown.Item on:click={() => (selectedRole = "viewer")}>Viewer</Dropdown.Item>
+            <Dropdown.Item on:click={() => (selectedRole = "admin")}
+              >Admin</Dropdown.Item
+            >
+            <Dropdown.Item on:click={() => (selectedRole = "editor")}
+              >Editor</Dropdown.Item
+            >
+            <Dropdown.Item on:click={() => (selectedRole = "viewer")}
+              >Viewer</Dropdown.Item
+            >
           </Dropdown.Content>
         </Dropdown.Root>
       </div>
@@ -249,7 +276,9 @@
           type="primary"
           form={formId}
           loading={$submitting}
-          disabled={hasInvalidEmails || $form.emails.every((e) => !e.trim()) || selectedProjects.length === 0}
+          disabled={hasInvalidEmails ||
+            $form.emails.every((e) => !e.trim()) ||
+            selectedProjects.length === 0}
         >
           Create guests
         </Button>
@@ -265,5 +294,3 @@
     </form>
   </DialogContent>
 </Dialog>
-
-
