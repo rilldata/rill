@@ -9,7 +9,6 @@
   padding: 12px 12px;
   width: 250px; /* Adjust this value to change width */
   min-width: 150px; /* Minimum width */
-  margin-left: 10px;
   height: 100%;
   position: relative;
   
@@ -77,20 +76,6 @@
   }
 
 }
-
-/* =========================
-   Release Notes Navbar Visibility
-   ========================= */
-.navbar .navbar__items--right .navbar-release-notes-mobile {
-  display: none;
-}
-@media (max-width: 996px) {
-  .navbar .navbar__items--right .navbar-release-notes-mobile {
-    display: flex;
-    width: 100%;
-    justify-content: flex-start;
-  }
-} 
 
 @media (max-width: 996px) {
   /* Make custom HTML navbar items look like menu__link in mobile menu */

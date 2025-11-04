@@ -36,7 +36,7 @@ _[string]_ - Extra instructions for LLM/AI features. Used to guide natural langu
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
 :::info Curious about OLAP Engines?
-Please see our reference documentation on [OLAP Engines](/connect/olap).
+Please see our reference documentation on [OLAP Engines](/build/connectors/olap).
 :::
 
 
@@ -81,10 +81,8 @@ _[object]_ - Defines project-wide default settings for explores. Unless overridd
 _[object]_ - Defines project-wide default settings for canvases. Unless overridden, individual canvases will inherit these defaults. 
 
 ```yaml
-# For example, the following YAML configuration below will set a project-wide default for:
-# Models - Configure a [source refresh](/build/build/models/data-refresh.md).
-# Metrics View - Set the [first day of the week](metrics-view.md) for timeseries aggregations to be Sunday along with setting the smallest_time_grain.
-# Explore Dashboards - Set the [default](explore-dashboards.md) values when a user opens a dashboard, and available time zones and/or time ranges.
+# For complete examples, see: 
+# https://docs.rilldata.com/build/rill-project-file#dashboard-defaults
 models:
     refresh:
         cron: '0 * * * *'
@@ -96,36 +94,22 @@ explores:
         time_range: P24M
     time_zones:
         - UTC
-        - America/Los_Angeles
-        - America/New_York
-        - Europe/London
-        - Europe/Paris
-        - Asia/Tokyo
-        - Australia/Sydney
     time_ranges:
         - PT24H
         - P6M
-        - P12M
 canvases:
     defaults:
-        time_range: P24M
+        time_range: P7D
     time_zones:
         - UTC
-        - America/Los_Angeles
-        - America/New_York
-        - Europe/London
-        - Europe/Paris
-        - Asia/Tokyo
-        - Australia/Sydney
     time_ranges:
         - PT24H
-        - P6M
-        - P12M
+        - P7D
 ```
 
 ## Setting variables
 
-Primarily useful for [templating](/connect/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/build/connectors/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
 :::info Overriding variables locally
 Variables also follow an order of precedence and can be overridden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 ```bash
@@ -137,7 +121,7 @@ Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file
 ```bash
 variable=xyz
 ```
-Similar to how [connector credentials can be pushed / pulled](/connect/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed / pulled](/build/connectors/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 :::
 
 

@@ -90,6 +90,15 @@ export function detectAppContext(page: Page): V1AppContext | null {
 }
 */
 
+// High-level agent tools that should not be rendered in the UI (for now)
+// These are internal orchestration agents, not user-facing tools
+const HIDDEN_AGENT_TOOLS = ["router_agent", "analyst_agent", "developer_agent"];
+
+// Helper to check if a tool call should be hidden from the UI
+export function isHiddenAgentTool(toolName: string | undefined): boolean {
+  return !!toolName && HIDDEN_AGENT_TOOLS.includes(toolName);
+}
+
 // Helper to check if a tool result contains chart data
 export function isChartToolResult(toolResult: any, toolCall: any): boolean {
   if (toolResult?.isError || toolCall?.name !== "create_chart") return false;

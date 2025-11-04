@@ -911,6 +911,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for Environment
 
+	// no validation rules for ProjectDisplayName
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector

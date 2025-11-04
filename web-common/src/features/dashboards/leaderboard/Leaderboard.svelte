@@ -293,7 +293,6 @@
   // This includes both above-the-fold and below-the-fold data for accurate scaling
   $: maxValues = getLeaderboardMaxValues(
     [...aboveTheFold, ...belowTheFoldRows],
-    leaderboardTotals,
     leaderboardMeasures,
   );
 

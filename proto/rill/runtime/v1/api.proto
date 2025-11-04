@@ -327,6 +327,7 @@ message InstanceHealth {
 message Instance {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string environment = 20;
+  string project_display_name = 25;
   string olap_connector = 2;
   string repo_connector = 4;
   string admin_connector = 19;
