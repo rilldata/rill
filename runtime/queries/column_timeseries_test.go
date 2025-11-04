@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -20,9 +21,7 @@ import (
 )
 
 func TestAgainstClickHouse(t *testing.T) {
-	if testing.Short() {
-		t.Skip("clickhouse: skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	ctx := context.Background()
 	clickHouseContainer, err := clickhouse.RunContainer(ctx,
@@ -181,10 +180,7 @@ func TestTimeseries_normaliseTimeRange_Specified(t *testing.T) {
 }
 
 func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
-	if testing.Short() {
-		// Ignoring test in CI because it sometimes fails with a segmentation fault in DuckDB when running with -race
-		t.SkipNow()
-	}
+	testmode.Expensive(t)
 
 	time.Local = time.UTC
 
@@ -205,10 +201,7 @@ func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
 }
 
 func TestTimeseries_SparkOnly(t *testing.T) {
-	if testing.Short() {
-		// Ignoring test in CI because it sometimes fails with a segmentation fault in DuckDB when running with -race
-		t.SkipNow()
-	}
+	testmode.Expensive(t)
 
 	time.Local = time.UTC
 
