@@ -11,6 +11,7 @@
   import {
     Dialog,
     DialogContent,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
@@ -270,20 +271,6 @@
         </Dropdown.Root>
       </div>
 
-      <div class="mt-4">
-        <Button
-          submitForm
-          type="primary"
-          form={formId}
-          loading={$submitting}
-          disabled={hasInvalidEmails ||
-            $form.emails.every((e) => !e.trim()) ||
-            selectedProjects.length === 0}
-        >
-          Create guests
-        </Button>
-      </div>
-
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
           {failedInvites.length === 1
@@ -292,5 +279,19 @@
         </div>
       {/if}
     </form>
+    <DialogFooter>
+      <Button type="plain" onClick={() => (open = false)}>Cancel</Button>
+      <Button
+        type="primary"
+        submitForm
+        form={formId}
+        loading={$submitting}
+        disabled={hasInvalidEmails ||
+          $form.emails.every((e) => !e.trim()) ||
+          selectedProjects.length === 0}
+      >
+        Create guests
+      </Button>
+    </DialogFooter>
   </DialogContent>
 </Dialog>
