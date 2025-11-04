@@ -35,54 +35,41 @@ curl https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name
   -o openapi.json
 ```
 
-## Access tokens
+## Authentication
 
-There are three types of access tokens you can use with custom APIs.
+Rill APIs require authentication tokens. Choose the appropriate token type for your use case:
 
-### User tokens
+### Quick Start
 
-These tokens are tied to your personal user and access permissions. They are useful for local development, scripting, and AI integrations (like MCP). Not recommended for production use.
-
-**Creating a user token:**
+**For local testing:**
 ```bash
-# Basic creation
-rill token issue --display-name "Local Development"
-
-# With expiration (7 days)
-rill token issue --display-name "Testing" --ttl-minutes 10080
+# Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>
+# No authentication required when running locally
 ```
 
-User tokens inherit your personal permissions and are automatically revoked if you leave the organization. For comprehensive documentation on user tokens, including management, use cases, and best practices, see [User Tokens](/manage/user-tokens). Also see the [CLI reference](../reference/cli/token) for command details.
-
-### Service tokens
-
-These tokens are tied to your Rill organization and persist even if the creating user is removed. Service tokens can be assigned specific roles (organization-level or project-level) and custom attributes. They are recommended for use cases that integrate Rill into production systems (such as scheduled jobs or backend APIs).
-
-Since service tokens can have broad permissions, they MUST NOT be embedded directly in your frontend or otherwise shared with end users. See "Ephemeral tokens" below for how to create safe, short-lived access tokens.
-
-**Creating a service token:**
+**For Rill Cloud testing:**
 ```bash
-# Basic service token with organization role
-rill service create my-service --org-role admin
-
-# Service token with project role and custom attributes
-rill service create my-service \
-  --project my-project \
-  --project-role viewer \
-  --attributes '{"department":"engineering","region":"us-west"}'
+rill token issue --display-name "API Testing"
 ```
 
-**Using custom attributes with security policies:**
-
-Custom attributes allow you to implement fine-grained access control. For example, if you create a service token with a `customer_id` attribute:
-
+**For production systems:**
 ```bash
-rill service create customer-api \
+rill service create my-api \
   --project-role viewer \
   --attributes '{"customer_id":"acme-corp"}'
 ```
 
-You can reference these attributes in your security policies:
+:::tip Token Documentation
+For comprehensive guidance on token types, roles, custom attributes, and management:
+- **[User Tokens](/manage/user-tokens)** - Personal access tokens for development
+- **[Service Tokens](/manage/service-tokens)** - Long-lived tokens for production systems
+- **[Roles and Permissions](/manage/user-management#organization-and-project-roles)** - Understand access levels
+
+:::
+
+### Using custom attributes with security policies
+
+Service tokens can include custom attributes for fine-grained access control. Reference these attributes in your [security policies](/build/metrics-view/security#advanced-example-custom-attributes-embed-dashboards):
 
 ```yaml
 # In your metrics view
@@ -90,8 +77,6 @@ security:
   access: true
   row_filter: customer_id = '{{ .user.customer_id }}'
 ```
-
-For comprehensive documentation on service tokens, including roles, attributes, and management, see [Service Tokens](/manage/service-tokens). Also see the [CLI reference](../reference/cli/service) for command details.
 
 ### Ephemeral user tokens
 

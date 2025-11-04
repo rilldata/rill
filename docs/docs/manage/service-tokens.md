@@ -5,7 +5,7 @@ sidebar_label: Service Tokens
 sidebar_position: 25
 ---
 
-Service tokens (also called service accounts) provide programmatic access to Rill Cloud for production systems, scheduled jobs, backend APIs, and other automated workflows. Unlike user tokens, service tokens persist even if the creating user is removed from the organization.
+Service tokens (also called service accounts) provide programmatic access to Rill Cloud for production systems, scheduled jobs, backend APIs, and other automated workflows. Unlike [user tokens](/manage/user-tokens), service tokens persist even if the creating user is removed from the organization.
 
 ## Overview
 
@@ -42,7 +42,7 @@ rill service create my-service \
   --attributes '{"department":"engineering","region":"us-west","tier":"premium"}'
 ```
 
-**Example attributes:**a
+**Example attributes:**
 - `department` - Organizational department (engineering, sales, finance)
 - `region` - Geographic region (us-west, eu-central, ap-south)
 - `customer_id` - Customer identifier for multi-tenant systems
