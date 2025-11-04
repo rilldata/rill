@@ -260,6 +260,13 @@ export class DashboardState extends Message<DashboardState> {
    */
   pivotColumnAllDimensions: PivotElement[] = [];
 
+  /**
+   * Top N limit for row dimensions (undefined/0 = no limit)
+   *
+   * @generated from field: optional int32 pivot_row_limit = 41;
+   */
+  pivotRowLimit?: number;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -307,6 +314,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 34, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
+    { no: 41, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

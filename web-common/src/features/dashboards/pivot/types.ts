@@ -55,6 +55,7 @@ export interface PivotState {
   enableComparison: boolean;
   tableMode: PivotTableMode;
   activeCell: PivotCell | null;
+  rowLimit?: number; // Top N limit for row dimensions (undefined = no limit)
 }
 
 export type PivotTableMode = "flat" | "nest";
@@ -126,7 +127,8 @@ export type PivotMeasure = {
 
 export type PivotDimension = {
   def: string;
-  /* other props like sort criteria, limits can go here */
+  limit?: number; // Top N limit for this dimension
+  /* other props like sort criteria can go here */
 };
 
 export type PivotColumnSet = {

@@ -150,6 +150,8 @@ message DashboardState {
   repeated PivotElement pivot_row_all_dimensions = 35;
   // List of all dimensions selected for columns
   repeated PivotElement pivot_column_all_dimensions = 36;
+  // Top N limit for row dimensions (undefined/0 = no limit)
+  optional int32 pivot_row_limit = 41;
 }
 
 message DashboardTimeRange {

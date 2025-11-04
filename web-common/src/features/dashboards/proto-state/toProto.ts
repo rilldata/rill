@@ -330,6 +330,7 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotColumnPage: pivotState.columnPage,
     pivotEnableComparison: pivotState.enableComparison,
     pivotTableMode: ToProtoPivotTableModeMap[pivotState.tableMode],
+    pivotRowLimit: pivotState.rowLimit,
   };
 }
 

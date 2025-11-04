@@ -434,6 +434,7 @@ function fromPivotProto(
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
       ],
+    rowLimit: dashboard.pivotRowLimit,
   };
 }
 
@@ -448,6 +449,7 @@ function blankPivotState(): PivotState {
     enableComparison: true,
     activeCell: null,
     tableMode: "nest" as PivotTableMode,
+    rowLimit: undefined,
   };
 }
 

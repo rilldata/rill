@@ -347,6 +347,18 @@ const metricsViewReducers = {
     });
   },
 
+  setPivotRowLimit(name: string, rowLimit: number | undefined) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        rowLimit,
+        rowPage: 1,
+        expanded: {},
+        activeCell: null,
+      };
+    });
+  },
+
   setPivotActiveCell(name: string, rowId: string, columnId: string) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.pivot.activeCell = { rowId, columnId };

@@ -102,6 +102,8 @@
           )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
+        setRowLimit={(limit) =>
+          metricsExplorerStore.setPivotRowLimit($exploreName, limit)}
         {isFetching}
         bind:showPanels
       >

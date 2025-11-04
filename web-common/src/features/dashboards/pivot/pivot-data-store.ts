@@ -298,6 +298,10 @@ export function createPivotDataStore(
 
         if (!isFlat) {
           // Get sort order for the anchor dimension
+          const rowLimit = config.pivot.rowLimit;
+          const effectiveLimit = rowLimit
+            ? Math.min(rowLimit, NUM_ROWS_PER_PAGE).toString()
+            : NUM_ROWS_PER_PAGE.toString();
           rowDimensionAxisQuery = getAxisForDimensions(
             ctx,
             config,
@@ -306,7 +310,7 @@ export function createPivotDataStore(
             whereFilter,
             sortPivotBy,
             timeRange,
-            NUM_ROWS_PER_PAGE.toString(),
+            effectiveLimit,
             rowOffset.toString(),
           );
         }

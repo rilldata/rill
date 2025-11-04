@@ -25,10 +25,28 @@
     columns: PivotChipData[],
   ) => void;
   export let collapseAll: () => void;
+  export let setRowLimit: ((limit: number | undefined) => void) | undefined =
+    undefined;
 
-  $: ({ rows, columns, tableMode, expanded } = pivotState);
+  $: ({ rows, columns, tableMode, expanded, rowLimit } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
+  $: hasRowDimensions = rows.length > 0;
+
+  const limitOptions = [
+    { label: "All", value: undefined },
+    { label: "Top 5", value: 5 },
+    { label: "Top 10", value: 10 },
+    { label: "Top 20", value: 20 },
+    { label: "Top 50", value: 50 },
+    { label: "Top 100", value: 100 },
+  ];
+
+  function handleLimitChange(e: Event) {
+    const value = (e.target as HTMLSelectElement).value;
+    const limit = value === "" ? undefined : parseInt(value, 10);
+    setRowLimit?.(limit);
+  }
 
   /**
    * This method stores the previous nest state and passes it to
@@ -107,6 +125,22 @@
       <Collapse size="16px" />
       Collapse All
     </Button>
+
+    {#if !isFlat && hasRowDimensions && setRowLimit}
+      <div class="flex items-center gap-x-2">
+        <label for="pivot-limit" class="text-xs text-gray-600">Limit:</label>
+        <select
+          id="pivot-limit"
+          class="px-2 py-1 text-xs border border-gray-300 rounded"
+          value={rowLimit ?? ""}
+          on:change={handleLimitChange}
+        >
+          {#each limitOptions as option}
+            <option value={option.value ?? ""}>{option.label}</option>
+          {/each}
+        </select>
+      </div>
+    {/if}
 
     <slot name="export-menu" />
 
