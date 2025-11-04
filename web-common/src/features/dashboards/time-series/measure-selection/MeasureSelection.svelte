@@ -25,7 +25,7 @@
   export let inBounds: (min, max, value) => boolean;
 
   $: ({ instanceId } = $runtime);
-  const { exploreName, dashboardStore } = getStateManagers();
+  const { exploreName } = getStateManagers();
 
   const plotConfig: Writable<SimpleDataGraphicConfiguration> = getContext(
     contexts.config,

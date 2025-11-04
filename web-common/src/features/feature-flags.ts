@@ -60,7 +60,7 @@ class FeatureFlags {
   reports = new FeatureFlag("user", true);
   darkMode = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
-  dashboardChat = new FeatureFlag("user", true);
+  dashboardChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
 
   constructor() {
@@ -83,11 +83,11 @@ class FeatureFlags {
       }
 
       // Then apply project-specific overrides
-      // for (const key in userFlags) {
-      //   const flag = this[key] as FeatureFlag | undefined;
-      //   if (!flag || flag.internalOnly) continue;
-      //   flag.set(userFlags[key]);
-      // }
+      for (const key in userFlags) {
+        const flag = this[key] as FeatureFlag | undefined;
+        if (!flag || flag.internalOnly) continue;
+        flag.set(userFlags[key]);
+      }
     };
 
     // Responsively update flags based rill.yaml

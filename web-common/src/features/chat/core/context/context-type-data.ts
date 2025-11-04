@@ -2,22 +2,12 @@ import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
 import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
 import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
 import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
-import {
-  getDimensionDisplayName,
-  getMeasureDisplayName,
-} from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
-import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import {
   type RuntimeServiceCompleteBody,
   type V1Expression,
-  V1TimeGrain,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { DateTime, Interval } from "luxon";
-import { derived, readable, type Readable } from "svelte/store";
 
 export enum ConversationContextType {
   Explore = "explore",
