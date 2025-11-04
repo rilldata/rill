@@ -98,7 +98,7 @@
             try {
               await handleCreate(email);
               return { index, email, success: true };
-            } catch (e) {
+            } catch {
               return { index, email, success: false };
             }
           }),
