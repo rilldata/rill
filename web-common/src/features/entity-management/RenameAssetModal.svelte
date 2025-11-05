@@ -10,6 +10,7 @@
     useDirectoryNamesInDirectory,
     useFileNamesInDirectory,
   } from "@rilldata/web-common/features/entity-management/file-selectors";
+  import { getFilenameSelectionRange } from "@rilldata/web-common/features/entity-management/filename-selection-utils";
   import { defaults, setError, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -32,16 +33,12 @@
 
   const [folderName, fileName] = splitFolderAndFileName(filePath);
 
-  let selectionStart: number | undefined;
-  let selectionEnd: number | undefined;
-
-  if (!isDir && fileName) {
-    const lastDotIndex = fileName.lastIndexOf(".");
-    if (lastDotIndex > 0) {
-      selectionStart = 0;
-      selectionEnd = lastDotIndex;
-    }
-  }
+  // Calculate selection range for files (exclude extension)
+  const selectionRange = !isDir
+    ? getFilenameSelectionRange(fileName)
+    : undefined;
+  const selectionStart = selectionRange?.selectionStart;
+  const selectionEnd = selectionRange?.selectionEnd;
 
   const validationSchema = object({
     newName: string()

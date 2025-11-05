@@ -16,21 +16,10 @@
   export let size: "sm" | "md" | "lg" = "lg";
   export let showIndicator = false;
   export let editing = false;
+  export let selectionStart: number | undefined = undefined;
+  export let selectionEnd: number | undefined = undefined;
 
   $: editedValue = value;
-
-  let selectionStart: number | undefined = undefined;
-  let selectionEnd: number | undefined = undefined;
-  $: if (type === "File" && value) {
-    const lastDotIndex = value.lastIndexOf(".");
-    if (lastDotIndex > 0) {
-      selectionStart = 0;
-      selectionEnd = lastDotIndex;
-    } else {
-      selectionStart = undefined;
-      selectionEnd = undefined;
-    }
-  }
 
   async function triggerConfirm() {
     if (!editedValue) return;

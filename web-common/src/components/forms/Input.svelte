@@ -79,29 +79,57 @@
 
   $: hasValue = inputType === "number" ? !!value || value === 0 : !!value;
 
-  onMount(async () => {
-    if (claimFocusOnMount) {
-      if (inputElement) {
-        if (selectTextOnMount && inputElement instanceof HTMLInputElement) {
-          await tick();
-          inputElement.focus();
+  /**
+   * Type guard to check if an element is a text input
+   */
+  function isTextInput(
+    element: HTMLElement | undefined,
+  ): element is HTMLInputElement {
+    return element instanceof HTMLInputElement;
+  }
 
-          setTimeout(() => {
-            if (inputElement instanceof HTMLInputElement) {
-              if (selectionStart !== undefined && selectionEnd !== undefined) {
-                inputElement.setSelectionRange(selectionStart, selectionEnd);
-              } else {
-                inputElement.select();
-              }
-            }
-          }, 10);
-        } else {
-          inputElement.focus();
-        }
-      } else if (selectElement) {
-        selectElement.focus();
+  /**
+   * Applies focus and text selection to an input element.
+   * Uses a small delay to ensure browser completes focus before setting selection.
+   */
+  async function applyTextSelection(
+    element: HTMLInputElement,
+    start: number | undefined,
+    end: number | undefined,
+  ) {
+    await tick();
+    element.focus();
+
+    // Small timeout to wait for the browser to settle down after focus
+    setTimeout(() => {
+      if (start !== undefined && end !== undefined) {
+        element.setSelectionRange(start, end);
+      } else {
+        element.select();
       }
+    }, 10);
+  }
+
+  onMount(async () => {
+    if (!claimFocusOnMount) return;
+
+    // Priority 1: Select element (dropdowns)
+    if (selectElement) {
+      selectElement.focus();
+      return;
     }
+
+    // Priority 2: Input element (text inputs)
+    if (!inputElement) return;
+
+    // Simple focus for non-text inputs or when selection not requested
+    if (!selectTextOnMount || !isTextInput(inputElement)) {
+      inputElement.focus();
+      return;
+    }
+
+    // Apply text selection for text inputs
+    await applyTextSelection(inputElement, selectionStart, selectionEnd);
   });
 
   function onElementBlur(
