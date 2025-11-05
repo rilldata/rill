@@ -241,9 +241,9 @@ export function useDatabasesFromSchemas(instanceId: string, connector: string) {
 }
 
 /**
- * Fetches schemas for a specific database
+ * List all schemas across databases
  */
-export function useSchemasForDatabase(
+export function useListDatabaseSchemas(
   instanceId: string,
   connector: string,
   database: string,
