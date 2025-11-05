@@ -24,8 +24,15 @@
     value: string,
   ) => { name: string; photoUrl?: string } | undefined = () => undefined;
   export let enableClientFiltering = true; // When false, pass options as-is (for server-side filtering)
+  // Infinite scrolling support (optional)
+  export let loadMore: (() => void | Promise<void>) | undefined = undefined;
+  export let hasMore: boolean = false;
+  export let isLoadingMore: boolean = false;
+  export let loadMoreThresholdPx: number = 24;
 
   let initialSelectedItems: Selected<string>[] = [];
+  let contentEl: HTMLElement | null = null;
+  let isRequestInFlight = false;
 
   onMount(() => {
     // Initialize the selected state for bits-ui combobox
@@ -51,8 +58,6 @@
         })
       : options;
 
-  $: console.log("filteredItems:", filteredItems);
-
   // Update initialSelectedItems when selectedValues changes
   $: initialSelectedItems = selectedValues.map((value) => ({
     value,
@@ -70,6 +75,20 @@
     } catch (e) {
       console.error("Error getting metadata:", e);
       return undefined;
+    }
+  }
+
+  function maybeLoadMoreOnScroll(e: Event) {
+    if (!loadMore || !contentEl) return;
+    const target = contentEl;
+    const { scrollTop, clientHeight, scrollHeight } = target;
+    const nearBottom =
+      scrollTop + clientHeight >= scrollHeight - loadMoreThresholdPx;
+    if (nearBottom && hasMore && !isLoadingMore && !isRequestInFlight) {
+      isRequestInFlight = true;
+      Promise.resolve(loadMore()).finally(() => {
+        isRequestInFlight = false;
+      });
     }
   }
 </script>
@@ -101,31 +120,44 @@
 
   <!-- NOTE: 52px * 4 for 208px to show scroller -->
   <Combobox.Content
-    class="w-full rounded-sm border border-muted bg-surface p-[6px] shadow-md outline-none max-h-[208px] overflow-y-auto"
+    class="w-full rounded-sm border border-muted bg-surface p-[6px] shadow-md outline-none"
     sideOffset={8}
   >
-    {#if filteredItems.length === 0}
-      <div class="px-4 py-2 text-xs text-gray-500">No results found</div>
-    {:else}
-      {#each filteredItems as item (item.value)}
-        <Combobox.Item
-          class="flex h-[52px] w-full select-none items-center rounded px-4 py-2 text-sm outline-none transition-all duration-75 data-[highlighted]:bg-slate-100"
-          value={item.value}
-          label={item.label}
-          {disabled}
-        >
-          <AvatarListItem
-            name={getValidMetadata(item.value)?.name || item.label}
-            email={item.value}
-            photoUrl={getValidMetadata(item.value)?.photoUrl}
-            leftSpacing={false}
-          />
-          <div class="grow"></div>
-          <Combobox.ItemIndicator>
-            <Check size="16px" />
-          </Combobox.ItemIndicator>
-        </Combobox.Item>
-      {/each}
-    {/if}
+    <div
+      class="max-h-[208px] overflow-y-auto"
+      bind:this={contentEl}
+      on:scroll={maybeLoadMoreOnScroll}
+    >
+      {#if filteredItems.length === 0}
+        <div class="px-4 py-2 text-xs text-gray-500">No results found</div>
+      {:else}
+        {#each filteredItems as item (item.value)}
+          <Combobox.Item
+            class="flex h-[52px] w-full select-none items-center rounded px-4 py-2 text-sm outline-none transition-all duration-75 data-[highlighted]:bg-slate-100"
+            value={item.value}
+            label={item.label}
+            {disabled}
+          >
+            <AvatarListItem
+              name={getValidMetadata(item.value)?.name || item.label}
+              email={item.value}
+              photoUrl={getValidMetadata(item.value)?.photoUrl}
+              leftSpacing={false}
+            />
+            <div class="grow"></div>
+            <Combobox.ItemIndicator>
+              <Check size="16px" />
+            </Combobox.ItemIndicator>
+          </Combobox.Item>
+        {/each}
+        {#if hasMore && isLoadingMore}
+          <div
+            class="px-4 py-2 text-xs text-gray-500 flex items-center justify-center"
+          >
+            Loading...
+          </div>
+        {/if}
+      {/if}
+    </div>
   </Combobox.Content>
 </Combobox.Root>

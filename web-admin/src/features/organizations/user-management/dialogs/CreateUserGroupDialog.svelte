@@ -4,7 +4,7 @@
   import {
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
-    createAdminServiceListOrganizationMemberUsers,
+    createAdminServiceListOrganizationMemberUsersInfinite,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
@@ -40,34 +40,60 @@
   let pendingRemovals: string[] = [];
 
   // Debounce search input to avoid too many API calls
-  $: {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      debouncedSearchText = searchInput;
-    }, 300);
-  }
+  $: searchInput,
+    (function () {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debouncedSearchText = searchInput;
+      }, 300);
+    })();
 
   $: organization = $page.params.organization;
 
-  // Query organization users when user types (debounced)
-  // Also fetch a small default list when there's no search to show suggestions
-  $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
-    organization,
-    debouncedSearchText
-      ? {
-          pageSize: 50,
-          searchPattern: `${debouncedSearchText}%`,
-        }
-      : { pageSize: 5 },
-    {
-      query: {
-        // Enable while dialog is open so we can show default suggestions
-        enabled: open,
+  // Infinite query for organization users (debounced by search)
+  $: organizationUsersInfiniteQuery =
+    createAdminServiceListOrganizationMemberUsersInfinite(
+      organization,
+      debouncedSearchText
+        ? {
+            pageSize: 50,
+            searchPattern: `${debouncedSearchText}%`,
+          }
+        : { pageSize: 50 },
+      {
+        query: {
+          enabled: open,
+          getNextPageParam: (lastPage) => {
+            return lastPage.nextPageToken !== ""
+              ? lastPage.nextPageToken
+              : undefined;
+          },
+        },
       },
-    },
-  );
+    );
 
-  $: organizationUsers = $organizationUsersQuery.data?.members ?? [];
+  $: organizationUsers = $organizationUsersInfiniteQuery.data?.pages
+    ? $organizationUsersInfiniteQuery.data.pages.flatMap((p) => p.members ?? [])
+    : [];
+
+  $: hasMoreUsers =
+    // Prefer built-in flag if available
+    ($organizationUsersInfiniteQuery?.hasNextPage ??
+      (($organizationUsersInfiniteQuery?.data?.pages?.length ?? 0) > 0 &&
+        ($organizationUsersInfiniteQuery?.data?.pages?.[
+          ($organizationUsersInfiniteQuery?.data?.pages?.length ?? 1) - 1
+        ]?.nextPageToken ?? "") !== "")) ||
+    false;
+
+  $: isLoadingMoreUsers =
+    $organizationUsersInfiniteQuery?.isFetchingNextPage ?? false;
+
+  function loadMoreUsers() {
+    const fetchNext = $organizationUsersInfiniteQuery?.fetchNextPage;
+    if (typeof fetchNext === "function") {
+      fetchNext();
+    }
+  }
 
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
@@ -274,6 +300,9 @@
             placeholder="Search to add/remove users"
             {getMetadata}
             enableClientFiltering={false}
+            loadMore={loadMoreUsers}
+            hasMore={hasMoreUsers}
+            isLoadingMore={isLoadingMoreUsers}
             selectedValues={[
               ...new Set(
                 [
