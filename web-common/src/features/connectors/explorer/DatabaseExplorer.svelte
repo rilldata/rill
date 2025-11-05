@@ -12,12 +12,6 @@
 
   $: connectorName = connector?.name as string;
 
-  // TODO: if unified api is enabled, can we remove this?
-  $: shouldUseNewAPI =
-    connector.driver?.implementsSqlStore ||
-    connector.driver?.implementsWarehouse ||
-    !connector.driver?.implementsOlap;
-
   $: databaseSchemasQuery = useListDatabaseSchemas(instanceId, connectorName);
 
   $: ({ data, error, isLoading } = $databaseSchemasQuery);
@@ -36,13 +30,7 @@
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry
-            {instanceId}
-            {connector}
-            {database}
-            {store}
-            useNewAPI={shouldUseNewAPI}
-          />
+          <DatabaseEntry {instanceId} {connector} {database} {store} />
         {/each}
       </ol>
     {/if}

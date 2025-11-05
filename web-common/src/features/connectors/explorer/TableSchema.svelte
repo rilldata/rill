@@ -9,18 +9,8 @@
   export let database: string = ""; // The backend interprets an empty string as the default database
   export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
   export let table: string;
-  export let useNewAPI: boolean = false;
 
   $: ({ instanceId } = $runtime);
-
-  $: legacyColumnsQuery = !useNewAPI
-    ? createQueryServiceTableColumns(instanceId, table, {
-        connector,
-        database,
-        databaseSchema,
-      })
-    : null;
-
   $: newTableQuery = useGetTable(
     instanceId,
     connector,
@@ -29,25 +19,17 @@
     table,
   );
 
-  // Normalize data from both APIs
-  $: columns = useNewAPI
-    ? // New API returns schema as { [columnName]: "type" }
-      $newTableQuery?.data?.schema
-      ? Object.entries($newTableQuery.data.schema).map(([name, type]) => ({
-          name,
-          type: type as string,
-        }))
-      : []
-    : // Legacy API returns profileColumns array
-      ($legacyColumnsQuery?.data?.profileColumns ?? []);
+  // New API returns schema as { [columnName]: "type" }
+  $: columns = $newTableQuery?.data?.schema
+    ? Object.entries($newTableQuery.data.schema).map(([name, type]) => ({
+        name,
+        type: type as string,
+      }))
+    : [];
 
-  $: error = useNewAPI ? $newTableQuery?.error : $legacyColumnsQuery?.error;
-  $: isError = useNewAPI
-    ? !!$newTableQuery?.error
-    : !!$legacyColumnsQuery?.error;
-  $: isLoading = useNewAPI
-    ? $newTableQuery?.isLoading
-    : $legacyColumnsQuery?.isLoading;
+  $: error = $newTableQuery?.error;
+  $: isError = !!$newTableQuery?.error;
+  $: isLoading = $newTableQuery?.isLoading;
 
   function prettyPrintType(type: string) {
     // If the type starts with "CODE_", remove it

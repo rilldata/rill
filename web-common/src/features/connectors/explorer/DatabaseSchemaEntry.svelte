@@ -11,7 +11,6 @@
   export let database: string;
   export let databaseSchema: string;
   export let store: ConnectorExplorerStore;
-  export let useNewAPI: boolean = false;
 
   $: connectorName = connector?.name as string;
 
@@ -106,7 +105,6 @@
             table={tableInfo.name}
             hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes ?? false}
             {store}
-            {useNewAPI}
           />
         {/each}
       </ol>

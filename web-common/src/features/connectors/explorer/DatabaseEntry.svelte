@@ -12,7 +12,6 @@
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let store: ConnectorExplorerStore;
-  export let useNewAPI: boolean = false;
 
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName, database);
@@ -61,7 +60,6 @@
               {connector}
               {database}
               {store}
-              {useNewAPI}
               databaseSchema={schema ?? ""}
             />
           {/each}
