@@ -143,7 +143,7 @@ export function getUserCounts(organization: string) {
           .length ?? 0;
 
       return {
-        membersCount: allUsersCounts + userInvitesCounts - guestUsersCounts,
+        membersCount: allUsersCounts - guestUsersCounts,
         guestsCount: guestUsersCounts,
         groupsCount,
       };
