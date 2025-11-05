@@ -199,7 +199,6 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 		if strings.HasPrefix(colName, "error(") && dataType == "\"NULL\"" {
 			return nil, fmt.Errorf("failed to get schema (try setting `materialize: true` — this usually happens for non-materialized views): %s", colName)
 		}
-
 		if pbType, err := databaseTypeToPB(dataType, false); err != nil {
 			if errors.Is(err, errUnsupportedType) {
 				schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)

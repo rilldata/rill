@@ -38,11 +38,16 @@
 
   $: minWidth = getMinWidth(sparkline);
 
-  $: title = kpiGridProperties.title;
-  $: description = kpiGridProperties.description;
+  $: ({ title, description, show_description_as_tooltip } = kpiGridProperties);
 </script>
 
-<ComponentHeader {component} {title} {description} {filters} />
+<ComponentHeader
+  {component}
+  {title}
+  {description}
+  showDescriptionAsTooltip={show_description_as_tooltip}
+  {filters}
+/>
 
 {#if schema.isValid}
   <div class="h-fit p-0 grow relative" class:!p-0={kpis.length === 1}>

@@ -38,8 +38,14 @@
 
   $: chartSpec = $specStore;
 
-  $: ({ title, description, metrics_view, time_filters, dimension_filters } =
-    chartSpec);
+  $: ({
+    title,
+    description,
+    show_description_as_tooltip,
+    metrics_view,
+    time_filters,
+    dimension_filters,
+  } = chartSpec);
 
   $: schemaStore = validateChartSchema(metricsView, chartSpec);
 
@@ -76,6 +82,7 @@
         faint={!title}
         title={title || component.chartTitle($chartData?.fields)}
         {description}
+        showDescriptionAsTooltip={show_description_as_tooltip}
         {filters}
         {component}
       />
