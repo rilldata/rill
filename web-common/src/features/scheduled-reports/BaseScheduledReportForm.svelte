@@ -5,8 +5,10 @@
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
-  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
+  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
+  import ReportSourceSelector from "@rilldata/web-common/features/scheduled-reports/report-source/ReportSourceSelector.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import {
     ReportRunAs,
@@ -26,11 +28,11 @@
   export let formId: string;
   export let data: Readable<ReportValues>;
   export let errors: SuperFormErrors<ReportValues>;
-  export let submit: () => void;
   export let enhance;
-  export let exploreName: string;
-  export let filters: Filters;
-  export let timeControls: TimeControls;
+  export let filters: Filters | undefined = undefined;
+  export let timeControls: TimeControls | undefined = undefined;
+  export let height: string = "h-[600px]";
+  export let submit: () => void;
 
   const RUN_AS_OPTIONS = [
     {
@@ -51,6 +53,8 @@
 
   $: ({ instanceId } = $runtime);
 
+  const { fullPageReportEditor } = featureFlags;
+
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
 </script>
 
@@ -61,8 +65,7 @@
   on:submit|preventDefault={submit}
   use:enhance
 >
-  <span>Email recurring exports to recipients.</span>
-  <div class="flex flex-col gap-y-3 w-full h-[600px] overflow-y-scroll">
+  <div class="flex flex-col gap-y-3 w-full overflow-y-scroll {height}">
     <Input
       bind:value={$data["title"]}
       errors={$errors["title"]}
@@ -70,6 +73,9 @@
       label="Report title"
       placeholder="My report"
     />
+    {#if $fullPageReportEditor}
+      <ReportSourceSelector {data} />
+    {/if}
     <Select
       bind:value={$data["webOpenMode"]}
       id="webOpenMode"
@@ -82,7 +88,7 @@
         {selectedRunAsOption.description}
       </div>
     {/if}
-    <ScheduleForm {data} {exploreName} />
+    <ScheduleForm {data} exploreName={$data["exploreName"]} />
     <Select
       bind:value={$data["exportFormat"]}
       id="exportFormat"
@@ -124,18 +130,20 @@
       </Tooltip>
     </div>
 
-    <div class="flex flex-col gap-y-3">
-      <InputLabel label="Filters" id="filters" capitalize={false} />
-      <FiltersForm {filters} {timeControls} side="top" />
-    </div>
+    {#if !$fullPageReportEditor && filters && timeControls}
+      <div class="flex flex-col gap-y-3">
+        <InputLabel label="Filters" id="filters" capitalize={false} />
+        <FiltersForm {filters} {timeControls} side="top" />
+      </div>
 
-    <RowsAndColumnsForm
-      bind:rows={$data["rows"]}
-      bind:columns={$data["columns"]}
-      columnErrors={$errors["columns"]}
-      {instanceId}
-      {exploreName}
-    />
+      <RowsAndColumnsForm
+        bind:rows={$data["rows"]}
+        bind:columns={$data["columns"]}
+        columnErrors={$errors["columns"]}
+        {instanceId}
+        exploreName={$data["exploreName"]}
+      />
+    {/if}
 
     <MultiInput
       id="emailRecipients"

@@ -11,6 +11,7 @@
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { getMappedExploreUrl } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -37,6 +38,8 @@
   export let report: string;
 
   $: ({ instanceId } = $runtime);
+
+  const { fullPageReportEditor } = featureFlags;
 
   $: reportQuery = useReport(instanceId, report);
   $: isReportCreatedByCode = useIsReportCreatedByCode(instanceId, report);
@@ -85,8 +88,13 @@
   const deleteReport = createAdminServiceDeleteReport();
 
   let showEditReportDialog = false;
+
   function handleEditReport() {
-    showEditReportDialog = true;
+    if ($fullPageReportEditor) {
+      void goto(`/${organization}/${project}/-/reports/${report}/edit`);
+    } else {
+      showEditReportDialog = true;
+    }
   }
 
   async function handleDeleteReport() {
@@ -95,10 +103,10 @@
       project,
       name: $reportQuery.data.resource.meta.name.name,
     });
-    queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       queryKey: getRuntimeServiceListResourcesQueryKey(instanceId),
     });
-    goto(`/${organization}/${project}/-/reports`);
+    void goto(`/${organization}/${project}/-/reports`);
   }
 </script>
 

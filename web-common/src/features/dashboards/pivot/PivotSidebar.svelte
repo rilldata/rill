@@ -17,6 +17,7 @@
     TimeControlState,
     "timeStart" | "timeEnd" | "minTimeGrain"
   >;
+  export let addField: (value: PivotChipData, rows: boolean) => void;
 
   $: ({ rows, columns, tableMode } = pivotState);
   $: splitColumns = splitPivotChips(columns);
@@ -95,8 +96,12 @@
     {extraSpace}
     {chipsPerSection}
     items={timeGrainOptions}
+    {measures}
+    {dimensions}
+    {timeControlsForPillActions}
     {tableMode}
     otherChipCounts={[filteredDimensions.length, filteredMeasures.length]}
+    {addField}
   />
 
   <PivotDrag
@@ -104,7 +109,11 @@
     {extraSpace}
     {chipsPerSection}
     items={filteredMeasures}
+    {measures}
+    {dimensions}
+    {timeControlsForPillActions}
     otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
+    {addField}
   />
 
   <PivotDrag
@@ -112,8 +121,12 @@
     {extraSpace}
     {chipsPerSection}
     items={filteredDimensions}
+    {measures}
+    {dimensions}
+    {timeControlsForPillActions}
     {tableMode}
     otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
+    {addField}
   />
 </div>
 

@@ -221,7 +221,7 @@ async function mergeDashboardFromUrlState(
   }
 }
 
-function getPivotStateFromRequest(
+export function getPivotStateFromRequest(
   req: V1MetricsViewAggregationRequest,
 ): PivotState {
   const { rows, dimensionColumns, measureColumns } =
@@ -259,7 +259,7 @@ function getPivotStateFromRequest(
     ...measureColumns.map(mapMeasure),
   ];
 
-  const isFlat = !req.pivotOn?.length;
+  const isFlat = req.pivotOn === undefined;
 
   const tableMode = isFlat ? "flat" : "nest";
 

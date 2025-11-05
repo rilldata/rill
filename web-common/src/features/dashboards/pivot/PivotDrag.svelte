@@ -9,13 +9,22 @@
 </script>
 
 <script lang="ts">
+  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+
   export let title: PivotSidebarSection;
   export let items: PivotChipData[];
+  export let measures: PivotChipData[];
+  export let dimensions: PivotChipData[];
+  export let timeControlsForPillActions: Pick<
+    TimeControlState,
+    "timeStart" | "timeEnd" | "minTimeGrain"
+  >;
   export let collapsed = false;
   export let chipsPerSection: number;
   export let extraSpace: boolean;
   export let otherChipCounts: number[];
   export let tableMode: PivotTableMode = "nest";
+  export let addField: (value: PivotChipData, rows: boolean) => void;
 
   $: fit =
     extraSpace ||
@@ -44,7 +53,15 @@
   <div class="w-full h-fit overflow-y-auto overflow-x-hidden px-[2px] pb-2">
     {#if !collapsed}
       {#if items.length}
-        <DragList {items} zone={title} {tableMode} />
+        <DragList
+          {items}
+          {measures}
+          {dimensions}
+          {timeControlsForPillActions}
+          zone={title}
+          {tableMode}
+          {addField}
+        />
       {:else}
         <p class="text-gray-500 my-1">No available fields</p>
       {/if}

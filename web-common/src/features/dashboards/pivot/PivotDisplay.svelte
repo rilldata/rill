@@ -69,6 +69,8 @@
       measures={$measures}
       dimensions={$dimensions}
       {timeControlsForPillActions}
+      addField={(value, rows) =>
+        metricsExplorerStore.addPivotField($exploreName, value, rows)}
     />
   {/if}
   <div
@@ -79,10 +81,15 @@
     {#if showPanels}
       <PivotHeader
         pivotState={$dashboardStore.pivot}
+        measures={$measures}
+        dimensions={$dimensions}
+        {timeControlsForPillActions}
         setRows={(rows) =>
           metricsExplorerStore.setPivotRows($exploreName, rows)}
         setColumns={(columns) =>
           metricsExplorerStore.setPivotColumns($exploreName, columns)}
+        addField={(value, rows) =>
+          metricsExplorerStore.addPivotField($exploreName, value, rows)}
       />
     {/if}
     <div

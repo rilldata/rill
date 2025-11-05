@@ -6,8 +6,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { writable } from "svelte/store";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import AddField from "./AddField.svelte";
   import PivotChip from "./PivotChip.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
@@ -33,19 +31,27 @@
 </script>
 
 <script lang="ts">
-  export let items: PivotChipData[] = [];
-  export let placeholder: string | null = null;
-  export let zone: Zone;
-  export let tableMode: PivotTableMode = "nest";
-  export let onUpdate: (items: PivotChipData[]) => void = () => {};
-
   import {
     handleTimeChipClick,
     handleTimeChipDrop,
     isNewTimeChip,
     updateTimeChipGrain,
   } from "@rilldata/web-common/features/dashboards/pivot/time-pill-utils";
+  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
   import { timePillSelectors } from "./time-pill-store";
+
+  export let items: PivotChipData[] = [];
+  export let measures: PivotChipData[];
+  export let dimensions: PivotChipData[];
+  export let timeControlsForPillActions: Pick<
+    TimeControlState,
+    "timeStart" | "timeEnd" | "minTimeGrain"
+  >;
+  export let placeholder: string | null = null;
+  export let zone: Zone;
+  export let tableMode: PivotTableMode = "nest";
+  export let onUpdate: (items: PivotChipData[]) => void = () => {};
+  export let addField: (value: PivotChipData, rows: boolean) => void;
 
   const isDropLocation = zone === "columns" || zone === "rows";
 
@@ -55,8 +61,6 @@
   let container: HTMLDivElement;
   let offset = { x: 0, y: 0 };
   let dragStart = { left: 0, top: 0 };
-
-  const { exploreName } = getStateManagers();
 
   $: ghostIndex = $_ghostIndex;
   $: dragData = $dragDataStore;
@@ -205,7 +209,7 @@
     if (item.type === PivotChipType.Time) {
       itemToAdd = handleTimeChipClick(item, availableTimeGrains);
     }
-    metricsExplorerStore.addPivotField($exploreName, itemToAdd, true);
+    addField(itemToAdd, true);
   }
 
   function handleColumnClick(item: PivotChipData) {
@@ -213,7 +217,7 @@
     if (item.type === PivotChipType.Time) {
       itemToAdd = handleTimeChipClick(item, availableTimeGrains);
     }
-    metricsExplorerStore.addPivotField($exploreName, itemToAdd, false);
+    addField(itemToAdd, false);
   }
 
   function handleTimeGrainSelect(item: PivotChipData, timeGrain: V1TimeGrain) {
@@ -305,8 +309,9 @@
               >
                 <Row size="16px" />
               </button>
-              <TooltipContent slot="tooltip-content">Add to rows</TooltipContent
-              >
+              <TooltipContent slot="tooltip-content">
+                Add to rows
+              </TooltipContent>
             </Tooltip>
           {/if}
 
@@ -340,7 +345,13 @@
   {/if}
 
   {#if zone === "columns" || zone === "rows"}
-    <AddField {zone} />
+    <AddField
+      {zone}
+      {measures}
+      {dimensions}
+      {timeControlsForPillActions}
+      {addField}
+    />
     {#if items.length}
       <Button
         type="text"

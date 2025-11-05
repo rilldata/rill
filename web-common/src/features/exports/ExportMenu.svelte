@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -24,6 +26,8 @@
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
 
+  const { fullPageReportEditor } = featureFlags;
+
   let showScheduledReportDialog = false;
   let open = false;
 
@@ -40,13 +44,15 @@
   const exportDash = createQueryServiceExport();
   const { reports, adminServer, exportHeader } = featureFlags;
 
+  $: ({ instanceId } = $runtime);
+
   async function handleExport(options: {
     format: V1ExportFormat;
     includeHeader?: boolean;
   }) {
     const { format, includeHeader = false } = options;
     const result = await $exportDash.mutateAsync({
-      instanceId: get(runtime).instanceId,
+      instanceId,
       data: {
         query: exportQuery,
         format,
@@ -73,6 +79,24 @@
       ));
     }
   });
+
+  function createScheduledReport() {
+    if (!$fullPageReportEditor) {
+      showScheduledReportDialog = true;
+      return;
+    }
+
+    if (!exploreName) return;
+
+    const pageState = get(page);
+    const { organization, project } = pageState.params;
+    const url = new URL(pageState.url);
+    url.pathname = `/${organization}/${project}/-/reports/-/create`;
+    url.search = "";
+    url.searchParams.set("explore", exploreName);
+    url.searchParams.set("query", JSON.stringify(scheduledReportQuery));
+    void goto(url);
+  }
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -145,7 +169,7 @@
     {/if}
     {#if includeScheduledReport && $reports && exploreName}
       <DropdownMenu.Item
-        on:click={() => (showScheduledReportDialog = true)}
+        on:click={createScheduledReport}
         disabled={!scheduledReportQuery}
       >
         Create scheduled report...

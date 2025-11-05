@@ -171,6 +171,8 @@
     props.mode === "create"
       ? getNewReportInitialFormValues(
           $user.data?.user?.email,
+          "", // Not used here
+          props.exploreName,
           aggregationRequest,
         )
       : getExistingReportInitialFormValues(
@@ -300,7 +302,6 @@
       {errors}
       {submit}
       {enhance}
-      exploreName={exploreName ?? ""}
       {filters}
       {timeControls}
     />
