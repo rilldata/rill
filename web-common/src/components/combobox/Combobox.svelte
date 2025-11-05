@@ -77,7 +77,7 @@
     }
   }
 
-  function maybeLoadMoreOnScroll(e: Event) {
+  function maybeLoadMoreOnScroll() {
     if (!loadMore || !contentEl) return;
     const target = contentEl;
     const { scrollTop, clientHeight, scrollHeight } = target;
