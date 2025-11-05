@@ -53,6 +53,9 @@ func TestManagedDeploy(t *testing.T) {
 
 	// cleanup repo
 	t.Cleanup(func() {
+		// delete github repo
+		// currently github repos are deleted by a background job
+		// but for test cleanup we will delete it here directly
 		owner, repo, ok := gitutil.SplitGithubRemote(resp.Project.GitRemote)
 		require.True(t, ok, "invalid github remote: %s", resp.Project.GitRemote)
 		_, err = ghClient.Repositories.Delete(context.Background(), owner, repo)
