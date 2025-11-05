@@ -72,8 +72,7 @@
   function getValidMetadata(value: string) {
     try {
       return getMetadata(value);
-    } catch (e) {
-      console.error("Error getting metadata:", e);
+    } catch {
       return undefined;
     }
   }
