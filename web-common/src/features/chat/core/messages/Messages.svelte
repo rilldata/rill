@@ -29,6 +29,18 @@
   // Data
   $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
 
+  // Build a map of result messages by parent ID for correlation with calls (excluding router_agent)
+  $: resultMessagesByParentId = new Map(
+    messages
+      .filter((msg) => msg.type === "result" && msg.tool !== "router_agent")
+      .map((msg) => [msg.parentId, msg]),
+  );
+
+  // Filter out tool result messages (but keep router_agent results which are assistant responses)
+  $: displayMessages = messages.filter(
+    (msg) => msg.type !== "result" || msg.tool === "router_agent",
+  );
+
   // Auto-scroll to bottom when messages change or loading state changes
   afterUpdate(() => {
     if (messagesContainer && layout === "sidebar") {
@@ -66,8 +78,11 @@
       <div class="chat-empty-subtitle">Happy to help explore your data</div>
     </div>
   {:else}
-    {#each messages as msg (msg.id)}
-      <Message message={msg} />
+    {#each displayMessages as msg (msg.id)}
+      <Message
+        message={msg}
+        resultMessage={resultMessagesByParentId.get(msg.id)}
+      />
     {/each}
   {/if}
   {#if isStreaming}

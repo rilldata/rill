@@ -10,6 +10,7 @@
 
   export let message: V1Message;
   export let content: string;
+  export let role: string = "";
 
   const exploreNameStore = derived(
     page,
@@ -24,8 +25,6 @@
     renderedInExplore && hasMapper
       ? getCitationUrlRewriter($mapperStore.data!)
       : undefined;
-
-  $: role = message.role;
 </script>
 
 <div class="chat-message chat-message--{role}">

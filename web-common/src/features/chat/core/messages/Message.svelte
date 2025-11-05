@@ -1,33 +1,55 @@
 <script lang="ts">
   import type { V1Message } from "../../../../runtime-client";
+  import CallMessage from "./CallMessage.svelte";
+  import ProgressMessage from "./ProgressMessage.svelte";
   import TextMessage from "./TextMessage.svelte";
-  import ToolMessage from "./ToolMessage.svelte";
 
   export let message: V1Message;
+  export let resultMessage: V1Message | undefined = undefined;
 
-  // Helper to get text content from message
-  function getTextContent(message: V1Message): string {
-    if (!message.content) return "";
-    return message.content
-      .filter((block) => block.text)
-      .map((block) => block.text)
-      .join(" ");
+  $: effectiveRole = getEffectiveRole(message);
+  $: isRouterAgent = isRouterAgentMessage(message);
+  $: content = extractTextContent(message);
+
+  function getEffectiveRole(message: V1Message): string {
+    if (message.type === "call" && message.tool === "router_agent") {
+      return "user";
+    }
+    if (message.type === "result" && message.tool === "router_agent") {
+      return "assistant";
+    }
+    return message.role || "";
   }
 
-  // Check if message has only text content
-  function hasOnlyText(message: V1Message): boolean {
-    if (!message.content || message.content.length === 0) return true;
-    return message.content.every(
-      (block) => block.text && !block.toolCall && !block.toolResult,
-    );
+  function extractTextContent(message: V1Message): string {
+    const rawContent = message.contentData || "";
+
+    // For router_agent messages, the contentData is JSON with prompt/response fields
+    if (message.tool === "router_agent" && message.contentType === "json") {
+      try {
+        const parsed = JSON.parse(rawContent);
+        // Extract prompt for calls, response for results
+        return parsed.prompt || parsed.response || rawContent;
+      } catch {
+        return rawContent;
+      }
+    }
+
+    return rawContent;
   }
 
-  $: isTextOnly = hasOnlyText(message);
-  $: textContent = getTextContent(message);
+  function isRouterAgentMessage(message: V1Message): boolean {
+    return message.tool === "router_agent";
+  }
 </script>
 
-{#if isTextOnly}
-  <TextMessage {message} content={textContent} />
-{:else}
-  <ToolMessage {message} />
+{#if isRouterAgent}
+  <!-- User prompts and assistant responses -->
+  <TextMessage {message} {content} role={effectiveRole} />
+{:else if message.type === "progress"}
+  <!-- Progress/thinking messages -->
+  <ProgressMessage {message} />
+{:else if message.type === "call"}
+  <!-- Tool call messages (results will be passed in to show together) -->
+  <CallMessage {message} {resultMessage} />
 {/if}
