@@ -99,8 +99,16 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if err != nil {
 			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
 		}
-		inputProps.InternalCreateSecretSQL = createSecretSQL
-		inputProps.InternalDropSecretSQL = dropSecretSQL
+		if inputProps.InternalCreateSecretSQL == "" {
+			inputProps.InternalCreateSecretSQL = createSecretSQL
+		} else {
+			inputProps.InternalCreateSecretSQL += ";" + createSecretSQL
+		}
+		if inputProps.InternalDropSecretSQL == "" {
+			inputProps.InternalDropSecretSQL = dropSecretSQL
+		} else {
+			inputProps.InternalDropSecretSQL += ";" + dropSecretSQL
+		}
 	}
 
 	originalPreExec := inputProps.PreExec
