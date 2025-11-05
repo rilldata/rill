@@ -48,9 +48,15 @@
   $: safeData = Array.isArray(data) ? data : [];
 
   const UserCell = <ColumnDef<OrgUser, any>>{
-    accessorKey: "user",
+    accessorKey: "userName",
     header: "User",
-    enableSorting: false,
+    enableSorting: true,
+    sortAscFirst: true,
+    sortingFn: (rowA, rowB) => {
+      const nameA = (rowA.original.userName ?? rowA.original.email ?? "").toLowerCase();
+      const nameB = (rowB.original.userName ?? rowB.original.email ?? "").toLowerCase();
+      return nameA.localeCompare(nameB);
+    },
     cell: ({ row }) =>
       flexRender(UserCompositeCell, {
         name: row.original.userName ?? row.original.email,

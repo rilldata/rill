@@ -30,8 +30,10 @@
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [];
 
-  // Initialize sorting for sortDescFirst column
+  // Initialize sorting for sortDescFirst or sortAscFirst column
   const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
+  const sortAscFirstColumn = columns.find((col) => col.sortAscFirst);
+  
   if (sortDescFirstColumn) {
     const columnId =
       "id" in sortDescFirstColumn
@@ -46,6 +48,22 @@
       {
         id: columnId as string,
         desc: true,
+      },
+    ];
+  } else if (sortAscFirstColumn) {
+    const columnId =
+      "id" in sortAscFirstColumn
+        ? sortAscFirstColumn.id
+        : "accessorKey" in sortAscFirstColumn
+          ? sortAscFirstColumn.accessorKey
+          : "accessorFn" in sortAscFirstColumn
+            ? (sortAscFirstColumn.header as string)
+            : Object.keys(sortAscFirstColumn)[0];
+
+    sorting = [
+      {
+        id: columnId as string,
+        desc: false,
       },
     ];
   }
