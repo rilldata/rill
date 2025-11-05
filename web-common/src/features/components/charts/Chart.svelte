@@ -68,21 +68,16 @@
       fn: (val: number) =>
         humanizeDataType(val, FormatPreset.HUMANIZE, "table"),
     },
-    ...measures.reduce(
-      (acc, measure) => {
-        const fieldName = sanitizeFieldName(measure.name || "measure");
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const formatter = measureFormatters[fieldName];
-        return {
-          ...acc,
-          [fieldName]: {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-            fn: (val: number) => (formatter ? formatter(val) : String(val)),
-          },
-        };
-      },
-      {} as Record<string, { fn: (val: number) => string }>,
-    ),
+    ...measures.reduce((acc, measure) => {
+      const fieldName = sanitizeFieldName(measure.name || "measure");
+      const formatter = measureFormatters[fieldName];
+      return {
+        ...acc,
+        [fieldName]: {
+          fn: (val: number) => (formatter ? formatter(val) : String(val)),
+        },
+      };
+    }, {}),
   };
 
   // Color mapping needs to be reactive to theme mode changes (light/dark)

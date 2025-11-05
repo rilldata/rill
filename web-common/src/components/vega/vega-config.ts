@@ -4,8 +4,6 @@ import { themeManager } from "@rilldata/web-common/features/themes/theme-manager
 import chroma from "chroma-js";
 import type { Config } from "vega-lite";
 
-export const clearCSSVariableCache = () => themeManager.clearCSSVariableCache();
-
 function resolveCSSVariable(
   cssVar: string,
   isDarkMode: boolean,
@@ -37,7 +35,10 @@ export const getRillTheme: (
     : colors.light.axisLabel;
 
   // Use provided theme if available, otherwise resolve from CSS variables
-  let lineColor, barColor, areaGradientLight, areaGradientDark;
+  let lineColor: string,
+    barColor: string,
+    areaGradientLight: string,
+    areaGradientDark: string;
 
   if (theme?.primary) {
     // Use theme's primary color directly
