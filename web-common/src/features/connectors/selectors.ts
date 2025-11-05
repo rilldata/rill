@@ -163,6 +163,7 @@ export function useListTables(
       connector,
       database,
       databaseSchema,
+      pageSize: 5,
     },
     {
       query: {
