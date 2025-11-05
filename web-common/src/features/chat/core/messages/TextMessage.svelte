@@ -6,11 +6,9 @@
   } from "@rilldata/web-common/features/chat/core/messages/rewrite-citation-urls.ts";
   import { derived } from "svelte/store";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
-  import type { V1Message } from "../../../../runtime-client";
 
-  export let message: V1Message;
   export let content: string;
-  export let role: string = "";
+  export let role: string;
 
   const exploreNameStore = derived(
     page,

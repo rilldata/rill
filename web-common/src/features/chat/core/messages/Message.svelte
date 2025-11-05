@@ -45,7 +45,7 @@
 
 {#if isRouterAgent}
   <!-- User prompts and assistant responses -->
-  <TextMessage {message} {content} role={effectiveRole} />
+  <TextMessage {content} role={effectiveRole} />
 {:else if message.type === "progress"}
   <!-- Progress/thinking messages -->
   <ProgressMessage {message} />
