@@ -17,10 +17,7 @@
   let isExpanded = false;
 
   $: toolName = message.tool || "Unknown Tool";
-  $: toolInput =
-    message.contentType === "json"
-      ? formatJson(message.contentData || "{}")
-      : message.contentData || "";
+  $: toolInput = formatContentData(message);
   $: isHidden = isHiddenAgentTool(message.tool);
   $: isChart = isChartCall(message);
   $: chartData = isChart
@@ -28,18 +25,33 @@
     : null;
   $: hasResult = !!resultMessage;
   $: isError = resultMessage?.contentType === "error";
-  $: resultContent = resultMessage?.contentData || "";
+  $: resultContent = resultMessage ? formatContentData(resultMessage) : "";
 
   function toggleExpanded() {
     isExpanded = !isExpanded;
   }
 
-  function formatJson(str: string): string {
-    try {
-      const obj = JSON.parse(str);
-      return JSON.stringify(obj, null, 2);
-    } catch {
-      return str;
+  function formatContentData(msg: V1Message): string {
+    const rawContent = msg.contentData || "";
+
+    switch (msg.contentType) {
+      case "json":
+        try {
+          const obj = JSON.parse(rawContent);
+          return JSON.stringify(obj, null, 2);
+        } catch {
+          return rawContent;
+        }
+
+      case "text":
+        return rawContent;
+
+      case "error":
+        return rawContent;
+
+      default:
+        // Fallback for unknown content types
+        return rawContent;
     }
   }
 

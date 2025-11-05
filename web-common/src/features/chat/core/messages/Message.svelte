@@ -27,18 +27,31 @@
   function extractTextContent(message: V1Message): string {
     const rawContent = message.contentData || "";
 
-    // For router_agent messages, the contentData is JSON with prompt/response fields
-    if (message.tool === "router_agent" && message.contentType === "json") {
-      try {
-        const parsed = JSON.parse(rawContent);
-        // Extract prompt for calls, response for results
-        return parsed.prompt || parsed.response || rawContent;
-      } catch {
+    switch (message.contentType) {
+      case "json":
+        // For router_agent, parse JSON and extract prompt/response field
+        if (message.tool === "router_agent") {
+          try {
+            const parsed = JSON.parse(rawContent);
+            return parsed.prompt || parsed.response || rawContent;
+          } catch {
+            return rawContent;
+          }
+        }
+        // Non-router_agent JSON messages shouldn't reach TextMessage (they go to CallMessage)
+        // But if they do, return raw content as fallback
         return rawContent;
-      }
-    }
 
-    return rawContent;
+      case "text":
+        return rawContent;
+
+      case "error":
+        return rawContent;
+
+      default:
+        // Fallback for unknown content types
+        return rawContent;
+    }
   }
 
   function isRouterAgentMessage(message: V1Message): boolean {
