@@ -3,8 +3,7 @@
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseEntry from "./DatabaseEntry.svelte";
-  import { useDatabasesFromSchemas } from "../selectors";
-  import { useDatabasesOLAP as useDatabasesLegacy } from "../selectors";
+  import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
@@ -13,18 +12,15 @@
 
   $: connectorName = connector?.name as string;
 
-  // Determine which API to use based on connector capabilities (optimized - direct access)
+  // TODO: if unified api is enabled, can we remove this?
   $: shouldUseNewAPI =
     connector.driver?.implementsSqlStore ||
     connector.driver?.implementsWarehouse ||
     !connector.driver?.implementsOlap;
 
-  // Use appropriate selector based on connector type
-  $: databasesQuery = shouldUseNewAPI
-    ? useDatabasesFromSchemas(instanceId, connectorName)
-    : useDatabasesLegacy(instanceId, connectorName);
+  $: databaseSchemasQuery = useListDatabaseSchemas(instanceId, connectorName);
 
-  $: ({ data, error, isLoading } = $databasesQuery);
+  $: ({ data, error, isLoading } = $databaseSchemasQuery);
 </script>
 
 <div class="wrapper">

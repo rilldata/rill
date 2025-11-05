@@ -28,6 +28,7 @@
 
   $: ({ data, error, isLoading } = $tablesQuery);
 
+  // TODO: verify with mysql, then remove legacy code
   // Handle data structure differences between APIs
   $: typedData = useNewAPI
     ? // New API returns V1TableInfo[]

@@ -103,108 +103,10 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
   return createQuery(queryOptions);
 }
 
-export function useDatabasesOLAP(instanceId: string, connector: string) {
-  return createConnectorServiceListDatabaseSchemas(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId && !!connector,
-        select: (data) => {
-          const allSchemas = data.databaseSchemas ?? [];
-          const hasEmptyDatabases = allSchemas.every((s) => !s.database);
-          return hasEmptyDatabases
-            ? Array.from(new Set(allSchemas.map((s) => s.databaseSchema ?? "")))
-            : Array.from(
-                new Set(allSchemas.map((s) => s.database ?? "")),
-              ).filter(Boolean);
-        },
-      },
-    },
-  );
-}
-
-export function useDatabaseSchemasOLAP(
-  instanceId: string,
-  connector: string,
-  database: string,
-) {
-  return createConnectorServiceListDatabaseSchemas(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId && !!connector,
-        select: (data) => {
-          const allSchemas = data.databaseSchemas ?? [];
-          const hasEmptyDatabases = allSchemas.every((s) => !s.database);
-          return hasEmptyDatabases
-            ? [database]
-            : allSchemas
-                .filter((s) => s.database === database)
-                .map((s) => s.databaseSchema ?? "");
-        },
-      },
-    },
-  );
-}
-
-export function useTablesOLAP(
-  instanceId: string,
-  connector: string,
-  database: string,
-  databaseSchema: string,
-  enabled: boolean = true,
-): CreateQueryResult<V1TableInfo[]> {
-  return createConnectorServiceListTables(
-    {
-      instanceId,
-      connector,
-      database,
-      databaseSchema,
-    },
-    {
-      query: {
-        enabled:
-          enabled &&
-          !!instanceId &&
-          !!connector &&
-          !!database &&
-          databaseSchema !== undefined,
-        select: (data) => data.tables ?? [],
-      },
-    },
-  );
-}
-
 /**
- * Fetches database schemas for any connector type
- * Replaces the need to filter OLAPListTables client-side
+ * List all schemas across databases
  */
-export function useDatabaseSchemas(instanceId: string, connector: string) {
-  return createConnectorServiceListDatabaseSchemas(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId && !!connector,
-        select: (data) => data.databaseSchemas ?? [],
-      },
-    },
-  );
-}
-
-/**
- * Extracts unique databases from database schemas
- * More efficient than the old approach
- */
-export function useDatabasesFromSchemas(instanceId: string, connector: string) {
+export function useListDatabaseSchemas(instanceId: string, connector: string) {
   return createConnectorServiceListDatabaseSchemas(
     {
       instanceId,
@@ -241,46 +143,7 @@ export function useDatabasesFromSchemas(instanceId: string, connector: string) {
 }
 
 /**
- * List all schemas across databases
- */
-export function useListDatabaseSchemas(
-  instanceId: string,
-  connector: string,
-  database: string,
-) {
-  return createConnectorServiceListDatabaseSchemas(
-    {
-      instanceId,
-      connector,
-    },
-    {
-      query: {
-        enabled: !!instanceId && !!connector,
-        select: (data) => {
-          const allSchemas = data.databaseSchemas ?? [];
-
-          // Check if this is a flat schema structure (like MySQL)
-          const hasEmptyDatabases = allSchemas.every(
-            (schema) => !schema.database,
-          );
-
-          const schemas = hasEmptyDatabases
-            ? // For flat structures, the "database" parameter is actually a schema name
-              [database]
-            : // For hierarchical structures, filter by actual database
-              allSchemas
-                .filter((schema) => schema.database === database)
-                .map((schema) => schema.databaseSchema ?? "");
-
-          return schemas;
-        },
-      },
-    },
-  );
-}
-
-/**
- * Fetches all tables for a given database and database_schema
+ * List all tables for a given database and database_schema
  * This is called on-demand when a schema is expanded
  */
 export function useListTables(
@@ -315,7 +178,7 @@ export function useListTables(
  * Fetches detailed metadata for a specific table
  * Called when a table is selected/expanded
  */
-export function useTableMetadata(
+export function useGetTable(
   instanceId: string,
   connector: string,
   database: string,

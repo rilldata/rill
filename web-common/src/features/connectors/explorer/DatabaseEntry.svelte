@@ -18,11 +18,7 @@
   $: expandedStore = store.getItem(connectorName, database);
   $: expanded = $expandedStore;
 
-  $: databaseSchemasQuery = useListDatabaseSchemas(
-    instanceId,
-    connectorName,
-    database,
-  );
+  $: databaseSchemasQuery = useListDatabaseSchemas(instanceId, connectorName);
 
   $: ({ data, error, isLoading } = $databaseSchemasQuery);
 </script>

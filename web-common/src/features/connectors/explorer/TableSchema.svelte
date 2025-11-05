@@ -2,7 +2,7 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import { createQueryServiceTableColumns } from "../../../runtime-client";
-  import { useTableMetadata } from "../selectors";
+  import { useGetTable } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
 
   export let connector: string;
@@ -13,7 +13,6 @@
 
   $: ({ instanceId } = $runtime);
 
-  // Use appropriate API based on connector type
   $: legacyColumnsQuery = !useNewAPI
     ? createQueryServiceTableColumns(instanceId, table, {
         connector,
@@ -22,9 +21,13 @@
       })
     : null;
 
-  $: newTableQuery = useNewAPI
-    ? useTableMetadata(instanceId, connector, database, databaseSchema, table)
-    : null;
+  $: newTableQuery = useGetTable(
+    instanceId,
+    connector,
+    database,
+    databaseSchema,
+    table,
+  );
 
   // Normalize data from both APIs
   $: columns = useNewAPI
