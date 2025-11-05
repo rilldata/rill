@@ -8,9 +8,10 @@
 
   $: css = theme?.css;
 
-  $: if (themeBoundary && styleEl && css) {
-    // @ts-expect-error
-    styleEl.textContent = css;
+  // Update theme CSS, or clear it when theme is undefined
+  $: if (themeBoundary && styleEl) {
+    // @ts-expect-error - textContent is writable but typed as readonly in some environments
+    styleEl.textContent = css || "";
   }
 </script>
 

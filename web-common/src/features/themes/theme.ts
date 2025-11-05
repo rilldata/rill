@@ -69,6 +69,23 @@ export class Theme {
   }
 
   private processTheme(spec: V1ThemeSpec) {
+    // Handle legacy theme format (colors: primary/secondary)
+    // If neither light nor dark is defined, but we have legacy color fields,
+    // treat them as light mode colors only for backwards compatibility
+    const hasLegacyColors =
+      !spec.light &&
+      !spec.dark &&
+      (spec.primaryColorRaw || spec.secondaryColorRaw);
+
+    if (hasLegacyColors) {
+      const legacyColors: V1ThemeColors = {
+        primary: spec.primaryColorRaw,
+        secondary: spec.secondaryColorRaw,
+      };
+      const lightColors = this.processColors(legacyColors);
+      return { dark: {}, light: lightColors };
+    }
+
     const darkColors = this.processColors(spec.dark ?? {});
     const lightColors = this.processColors(spec.light ?? {});
 

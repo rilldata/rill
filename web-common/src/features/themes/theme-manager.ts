@@ -137,8 +137,16 @@ class ThemeManager {
     const modeTheme: V1ThemeColors | undefined = isThemeModeDark
       ? themeSpec.dark
       : themeSpec.light;
-    const primaryColor = modeTheme?.primary;
-    const secondaryColor = modeTheme?.secondary;
+
+    // Handle legacy theme format (colors: primary/secondary)
+    // Fall back to legacy color fields only in light mode
+    // TODO: ENG-957
+    const primaryColor =
+      modeTheme?.primary ||
+      (!isThemeModeDark ? themeSpec.primaryColorRaw : undefined);
+    const secondaryColor =
+      modeTheme?.secondary ||
+      (!isThemeModeDark ? themeSpec.secondaryColorRaw : undefined);
 
     return {
       primary: primaryColor
@@ -159,20 +167,36 @@ class ThemeManager {
     const modeTheme: V1ThemeColors | undefined = isThemeModeDark
       ? themeSpec.dark
       : themeSpec.light;
-    if (!modeTheme) return undefined;
+
+    // Handle legacy theme format (colors: primary/secondary)
+    // If neither light nor dark is defined, create a theme object from legacy fields
+    // but only for light mode
+    // TODO: ENG-957
+    const hasLegacyColors =
+      !isThemeModeDark &&
+      !themeSpec.light &&
+      !themeSpec.dark &&
+      (themeSpec.primaryColorRaw || themeSpec.secondaryColorRaw);
+
+    if (!modeTheme && !hasLegacyColors) return undefined;
+
+    const effectiveModeTheme = modeTheme || {
+      primary: themeSpec.primaryColorRaw,
+      secondary: themeSpec.secondaryColorRaw,
+    };
 
     const merged: Record<string, string> = {};
 
-    if (modeTheme.variables) {
-      Object.assign(merged, modeTheme.variables);
+    if (effectiveModeTheme.variables) {
+      Object.assign(merged, effectiveModeTheme.variables);
     }
 
-    if (modeTheme.primary) {
-      merged.primary = modeTheme.primary;
+    if (effectiveModeTheme.primary) {
+      merged.primary = effectiveModeTheme.primary;
     }
 
-    if (modeTheme.secondary) {
-      merged.secondary = modeTheme.secondary;
+    if (effectiveModeTheme.secondary) {
+      merged.secondary = effectiveModeTheme.secondary;
     }
 
     return Object.keys(merged).length > 0 ? merged : undefined;
