@@ -1,4 +1,5 @@
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   type V1TableInfo,
@@ -11,6 +12,7 @@ import {
   runtimeServiceGetResource,
   type RpcStatus,
 } from "../../runtime-client";
+import { connectorServiceListTables } from "../../runtime-client/gen/connector-service/connector-service";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
@@ -177,6 +179,48 @@ export function useListTables(
       },
     },
   );
+}
+
+/**
+ * Infinite tables loader using pageToken cursor
+ */
+export function useInfiniteTables(
+  instanceId: string,
+  connector: string,
+  database: string,
+  databaseSchema: string,
+  pageSize = 5,
+) {
+  return createInfiniteQuery({
+    queryKey: [
+      "/v1/connectors/tables",
+      { instanceId, connector, database, databaseSchema, pageSize },
+    ],
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage: { nextPageToken?: string }) =>
+      lastPage?.nextPageToken || undefined,
+    queryFn: ({ pageParam, signal }) =>
+      connectorServiceListTables(
+        {
+          instanceId,
+          connector,
+          database,
+          databaseSchema,
+          pageSize,
+          pageToken: pageParam,
+        },
+        signal,
+      ),
+    select: (data: any) => ({
+      tables: data.pages.flatMap(
+        (p: { tables?: V1TableInfo[] }) => p.tables ?? [],
+      ),
+      nextPageToken:
+        data.pages.length > 0
+          ? data.pages[data.pages.length - 1].nextPageToken
+          : undefined,
+    }),
+  });
 }
 
 /**

@@ -3,7 +3,7 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
-  import { useListTables } from "../selectors";
+  import { useInfiniteTables } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
@@ -17,20 +17,27 @@
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
 
-  $: tablesQuery = useListTables(
+  $: tablesQuery = useInfiniteTables(
     instanceId,
     connectorName,
     database,
     databaseSchema,
-    expanded,
+    5,
   );
 
-  $: ({ data, error, isLoading } = $tablesQuery);
+  $: ({
+    data,
+    error,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = $tablesQuery);
 
   // Normalize V1TableInfo[] from ListTables into the TableEntry input shape
   $: typedData = (
-    data as Array<{ name?: string; view?: boolean }> | undefined
-  )?.map((table) => ({
+    data as { tables?: Array<{ name?: string; view?: boolean }> }
+  )?.tables?.map((table) => ({
     name: table.name ?? "",
     database,
     databaseSchema,
@@ -108,6 +115,18 @@
           />
         {/each}
       </ol>
+
+      {#if hasNextPage}
+        <div class="load-more {database ? 'pl-[78px]' : 'pl-[60px]'}">
+          <button
+            class="load-more-btn"
+            disabled={isFetchingNextPage}
+            on:click={() => fetchNextPage()}
+          >
+            {isFetchingNextPage ? "Loading..." : "Load more"}
+          </button>
+        </div>
+      {/if}
     {/if}
   {/if}
 </li>
@@ -130,5 +149,18 @@
   .message {
     @apply pr-3.5 py-2; /* left-padding is set dynamically above */
     @apply text-gray-500;
+  }
+
+  .load-more {
+    @apply py-2;
+  }
+  .load-more-btn {
+    @apply px-3 py-1 text-xs border rounded-[2px] text-gray-700 border-slate-200;
+  }
+  .load-more-btn:hover {
+    @apply bg-gray-50;
+  }
+  .load-more-btn:disabled {
+    @apply opacity-60;
   }
 </style>
