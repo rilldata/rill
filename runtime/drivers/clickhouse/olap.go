@@ -139,8 +139,14 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		stmt.Query += ", "
 		var attrPairs []string
 		for k, v := range stmt.QueryAttributes {
-			// Escape the key as an identifier and quote the value
-			attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", k, strings.ReplaceAll(v, "'", "''")))
+			// ClickHouse convention: prefix settings keys with SQL_
+			prefixedKey := k
+			if !strings.HasPrefix(k, "SQL_") {
+				prefixedKey = "SQL_" + k
+			}
+			// Escape single quotes in the value
+			escapedValue := strings.ReplaceAll(v, "'", "''")
+			attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", prefixedKey, escapedValue))
 		}
 		stmt.Query += strings.Join(attrPairs, ", ")
 	}

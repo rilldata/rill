@@ -1,10 +1,16 @@
 package clickhouse
 
 import (
+	"context"
 	"testing"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestManagedModePrecedence(t *testing.T) {
@@ -120,4 +126,94 @@ func TestManagedModePrecedence(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestQueryAttributesSETTINGSInjection verifies that query attributes are properly injected into the SETTINGS clause
+func TestQueryAttributesSETTINGSInjection(t *testing.T) {
+	dsn := testclickhouse.Start(t)
+
+	conn, err := driver{}.Open("default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	olap, ok := conn.AsOLAP("default")
+	require.True(t, ok)
+
+	ctx := context.Background()
+
+	// Create test table
+	err = olap.Exec(ctx, &drivers.Statement{
+		Query: "CREATE TABLE test_attrs (id Int32, value String) ENGINE=Memory",
+	})
+	require.NoError(t, err)
+
+	// Insert test data
+	err = olap.Exec(ctx, &drivers.Statement{
+		Query: "INSERT INTO test_attrs VALUES (1, 'test')",
+	})
+	require.NoError(t, err)
+
+	t.Run("SingleQueryAttribute", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{
+				"partner_id": "acme_corp",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("MultipleQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{
+				"partner_id":  "acme_corp",
+				"environment": "production",
+				"region":      "us-west-2",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("EmptyQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query:           "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("NilQueryAttributes", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query:           "SELECT id, value FROM test_attrs",
+			QueryAttributes: nil,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("QueryAttributeWithExistingPrefix", func(t *testing.T) {
+		res, err := olap.Query(ctx, &drivers.Statement{
+			Query: "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{
+				"SQL_partner_id": "acme_corp",
+				"environment":    "production",
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
 }
