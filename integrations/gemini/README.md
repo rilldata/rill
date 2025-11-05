@@ -11,7 +11,7 @@ Check out [Rill's Docs](https://docs.rilldata.com) for more information about Ri
 Install the extension via GitHub:
 
 ```bash
-gemini extensions install https://github.com/rilldata/gemini
+gemini extensions install https://github.com/rilldata/rill
 ```
 
 Install Rill CLI if you haven't already:
@@ -43,11 +43,17 @@ To test changes locally:
 1. Make your changes to the extension files
 2. Install the extension from your local development branch:
    ```bash
-   gemini extensions install https://github.com/rilldata/rill --ref=your-branch-name
+   npm run -w integrations/gemini link
+   ```
+3. Test the extension in Gemini:
+   ```bash
+   npm run -w integrations/gemini unlink
    ```
 
 ### Releasing
 
-Extension updates are automatically available when changes are merged to the main branch. Users will be prompted to update when new versions are available.
+This extension is distributed through [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases). This provides a faster and more reliable initial installation experience for users, as releases are shipped as single archives instead of requiring a git clone.
 
-The extension version is managed through the `gemini-extension.json` file, and users can install specific versions using git refs if needed.
+Each release includes an archive file containing the full contents of the repository at the tagged commit. When checking for updates, Gemini CLI looks for the "latest" release on GitHub (you must mark it as such when creating the release), unless the user installed a specific release by passing `--ref=<some-release-tag>`.
+
+The extension version is managed through the `gemini-extension.json` file, and releases are automated via GitHub Actions when new version tags are pushed.

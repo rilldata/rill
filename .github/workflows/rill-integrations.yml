@@ -1,0 +1,65 @@
+name: Build and Release Rill Integrations
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/rill-integrations.yml"
+      - "integrations/gemini/**"
+  push:
+    tags:
+      - "v*"
+    paths:
+      - ".github/workflows/rill-integrations.yml"
+      - "integrations/gemini/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: cd integrations/gemini && npm ci
+        env:
+          HUSKY: 0
+
+      - name: Build extension
+        run: cd integrations/gemini && npm run build
+
+      - name: Run tests
+        run: cd integrations/gemini && npm run test
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: cd integrations/gemini && npm ci
+        env:
+          HUSKY: 0
+
+      - name: Build extension
+        run: cd integrations/gemini && npm run build
+
+      - name: Create release assets
+        run: cd integrations/gemini && npm run package
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: integrations/gemini/release/**
