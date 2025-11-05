@@ -10,18 +10,25 @@
   } from "@rilldata/web-common/features/chat/core/messages/rewrite-citation-urls.ts";
   import { derived } from "svelte/store";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
+  import type { V1Message } from "../../../../runtime-client";
+  import { extractMessageText } from "../utils";
 
-  export let content: string;
-  export let role: string;
+  export let message: V1Message;
 
+  // Message content and styling
+  $: role = message.role || "assistant";
+  $: content = extractMessageText(message);
+
+  // Citation URL rewriting for explore dashboards
+  // When rendered in an explore context, converts relative citation URLs to full dashboard URLs
   const exploreNameStore = derived(
     page,
     (pageState) => pageState.params.dashboard ?? pageState.params.name ?? "",
   );
-  $: renderedInExplore = !!$exploreNameStore;
-
   const mapperStore =
     getMetricsResolverQueryToUrlParamsMapperStore(exploreNameStore);
+
+  $: renderedInExplore = !!$exploreNameStore;
   $: hasMapper = !!$mapperStore.data;
   $: convertCitationUrls =
     renderedInExplore && hasMapper
