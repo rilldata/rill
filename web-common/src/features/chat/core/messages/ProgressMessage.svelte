@@ -1,3 +1,6 @@
+<!--
+  Renders AI thinking/reasoning messages that appear during tool execution.
+-->
 <script lang="ts">
   import type { V1Message } from "../../../../runtime-client";
 

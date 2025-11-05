@@ -1,3 +1,9 @@
+<!--
+  Renders tool invocations with their results in a collapsible interface.
+  
+  Architecture: Tool calls and results are rendered together in one component,
+  with results correlated via parent_id. Charts are rendered separately below.
+-->
 <script lang="ts">
   import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
   import ChevronRight from "../../../../components/icons/ChevronRight.svelte";

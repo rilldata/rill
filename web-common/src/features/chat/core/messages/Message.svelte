@@ -1,3 +1,6 @@
+<!--
+  Routes messages to specialized rendering components based on message type.
+-->
 <script lang="ts">
   import type { V1Message } from "../../../../runtime-client";
   import CallMessage from "./CallMessage.svelte";

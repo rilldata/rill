@@ -1,3 +1,7 @@
+<!--
+  Renders conversational text exchanges between user and AI assistant.
+  Handles router_agent messages (user prompts and assistant responses).
+-->
 <script lang="ts">
   import { page } from "$app/stores";
   import {
