@@ -5,6 +5,8 @@
  * and maintain consistency in error handling, ID generation, and cache management.
  */
 
+import type { V1Message } from "@rilldata/web-common/runtime-client";
+
 // =============================================================================
 // ID GENERATION
 // =============================================================================
@@ -44,6 +46,45 @@ export function formatChatError(error: unknown): string {
   return typeof error === "string"
     ? error
     : "An unexpected error occurred. Please try again.";
+}
+
+// =============================================================================
+// MESSAGE CONTENT EXTRACTION
+// =============================================================================
+
+/**
+ * Extract text content from a message based on content type
+ *
+ * Handles all three content types (text, json, error) with special parsing
+ * for router_agent JSON messages to extract prompt/response fields.
+ */
+export function extractMessageText(message: V1Message): string {
+  const rawContent = message.contentData || "";
+
+  switch (message.contentType) {
+    case "json":
+      // For router_agent, parse JSON and extract prompt/response field
+      if (message.tool === "router_agent") {
+        try {
+          const parsed = JSON.parse(rawContent);
+          return parsed.prompt || parsed.response || rawContent;
+        } catch {
+          return rawContent;
+        }
+      }
+
+      // For non-router_agent JSON messages, return raw content
+      return rawContent;
+
+    case "text":
+      return rawContent;
+
+    case "error":
+      return rawContent;
+
+    default:
+      return rawContent;
+  }
 }
 
 // =============================================================================
