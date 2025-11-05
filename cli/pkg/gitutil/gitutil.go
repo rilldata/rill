@@ -221,7 +221,7 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	return SyncStatusSynced, nil
 }
 
-func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
+func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature, force bool) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
@@ -286,7 +286,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	if config.Username == "" {
 		// If no credentials are provided we assume that is user's self managed repo and auth is already set in git
 		// go-git does not support pushing to a private repo without auth so we will trigger the git command directly
-		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, true)
+		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, force)
 	}
 
 	u, err := url.Parse(config.Remote)
@@ -294,7 +294,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return fmt.Errorf("failed to parse remote URL: %w", err)
 	}
 	u.User = url.UserPassword(config.Username, config.Password)
-	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch, true)
+	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch, force)
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {

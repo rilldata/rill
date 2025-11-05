@@ -561,6 +561,42 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 	return nil
 }
 
+func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature) error {
+	err := gitutil.CommitAndPush(ctx, root, config, commitMsg, author, false)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, gitutil.ErrLocalBehind) {
+		return err
+	}
+	// local is behind remote
+	choice := "1"
+	if h.Interactive {
+		h.PrintfWarn("The remote repository has changes ahead of your local branch.")
+		h.PrintfWarn("Please choose one of the following options to proceed:\n")
+		h.PrintfWarn("1: Merge remote changes to your local branch and fail on conflicts\n")
+		h.PrintfWarn("2: Overwrite remote changes with your local changes\n")
+		h.PrintfWarn("3: Abort deploy and merge manually\n")
+		choice, err = SelectPrompt("Choose how to resolve remote changes", []string{"1", "2", "3"}, "1")
+		if err != nil {
+			return err
+		}
+	}
+
+	switch choice {
+	case "1":
+		_, err := gitutil.RunGitPull(ctx, root, false, false, "", "origin")
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author, false)
+	case "2":
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author, true)
+	default:
+		return fmt.Errorf("aborting deploy")
+	}
+}
+
 func removeRemote(path, remoteName string) error {
 	repo, err := git.PlainOpen(path)
 	if err != nil {

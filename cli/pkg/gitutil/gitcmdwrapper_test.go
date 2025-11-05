@@ -21,7 +21,7 @@ func TestRunGitStatus(t *testing.T) {
 	// Run GitFetch
 	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes from remote repository")
 	// Run the RunGitStatus function again
-	status, err := RunGitStatus(tempDir, "origin")
+	status, err := RunGitStatus(tempDir, "", "origin")
 	require.NoError(t, err, "RunGitStatus failed after local commit")
 
 	// Validate the updated status
@@ -35,7 +35,7 @@ func TestRunGitStatus(t *testing.T) {
 	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes from remote repository")
 
 	// Run the RunGitStatus function again
-	status, err = RunGitStatus(tempDir, "origin")
+	status, err = RunGitStatus(tempDir, "", "origin")
 	require.NoError(t, err, "RunGitStatus failed after local commit")
 
 	// Validate the updated status
@@ -47,7 +47,7 @@ func TestRunGitStatus(t *testing.T) {
 	err = os.WriteFile(filePath, []byte("untracked content"), 0644)
 	require.NoError(t, err, "failed to create untracked file")
 
-	status, err = RunGitStatus(tempDir, "origin")
+	status, err = RunGitStatus(tempDir, "", "origin")
 	require.NoError(t, err, "RunGitStatus failed with untracked files")
 	require.True(t, status.LocalChanges, "expected local changes due to untracked files")
 
@@ -59,7 +59,7 @@ func TestRunGitStatus(t *testing.T) {
 	err = cmd.Run()
 	require.NoError(t, err, "failed to stage file")
 
-	status, err = RunGitStatus(tempDir, "origin")
+	status, err = RunGitStatus(tempDir, "", "origin")
 	require.NoError(t, err, "RunGitStatus failed with staged changes")
 	require.True(t, status.LocalChanges, "expected local changes due to staged files")
 
@@ -67,7 +67,7 @@ func TestRunGitStatus(t *testing.T) {
 	err = os.WriteFile(filePath, []byte("unstaged content"), 0644)
 	require.NoError(t, err, "failed to modify file for unstaged changes")
 
-	status, err = RunGitStatus(tempDir, "origin")
+	status, err = RunGitStatus(tempDir, "", "origin")
 	require.NoError(t, err, "RunGitStatus failed with unstaged changes")
 	require.True(t, status.LocalChanges, "expected local changes due to unstaged files")
 }
@@ -76,27 +76,27 @@ func TestGitPull(t *testing.T) {
 	tempDir, remoteDir := setupTestRepository(t)
 
 	// Test case: Pull with no local changes
-	output, err := RunGitPull(context.Background(), tempDir, false, "", "origin")
+	output, err := RunGitPull(context.Background(), tempDir, false, false, "", "origin")
 	require.NoError(t, err, "GitPull failed with no local changes")
 	require.Empty(t, output, "unexpected output from GitPull with no local changes")
 
 	// Test case: Pull with local changes (discardLocal = false)
 	createCommit(t, tempDir, "local.txt", "local content", "local commit")
 	createRemoteCommit(t, remoteDir, "local.txt", "remote content", "remote commit")
-	output, err = RunGitPull(context.Background(), tempDir, false, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, false, false, "", "origin")
 	if len(output) == 0 && err == nil {
 		t.Fatalf("expected GitPull to fail with local changes and discardLocal=false, but it succeeded")
 	}
 	require.Contains(t, output, "Need to specify how to reconcile divergent branches", "unexpected output from GitPull with local changes")
 
 	// Test case: Pull with local changes (discardLocal = true)
-	output, err = RunGitPull(context.Background(), tempDir, true, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, true, false, "", "origin")
 	require.NoError(t, err, "GitPull failed with local changes and discardLocal=true")
 	require.Empty(t, output, "unexpected output from GitPull with discardLocal=true")
 
 	// Test case: Pull with remote changes
 	createRemoteCommit(t, remoteDir, "remote.txt", "remote content", "remote commit")
-	output, err = RunGitPull(context.Background(), tempDir, false, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, false, false, "", "origin")
 	require.NoError(t, err, "GitPull failed with remote changes")
 	require.Empty(t, output, "unexpected output from GitPull with remote changes")
 }
@@ -189,7 +189,7 @@ func setupTestRepository(t *testing.T) (string, string) {
 	require.NoError(t, err, "failed to push initial commit")
 
 	// Run the RunGitStatus function
-	status, err := RunGitStatus(tempDir, "origin")
+	status, err := RunGitStatus(tempDir, "", "origin")
 	require.NoError(t, err, "RunGitStatus failed")
 
 	// Validate the status

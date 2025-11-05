@@ -555,7 +555,7 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 				Remote:        projResp.Project.GitRemote,
 				DefaultBranch: projResp.Project.ProdBranch,
 			}
-			err = gitutil.CommitAndForcePush(ctx, reporoot, config, "", author)
+			err = s.app.ch.CommitAndSafePush(ctx, reporoot, config, "", author)
 			if err != nil {
 				return nil, err
 			}
