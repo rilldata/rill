@@ -5,21 +5,13 @@ import {
   type CanvasResponse,
 } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import {
-  defaultPrimaryColors,
-  defaultSecondaryColors,
-} from "@rilldata/web-common/features/themes/color-config";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetResourceQueryKey,
-  runtimeServiceGetResource,
   type V1CanvasSpec,
   type V1ComponentSpecRendererProperties,
   type V1MetricsViewSpec,
   type V1Resource,
-  type V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import chroma, { type Color } from "chroma-js";
 import {
   derived,
   get,
@@ -44,6 +36,8 @@ import {
 import { Filters } from "./filters";
 import { Grid } from "./grid";
 import { TimeControls } from "./time-control";
+import { Theme } from "../../themes/theme";
+import { createResolvedThemeStore } from "../../themes/selectors";
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
@@ -76,9 +70,9 @@ export class CanvasEntity {
   parsedContent: Readable<ReturnType<typeof parseDocument>>;
   specStore: CanvasSpecResponseStore;
   // Tracks whether the canvas been loaded (and rows processed) for the first time
-  firstLoad = true;
-  theme: Writable<{ primary?: Color; secondary?: Color }> = writable({});
-  themeSpec: Writable<V1ThemeSpec | undefined> = writable(undefined);
+  firstLoad = writable(true);
+  themeName = writable<string | undefined>(undefined);
+  theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
@@ -92,7 +86,7 @@ export class CanvasEntity {
     private instanceId: string,
   ) {
     this.specStore = useCanvas(
-      instanceId,
+      this.instanceId,
       name,
       {
         retry: 3,
@@ -137,7 +131,7 @@ export class CanvasEntity {
     });
 
     this.metricsView = new MetricsViewSelectors(
-      instanceId,
+      this.instanceId,
       derived(this.specStore, ($specStore) => {
         return $specStore.data?.metricsViews || {};
       }),
@@ -151,19 +145,8 @@ export class CanvasEntity {
     );
     this.filters = new Filters(this.metricsView, searchParamsStore);
 
-    searchParamsStore.subscribe((searchParams) => {
-      const themeFromUrl = searchParams.get("theme");
-      if (themeFromUrl) {
-        this.processTheme(themeFromUrl, undefined).catch(console.error);
-      }
-    });
-
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
-      const theme = spec.data?.canvas?.theme;
-      const embeddedTheme = spec.data?.canvas?.embeddedTheme;
-
-      this.processTheme(theme, embeddedTheme).catch(console.error);
 
       if (!filePath) {
         return;
@@ -196,7 +179,17 @@ export class CanvasEntity {
 
     // TODO: merge more stores once we add support for defaults for those.
     this.defaultUrlParamsStore = this.timeControls.defaultUrlParamsStore;
+
+    this.theme = createResolvedThemeStore(
+      this.themeName,
+      this.specStore,
+      this.instanceId,
+    );
   }
+
+  onUrlParamsChange = (urlParams: URLSearchParams) => {
+    this.themeName.set(urlParams.get("theme") ?? undefined);
+  };
 
   // Not currently being used
   unsubscribe = () => {
@@ -306,46 +299,10 @@ export class CanvasEntity {
 
     // Calling this function triggers the rows to rerender, ensuring they're up to date
     // with the components Map, which is not reactive
-    if ((!didUpdateRowCount && createdNewComponent) || this.firstLoad) {
+    if ((!didUpdateRowCount && createdNewComponent) || get(this.firstLoad)) {
       this._rows.refresh();
     }
-    this.firstLoad = false;
-  };
-
-  processTheme = async (
-    themeName: string | undefined,
-    embeddedTheme: V1ThemeSpec | undefined,
-  ) => {
-    let themeSpec: V1ThemeSpec | undefined;
-
-    if (themeName) {
-      const response = await queryClient.fetchQuery({
-        queryKey: getRuntimeServiceGetResourceQueryKey(this.instanceId, {
-          "name.kind": ResourceKind.Theme,
-          "name.name": themeName,
-        }),
-        queryFn: () =>
-          runtimeServiceGetResource(this.instanceId, {
-            "name.kind": ResourceKind.Theme,
-            "name.name": themeName,
-          }),
-      });
-
-      themeSpec = response.resource?.theme?.spec;
-    } else if (embeddedTheme) {
-      themeSpec = embeddedTheme;
-    }
-
-    this.themeSpec.set(themeSpec);
-
-    this.theme.set({
-      primary: themeSpec?.primaryColorRaw
-        ? chroma(themeSpec.primaryColorRaw)
-        : chroma(`hsl(${defaultPrimaryColors[500]})`),
-      secondary: themeSpec?.secondaryColorRaw
-        ? chroma(themeSpec.secondaryColorRaw)
-        : chroma(`hsl(${defaultSecondaryColors[500]})`),
-    });
+    this.firstLoad.set(false);
   };
 
   generateId = (row: number | undefined, column: number | undefined) => {

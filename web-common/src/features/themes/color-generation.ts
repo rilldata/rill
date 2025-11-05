@@ -1,25 +1,29 @@
-import { TailwindColorSpacing } from "./color-config.ts";
-import type { V1ThemeSpec } from "../../../../web-common/src/runtime-client/index.ts";
+/**
+ * Color Palette Generation
+ *
+ * Functions for generating color palettes for light and dark modes
+ * using the OKLab color space for perceptually uniform colors.
+ */
+
 import chroma, { type Color } from "chroma-js";
 import { clamp } from "../../../../web-common/src/lib/clamp.ts";
-import { generateColorPalette } from "./palette-generator.ts";
-import { featureFlags } from "../feature-flags.ts";
-import { get } from "svelte/store";
 
 export const BLACK = chroma("black");
 export const WHITE = chroma("white");
 export const MODE = "oklab";
 
-export function createDarkVariation(colors: Color[]) {
-  return generatePalette(colors[5]).dark;
-}
+export const DEFAULT_STEP_COUNT = 11;
+export const DEFAULT_GAMMA = 1.12;
 
-function generatePalette(
+/**
+ * Generates light and dark color palettes from a reference color
+ */
+export function generatePalette(
   refColor: Color,
   desaturateNearGray: boolean = true,
   stepCount: number = 11,
   gamma: number = 1.12,
-) {
+): { light: Color[]; dark: Color[] } {
   const [l, c, h] = refColor.oklch();
 
   if (desaturateNearGray && c < 0.05) {
@@ -109,81 +113,14 @@ function generatePalette(
   };
 }
 
-export function setVariables(
-  root: HTMLElement,
-  type: string,
-  mode: "dark" | "light",
-
-  colors?: Color[],
-) {
-  if (!colors) {
-    TailwindColorSpacing.forEach((_, i) => {
-      root.style.removeProperty(
-        `--color-${type}-${mode}-${TailwindColorSpacing[i]}`,
-      );
-    });
-  } else {
-    colors.forEach((color, i) => {
-      root.style.setProperty(
-        `--color-${type}-${mode}-${TailwindColorSpacing[i]}`,
-        color.css("oklch"),
-      );
-    });
-  }
+/**
+ * Creates dark mode variation of a color palette
+ */
+export function createDarkVariation(colors: Color[]): Color[] {
+  return generatePalette(colors[5]).dark;
 }
 
-export function updateThemeVariables(theme: V1ThemeSpec | undefined) {
-  const root = document.documentElement;
-  const { darkMode } = featureFlags;
-  const allowNewPalette = get(darkMode);
-
-  if (theme?.primaryColor) {
-    const chromaColor = chroma.rgb(
-      (theme.primaryColor.red ?? 1) * 256,
-      (theme.primaryColor.green ?? 1) * 256,
-      (theme.primaryColor.blue ?? 1) * 256,
-    );
-
-    const originalLightPalette = generateColorPalette(chromaColor);
-    const { light, dark } = generatePalette(chromaColor, false);
-
-    setVariables(
-      root,
-      "theme",
-      "light",
-      allowNewPalette ? light : originalLightPalette,
-    );
-
-    setVariables(root, "theme", "dark", dark);
-  } else {
-    setVariables(root, "theme", "light");
-    setVariables(root, "theme", "dark");
-  }
-
-  if (theme?.secondaryColor) {
-    const chromaColor = chroma.rgb(
-      (theme.secondaryColor.red ?? 1) * 256,
-      (theme.secondaryColor.green ?? 1) * 256,
-      (theme.secondaryColor.blue ?? 1) * 256,
-    );
-
-    const originalLightPalette = generateColorPalette(chromaColor);
-    const { light, dark } = generatePalette(chromaColor, false);
-
-    setVariables(
-      root,
-      "theme-secondary",
-      "light",
-      allowNewPalette ? light : originalLightPalette,
-    );
-    setVariables(root, "theme-secondary", "dark", dark);
-  } else {
-    setVariables(root, "theme-secondary", "light");
-    setVariables(root, "theme-secondary", "dark");
-  }
-}
-
-function findLuminance(spectrum: Color[], lumn: number) {
+function findLuminance(spectrum: Color[], lumn: number): Color | undefined {
   return spectrum.find((color) => {
     const [l] = color.oklch();
     return l >= lumn;
@@ -196,7 +133,7 @@ function findContrast(
   contrast: number,
   maxSaturation?: number,
   minSaturation?: number,
-) {
+): Color | undefined {
   const color = spectrum.find((color) => {
     return chroma.contrast(comparedTo, color) >= contrast;
   });
