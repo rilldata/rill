@@ -11,7 +11,6 @@
     DashboardBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
@@ -150,9 +149,7 @@
           storageNamespacePrefix={`${orgName}__${projectName}__`}
           bookmarkOrTokenExploreState={bookmarkExploreStateQuery}
         >
-          <DashboardThemeProvider>
-            <Dashboard {metricsViewName} {exploreName} />
-          </DashboardThemeProvider>
+          <Dashboard {metricsViewName} {exploreName} />
         </DashboardStateManager>
       </StateManagersProvider>
     {/key}
