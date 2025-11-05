@@ -32,7 +32,7 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	`
 	args = append(args, limit+1)
 
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -92,7 +92,7 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	`
 	args = append(args, limit+1)
 
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -141,7 +141,7 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	ORDER BY ordinal_position
 	`
 
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}

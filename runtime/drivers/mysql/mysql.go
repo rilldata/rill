@@ -7,6 +7,7 @@ import (
 	"maps"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -249,14 +250,14 @@ type connection struct {
 	logger     *zap.Logger
 	logQueries bool
 
-	db    *sqlx.DB // lazily populated using acquireDB
+	db    *sqlx.DB // lazily populated using getDB
 	dbErr error
 	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open MySQL connection: %w", err)
 	}
@@ -356,8 +357,8 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// acquireDB lazily initializes and returns a database connection.
-func (c *connection) acquireDB(ctx context.Context) (*sqlx.DB, error) {
+// getDB lazily initializes and returns a database connection.
+func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 	err := c.dbMu.Acquire(ctx, 1)
 	if err != nil {
 		return nil, err
@@ -384,6 +385,7 @@ func (c *connection) acquireDB(ctx context.Context) (*sqlx.DB, error) {
 	if c.dbErr != nil {
 		return nil, c.dbErr
 	}
+	c.db.SetConnMaxIdleTime(time.Minute)
 
 	return c.db, nil
 }

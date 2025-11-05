@@ -390,7 +390,7 @@
         exclude={curExcludeMode}
         label={`${name} filter`}
         theme
-        on:remove={onRemove}
+        {onRemove}
         removable={!readOnly}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
@@ -445,7 +445,7 @@
           showBorderOnFocus={false}
           retainValueOnMount
           placeholder={searchPlaceholder}
-          on:submit={onApply}
+          onSubmit={onApply}
           forcedInputStyle="rounded-l-none"
           multiline
         />
