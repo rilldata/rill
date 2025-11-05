@@ -1165,11 +1165,11 @@ func (m *Connector) validate(all bool) error {
 	// no validation rules for Name
 
 	if all {
-		switch v := interface{}(m.GetProperties()).(type) {
+		switch v := interface{}(m.GetConfig()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ConnectorValidationError{
-					field:  "Properties",
+					field:  "Config",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -1177,16 +1177,16 @@ func (m *Connector) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ConnectorValidationError{
-					field:  "Properties",
+					field:  "Config",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetProperties()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ConnectorValidationError{
-				field:  "Properties",
+				field:  "Config",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

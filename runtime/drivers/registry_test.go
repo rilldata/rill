@@ -22,19 +22,19 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
-				Type:       "file",
-				Name:       "repo",
-				Properties: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": "."})),
+				Type:   "file",
+				Name:   "repo",
+				Config: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": "."})),
 			},
 			{
-				Type:       "duckdb",
-				Name:       "duckdb",
-				Properties: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
+				Type:   "duckdb",
+				Name:   "duckdb",
+				Config: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 			},
 			{
-				Type:       "sqlite",
-				Name:       "catalog",
-				Properties: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": "file:rill?mode=memory&cache=shared"})),
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: testruntime.Must(structpb.NewStruct(map[string]any{"dsn": "file:rill?mode=memory&cache=shared"})),
 			},
 		},
 	}

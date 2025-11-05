@@ -5483,6 +5483,11 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   properties?: Struct;
 
   /**
+   * @generated from field: repeated string templated_properties = 4;
+   */
+  templatedProperties: string[] = [];
+
+  /**
    * @generated from field: bool provision = 5;
    */
   provision = false;
@@ -5502,6 +5507,7 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "properties", kind: "message", T: Struct },
+    { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },
   ]);

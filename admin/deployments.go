@@ -191,7 +191,8 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		return err
 	}
 
-	adminProp, err := structpb.NewStruct(map[string]any{
+	// Prepare connectors
+	adminConfig, err := structpb.NewStruct(map[string]any{
 		"admin_url":    s.opts.ExternalURL,
 		"access_token": dat.Token().String(),
 		"project_id":   depl.ProjectID,
@@ -200,7 +201,7 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 		return err
 	}
 
-	duckdbProp, err := structpb.NewStruct(map[string]any{
+	duckdbConfig, err := structpb.NewStruct(map[string]any{
 		"cpu":                 strconv.Itoa(cfg.CPU),
 		"memory_limit_gb":     strconv.Itoa(cfg.MemoryGB),
 		"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
@@ -208,20 +209,18 @@ func (s *Service) startDeploymentInner(ctx context.Context, depl *database.Deplo
 	if err != nil {
 		return err
 	}
-
-	// Prepare connectors
 	connectors := []*runtimev1.Connector{
 		// The admin connector
 		{
-			Name:       "admin",
-			Type:       "admin",
-			Properties: adminProp,
+			Name:   "admin",
+			Type:   "admin",
+			Config: adminConfig,
 		},
 		// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
 		{
-			Name:       "duckdb",
-			Type:       "duckdb",
-			Properties: duckdbProp,
+			Name:   "duckdb",
+			Type:   "duckdb",
+			Config: duckdbConfig,
 		},
 	}
 

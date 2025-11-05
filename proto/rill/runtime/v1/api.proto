@@ -350,7 +350,9 @@ message Connector {
   // Name of the connector
   string name = 2;
   // Config for the connector
-  google.protobuf.Struct properties = 3;
+  google.protobuf.Struct config = 3;
+  // Properties in config that use templating
+  repeated string templated_properties = 5;
   // Provision settings if its a managed connector
   bool provision = 6;
   google.protobuf.Struct provision_args = 7;

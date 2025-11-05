@@ -121,15 +121,15 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	// Create a local runtime with an in-memory metastore
-	metastoreProp, err := structpb.NewStruct(map[string]any{"dsn": "file:rill?mode=memory&cache=shared"})
+	metastoreConfig, err := structpb.NewStruct(map[string]any{"dsn": "file:rill?mode=memory&cache=shared"})
 	if err != nil {
 		return nil, err
 	}
 	systemConnectors := []*runtimev1.Connector{
 		{
-			Type:       "sqlite",
-			Name:       "metastore",
-			Properties: metastoreProp,
+			Type:   "sqlite",
+			Name:   "metastore",
+			Config: metastoreConfig,
 		},
 	}
 
@@ -200,7 +200,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	// Add default OLAP connector
-	olapProp, err := structpb.NewStruct(map[string]any{
+	olapConfig, err := structpb.NewStruct(map[string]any{
 		"pool_size":   "4",
 		"log_queries": strconv.FormatBool(opts.Debug),
 	})
@@ -208,38 +208,38 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		return nil, err
 	}
 	olapConnector := &runtimev1.Connector{
-		Type:       "duckdb",
-		Name:       "duckdb",
-		Properties: olapProp,
+		Type:   "duckdb",
+		Name:   "duckdb",
+		Config: olapConfig,
 	}
 	connectors = append(connectors, olapConnector)
 
 	// The repo connector is the local project directory
-	repoProp, err := structpb.NewStruct(map[string]any{"dsn": projectPath})
+	repoConfig, err := structpb.NewStruct(map[string]any{"dsn": projectPath})
 	if err != nil {
 		return nil, err
 	}
 	repoConnector := &runtimev1.Connector{
-		Type:       "file",
-		Name:       "repo",
-		Properties: repoProp,
+		Type:   "file",
+		Name:   "repo",
+		Config: repoConfig,
 	}
 	connectors = append(connectors, repoConnector)
 
 	// The catalog connector is a SQLite database in the project directory's tmp folder
-	catalogProp, err := structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))})
+	catalogConfig, err := structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))})
 	if err != nil {
 		return nil, err
 	}
 	catalogConnector := &runtimev1.Connector{
-		Type:       "sqlite",
-		Name:       "catalog",
-		Properties: catalogProp,
+		Type:   "sqlite",
+		Name:   "catalog",
+		Config: catalogConfig,
 	}
 	connectors = append(connectors, catalogConnector)
 
 	// Use the admin service for AI
-	aiProp, err := structpb.NewStruct(map[string]any{
+	aiConfig, err := structpb.NewStruct(map[string]any{
 		"admin_url":    opts.Ch.AdminURL(),
 		"access_token": opts.Ch.AdminToken(),
 	})
@@ -247,9 +247,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		return nil, err
 	}
 	aiConnector := &runtimev1.Connector{
-		Name:       "admin",
-		Type:       "admin",
-		Properties: aiProp,
+		Name:   "admin",
+		Type:   "admin",
+		Config: aiConfig,
 	}
 	connectors = append(connectors, aiConnector)
 

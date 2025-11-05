@@ -18,7 +18,7 @@ var ErrAINotConfigured = fmt.Errorf("an AI service is not configured for this in
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
-			raw := c.Properties.AsMap()
+			raw := c.Config.AsMap()
 			cfg := lowerKeys(raw)
 			cfg["allow_host_access"] = r.opts.AllowHostAccess
 			return r.getConnection(ctx, cachedConnectionConfig{
@@ -190,7 +190,7 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	for _, c := range inst.Connectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Preset = c.Properties.AsMap()
+			res.Preset = c.Config.AsMap()
 			if c.Provision {
 				res.Provision = c.Provision
 				res.ProvisionArgs = c.ProvisionArgs.AsMap()
@@ -290,20 +290,46 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 // resolveConnectorProperties resolves templating in the provided connector's properties.
 // It always returns a clone of the properties, even if no templating is found, so the output is safe for further mutations.
 func resolveConnectorProperties(environment string, vars map[string]string, c *runtimev1.Connector) (map[string]any, error) {
-	res := c.Properties.AsMap()
+	res := c.Config.AsMap()
 	if res == nil {
 		res = make(map[string]any)
 	}
+
 	td := parser.TemplateData{
 		Environment: environment,
 		Variables:   vars,
 	}
 
-	val, err := parser.ResolveTemplateRecursively(res, td, true)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve template: %w", err)
+	for _, k := range c.TemplatedProperties {
+		v, ok := res[k]
+		if !ok {
+			continue
+		}
+		// because we only added root value string properties in TemplatedProperties while parsing
+		s, ok := v.(string)
+		if !ok {
+			continue
+		}
+		v, err := parser.ResolveTemplate(s, td, true)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve templated property %q: %w", k, err)
+		}
+		res[k] = v
 	}
-	return val.(map[string]any), nil
+	// Resolve the remaining keys.
+	for k, v := range res {
+		// if value is root level string properties is must have already be resolved using TemplatedProperties
+		if _, ok := v.(string); !ok {
+			continue
+		}
+		v, err := parser.ResolveTemplateRecursively(v, td, true)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve template: %w", err)
+		}
+		res[k] = v
+	}
+
+	return res, nil
 }
 
 // ConnectorConfig holds and resolves connector configuration.
@@ -336,7 +362,9 @@ func (c *ConnectorConfig) Resolve() map[string]any {
 	for k, v := range c.Env {
 		cfg[strings.ToLower(k)] = v
 	}
-	cfg = deepMerge(cfg, lowerKeys(c.Preset))
+	for k, v := range lowerKeys(c.Preset) {
+		cfg[k] = v
+	}
 	return cfg
 }
 
@@ -352,45 +380,14 @@ func (c *ConnectorConfig) setPreset(k, v string, force bool) {
 	c.Preset[k] = v
 }
 
-func deepMerge(dst, src map[string]any) map[string]any {
-	for k, v := range src {
-		if vMap, ok := v.(map[string]any); ok {
-			if dstMap, ok := dst[k].(map[string]any); ok {
-				dst[k] = deepMerge(dstMap, vMap)
-				continue
-			}
-		}
-		dst[k] = v
-	}
-	return dst
-}
-
 func lowerKeys(m map[string]any) map[string]any {
 	res := make(map[string]any, len(m))
 	for k, v := range m {
 		lk := strings.ToLower(k)
-		switch val := v.(type) {
-		case map[string]any:
-			res[lk] = lowerKeys(val)
-		case []any:
-			res[lk] = lowerKeysInSlice(val)
-		default:
-			res[lk] = val
-		}
-	}
-	return res
-}
-
-func lowerKeysInSlice(s []any) []any {
-	res := make([]any, len(s))
-	for i, v := range s {
-		switch val := v.(type) {
-		case map[string]any:
-			res[i] = lowerKeys(val)
-		case []any:
-			res[i] = lowerKeysInSlice(val)
-		default:
-			res[i] = val
+		if nested, ok := v.(map[string]any); ok {
+			res[lk] = lowerKeys(nested)
+		} else {
+			res[lk] = v
 		}
 	}
 	return res

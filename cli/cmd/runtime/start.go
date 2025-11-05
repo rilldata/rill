@@ -222,11 +222,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
-			metastoreProp, err := structpb.NewStruct(map[string]any{
+			metastoreConfig, err := structpb.NewStruct(map[string]any{
 				"dsn": conf.MetastoreURL,
 			})
 			if err != nil {
-				logger.Fatal("error in metastore creating properties", zap.Error(err))
+				logger.Fatal("error: could not creat metastore metastore config", zap.Error(err))
 			}
 			// Init runtime
 			opts := &runtime.Options{
@@ -239,9 +239,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AllowHostAccess:              conf.AllowHostAccess,
 				SystemConnectors: []*runtimev1.Connector{
 					{
-						Type:       conf.MetastoreDriver,
-						Name:       "metastore",
-						Properties: metastoreProp,
+						Type:   conf.MetastoreDriver,
+						Name:   "metastore",
+						Config: metastoreConfig,
 					},
 				},
 				Version: ch.Version,

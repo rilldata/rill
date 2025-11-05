@@ -143,24 +143,25 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	// Dedupe connectors
 	connMap := make(map[string]*runtimev1.Connector)
 	for _, c := range rillYAML.Connectors {
-		prop, err := structpb.NewStruct(c.Defaults)
+		config, err := structpb.NewStruct(c.Defaults)
 		if err != nil {
 			return err
 		}
 		connMap[c.Name] = &runtimev1.Connector{
-			Type:       c.Type,
-			Name:       c.Name,
-			Properties: prop,
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: config,
 		}
 	}
 	for _, r := range p.Resources {
 		if r.ConnectorSpec != nil {
 			connMap[r.Name.Name] = &runtimev1.Connector{
-				Name:          r.Name.Name,
-				Type:          r.ConnectorSpec.Driver,
-				Properties:    r.ConnectorSpec.Properties,
-				Provision:     r.ConnectorSpec.Provision,
-				ProvisionArgs: r.ConnectorSpec.ProvisionArgs,
+				Name:                r.Name.Name,
+				Type:                r.ConnectorSpec.Driver,
+				Config:              r.ConnectorSpec.Properties,
+				TemplatedProperties: r.ConnectorSpec.TemplatedProperties,
+				Provision:           r.ConnectorSpec.Provision,
+				ProvisionArgs:       r.ConnectorSpec.ProvisionArgs,
 			}
 		}
 	}
@@ -205,11 +206,12 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 	// If not removing, append the new/updated connector.
 	if connector != nil {
 		projConns = append(projConns, &runtimev1.Connector{
-			Name:          name,
-			Type:          connector.Driver,
-			Properties:    connector.Properties,
-			Provision:     connector.Provision,
-			ProvisionArgs: connector.ProvisionArgs,
+			Name:                name,
+			Type:                connector.Driver,
+			Config:              connector.Properties,
+			TemplatedProperties: connector.TemplatedProperties,
+			Provision:           connector.Provision,
+			ProvisionArgs:       connector.ProvisionArgs,
 		})
 	}
 

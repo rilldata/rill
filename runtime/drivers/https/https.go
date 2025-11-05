@@ -52,6 +52,20 @@ type ConfigProperties struct {
 	Headers map[string]string `mapstructure:"headers"`
 }
 
+type SourceProperties struct {
+	Path    string            `mapstructure:"path"`
+	URI     string            `mapstructure:"uri"`
+	Headers map[string]string `mapstructure:"headers"`
+}
+
+func (s *SourceProperties) ResolvePath() string {
+	// Backwards compatibility for "uri" renamed to "path"
+	if s.URI != "" {
+		return s.URI
+	}
+	return s.Path
+}
+
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("https driver can't be shared")
@@ -187,20 +201,6 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-type SourceProperties struct {
-	Path    string            `mapstructure:"path"`
-	URI     string            `mapstructure:"uri"`
-	Headers map[string]string `mapstructure:"headers"`
-}
-
-func (s *SourceProperties) ResolvePath() string {
-	// Backwards compatibility for "uri" renamed to "path"
-	if s.URI != "" {
-		return s.URI
-	}
-	return s.Path
 }
 
 // FilePaths implements drivers.FileStore

@@ -48,12 +48,6 @@ func (e *httpsToSelfExecutor) modelInputProperties(modelName, inputConnector str
 	if err := mapstructure.WeakDecode(inputProperties, srcProp); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
-
-	path := srcProp.ResolvePath()
-	if path == "" {
-		return nil, fmt.Errorf("missing required property: `path`")
-	}
-
 	// Merge headers
 	headers := make(map[string]string)
 	for k, v := range connectorProps.Headers {
@@ -61,6 +55,11 @@ func (e *httpsToSelfExecutor) modelInputProperties(modelName, inputConnector str
 	}
 	for k, v := range srcProp.Headers {
 		headers[k] = v // srcProp overrides connectorProps
+	}
+
+	path := srcProp.ResolvePath()
+	if path == "" {
+		return nil, fmt.Errorf("missing required property: `path`")
 	}
 
 	m := &ModelInputProperties{}

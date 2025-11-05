@@ -51,6 +51,10 @@ func (p *Parser) parseConnector(node *Node) error {
 		}
 	}
 
+	templatedProps, err := analyzeTemplatedProperties(tmp.Properties)
+	if err != nil {
+		return fmt.Errorf("failed to analyze templated properties: %w", err)
+	}
 	var propertiesPB *structpb.Struct
 	if tmp.Properties != nil {
 		propertiesPB, err = structpb.NewStruct(tmp.Properties)
@@ -68,8 +72,29 @@ func (p *Parser) parseConnector(node *Node) error {
 
 	r.ConnectorSpec.Driver = tmp.Driver
 	r.ConnectorSpec.Properties = propertiesPB
+	r.ConnectorSpec.TemplatedProperties = templatedProps
 	r.ConnectorSpec.Provision = provision
 	r.ConnectorSpec.ProvisionArgs = provisionArgsPB
 
 	return nil
+}
+
+func analyzeTemplatedProperties(m map[string]any) ([]string, error) {
+	var res []string
+	for k, v := range m {
+		// Only analyze root level string values.
+		s, ok := v.(string)
+		if !ok {
+			continue
+		}
+		meta, err := AnalyzeTemplate(s)
+		if err != nil {
+			return nil, err
+		}
+		if !meta.UsesTemplating {
+			continue
+		}
+		res = append(res, k)
+	}
+	return res, nil
 }
