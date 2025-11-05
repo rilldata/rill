@@ -8,5 +8,17 @@ import (
 )
 
 type AIService interface {
-	Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error)
+	Complete(ctx context.Context, opts *CompleteOptions) (*CompleteResult, error)
+}
+
+type CompleteOptions struct {
+	Messages     []*aiv1.CompletionMessage
+	Tools        []*aiv1.Tool
+	OutputSchema *jsonschema.Schema
+}
+
+type CompleteResult struct {
+	Message      *aiv1.CompletionMessage
+	InputTokens  int
+	OutputTokens int
 }
