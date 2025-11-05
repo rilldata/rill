@@ -99,9 +99,14 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
 }
 
 /**
- * List all schemas across databases
+ * List databases (when `database` is undefined) or schemas for a given database (when provided).
+ * The backend returns all schemas across databases; filtering is applied client-side.
  */
-export function useListDatabaseSchemas(instanceId: string, connector: string) {
+export function useListDatabaseSchemas(
+  instanceId: string,
+  connector: string,
+  database?: string,
+) {
   return createConnectorServiceListDatabaseSchemas(
     {
       instanceId,
@@ -113,24 +118,28 @@ export function useListDatabaseSchemas(instanceId: string, connector: string) {
         select: (data) => {
           const allSchemas = data.databaseSchemas ?? [];
 
-          // Check if all databases are empty (flat schema structure like MySQL)
+          if (database !== undefined) {
+            const hasEmptyDatabases = allSchemas.every((s) => !s.database);
+            return hasEmptyDatabases
+              ? [database]
+              : allSchemas
+                  .filter((s) => s.database === database)
+                  .map((s) => s.databaseSchema ?? "");
+          }
+
+          // Derive databases (top-level)
           const hasEmptyDatabases = allSchemas.every(
             (schema) => !schema.database,
           );
-
-          const databases = hasEmptyDatabases
-            ? // For flat structures, use databaseSchema as the primary level
-              Array.from(
+          return hasEmptyDatabases
+            ? Array.from(
                 new Set(
                   allSchemas.map((schema) => schema.databaseSchema ?? ""),
                 ),
               )
-            : // For hierarchical structures, use database as the primary level
-              Array.from(
+            : Array.from(
                 new Set(allSchemas.map((schema) => schema.database ?? "")),
               ).filter(Boolean);
-
-          return databases;
         },
       },
     },
