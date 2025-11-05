@@ -152,7 +152,7 @@
         body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
       />
     {:else if $showPivot}
-      <PivotDisplay />
+      <PivotDisplay {isEmbedded} />
     {:else}
       <div
         class="flex gap-x-1 gap-y-2 overflow-hidden pl-4 slide bg-surface"
