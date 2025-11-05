@@ -7,10 +7,6 @@
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
-  import { createTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-  import { getPivotExploreParams } from "@rilldata/web-common/features/exports/get-pivot-explore-params.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import {
     createQueryServiceExport,
@@ -49,15 +45,6 @@
   const { reports, adminServer, exportHeader } = featureFlags;
 
   $: ({ instanceId } = $runtime);
-  $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName ?? "");
-  $: metricsViewSpec = $exploreSpecQuery.data?.metricsView ?? {};
-  $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
-  $: exploreState = useExploreState(exploreName ?? "");
-  $: timeControlStore = createTimeControlStoreFromName(
-    instanceId,
-    exploreSpec.metricsView ?? "",
-    exploreName ?? "",
-  );
 
   async function handleExport(options: {
     format: V1ExportFormat;
@@ -103,16 +90,12 @@
 
     const pageState = get(page);
     const { organization, project } = pageState.params;
-    const searchParams = getPivotExploreParams(
-      $exploreState,
-      metricsViewSpec,
-      exploreSpec,
-      $timeControlStore,
-    );
-    searchParams.set("explore", exploreName);
-    void goto(
-      `/${organization}/${project}/-/reports/-/create/explore/${exploreName}?${searchParams.toString()}`,
-    );
+    const url = new URL(pageState.url);
+    url.pathname = `/${organization}/${project}/-/reports/-/create`;
+    url.search = "";
+    url.searchParams.set("explore", exploreName);
+    url.searchParams.set("query", JSON.stringify(scheduledReportQuery));
+    void goto(url);
   }
 </script>
 

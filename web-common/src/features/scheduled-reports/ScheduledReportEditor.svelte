@@ -23,12 +23,20 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
+  import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+  import { getPivotStateFromRequest } from "@rilldata/web-common/features/explore-mappers/get-dashboard-from-aggregation-request.ts";
+  import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
   import BaseScheduledReportForm from "@rilldata/web-common/features/scheduled-reports/BaseScheduledReportForm.svelte";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import MetricsViewPivotEditor from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/MetricsViewPivotEditor.svelte";
   import { getPivotConfig } from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/pivot-data-config.ts";
-  import { ReportPivotRenderStore } from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/report-pivot-render-store.ts";
+  import {
+    getAggregationRequestForPivot,
+    getInitFiltersFromAggregationRequest,
+    getInitTimeControlsFromAggregationRequest,
+    ReportPivotRenderStore,
+  } from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/report-pivot-render-store.ts";
   import { convertFormValuesToCronExpression } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
   import {
     getExistingReportInitialFormValues,
@@ -42,8 +50,11 @@
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
+    type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { writable } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
   import { array, boolean, object, string } from "yup";
@@ -51,6 +62,7 @@
   export let props: CreateReportProps | EditReportProps;
   export let organization: string;
   export let project: string;
+  export let aggregationRequest: V1MetricsViewAggregationRequest;
 
   const FORM_ID = "scheduled-report-form";
   const AGGREGATION_QUERY_NAME = "MetricsViewAggregation";
@@ -61,21 +73,47 @@
 
   $: reportName = props.mode === "create" ? "" : props.reportName;
   let metricsViewName = "";
+  const metricsViewNameStore = writable(metricsViewName);
+  $: metricsViewNameStore.set(metricsViewName);
   let exploreName = "";
   let canvasName = "";
 
   const initialMetricsViewName =
-    props.mode === "create" ? props.metricsViewName : "";
-  const initialExploreName = props.mode === "create" ? props.exploreName : "";
-  const initialCanvasName = props.mode === "create" ? props.canvasName : "";
+    props.mode === "create"
+      ? props.metricsViewName
+      : (JSON.parse(props.reportSpec.queryArgsJson).metricsView ?? "");
+  const initialExploreName =
+    props.mode === "create"
+      ? props.exploreName
+      : (props.reportSpec.annotations?.["explore"] ??
+        getExploreName(props.reportSpec.annotations?.web_open_path ?? "") ??
+        "");
+  const initialCanvasName =
+    props.mode === "create"
+      ? props.canvasName
+      : (props.reportSpec.annotations?.["canvas"] ??
+        getExploreName(props.reportSpec.annotations?.web_open_path ?? "") ??
+        "");
   $: isInitialSource =
     metricsViewName === initialMetricsViewName &&
     exploreName === initialExploreName &&
     canvasName === initialCanvasName;
 
+  $: console.log(
+    "init",
+    initialMetricsViewName,
+    initialExploreName,
+    initialCanvasName,
+  );
+  $: console.log("cur", metricsViewName, exploreName, canvasName);
+
   $: ({ instanceId } = $runtime);
 
   const user = createAdminServiceGetCurrentUser();
+  const timeRangeSummaryResp = createQuery(
+    getMetricsViewTimeRangeFromExploreQueryOptions(metricsViewNameStore),
+  );
+  $: timeRangeSummary = $timeRangeSummaryResp.data?.timeRangeSummary;
 
   $: mutation =
     props.mode === "create"
@@ -86,17 +124,28 @@
     props.mode === "create"
       ? getNewReportInitialFormValues(
           $user.data?.user?.email,
-          props.metricsViewName,
-          props.exploreName,
+          initialMetricsViewName,
+          initialExploreName,
+          initialCanvasName,
           {},
         )
       : getExistingReportInitialFormValues(
           props.reportSpec,
+          initialMetricsViewName,
+          initialExploreName,
+          initialCanvasName,
           $user.data?.user?.email,
           {},
         );
 
-  const renderStore = new ReportPivotRenderStore();
+  $: renderStore = new ReportPivotRenderStore(
+    getInitFiltersFromAggregationRequest(aggregationRequest),
+    getInitTimeControlsFromAggregationRequest(
+      aggregationRequest,
+      timeRangeSummary,
+    ),
+    getPivotStateFromRequest(aggregationRequest),
+  );
   $: renderData = renderStore.get(
     instanceId,
     metricsViewName,
@@ -174,6 +223,14 @@
       values.timeOfDay,
       values.dayOfMonth,
     );
+    const req = getAggregationRequestForPivot(
+      {
+        instanceId,
+        metricsView: metricsViewName,
+        ...aggregationRequest,
+      },
+      renderData,
+    );
 
     try {
       await $mutation.mutateAsync({
@@ -186,8 +243,9 @@
             refreshCron: refreshCron, // for testing: "* * * * *"
             refreshTimeZone: values.timeZone,
             explore: values.exploreName,
+            canvas: values.canvasName,
             queryName: AGGREGATION_QUERY_NAME,
-            queryArgsJson: JSON.stringify({}), // TODO
+            queryArgsJson: JSON.stringify(req), // TODO
             exportLimit: values.exportLimit || undefined,
             exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,
@@ -245,25 +303,23 @@
 </script>
 
 <div class="flex flex-row size-full max-w-full max-h-full overflow-auto">
-  <div class="w-full overflow-auto">
-    <article
-      class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
+  <article
+    class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
+  >
+    <div
+      id="header"
+      class="border-b w-fit min-w-full flex flex-col bg-background slide"
     >
-      <div
-        id="header"
-        class="border-b w-fit min-w-full flex flex-col bg-background slide"
-      >
-        <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-          <FiltersForm {filters} {timeControls} />
-        </section>
-        <MetricsViewPivotEditor
-          {metricsViewName}
-          {pivotStore}
-          {pivotConfigStore}
-        />
-      </div>
-    </article>
-  </div>
+      <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
+        <FiltersForm {filters} {timeControls} />
+      </section>
+      <MetricsViewPivotEditor
+        {metricsViewName}
+        {pivotStore}
+        {pivotConfigStore}
+      />
+    </div>
+  </article>
   <div class="flex flex-col border-l relative h-full" style="width: {width}px;">
     <Resizer
       min={MIN_SIDEBAR_WIDTH}

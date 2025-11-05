@@ -38,7 +38,6 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import FilterButton from "./FilterButton.svelte";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
-  import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
   import { featureFlags } from "../../feature-flags";
   import Timestamp from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Timestamp.svelte";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";

@@ -7,15 +7,13 @@ export async function load({ parent, params }) {
   const reportName = params.report;
   const reportSpec = report?.report?.spec;
 
-  const exploreName =
-    reportSpec.annotations?.["explore"] ??
-    getExploreName(reportSpec.annotations?.web_open_path ?? "");
+  const aggregationRequest = JSON.parse(reportSpec.queryArgsJson || "{}");
 
   return {
     organization,
     project,
     reportName,
     report,
-    exploreName,
+    aggregationRequest,
   };
 }

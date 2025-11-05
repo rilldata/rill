@@ -221,7 +221,7 @@ async function mergeDashboardFromUrlState(
   }
 }
 
-function getPivotStateFromRequest(
+export function getPivotStateFromRequest(
   req: V1MetricsViewAggregationRequest,
 ): PivotState {
   const { rows, dimensionColumns, measureColumns } =

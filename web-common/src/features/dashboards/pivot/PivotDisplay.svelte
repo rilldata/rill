@@ -81,6 +81,9 @@
     {#if showPanels}
       <PivotHeader
         pivotState={$dashboardStore.pivot}
+        measures={$measures}
+        dimensions={$dimensions}
+        {timeControlsForPillActions}
         setRows={(rows) =>
           metricsExplorerStore.setPivotRows($exploreName, rows)}
         setColumns={(columns) =>

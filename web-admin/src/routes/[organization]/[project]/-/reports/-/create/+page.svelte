@@ -3,11 +3,19 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  const { organization, project, metricsViewName, exploreName } = data;
+  const {
+    organization,
+    project,
+    metricsViewName,
+    exploreName,
+    canvasName,
+    aggregationRequest,
+  } = data;
 </script>
 
 <ScheduledReportEditor
   {organization}
   {project}
-  props={{ mode: "create", metricsViewName, exploreName }}
+  props={{ mode: "create", metricsViewName, exploreName, canvasName }}
+  {aggregationRequest}
 />

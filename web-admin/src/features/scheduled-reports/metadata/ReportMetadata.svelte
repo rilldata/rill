@@ -91,10 +91,7 @@
 
   function handleEditReport() {
     if ($fullPageReportEditor) {
-      // Use the explore url with all the state params but change the path to be report editor
-      const url = new URL($exploreUrl);
-      url.pathname = `/${organization}/${project}/-/reports/${report}/edit/explore/${$exploreName.data}`;
-      void goto(url.toString());
+      void goto(`/${organization}/${project}/-/reports/${report}/edit`);
     } else {
       showEditReportDialog = true;
     }

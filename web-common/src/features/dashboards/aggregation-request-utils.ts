@@ -1,8 +1,21 @@
-import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
+import {
+  getAggregationDimensionFromFieldName,
+  getDimensionForTimeField,
+} from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
-import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
+import {
+  prepareMeasureForComparison,
+  splitPivotChips,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  ComparisonModifierSuffixRegex,
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
@@ -16,6 +29,7 @@ import type {
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationRequest,
   V1MetricsViewAggregationSort,
+  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
 export type AggregationRequestUpdater = (
@@ -184,6 +198,93 @@ export function splitDimensionsAndMeasuresAsRowsAndColumns(
     rows,
     dimensionColumns,
     measureColumns,
+  };
+}
+
+export function aggregationRequestWithPivotState(
+  pivotState: PivotState,
+  metricsViewSpec: V1MetricsViewSpec,
+) {
+  return (aggregationRequest: V1MetricsViewAggregationRequest) => {
+    const isFlat = pivotState.tableMode === "flat";
+    const columns = splitPivotChips(pivotState.columns);
+    const timeDimension = metricsViewSpec.timeDimension ?? "";
+    const timeZone = aggregationRequest.timeRange?.timeZone ?? "UTC";
+    const enableComparison = !!aggregationRequest.comparisonTimeRange;
+
+    const measures = columns.measure.flatMap((m) => {
+      const measureName = m.id;
+      const group = [{ name: measureName }];
+
+      if (enableComparison) {
+        group.push(
+          { name: `${measureName}${COMPARISON_DELTA}` },
+          { name: `${measureName}${COMPARISON_PERCENT}` },
+        );
+      }
+
+      return group;
+    });
+
+    const allDimensions = [...pivotState.rows, ...columns.dimension].map((d) =>
+      d.type === PivotChipType.Time
+        ? getDimensionForTimeField(timeDimension, timeZone, d, !isFlat)
+        : {
+            name: d.id,
+          },
+    );
+
+    const pivotOn = isFlat
+      ? undefined
+      : columns.dimension.map((d) =>
+          d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
+        );
+
+    const rowDimensions = pivotState.rows.map((d) =>
+      d.type === PivotChipType.Time
+        ? getDimensionForTimeField(timeDimension, timeZone, d, true)
+        : {
+            name: d.id,
+          },
+    );
+
+    let sort: V1MetricsViewAggregationSort[] = [];
+
+    if (isFlat) {
+      if (pivotState.sorting.length > 0) {
+        sort = [
+          {
+            name: pivotState.sorting[0].id,
+            desc: pivotState.sorting[0].desc,
+          },
+        ];
+      } else {
+        sort = [
+          {
+            desc: measures?.[0] ? true : false,
+            name: measures?.[0]?.name || allDimensions?.[0]?.name,
+          },
+        ];
+      }
+    } else {
+      // Sort by the dimensions in the pivot's rows
+      sort = rowDimensions.map((d) => {
+        return {
+          name: d.alias ? d.alias : d.name,
+          desc: pivotState.sorting.find((s) => s.id === d.name)?.desc ?? false,
+        };
+      });
+    }
+
+    return {
+      ...aggregationRequest,
+      measures: enableComparison
+        ? prepareMeasureForComparison(measures)
+        : measures,
+      dimensions: allDimensions,
+      pivotOn,
+      sort,
+    };
   };
 }
 
