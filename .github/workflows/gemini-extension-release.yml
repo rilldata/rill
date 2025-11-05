@@ -1,0 +1,69 @@
+name: Release Gemini Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., gemini-v1.0.0)'
+        required: true
+        type: string
+
+env:
+  EXTENSION_VERSION: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  release-gemini-extension:
+    name: Release Gemini Extension
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Build Gemini Extension
+        run: |
+          cd integrations/gemini
+          npm ci
+          npm run build
+          npm run package
+        env:
+          HUSKY: 0
+
+      - name: Create Gemini Extension Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.EXTENSION_VERSION }}
+          name: "Gemini Extension ${{ env.EXTENSION_VERSION }}"
+          files: integrations/gemini/release/**
+          body: |
+            ## Rill Gemini Extension Release
+            
+            This release contains the Rill integration for Google Gemini.
+            
+            ### Installation
+            ```bash
+            gemini extensions install https://github.com/rilldata/rill --ref=${{ env.EXTENSION_VERSION }}
+            ```
+            
+            See the [README](https://github.com/rilldata/rill/blob/main/integrations/gemini/README.md) for setup instructions.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify Slack
+        uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "Gemini Extension Release - ${{ env.EXTENSION_VERSION }}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          footer: "Linked Repo <{repo_url}|{repo}>"
+          notify_when: "failure"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}

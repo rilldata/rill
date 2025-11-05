@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"reflect"
 	goruntime "runtime"
 	"slices"
@@ -72,7 +71,6 @@ type SessionOptions struct {
 	CreateIfNotExists bool
 	Claims            *runtime.SecurityClaims
 	UserAgent         string
-	Headers           http.Header
 }
 
 // Session creates or loads an AI session.
@@ -162,7 +160,6 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		id:         session.ID,
 		instanceID: opts.InstanceID,
 		claims:     opts.Claims,
-		headers:    opts.Headers,
 
 		runner:              r,
 		logger:              logger,
@@ -364,7 +361,6 @@ type BaseSession struct {
 	id         string
 	instanceID string
 	claims     *runtime.SecurityClaims
-	headers    http.Header
 
 	runner              *Runner
 	logger              *zap.Logger
@@ -459,10 +455,6 @@ func (s *BaseSession) CatalogSession() *drivers.AISession {
 
 func (s *BaseSession) Claims() *runtime.SecurityClaims {
 	return s.claims
-}
-
-func (s *BaseSession) Headers() http.Header {
-	return s.headers
 }
 
 func (s *BaseSession) Title() string {

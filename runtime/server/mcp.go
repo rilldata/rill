@@ -37,7 +37,6 @@ func (s *Server) mcpHandler() http.Handler {
 			CreateIfNotExists: true,
 			Claims:            auth.GetClaims(r.Context(), instanceID),
 			UserAgent:         "mcp/unknown", // It's just preliminary: the MCP server updates it with the actual user agent after the initialization handshake.
-			Headers:           r.Header,
 		})
 		if err != nil {
 			s.logger.Error("failed to create AI session for MCP", zap.String("instance_id", instanceID), zap.String("session_id", sessionID), zap.Error(err))

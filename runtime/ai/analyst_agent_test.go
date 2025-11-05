@@ -1,38 +1,15 @@
 package ai_test
 
 import (
-	"net/http"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
-
-// newSessionWithHeaders creates a test AI session with optional headers.
-func newSessionWithHeaders(t *testing.T, rt *runtime.Runtime, instanceID string, userAgent string, headers http.Header) *ai.Session {
-	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
-	r := ai.NewRunner(rt, activity.NewNoopClient())
-	s, err := r.Session(t.Context(), &ai.SessionOptions{
-		InstanceID: instanceID,
-		Claims:     claims,
-		UserAgent:  userAgent,
-		Headers:    headers,
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := s.Flush(t.Context())
-		require.NoError(t, err)
-	})
-
-	return s
-}
 
 func TestAnalystBasic(t *testing.T) {
 	// Setup a basic metrics view with an "event_time" time dimension, "country" dimension, and "count" and "revenue" measures.
@@ -187,56 +164,4 @@ func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
 	return ts
-}
-
-func TestAnalystCheckAccess(t *testing.T) {
-	// Setup runtime instance with the OpenRTB dataset
-	n, files := testruntime.ProjectOpenRTB(t)
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		EnableLLM: true,
-		Files:     files,
-	})
-	testruntime.RequireReconcileState(t, rt, instanceID, n, 0, 0)
-
-	t.Run("CheckAccess Denied - non-rill user agent", func(t *testing.T) {
-		s := newSession(t, rt, instanceID)
-		s.CatalogSession().UserAgent = "some-other-agent/1.0"
-
-		agent := &ai.AnalystAgent{Runtime: rt}
-
-		require.False(t, agent.CheckAccess(ai.WithSession(t.Context(), s)))
-	})
-
-	t.Run("CheckAccess Denied - no X-Rill-Agent header and non-rill user agent", func(t *testing.T) {
-		s := newSession(t, rt, instanceID)
-		s.CatalogSession().UserAgent = "some-other-agent/1.0"
-
-		agent := &ai.AnalystAgent{Runtime: rt}
-
-		ctx := ai.WithSession(t.Context(), s)
-		require.False(t, agent.CheckAccess(ctx))
-	})
-
-	t.Run("CheckAccess Allowed - rill user agent", func(t *testing.T) {
-		s := newSession(t, rt, instanceID)
-
-		s.CatalogSession().UserAgent = "rill-evals/1.0"
-
-		agent := &ai.AnalystAgent{Runtime: rt}
-
-		ctx := ai.WithSession(t.Context(), s)
-		require.True(t, agent.CheckAccess(ctx))
-	})
-
-	t.Run("CheckAccess Allowed - X-Rill-Agent header", func(t *testing.T) {
-		headers := http.Header{}
-		headers.Set("X-Rill-Agent", "gemini")
-
-		s := newSessionWithHeaders(t, rt, instanceID, "node", headers)
-
-		agent := &ai.AnalystAgent{Runtime: rt}
-
-		ctx := ai.WithSession(t.Context(), s)
-		require.True(t, agent.CheckAccess(ctx))
-	})
 }

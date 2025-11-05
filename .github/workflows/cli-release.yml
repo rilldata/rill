@@ -121,21 +121,6 @@ jobs:
       - name: Set up gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.nvmrc'
-
-      - name: Build Gemini Extension
-        if: env.PUBLISH_RELEASE == 'true'
-        run: |
-          cd integrations/gemini
-          npm ci
-          npm run build
-          npm run package
-        env:
-          HUSKY: 0
-
       - name: Set GORELEASER_CURRENT_TAG and NIGHTLY
         run: |-
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
@@ -169,14 +154,6 @@ jobs:
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
           GORELEASER_CURRENT_TAG: ${{ env.GORELEASER_CURRENT_TAG }}
           PUBLISH_NIGHTLY: ${{ env.PUBLISH_NIGHTLY }}
-
-      - name: Add Gemini Extension to Release
-        if: env.PUBLISH_RELEASE == 'true'
-        uses: softprops/action-gh-release@v1
-        with:
-          files: integrations/gemini/release/**
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: CDN - Explicitly invalidate the old artifacts from CDN cache
         run: |-

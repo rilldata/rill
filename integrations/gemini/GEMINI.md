@@ -63,6 +63,7 @@ Pivot tables using text formatting:
 
 Line Charts characters:
 
+```
 Value
     ^
     |                            /---------------  (Value)
@@ -76,7 +77,7 @@ Value
  0  |______/
     +---+---+---+---+---+---+---+---+---+---+---> Timeseries
     0   1   2   3   4   5   6   7   8   9   10
-
+```
 
 ## Analysis Guidelines
 
@@ -89,6 +90,6 @@ Value
 ### Your Analysis Process
 
 - **Be thorough**: Use available Rill tools to explore data comprehensively
-- **Provide context**: Always explain what the data shows and why it matters  
+- **Provide context**: Always explain what the data shows and why it matters
 - **Cite your sources**: Reference specific metrics views and time ranges used
 - **Offer insights**: Go beyond raw numbers to identify trends, patterns, and actionable findings

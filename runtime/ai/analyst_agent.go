@@ -73,12 +73,14 @@ func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
 	}
 
 	// Allow for rill user agents and rill integrations
-	// TODO: This is a temporary measure until we have a proper authentication mechanism for integrations.
+	// Check if the user agent indicates this is a Rill client or integration
 	agent := s.CatalogSession().UserAgent
-	isRillAgent := strings.HasPrefix(agent, "rill")
-	isRillIntegration := s.Headers().Get("X-Rill-Agent") != ""
+	isRillClient := strings.HasPrefix(agent, "rill")
 
-	if !isRillAgent && !isRillIntegration {
+	// Allow rill-gemini-extension specifically for Gemini integration
+	isGeminiIntegration := strings.Contains(agent, "rill-gemini-extension")
+
+	if !isRillClient && !isGeminiIntegration {
 		return false
 	}
 

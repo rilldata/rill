@@ -8,11 +8,15 @@ Check out [Rill's Docs](https://docs.rilldata.com) for more information about Ri
 
 ## Installation
 
-Install the extension via GitHub:
+Install the extension via GitHub using a specific release tag:
 
 ```bash
-gemini extensions install https://github.com/rilldata/rill
+gemini extensions install https://github.com/rilldata/rill --ref=gemini-v1.0.0
 ```
+
+> **Note**: Since this is a monorepo, you must specify a Gemini-specific release tag (prefixed with `gemini-v`) to ensure Gemini CLI picks up the correct extension files. See [Releases](https://github.com/rilldata/rill/releases) for available versions.
+
+For the latest version, check the [releases page](https://github.com/rilldata/rill/releases) and use the most recent `gemini-v*` tag.
 
 Install Rill CLI if you haven't already:
 
@@ -22,17 +26,21 @@ curl https://rill.sh | sh
 
 ## Configuration
 
-Generate a Rill authentication token:
+After installation, configure the extension with your Rill credentials. The extension will prompt you for the following information during setup:
+
+- **Organization**: Your Rill organization name
+- **Project**: Your Rill project name
+- **Access Token**: Your Rill access token
+
+To generate a Rill authentication token, run:
 
 ```bash
 rill token issue --display-name "Gemini Extension"
 ```
 
-Update the extension with your Rill credentials by providing the following information when prompted:
+> **Tip**: You can find your organization and project names in the Rill Cloud UI URL: `https://ui.rilldata.com/{organization}/{project}`
 
-- `Organization`: Your Rill organization name
-- `Project`: Your Rill project name
-- `Access Token`: Your Rill access token
+The extension configuration is handled automatically through Gemini's settings interface - no manual environment file setup is required.
 
 ## Development
 
@@ -52,8 +60,4 @@ To test changes locally:
 
 ### Releasing
 
-This extension is distributed through [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases). This provides a faster and more reliable initial installation experience for users, as releases are shipped as single archives instead of requiring a git clone.
-
-Each release includes an archive file containing the full contents of the repository at the tagged commit. When checking for updates, Gemini CLI looks for the "latest" release on GitHub (you must mark it as such when creating the release), unless the user installed a specific release by passing `--ref=<some-release-tag>`.
-
-The extension version is managed through the `gemini-extension.json` file, and releases are automated via GitHub Actions when new version tags are pushed.
+This extension is distributed through [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)
