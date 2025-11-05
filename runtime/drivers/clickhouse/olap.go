@@ -135,6 +135,16 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		}
 	}
 
+	if len(stmt.QueryAttributes) > 0 {
+		stmt.Query += ", "
+		var attrPairs []string
+		for k, v := range stmt.QueryAttributes {
+			// Escape the key as an identifier and quote the value
+			attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", k, strings.ReplaceAll(v, "'", "''")))
+		}
+		stmt.Query += strings.Join(attrPairs, ", ")
+	}
+
 	// Gather metrics only for actual queries
 	var acquiredTime time.Time
 	acquired := false

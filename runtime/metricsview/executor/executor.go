@@ -94,9 +94,15 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		return []byte(ts.Watermark.Format(time.RFC3339)), true, nil
 	}
 
+	queryAttrs, err := e.resolveQueryAttributes(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+
 	res, err := e.olap.Query(ctx, &drivers.Statement{
-		Query:    spec.CacheKeySql,
-		Priority: e.priority,
+		Query:           spec.CacheKeySql,
+		Priority:        e.priority,
+		QueryAttributes: queryAttrs,
 	})
 	if err != nil {
 		return nil, false, err
@@ -327,11 +333,17 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 			return nil, err
 		}
 
+		queryAttrs, err := e.resolveQueryAttributes(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		res, err = e.olap.Query(ctx, &drivers.Statement{
 			Query:            sql,
 			Args:             args,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultInteractiveTimeout,
+			QueryAttributes:  queryAttrs,
 		})
 		if err != nil {
 			return nil, err
@@ -474,11 +486,15 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		}
 	}
 
+	queryAttrs, err := e.resolveQueryAttributes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var (
 		finalSQL  strings.Builder
 		finalArgs []any
 		rowsCap   int64
-		err       error
 	)
 	for i, d := range qry.Dimensions {
 		if i > 0 {
@@ -534,6 +550,7 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		Args:             finalArgs,
 		Priority:         e.priority,
 		ExecutionTimeout: defaultInteractiveTimeout,
+		QueryAttributes:  queryAttrs,
 	})
 	if err != nil {
 		return nil, err
@@ -618,6 +635,12 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 	if qry.TimeRange == nil {
 		return nil, errDruidNativeSearchUnimplemented
 	}
+
+	queryAttrs, err := e.resolveQueryAttributes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	dimensions := make([]metricsview.Dimension, len(qry.Dimensions))
 	for i, d := range qry.Dimensions {
 		dimensions[i] = metricsview.Dimension{Name: d}
@@ -667,6 +690,7 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 			Args:             a.Root.Where.Args,
 			Priority:         e.priority,
 			ExecutionTimeout: defaultInteractiveTimeout,
+			QueryAttributes:  queryAttrs,
 		})
 		if err != nil {
 			return nil, err
