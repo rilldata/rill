@@ -78,8 +78,9 @@ type MetricsViewYAML struct {
 		Connector      string             `yaml:"connector"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
-	Security *SecurityPolicyYAML
-	Cache    struct {
+	Security        *SecurityPolicyYAML
+	QueryAttributes map[string]string `yaml:"query_attributes"`
+	Cache           struct {
 		Enabled *bool  `yaml:"enabled"`
 		KeySQL  string `yaml:"key_sql"`
 		KeyTTL  string `yaml:"key_ttl"`
@@ -785,6 +786,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.CacheEnabled = tmp.Cache.Enabled
 	spec.CacheKeySql = tmp.Cache.KeySQL
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
+	spec.QueryAttributes = tmp.QueryAttributes
 
 	// When version is greater than 0 or inline explore is defined or skip explore set to true, we skip creating a default explore resource. Application should set version to 0 now to enable automatic explore emission.
 	if node.Version > 0 || skipExplore {

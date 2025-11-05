@@ -1472,6 +1472,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   cacheKeyTtlSeconds = protoInt64.zero;
 
+  /**
+   * Query attributes that can be templated with user context and used by drivers (e.g., appended to SETTINGS in ClickHouse).
+   * Keys and values are stored as templates and will be resolved at query time.
+   *
+   * @generated from field: map<string, string> query_attributes = 33;
+   */
+  queryAttributes: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1503,6 +1511,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 33, name: "query_attributes", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
