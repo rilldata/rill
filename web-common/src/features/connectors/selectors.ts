@@ -2,11 +2,9 @@ import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
   type V1TableInfo,
-  type V1OlapTableInfo,
   createConnectorServiceListDatabaseSchemas,
   createConnectorServiceListTables,
   createConnectorServiceGetTable,
-  createConnectorServiceOLAPListTables,
   createRuntimeServiceGetInstance,
   type V1GetResourceResponse,
   getRuntimeServiceGetResourceQueryKey,
@@ -106,7 +104,7 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
 }
 
 export function useDatabasesOLAP(instanceId: string, connector: string) {
-  return createConnectorServiceOLAPListTables(
+  return createConnectorServiceListDatabaseSchemas(
     {
       instanceId,
       connector,
@@ -115,13 +113,13 @@ export function useDatabasesOLAP(instanceId: string, connector: string) {
       query: {
         enabled: !!instanceId && !!connector,
         select: (data) => {
-          // Get the unique databases
-          return (
-            data.tables
-              ?.map((tableInfo) => tableInfo.database ?? "")
-              .filter((value, index, self) => self.indexOf(value) === index) ??
-            []
-          );
+          const allSchemas = data.databaseSchemas ?? [];
+          const hasEmptyDatabases = allSchemas.every((s) => !s.database);
+          return hasEmptyDatabases
+            ? Array.from(new Set(allSchemas.map((s) => s.databaseSchema ?? "")))
+            : Array.from(
+                new Set(allSchemas.map((s) => s.database ?? "")),
+              ).filter(Boolean);
         },
       },
     },
@@ -133,7 +131,7 @@ export function useDatabaseSchemasOLAP(
   connector: string,
   database: string,
 ) {
-  return createConnectorServiceOLAPListTables(
+  return createConnectorServiceListDatabaseSchemas(
     {
       instanceId,
       connector,
@@ -142,13 +140,13 @@ export function useDatabaseSchemasOLAP(
       query: {
         enabled: !!instanceId && !!connector,
         select: (data) => {
-          return (
-            data.tables
-              ?.filter((table) => table.database === database)
-              .map((table) => table.databaseSchema)
-              .filter((value, index, self) => self.indexOf(value) === index) ??
-            []
-          );
+          const allSchemas = data.databaseSchemas ?? [];
+          const hasEmptyDatabases = allSchemas.every((s) => !s.database);
+          return hasEmptyDatabases
+            ? [database]
+            : allSchemas
+                .filter((s) => s.database === database)
+                .map((s) => s.databaseSchema ?? "");
         },
       },
     },
@@ -161,24 +159,23 @@ export function useTablesOLAP(
   database: string,
   databaseSchema: string,
   enabled: boolean = true,
-): CreateQueryResult<V1OlapTableInfo[]> {
-  return createConnectorServiceOLAPListTables(
+): CreateQueryResult<V1TableInfo[]> {
+  return createConnectorServiceListTables(
     {
       instanceId,
       connector,
+      database,
+      databaseSchema,
     },
     {
       query: {
-        enabled: enabled && !!instanceId && !!connector,
-        select: (data) => {
-          return (
-            data.tables?.filter(
-              (table) =>
-                table.database === database &&
-                table.databaseSchema === databaseSchema,
-            ) ?? []
-          );
-        },
+        enabled:
+          enabled &&
+          !!instanceId &&
+          !!connector &&
+          !!database &&
+          databaseSchema !== undefined,
+        select: (data) => data.tables ?? [],
       },
     },
   );
