@@ -2,6 +2,7 @@
   Renders AI thinking/reasoning messages that appear during tool execution.
 -->
 <script lang="ts">
+  import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
 
   export let message: V1Message;
@@ -11,7 +12,7 @@
 
 <div class="progress-message">
   <div class="progress-content">
-    {content}
+    <Markdown {content} />
   </div>
 </div>
 
