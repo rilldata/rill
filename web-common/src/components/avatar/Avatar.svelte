@@ -12,14 +12,16 @@
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
   }
+
+  let internalLoadingStatus = loadingStatus;
 </script>
 
 <Avatar.Root
-  bind:loadingStatus
+  bind:loadingStatus={internalLoadingStatus}
   class={cn(
     avatarSize,
     "rounded-full",
-    loadingStatus === "loaded" ? "border-foreground" : "border-transparent",
+    internalLoadingStatus === "loaded" ? "border-foreground" : "border-transparent",
     "text-[17px]",
     "font-medium",
     "uppercase",
@@ -33,7 +35,7 @@
       {
         "border-dashed bg-transparent border-slate-400": !src && !alt,
         [`border-transparent ${bgColor}`]:
-          (!src && alt) || (loadingStatus === "error" && alt),
+          (!src && alt) || (internalLoadingStatus === "error" && alt),
       },
     )}
   >

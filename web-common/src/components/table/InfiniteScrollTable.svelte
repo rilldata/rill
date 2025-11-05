@@ -237,8 +237,7 @@
         {:else}
           {#each $virtualizer.getVirtualItems() as virtualRow, idx (virtualRow.index)}
             <tr
-              style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
-                idx * virtualRow.size}px);"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: {virtualRow.size}px; transform: translateY({virtualRow.start}px);"
             >
               {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
                 <td
@@ -304,5 +303,8 @@
   .scroll-container {
     width: 100%;
     overflow-y: auto;
+  }
+  tbody {
+    @apply relative;
   }
 </style>
