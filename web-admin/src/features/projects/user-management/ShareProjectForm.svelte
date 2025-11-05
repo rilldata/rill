@@ -122,7 +122,7 @@
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     "autogroup:members",
-    undefined,
+    { pageSize: 1000 },
     {
       query: {
         enabled,

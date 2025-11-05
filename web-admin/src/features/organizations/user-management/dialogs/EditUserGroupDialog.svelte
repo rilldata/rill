@@ -53,6 +53,7 @@
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     groupName,
+    { pageSize: 1000 },
   );
 
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
