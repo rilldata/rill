@@ -280,10 +280,10 @@ export function useListDatabaseSchemas(
 }
 
 /**
- * Fetches tables for a specific database and schema
+ * Fetches all tables for a given database and database_schema
  * This is called on-demand when a schema is expanded
  */
-export function useTablesForSchema(
+export function useListTables(
   instanceId: string,
   connector: string,
   database: string,

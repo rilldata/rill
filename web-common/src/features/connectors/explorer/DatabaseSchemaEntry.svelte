@@ -3,10 +3,7 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
-  import {
-    useTablesOLAP as useTablesLegacy,
-    useTablesForSchema,
-  } from "../selectors";
+  import { useListTables } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
@@ -21,22 +18,13 @@
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
 
-  // Use appropriate selector based on API version
-  $: tablesQuery = useNewAPI
-    ? useTablesForSchema(
-        instanceId,
-        connectorName,
-        database,
-        databaseSchema,
-        expanded,
-      )
-    : useTablesLegacy(
-        instanceId,
-        connectorName,
-        database,
-        databaseSchema,
-        expanded,
-      );
+  $: tablesQuery = useListTables(
+    instanceId,
+    connectorName,
+    database,
+    databaseSchema,
+    expanded,
+  );
 
   $: ({ data, error, isLoading } = $tablesQuery);
 
