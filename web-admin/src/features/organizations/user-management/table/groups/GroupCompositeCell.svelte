@@ -46,7 +46,7 @@
     <span class="text-sm font-medium text-gray-900 flex flex-row gap-x-1">
       {name}
     </span>
-    <Tooltip location="right" alignment="middle" distance={8}>
+    <Tooltip location="right" alignment="start" distance={8}>
       <div
         class="flex flex-row items-center gap-x-1"
         role="button"
