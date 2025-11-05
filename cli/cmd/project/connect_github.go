@@ -171,6 +171,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		Public:        opts.Public,
 		DirectoryName: filepath.Base(localProjectPath),
 		GitRemote:     opts.remoteURL,
+		SkipDeploy:    opts.SkipDeploy,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {

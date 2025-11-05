@@ -44,6 +44,9 @@ type DeployOpts struct {
 	// Github indicates if the project should be connected to GitHub for automatic deploys.
 	Github bool
 
+	// SkipDeploy skips the runtime deployment step. Used for testing.
+	SkipDeploy bool
+
 	// remoteURL is the git remote url of the repository if detected. Set internally.
 	remoteURL string
 	// pushToProject is set if the deploy should push current changes to this existing project. Set internally.
@@ -187,7 +190,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			return err
 		}
 		connectToGithub = !ok
-	} else if !o.Github {
+	} else if !o.Github && ch.Interactive {
 		// still confirm if user wants to connect to github
 		connectToGithub, err = cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
 		if err != nil {
@@ -300,6 +303,14 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		}
 	}
 
+	deployCmd.Flags().BoolVar(&opts.SkipDeploy, "skip-deploy", false, "Skip the runtime deployment step (for testing only)")
+	if !ch.IsDev() {
+		err := deployCmd.Flags().MarkHidden("skip-deploy")
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return deployCmd
 }
 
@@ -379,6 +390,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ProdSlots:     int64(opts.Slots),
 		Public:        opts.Public,
 		DirectoryName: filepath.Base(localProjectPath),
+		SkipDeploy:    opts.SkipDeploy,
 	}
 
 	ch.Printer.Println("Starting upload.")
