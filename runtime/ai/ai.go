@@ -1034,7 +1034,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			if outErr != nil {
 				outErrStr = outErr.Error()
 			}
-			s.activity.Record(ctx, activity.EventTypeLog, "llm_completion",
+			s.activity.Record(ctx, activity.EventTypeLog, "ai_completion",
 				attribute.String("parent_message_id", s.ParentID),
 				attribute.String("parent_tool", name),
 				attribute.String("error", outErrStr),

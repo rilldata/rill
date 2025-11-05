@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 )
 
 func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*adminv1.CompleteResponse, error) {
@@ -53,10 +54,18 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 	if err != nil {
 		return nil, err
 	}
-
 	if len(res.Message.Content) == 0 {
 		return nil, errors.New("the AI responded with an empty message")
 	}
+
+	// Log token usage
+	s.logger.Info("llm completion successful",
+		zap.Int("input_messages", len(messages)),
+		zap.Int("output_messages", len(res.Message.Content)),
+		zap.Int("input_tokens", res.InputTokens),
+		zap.Int("output_tokens", res.OutputTokens),
+		observability.ZapCtx(ctx),
+	)
 
 	// Handle response backwards compatibility: if request used old format,
 	// populate both data and content fields for old runtime compatibility
