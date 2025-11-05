@@ -68,11 +68,6 @@ function createModelingSupportQueryOptions(
 }
 
 /**
- * LEGACY OLAP SELECTORS
- * These use the legacy OLAP-specific APIs and should be migrated to the new generic APIs above
- */
-
-/**
  * Check if modeling is supported for a specific connector based on its properties
  */
 export function useIsModelingSupportedForConnectorOLAP(
@@ -175,7 +170,7 @@ export function useListTables(
 }
 
 /**
- * Fetches detailed metadata for a specific table
+ * Get metadata about a table or view
  * Called when a table is selected/expanded
  */
 export function useGetTable(

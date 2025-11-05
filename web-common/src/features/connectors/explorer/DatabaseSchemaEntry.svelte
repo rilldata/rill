@@ -28,28 +28,16 @@
 
   $: ({ data, error, isLoading } = $tablesQuery);
 
-  // TODO: verify with mysql, then remove legacy code
-  // Handle data structure differences between APIs
-  $: typedData = useNewAPI
-    ? // New API returns V1TableInfo[]
-      (data as Array<{ name: string; view?: boolean }> | undefined)?.map(
-        (table) => ({
-          name: table.name,
-          database,
-          databaseSchema,
-          hasUnsupportedDataTypes: false, // Not available in new API
-          view: table.view ?? false,
-        }),
-      )
-    : // Legacy API returns V1OlapTableInfo[]
-      (data as
-        | Array<{
-            name: string;
-            database: string;
-            databaseSchema: string;
-            hasUnsupportedDataTypes: boolean;
-          }>
-        | undefined);
+  // Normalize V1TableInfo[] from ListTables into the TableEntry input shape
+  $: typedData = (
+    data as Array<{ name?: string; view?: boolean }> | undefined
+  )?.map((table) => ({
+    name: table.name ?? "",
+    database,
+    databaseSchema,
+    hasUnsupportedDataTypes: false,
+    view: table.view ?? false,
+  }));
 </script>
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
