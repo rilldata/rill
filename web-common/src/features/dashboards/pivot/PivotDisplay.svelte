@@ -13,6 +13,8 @@
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
 
+  export let isEmbedded: boolean = false;
+
   const stateManagers = getStateManagers();
   const {
     exploreName,
@@ -69,7 +71,12 @@
       {#if $pivotDataStore?.error?.length}
         <PivotError errors={$pivotDataStore.error} />
       {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-        <PivotEmpty {assembled} {isFetching} {hasColumnAndNoMeasure} />
+        <PivotEmpty
+          {assembled}
+          {isFetching}
+          {hasColumnAndNoMeasure}
+          {isEmbedded}
+        />
       {:else}
         <PivotTable
           {pivotDataStore}
