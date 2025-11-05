@@ -15,6 +15,7 @@ import {
 import {
   getQueryServiceMetricsViewSchemaQueryOptions,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
+  getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
@@ -59,10 +60,40 @@ export function useValidExplores(instanceId: string) {
   );
 }
 
+export function getValidExploreSpecsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      { kind: ResourceKind.Explore },
+      {
+        query: {
+          select: (data) =>
+            data.resources?.filter((res) => !!res.explore?.state?.validSpec),
+        },
+      },
+    );
+  });
+}
+
 export function useValidCanvases(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.Canvas, (data) =>
     data?.resources?.filter((res) => !!res.canvas?.state?.validSpec),
   );
+}
+
+export function getValidCanvasSpecsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      { kind: ResourceKind.Canvas },
+      {
+        query: {
+          select: (data) =>
+            data.resources?.filter((res) => !!res.canvas?.state?.validSpec),
+        },
+      },
+    );
+  });
 }
 
 export function useValidDashboards(instanceId: string) {

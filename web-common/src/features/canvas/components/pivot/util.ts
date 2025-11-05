@@ -157,6 +157,7 @@ export function processPivot(
       timeEnd: timeRange?.end,
       timeZone: timeRange.timeZone || "UTC",
       timeDimension: metricsView?.timeDimension || "",
+      minTimeGrain: metricsView?.smallestTimeGrain,
     },
   };
 
@@ -243,6 +244,7 @@ export function processFlat(
       timeEnd: timeRange?.end,
       timeZone: timeRange.timeZone || "UTC",
       timeDimension: metricsView?.timeDimension || "",
+      minTimeGrain: metricsView?.smallestTimeGrain,
     },
   };
 

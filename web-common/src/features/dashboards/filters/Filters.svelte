@@ -5,6 +5,7 @@
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { DashboardStateSync } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateSync";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { isUrlTooLong } from "@rilldata/web-common/features/dashboards/url-state/url-length-limits";
@@ -100,11 +101,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: timeRangeQuery = createQueryServiceMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    {},
-  );
+  $: timeRangeQuery = useMetricsViewTimeRange(instanceId, metricsViewName);
 
   $: timeRangeSummary = $timeRangeQuery.data?.timeRangeSummary;
 

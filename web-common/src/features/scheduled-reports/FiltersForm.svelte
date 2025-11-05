@@ -53,12 +53,7 @@
     setMeasureFilter,
     setTemporaryFilterName,
     clearAllFilters,
-    metricsViewMetadata: {
-      metricsViewName,
-      allDimensions,
-      allSimpleMeasures,
-      validSpecQuery,
-    },
+    metricsViewMetadata: { metricsViewName, allDimensions, allSimpleMeasures },
   } = filters);
 
   $: ({
@@ -72,8 +67,6 @@
     setSelectedComparisonRange,
     displayTimeComparison,
   } = timeControls);
-
-  $: exploreSpec = $validSpecQuery.data?.explore ?? {};
 
   $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
@@ -90,9 +83,9 @@
 
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
-  $: defaultTimeRange = exploreSpec.defaultPreset?.timeRange;
-  $: availableTimeZones = exploreSpec.timeZones ?? [];
-  $: timeRanges = exploreSpec.timeRanges ?? [];
+  $: defaultTimeRange = undefined;
+  $: availableTimeZones = [];
+  $: timeRanges = [];
 
   $: minTimeGrain = $_minTimeGrain;
 

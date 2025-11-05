@@ -77,6 +77,7 @@ export interface PivotTimeConfig {
   timeEnd: string | undefined;
   timeZone: string;
   timeDimension: string;
+  minTimeGrain: V1TimeGrain | undefined;
 }
 
 export interface PivotQueryError {

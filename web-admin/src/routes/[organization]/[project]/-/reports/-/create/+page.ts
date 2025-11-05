@@ -8,6 +8,7 @@ export async function load({ parent, params }) {
   return {
     organization,
     project,
+    metricsViewName: "", // TODO
     exploreName,
   };
 }

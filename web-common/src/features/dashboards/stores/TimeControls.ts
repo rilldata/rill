@@ -31,6 +31,14 @@ export type TimeControlState = Pick<
   | "showTimeComparison"
   | "selectedTimezone"
 >;
+export function getEmptyTimeControlState(): TimeControlState {
+  return {
+    selectedTimeRange: undefined,
+    selectedComparisonTimeRange: undefined,
+    showTimeComparison: false,
+    selectedTimezone: "UTC",
+  };
+}
 
 export class TimeControls {
   /**
@@ -83,17 +91,17 @@ export class TimeControls {
     );
 
     this.hasTimeSeries = derived(
-      metricsViewMetadata.validSpecQuery,
-      (validSpecResp) => {
-        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      metricsViewMetadata.metricsViewSpecQuery,
+      (metricsViewSpecResp) => {
+        const metricsViewSpec = metricsViewSpecResp.data ?? {};
         return Boolean(metricsViewSpec.timeDimension);
       },
     );
 
     this.minTimeGrain = derived(
-      metricsViewMetadata.validSpecQuery,
-      (validSpecResp) => {
-        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
+      metricsViewMetadata.metricsViewSpecQuery,
+      (metricsViewSpecResp) => {
+        const metricsViewSpec = metricsViewSpecResp.data ?? {};
         return (
           metricsViewSpec.smallestTimeGrain ??
           V1TimeGrain.TIME_GRAIN_UNSPECIFIED
@@ -103,28 +111,24 @@ export class TimeControls {
 
     this.timeRangeStateStore = derived(
       [
-        metricsViewMetadata.validSpecQuery,
+        metricsViewMetadata.metricsViewSpecQuery,
+        metricsViewMetadata.timeDefaults,
         this.allTimeRange,
         this.selectedTimeRange,
         this.selectedTimezone,
         this.minTimeGrain,
       ],
       ([
-        validSpecResp,
+        metricsViewSpecResp,
+        timeDefaults,
         allTimeRange,
         selectedTimeRange,
         selectedTimezone,
         minTimeGrain,
       ]) => {
-        const metricsViewSpec = validSpecResp.data?.metricsView ?? {};
-        const exploreSpec = validSpecResp.data?.explore ?? {};
+        const metricsViewSpec = metricsViewSpecResp.data ?? {};
 
-        if (
-          !metricsViewSpec ||
-          !exploreSpec ||
-          !selectedTimeRange ||
-          !allTimeRange
-        ) {
+        if (!metricsViewSpec || !selectedTimeRange || !allTimeRange) {
           return undefined;
         }
 
@@ -135,7 +139,7 @@ export class TimeControls {
         };
 
         const defaultTimeRange = isoDurationToFullTimeRange(
-          exploreSpec.defaultPreset?.timeRange,
+          timeDefaults.timeRange,
           allTimeRange.start,
           allTimeRange.end,
           selectedTimezone,
@@ -156,7 +160,7 @@ export class TimeControls {
 
     this.comparisonRangeStateStore = derived(
       [
-        metricsViewMetadata.validSpecQuery,
+        metricsViewMetadata.timeDefaults,
         this.allTimeRange,
         this.selectedComparisonTimeRange,
         this.selectedTimezone,
@@ -164,16 +168,15 @@ export class TimeControls {
         this.timeRangeStateStore,
       ],
       ([
-        validSpecResp,
+        timeDefaults,
         allTimeRange,
         selectedComparisonTimeRange,
         selectedTimezone,
         showTimeComparison,
         timeRangeState,
       ]) => {
-        const exploreSpec = validSpecResp.data?.explore ?? {};
-        if (!exploreSpec || !timeRangeState || !allTimeRange) return undefined;
-        const timeRanges = exploreSpec.timeRanges ?? [];
+        if (!timeRangeState || !allTimeRange) return undefined;
+        const timeRanges = timeDefaults.timeRanges ?? [];
         return calculateComparisonTimeRangePartial(
           timeRanges,
           allTimeRange,

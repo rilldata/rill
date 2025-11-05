@@ -2,14 +2,22 @@
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
+  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
   import { slide } from "svelte/transition";
   import DragList from "./DragList.svelte";
   import { lastNestState } from "./PivotToolbar.svelte";
   import { PivotChipType, type PivotChipData, type PivotState } from "./types";
 
   export let pivotState: PivotState;
+  export let measures: PivotChipData[];
+  export let dimensions: PivotChipData[];
+  export let timeControlsForPillActions: Pick<
+    TimeControlState,
+    "timeStart" | "timeEnd" | "minTimeGrain"
+  >;
   export let setRows: (items: PivotChipData[]) => void;
   export let setColumns: (items: PivotChipData[]) => void;
+  export let addField: (value: PivotChipData, rows: boolean) => void;
 
   $: ({ rows, columns, tableMode } = pivotState);
   $: splitColumns = splitPivotChips(columns);
@@ -46,7 +54,11 @@
         zone="rows"
         placeholder="Drag dimensions here"
         items={rows}
+        {measures}
+        {dimensions}
+        {timeControlsForPillActions}
         onUpdate={updateRows}
+        {addField}
       />
     </div>
   {/if}
@@ -59,8 +71,12 @@
       zone="columns"
       {tableMode}
       items={isFlat ? columns : fullColumns}
+      {measures}
+      {dimensions}
+      {timeControlsForPillActions}
       placeholder="Drag dimensions or measures here"
       onUpdate={updateColumn}
+      {addField}
     />
   </div>
 </div>

@@ -1,39 +1,34 @@
 <script lang="ts" context="module">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
-
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     getAllowedTimeGrains,
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
-
   import { PivotChipType } from "./types";
   import type { PivotChipData } from "./types";
 </script>
 
 <script lang="ts">
-  export let zone: "rows" | "columns" | null = null;
+  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 
-  const {
-    selectors: {
-      pivot: { dimensions, measures },
-    },
-    exploreName,
-  } = getStateManagers();
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  export let measures: PivotChipData[];
+  export let dimensions: PivotChipData[];
+  export let timeControlsForPillActions: Pick<
+    TimeControlState,
+    "timeStart" | "timeEnd" | "minTimeGrain"
+  >;
+  export let zone: "rows" | "columns" | null = null;
+  export let addField: (value: PivotChipData, rows: boolean) => void;
 
   let open = false;
 
   $: allTimeGrains = getAllowedTimeGrains(
-    new Date($timeControlsStore.timeStart!),
-    new Date($timeControlsStore.timeEnd!),
+    new Date(timeControlsForPillActions.timeStart!),
+    new Date(timeControlsForPillActions.timeEnd!),
   ).map((tgo) => {
     return {
       id: tgo.grain,
@@ -44,9 +39,10 @@
 
   $: timeGrainOptions = allTimeGrains.filter(
     (tgo) =>
-      $timeControlsStore.minTimeGrain === undefined ||
-      $timeControlsStore.minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED ||
-      !isGrainBigger($timeControlsStore.minTimeGrain, tgo.id),
+      timeControlsForPillActions.minTimeGrain === undefined ||
+      timeControlsForPillActions.minTimeGrain ===
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED ||
+      !isGrainBigger(timeControlsForPillActions.minTimeGrain, tgo.id),
   );
 
   $: selectableGroups = [
@@ -54,7 +50,7 @@
       ? [
           <SearchableFilterSelectableGroup>{
             name: "MEASURES",
-            items: $measures?.map((m) => ({
+            items: measures?.map((m) => ({
               name: m.id,
               label: m.title,
             })),
@@ -63,7 +59,7 @@
       : []),
     <SearchableFilterSelectableGroup>{
       name: "DIMENSIONS",
-      items: $dimensions?.map((d) => ({
+      items: dimensions?.map((d) => ({
         name: d.id,
         label: d.title,
       })),
@@ -78,22 +74,14 @@
     },
   ];
 
-  $: allDimensionsMeasures = [
-    ...$dimensions,
-    ...$measures,
-    ...timeGrainOptions,
-  ];
+  $: allDimensionsMeasures = [...dimensions, ...measures, ...timeGrainOptions];
 
   function handleSelectValue(name) {
     const selectedItem = allDimensionsMeasures.find(
       (item) => item.id === name,
     ) as PivotChipData;
 
-    metricsExplorerStore.addPivotField(
-      $exploreName,
-      selectedItem,
-      zone === "rows",
-    );
+    addField(selectedItem, zone === "rows");
   }
 </script>
 

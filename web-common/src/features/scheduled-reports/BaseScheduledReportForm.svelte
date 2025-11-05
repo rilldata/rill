@@ -3,12 +3,12 @@
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
-  import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
+  import ReportSourceSelector from "@rilldata/web-common/features/scheduled-reports/report-source/ReportSourceSelector.svelte";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import {
     ReportRunAs,
@@ -33,8 +33,6 @@
   export let timeControls: TimeControls | undefined = undefined;
   export let height: string = "h-[600px]";
   export let submit: () => void;
-  export let handleExploreChange: ((exploreName: string) => void) | undefined =
-    undefined;
 
   const RUN_AS_OPTIONS = [
     {
@@ -57,16 +55,6 @@
 
   const { fullPageReportEditor } = featureFlags;
 
-  $: explores = useValidExplores(instanceId);
-  $: exploreOptions =
-    $explores.data?.map((res) => {
-      const name = res.meta!.name!.name!; // name is never null
-      return {
-        value: name,
-        label: res.explore?.state?.validSpec?.displayName ?? name,
-      };
-    }) ?? [];
-
   $: hasSlackNotifier = getHasSlackConnection(instanceId);
 </script>
 
@@ -86,14 +74,7 @@
       placeholder="My report"
     />
     {#if $fullPageReportEditor}
-      <Select
-        bind:value={$data["exploreName"]}
-        id="exploreName"
-        label="Explore"
-        options={exploreOptions}
-        onChange={handleExploreChange}
-        placeholder="Select an explore"
-      />
+      <ReportSourceSelector {data} />
     {/if}
     <Select
       bind:value={$data["webOpenMode"]}

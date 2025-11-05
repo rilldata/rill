@@ -45,6 +45,14 @@ export type FiltersState = Pick<
   | "dimensionThresholdFilters"
   | "dimensionFilterExcludeMode"
 >;
+export function getEmptyFilterState(): FiltersState {
+  return {
+    whereFilter: createAndExpression([]),
+    dimensionThresholdFilters: [],
+    dimensionsWithInlistFilter: [],
+    dimensionFilterExcludeMode: new Map(),
+  };
+}
 
 /**
  * Filters class encapsulates all filter related selectors and actions into a single class.

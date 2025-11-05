@@ -3,7 +3,9 @@
 
   export type CreateReportProps = {
     mode: "create";
+    metricsViewName: string;
     exploreName: string;
+    canvasName: string;
   };
 
   export type EditReportProps = {
@@ -21,11 +23,12 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import { getPivotQueryFromExploreState } from "@rilldata/web-common/features/dashboards/pivot/pivot-export.ts";
-  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import BaseScheduledReportForm from "@rilldata/web-common/features/scheduled-reports/BaseScheduledReportForm.svelte";
+  import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
+  import MetricsViewPivotEditor from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/MetricsViewPivotEditor.svelte";
+  import { getPivotConfig } from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/pivot-data-config.ts";
+  import { ReportPivotRenderStore } from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/report-pivot-render-store.ts";
   import { convertFormValuesToCronExpression } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
   import {
     getExistingReportInitialFormValues,
@@ -41,7 +44,6 @@
     getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
-  import { get } from "svelte/store";
   import { defaults, superForm } from "sveltekit-superforms";
   import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
   import { array, boolean, object, string } from "yup";
@@ -58,14 +60,20 @@
   let width = SIDEBAR_WIDTH;
 
   $: reportName = props.mode === "create" ? "" : props.reportName;
+  let metricsViewName = "";
   let exploreName = "";
+  let canvasName = "";
+
+  const initialMetricsViewName =
+    props.mode === "create" ? props.metricsViewName : "";
   const initialExploreName = props.mode === "create" ? props.exploreName : "";
+  const initialCanvasName = props.mode === "create" ? props.canvasName : "";
+  $: isInitialSource =
+    metricsViewName === initialMetricsViewName &&
+    exploreName === initialExploreName &&
+    canvasName === initialCanvasName;
 
   $: ({ instanceId } = $runtime);
-  $: exploreSpecQuery = useExploreValidSpec(instanceId, exploreName);
-  $: metricsViewSpec = $exploreSpecQuery.data?.metricsView ?? {};
-  $: exploreSpec = $exploreSpecQuery.data?.explore ?? {};
-  $: exploreStore = useExploreState(exploreName);
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -78,6 +86,7 @@
     props.mode === "create"
       ? getNewReportInitialFormValues(
           $user.data?.user?.email,
+          props.metricsViewName,
           props.exploreName,
           {},
         )
@@ -86,6 +95,22 @@
           $user.data?.user?.email,
           {},
         );
+
+  const renderStore = new ReportPivotRenderStore();
+  $: renderData = renderStore.get(
+    instanceId,
+    metricsViewName,
+    exploreName,
+    canvasName,
+    isInitialSource,
+  );
+  $: ({ metadata, filters, timeControls, pivotStore } = renderData);
+  $: pivotConfigStore = getPivotConfig(
+    metadata,
+    filters,
+    timeControls,
+    pivotStore,
+  );
 
   const schema = yup(
     object({
@@ -136,7 +161,9 @@
     },
   ));
 
+  $: metricsViewName = $form?.metricsViewName ?? "";
   $: exploreName = $form?.exploreName ?? "";
+  $: canvasName = $form?.canvasName ?? "";
 
   $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
 
@@ -146,12 +173,6 @@
       values.dayOfWeek,
       values.timeOfDay,
       values.dayOfMonth,
-    );
-    const exploreState = get(exploreStore);
-    const req = getPivotQueryFromExploreState(
-      metricsViewSpec,
-      exploreSpec,
-      exploreState,
     );
 
     try {
@@ -166,7 +187,7 @@
             refreshTimeZone: values.timeZone,
             explore: values.exploreName,
             queryName: AGGREGATION_QUERY_NAME,
-            queryArgsJson: JSON.stringify(req.metricsViewAggregationRequest),
+            queryArgsJson: JSON.stringify({}), // TODO
             exportLimit: values.exportLimit || undefined,
             exportIncludeHeader: values.exportIncludeHeader || false,
             exportFormat: values.exportFormat,
@@ -177,7 +198,6 @@
             slackUsers: values.enableSlackNotification
               ? values.slackUsers.filter(Boolean)
               : undefined,
-            webOpenState: exploreState.proto,
             webOpenMode: values.webOpenMode,
           },
         },
@@ -219,62 +239,70 @@
     }
   }
 
-  function handleExploreChange(exploreName: string) {
-    if (props.mode === "create") {
-      void goto(
-        `/${organization}/${project}/-/reports/-/create/explore/${exploreName}`,
-      );
-    } else {
-      void goto(
-        `/${organization}/${project}/-/reports/${reportName}/edit/explore/${exploreName}`,
-      );
-    }
-  }
-
   function updateSidebarWidth(newWidth: number): void {
     width = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, newWidth));
   }
 </script>
 
-<div class="flex flex-col border-l relative h-full" style="width: {width}px;">
-  <Resizer
-    min={MIN_SIDEBAR_WIDTH}
-    max={MAX_SIDEBAR_WIDTH}
-    basis={SIDEBAR_WIDTH}
-    dimension={width}
-    direction="EW"
-    side="left"
-    onUpdate={updateSidebarWidth}
-  />
-  <SidebarWrapper title="Scheduled reports">
-    <BaseScheduledReportForm
-      formId={FORM_ID}
-      data={form}
-      {errors}
-      {submit}
-      {enhance}
-      height=""
-      {handleExploreChange}
-    />
-
-    {#if generalErrors}
-      <div class="text-red-500">{generalErrors}</div>
-    {/if}
-
-    <footer
-      class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3"
-      slot="footer"
+<div class="flex flex-row size-full max-w-full max-h-full overflow-auto">
+  <div class="w-full overflow-auto">
+    <article
+      class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
     >
-      <Button onClick={handleCancel}>Cancel</Button>
-      <Button
-        disabled={$submitting}
-        form={FORM_ID}
-        submitForm
-        type="primary"
-        label={props.mode === "create" ? "Create report" : "Save report"}
+      <div
+        id="header"
+        class="border-b w-fit min-w-full flex flex-col bg-background slide"
       >
-        {props.mode === "create" ? "Create" : "Save"}
-      </Button>
-    </footer>
-  </SidebarWrapper>
+        <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
+          <FiltersForm {filters} {timeControls} />
+        </section>
+        <MetricsViewPivotEditor
+          {metricsViewName}
+          {pivotStore}
+          {pivotConfigStore}
+        />
+      </div>
+    </article>
+  </div>
+  <div class="flex flex-col border-l relative h-full" style="width: {width}px;">
+    <Resizer
+      min={MIN_SIDEBAR_WIDTH}
+      max={MAX_SIDEBAR_WIDTH}
+      basis={SIDEBAR_WIDTH}
+      dimension={width}
+      direction="EW"
+      side="left"
+      onUpdate={updateSidebarWidth}
+    />
+    <SidebarWrapper title="Scheduled reports">
+      <BaseScheduledReportForm
+        formId={FORM_ID}
+        data={form}
+        {errors}
+        {submit}
+        {enhance}
+        height=""
+      />
+
+      {#if generalErrors}
+        <div class="text-red-500">{generalErrors}</div>
+      {/if}
+
+      <footer
+        class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3"
+        slot="footer"
+      >
+        <Button onClick={handleCancel}>Cancel</Button>
+        <Button
+          disabled={$submitting}
+          form={FORM_ID}
+          submitForm
+          type="primary"
+          label={props.mode === "create" ? "Create report" : "Save report"}
+        >
+          {props.mode === "create" ? "Create" : "Save"}
+        </Button>
+      </footer>
+    </SidebarWrapper>
+  </div>
 </div>

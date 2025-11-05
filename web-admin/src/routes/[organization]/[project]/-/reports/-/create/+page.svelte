@@ -1,10 +1,13 @@
 <script lang="ts">
-  import CTAContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
-  import CTALayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import ScheduledReportEditor from "@rilldata/web-common/features/scheduled-reports/ScheduledReportEditor.svelte";
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+  const { organization, project, metricsViewName, exploreName } = data;
 </script>
 
-<CTALayoutContainer>
-  <CTAContentContainer>
-    <div class="text-xl">Select an explore to start editing a report.</div>
-  </CTAContentContainer>
-</CTALayoutContainer>
+<ScheduledReportEditor
+  {organization}
+  {project}
+  props={{ mode: "create", metricsViewName, exploreName }}
+/>
