@@ -1,7 +1,6 @@
 <script lang="ts">
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
-  import { createQueryServiceTableColumns } from "../../../runtime-client";
   import { useGetTable } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
 
