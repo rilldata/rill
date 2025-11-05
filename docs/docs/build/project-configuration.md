@@ -343,7 +343,6 @@ To enable feature flags, add the `features` section to your `rill.yaml`:
 
 ```yaml
 features:
-  - chatCharts
   - cloudDataViewer
 ```
 
@@ -358,9 +357,9 @@ features:
 - `alerts`: Enables alerting features (default: `true`)
 - `reports`: Enables reporting functionality (default: `true`)
 - `darkMode`: Enables dark mode interface (default: `true`)
-- `chat`: Enables chat functionality (default: `false`)
+- `chat`: Enables chat functionality (default: `true`)
 - `dashboardChat`: Enables chat features within dashboards (default: `false`)
-- `chatCharts`: Enables interactive chart visualizations in AI chat responses (default: `false`)
+- `chatCharts`: Enables interactive chart visualizations in AI chat responses (default: `true`)
 
 **How to enable**: Add the `features` section to your `rill.yaml`
 
