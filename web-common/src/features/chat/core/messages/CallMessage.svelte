@@ -16,16 +16,21 @@
 
   let isExpanded = false;
 
+  // Call message properties
   $: toolName = message.tool || "Unknown Tool";
   $: toolInput = formatContentData(message);
   $: isHidden = isHiddenAgentTool(message.tool);
+
+  // Result message properties
+  $: hasResult = !!resultMessage;
+  $: isError = resultMessage?.contentType === "error";
+  $: resultContent = resultMessage ? formatContentData(resultMessage) : "";
+
+  // Chart detection and parsing
   $: isChart = isChartCall(message);
   $: chartData = isChart
     ? parseChartData({ input: message.contentData })
     : null;
-  $: hasResult = !!resultMessage;
-  $: isError = resultMessage?.contentType === "error";
-  $: resultContent = resultMessage ? formatContentData(resultMessage) : "";
 
   function toggleExpanded() {
     isExpanded = !isExpanded;

@@ -11,28 +11,14 @@
   export let message: V1Message;
   export let resultMessage: V1Message | undefined = undefined;
 
-  $: effectiveRole = getEffectiveRole(message);
-  $: isRouterAgent = isRouterAgentMessage(message);
+  $: isRouterAgent = message.tool === "router_agent";
   $: content = extractMessageText(message);
-
-  function getEffectiveRole(message: V1Message): string {
-    if (message.type === "call" && message.tool === "router_agent") {
-      return "user";
-    }
-    if (message.type === "result" && message.tool === "router_agent") {
-      return "assistant";
-    }
-    return message.role || "";
-  }
-
-  function isRouterAgentMessage(message: V1Message): boolean {
-    return message.tool === "router_agent";
-  }
 </script>
 
 {#if isRouterAgent}
   <!-- User prompts and assistant responses -->
-  <TextMessage {content} role={effectiveRole} />
+  <!-- Note: role should always be set by backend, but fallback to "assistant" for safety -->
+  <TextMessage {content} role={message.role || "assistant"} />
 {:else if message.type === "progress"}
   <!-- Progress/thinking messages -->
   <ProgressMessage {message} />
