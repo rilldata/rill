@@ -438,7 +438,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&grain=hour&f=advertiser_name IN ('Instacart','Leafly')`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name IN ('Instacart','Leafly')`,
         );
         // Assert filters applied
         await expect(
