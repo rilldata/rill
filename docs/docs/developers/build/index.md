@@ -7,7 +7,7 @@ sidebar_position: 0
 Rill provides a comprehensive platform for building end-to-end data analytics solutions. Once you've connected to your source data or connected to your own OLAP database, you can start building with Rill. Don't forget to check out the [reference documentation!](/reference/project-files)
 
 ### What is a Rill project?
-- [**Getting Started with your Rill Project**](/developers/build/getting-started) - Understand Rill project structure and configuration
+- [**Getting Started with your Rill Project**](/developers/build/rill-project) - Understand Rill project structure and configuration
 
 ### Connect to your Data
 - [**Connectors Overview**](/developers/build/connectors) - Learn about connecting Rill to data sources and OLAP engines

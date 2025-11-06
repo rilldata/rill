@@ -816,7 +816,7 @@ const config = {
           },
           {
             from: '/build/getting-started',
-            to: '/developers/build/getting-started',
+            to: '/developers/build/rill-project',
           },
           {
             from: '/build/project-configuration',
