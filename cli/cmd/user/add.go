@@ -37,7 +37,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Handle adding the user to the org.
 			// We do this only if a more specific target (group or project) is not specified.
-			if group == "" && projectName == "" {
+			if projectName == "" && group == "" {
 				// Handle empty role
 				if role == "" {
 					if !ch.Interactive {
@@ -59,12 +59,13 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				// Print status
+				// Print status and exit
 				if res.PendingSignup {
 					ch.PrintfSuccess("Invitation sent to %q to join organization %q as %q\n", email, ch.Org, role)
 				} else {
 					ch.PrintfSuccess("User %q added to the organization %q as %q\n", email, ch.Org, role)
 				}
+				return nil
 			}
 
 			// Handle adding the user to a project.
@@ -98,6 +99,8 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				} else {
 					ch.PrintfSuccess("User %q added to the project \"%s/%s\" as %q\n", email, ch.Org, projectName, role)
 				}
+
+				// NOTE: Not exiting here since we may also need to add to a group.
 			}
 
 			// Handle adding the user to a group.
@@ -108,18 +111,13 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					Email:     email,
 				})
 				if err != nil {
-					// If the user is not part of the org, we need to invite them first.
-					// Otherwise, it's an actual error.
+					// If the user is not in the organization, we'll try to interactively add them.
 					if !strings.Contains(err.Error(), "user is not a member of the org") {
 						return err
 					}
-
-					// We can't proceed if not in interactive mode.
 					if !ch.Interactive {
 						return err
 					}
-
-					// The user is not in the organization, and we are in interactive mode.
 					ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("The user must be a member of %q to join one of its groups. Do you want to invite the user to join %q?", ch.Org, ch.Org), "", false)
 					if err != nil {
 						return err
@@ -128,10 +126,17 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 						return fmt.Errorf("aborted: user needs to be part of the organization to be added to the user group")
 					}
 
-					// Find the org role to use. If --project was specified, use "guest" as default.
+					// Find the org role to use.
 					orgRole := role
 					if projectName != "" {
-						orgRole = "guest"
+						// When --project is specified, --role refers to the project role, not the org role.
+						orgRole = ""
+					}
+					if orgRole == "" {
+						err := cmdutil.SelectPromptIfEmpty(&orgRole, "Select organization role", orgRoles, orgRoles[len(orgRoles)-1])
+						if err != nil {
+							return err
+						}
 					}
 
 					// Add the user to the organization
@@ -146,9 +151,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 					// Print status
 					if res.PendingSignup {
-						ch.PrintfSuccess("Invitation sent to %q to join organization %q as %q\n", email, ch.Org, role)
+						ch.PrintfSuccess("Invitation sent to %q to join organization %q as %q\n", email, ch.Org, orgRole)
 					} else {
-						ch.PrintfSuccess("User %q added to the organization %q as %q\n", email, ch.Org, role)
+						ch.PrintfSuccess("User %q added to the organization %q as %q\n", email, ch.Org, orgRole)
 					}
 
 					// User is now in the org, retry adding to the group
