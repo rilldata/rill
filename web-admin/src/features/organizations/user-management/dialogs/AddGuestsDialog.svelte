@@ -189,7 +189,7 @@
   </DialogTrigger>
   <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
-      <DialogTitle>Create guest users</DialogTitle>
+      <DialogTitle>Add guest users</DialogTitle>
     </DialogHeader>
     <form
       id={formId}
@@ -307,7 +307,7 @@
           $form.emails.every((e) => !e.trim()) ||
           selectedProjects.length === 0}
       >
-        Create guests
+        Add guests
       </Button>
     </DialogFooter>
   </DialogContent>

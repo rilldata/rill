@@ -7,7 +7,7 @@
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddUsersDialog.svelte";
-  import CreateGuestsDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/CreateGuestsDialog.svelte";
+  import AddGuestsDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddGuestsDialog.svelte";
   import ConvertGuestToMemberDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ConvertGuestToMemberDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/user-management/OrgUsersFilters.svelte";
@@ -31,7 +31,7 @@
   let isSuperUser = false;
 
   let isAddUserDialogOpen = false;
-  let isCreateGuestsDialogOpen = false;
+  let isAddGuestsDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let editingUserGroupName = "";
   let convertGuestUser: V1OrganizationMemberUser | undefined = undefined;
@@ -135,10 +135,10 @@
         <Button
           type="primary"
           large
-          onClick={() => (isCreateGuestsDialogOpen = true)}
+          onClick={() => (isAddGuestsDialogOpen = true)}
         >
           <Plus size="16px" />
-          <span>Create guest</span>
+          <span>Add guest</span>
         </Button>
       </div>
       <div class="mt-6">
@@ -175,7 +175,7 @@
   {isSuperUser}
 />
 
-<CreateGuestsDialog bind:open={isCreateGuestsDialogOpen} />
+<AddGuestsDialog bind:open={isAddGuestsDialogOpen} />
 
 {#if editingUserGroupName}
   <EditUserGroupDialog
