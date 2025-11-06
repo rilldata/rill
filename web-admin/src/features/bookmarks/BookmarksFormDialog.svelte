@@ -49,13 +49,6 @@
   export let metricsViewNames: string[];
   export let onClose = () => {};
 
-  $: ({ name: resourceName, kind: resourceKind } = resource);
-
-  $: ({ url } = $page);
-  $: curUrlParams = url.searchParams;
-
-  $: bookmarkUrl = bookmark?.url || $page.url.searchParams.toString();
-
   let filterState = {
     whereFilter: createAndExpression([]),
     dimensionsWithInlistFilter: [],
@@ -65,6 +58,13 @@
     timeRange: { expression: "" } as V1TimeRange,
     selectedTimeRange: "",
   };
+
+  $: ({ name: resourceName, kind: resourceKind } = resource);
+
+  $: ({ url } = $page);
+  $: curUrlParams = url.searchParams;
+
+  $: bookmarkUrl = bookmark?.url || $page.url.searchParams.toString();
 
   $: processUrl(bookmarkUrl)
     .then((state) => {
