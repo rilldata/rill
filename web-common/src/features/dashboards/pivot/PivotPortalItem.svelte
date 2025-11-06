@@ -43,6 +43,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .portal-item {
     @apply shadow-lg;
     z-index: 100;

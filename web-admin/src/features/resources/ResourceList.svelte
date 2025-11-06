@@ -115,6 +115,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .resource-list {
     @apply list-none p-0 m-0 w-full;
   }

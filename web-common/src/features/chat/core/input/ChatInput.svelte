@@ -121,6 +121,10 @@
 </form>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .chat-input-form {
     display: flex;
     align-items: flex-end;

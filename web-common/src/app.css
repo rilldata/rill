@@ -1,7 +1,6 @@
+@import "tailwindcss";
 @import "./colors.css";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "./theme.css";
 
 @layer utilities {
   .ui-copy {
@@ -17,7 +16,7 @@
   }
 
   .ui-copy-icon {
-    @apply ui-copy-muted;
+    @apply text-gray-800 dark:text-gray-800;
   }
 
   .ui-copy-number {
@@ -58,7 +57,7 @@
   }
 
   .ui-copy-disabled {
-    @apply ui-copy-inactive;
+    @apply text-gray-500;
   }
 
   /** a non-acccessible faint version of ui-copy-disabled used in dimension tables */
@@ -446,12 +445,12 @@
 }
 
 html {
-  @apply ui-copy;
+  @apply text-gray-900;
 }
 
 a,
 button {
-  @apply ui-copy;
+  @apply text-gray-900;
 }
 
 body {

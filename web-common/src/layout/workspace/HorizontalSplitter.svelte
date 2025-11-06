@@ -4,6 +4,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .wrapper {
     @apply flex items-center justify-center;
     @apply w-full h-2 pr-2;

@@ -51,6 +51,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   * {
     --focus: rgba(255, 255, 255, 1) 0 0 0 2.5px, var(--color) 0 0 0 4.5px;
     --hover:

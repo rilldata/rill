@@ -94,6 +94,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   /* div {
     @apply bg-blue-400/20;
   } */

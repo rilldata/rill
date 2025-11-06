@@ -70,6 +70,8 @@
 </thead>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   thead {
     @apply sticky top-0 z-20;
   }

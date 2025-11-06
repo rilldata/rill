@@ -403,6 +403,8 @@
 </tr>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   td {
     @apply text-right p-0;
     @apply px-2 relative;

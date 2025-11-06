@@ -12,6 +12,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .custom-instructions-wrapper {
     @apply px-4 py-24 w-full;
     @apply italic text-gray-500 text-center;

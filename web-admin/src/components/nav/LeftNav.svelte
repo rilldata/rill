@@ -26,6 +26,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .nav-items {
     @apply flex flex-col gap-y-2;
   }

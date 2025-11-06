@@ -104,6 +104,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .wrapper {
     @apply flex w-fit;
     @apply h-7 rounded-full;

@@ -79,6 +79,8 @@
 </tr>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   td {
     @apply truncate p-0 bg-surface;
     height: var(--row-height);

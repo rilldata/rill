@@ -304,6 +304,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   form {
     @apply flex flex-col;
   }

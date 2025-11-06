@@ -188,6 +188,8 @@
 </DropdownMenu.Root>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   button {
     @apply gap-x-1;
   }

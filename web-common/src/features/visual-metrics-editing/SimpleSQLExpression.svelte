@@ -153,6 +153,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .label-wrapper {
     @apply flex items-center gap-x-1;
   }

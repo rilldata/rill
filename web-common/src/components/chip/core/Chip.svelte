@@ -99,6 +99,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .grab {
     @apply cursor-grab;
   }

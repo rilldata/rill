@@ -93,6 +93,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .tdd {
     @apply border h-7 rounded-full px-2 pl-2.5;
   }

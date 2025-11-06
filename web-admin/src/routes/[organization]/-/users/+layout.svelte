@@ -45,6 +45,8 @@
 </ContentContainer>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .container {
     @apply flex pt-6 gap-6 max-w-full overflow-hidden;
   }

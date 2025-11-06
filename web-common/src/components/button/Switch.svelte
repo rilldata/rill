@@ -23,6 +23,8 @@
 </button>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   input {
     @apply bg-gray-400;
     --width: 22px;

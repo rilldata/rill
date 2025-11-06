@@ -61,6 +61,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .quotas {
     @apply flex flex-row items-center gap-x-20 mt-2;
   }

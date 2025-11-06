@@ -73,6 +73,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .chat-sidebar {
     position: relative;
     width: var(--sidebar-width);

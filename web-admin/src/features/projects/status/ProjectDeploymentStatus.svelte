@@ -47,6 +47,8 @@
 </section>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .deployment-status {
     @apply flex flex-col gap-y-1;
   }

@@ -112,6 +112,8 @@
 </li>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .current {
     @apply text-gray-800 font-medium;
   }

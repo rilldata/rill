@@ -30,6 +30,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .section {
     @apply px-5 flex flex-col gap-y-2 pt-2;
     @apply border-t;

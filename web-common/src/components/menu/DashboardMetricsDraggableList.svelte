@@ -298,6 +298,8 @@
 </Popover.Root>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   h3 {
     @apply text-[11px] text-gray-500;
   }

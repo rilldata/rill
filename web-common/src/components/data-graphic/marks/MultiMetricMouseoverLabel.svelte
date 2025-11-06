@@ -289,6 +289,8 @@ It is probably not the most up to date code; but it works very well in practice.
 </g>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .mc-mouseover-label {
     cursor: pointer;
     transition: fill 200ms;

@@ -6,6 +6,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   /** we are setting the tooltip content code block styling here, since this is sometimes 
 programmatically returned by the runtime **/
   :global(.long-tooltip-description code) {

@@ -148,6 +148,10 @@
 </li>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .table-entry {
     @apply w-full justify-between;
     @apply flex flex-col;

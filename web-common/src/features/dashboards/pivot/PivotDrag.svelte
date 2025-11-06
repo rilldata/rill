@@ -53,6 +53,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .full {
     height: 100% !important;
     flex-shrink: 1 !important;

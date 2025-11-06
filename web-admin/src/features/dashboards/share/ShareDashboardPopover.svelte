@@ -82,6 +82,8 @@
 </Popover>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   h3 {
     @apply font-semibold;
   }

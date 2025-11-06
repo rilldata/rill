@@ -53,6 +53,8 @@
 </CtaLayoutContainer>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .status-code {
     @apply text-8xl font-extrabold;
     @apply bg-gradient-to-b from-[#CBD5E1] to-[#E2E8F0] text-transparent bg-clip-text;

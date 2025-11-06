@@ -36,6 +36,8 @@
 </header>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   h2 {
     @apply text-sm font-semibold;
   }

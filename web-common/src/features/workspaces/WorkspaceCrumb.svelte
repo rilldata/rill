@@ -160,6 +160,10 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   a:hover,
   button:hover {
     @apply text-gray-700;

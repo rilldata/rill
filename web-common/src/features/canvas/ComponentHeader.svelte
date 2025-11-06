@@ -91,6 +91,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .header-row {
     @apply flex flex-col items-start gap-y-1 gap-x-2 w-full;
   }

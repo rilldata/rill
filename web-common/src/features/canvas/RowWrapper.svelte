@@ -22,6 +22,10 @@
 </section>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .canvas-row {
     grid-auto-rows: auto;
   }

@@ -383,6 +383,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   h1 {
     @apply text-lg font-semibold mb-4;
   }

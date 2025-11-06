@@ -46,6 +46,8 @@
 </a>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   a {
     @apply px-2 py-1.5 flex gap-x-1 items-center w-fit;
     @apply rounded-sm text-gray-500;

@@ -130,6 +130,10 @@
 </header>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   header {
     @apply w-full bg-surface box-border;
     @apply flex gap-x-2 items-center px-4 flex-none;

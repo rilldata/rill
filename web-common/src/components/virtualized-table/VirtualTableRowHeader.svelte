@@ -7,6 +7,8 @@
 </span>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   span {
     @apply bg-gray-100 size-full flex;
     @apply items-center justify-center font-bold p-0;

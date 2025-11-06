@@ -174,6 +174,10 @@
 />
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .sidebar {
     @apply flex flex-col flex-none relative overflow-hidden bg-surface;
     @apply h-full border-r z-0;

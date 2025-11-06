@@ -240,6 +240,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .transition-margin {
     transition-property: margin-top, margin-bottom;
     transition-duration: 100ms;

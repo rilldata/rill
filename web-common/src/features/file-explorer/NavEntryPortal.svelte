@@ -30,6 +30,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .portal-item {
     @apply shadow-lg shadow-slate-300;
     @apply z-50;

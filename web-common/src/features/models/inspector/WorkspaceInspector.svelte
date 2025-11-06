@@ -301,6 +301,10 @@
 </Inspector>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .wrapper {
     @apply transition duration-200 py-2 flex flex-col gap-y-2;
   }

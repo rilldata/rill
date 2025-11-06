@@ -140,6 +140,10 @@
 </DropdownMenu.Root>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .dropdown-trigger {
     @apply flex items-center;
     @apply px-3 gap-x-2 h-8 max-w-full;

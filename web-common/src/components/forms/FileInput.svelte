@@ -141,6 +141,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .container {
     @apply flex flex-col gap-y-2;
   }

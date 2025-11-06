@@ -20,6 +20,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .header-cell {
     @apply flex gap-x-2 px-4 items-center relative size-full;
     @apply bg-gray-100 font-bold;

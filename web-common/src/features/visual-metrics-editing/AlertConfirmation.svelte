@@ -75,6 +75,8 @@
 </AlertDialog.Root>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   h2 {
     @apply font-semibold text-lg;
   }

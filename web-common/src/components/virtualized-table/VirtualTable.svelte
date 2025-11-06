@@ -391,6 +391,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal cursor-pointer select-none;

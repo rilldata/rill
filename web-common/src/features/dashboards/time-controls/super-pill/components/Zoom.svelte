@@ -10,6 +10,8 @@
 </button>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   button {
     @apply w-8 flex items-center justify-center;
   }

@@ -56,6 +56,10 @@
 </section>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   section {
     @apply px-4 flex flex-col gap-y-2;
   }

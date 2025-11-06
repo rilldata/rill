@@ -28,6 +28,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .plan-container {
     @apply w-[800px] border border-slate-200 m-5;
   }

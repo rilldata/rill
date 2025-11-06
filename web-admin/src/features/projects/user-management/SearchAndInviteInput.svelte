@@ -499,6 +499,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .invite-search-input {
     width: 100%;
     position: relative;

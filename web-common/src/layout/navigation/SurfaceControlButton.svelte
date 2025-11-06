@@ -37,6 +37,10 @@
 </span>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   span {
     @apply rounded flex justify-center items-center absolute;
     @apply z-50;

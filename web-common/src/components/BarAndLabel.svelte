@@ -56,6 +56,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .number-bar {
     --width: 0%;
     content: "";

@@ -118,6 +118,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .sidebar {
     @apply flex flex-col flex-none relative overflow-hidden;
     @apply h-full border-r z-0 w-60;

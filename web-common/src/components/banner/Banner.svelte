@@ -53,6 +53,8 @@
 </header>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .app-banner {
     @apply h-7 bg-secondary-100 border-b;
   }

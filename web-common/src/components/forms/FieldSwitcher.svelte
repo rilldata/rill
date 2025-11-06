@@ -19,6 +19,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   button {
     @apply capitalize;
   }

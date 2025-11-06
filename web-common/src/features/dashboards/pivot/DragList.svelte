@@ -365,6 +365,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .ghost {
     @apply bg-gray-100 border rounded-sm pointer-events-none;
     height: 26px;

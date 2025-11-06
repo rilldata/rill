@@ -282,6 +282,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .scroll-container {
     @apply h-[600px];
     @apply min-w-full;

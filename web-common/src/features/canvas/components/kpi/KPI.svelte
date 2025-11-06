@@ -213,6 +213,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .wrapper {
     @apply flex flex-col items-center justify-center size-full gap-2;
     container-type: inline-size;

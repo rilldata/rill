@@ -79,6 +79,10 @@
 </Inspector>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .spinner-wrapper {
     @apply px-4 py-8 size-full;
     @apply flex items-center justify-center;

@@ -91,6 +91,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .config-editor-container {
     @apply my-2 pl-2 border-b border-gray-300;
   }

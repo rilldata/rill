@@ -19,6 +19,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .loading-cell {
     @apply h-2 bg-gray-200 rounded w-full inline-block;
   }

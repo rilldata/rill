@@ -25,6 +25,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .primary {
     @apply text-lg font-semibold;
     @apply pt-6 px-5 mb-2;

@@ -169,6 +169,8 @@
 />
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   :global(.cm-mergeView) {
     @apply h-full;
   }

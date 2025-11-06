@@ -90,6 +90,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .conversation-sidebar {
     width: 280px;
     background: var(--surface);

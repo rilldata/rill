@@ -83,6 +83,10 @@
 </ul>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .table-schema-list {
     @apply pr-4 py-1.5; /* padding-left is set dynamically above */
     @apply flex flex-col gap-y-0.5;

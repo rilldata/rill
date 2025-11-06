@@ -868,6 +868,10 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .wrapper {
     @apply size-full max-w-full max-h-full flex-none;
     @apply overflow-hidden;

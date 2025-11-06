@@ -106,6 +106,8 @@
 </button>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .dropdown-item {
     @apply flex items-center justify-between px-3 py-2 cursor-pointer w-full text-left border-none bg-transparent;
     scroll-margin: 8px;

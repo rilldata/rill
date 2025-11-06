@@ -14,6 +14,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   div {
     @apply p-2.5 relative pointer-events-none size-full;
     container-type: inline-size;

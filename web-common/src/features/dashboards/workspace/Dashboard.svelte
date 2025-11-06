@@ -238,6 +238,8 @@
 </ThemeProvider>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .left-shift {
     @apply pl-8;
   }

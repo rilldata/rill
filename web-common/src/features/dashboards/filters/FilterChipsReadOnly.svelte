@@ -110,6 +110,8 @@ The main feature-set component for dashboard filters
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .scrollable-chips {
     @apply overflow-x-auto whitespace-nowrap;
     @apply overscroll-x-contain pr-2;

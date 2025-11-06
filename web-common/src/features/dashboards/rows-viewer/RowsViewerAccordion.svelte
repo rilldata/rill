@@ -191,6 +191,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .bar {
     @apply flex items-center px-2 h-7 w-full bg-gray-100 border-t;
   }

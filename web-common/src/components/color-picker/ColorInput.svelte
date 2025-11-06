@@ -216,6 +216,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .trigger {
     @apply h-full aspect-square;
     @apply rounded-[2px] overflow-hidden flex-none;

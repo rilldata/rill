@@ -123,6 +123,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .leaderboard-grid {
     @apply flex flex-row flex-wrap gap-4 overflow-x-auto;
   }

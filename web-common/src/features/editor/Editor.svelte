@@ -189,6 +189,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .editor-container {
     @apply size-full overflow-auto p-0 pt-0 pb-0 flex flex-col;
   }

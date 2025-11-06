@@ -78,6 +78,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .chat-fullpage {
     display: flex;
     height: 100%;
