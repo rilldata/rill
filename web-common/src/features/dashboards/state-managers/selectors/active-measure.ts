@@ -1,5 +1,4 @@
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-import { isSummableMeasure } from "../../dashboard-utils";
 import type { DashboardDataSources } from "./types";
 
 export const activeMeasure = (
@@ -41,13 +40,6 @@ export const activeMeasureSelectors = {
    * Gets the name of the primary active measure for the dashboard.
    */
   activeMeasureName,
-  /**
-   * is the currently active measure a summable measure?
-   */
-  isSummableMeasure: (args: DashboardDataSources) => {
-    const measure = activeMeasure(args);
-    return measure ? isSummableMeasure(measure) : false;
-  },
 
   /**
    * names of the currently selected measures

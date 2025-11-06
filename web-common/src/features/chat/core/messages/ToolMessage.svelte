@@ -2,6 +2,7 @@
   import ChartBlock from "@rilldata/web-common/features/chat/core/messages/ChartBlock.svelte";
   import {
     isChartToolResult,
+    isHiddenAgentTool,
     parseChartData,
   } from "@rilldata/web-common/features/chat/core/utils";
   import type { V1Message } from "../../../../runtime-client";
@@ -50,6 +51,11 @@
     index: number,
     toolResults: Map<string, any>,
   ): any[] {
+    // Filter out high-level agent invocations
+    if (isHiddenAgentTool(block.toolCall?.name)) {
+      return [];
+    }
+
     // Streaming merges tool results into toolCall blocks.
     // For initial fetch (GetConversation), calls/results are separate, so we attach via fallback.
     const toolResult = block.toolResult || toolResults.get(block.toolCall.id);

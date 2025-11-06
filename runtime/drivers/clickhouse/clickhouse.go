@@ -36,7 +36,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "ClickHouse",
 	Description: "Connect to ClickHouse.",
-	DocsURL:     "https://docs.rilldata.com/connect/olap/clickhouse",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/clickhouse",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -490,7 +490,7 @@ func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 
 // AsInformationSchema implements drivers.Handle.
 func (c *Connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
 // Migrate implements drivers.Handle.
@@ -614,6 +614,20 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
 		case <-regularTicker.C:
+			// Skip if it hasn't been used recently and may be scaled to zero.
+			if !(c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) && !skipEstimatedSizeEmission {
+				// Emit the estimated size per table.
+				tableSizes, err := c.estimatePerTableSize(c.ctx)
+				if err == nil {
+					for _, ts := range tableSizes {
+						c.activity.RecordMetric(c.ctx, "clickhouse_per_table_estimated_size_bytes", float64(ts.size), attribute.String("database", ts.database), attribute.String("table", ts.table))
+					}
+				} else if !errors.Is(err, c.ctx.Err()) {
+					c.logger.Warn("failed to estimate clickhouse per-table sizes", zap.Error(err))
+				}
+			}
+
+			// Check if billing.events table exists (with caching).
 			billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
 			if err != nil {
 				if !errors.Is(err, c.ctx.Err()) {
@@ -650,12 +664,47 @@ func (c *Connection) periodicallyEmitStats() {
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
 func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 	var size int64
-	err := c.readDB.QueryRowxContext(ctx, `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`).Scan(&size)
+	var query string
+	if c.config.Cluster == "" {
+		query = `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`
+	} else {
+		query = fmt.Sprintf(`SELECT sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`, c.config.Cluster)
+	}
+	err := c.readDB.QueryRowxContext(ctx, query).Scan(&size)
 	if err != nil {
 		return 0, err
 	}
 
 	return size, nil
+}
+
+// estimatePerTableSize returns the estimated average disk size per table in bytes.
+func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, error) {
+	var query string
+	if c.config.Cluster == "" {
+		query = `SELECT database, table, sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`
+	} else {
+		query = fmt.Sprintf(`SELECT database, table, sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
+	}
+	rows, err := c.readDB.QueryxContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tableSizes []*tableSize
+	for rows.Next() {
+		var ts tableSize
+		if err := rows.Scan(&ts.database, &ts.table, &ts.size); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		tableSizes = append(tableSizes, &ts)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %w", err)
+	}
+
+	return tableSizes, nil
 }
 
 // latestRCUPerService returns the sum latest RCU value reported for nodes in each service i.e. read/write.
@@ -789,4 +838,10 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	}
 
 	return db, nil
+}
+
+type tableSize struct {
+	database string
+	table    string
+	size     int64
 }

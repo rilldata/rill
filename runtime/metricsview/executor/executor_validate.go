@@ -12,6 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
 	"golang.org/x/sync/errgroup"
 )
@@ -56,7 +57,7 @@ func (r *ValidateMetricsViewResult) Error() error {
 
 // ValidateAndNormalizeMetricsView validates the dimensions and measures in the executor's metrics view and returns a ValidateMetricsViewResult
 // It also inherits properties from parent metrics view and populates the schema of the metrics view if all dimensions and measures are valid.
-// Note - Beware that it modifies the metrics view spec in place to populate the dimension and measure types.
+// Note: Beware that it modifies the e.metricsView spec in place, e.g. to populate the dimension and measure types.
 func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
 	err := e.resolveParentMetricsView(ctx)
 	if err != nil {
@@ -156,6 +157,54 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 	_, _, err = e.CacheKey(ctx)
 	if err != nil {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get cache key: %w", err))
+	}
+
+	// Validate or infer the smallest time grains for the default time dimension and for any additional time dimensions.
+	// We require the smallest time grain to be at least at second grain.
+	// If any time dimension has DATE type, we require the smallest time grain to be at least at day grain.
+	if e.metricsView.TimeDimension != "" {
+		// Find the smallest possible grain
+		var smallestPossibleGrain runtimev1.TimeGrain
+		col, ok := cols[strings.ToLower(e.metricsView.TimeDimension)]
+		if ok && col.Type.Code != runtimev1.Type_CODE_DATE {
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND
+		} else {
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
+		}
+
+		// Check the grain or apply the smallest possible grain as the default
+		if mv.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			mv.SmallestTimeGrain = smallestPossibleGrain
+		} else if mv.SmallestTimeGrain < smallestPossibleGrain {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q is smaller than the smallest possible grain %q based on the data type of the default time dimension", metricsview.TimeGrainFromProto(mv.SmallestTimeGrain), metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+		}
+	}
+	for _, d := range mv.Dimensions {
+		// Skip if data type discovery failed.
+		if d.DataType == nil {
+			continue
+		}
+
+		// Find the smallest possible grain
+		var smallestPossibleGrain runtimev1.TimeGrain
+		switch d.DataType.Code {
+		case runtimev1.Type_CODE_TIMESTAMP:
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_SECOND
+		case runtimev1.Type_CODE_DATE:
+			smallestPossibleGrain = runtimev1.TimeGrain_TIME_GRAIN_DAY
+		default:
+		}
+		if smallestPossibleGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			// Not a time dimension, skip.
+			continue
+		}
+
+		// Check the grain or apply the smallest possible grain as the default
+		if d.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			d.SmallestTimeGrain = smallestPossibleGrain
+		} else if d.SmallestTimeGrain < smallestPossibleGrain {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q for time dimension %q is smaller than the smallest possible grain %q based on the data type of the time dimension", metricsview.TimeGrainFromProto(d.SmallestTimeGrain), d.Name, metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+		}
 	}
 
 	return res, nil

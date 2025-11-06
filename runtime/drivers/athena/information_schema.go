@@ -85,7 +85,7 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		return nil, "", err
 	}
 
-	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
+	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to execute table listing query: %w", err)
 	}
@@ -117,41 +117,40 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := fmt.Sprintf(`
 SELECT
+	CASE t.table_type WHEN 'VIEW' THEN true ELSE false END AS view,
 	column_name,
 	data_type
-FROM %s.information_schema.columns
-WHERE table_schema = %s AND table_name = %s
-ORDER BY ordinal_position
-`, sqlSafeName(database), escapeStringValue(databaseSchema), escapeStringValue(table))
+FROM %s.information_schema.columns c
+JOIN %s.information_schema.tables t
+	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+WHERE c.table_schema = ? AND c.table_name = ?
+ORDER BY c.ordinal_position
+`, sqlSafeName(database), sqlSafeName(database))
 
-	client, err := c.getClient(ctx)
+	rows, err := c.Query(ctx, &drivers.Statement{
+		Query: q,
+		Args:  []any{databaseSchema, table},
+	})
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute columns query: %w", err)
+	res := &drivers.TableMetadata{
+		Schema: make(map[string]string),
 	}
-
-	results, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
-		QueryExecutionId: queryID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get query results: %w", err)
-	}
-	// first row is header of skipping it
-	schemaMap := make(map[string]string, len(results.ResultSet.Rows)-1)
-	for _, row := range results.ResultSet.Rows[1:] {
-		if len(row.Data) < 2 || row.Data[0].VarCharValue == nil || row.Data[1].VarCharValue == nil {
-			continue
+	var col, typ string
+	for rows.Next() {
+		err = rows.Scan(&res.View, &col, &typ)
+		if err != nil {
+			return nil, err
 		}
-		schemaMap[*row.Data[0].VarCharValue] = *row.Data[1].VarCharValue
+		res.Schema[col] = typ
 	}
-
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-	}, nil
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (c *Connection) listCatalogs(ctx context.Context, client *athena.Client) ([]string, error) {
@@ -203,7 +202,7 @@ func (c *Connection) listSchemasForCatalog(ctx context.Context, client *athena.C
 	}
 
 	// Execute the query
-	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation)
+	queryID, err := c.executeQuery(ctx, client, q, c.config.Workgroup, c.config.OutputLocation, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute schema listing query: %w", err)
 	}

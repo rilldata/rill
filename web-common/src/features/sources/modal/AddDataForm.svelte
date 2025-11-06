@@ -5,7 +5,6 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import type { ActionResult } from "@sveltejs/kit";
-  import { createEventDispatcher } from "svelte";
   import {
     defaults,
     superForm,
@@ -48,10 +47,9 @@
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
 
-  const dispatch = createEventDispatcher();
-
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
+  export let isSubmitting: boolean;
   export let onBack: () => void;
   export let onClose: () => void;
 
@@ -232,6 +230,8 @@
     }
   })();
 
+  $: isSubmitting = submitting;
+
   // Reset errors when form is modified
   $: (() => {
     if (hasOnlyDsn() || connectionTab === "dsn") {
@@ -253,9 +253,6 @@
       }
     }
   })();
-
-  // Emit the submitting state to the parent
-  $: dispatch("submitting", { submitting });
 
   function getClickHouseYamlPreview(
     values: Record<string, unknown>,
@@ -530,13 +527,12 @@
             clickhouseErrorDetails = details;
           }}
           bind:formId={clickhouseFormId}
-          bind:submitting={clickhouseSubmitting}
+          bind:isSubmitting={clickhouseSubmitting}
           bind:isSubmitDisabled={clickhouseIsSubmitDisabled}
           bind:connectorType={clickhouseConnectorType}
           bind:connectionTab
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
-          on:submitting
         />
       {:else if hasDsnFormOption}
         <Tabs

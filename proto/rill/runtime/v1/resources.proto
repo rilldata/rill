@@ -193,7 +193,7 @@ message MetricsViewSpec {
   message Dimension {
     string name = 1;
     // The dimension type. Only populated in ValidSpec.
-    DimensionType type = 13;
+    DimensionType type = 14;
     string display_name = 3;
     string description = 4;
     string column = 2;
@@ -205,6 +205,8 @@ message MetricsViewSpec {
     string lookup_key_column = 9;
     string lookup_value_column = 10;
     string lookup_default_expression = 11;
+    // The smallest time grain for the dimension. Only populated for time dimensions.
+    TimeGrain smallest_time_grain = 13;
     // The data type of the dimension. Only populated in ValidSpec.
     Type data_type = 12;
   }
