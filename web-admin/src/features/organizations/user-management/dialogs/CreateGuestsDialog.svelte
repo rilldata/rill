@@ -21,6 +21,7 @@
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -196,7 +197,7 @@
       <div class="mt-3">
         <div class="text-xs font-medium mb-1">Project access</div>
         {#if $projectsQuery?.isLoading}
-          <div class="text-xs text-slate-500">Loading projects…</div>
+          <DelayedSpinner isLoading={$projectsQuery?.isLoading} size="1rem" />
         {:else if $projectsQuery?.error}
           <div class="text-xs text-red-500">Failed to load projects</div>
         {:else if projects.length === 0}
