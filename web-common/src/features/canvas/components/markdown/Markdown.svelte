@@ -21,6 +21,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   :global(.canvas-markdown) {
     @apply text-gray-900;
   }

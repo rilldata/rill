@@ -160,6 +160,8 @@
 </tr>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .editing-controls {
     height: 39px;
     width: 192px;

@@ -13,6 +13,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   :global(.chat-markdown) {
     @apply text-gray-800;
     line-height: 1.6;

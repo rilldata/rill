@@ -138,6 +138,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .wrapper {
     @apply flex w-fit;
     @apply h-[26px] rounded-full;

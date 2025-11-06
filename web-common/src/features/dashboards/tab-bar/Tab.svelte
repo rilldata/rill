@@ -29,6 +29,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   a,
   button {
     @apply border-b-2 border-transparent;

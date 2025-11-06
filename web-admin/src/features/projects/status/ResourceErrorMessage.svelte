@@ -39,6 +39,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .container {
     @apply flex items-center justify-center flex-none;
   }

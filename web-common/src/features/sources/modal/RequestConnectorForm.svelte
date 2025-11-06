@@ -90,6 +90,8 @@
 </form>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   form {
     @apply flex flex-col gap-y-4;
   }

@@ -59,6 +59,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .component-param {
     @apply py-3 px-5;
     @apply border-t;

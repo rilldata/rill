@@ -224,6 +224,8 @@
 </thead>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   button {
     @apply px-2 flex items-center justify-start size-full;
   }

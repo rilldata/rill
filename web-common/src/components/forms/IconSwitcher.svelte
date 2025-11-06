@@ -38,6 +38,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   button {
     @apply flex justify-center items-center;
     @apply capitalize;

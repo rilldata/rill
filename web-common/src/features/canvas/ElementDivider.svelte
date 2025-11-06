@@ -134,6 +134,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .show-on-left {
     @apply left-0 -translate-x-1/2;
   }

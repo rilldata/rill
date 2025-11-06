@@ -45,6 +45,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .wrapper {
     @apply overflow-auto px-0 pb-4;
   }

@@ -31,6 +31,8 @@
 {/each}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   div {
     @apply opacity-10 w-1/2;
   }

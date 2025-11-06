@@ -9,6 +9,8 @@
 </a>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   a {
     @apply p-2 flex gap-x-1 items-center;
     @apply rounded-sm;

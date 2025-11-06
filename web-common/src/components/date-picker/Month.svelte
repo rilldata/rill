@@ -95,6 +95,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .weekday {
     @apply text-center w-full aspect-[2/1] text-slate-500 select-none;
   }

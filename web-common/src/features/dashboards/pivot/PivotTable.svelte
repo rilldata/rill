@@ -325,6 +325,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
     @apply z-40 select-none;

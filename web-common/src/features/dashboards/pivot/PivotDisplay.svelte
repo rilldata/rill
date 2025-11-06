@@ -155,6 +155,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .layout {
     @apply flex box-border overflow-hidden;
   }

@@ -39,6 +39,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .chat-message {
     max-width: 90%;
   }

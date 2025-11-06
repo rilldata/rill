@@ -432,6 +432,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   table {
     @apply p-0 m-0 border-spacing-0 border-collapse w-fit;
     @apply font-normal cursor-pointer select-none;

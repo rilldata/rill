@@ -34,6 +34,8 @@
 </Tooltip>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   button {
     @apply h-full aspect-square;
     @apply flex justify-center items-center;

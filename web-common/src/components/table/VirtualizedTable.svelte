@@ -189,6 +189,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   * {
     @apply border-slate-200;
   }

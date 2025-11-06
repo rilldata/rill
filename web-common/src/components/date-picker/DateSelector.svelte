@@ -110,6 +110,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   :global(.selecting button) {
     @apply ring-1 ring-primary-400;
   }

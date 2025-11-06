@@ -32,6 +32,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .table-wrapper {
     transition: filter 200ms;
     @apply relative rounded-[2px] w-full overflow-hidden border h-full;

@@ -51,6 +51,8 @@
 </th>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   th {
     @apply truncate p-0 bg-surface;
     height: var(--header-height);

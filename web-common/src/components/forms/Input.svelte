@@ -268,6 +268,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .component-wrapper {
     @apply flex flex-col h-fit justify-center;
   }

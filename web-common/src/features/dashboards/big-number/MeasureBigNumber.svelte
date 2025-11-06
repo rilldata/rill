@@ -239,6 +239,8 @@
 </Tooltip>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .big-number {
     @apply h-fit w-[138px] m-0.5 rounded p-2 font-normal;
     @apply items-start flex flex-col text-left;

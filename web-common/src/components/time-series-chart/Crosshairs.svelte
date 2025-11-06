@@ -13,6 +13,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   line {
     @apply stroke-gray-300;
     stroke-color: gray;

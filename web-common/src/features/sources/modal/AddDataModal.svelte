@@ -252,6 +252,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   section {
     @apply flex flex-col gap-y-3;
   }

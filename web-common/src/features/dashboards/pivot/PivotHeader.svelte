@@ -66,6 +66,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .header {
     @apply flex flex-col border-b select-none;
     @apply bg-surface justify-center py-2 gap-y-2;

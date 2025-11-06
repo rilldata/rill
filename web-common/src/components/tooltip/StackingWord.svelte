@@ -27,6 +27,8 @@
 <span bind:this={span}><slot /></span>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   span {
     @apply inline-block;
     border-radius: 2px;

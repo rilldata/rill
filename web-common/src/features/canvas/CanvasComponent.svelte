@@ -59,6 +59,8 @@
 </article>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .component-card.editable:hover {
     @apply shadow-md outline;
   }

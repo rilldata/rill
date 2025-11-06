@@ -65,6 +65,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .error-container {
     @apply border-red-600 bg-red-50;
     @apply p-2 flex border rounded;

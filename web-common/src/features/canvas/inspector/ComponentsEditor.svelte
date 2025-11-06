@@ -61,6 +61,10 @@
 </SidebarWrapper>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .inspector-center {
     @apply flex items-center justify-center h-full w-full;
   }

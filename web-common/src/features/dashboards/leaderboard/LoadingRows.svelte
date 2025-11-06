@@ -15,6 +15,8 @@
 {/each}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   td {
     height: 22px;
     @apply p-1 py-[5px];

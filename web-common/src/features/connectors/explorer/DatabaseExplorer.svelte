@@ -54,6 +54,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .wrapper {
     @apply flex flex-col overflow-y-auto;
   }

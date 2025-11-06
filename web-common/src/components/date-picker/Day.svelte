@@ -101,6 +101,8 @@
 </button>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .day {
     @apply w-full aspect-square;
     @apply bg-transparent;

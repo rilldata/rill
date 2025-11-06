@@ -76,6 +76,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .chart-type-selector {
     @apply flex ml-auto overflow-hidden mr-4;
     @apply border border-theme-300 divide-x divide-theme-300 rounded-sm;

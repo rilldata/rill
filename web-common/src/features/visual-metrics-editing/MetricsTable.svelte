@@ -237,6 +237,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .wrapper {
     @apply overflow-x-auto overflow-y-hidden relative;
     @apply border rounded-[2px];

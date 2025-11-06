@@ -26,6 +26,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .scroll {
     @apply size-full overflow-x-hidden overflow-y-auto;
   }

@@ -136,6 +136,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .complex-message-container {
     display: flex;
     flex-direction: column;

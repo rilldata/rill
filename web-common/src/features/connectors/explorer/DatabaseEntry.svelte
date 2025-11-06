@@ -76,6 +76,10 @@
 </li>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .database-entry {
     @apply w-full justify-between;
     @apply flex flex-col;

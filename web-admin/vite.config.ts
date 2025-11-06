@@ -2,6 +2,7 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
 import { defineConfig } from "vitest/config";
 import { readPublicEmailDomains } from "./src/features/projects/user-management/readPublicEmailDomains";
+import tailwindcss from "@tailwindcss/vite";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
@@ -24,7 +25,7 @@ export default defineConfig({
   define: {
     RillPublicEmailDomains: readPublicEmailDomains(),
   },
-  plugins: [sveltekit()],
+  plugins: [tailwindcss(), sveltekit()],
   envDir: "../",
   envPrefix: "RILL_UI_PUBLIC_",
 });

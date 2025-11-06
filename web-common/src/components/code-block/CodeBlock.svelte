@@ -50,6 +50,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   pre {
     background: #f7f7f7;
     border: 1px solid #ececec;

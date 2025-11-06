@@ -45,6 +45,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .chat-page-wrapper {
     flex: 1;
     overflow: hidden;

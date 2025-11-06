@@ -10,6 +10,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .chat-footer {
     padding: 0.5rem 1rem 1rem 1rem;
     background: var(--surface);

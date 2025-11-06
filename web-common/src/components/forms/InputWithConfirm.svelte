@@ -100,6 +100,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   h1 {
     @apply p-0 bg-transparent;
     @apply w-full max-w-fit;

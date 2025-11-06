@@ -50,6 +50,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .tool-container {
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;

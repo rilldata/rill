@@ -2,6 +2,9 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vitest/config";
 import type { Alias } from "vite";
 import { svelteTesting } from "@testing-library/svelte/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { fileURLToPath } from "url";
+import path from "path";
 
 const alias: Alias[] = [
   {
@@ -33,7 +36,12 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias,
     },
-    plugins: [sveltekit()],
+    plugins: [
+      tailwindcss({
+        config: path.resolve(process.cwd(), "tailwind.config.ts"),
+      }),
+      sveltekit(),
+    ],
     test: {
       workspace: [
         {

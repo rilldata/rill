@@ -51,6 +51,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   button {
     @apply flex-none flex items-center justify-center rounded-[4px];
     @apply size-[22px] cursor-pointer;

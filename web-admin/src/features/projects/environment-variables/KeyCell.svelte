@@ -53,6 +53,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .source-code {
     font-family: "Source Code Variable", monospace;
   }

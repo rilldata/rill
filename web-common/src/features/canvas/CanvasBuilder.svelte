@@ -608,6 +608,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .drag-container {
     container-type: inline-size;
     container-name: component-container;

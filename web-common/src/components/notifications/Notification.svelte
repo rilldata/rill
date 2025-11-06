@@ -70,6 +70,8 @@
 </aside>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   * {
     @apply border-gray-600;
   }

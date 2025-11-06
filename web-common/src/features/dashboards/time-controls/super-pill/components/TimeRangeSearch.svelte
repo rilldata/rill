@@ -100,6 +100,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   form {
     @apply overflow-hidden;
     @apply flex justify-center gap-x-1 items-center pl-2 pr-0.5;

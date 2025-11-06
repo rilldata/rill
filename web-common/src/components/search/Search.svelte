@@ -94,6 +94,8 @@
 </form>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .focus:focus {
     @apply border-primary-400;
   }

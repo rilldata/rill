@@ -65,6 +65,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .pan-button {
     @apply cursor-pointer fill-slate-400;
   }

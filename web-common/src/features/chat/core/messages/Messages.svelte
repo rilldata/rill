@@ -81,6 +81,10 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .chat-messages {
     flex: 1;
     display: flex;

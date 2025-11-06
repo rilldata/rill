@@ -152,6 +152,10 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .ghost {
     width: var(--ghost-width);
   }

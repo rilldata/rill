@@ -1,6 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
 import { defineConfig } from "vitest/config";
+import tailwindcss from "@tailwindcss/vite";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
@@ -32,7 +33,7 @@ const config = defineConfig({
     "import.meta.env.VITE_PLAYWRIGHT_CLOUD_TEST":
       process.env.PLAYWRIGHT_CLOUD_TEST,
   },
-  plugins: [sveltekit()],
+  plugins: [tailwindcss(), sveltekit()],
   envDir: "../",
   envPrefix: "RILL_UI_PUBLIC_",
 });

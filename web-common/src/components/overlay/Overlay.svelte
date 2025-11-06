@@ -36,6 +36,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   :global(.body) {
     transition: transform 400ms;
     transform-origin: center;

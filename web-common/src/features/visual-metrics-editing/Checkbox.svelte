@@ -36,6 +36,8 @@
 </button>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   button {
     @apply border rounded-[2px] bg-gray-50 grid place-content-center p-[1.5px];
   }

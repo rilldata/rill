@@ -148,6 +148,8 @@
 </SettingsContainer>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .update-org-form {
     @apply flex flex-col gap-y-5 w-full;
   }

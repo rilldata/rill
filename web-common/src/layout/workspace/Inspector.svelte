@@ -45,6 +45,10 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .inspector-wrapper {
     will-change: width;
     @apply h-full flex-none flex relative;

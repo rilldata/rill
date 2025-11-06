@@ -28,6 +28,8 @@
 </a>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   a {
     @apply bg-no-repeat bg-center bg-cover;
     @apply relative select-none;

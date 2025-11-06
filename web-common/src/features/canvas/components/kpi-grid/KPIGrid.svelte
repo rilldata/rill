@@ -69,6 +69,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .grid-wrapper {
     @apply size-full grid;
     grid-auto-rows: auto;

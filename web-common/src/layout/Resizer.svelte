@@ -103,6 +103,10 @@
 </button>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   button {
     @apply z-50 flex-none;
     @apply pointer-events-auto;

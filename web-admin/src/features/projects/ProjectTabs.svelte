@@ -93,6 +93,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   div {
     @apply border-b pt-1;
     @apply gap-y-[3px] flex flex-col;

@@ -73,6 +73,10 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .connector-entry {
     @apply flex flex-col flex-none;
   }

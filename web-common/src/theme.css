@@ -1,0 +1,90 @@
+/**
+ * Tailwind CSS v4 Theme Configuration
+ * 
+ * This file defines the theme in CSS using @theme directive.
+ * Tells Tailwind v4 what utility classes to generate based on our existing CSS variables.
+ */
+
+@theme {
+  /* Test: simple color to verify @theme works */
+  --color-test-blue: #3b82f6;
+  
+  /* Dark mode */
+  --dark-mode: class;
+  
+  /* Border radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  
+  /* Z-index */
+  --z-popover: 80;
+  
+  /* Border color */
+  --color-border-DEFAULT: color-mix(in oklab, var(--border) calc(<alpha-value> * 100%), transparent);
+  
+  /* Semantic colors */
+  --color-background: color-mix(in oklab, var(--background) calc(<alpha-value> * 100%), transparent);
+  --color-foreground: color-mix(in oklab, var(--foreground) calc(<alpha-value> * 100%), transparent);
+  --color-card-DEFAULT: color-mix(in oklab, var(--card) calc(<alpha-value> * 100%), transparent);
+  --color-card-foreground: color-mix(in oklab, var(--card-foreground) calc(<alpha-value> * 100%), transparent);
+  --color-popover-DEFAULT: color-mix(in oklab, var(--popover) calc(<alpha-value> * 100%), transparent);
+  --color-popover-foreground: color-mix(in oklab, var(--popover-foreground) calc(<alpha-value> * 100%), transparent);
+  --color-muted-DEFAULT: color-mix(in oklab, var(--muted) calc(<alpha-value> * 100%), transparent);
+  --color-muted-foreground: color-mix(in oklab, var(--muted-foreground) calc(<alpha-value> * 100%), transparent);
+  --color-accent-DEFAULT: color-mix(in oklab, var(--accent) calc(<alpha-value> * 100%), transparent);
+  --color-accent-foreground: color-mix(in oklab, var(--accent-foreground) calc(<alpha-value> * 100%), transparent);
+  --color-destructive-DEFAULT: color-mix(in oklab, var(--destructive) calc(<alpha-value> * 100%), transparent);
+  --color-destructive-foreground: color-mix(in oklab, var(--destructive-foreground) calc(<alpha-value> * 100%), transparent);
+  --color-input: color-mix(in oklab, var(--input) calc(<alpha-value> * 100%), transparent);
+  --color-ring: color-mix(in oklab, var(--ring) calc(<alpha-value> * 100%), transparent);
+  --color-surface: color-mix(in oklab, var(--surface) calc(<alpha-value> * 100%), transparent);
+  
+  /* Primary colors - these reference CSS vars defined in colors.css and app.css */
+  
+  /* Secondary colors */
+  --color-secondary-DEFAULT: color-mix(in oklab, var(--color-secondary-500) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-foreground: color-mix(in oklab, var(--color-gray-50) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-50: color-mix(in oklab, var(--color-secondary-50) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-100: color-mix(in oklab, var(--color-secondary-100) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-200: color-mix(in oklab, var(--color-secondary-200) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-300: color-mix(in oklab, var(--color-secondary-300) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-400: color-mix(in oklab, var(--color-secondary-400) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-500: color-mix(in oklab, var(--color-secondary-500) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-600: color-mix(in oklab, var(--color-secondary-600) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-700: color-mix(in oklab, var(--color-secondary-700) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-800: color-mix(in oklab, var(--color-secondary-800) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-900: color-mix(in oklab, var(--color-secondary-900) calc(<alpha-value> * 100%), transparent);
+  --color-secondary-950: color-mix(in oklab, var(--color-secondary-950) calc(<alpha-value> * 100%), transparent);
+  
+  /* Theme colors */
+  --color-theme-DEFAULT: color-mix(in oklab, var(--color-theme-500) calc(<alpha-value> * 100%), transparent);
+  --color-theme-foreground: color-mix(in oklab, var(--theme-foreground) calc(<alpha-value> * 100%), transparent);
+  --color-theme-50: color-mix(in oklab, var(--color-theme-50) calc(<alpha-value> * 100%), transparent);
+  --color-theme-100: color-mix(in oklab, var(--color-theme-100) calc(<alpha-value> * 100%), transparent);
+  --color-theme-200: color-mix(in oklab, var(--color-theme-200) calc(<alpha-value> * 100%), transparent);
+  --color-theme-300: color-mix(in oklab, var(--color-theme-300) calc(<alpha-value> * 100%), transparent);
+  --color-theme-400: color-mix(in oklab, var(--color-theme-400) calc(<alpha-value> * 100%), transparent);
+  --color-theme-500: color-mix(in oklab, var(--color-theme-500) calc(<alpha-value> * 100%), transparent);
+  --color-theme-600: color-mix(in oklab, var(--color-theme-600) calc(<alpha-value> * 100%), transparent);
+  --color-theme-700: color-mix(in oklab, var(--color-theme-700) calc(<alpha-value> * 100%), transparent);
+  --color-theme-800: color-mix(in oklab, var(--color-theme-800) calc(<alpha-value> * 100%), transparent);
+  --color-theme-900: color-mix(in oklab, var(--color-theme-900) calc(<alpha-value> * 100%), transparent);
+  --color-theme-950: color-mix(in oklab, var(--color-theme-950) calc(<alpha-value> * 100%), transparent);
+  
+  /* Theme secondary colors */
+  --color-theme-secondary-DEFAULT: color-mix(in oklab, var(--color-theme-secondary-500) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-foreground: color-mix(in oklab, var(--color-gray-50) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-50: color-mix(in oklab, var(--color-theme-secondary-50) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-100: color-mix(in oklab, var(--color-theme-secondary-100) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-200: color-mix(in oklab, var(--color-theme-secondary-200) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-300: color-mix(in oklab, var(--color-theme-secondary-300) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-400: color-mix(in oklab, var(--color-theme-secondary-400) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-500: color-mix(in oklab, var(--color-theme-secondary-500) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-600: color-mix(in oklab, var(--color-theme-secondary-600) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-700: color-mix(in oklab, var(--color-theme-secondary-700) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-800: color-mix(in oklab, var(--color-theme-secondary-800) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-900: color-mix(in oklab, var(--color-theme-secondary-900) calc(<alpha-value> * 100%), transparent);
+  --color-theme-secondary-950: color-mix(in oklab, var(--color-theme-secondary-950) calc(<alpha-value> * 100%), transparent);
+}
+

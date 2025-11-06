@@ -104,6 +104,8 @@
 </svelte:element>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   button,
   a {
     @apply flex flex-none text-center items-center justify-center;

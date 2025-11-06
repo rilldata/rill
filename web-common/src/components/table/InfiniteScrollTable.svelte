@@ -262,6 +262,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   table {
     @apply border-separate border-spacing-0 w-full;
   }

@@ -175,6 +175,8 @@
 {/if}
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .item {
     @apply w-full relative justify-between flex cursor-pointer select-none items-start rounded-sm py-1.5 px-2 gap-x-2 text-xs outline-none;
   }

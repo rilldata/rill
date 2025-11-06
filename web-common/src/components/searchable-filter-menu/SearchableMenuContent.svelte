@@ -152,6 +152,8 @@
 </DropdownMenu.Content>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   footer {
     height: 42px;
     @apply border-t border-slate-300;

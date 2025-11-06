@@ -135,6 +135,10 @@
 </header>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .second-level-wrapper {
     @apply px-4 py-2 w-full h-7;
     @apply flex justify-between gap-x-2;

@@ -37,6 +37,8 @@
 </div>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .settings-container {
     @apply w-full border border-slate-200 text-slate-700 rounded-sm;
   }

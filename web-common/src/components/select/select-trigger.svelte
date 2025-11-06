@@ -63,6 +63,8 @@
 </SelectPrimitive.Trigger>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   :global(button[aria-expanded="true"] > .caret) {
     @apply transform -rotate-180 transition-transform;
   }

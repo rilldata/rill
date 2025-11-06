@@ -138,6 +138,10 @@
 </li>
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
+  @reference "tailwindcss";
+
   .database-schema-entry {
     @apply w-full;
     @apply flex flex-col;

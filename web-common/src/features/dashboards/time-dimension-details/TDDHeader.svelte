@@ -260,6 +260,8 @@
 />
 
 <style lang="postcss">
+  @reference "tailwindcss";
+
   .tdd-header {
     @apply grid justify-between grid-flow-col items-center py-2 px-4 h-11;
   }
