@@ -578,7 +578,7 @@ func (c *Connection) periodicallyEmitStats() {
 	defer sensitiveTicker.Stop()
 
 	// Regular ticker for non-sensitive stats
-	regularTicker := time.NewTicker(10 * time.Minute)
+	regularTicker := time.NewTicker(30 * time.Second)
 	defer regularTicker.Stop()
 
 	// Cache invalidation ticker to reset billing table existence cache
@@ -614,11 +614,8 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
 		case <-regularTicker.C:
-			go func() {
-				// Skip if it hasn't been used recently and may be scaled to zero.
-				if (c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) || skipEstimatedSizeEmission {
-					return
-				}
+			// Skip if it hasn't been used recently and may be scaled to zero.
+			if !(c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) && !skipEstimatedSizeEmission {
 				// Emit the estimated size per table.
 				tableSizes, err := c.estimatePerTableSize(c.ctx)
 				if err == nil {
@@ -628,34 +625,32 @@ func (c *Connection) periodicallyEmitStats() {
 				} else if !errors.Is(err, c.ctx.Err()) {
 					c.logger.Warn("failed to estimate clickhouse per-table sizes", zap.Error(err))
 				}
-			}()
+			}
 
-			go func() {
-				// Check if billing.events table exists (with caching).
-				billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
-				if err != nil {
-					if !errors.Is(err, c.ctx.Err()) {
-						c.logger.Warn("failed to check if billing table exists", zap.Error(err))
-					}
-					return
+			// Check if billing.events table exists (with caching).
+			billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
+			if err != nil {
+				if !errors.Is(err, c.ctx.Err()) {
+					c.logger.Warn("failed to check if billing table exists", zap.Error(err))
 				}
-				if !billingTableExists {
-					c.logger.Debug("billing.events table does not exist in the database, RCU metrics will not be available", zap.String("clickhouse_host", c.config.Host), zap.String("clickhouse_dsn", c.config.DSN))
-					return
+				continue
+			}
+			if !billingTableExists {
+				c.logger.Debug("billing.events table does not exist in the database, RCU metrics will not be available", zap.String("clickhouse_host", c.config.Host), zap.String("clickhouse_dsn", c.config.DSN))
+				continue
+			}
+			// Emit the latest RCU per service.
+			latestRCU, err := c.latestRCUPerService(c.ctx)
+			if err == nil {
+				for service, value := range latestRCU {
+					c.activity.RecordMetric(c.ctx, "clickhouse_rcu", value, attribute.String("billing_service", service))
 				}
-				// Emit the latest RCU per service.
-				latestRCU, err := c.latestRCUPerService(c.ctx)
-				if err == nil {
-					for service, value := range latestRCU {
-						c.activity.RecordMetric(c.ctx, "clickhouse_rcu", value, attribute.String("billing_service", service))
-					}
-					if len(latestRCU) == 0 {
-						c.logger.Warn("no RCU data found for any service", zap.String("clickhouse_host", c.config.Host))
-					}
-				} else if !errors.Is(err, c.ctx.Err()) {
-					c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
+				if len(latestRCU) == 0 {
+					c.logger.Warn("no RCU data found for any service", zap.String("clickhouse_host", c.config.Host))
 				}
-			}()
+			} else if !errors.Is(err, c.ctx.Err()) {
+				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
+			}
 		case <-cacheInvalidationTicker.C:
 			// Invalidate the billing table existence cache and skip size emission flag.
 			c.billingTableExists = nil
