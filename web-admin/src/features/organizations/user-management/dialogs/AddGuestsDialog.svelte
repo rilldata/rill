@@ -24,6 +24,7 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
+  import { ORG_ROLES_OPTIONS } from "@rilldata/web-admin/features/organizations/constants";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -57,6 +58,9 @@
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
   $: projectsErrorMessage =
     getRpcErrorMessage($projectsQuery?.error) ?? $projectsQuery?.error?.message;
+
+  $: selectedRoleLabel =
+    ORG_ROLES_OPTIONS.find((o) => o.value === selectedRole)?.label ?? "";
 
   function toggleProjectSelection(projectName: string) {
     const idx = selectedProjects.indexOf(projectName);
@@ -160,11 +164,7 @@
     (e, i) => e.length > 0 && $errors.emails?.[i] !== undefined,
   );
 
-  function roleLabel(role: string) {
-    if (role === "admin") return "Admin";
-    if (role === "editor") return "Editor";
-    return "Viewer";
-  }
+  // role label is derived from ORG_ROLES_OPTIONS
 </script>
 
 <Dialog
@@ -267,7 +267,7 @@
               ? 'bg-slate-200'
               : 'hover:bg-slate-100'} px-2 py-1"
           >
-            <span>{roleLabel(selectedRole)}</span>
+            <span>{selectedRoleLabel}</span>
             {#if roleDropdownOpen}
               <CaretUpIcon size="12px" />
             {:else}
