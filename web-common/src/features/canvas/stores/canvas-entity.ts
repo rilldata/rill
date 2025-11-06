@@ -18,7 +18,6 @@ import {
   writable,
   type Readable,
   type Unsubscriber,
-  type Writable,
 } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
@@ -39,6 +38,8 @@ import { TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 
+export const lastVisitedState = new Map<string, string>();
+
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
 // Set returns a boolean indicating whether the value was set
@@ -49,7 +50,6 @@ export type SearchParamsStore = {
 };
 
 export class CanvasEntity {
-  name: string;
   components = new Map<string, BaseCanvasComponent>();
 
   _rows: Grid = new Grid(this);
@@ -74,10 +74,9 @@ export class CanvasEntity {
   themeName = writable<string | undefined>(undefined);
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
-  lastVisitedState: Writable<string | null> = writable(null);
 
   constructor(
-    name: string,
+    public name: string,
     private instanceId: string,
   ) {
     this.specStore = useCanvas(
@@ -90,8 +89,6 @@ export class CanvasEntity {
       },
       queryClient,
     );
-
-    this.name = name;
 
     const searchParamsStore: SearchParamsStore = (() => {
       return {
@@ -189,17 +186,7 @@ export class CanvasEntity {
   };
 
   saveSnapshot = (filterState: string) => {
-    this.lastVisitedState.set(filterState);
-  };
-
-  restoreSnapshot = async () => {
-    const lastVisitedState = get(this.lastVisitedState);
-
-    if (lastVisitedState) {
-      await goto(`?${lastVisitedState}`, {
-        replaceState: true,
-      });
-    }
+    lastVisitedState.set(this.name, filterState);
   };
 
   duplicateItem = (id: string) => {

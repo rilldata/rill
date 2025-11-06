@@ -92,12 +92,15 @@
     const homeBookmarkParams =
       bookmarkResponse.data.categorizedBookmarks.home?.url;
 
-    if (homeBookmarkParams && $page.url.search.toString() === "") {
-      // Redirect to home bookmark URL if no search params are present
-      goto(`?${homeBookmarkParams}`);
+    if (homeBookmarkParams && !$page.url.search.toString()) {
+      goto(`?${homeBookmarkParams}`)
+        .then(() => {
+          showLoading = false;
+        })
+        .catch(console.error);
+    } else {
+      showLoading = false;
     }
-
-    showLoading = false;
   }
 
   onNavigate(({ from, to }) => {

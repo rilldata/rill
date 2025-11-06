@@ -2,7 +2,6 @@
   import { page } from "$app/stores";
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onDestroy } from "svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
   import ThemeProvider from "../dashboards/ThemeProvider.svelte";
@@ -27,9 +26,9 @@
 
   $: ({ width: clientWidth } = contentRect);
 
-  onDestroy(() => {
-    saveSnapshot($page.url.searchParams.toString());
-  });
+  $: searchParams = $page.url.searchParams.toString();
+
+  $: if (searchParams) saveSnapshot(searchParams);
 </script>
 
 <ThemeProvider theme={$theme}>

@@ -51,17 +51,15 @@ type AllTimeRange = TimeRange & { isFetching: boolean };
 
 let lastAllTimeRange: AllTimeRange | undefined;
 
+// This class is used for both local and global time controls on Canvas
+// To avoid methods running in widgets, make them
+// conditional on the isWidgetInstance flag
 export class TimeControls {
-  /**
-   * Writables which can be updated by the user
-   */
+  isWidgetInstance: boolean;
   selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
   showTimeComparison: Writable<boolean>;
   selectedTimezone: Writable<string>;
 
-  /**
-   * Derived stores based on writables and spec
-   */
   allTimeRange: Readable<AllTimeRange>;
   isReady: Readable<boolean>;
   minTimeGrain: Writable<V1TimeGrain> = writable(
@@ -85,7 +83,7 @@ export class TimeControls {
     this.selectedComparisonTimeRange = writable(undefined);
     this.showTimeComparison = writable(false);
     this.selectedTimezone = writable("UTC");
-    this.componentName = componentName;
+    this.isWidgetInstance = Boolean(componentName);
 
     this.hasTimeSeries = derived(specStore, (spec) => {
       let metricsViews = spec?.data?.metricsViews || {};
@@ -122,7 +120,7 @@ export class TimeControls {
         } = parseSearchParams(searchParams);
 
         // Component does not have local time range
-        if (this.componentName && !timeRange) return;
+        if (this.isWidgetInstance && !timeRange) return;
 
         // TODO: figure out a better way of handling this property
         // when it's not consistent across all metrics views - bgh
