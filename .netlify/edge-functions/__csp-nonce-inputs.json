@@ -3,12 +3,7 @@
   "strictDynamic": true,
   "unsafeEval": false,
   "path": "/*",
-  "excludedPath": [
-    "*.css",
-    "*.js",
-    "*.svg",
-    "/.netlify/images"
-  ],
+  "excludedPath": ["*.css", "*.js", "*.svg", "/.netlify/images"],
   "unsafeInline": true,
   "self": true,
   "reportUri": "/__csp-violations"
