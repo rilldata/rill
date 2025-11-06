@@ -21,7 +21,7 @@ on:
       env:
         description: "Environment"
         required: true
-        default: "stage"
+        default: "test"
         type: choice
         options:
         - stage
