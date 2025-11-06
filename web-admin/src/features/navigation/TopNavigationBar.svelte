@@ -177,7 +177,7 @@
   ];
 
   $: exploreQuery = useExplore(instanceId, dashboard, {
-    enabled: !!instanceId && !!dashboard,
+    enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
   });
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;

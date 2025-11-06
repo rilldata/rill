@@ -44,9 +44,12 @@
 >
   {#if editable}
     <!-- Editable mode: Show dropdown with explore option -->
-    <DropdownMenu.Root bind:open={dropdownOpen}>
+    <DropdownMenu.Root
+      bind:open={dropdownOpen}
+      portal=".dashboard-theme-boundary"
+    >
       <DropdownMenu.Trigger
-        class="size-7 grid place-content-center hover:bg-slate-100 active:bg-slate-200"
+        class="size-7 grid place-content-center bg-card hover:brightness-[85%] active:brightness-75"
       >
         <ThreeDot size="16px" />
       </DropdownMenu.Trigger>

@@ -19,6 +19,7 @@ export function multiLayerBaseSpec() {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
     width: "container",
     data: { name: "table" },
+    background: "transparent",
     layer: [],
   };
   return baseSpec;

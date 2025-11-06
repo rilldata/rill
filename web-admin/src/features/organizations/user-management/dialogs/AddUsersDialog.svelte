@@ -160,6 +160,7 @@
     role = "";
     isSuperUser = false;
     failedInvites = [];
+    $form.emails = [""];
   }}
   onOpenChange={(open) => {
     if (!open) {
@@ -167,6 +168,7 @@
       role = "";
       isSuperUser = false;
       failedInvites = [];
+      $form.emails = [""];
     }
   }}
 >
@@ -186,13 +188,13 @@
       <MultiInput
         id="emails"
         placeholder="Add emails, separated by commas"
-        contentClassName="relative"
+        contentClassName="relative [&>div:first-child]:max-h-[120px] [&>div:first-child]:overflow-y-auto"
         bind:values={$form.emails}
         errors={$errors.emails}
         singular="email"
         plural="emails"
       >
-        <div slot="within-input" class="flex items-center h-full">
+        <div slot="within-input" class="flex items-center h-full shrink-0 ml-2">
           <UserRoleSelect bind:value={$form.role} />
         </div>
         <svelte:fragment slot="beside-input" let:hasSomeValue>
