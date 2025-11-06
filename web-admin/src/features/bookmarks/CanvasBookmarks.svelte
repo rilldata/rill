@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import { getCanvasCategorisedBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
+  import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
   import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
@@ -20,46 +22,21 @@
   const canvasNameStore = writable(canvasName);
   $: canvasNameStore.set(canvasName);
 
-  $: ({
-    canvasEntity: {
-      metricsView: { metricViewNames },
-      filters: {
-        whereFilter,
-        dimensionsWithInlistFilter,
-        dimensionThresholdFilters,
-        dimensionFilterExcludeMode,
-      },
-      timeControls: {
-        timeRangeStateStore,
-        comparisonRangeStateStore,
-        selectedTimezone,
-      },
-      defaultUrlParamsStore,
-    },
-  } = getCanvasStore(canvasName, instanceId));
-
-  $: filtersState = <FiltersState>{
-    whereFilter: $whereFilter,
-    dimensionsWithInlistFilter: $dimensionsWithInlistFilter,
-    dimensionThresholdFilters: $dimensionThresholdFilters,
-    dimensionFilterExcludeMode: $dimensionFilterExcludeMode,
-  };
-  $: timeControlState = <TimeControlState>{
-    selectedTimeRange: $timeRangeStateStore?.selectedTimeRange,
-    selectedComparisonTimeRange:
-      $comparisonRangeStateStore?.selectedComparisonTimeRange,
-    showTimeComparison: $comparisonRangeStateStore?.showTimeComparison,
-    selectedTimezone: $selectedTimezone,
-  };
-
   const categorizedBookmarksStore = getCanvasCategorisedBookmarks(
     orgAndProjectNameStore,
     canvasNameStore,
   );
+
+  $: canvasResponse = useCanvas(instanceId, canvasName);
+
+  $: metricsViews = $canvasResponse.data?.metricsViews || {};
+
+  $: metricsViewNames = Object.keys(metricsViews);
   $: ({
     data: { bookmarks, categorizedBookmarks },
   } = $categorizedBookmarksStore);
-  $: defaultHomeBookmarkUrl = "?" + $defaultUrlParamsStore.data.toString();
+
+  $: defaultHomeBookmarkUrl = $page.url.pathname;
 </script>
 
 <Bookmarks
@@ -72,9 +49,5 @@
     showFiltersOnly: false,
     defaultHomeBookmarkUrl,
   }}
-  dashboardState={{
-    metricsViewNames: $metricViewNames,
-    filtersState,
-    timeControlState,
-  }}
+  {metricsViewNames}
 />

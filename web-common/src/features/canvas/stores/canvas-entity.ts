@@ -76,11 +76,6 @@ export class CanvasEntity {
   unsubscriber: Unsubscriber;
   lastVisitedState: Writable<string | null> = writable(null);
 
-  defaultUrlParamsStore: Readable<{
-    data: URLSearchParams;
-    isPending: boolean;
-  }>;
-
   constructor(
     name: string,
     private instanceId: string,
@@ -177,9 +172,6 @@ export class CanvasEntity {
       }
     });
 
-    // TODO: merge more stores once we add support for defaults for those.
-    this.defaultUrlParamsStore = this.timeControls.defaultUrlParamsStore;
-
     this.theme = createResolvedThemeStore(
       this.themeName,
       this.specStore,
@@ -200,11 +192,11 @@ export class CanvasEntity {
     this.lastVisitedState.set(filterState);
   };
 
-  restoreSnapshot = async (initState: string | undefined) => {
-    const stateToRestore = get(this.lastVisitedState) ?? initState;
+  restoreSnapshot = async () => {
+    const lastVisitedState = get(this.lastVisitedState);
 
-    if (stateToRestore) {
-      await goto(`?${stateToRestore}`, {
+    if (lastVisitedState) {
+      await goto(`?${lastVisitedState}`, {
         replaceState: true,
       });
     }

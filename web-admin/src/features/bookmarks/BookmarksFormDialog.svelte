@@ -13,6 +13,7 @@
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
@@ -20,16 +21,23 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
-  import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import { deriveInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
+    type V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
   import { InfoIcon } from "lucide-svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
+  import type { Interval } from "luxon";
 
   export let organization: string;
   export let project: string;
@@ -38,33 +46,111 @@
   export let bookmark: BookmarkEntry | null = null;
   export let defaultUrlParams: URLSearchParams | undefined = undefined;
   export let showFiltersOnly: boolean = true;
-  export let dashboardState: {
-    metricsViewNames: string[];
-    filtersState: FiltersState;
-    timeControlState: TimeControlState;
-  };
+  export let metricsViewNames: string[];
   export let onClose = () => {};
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
-  $: ({ metricsViewNames, filtersState, timeControlState } = dashboardState);
 
   $: ({ url } = $page);
   $: curUrlParams = url.searchParams;
 
-  $: start = timeControlState?.selectedTimeRange?.start?.toISOString() ?? "";
-  $: end = timeControlState?.selectedTimeRange?.end?.toISOString() ?? "";
-  $: timeRange = <V1TimeRange>{
-    isoDuration: timeControlState.selectedTimeRange?.name,
-    start,
-    end,
+  $: bookmarkUrl = bookmark?.url || $page.url.searchParams.toString();
+
+  let filterState = {
+    whereFilter: createAndExpression([]),
+    dimensionsWithInlistFilter: [],
+    dimensionThresholdFilters: [],
+    start: "",
+    end: "",
+    timeRange: { expression: "" } as V1TimeRange,
+    selectedTimeRange: "",
   };
 
-  $: selectedTimeRange = formatTimeRange(
-    start,
-    end,
-    timeControlState.selectedTimeRange?.interval,
-    timeControlState?.selectedTimezone,
-  );
+  $: processExploreUrl(bookmarkUrl)
+    .then((state) => {
+      filterState = state;
+    })
+    .catch(console.error);
+
+  async function processExploreUrl(searchParams: string) {
+    const searchParamsObj = new URLSearchParams(searchParams);
+    const rangeExpression = searchParamsObj.get(
+      ExploreStateURLParams.TimeRange,
+    );
+    const timeRange = <V1TimeRange>{
+      expression: rangeExpression || "",
+    };
+
+    const timeZone =
+      searchParamsObj.get(ExploreStateURLParams.TimeZone) || "UTC";
+
+    try {
+      //For each metricsview in the metricsview names array, derive interval to parse RillTime range expressions correctly
+      const promises = metricsViewNames.map((mvName) =>
+        deriveInterval(timeRange.expression || "", mvName, timeZone),
+      );
+
+      const intervals = await Promise.all(promises);
+      let intervalWithLatestEndPoint:
+        | {
+            interval: Interval;
+            grain?: V1TimeGrain | undefined;
+            error?: string;
+          }
+        | undefined;
+      intervals.forEach((response) => {
+        if (
+          !intervalWithLatestEndPoint ||
+          (response.interval.end && intervalWithLatestEndPoint.interval.end
+            ? response.interval.end > intervalWithLatestEndPoint.interval.end
+            : false)
+        ) {
+          intervalWithLatestEndPoint = response;
+        }
+      });
+
+      const start = intervalWithLatestEndPoint.interval.start
+        ? intervalWithLatestEndPoint.interval.start.toISO()
+        : "";
+      const end = intervalWithLatestEndPoint.interval.end
+        ? intervalWithLatestEndPoint.interval.end.toISO()
+        : "";
+
+      const grain =
+        (searchParamsObj.get(ExploreStateURLParams.TimeGrain) as V1TimeGrain) ||
+        intervalWithLatestEndPoint.grain ||
+        V1TimeGrain.TIME_GRAIN_MINUTE;
+
+      const { expr, dimensionsWithInlistFilter } = getFiltersFromText(
+        searchParamsObj.get(ExploreStateURLParams.Filters) || "",
+      );
+
+      const { dimensionFilters, dimensionThresholdFilters } =
+        splitWhereFilter(expr);
+
+      const selectedTimeRange = formatTimeRange(start, end, grain, timeZone);
+
+      return {
+        dimensionThresholdFilters,
+        dimensionsWithInlistFilter,
+        whereFilter: dimensionFilters,
+        start,
+        end,
+        timeRange,
+        selectedTimeRange,
+      };
+    } catch {
+      return {
+        dimensionThresholdFilters: [],
+        dimensionsWithInlistFilter: [],
+        whereFilter: createAndExpression([]),
+        start: "",
+        end: "",
+        timeRange,
+        selectedTimeRange: "Invalid time range",
+      };
+    }
+  }
 
   // Adding it here to get a newline in
   const CategoryTooltip = `Your bookmarks can only be viewed by you.
@@ -175,13 +261,13 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           </div>
         </Label>
         <ExploreFilterChipsReadOnly
-          dimensionThresholdFilters={filtersState.dimensionThresholdFilters}
-          dimensionsWithInlistFilter={filtersState.dimensionsWithInlistFilter}
-          filters={filtersState.whereFilter}
+          dimensionThresholdFilters={filterState.dimensionThresholdFilters}
+          dimensionsWithInlistFilter={filterState.dimensionsWithInlistFilter}
+          filters={filterState.whereFilter}
           {metricsViewNames}
-          displayTimeRange={timeRange}
-          queryTimeStart={start}
-          queryTimeEnd={end}
+          displayTimeRange={filterState.timeRange}
+          queryTimeStart={filterState.start}
+          queryTimeEnd={filterState.end}
         />
       </div>
       <ProjectAccessControls {organization} {project}>
@@ -245,7 +331,9 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
               </TooltipContent>
             </Tooltip>
           </div>
-          <div class="text-gray-500 text-sm">{selectedTimeRange}</div>
+          <div class="text-gray-500 text-sm">
+            {filterState.selectedTimeRange}
+          </div>
         </Label>
       </div>
     </form>

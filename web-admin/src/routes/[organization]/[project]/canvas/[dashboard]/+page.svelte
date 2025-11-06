@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onNavigate } from "$app/navigation";
+  import { goto, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import { getCanvasCategorisedBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
@@ -24,6 +24,8 @@
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
+
+  let showLoading = true;
 
   $: ({ instanceId } = $runtime);
   $: canvasName = $page.params.dashboard;
@@ -82,8 +84,21 @@
     orgAndProjectNameStore,
     canvasNameStore,
   );
-  $: homeBookmarkUrlSearch =
-    $categorizedBookmarksStore.data.categorizedBookmarks.home?.url;
+
+  $: bookmarkResponse = $categorizedBookmarksStore;
+
+  // This should eventually be moved to the load function - bgh
+  $: if (!bookmarkResponse.isPending && showLoading) {
+    const homeBookmarkParams =
+      bookmarkResponse.data.categorizedBookmarks.home?.url;
+
+    if (homeBookmarkParams && $page.url.search.toString() === "") {
+      // Redirect to home bookmark URL if no search params are present
+      goto(`?${homeBookmarkParams}`);
+    }
+
+    showLoading = false;
+  }
 
   onNavigate(({ from, to }) => {
     const changedDashboard =
@@ -120,12 +135,12 @@
 
 {#if isCanvasReconcilingForFirstTime(canvasResource)}
   <DashboardBuilding />
-{:else if $categorizedBookmarksStore.isPending}
+{:else if showLoading}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <Spinner status={EntityStatus.Running} size="32px" />
     </CtaContentContainer>
   </CtaLayoutContainer>
 {:else}
-  <CanvasDashboardEmbed resource={canvasResource} {homeBookmarkUrlSearch} />
+  <CanvasDashboardEmbed resource={canvasResource} />
 {/if}
