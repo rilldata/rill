@@ -451,19 +451,21 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
-	var ts metricsview.TimestampsResult
+	// to keep results consistent
+	now := time.Now()
+
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, claims, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
 	if req.RefOverride != nil {
+		// If override is set, we use it for every ref except `min`
 		ts = metricsview.TimestampsResult{
-			Min:       req.RefOverride.AsTime(),
+			Min:       ts.Min,
 			Max:       req.RefOverride.AsTime(),
 			Watermark: req.RefOverride.AsTime(),
-			Now:       req.RefOverride.AsTime(),
 		}
-	} else {
-		ts, err = queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, req.TimeDimension, claims, int(req.Priority))
-		if err != nil {
-			return nil, err
-		}
+		now = req.RefOverride.AsTime()
 	}
 
 	timeDimension := req.TimeDimension
@@ -478,9 +480,6 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 			return nil, err
 		}
 	}
-
-	// to keep results consistent
-	now := time.Now()
 
 	timeRanges := make([]*runtimev1.ResolvedTimeRange, len(req.Expressions))
 	for i, tr := range req.Expressions {
