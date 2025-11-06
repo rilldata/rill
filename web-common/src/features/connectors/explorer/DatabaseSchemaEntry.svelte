@@ -26,6 +26,7 @@
     database,
     databaseSchema,
     5,
+    expanded,
   );
 
   $: ({

@@ -190,12 +190,19 @@ export function useInfiniteTables(
   database: string,
   databaseSchema: string,
   pageSize = 5,
+  enabled: boolean = true,
 ) {
   return createInfiniteQuery({
     queryKey: [
       "/v1/connectors/tables",
       { instanceId, connector, database, databaseSchema, pageSize },
     ],
+    enabled:
+      enabled &&
+      !!instanceId &&
+      !!connector &&
+      (!!database || database === "") &&
+      databaseSchema !== undefined,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage: { nextPageToken?: string }) =>
       lastPage?.nextPageToken || undefined,
