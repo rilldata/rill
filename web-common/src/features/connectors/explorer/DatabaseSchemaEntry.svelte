@@ -7,6 +7,7 @@
   } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
   import { useInfiniteListTables } from "../selectors";
+  import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
@@ -122,17 +123,20 @@
         <div class="load-more {database ? 'pl-[78px]' : 'pl-[60px]'}">
           {#if error}
             <span class="error">Failed to load more tables.</span>
-            <button class="load-more-btn" on:click={() => fetchNextPage()}>
+            <Button type="plain" small onClick={() => fetchNextPage()}>
               Retry
-            </button>
+            </Button>
           {:else}
-            <button
-              class="load-more-btn"
+            <Button
+              type="plain"
+              small
               disabled={isFetchingNextPage}
-              on:click={() => fetchNextPage()}
+              loading={isFetchingNextPage}
+              loadingCopy="Loading..."
+              onClick={() => fetchNextPage()}
             >
-              {isFetchingNextPage ? "Loading..." : "Load more"}
-            </button>
+              Load more
+            </Button>
           {/if}
         </div>
       {/if}
@@ -162,14 +166,5 @@
 
   .load-more {
     @apply py-2;
-  }
-  .load-more-btn {
-    @apply px-3 py-1 text-xs border rounded-[2px] text-gray-700 border-slate-200;
-  }
-  .load-more-btn:hover {
-    @apply bg-gray-50;
-  }
-  .load-more-btn:disabled {
-    @apply opacity-60;
   }
 </style>
