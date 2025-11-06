@@ -6,6 +6,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
   export let name: string;
   export let usersCount: number;
@@ -63,7 +65,13 @@
         {#if (usersCount ?? 0) === 0}
           <div class="text-xs text-gray-300 px-1 py-0.5">No users</div>
         {:else if $listUsergroupMemberUsers.isLoading}
-          <div class="text-xs text-gray-300 px-1 py-0.5">Loading…</div>
+          <div class="px-1 py-0.5">
+            <Spinner
+              status={EntityStatus.Running}
+              size="0.9rem"
+              duration={600}
+            />
+          </div>
         {:else if $listUsergroupMemberUsers.isError}
           <div class="text-xs text-red-300 px-1 py-0.5">
             Failed to load users
@@ -71,15 +79,19 @@
         {:else}
           <ul>
             {#each previewUsers.slice(0, PREVIEW_COUNT) as u}
+              {@const displayName = u.userName || u.userEmail}
+              {@const colorSeed = u.userEmail || u.userName}
               <div class="flex items-center gap-1 py-1">
+                <!-- Use email first to seed color for stable, unique avatar colors;
+                     visible text and alt prefer name for readability. -->
                 <Avatar
                   src={u.userPhotoUrl}
                   avatarSize="h-4 w-4"
                   fontSize="text-[10px]"
-                  alt={u.userName || u.userEmail}
-                  bgColor={getRandomBgColor(u.userEmail || u.userName)}
+                  alt={displayName}
+                  bgColor={getRandomBgColor(colorSeed)}
                 />
-                <li>{u.userName || u.userEmail}</li>
+                <li>{displayName}</li>
               </div>
             {/each}
             {#if (usersCount ?? 0) > PREVIEW_COUNT}
