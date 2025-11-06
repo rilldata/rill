@@ -1024,6 +1024,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		defer func() {
 			s.logger.Debug("completion finished",
 				zap.Int("iterations", opts.MaxIterations),
+				zap.Int("iterations_with_truncation", truncations),
 				zap.Int("added_messages", len(messages)-len(opts.Messages)),
 				zap.Int("total_messages", len(messages)),
 				zap.Error(outErr),
@@ -1039,6 +1040,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.String("parent_tool", name),
 				attribute.String("error", outErrStr),
 				attribute.Int("iterations", iterations),
+				attribute.Int("iterations_with_truncation", truncations),
 				attribute.Int("max_iterations", opts.MaxIterations),
 				attribute.Int("tools_count", len(tools)),
 				attribute.Int("initial_messages", len(opts.Messages)),
@@ -1080,11 +1082,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			llmCancel()
 
 			// Handle telemetry before checking the error
+			var resMsgsCount int
 			if res != nil {
+				resMsgsCount = len(res.Message.Content)
 				inputTokens += res.InputTokens
 				outputTokens += res.OutputTokens
 			}
-			s.logger.Debug("completion iteration got response", zap.Int("iteration", i), zap.Int("response_messages_count", len(res.Message.Content)), zap.Error(err), observability.ZapCtx(ctx))
+			s.logger.Debug("completion iteration got response", zap.Int("iteration", i), zap.Int("response_messages_count", resMsgsCount), zap.Error(err), observability.ZapCtx(ctx))
 
 			// Handle LLM completion error
 			if err != nil {
