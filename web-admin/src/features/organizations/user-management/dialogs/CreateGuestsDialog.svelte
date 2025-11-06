@@ -58,6 +58,17 @@
   $: projectsErrorMessage =
     getRpcErrorMessage($projectsQuery?.error) ?? $projectsQuery?.error?.message;
 
+  function toggleProjectSelection(projectName: string) {
+    const idx = selectedProjects.indexOf(projectName);
+    if (idx >= 0) {
+      selectedProjects = selectedProjects.filter(
+        (name) => name !== projectName,
+      );
+    } else {
+      selectedProjects = [...selectedProjects, projectName];
+    }
+  }
+
   async function handleCreate(email: string) {
     // Loop selected projects and add as selectedRole
     await Promise.all(
@@ -237,14 +248,7 @@
                 <Dropdown.CheckboxItem
                   class="font-normal flex items-center overflow-hidden"
                   checked={selectedProjects.includes(p.name)}
-                  on:click={() => {
-                    const idx = selectedProjects.indexOf(p.name);
-                    if (idx >= 0)
-                      selectedProjects = selectedProjects.filter(
-                        (n) => n !== p.name,
-                      );
-                    else selectedProjects = [...selectedProjects, p.name];
-                  }}
+                  on:click={() => toggleProjectSelection(p.name)}
                 >
                   <span class="truncate w-full" title={p.name}>{p.name}</span>
                 </Dropdown.CheckboxItem>
