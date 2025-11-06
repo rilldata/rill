@@ -66,13 +66,13 @@
     selectedTimeRange: "",
   };
 
-  $: processExploreUrl(bookmarkUrl)
+  $: processUrl(bookmarkUrl)
     .then((state) => {
       filterState = state;
     })
     .catch(console.error);
 
-  async function processExploreUrl(searchParams: string) {
+  async function processUrl(searchParams: string) {
     const searchParamsObj = new URLSearchParams(searchParams);
     const rangeExpression = searchParamsObj.get(
       ExploreStateURLParams.TimeRange,
