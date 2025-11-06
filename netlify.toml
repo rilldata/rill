@@ -21,3 +21,12 @@
     Cross-Origin-Resource-Policy = "cross-origin"
     X-Frame-Options = "allow-from *"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+# netlify.toml (at repo root)
+[[plugins]]
+  package = "@netlify/plugin-csp-nonce"
+  [plugins.inputs]
+    reportOnly = true        # start in report-only
+    unsafeEval = false       # safer default
+    reportUri = "/__csp-violations"  # optional: skip to use built-in logger
+    excludedPath = ["*.css", "*.js", "*.svg"]
