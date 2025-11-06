@@ -62,20 +62,20 @@ SELECT * FROM model WHERE NOT (<condition>)
 ```yaml
 tests:
   # Check for null values
-  - name: No Null Values
-    assert: user_id IS NOT NULL
+  - name: No Null Campaign ID
+    assert: campaign_id IS NOT NULL
 
   # Range validation
-  - name: Valid Age Range
-    assert: age >= 0 AND age <= 120
+  - name: Valid Bid Price
+    assert: bid_price >= 0 AND bid_price <= 100
 
   # Value constraints
-  - name: Valid Status
-    assert: status IN ('active', 'inactive', 'pending')
+  - name: Valid Ad Status
+    assert: status IN ('active', 'paused', 'completed', 'draft')
 
   # Multiple conditions
-  - name: Valid Revenue
-    assert: revenue >= 0 AND revenue <= 1000000
+  - name: Valid Impression Count
+    assert: impressions >= 0 AND impressions <= 1000000000
 ```
 
 ### SQL Tests
@@ -93,36 +93,36 @@ SQL tests use a complete SQL query that should return zero rows. If any rows are
 ```yaml
 tests:
   # Row count validation
-  - name: Minimum Row Count
-    sql: SELECT 'Too few rows' WHERE (SELECT COUNT(*) FROM model) < 100
+  - name: Minimum Impression Count
+    sql: SELECT 'Too few impressions' WHERE (SELECT COUNT(*) FROM model) < 1000
 
   # Aggregate validation
-  - name: Total Revenue Check
-    sql: SELECT 'Revenue mismatch' WHERE (SELECT SUM(revenue) FROM model) < 0
+  - name: Positive Total Spend
+    sql: SELECT 'Negative spend detected' WHERE (SELECT SUM(spend) FROM model) < 0
 
   # Duplicate detection
-  - name: No Duplicate Users
+  - name: No Duplicate Impression IDs
     sql: |
-      SELECT user_id, COUNT(*) as count
+      SELECT impression_id, COUNT(*) as count
       FROM model
-      GROUP BY user_id
+      GROUP BY impression_id
       HAVING COUNT(*) > 1
 
   # Referential integrity
-  - name: Valid Customer References
+  - name: Valid Campaign References
     sql: |
-      SELECT o.customer_id
-      FROM model o
-      LEFT JOIN customers c ON o.customer_id = c.id
+      SELECT i.campaign_id
+      FROM model i
+      LEFT JOIN campaigns c ON i.campaign_id = c.id
       WHERE c.id IS NULL
 
   # Data completeness
-  - name: All Expected Categories Present
+  - name: All Expected Ad Formats Present
     sql: |
-      SELECT missing_category FROM (
-        VALUES ('A'), ('B'), ('C')
-      ) AS expected(missing_category)
-      WHERE missing_category NOT IN (SELECT DISTINCT category FROM model)
+      SELECT missing_format FROM (
+        VALUES ('banner'), ('video'), ('native')
+      ) AS expected(missing_format)
+      WHERE missing_format NOT IN (SELECT DISTINCT ad_format FROM model)
 ```
 
 ## Complete Example
@@ -130,59 +130,59 @@ tests:
 Here's a comprehensive example showing various validation patterns:
 
 ```yaml
-# models/orders.yaml
+# models/ad_impressions.yaml
 type: model
-sql: SELECT * FROM raw_orders
+sql: SELECT * FROM raw_impressions
 
 tests:
   # Basic null checks
-  - name: Order ID Not Null
-    assert: order_id IS NOT NULL
+  - name: Impression ID Not Null
+    assert: impression_id IS NOT NULL
 
-  - name: Customer ID Not Null
-    assert: customer_id IS NOT NULL
+  - name: Campaign ID Not Null
+    assert: campaign_id IS NOT NULL
 
   # Range validations
-  - name: Valid Order Amount
-    assert: amount > 0 AND amount < 1000000
+  - name: Valid Bid Price
+    assert: bid_price > 0 AND bid_price < 100
 
-  - name: Valid Order Date
-    assert: order_date >= '2020-01-01' AND order_date <= CURRENT_DATE
+  - name: Valid Impression Date
+    assert: impression_date >= '2020-01-01' AND impression_date <= CURRENT_DATE
 
   # Status validation
-  - name: Valid Order Status
-    assert: status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')
+  - name: Valid Campaign Status
+    assert: status IN ('active', 'paused', 'completed', 'draft')
 
   # Uniqueness check
-  - name: No Duplicate Order IDs
+  - name: No Duplicate Impression IDs
     sql: |
-      SELECT order_id, COUNT(*) as count
-      FROM orders
-      GROUP BY order_id
+      SELECT impression_id, COUNT(*) as count
+      FROM ad_impressions
+      GROUP BY impression_id
       HAVING COUNT(*) > 1
 
   # Row count validation
-  - name: Minimum Orders Present
-    sql: SELECT 'Too few orders' WHERE (SELECT COUNT(*) FROM orders) < 10
+  - name: Minimum Impressions Present
+    sql: SELECT 'Too few impressions' WHERE (SELECT COUNT(*) FROM ad_impressions) < 1000
 
   # Aggregate validation
-  - name: Positive Total Revenue
-    sql: SELECT 'Negative revenue' WHERE (SELECT SUM(amount) FROM orders) < 0
+  - name: Positive Total Spend
+    sql: SELECT 'Negative spend' WHERE (SELECT SUM(spend) FROM ad_impressions) < 0
 
   # Complex business logic
-  - name: Shipped Orders Have Ship Date
-    sql: SELECT * FROM orders WHERE status = 'shipped' AND ship_date IS NULL
+  - name: Clicks Must Have Impressions
+    sql: SELECT * FROM ad_impressions WHERE clicks > 0 AND impressions = 0
 
-  - name: Delivered Orders After Order Date
-    sql: SELECT * FROM orders WHERE delivered_date < order_date
+  - name: Click Timestamp After Impression
+    sql: SELECT * FROM ad_impressions WHERE click_timestamp < impression_timestamp
 
   # Referential integrity
-  - name: Valid Customer References
+  - name: Valid Campaign References
     sql: |
-      SELECT o.customer_id
-      FROM orders o
-      LEFT JOIN customers c ON o.customer_id = c.customer_id
-      WHERE c.customer_id IS NULL
+      SELECT i.campaign_id
+      FROM ad_impressions i
+      LEFT JOIN campaigns c ON i.campaign_id = c.campaign_id
+      WHERE c.campaign_id IS NULL
 ```
 
 ## Test Execution
@@ -196,9 +196,9 @@ Tests are executed automatically when your model is refreshed:
 
 ### Test Behavior
 
-- Tests run **after** the model data is materialized
+- Tests run **after** successful model refresh
 - A failing test does **not** prevent the model from being available for queries
-- Test results are stored in the model's state and visible in the Rill UI
+- Test results are stored in the model's state and visible in the [Rill logs](/reference/cli/project/logs)
 - All tests run independently - one failure doesn't stop other tests
 - Tests can reference the model's output using the model name
 
@@ -206,7 +206,6 @@ Tests are executed automatically when your model is refreshed:
 
 Test results are stored in the model state and visible in:
 
-- **Rill UI** - View test status in the model details page
 - **Model State** - Access via the runtime API in the `test_errors` field
 - **Logs** - Test failures are logged during model reconciliation
 
@@ -223,9 +222,9 @@ Use descriptive names that clearly indicate what's being validated:
 
 ```yaml
 # Good names
-- name: No Null Customer IDs
-- name: Revenue Within Valid Range
-- name: All Orders Have Valid Status
+- name: No Null Campaign IDs
+- name: Spend Within Valid Range
+- name: All Impressions Have Valid Status
 
 # Less clear names
 - name: Test 1
@@ -240,19 +239,37 @@ Group related tests together and add comments:
 ```yaml
 tests:
   # Null checks
-  - name: Order ID Not Null
-    assert: order_id IS NOT NULL
+  - name: Impression ID Not Null
+    assert: impression_id IS NOT NULL
 
-  - name: Customer ID Not Null
-    assert: customer_id IS NOT NULL
+  - name: Campaign ID Not Null
+    assert: campaign_id IS NOT NULL
 
   # Range validations
-  - name: Valid Amount
-    assert: amount > 0
+  - name: Valid Bid Price
+    assert: bid_price > 0
 
   - name: Valid Date Range
-    assert: order_date >= '2020-01-01'
+    assert: impression_date >= '2020-01-01'
 ```
+
+### Understanding Assert vs SQL Syntax
+
+**Assert Syntax** - Define conditions that should be true for all rows:
+- You write: `assert: value > 0`
+- Rill converts this to: `SELECT * FROM model WHERE NOT (value > 0)`
+- Tests **pass** if no rows are returned (all rows satisfy the condition)
+- Tests **fail** if any rows are returned (violations found)
+
+**SQL Syntax** - Write custom queries that return failing rows:
+- You write: `sql: SELECT * FROM model WHERE value <= 0`
+- Your query should explicitly return rows that represent failures
+- Tests **pass** if the query returns an empty result set
+- Tests **fail** if the query returns any rows
+
+:::tip Key Difference
+With `assert`, you define what should be **true**. With `sql`, you query for what is **wrong**.
+:::
 
 ### Choosing Between Assert and SQL
 
@@ -260,12 +277,14 @@ tests:
 - Testing row-level conditions
 - Checking simple constraints
 - The logic is straightforward
+- You want Rill to handle the "NOT" logic for you
 
 **Use SQL when:**
 - Testing aggregate values (COUNT, SUM, AVG)
 - Checking relationships between tables
 - Implementing complex validation logic
 - You need more control over the error message
+- You prefer to explicitly write the failure query
 
 ### Performance Considerations
 
@@ -299,14 +318,14 @@ Tests work with incremental models and run after each incremental refresh:
 ```yaml
 type: model
 incremental: true
-sql: SELECT * FROM new_data WHERE timestamp > (SELECT MAX(timestamp) FROM {{ .self }})
+sql: SELECT * FROM raw_impressions WHERE impression_timestamp > (SELECT MAX(impression_timestamp) FROM {{ .self }})
 
 tests:
-  - name: No Null Timestamps
-    assert: timestamp IS NOT NULL
+  - name: No Null Impression Timestamps
+    assert: impression_timestamp IS NOT NULL
 
-  - name: No Future Timestamps
-    assert: timestamp <= CURRENT_TIMESTAMP
+  - name: No Future Impression Timestamps
+    assert: impression_timestamp <= CURRENT_TIMESTAMP
 ```
 
 The tests validate the **entire model output**, not just the newly added rows.
@@ -319,16 +338,16 @@ Tests also work with partitioned models:
 type: model
 incremental: true
 partitions:
-  sql: SELECT DISTINCT date FROM source_data
+  sql: SELECT DISTINCT impression_date FROM raw_impressions
 
-sql: SELECT * FROM source_data WHERE date = '{{ .partition.date }}'
+sql: SELECT * FROM raw_impressions WHERE impression_date = '{{ .partition.impression_date }}'
 
 tests:
-  - name: Valid Dates
-    assert: date IS NOT NULL
+  - name: Valid Impression Dates
+    assert: impression_date IS NOT NULL
 
   - name: Partition Date Matches
-    assert: date = '{{ .partition.date }}'
+    assert: impression_date = '{{ .partition.impression_date }}'
 ```
 
 Tests run against the complete model output after all partitions are processed.
@@ -338,52 +357,52 @@ Tests run against the complete model output after all partitions are processed.
 ### Checking for Duplicates
 
 ```yaml
-- name: No Duplicate Keys
+- name: No Duplicate Impression IDs
   sql: |
-    SELECT key, COUNT(*) as count
+    SELECT impression_id, COUNT(*) as count
     FROM model
-    GROUP BY key
+    GROUP BY impression_id
     HAVING COUNT(*) > 1
 ```
 
 ### Validating Relationships
 
 ```yaml
-- name: Valid Foreign Keys
+- name: Valid Campaign References
   sql: |
-    SELECT m.foreign_key
-    FROM model m
-    LEFT JOIN other_table o ON m.foreign_key = o.id
-    WHERE o.id IS NULL
+    SELECT i.campaign_id
+    FROM model i
+    LEFT JOIN campaigns c ON i.campaign_id = c.id
+    WHERE c.id IS NULL
 ```
 
 ### Checking Completeness
 
 ```yaml
-- name: All Expected Values Present
+- name: All Expected Ad Formats Present
   sql: |
-    SELECT expected_value
-    FROM (VALUES ('A'), ('B'), ('C')) AS expected(expected_value)
-    WHERE expected_value NOT IN (SELECT DISTINCT value FROM model)
+    SELECT expected_format
+    FROM (VALUES ('banner'), ('video'), ('native')) AS expected(expected_format)
+    WHERE expected_format NOT IN (SELECT DISTINCT ad_format FROM model)
 ```
 
 ### Aggregate Validations
 
 ```yaml
-- name: Total Matches Expected
+- name: CTR Within Expected Range
   sql: |
-    SELECT 'Total mismatch' as error
-    WHERE ABS((SELECT SUM(amount) FROM model) - 1000000) > 0.01
+    SELECT 'CTR out of range' as error
+    WHERE (SELECT SUM(clicks) * 1.0 / NULLIF(SUM(impressions), 0) FROM model) > 0.5
 ```
 
 ### Date Range Checks
 
 ```yaml
-- name: Valid Date Range
-  assert: date >= '2020-01-01' AND date <= CURRENT_DATE
+- name: Valid Impression Date Range
+  assert: impression_date >= '2020-01-01' AND impression_date <= CURRENT_DATE
 
-- name: Dates Within Last Year
-  assert: date >= CURRENT_DATE - INTERVAL '1 year'
+- name: Impressions Within Last Year
+  assert: impression_date >= CURRENT_DATE - INTERVAL '1 year'
 ```
 
 :::warning Limitations
