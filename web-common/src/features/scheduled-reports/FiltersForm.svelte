@@ -21,10 +21,12 @@
     type TimeRange,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types.ts";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
+  import { get } from "svelte/store";
   import { fly } from "svelte/transition";
 
   export let filters: Filters;
@@ -53,7 +55,13 @@
     setMeasureFilter,
     setTemporaryFilterName,
     clearAllFilters,
-    metricsViewMetadata: { metricsViewName, allDimensions, allSimpleMeasures },
+
+    metricsViewMetadata: {
+      metricsViewName,
+      timeDefaults,
+      allDimensions,
+      allSimpleMeasures,
+    },
   } = filters);
 
   $: ({
@@ -84,8 +92,8 @@
   $: selectedRangeAlias = selectedTimeRange?.name;
   $: activeTimeGrain = selectedTimeRange?.interval;
   $: defaultTimeRange = undefined;
-  $: availableTimeZones = [];
-  $: timeRanges = [];
+  $: availableTimeZones = $timeDefaults.timeZones;
+  $: timeRanges = $timeDefaults.timeRanges;
 
   $: minTimeGrain = $_minTimeGrain;
 
@@ -111,18 +119,6 @@
     setMeasureFilter(dimension, filter);
   }
 
-  function makeTimeSeriesTimeRangeAndUpdateAppState(
-    timeRange: TimeRange,
-    timeGrain: V1TimeGrain,
-    /** we should only reset the comparison range when the user has explicitly chosen a new
-     * time range. Otherwise, the current comparison state should continue to be the
-     * source of truth.
-     */
-    comparisonTimeRange: DashboardTimeControls | undefined,
-  ) {
-    selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
-  }
-
   function selectRange(
     range: TimeRange,
     grain?: V1TimeGrain,
@@ -136,16 +132,13 @@
 
     // Get valid option for the new time range
     const validComparison = $allTimeRange && comparisonOption;
+    const comparisonRange = rangeOnly
+      ? undefined
+      : ({
+          name: validComparison,
+        } as DashboardTimeControls);
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(
-      range,
-      defaultTimeGrain,
-      rangeOnly
-        ? undefined
-        : ({
-            name: validComparison,
-          } as DashboardTimeControls),
-    );
+    selectTimeRange(range, defaultTimeGrain, comparisonRange);
   }
 
   async function onSelectRange(name: string, rangeOnly: boolean = false) {
@@ -185,11 +178,7 @@
 
   function onTimeGrainSelect(timeGrain: V1TimeGrain) {
     if (baseTimeRange) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        baseTimeRange,
-        timeGrain,
-        selectedComparisonTimeRange,
-      );
+      selectTimeRange(baseTimeRange, timeGrain, selectedComparisonTimeRange);
     }
   }
 
@@ -211,8 +200,9 @@
     setTimeZone(timeZone);
   }
 
-  onMount(() => {
-    if (selectedRangeAlias) onSelectRange(selectedRangeAlias, true);
+  onMount(async () => {
+    await waitUntil(() => !!selectedRangeAlias && !!get(timeRangeStateStore));
+    if (selectedRangeAlias) void onSelectRange(selectedRangeAlias, true);
   });
 </script>
 

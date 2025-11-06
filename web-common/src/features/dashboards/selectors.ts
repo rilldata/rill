@@ -15,6 +15,7 @@ import {
 import {
   getQueryServiceMetricsViewSchemaQueryOptions,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
+  getRuntimeServiceGetResourceQueryOptions,
   getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   type V1Expression,
@@ -51,6 +52,45 @@ export function useMetricsView(
     ResourceKind.MetricsView,
     queryOptions,
   );
+}
+
+export function getValidMetricsViewSpecQueryOptions(
+  metricsViewNameStore: Readable<string>,
+) {
+  return derived(
+    [runtime, metricsViewNameStore],
+    ([{ instanceId }, metricsViewName]) =>
+      getRuntimeServiceGetResourceQueryOptions(
+        instanceId,
+        {
+          "name.kind": ResourceKind.MetricsView,
+          "name.name": metricsViewName,
+        },
+        {
+          query: {
+            select: (data) => data.resource?.metricsView?.state?.validSpec,
+            enabled: !!metricsViewName,
+          },
+        },
+      ),
+  );
+}
+
+export function getValidMetricsViewSpecsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      { kind: ResourceKind.MetricsView },
+      {
+        query: {
+          select: (data) =>
+            data.resources?.filter(
+              (res) => !!res.metricsView?.state?.validSpec,
+            ),
+        },
+      },
+    );
+  });
 }
 
 export function useValidExplores(instanceId: string) {
@@ -161,6 +201,32 @@ export function useMetricsViewTimeRange(
   );
 
   return createQuery(fullTimeRangeQueryOptionsStore, queryClient);
+}
+
+export function getMetricsViewTimeRangeQueryOptions(
+  metricsViewNameStore: Readable<string>,
+) {
+  const validSpecQuery = createQuery(
+    getValidMetricsViewSpecQueryOptions(metricsViewNameStore),
+  );
+
+  return derived(
+    [runtime, metricsViewNameStore, validSpecQuery],
+    ([{ instanceId }, metricsViewName, validSpecResp]) => {
+      const metricsViewSpec = validSpecResp.data ?? {};
+
+      return getQueryServiceMetricsViewTimeRangeQueryOptions(
+        instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            enabled: !!metricsViewSpec.timeDimension,
+          },
+        },
+      );
+    },
+  );
 }
 
 export function getMetricsViewTimeRangeFromExploreQueryOptions(

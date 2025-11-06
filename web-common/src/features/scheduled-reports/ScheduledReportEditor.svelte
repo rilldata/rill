@@ -23,7 +23,7 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
+  import { getMetricsViewTimeRangeQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { getPivotStateFromRequest } from "@rilldata/web-common/features/explore-mappers/get-dashboard-from-aggregation-request.ts";
   import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils.ts";
@@ -37,6 +37,7 @@
     getInitTimeControlsFromAggregationRequest,
     ReportPivotRenderStore,
   } from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/report-pivot-render-store.ts";
+  import type { ReportSource } from "@rilldata/web-common/features/scheduled-reports/report-source/utils.ts";
   import { convertFormValuesToCronExpression } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
   import {
     getExistingReportInitialFormValues,
@@ -72,16 +73,11 @@
   let width = SIDEBAR_WIDTH;
 
   $: reportName = props.mode === "create" ? "" : props.reportName;
-  let metricsViewName = "";
-  const metricsViewNameStore = writable(metricsViewName);
-  $: metricsViewNameStore.set(metricsViewName);
-  let exploreName = "";
-  let canvasName = "";
 
   const initialMetricsViewName =
     props.mode === "create"
       ? props.metricsViewName
-      : (JSON.parse(props.reportSpec.queryArgsJson).metricsView ?? "");
+      : (JSON.parse(props.reportSpec.queryArgsJson ?? "").metricsView ?? "");
   const initialExploreName =
     props.mode === "create"
       ? props.exploreName
@@ -94,24 +90,26 @@
       : (props.reportSpec.annotations?.["canvas"] ??
         getExploreName(props.reportSpec.annotations?.web_open_path ?? "") ??
         "");
-  $: isInitialSource =
-    metricsViewName === initialMetricsViewName &&
-    exploreName === initialExploreName &&
-    canvasName === initialCanvasName;
+  const initialSource = <ReportSource>{
+    metricsViewName: initialMetricsViewName,
+    exploreName: initialExploreName,
+    canvasName: initialCanvasName,
+    label: initialExploreName || initialCanvasName, // TODO
+    kind: initialExploreName ? ResourceKind.Explore : ResourceKind.Canvas,
+  };
 
-  $: console.log(
-    "init",
-    initialMetricsViewName,
-    initialExploreName,
-    initialCanvasName,
-  );
-  $: console.log("cur", metricsViewName, exploreName, canvasName);
+  let selectedSource: ReportSource = initialSource;
+
+  $: isInitialSource =
+    selectedSource.metricsViewName === initialMetricsViewName &&
+    selectedSource.exploreName === initialExploreName &&
+    selectedSource.canvasName === initialCanvasName;
 
   $: ({ instanceId } = $runtime);
 
   const user = createAdminServiceGetCurrentUser();
   const timeRangeSummaryResp = createQuery(
-    getMetricsViewTimeRangeFromExploreQueryOptions(metricsViewNameStore),
+    getMetricsViewTimeRangeQueryOptions(writable(initialMetricsViewName)),
   );
   $: timeRangeSummary = $timeRangeSummaryResp.data?.timeRangeSummary;
 
@@ -122,20 +120,11 @@
 
   $: initialValues =
     props.mode === "create"
-      ? getNewReportInitialFormValues(
-          $user.data?.user?.email,
-          initialMetricsViewName,
-          initialExploreName,
-          initialCanvasName,
-          {},
-        )
+      ? getNewReportInitialFormValues(initialSource, $user.data?.user?.email)
       : getExistingReportInitialFormValues(
           props.reportSpec,
-          initialMetricsViewName,
-          initialExploreName,
-          initialCanvasName,
+          initialSource,
           $user.data?.user?.email,
-          {},
         );
 
   $: renderStore = new ReportPivotRenderStore(
@@ -146,13 +135,7 @@
     ),
     getPivotStateFromRequest(aggregationRequest),
   );
-  $: renderData = renderStore.get(
-    instanceId,
-    metricsViewName,
-    exploreName,
-    canvasName,
-    isInitialSource,
-  );
+  $: renderData = renderStore.get(instanceId, selectedSource, isInitialSource);
   $: ({ metadata, filters, timeControls, pivotStore } = renderData);
   $: pivotConfigStore = getPivotConfig(
     metadata,
@@ -164,7 +147,6 @@
   const schema = yup(
     object({
       title: string().required("Required"),
-      exploreName: string().required("Required"),
       emailRecipients: array().of(string().email("Invalid email")),
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
@@ -195,6 +177,7 @@
     defaults(initialValues, schema),
     {
       id: FORM_ID,
+      dataType: "json",
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
@@ -210,9 +193,7 @@
     },
   ));
 
-  $: metricsViewName = $form?.metricsViewName ?? "";
-  $: exploreName = $form?.exploreName ?? "";
-  $: canvasName = $form?.canvasName ?? "";
+  $: selectedSource = $form?.reportSource ?? selectedSource;
 
   $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
 
@@ -226,7 +207,7 @@
     const req = getAggregationRequestForPivot(
       {
         instanceId,
-        metricsView: metricsViewName,
+        metricsView: values.reportSource.metricsViewName,
         ...aggregationRequest,
       },
       renderData,
@@ -242,8 +223,8 @@
             displayName: values.title,
             refreshCron: refreshCron, // for testing: "* * * * *"
             refreshTimeZone: values.timeZone,
-            explore: values.exploreName,
-            canvas: values.canvasName,
+            explore: values.reportSource.exploreName,
+            canvas: values.reportSource.canvasName,
             queryName: AGGREGATION_QUERY_NAME,
             queryArgsJson: JSON.stringify(req), // TODO
             exportLimit: values.exportLimit || undefined,
@@ -303,23 +284,25 @@
 </script>
 
 <div class="flex flex-row size-full max-w-full max-h-full overflow-auto">
-  <article
-    class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
-  >
-    <div
-      id="header"
-      class="border-b w-fit min-w-full flex flex-col bg-background slide"
+  {#key selectedSource.metricsViewName}
+    <article
+      class="flex flex-col size-full overflow-hidden dashboard-theme-boundary"
     >
-      <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
-        <FiltersForm {filters} {timeControls} />
-      </section>
-      <MetricsViewPivotEditor
-        {metricsViewName}
-        {pivotStore}
-        {pivotConfigStore}
-      />
-    </div>
-  </article>
+      <div
+        id="header"
+        class="flex flex-col border-b size-full min-w-full bg-background slide overflow-hidden"
+      >
+        <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
+          <FiltersForm {filters} {timeControls} />
+        </section>
+        <MetricsViewPivotEditor
+          metricsViewName={selectedSource.metricsViewName}
+          {pivotStore}
+          {pivotConfigStore}
+        />
+      </div>
+    </article>
+  {/key}
   <div class="flex flex-col border-l relative h-full" style="width: {width}px;">
     <Resizer
       min={MIN_SIDEBAR_WIDTH}

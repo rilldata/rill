@@ -10,6 +10,7 @@ import {
   mapV1TimeRangeToSelectedTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
+import type { ReportSource } from "@rilldata/web-common/features/scheduled-reports/report-source/utils.ts";
 import {
   getExistingScheduleFormValues,
   getInitialScheduleFormValues,
@@ -45,17 +46,14 @@ export function getQueryNameFromQuery(query: V1Query) {
 }
 
 export function getNewReportInitialFormValues(
+  reportSource: ReportSource,
   userEmail: string | undefined,
-  metricsViewName: string,
-  exploreName: string,
-  canvasName: string,
-  aggregationRequest: V1MetricsViewAggregationRequest,
+  aggregationRequest: V1MetricsViewAggregationRequest = {},
 ) {
   return {
     title: "",
-    metricsViewName,
-    exploreName,
-    canvasName,
+    exploreName: reportSource.exploreName,
+    reportSource,
     webOpenMode: ReportRunAs.Creator as string,
     ...getInitialScheduleFormValues(),
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
@@ -68,17 +66,14 @@ export function getNewReportInitialFormValues(
 
 export function getExistingReportInitialFormValues(
   reportSpec: V1ReportSpec,
-  metricsViewName: string,
-  exploreName: string,
-  canvasName: string,
+  reportSource: ReportSource,
   userEmail: string | undefined,
-  aggregationRequest: V1MetricsViewAggregationRequest,
+  aggregationRequest: V1MetricsViewAggregationRequest = {},
 ) {
   return {
     title: reportSpec.displayName ?? "",
-    metricsViewName,
-    exploreName,
-    canvasName,
+    exploreName: reportSource.exploreName, // Temporary for old code.
+    reportSource,
     webOpenMode:
       reportSpec.annotations?.web_open_mode || (ReportRunAs.Creator as string),
     ...getExistingScheduleFormValues(reportSpec.refreshSchedule),

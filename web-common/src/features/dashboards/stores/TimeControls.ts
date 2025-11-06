@@ -33,7 +33,9 @@ export type TimeControlState = Pick<
 >;
 export function getEmptyTimeControlState(): TimeControlState {
   return {
-    selectedTimeRange: undefined,
+    selectedTimeRange: {
+      name: "PT24H", // Arbitrary default similar to canvas
+    } as DashboardTimeControls,
     selectedComparisonTimeRange: undefined,
     showTimeComparison: false,
     selectedTimezone: "UTC",
@@ -126,7 +128,7 @@ export class TimeControls {
         selectedTimezone,
         minTimeGrain,
       ]) => {
-        const metricsViewSpec = metricsViewSpecResp.data ?? {};
+        const metricsViewSpec = metricsViewSpecResp.data;
 
         if (!metricsViewSpec || !selectedTimeRange || !allTimeRange) {
           return undefined;
@@ -205,6 +207,7 @@ export class TimeControls {
       this.showTimeComparison.set(false);
     }
 
+    console.log("SET", timeRange);
     this.selectedTimeRange.set({
       ...timeRange,
       interval: timeGrain,

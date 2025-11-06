@@ -2,12 +2,15 @@ import { getCanvasQueryOptions } from "@rilldata/web-common/features/canvas/sele
 import {
   getValidCanvasSpecsQueryOptions,
   getValidExploreSpecsQueryOptions,
+  getValidMetricsViewSpecsQueryOptions,
 } from "@rilldata/web-common/features/dashboards/selectors.ts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
 export type ReportSource = {
   label: string;
+  kind: ResourceKind;
   metricsViewName: string;
   exploreName: string;
   canvasName: string;
@@ -15,22 +18,42 @@ export type ReportSource = {
 
 export function getPrimaryExploreSourceOptions(): Readable<ReportSource[]> {
   const exploreSpecsQuery = createQuery(getValidExploreSpecsQueryOptions());
+  const metricsViewSpecsQuery = createQuery(
+    getValidMetricsViewSpecsQueryOptions(),
+  );
 
-  return derived(exploreSpecsQuery, (validExploreSpecs) => {
-    const exploreNames = validExploreSpecs.data ?? [];
-    const exploreSources = exploreNames.map((res) => {
-      const exploreName = res.meta?.name?.name ?? "";
-      const exploreSpec = res.explore?.state?.validSpec;
-      return {
-        label: exploreSpec?.displayName ?? exploreName,
-        metricsViewName: exploreSpec?.metricsView ?? "",
-        exploreName,
-        canvasName: "",
-      };
-    });
+  return derived(
+    [exploreSpecsQuery, metricsViewSpecsQuery],
+    ([validExploreSpecsResp, validMetricsViewSpecsResp]) => {
+      const exploreNames = validExploreSpecsResp.data ?? [];
+      const metricsViewsMap = new Map(
+        validMetricsViewSpecsResp.data?.map((mv) => [
+          mv.meta?.name?.name ?? "",
+          mv.metricsView?.state?.validSpec ?? {},
+        ]) ?? [],
+      );
 
-    return exploreSources;
-  });
+      const exploreSources = exploreNames
+        .map((res) => {
+          const exploreName = res.meta?.name?.name ?? "";
+          const exploreSpec = res.explore?.state?.validSpec;
+          const metricsViewName = exploreSpec?.metricsView ?? "";
+          const metricsViewSpec = metricsViewsMap.get(metricsViewName);
+          if (!metricsViewSpec?.timeDimension) return undefined;
+
+          return {
+            label: exploreSpec?.displayName ?? exploreName,
+            kind: ResourceKind.Explore,
+            metricsViewName,
+            exploreName,
+            canvasName: "",
+          };
+        })
+        .filter(Boolean) as ReportSource[];
+
+      return exploreSources;
+    },
+  );
 }
 
 export function getPrimaryCanvasSourceOptions(): Readable<ReportSource[]> {
@@ -43,7 +66,8 @@ export function getPrimaryCanvasSourceOptions(): Readable<ReportSource[]> {
       const canvasSpec = res.canvas?.state?.validSpec;
       return {
         label: canvasSpec?.displayName ?? canvasName,
-        metricsViewName: "", // There can be multplie of these. Will be added as sub options
+        kind: ResourceKind.Canvas,
+        metricsViewName: "", // There can be multiple of these. Will be added as sub options
         exploreName: "",
         canvasName,
       };
@@ -63,15 +87,20 @@ export function getSecondarySourceForCanvasOptions(
   return derived(
     [canvasNameStore, canvasResolvedSpecQuery],
     ([canvasName, canvasResolvedSpecResp]) => {
-      return Object.entries(
-        canvasResolvedSpecResp.data?.metricsViews ?? [],
-      ).map(([metricsViewName, metricsViewSpec]) => ({
-        label:
-          metricsViewSpec?.state?.validSpec?.displayName ?? metricsViewName,
-        metricsViewName,
-        exploreName: "",
-        canvasName,
-      }));
+      return Object.entries(canvasResolvedSpecResp.data?.metricsViews ?? [])
+        .map(([metricsViewName, metricsViewResource]) => {
+          if (!metricsViewResource?.state?.validSpec?.timeDimension) return;
+          return {
+            label:
+              metricsViewResource?.state?.validSpec?.displayName ??
+              metricsViewName,
+            kind: ResourceKind.MetricsView,
+            metricsViewName,
+            exploreName: "",
+            canvasName,
+          };
+        })
+        .filter(Boolean) as ReportSource[];
     },
   );
 }

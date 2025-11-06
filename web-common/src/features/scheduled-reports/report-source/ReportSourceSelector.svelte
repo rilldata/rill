@@ -13,16 +13,18 @@
 
   export let data: Readable<ReportValues>;
 
-  $: ({ metricsViewName, exploreName, canvasName } = $data);
-  $: hasSelection = Boolean(metricsViewName || exploreName);
+  $: ({ reportSource } = $data);
+  $: hasSelection = Boolean(
+    reportSource?.metricsViewName || reportSource?.exploreName,
+  );
 
-  const exploreSourceOptionsStore = getPrimaryExploreSourceOptions();
   const canvasSourceOptionsStore = getPrimaryCanvasSourceOptions();
+  $: hasCanvasSourceOptions = $canvasSourceOptionsStore.length > 0;
+  const exploreSourceOptionsStore = getPrimaryExploreSourceOptions();
+  $: hasExploreSourceOptions = $exploreSourceOptionsStore.length > 0;
 
   function onSelect(source: ReportSource) {
-    $data.metricsViewName = source.metricsViewName;
-    $data.exploreName = source.exploreName;
-    $data.canvasName = source.canvasName;
+    $data.reportSource = source;
   }
 </script>
 
@@ -34,29 +36,33 @@
       use:builderActions={{ builders: [builder] }}
     >
       {#if hasSelection}
-        <span>{exploreName || metricsViewName}</span>
+        <span>{reportSource.label}</span>
       {:else}
         <span class="text-muted-foreground">Select a source...</span>
       {/if}
     </button>
   </Dropdown.Trigger>
   <Dropdown.Content align="start" class="w-[250px]">
-    {#each $exploreSourceOptionsStore as source, i (i)}
-      <ReportSourceItem
-        {metricsViewName}
-        {exploreName}
-        {canvasName}
-        {source}
-        {onSelect}
-      />
-    {/each}
+    {#if hasCanvasSourceOptions}
+      <Dropdown.Label>Canvases</Dropdown.Label>
 
-    {#each $canvasSourceOptionsStore as source, i (i)}
-      <ReportSourceCanvasSubSelector
-        {data}
-        canvasNameForSubSelector={source.canvasName}
-        {onSelect}
-      />
-    {/each}
+      {#each $canvasSourceOptionsStore as source, i (i)}
+        <ReportSourceCanvasSubSelector
+          selectedSource={reportSource}
+          canvasNameForSubSelector={source.canvasName}
+          {onSelect}
+        />
+      {/each}
+    {/if}
+
+    {#if hasExploreSourceOptions}
+      {#if hasCanvasSourceOptions}
+        <Dropdown.Separator />
+      {/if}
+      <Dropdown.Label>Metrics explores</Dropdown.Label>
+      {#each $exploreSourceOptionsStore as source, i (i)}
+        <ReportSourceItem selectedSource={reportSource} {source} {onSelect} />
+      {/each}
+    {/if}
   </Dropdown.Content>
 </Dropdown.Root>

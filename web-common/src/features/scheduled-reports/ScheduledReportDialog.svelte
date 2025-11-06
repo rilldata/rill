@@ -170,13 +170,13 @@
   $: initialValues =
     props.mode === "create"
       ? getNewReportInitialFormValues(
+          { exploreName } as any, // not used in old editor
           $user.data?.user?.email,
-          "", // Not used here
-          props.exploreName,
           aggregationRequest,
         )
       : getExistingReportInitialFormValues(
           props.reportSpec,
+          { exploreName } as any, // not used in old editor
           $user.data?.user?.email,
           aggregationRequest,
         );

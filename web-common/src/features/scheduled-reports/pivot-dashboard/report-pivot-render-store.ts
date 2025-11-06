@@ -3,9 +3,7 @@ import {
   aggregationRequestWithPivotState,
   aggregationRequestWithTimeRange,
   buildAggregationRequest,
-  splitDimensionsAndMeasuresAsRowsAndColumns,
 } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
-import { getDimensionNameFromAggregationDimension } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import { includeExcludeModeFromFilters } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
@@ -25,13 +23,13 @@ import {
   mapV1TimeRangeToSelectedTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 import { PivotStore } from "@rilldata/web-common/features/scheduled-reports/pivot-dashboard/pivot-store.ts";
+import type { ReportSource } from "@rilldata/web-common/features/scheduled-reports/report-source/utils.ts";
 import {
   type DashboardTimeControls,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types.ts";
 import type {
   V1MetricsViewAggregationRequest,
-  V1MetricsViewSpec,
   V1TimeRange,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -47,21 +45,18 @@ export class ReportPivotRenderStore {
   private dataStore = new Map<string, ReportPivotRenderData>();
 
   public constructor(
-    private readonly initFilters: FiltersState = getEmptyFilterState(),
-    private readonly initTimeControls: TimeControlState = getEmptyTimeControlState(),
-    private readonly initPivotState: PivotState = getEmptyPivotState(),
-  ) {
-    console.log(initFilters, initTimeControls, initPivotState);
-  }
+    private initFilters: FiltersState = getEmptyFilterState(),
+    private initTimeControls: TimeControlState = getEmptyTimeControlState(),
+    private initPivotState: PivotState = getEmptyPivotState(),
+  ) {}
 
   public get(
     instanceId: string,
-    metricsViewName: string,
-    exploreName: string,
-    canvasName: string,
+    { metricsViewName, exploreName, canvasName }: ReportSource,
     useInit: boolean,
   ): ReportPivotRenderData {
     const key = `${instanceId}__${metricsViewName}__${exploreName || canvasName}`;
+    console.log(key, this.dataStore.has(key));
     if (this.dataStore.has(key)) {
       return this.dataStore.get(key)!;
     }

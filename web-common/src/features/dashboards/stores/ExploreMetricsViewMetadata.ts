@@ -3,6 +3,7 @@ import {
   useMetricsViewValidSpec,
 } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { isSimpleMeasure } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
+import { getPinnedTimeZones } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
@@ -17,6 +18,7 @@ import { derived, type Readable } from "svelte/store";
 type TimeDefaults = {
   timeRange: string | undefined;
   timeRanges: V1ExploreTimeRange[];
+  timeZones: string[];
 };
 
 export class ExploreMetricsViewMetadata {
@@ -50,10 +52,11 @@ export class ExploreMetricsViewMetadata {
       queryClient,
     );
     this.timeDefaults = derived(validSpecQuery, ($validSpecQuery) => {
-      const exploreSpec = $validSpecQuery.data?.explore;
+      const exploreSpec = $validSpecQuery.data?.explore ?? {};
       return {
         timeRange: exploreSpec?.defaultPreset?.timeRange,
         timeRanges: exploreSpec?.timeRanges ?? [],
+        timeZones: getPinnedTimeZones(exploreSpec),
       };
     });
 
