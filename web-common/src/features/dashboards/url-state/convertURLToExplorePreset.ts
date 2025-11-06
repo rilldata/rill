@@ -21,13 +21,17 @@ import {
   FromURLParamTimeGrainMap,
   FromURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { validateRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import {
+  parseRillTime,
+  validateRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+import { getAggregationGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -328,6 +332,16 @@ export function fromTimeRangesParams(
       preset.timeGrain = tg;
     } else {
       errors.push(getSingleFieldError("time grain", tg));
+    }
+  } else {
+    try {
+      const parsed = parseRillTime(preset.timeRange ?? "");
+      const grain = getAggregationGrain(parsed);
+      console.log("HELLO", { grain });
+
+      preset.timeGrain = grain;
+    } catch {
+      // ignore
     }
   }
 

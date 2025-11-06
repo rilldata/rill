@@ -1,10 +1,16 @@
+import {
+  RillLegacyDaxInterval,
+  RillLegacyIsoInterval,
+  RillPeriodToGrainInterval,
+  type RillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
 
 type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
 
-type TimeGrainAlias =
+export type TimeGrainAlias =
   | "ms"
   | "MS"
   | "s"
@@ -287,7 +293,7 @@ export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
     case V1TimeGrain.TIME_GRAIN_SECOND:
       return V1TimeGrain.TIME_GRAIN_MILLISECOND;
     case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return V1TimeGrain.TIME_GRAIN_SECOND;
+      return V1TimeGrain.TIME_GRAIN_MINUTE;
     case V1TimeGrain.TIME_GRAIN_HOUR:
       return V1TimeGrain.TIME_GRAIN_MINUTE;
     case V1TimeGrain.TIME_GRAIN_DAY:
@@ -299,7 +305,7 @@ export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
     case V1TimeGrain.TIME_GRAIN_QUARTER:
       return V1TimeGrain.TIME_GRAIN_MONTH;
     case V1TimeGrain.TIME_GRAIN_YEAR:
-      return V1TimeGrain.TIME_GRAIN_QUARTER;
+      return V1TimeGrain.TIME_GRAIN_MONTH;
     default:
       return V1TimeGrain.TIME_GRAIN_MINUTE;
   }
@@ -331,4 +337,52 @@ export function getSmallestGrainFromISODuration(
       ? current
       : smallest;
   });
+}
+
+export function getAggregationGrain(rillTime: RillTime | undefined) {
+  if (!rillTime) return undefined;
+
+  const asOfSnap = rillTime.asOfLabel?.snap;
+
+  const asOfSnapV1Grain = GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
+  const rangeV1Grain = rillTime.rangeGrain;
+  const intervalV1Grain = rillTime.interval.getGrain();
+
+  return getSmallestGrain([asOfSnapV1Grain, rangeV1Grain, intervalV1Grain]);
+}
+
+export function getTruncationGrain(rillTime: RillTime | undefined) {
+  if (!rillTime) return undefined;
+
+  const asOfSnap = rillTime.asOfLabel?.snap;
+
+  if (asOfSnap) return GrainAliasToV1TimeGrain[asOfSnap as TimeGrainAlias];
+
+  if (rillTime.interval instanceof RillLegacyIsoInterval) {
+    return rillTime.interval.getGrain();
+  }
+
+  if (rillTime.interval instanceof RillLegacyDaxInterval) {
+    if (rillTime.interval.name.endsWith("C")) return undefined;
+    return V1TimeGrain.TIME_GRAIN_DAY;
+  }
+
+  return undefined;
+}
+
+export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
+  if (grains.length === 0) {
+    return undefined;
+  }
+
+  return grains.reduce(
+    (smallest, current) => {
+      if (!current) return smallest;
+      if (!smallest) return current;
+      return V1TimeGrainToOrder[current] < V1TimeGrainToOrder[smallest]
+        ? current
+        : smallest;
+    },
+    undefined as V1TimeGrain | undefined,
+  );
 }

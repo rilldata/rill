@@ -26,6 +26,7 @@
     getGrainOrder,
     getLowerOrderGrain,
     getSmallestGrainFromISODuration,
+    getTruncationGrain,
     GrainAliasToV1TimeGrain,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
@@ -71,7 +72,6 @@
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
   let showCalendarPicker = false;
-  let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
   let searchValue: string | undefined = timeString;
 
@@ -96,13 +96,7 @@
     ? RillTimeLabel.Latest
     : parsedTime?.asOfLabel?.label;
 
-  $: truncationGrain = usingLegacyTime
-    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
-      ? V1TimeGrain.TIME_GRAIN_DAY
-      : getSmallestGrainFromISODuration(timeString ?? "PT1M")
-    : parsedTime?.asOfLabel?.snap
-      ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
-      : undefined;
+  $: truncationGrain = getTruncationGrain(parsedTime);
 
   $: dateTimeAnchor = returnAnchor(ref, zone);
 
@@ -115,8 +109,11 @@
   );
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
+    console.log({ range });
     try {
       const parsed = parseRillTime(range);
+
+      console.log({ parsed: structuredClone(parsed) });
 
       const isPeriodToDate =
         parsed.interval instanceof RillPeriodToGrainInterval;
@@ -130,9 +127,7 @@
         !parsed.asOfLabel && !(parsed.interval instanceof RillIsoInterval);
 
       if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-        truncationGrain = isPeriodToDate
-          ? getLowerOrderGrain(parsed.rangeGrain)
-          : parsed.rangeGrain;
+        truncationGrain = parsed.rangeGrain;
       }
 
       if (shouldAppendAsOfString) {
@@ -197,7 +192,7 @@
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
       return watermark.setZone(zone);
-    } else if (asOf === "now") {
+    } else if (asOf === "now" || !asOf) {
       return DateTime.now().setZone(zone);
     }
   }
@@ -282,6 +277,7 @@
       bind:searchValue
       onSelectRange={(range) => {
         open = false;
+        console.log({ range });
         handleRangeSelect(range);
       }}
     />

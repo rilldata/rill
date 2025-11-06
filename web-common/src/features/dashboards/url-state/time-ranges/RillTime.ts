@@ -1,14 +1,20 @@
-import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
+import {
+  DEFAULT_TIME_RANGES,
+  PERIOD_TO_DATE_RANGES,
+} from "@rilldata/web-common/lib/time/config.ts";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Duration } from "luxon";
 import type { DateObjectUnits } from "luxon/src/datetime";
 import {
+  getLowerOrderGrain,
   getMinGrain,
+  getSmallestGrain,
   grainAliasToDateTimeUnit,
   GrainAliasToV1TimeGrain,
   V1TimeGrainToDateTimeUnit,
+  type TimeGrainAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
 
 const absTimeRegex =
@@ -441,7 +447,26 @@ export class RillLegacyIsoInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    return undefined;
+    const timeGrains = [...this.timeGrains].map((g) =>
+      getLegacyGrain(g.grain, true),
+    );
+    const dateGrains = [...this.dateGrains].map((g) =>
+      getLegacyGrain(g.grain, false),
+    );
+
+    const allGrains = [...timeGrains, ...dateGrains];
+    const isSinglePeriod =
+      allGrains.length === 1 &&
+      (this.timeGrains[0]?.num === 1 || this.dateGrains[0]?.num === 1);
+
+    if (isSinglePeriod) {
+      const grain = allGrains[0];
+      return getLowerOrderGrain(grain);
+    }
+
+    const smallestGrain = getSmallestGrain([...timeGrains, ...dateGrains]);
+
+    return smallestGrain;
   }
 
   public toString() {
@@ -458,7 +483,7 @@ export class RillLegacyIsoInterval implements RillTimeInterval {
 }
 
 export class RillLegacyDaxInterval implements RillTimeInterval {
-  public constructor(private readonly name: string) {}
+  public constructor(public readonly name: string) {}
 
   public isComplete() {
     return false;
@@ -471,7 +496,9 @@ export class RillLegacyDaxInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    return undefined;
+    const entry = PERIOD_TO_DATE_RANGES[this.name];
+
+    return entry?.minimumTimeGrain;
   }
 
   public toString() {
@@ -686,4 +713,16 @@ type RillGrain = {
 
 export function capitalizeFirstChar(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function getLegacyGrain(grain: string, time: boolean) {
+  const isValid = grain in GrainAliasToV1TimeGrain;
+
+  if (!isValid) return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+  if (!time || (grain !== "M" && grain !== "m")) {
+    return GrainAliasToV1TimeGrain[grain as TimeGrainAlias];
+  } else {
+    return V1TimeGrain.TIME_GRAIN_MINUTE;
+  }
 }

@@ -35,7 +35,10 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
+    type MetricsViewSpecMeasure,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
@@ -55,10 +58,17 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import {
     getAllowedGrains,
+    isGrainAllowed,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import { featureFlags } from "../../feature-flags";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import WarningIcon from "@rilldata/web-common/components/icons/WarningIcon.svelte";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
+  import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   const { rillTime } = featureFlags;
 
@@ -269,6 +279,9 @@
 
   $: timeGrainOptions = getAllowedGrains(minTimeGrain);
 
+  // $: console.log({ activeTimeGrain, minTimeGrain });
+  $: grainAllowed = isGrainAllowed(activeTimeGrain, minTimeGrain);
+
   $: annotationsForMeasures = renderedMeasures.map((measure) =>
     getAnnotationsForMeasure({
       instanceId,
@@ -358,14 +371,31 @@
             <button
               {...builder}
               use:builder.action
+              class:!text-red-600={!grainAllowed}
               class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
             >
               by <b>
                 {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
               </b>
+
               <span class:-rotate-90={open} class="transition-transform">
                 <CaretDownIcon />
               </span>
+              {#if !grainAllowed}
+                <Tooltip.Root portal="body">
+                  <Tooltip.Trigger>
+                    <AlertCircleOutline className="size-3.5 text-red-600" />
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="top" class="z-50">
+                    <TooltipContent>
+                      {V1TimeGrainToDateTimeUnit[activeTimeGrain]} granularity not
+                      allowed for this dashboard. Displaying by {V1TimeGrainToDateTimeUnit[
+                        minTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE
+                      ]} instead.
+                    </TooltipContent>
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              {/if}
             </button>
           </DropdownMenu.Trigger>
 
