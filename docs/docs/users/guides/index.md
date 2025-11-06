@@ -18,9 +18,9 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 ---
 Follow along, refer to the in-line linked documentation, and explore our product to make the most out of these guides! Please reach out to ask any questions or provide feedback on our Community Slack or Discord!
 
-- [**GitHub Analytics:**](/users/guides/demos/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py
-- [**Cost Monitoring Analytics:**](/users/guides/demos/cost-monitoring-analytics) Analyze your cost and usage data
-- [**OpenRTB Analytics:**](/users/guides/demos/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
+- [**GitHub Analytics:**](/developers/guides/demos/github-analytics) Analyze your own GitHub repository by modifying the Python file, download_commits.py
+- [**Cost Monitoring Analytics:**](/developers/guides/demos/cost-monitoring-analytics) Analyze your cost and usage data
+- [**OpenRTB Analytics:**](/developers/guides/demos/openrtb-analytics) Analyze real-time bidding data to track impressions, bids, wins and more
 - [**Set Up MCP**](/users/guides/setting-up-mcp) Configure Model Context Protocol (MCP) to enable natural language queries with Claude integration
 
 

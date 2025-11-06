@@ -83,13 +83,13 @@ A compilation of projects that deep dives into Rill's features using ClickHouse'
 <TileIcon
   header="Prepare Your Data"
   content="Transform and prepare your data with Rill's powerful ETL capabilities."
-  link="/build/models"
+  link="/developers/build/models"
   icon={<img src="/img/get-started/model.svg" alt="Model" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon
   header="Create a Metrics Layer"
   content="Build a metrics layer to define key business metrics and KPIs."
-  link="/build/metrics-view"
+  link="/developers/build/metrics-view"
   icon={<img src="/img/get-started/metrics.svg" alt="Metrics" style={{ width: 24, height: 24 }} />}
 />
 <TileIcon

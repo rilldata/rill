@@ -966,15 +966,15 @@ const config = {
           // Specific demo guides that moved to users
           {
             from: '/guides/cost-monitoring-analytics',
-            to: '/users/guides/demos/cost-monitoring-analytics',
+            to: '/developers/guides/demos/cost-monitoring-analytics',
           },
           {
             from: '/guides/github-analytics',
-            to: '/users/guides/demos/github-analytics',
+            to: '/developers/guides/demos/github-analytics',
           },
           {
             from: '/guides/openrtb-analytics',
-            to: '/users/guides/demos/openrtb-analytics',
+            to: '/developers/guides/demos/openrtb-analytics',
           },
           {
             from: '/guides/setting-up-mcp',
