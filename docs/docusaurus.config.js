@@ -129,15 +129,16 @@ const config = {
         },
         items: [
           {
-            type: "html",
+            type: "docSidebar",
+            sidebarId: "developersSidebar",
             position: "left",
-            value: '<div id="persona-switcher-placeholder"></div>',
+            label: "Developer Docs",
           },
           {
-            type: "doc",
-            docId: "get-started/get-started",
+            type: "docSidebar",
+            sidebarId: "usersSidebar",
             position: "left",
-            label: "Docs",
+            label: "User Guide",
           },
 
           {

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import Navbar from '@theme-original/Navbar';
 import { useColorMode } from '@docusaurus/theme-common';
-import PersonaSwitcher from '../../components/PersonaSwitcher';
 
 export default function NavbarWrapper(props) {
   const { colorMode, setColorMode } = useColorMode();
@@ -16,7 +15,7 @@ export default function NavbarWrapper(props) {
         if (colorMode === 'dark') {
           iconContainer.innerHTML = `
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" fill="currentColor"/>
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9 Z" fill="currentColor"/>
               </svg>
             `;
           toggleButton.setAttribute('aria-label', 'Switch to light mode');
@@ -47,55 +46,5 @@ export default function NavbarWrapper(props) {
     }
   }, [colorMode, setColorMode]);
 
-  // Add PersonaSwitcher to navbar
-  useEffect(() => {
-    const placeholder = document.getElementById('persona-switcher-placeholder');
-
-    if (placeholder && !placeholder.classList.contains('initialized')) {
-      placeholder.classList.add('initialized');
-
-      // Render React component using createRoot (React 18)
-      import('react-dom/client').then(({ createRoot }) => {
-        const root = createRoot(placeholder);
-        root.render(<PersonaSwitcher />);
-      });
-    }
-  }, []);
-
-  // Hide/show navbar items based on persona
-  useEffect(() => {
-    const updateNavbarVisibility = () => {
-      const persona = localStorage.getItem('rill-docs-persona') || 'developer';
-      const referenceLinks = document.querySelectorAll('.navbar__link[href*="/reference"], a[href*="/reference"].navbar__link');
-
-      referenceLinks.forEach(link => {
-        const navItem = link.closest('.navbar__item');
-        if (persona === 'business') {
-          // Hide Reference for business users
-          if (link) link.style.display = 'none';
-          if (navItem) navItem.style.display = 'none';
-        } else {
-          // Show Reference for developers
-          if (link) link.style.display = '';
-          if (navItem) navItem.style.display = '';
-        }
-      });
-    };
-
-    // Initial update
-    updateNavbarVisibility();
-
-    // Listen for persona changes
-    const handlePersonaChange = () => {
-      updateNavbarVisibility();
-    };
-
-    window.addEventListener('persona-change', handlePersonaChange);
-
-    return () => {
-      window.removeEventListener('persona-change', handlePersonaChange);
-    };
-  }, []);
-
   return <Navbar {...props} />;
-} 
+}
