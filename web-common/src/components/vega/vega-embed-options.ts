@@ -66,85 +66,93 @@ export function createEmbedOptions({
 }
 
 export function getTooltipFormatter(colorMapping: ColorMapping) {
+  const colorMap = new Map<string, string>(
+    (colorMapping ?? []).map((m) => [m.value, m.color]),
+  );
+
   return (
     items: Record<string, unknown>,
     sanitize: (value: unknown) => string,
   ) => {
-    // Group items to combine current and previous values
     const groupedItems = new Map<
       string,
       { current?: unknown; previous?: unknown }
     >();
     const nonComparisonItems: Array<[string, unknown]> = [];
+    let headerValue: string | null = null;
+    let hasComparison = false;
 
     for (const [key, val] of Object.entries(items)) {
       if (val === undefined) continue;
 
-      // Check if this is a comparison field (ends with _prev)
       if (key.endsWith("_prev")) {
-        const baseKey = key.slice(0, -1 * "_prev".length);
+        const baseKey = key.slice(0, -"_prev".length);
         const existing = groupedItems.get(baseKey) || {};
         groupedItems.set(baseKey, { ...existing, previous: val });
+        hasComparison = true;
       } else {
-        // Check if there's a corresponding _prev field in items
         const prevKey = key + "_prev";
         if (prevKey in items) {
-          // This is a current value with a comparison
           const existing = groupedItems.get(key) || {};
           groupedItems.set(key, { ...existing, current: val });
+          hasComparison = true;
         } else {
-          // This is a standalone field (not part of comparison)
-          nonComparisonItems.push([key, val]);
+          // Standalone field: first string becomes header, don't add it to rows
+          if (headerValue === null && typeof val === "string") {
+            headerValue = sanitize(val);
+          } else {
+            nonComparisonItems.push([key, val]);
+          }
         }
       }
     }
 
     const rows: string[] = [];
 
-    // Add non-comparison items first (like x-axis field)
-    for (const [key, val] of nonComparisonItems) {
-      const colorEntry = colorMapping?.find((mapping) => mapping.value === key);
-      const keyColor = colorEntry
-        ? `<svg class="key-color">
-          <circle cx="6" cy="6" r="6" style="fill:${colorEntry.color};"/>
-        </svg>`
-        : "";
+    // Header row (if any)
+    if (headerValue) {
       rows.push(
-        `<tr><td class="key">${keyColor}<span>${sanitize(key)}</span></td><td class="value">${sanitize(val)}</td></tr>`,
+        `<tr><td colspan="10" style="text-align: left; font-weight: 600; padding-bottom: 4px;">${headerValue}</td></tr>`,
       );
     }
 
-    // Check if any grouped items have comparison values
-    const hasComparison = Array.from(groupedItems.values()).some(
-      (v) => v.previous !== undefined,
-    );
-
-    // Add grouped comparison items
-    for (const [key, values] of groupedItems.entries()) {
-      const colorEntry = colorMapping?.find((mapping) => mapping.value === key);
-      const keyColor = colorEntry
-        ? `<svg class="key-color">
-          <circle cx="6" cy="6" r="6" style="fill:${colorEntry.color};"/>
-        </svg>`
+    // Helper: key color SVG (if present)
+    const keyColorSvg = (color?: string) =>
+      color
+        ? `<svg class="key-color"><circle cx="6" cy="6" r="6" style="fill:${color};"/></svg>`
         : "";
 
+    // Non-comparison rows first
+    for (const [key, val] of nonComparisonItems) {
+      const color = colorMap.get(key);
+      const keyHtml = `<td class="key">${keyColorSvg(color)}<span>${sanitize(key)}</span></td>`;
+      const valHtml = `<td class="value">${sanitize(val)}</td>`;
       if (hasComparison) {
-        // Use separate columns for current and comparison values
+        rows.push(
+          `<tr>${keyHtml}${valHtml}<td class="value empty-cell"></td></tr>`,
+        );
+      } else {
+        rows.push(`<tr>${keyHtml}${valHtml}</tr>`);
+      }
+    }
+
+    // Grouped comparison (or single) rows
+    for (const [key, values] of groupedItems.entries()) {
+      const color = colorMap.get(key);
+      const keyHtml = `<td class="key">${keyColorSvg(color)}<span>${sanitize(key)}</span></td>`;
+
+      if (hasComparison) {
         const currentValue =
           values.current !== undefined ? sanitize(values.current) : "";
         const previousValue =
           values.previous !== undefined ? sanitize(values.previous) : "";
-
         rows.push(
-          `<tr><td class="key">${keyColor}<span>${sanitize(key)}</span></td><td class="value current-value">${currentValue}</td><td class="value previous-value">${previousValue}</td></tr>`,
+          `<tr>${keyHtml}<td class="value current-value">${currentValue}</td><td class="value previous-value">${previousValue}</td></tr>`,
         );
       } else {
-        // Single value column when no comparison
         const valueHtml =
           values.current !== undefined ? sanitize(values.current) : "";
-        rows.push(
-          `<tr><td class="key">${keyColor}<span>${sanitize(key)}</span></td><td class="value">${valueHtml}</td></tr>`,
-        );
+        rows.push(`<tr>${keyHtml}<td class="value">${valueHtml}</td></tr>`);
       }
     }
 
