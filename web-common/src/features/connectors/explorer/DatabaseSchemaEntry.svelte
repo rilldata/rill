@@ -132,10 +132,11 @@
               small
               disabled={isFetchingNextPage}
               loading={isFetchingNextPage}
-              loadingCopy="Loading..."
+              loadingCopy="Loading tables..."
+              class="w-full"
               onClick={() => fetchNextPage()}
             >
-              Load more
+              Load more tables
             </Button>
           {/if}
         </div>
@@ -165,6 +166,6 @@
   }
 
   .load-more {
-    @apply py-2;
+    @apply py-2 pr-2;
   }
 </style>
