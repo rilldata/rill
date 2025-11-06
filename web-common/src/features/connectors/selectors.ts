@@ -149,42 +149,9 @@ export function useListDatabaseSchemas(
 }
 
 /**
- * List all tables for a given database and database_schema
- * This is called on-demand when a schema is expanded
- */
-export function useListTables(
-  instanceId: string,
-  connector: string,
-  database: string,
-  databaseSchema: string,
-  enabled: boolean = true,
-): CreateQueryResult<V1TableInfo[]> {
-  return createConnectorServiceListTables(
-    {
-      instanceId,
-      connector,
-      database,
-      databaseSchema,
-      pageSize: 5,
-    },
-    {
-      query: {
-        enabled:
-          enabled &&
-          !!instanceId &&
-          !!connector &&
-          !!database &&
-          databaseSchema !== undefined,
-        select: (data) => data.tables ?? [],
-      },
-    },
-  );
-}
-
-/**
  * Infinite tables loader using pageToken cursor
  */
-export function useInfiniteTables(
+export function useInfiniteListTables(
   instanceId: string,
   connector: string,
   database: string,

@@ -6,7 +6,7 @@
     V1TableInfo,
   } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
-  import { useInfiniteTables } from "../selectors";
+  import { useInfiniteListTables } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
@@ -20,7 +20,7 @@
   $: expandedStore = store.getItem(connectorName, database, databaseSchema);
   $: expanded = $expandedStore;
 
-  $: tablesQuery = useInfiniteTables(
+  $: tablesQuery = useInfiniteListTables(
     instanceId,
     connectorName,
     database,
