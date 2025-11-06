@@ -32,11 +32,10 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 	`
 	args = append(args, limit+1)
 
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
-	defer db.Close()
 
 	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
@@ -93,11 +92,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 	`
 	args = append(args, limit+1)
 
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, "", err
 	}
-	defer db.Close()
 
 	rows, err := db.QueryxContext(ctx, q, args...)
 	if err != nil {
@@ -133,18 +131,20 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
 	q := `
 	SELECT
-		column_name,
-		data_type
-	FROM information_schema.columns
-	WHERE table_schema = ? AND table_name = ?
+		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS view,
+		c.column_name,
+		c.data_type
+	FROM information_schema.tables t
+	JOIN information_schema.columns c
+	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
+	WHERE c.table_schema = ? AND c.table_name = ?
 	ORDER BY ordinal_position
 	`
 
-	db, err := c.getDB()
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
 	rows, err := db.QueryxContext(ctx, q, databaseSchema, table)
 	if err != nil {
@@ -152,20 +152,20 @@ func (c *connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	}
 	defer rows.Close()
 
-	schemaMap := make(map[string]string)
+	res := &drivers.TableMetadata{
+		Schema: make(map[string]string),
+	}
 	for rows.Next() {
 		var colName, dataType string
-		if err := rows.Scan(&colName, &dataType); err != nil {
+		if err := rows.Scan(&res.View, &colName, &dataType); err != nil {
 			return nil, err
 		}
-		schemaMap[colName] = dataType
+		res.Schema[colName] = dataType
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return &drivers.TableMetadata{
-		Schema: schemaMap,
-	}, nil
+	return res, nil
 }

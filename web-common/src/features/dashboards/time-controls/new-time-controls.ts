@@ -377,7 +377,7 @@ export async function deriveInterval(
       staleTime: Infinity,
     });
 
-    const timeRange = response.timeRanges?.[0];
+    const timeRange = response.resolvedTimeRanges?.[0];
 
     if (!timeRange?.start || !timeRange?.end) {
       return { interval: Interval.invalid("Invalid time range") };
@@ -466,6 +466,19 @@ export function getSmallestUnit(
   if (units.months) return "month";
   if (units.quarters) return "quarter";
   if (units.years) return "year";
+
+  return null;
+}
+
+export function getSmallestUnitInDateTime(time: DateTime): DateTimeUnit | null {
+  if (time.millisecond) return "millisecond";
+  if (time.second) return "second";
+  if (time.minute) return "minute";
+  if (time.hour) return "hour";
+  if (time.day) return "day";
+  if (time.month) return "month";
+  if (time.quarter) return "quarter";
+  if (time.year) return "year";
 
   return null;
 }

@@ -48,10 +48,10 @@ func newSession(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Sessio
 // - It records messages and LLM calls to the ./evals directory for later inspection.
 // - It ensures the test is skipped in CI (short mode).
 func newEval(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Session {
-	// Check the test is skipped in CI (short mode).
-	// Note that we error instead of skipping here since eval tests should be skipped before creating the runtime instance (which triggers data ingestion that especially for evals may be quite expensive).
+	// Eval tests are expensive, but we don't use testmode.Expensive here because it should have already been called before ingesting data.
+	// Most of the time, the test should have been marked expensive when EnableLLM was set, and we can check it wasn't forgotten by checking testing.Short().
 	if testing.Short() {
-		t.Fatal("eval test is not skipped in CI (short mode); did you forget to set EnableLLM in testruntime.InstanceOptions?")
+		t.Fatal("eval test was not marked expensive; did you forget to set EnableLLM in testruntime.InstanceOptions?")
 	}
 
 	// Create test runtime instance and AI session
