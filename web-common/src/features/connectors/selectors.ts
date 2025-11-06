@@ -4,7 +4,6 @@ import { derived } from "svelte/store";
 import {
   type V1TableInfo,
   createConnectorServiceListDatabaseSchemas,
-  createConnectorServiceListTables,
   createConnectorServiceGetTable,
   createRuntimeServiceGetInstance,
   type V1GetResourceResponse,
