@@ -4,7 +4,7 @@
   [headers.values]
     Content-Security-Policy = """\
       default-src 'self'; \
-      script-src 'self' 'strict-dynamic' 'nonce-{{CSP_NONCE}}' https: *.usepylon.com *.posthog.com *.pusher.com; \
+      script-src 'self' https: *.usepylon.com *.posthog.com *.pusher.com; \
       style-src https: 'unsafe-inline'; \
       img-src https: data: blob:; \
       frame-src 'self' https://www.youtube.com/ https://www.loom.com/ https://www.vimeo.com https://portal.withorb.com blob: data:; \
