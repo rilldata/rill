@@ -21,9 +21,3 @@
     Cross-Origin-Resource-Policy = "cross-origin"
     X-Frame-Options = "allow-from *"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-
-[[plugins]]
-  package = "@netlify/plugin-csp-nonce"
-  [plugins.inputs]
-    reportOnly = false
-    unsafeEval = false
