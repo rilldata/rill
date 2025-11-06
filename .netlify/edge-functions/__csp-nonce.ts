@@ -41,6 +41,7 @@ const handler = async (_request: Request, context: Context) => {
     const response = await context.next();
     // for debugging which routes use this edge function
     response.headers.set("x-debug-csp-nonce", "invoked");
+    console.log("new request")
     return csp(response, params);
   } catch {
     /*
