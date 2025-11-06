@@ -16,7 +16,7 @@ Policies are based on user attributes such as **email address**, **domain**, or 
 
 ## How Does It Work?
 
-Access policies are defined in the **metrics view** and/or **[dashboard YAML](/build/dashboards/customization#define-dashboard-access)**.  
+Access policies are defined in the **metrics view** and/or **[dashboard YAML](/developers/build/dashboards/customization#define-dashboard-access)**.  
 There are three types of rules:
 
 **General Access:** (`access`) A boolean expression deciding if a user can access the metrics view
@@ -48,7 +48,7 @@ security:
 ```
 
 When a user loads a dashboard, the policies are resolved in two phases:
-  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/build/connectors/templating))
+  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/developers/build/connectors/templating))
   2. The resulting expression is then evaluated contextually:
      - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
      - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
@@ -70,7 +70,7 @@ Typical use cases include:
 
 :::tip Project Access Required
 
-Access Policies assume that the user already has access to the project in Rill Cloud. For more information on user management, see our [User Management](/manage/user-management) and [Project Management](/manage/project-management) documentation.
+Access Policies assume that the user already has access to the project in Rill Cloud. For more information on user management, see our [User Management](/users/manage/user-management) and [Project Management](/users/manage/project-management) documentation.
 
 :::
 
@@ -80,11 +80,11 @@ There are two locations that control data access in Rill.
 
 ### Project Level Defaults
 
-By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/build/dashboards/customization#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
+By default, when a user is granted access to your project, they have access to all metrics views and, if there is [no dashboard policy](/developers/build/dashboards/customization#define-dashboard-access), all dashboards. While this is the default behavior, it can be easily changed in the project's `rill.yaml`. This will lock down all metrics views and block all users who are not Rill Administrators or do not have 'example.com' as their domain.
 
 :::tip Set project-wide security defaults
 Configure default security policies for all metrics views and dashboards in your project.
-[Learn more about security defaults →](/build/project-configuration#metrics-views-security-policy)
+[Learn more about security defaults →](/developers/build/project-configuration#metrics-views-security-policy)
 :::
 
 ```yaml
@@ -123,7 +123,7 @@ When combining access policies from project defaults and object-specific policie
 
 ## Dashboard Access
 
-Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/build/dashboards/customization#define-dashboard-access) and [canvas](/build/dashboards/customization#define-dashboard-access) dashboards can set the following:
+Dashboards also have an `access` key that can add additional security to the metrics view. Both [explore](/developers/build/dashboards/customization#define-dashboard-access) and [canvas](/developers/build/dashboards/customization#define-dashboard-access) dashboards can set the following:
 
 ```yaml
 security:
@@ -139,7 +139,7 @@ Access Policies can get quite complicated as your use case grows and having to n
 A few recommendations:
 1. Only change project level access if absolutely necessary. (They get overwritten by object level security)
 2. Dashboard access can be derived from the metrics view, only add extra policies on the dashboard if absolutely necessary as this gets combined with the metrics view using logical AND operations anyway.
-3. Solve project access issues higher up in the [user](/manage/user-management) / [usergroup](/manage/usergroup-management) settings, and keep default project security rules.
+3. Solve project access issues higher up in the [user](/users/manage/user-management) / [usergroup](/users/manage/usergroup-management) settings, and keep default project security rules.
 
 :::
 
@@ -161,7 +161,7 @@ In development (on `localhost`), you can test your policies by adding "mock user
 
 :::tip Test policies in Rill Developer
 Use `mock_users` in rill.yaml to test your security policies before deploying.
-[Learn more about testing security →](/build/project-configuration#testing-security)
+[Learn more about testing security →](/developers/build/project-configuration#testing-security)
 :::
 
 In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute and can optionally have `name` and `admin` attributes. For example:
@@ -187,9 +187,9 @@ If you want to test what your users are seeing in Rill Cloud after deploying, yo
 
 ### Embedded Dashboards
 
-When [requesting an embedded dashboard from Rill](/integrate/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
+When [requesting an embedded dashboard from Rill](/developers/integrate/embedding) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
 
-For more information, see [our embedding docs](/integrate/embedding#backend-build-an-iframe-url).
+For more information, see [our embedding docs](/developers/integrate/embedding#backend-build-an-iframe-url).
 
 
 ## Examples
@@ -287,7 +287,7 @@ security:
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column, and external users should only be able to see data for the tenant they belong to.
 
-To support this, ingest a separate data [source](/build/connectors) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
+To support this, ingest a separate data [source](/developers/build/connectors) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
 
 For example, a locally created `mappings.csv` file in the `data` directory of your Rill project with the following contents:
 ```csv
@@ -313,7 +313,7 @@ security:
 
 ### Advanced Example: Custom attributes (Embed Dashboards)
 
-Another use case for row access policies is to ensure that your embedded dashboard provides a specific view for your end users. During the [embed dashboard request](/integrate/embedding), you can pass custom attributes (other than the ones provided out-of-the-box) that map directly to a value within your Rill explore dashboard.
+Another use case for row access policies is to ensure that your embedded dashboard provides a specific view for your end users. During the [embed dashboard request](/developers/integrate/embedding), you can pass custom attributes (other than the ones provided out-of-the-box) that map directly to a value within your Rill explore dashboard.
 
 ```yaml
 security:

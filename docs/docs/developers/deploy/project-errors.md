@@ -20,7 +20,7 @@ To help you quickly identify and fix errors, you can configure a Rill alert that
 
 :::tip Want to learn more about alerts?
 
-Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/explore/alerts)!
+Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/users/explore/alerts)!
 
 :::
 
@@ -49,13 +49,13 @@ notify:
 
 :::info Don't forget to commit your changes!
 
-After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
+After making these changes, you should commit and [push these changes](/developers/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
 :::
 
 ### Configure a Slack alert
 
-To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](../explore/alerts/slack). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
+To configure a Slack alert for project errors, first follow the Slack configuration steps described on [Configuring Slack integration](/users/explore/alerts/slack). Next, add a file named `project_errors.yaml` to your Rill project with the contents below. Remember to update the `channels` field to your desired destination channel.
 
 ```yaml
 type: alert
@@ -79,6 +79,6 @@ notify:
 
 :::info Don't forget to commit your changes!
 
-After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
+After making these changes, you should commit and [push these changes](/developers/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
 :::

@@ -41,7 +41,7 @@ models:
         cron: '0 * * * *'
 ```
 
-For more information on configuring model refreshes, see the [models documentation](/build/models) and [model refresh reference](/reference/project-files/models#refresh).
+For more information on configuring model refreshes, see the [models documentation](/developers/build/models) and [model refresh reference](/reference/project-files/models#refresh).
 
 ### Model Materialization
 
@@ -61,12 +61,12 @@ This is particularly useful in production environments where performance is prio
 - **Consider:** Complex intermediate models with large datasets
 - **Avoid:** Models with cross joins or when you need real-time keystroke-by-keystroke updates
 
-For more details, see our [model performance guide](/build/models/performance#materialization).
+For more details, see our [model performance guide](/developers/build/models/performance#materialization).
 :::
 
 ## Metrics Views Defaults
 
-Configure default settings for all metrics views in your project. These settings control time-related behavior and security policies that apply across all metrics views unless overridden in individual metrics view files. For comprehensive information on metrics views, see the [metrics view documentation](/build/metrics-view).
+Configure default settings for all metrics views in your project. These settings control time-related behavior and security policies that apply across all metrics views unless overridden in individual metrics view files. For comprehensive information on metrics views, see the [metrics view documentation](/developers/build/metrics-view).
 
 
 ### Metrics Views Time Modifiers
@@ -81,7 +81,7 @@ metrics_views:
 
 ### Metrics Views Security Policy
 
-By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like in a metrics view file, you can define the security as shown below. For more information, read our [data access documentation](/build/metrics-view/security#examples).
+By default, Rill is open to access (to your organization users), unless otherwise defined. To add project-level access to the Rill project, you can add a default metrics view security policy in the `rill.yaml` file. Like in a metrics view file, you can define the security as shown below. For more information, read our [data access documentation](/developers/build/metrics-view/security#examples).
 
 ```yaml
 metrics_views:
@@ -94,17 +94,17 @@ metrics_views:
 
 Rill YAML settings < (Metrics View YAML AND Dashboard YAML)
 
-For detailed guide on security policies, review our [data access policies](/build/metrics-view/security) doc.
+For detailed guide on security policies, review our [data access policies](/developers/build/metrics-view/security) doc.
 :::
 
 
 ## Dashboard Defaults
 
-Rill supports two types of dashboards: **Explores** (metrics-focused dashboards) and **Canvases** (custom visualization dashboards). You can set default configurations for each type. Learn more about creating and customizing dashboards in our [dashboard documentation](/build/dashboards).
+Rill supports two types of dashboards: **Explores** (metrics-focused dashboards) and **Canvases** (custom visualization dashboards). You can set default configurations for each type. Learn more about creating and customizing dashboards in our [dashboard documentation](/developers/build/dashboards).
 
 ### Dashboard Security Policy
 
-Similar to metrics views, you can set [security for a dashboard](/build/dashboards/customization#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
+Similar to metrics views, you can set [security for a dashboard](/developers/build/dashboards/customization#define-dashboard-access). (Note that only `access` can be set at the dashboard level.)
 
 ```yaml
 explores:
@@ -224,7 +224,7 @@ WHERE status = '{{ .env.string_var }}'
 
 ### `ai_instructions`
 
-Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs. For more information on AI features in Rill, see our [AI documentation](/explore/mcp#adding-ai-instructions-to-your-model).
+Use the `ai_instructions` field to provide information that is **unique to your project**. This helps the AI agent deliver more relevant and actionable insights tailored to your specific needs. For more information on AI features in Rill, see our [AI documentation](/users/explore/mcp#adding-ai-instructions-to-your-model).
 
 **What to include:**
 - Guidance on which metrics views are most important or should be prioritized for your project
@@ -260,7 +260,7 @@ For metric-level specific instructions, `ai_instructions` can also be applied th
 
 ### Test Access Policies in Rill Developer
 
-Testing access policies in your local environment is a crucial step before deploying to Rill Cloud. This is done via the `mock_users` in the project file. You can create pseudo-users with specific domains, admin/non-admin roles, or user groups to ensure that access policies work as intended. For comprehensive information on security policies, see our [data access policies documentation](/build/metrics-view/security). 
+Testing access policies in your local environment is a crucial step before deploying to Rill Cloud. This is done via the `mock_users` in the project file. You can create pseudo-users with specific domains, admin/non-admin roles, or user groups to ensure that access policies work as intended. For comprehensive information on security policies, see our [data access policies documentation](/developers/build/metrics-view/security). 
 
 Let's assume that the following security policy is applied to the metrics view.
 
@@ -289,7 +289,7 @@ See our embedded example, [here](https://rill-embedding-example.netlify.app/rowa
 
 ### Custom Attributes
 
-Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code. For more information on embedding dashboards, see our [embedding documentation](/integrate/embedding).
+Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code. For more information on embedding dashboards, see our [embedding documentation](/developers/integrate/embedding).
 
 To test embedded dashboards locally with custom attributes, add them to `mock_users`:
 

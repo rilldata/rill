@@ -11,7 +11,7 @@ tags:
 ---
 
 ### What is a model?
-A model in Rill is used to perform intermediate processing as well as any last-mile ETL on the source data. This includes joining lookup tables to your table to enrich and transform the data for analysis. We recommend creating [One Big Table](/build/models/models-101#one-big-table-and-dashboarding) to power your metrics views. 
+A model in Rill is used to perform intermediate processing as well as any last-mile ETL on the source data. This includes joining lookup tables to your table to enrich and transform the data for analysis. We recommend creating [One Big Table](/developers/build/models/models-101#one-big-table-and-dashboarding) to power your metrics views. 
 
 ### Create a Model from the Source
 

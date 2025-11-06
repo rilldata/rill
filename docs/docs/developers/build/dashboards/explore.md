@@ -45,12 +45,12 @@ defaults:
 ```
 :::tip Customize default time ranges
 Set project-wide default time ranges and available options for all explore dashboards.
-[Learn more about dashboard defaults →](/build/project-configuration#explore-defaults)
+[Learn more about dashboard defaults →](/developers/build/project-configuration#explore-defaults)
 :::
 
 ### Using AI
 
-In various locations throughout the platform, you have the opportunity to fast-track your dashboard creation via AI. This feature [creates the underlying metrics view with AI](/build/metrics-view/what-are-metrics-views#creating-a-metrics-view-with-ai) and generates your explore.yaml similar to the example above with the required components.
+In various locations throughout the platform, you have the opportunity to fast-track your dashboard creation via AI. This feature [creates the underlying metrics view with AI](/developers/build/metrics-view/what-are-metrics-views#creating-a-metrics-view-with-ai) and generates your explore.yaml similar to the example above with the required components.
 
 **Directly from your connector's tables:**
 
@@ -65,14 +65,14 @@ In various locations throughout the platform, you have the opportunity to fast-t
 
 ## Preview a Dashboard in Rill Developer
 
-Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer.
+Once a dashboard is ready to preview, before [deploying to Rill Cloud](/developers/deploy/deploy-dashboard), you can preview the dashboard in Rill Developer.
 
 <img src='/img/build/dashboard/preview.png' class='rounded-gif' />
 <br />
 
 ### Setting Up Dashboard Access
 
-If you are setting up [dashboard policies](/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying. This option will be available for testing if you have set up access policies at the [project level](/build/project-configuration#testing-security), [metrics view level](/build/metrics-view/security), or [dashboard level](/build/dashboards/customization#define-dashboard-access).
+If you are setting up [dashboard policies](/developers/build/dashboards/customization#define-dashboard-access), it is recommended to preview and test the dashboard before deploying. This option will be available for testing if you have set up access policies at the [project level](/developers/build/project-configuration#testing-security), [metrics view level](/developers/build/metrics-view/security), or [dashboard level](/developers/build/dashboards/customization#define-dashboard-access).
 
 
 

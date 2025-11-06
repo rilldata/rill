@@ -21,7 +21,7 @@ When using Rill Developer on your local machine, you will need to provide your c
 
 :::tip Updating the project environmental variable
 
-If you've already deployed to Rill Cloud, you can either [push/pull the credential](/manage/project-management/variables-and-credentials#pushing-and-pulling-credentials-to--from-rill-cloud-via-the-cli) from the CLI with:
+If you've already deployed to Rill Cloud, you can either [push/pull the credential](/users/manage/project-management/variables-and-credentials#pushing-and-pulling-credentials-to--from-rill-cloud-via-the-cli) from the CLI with:
 ```
 rill env push
 rill env pull
@@ -41,7 +41,7 @@ sobject: "Opportunity"
 
 :::tip Did you know?
 
-If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/build/connectors/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
+If this project has already been deployed to Rill Cloud and credentials have been set for this source, you can use `rill env pull` to [pull these cloud credentials](/developers/build/connectors/credentials/#rill-env-pull) locally (into your local `.env` file). Please note that this may override any credentials you have set locally for this source.
 
 :::
 

@@ -64,7 +64,7 @@ olap_connector: motherduck
 
 :::info Interested in using multiple OLAP engines in the same project?
 
-Please see our [Using Multiple OLAP Engines](/build/connectors/olap/multiple-olap) page.
+Please see our [Using Multiple OLAP Engines](/developers/build/connectors/olap/multiple-olap) page.
 :::
 
 
@@ -87,7 +87,7 @@ Note that you must `cd` into the Git repository that your project was deployed f
 ## Additional Notes
 
 - MotherDuck uses the same SQL syntax as DuckDB, so all standard DuckDB functions and features are available
-- For dashboards powered by MotherDuck, [measure definitions](/build/metrics-view/#measures) should follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax
+- For dashboards powered by MotherDuck, [measure definitions](/developers/build/metrics-view/#measures) should follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax
 
 :::info Need help connecting to MotherDuck?
 

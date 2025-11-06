@@ -49,13 +49,13 @@ To calculate your current usage and pricing, see our [pricing page](https://www.
 
 ## Enterprise Plan
 
-Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and less restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](../../contact).
+Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and less restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](/contact).
 
 ### Enterprise usage-based billing
 
 **Storage:**
 
-Storage is the total compressed data in the cluster. It's available in [two performance tiers](/other/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/other/FAQ#what-are-the-compute-requirements-for-data-processing).
+Storage is the total compressed data in the cluster. It's available in [two performance tiers](/developers/other/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/developers/other/FAQ#what-are-the-compute-requirements-for-data-processing).
 
 Data can be also offloaded to an archival tier where it does not consume any compute
 
@@ -64,7 +64,7 @@ Data can be also offloaded to an archival tier where it does not consume any com
 
 **Compute:**
 
-[Rill Compute Units (RCU)](/other/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
+[Rill Compute Units (RCU)](/developers/other/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
 
 RCU scale up elastically for data ingestion & processing with enterprise discounts on RCUs provisioned for querying.
 

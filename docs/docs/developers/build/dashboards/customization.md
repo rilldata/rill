@@ -15,7 +15,7 @@ For a full list of available dashboard properties and configurations, please see
 
 ## Define Dashboard Access
 
-Along with [metrics views security policies](/build/metrics-view/security), you can set access on the dashboard level. Access policies will be combined with metrics view policies using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard.  Only the `access` key can be set in the dashboard.
+Along with [metrics views security policies](/developers/build/metrics-view/security), you can set access on the dashboard level. Access policies will be combined with metrics view policies using a logical AND, so if a user doesn’t pass both, they won’t get access to the dashboard.  Only the `access` key can be set in the dashboard.
 
 ```yaml
 security:
@@ -28,7 +28,7 @@ security:
 
 Default time range controls the data analyzed on initial page load. Setting the default time range improves user experience by setting it to the most frequently used period— in particular, avoiding `all time` if you have a large data source but only analyze more recent data.
 
-The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions#extensions).
+The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions] (/reference/rill-iso-extensions#extensions).
 
 
 ### Default Dimensions
@@ -59,7 +59,7 @@ defaults:
 
 ### Default Comparison Modes
 
-It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/explore/time-series#time-comparisons) and [dimension comparison.](/explore/filters#filter-by-dimensions) Note that only one of these comparisons can be set as default. 
+It is also possible to set up a default comparison mode for your dashboard. In Rill, we support both [time comparison](/users/explore/time-series#time-comparisons) and [dimension comparison.](/users/explore/filters#filter-by-dimensions) Note that only one of these comparisons can be set as default. 
 
 ```yaml
 defaults:
@@ -73,7 +73,7 @@ defaults:
 
 ## Time Ranges
 
-One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses, like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions#extensions).
+One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses, like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions] (/reference/rill-iso-extensions#extensions).
 
 ```yaml
 time_ranges:

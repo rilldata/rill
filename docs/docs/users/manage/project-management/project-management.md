@@ -50,14 +50,14 @@ From there, you can follow the same steps as [above](#connect-to-github-reposito
 
 
 ### Deploying from a branch other than `main`
-If you have already [setup your connection to GitHub](/deploy/deploy-dashboard/#syncing-your-github-repository), you can edit the branch from where the project is deployed from.
+If you have already [setup your connection to GitHub](/developers/deploy/deploy-dashboard/#syncing-your-github-repository), you can edit the branch from where the project is deployed from.
 
 <img src = '/img/manage/project-management/main-branch.png' class='rounded-gif' />
 <br />
 
 
 ### Managing Project settings
-You can also manage project objects in the settings page including public URLs (created in an explore dashboard) and environmental variables. For more information on managing variables, see [variables and credentials](/manage/project-management/variables-and-credentials).
+You can also manage project objects in the settings page including public URLs (created in an explore dashboard) and environmental variables. For more information on managing variables, see [variables and credentials](/users/manage/project-management/variables-and-credentials).
 
 <img src = '/img/manage/project-management/project-settings.png' class='rounded-gif' />
 <br />

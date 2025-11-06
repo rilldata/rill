@@ -43,7 +43,7 @@ From the User page, you can view and manage your users with organizational. Note
 
 ### Org Settings via Rill Cloud
 
-In the organization setting page, depending on your plan type, you can view the general information, billing and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add, or modify your current payment type. For more information, please review our [Billing Information documentation](/other/plans).
+In the organization setting page, depending on your plan type, you can view the general information, billing and current usage. The Billing tab is only available for those on a `Team Plan`. You can use this page to add, or modify your current payment type. For more information, please review our [Billing Information documentation](/developers/other/plans).
 
 <img src = '/img/manage/project-management/rill-org-settings.png' class='rounded-gif' />
 <br />
@@ -78,7 +78,7 @@ Global Flags:
 
 :::tip
 
-Access to Rill can be granted on the [organization level](/manage/user-management#how-to-add-an-organization-user), [project level](/manage/user-management#how-to-add-a-project-user), and [user group level](/manage/user-management#how-to-add-a-user-to-a-usergroup).
+Access to Rill can be granted on the [organization level](/users/manage/user-management#how-to-add-an-organization-user), [project level](/users/manage/user-management#how-to-add-a-project-user), and [user group level](/users/manage/user-management#how-to-add-a-user-to-a-usergroup).
 
 :::
 

@@ -4,11 +4,11 @@ sidebar_label: Underlying Model/Table
 sidebar_position: 05
 ---
 
-Once you have finished [building your model](/build/models), you can create a metrics view to define measures and dimensions for your dashboard. The way you specify the underlying data source depends on your OLAP engine.
+Once you have finished [building your model](/developers/build/models), you can create a metrics view to define measures and dimensions for your dashboard. The way you specify the underlying data source depends on your OLAP engine.
 
 ## Choosing Your Data Source
 
-Rill supports [multiple OLAP engines](/build/connectors/olap), and the engine you're using determines which YAML property you'll use in your metrics view:
+Rill supports [multiple OLAP engines](/developers/build/connectors/olap), and the engine you're using determines which YAML property you'll use in your metrics view:
 
 - **Use `model`** for DuckDB and Rill-managed ClickHouse
 - **Use `table`** for self-managed live connectors

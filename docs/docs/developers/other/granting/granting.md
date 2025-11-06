@@ -11,9 +11,9 @@ In addition to standard connectors, Rill also manages data pipelines for custome
 
 To provide access for the Rill team, your team can grant read access: 
 
-- [Amazon s3](/other/granting/aws-s3-bucket)
-- [GCS](/other/granting/gcs-bucket)
-- [Google BigQuery](/other/granting/google-bigquery)
-- [Microsoft Azure Storage](/other/granting/azure-storage-container)
+- [Amazon s3](/developers/other/granting/aws-s3-bucket)
+- [GCS](/developers/other/granting/gcs-bucket)
+- [Google BigQuery](/developers/other/granting/google-bigquery)
+- [Microsoft Azure Storage](/developers/other/granting/azure-storage-container)
 
 For more information on how Rill can help, please contact our team at [contact@rilldata.com](mailto:contact@rilldata.com). 

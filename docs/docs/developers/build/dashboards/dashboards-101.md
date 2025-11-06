@@ -5,18 +5,18 @@ sidebar_label: Overview
 sidebar_position: 00
 ---
 
-Rill offers two distinct dashboard experiences, each optimized for different use cases and user needs. While both are used to visualize your data, the key difference lies in how they handle [**metrics views**](/build/metrics-view) - the data sources that power your dashboards.
+Rill offers two distinct dashboard experiences, each optimized for different use cases and user needs. While both are used to visualize your data, the key difference lies in how they handle [**metrics views**](/developers/build/metrics-view) - the data sources that power your dashboards.
 
-- **Explore Dashboards** - Standardized _opinionated_ dashboards with consistent data components, visualizations, and layout structure that promote slice-and-dice discovery and interactive data exploration. These are built over a **single metrics view** using the [One Big Table approach](/build/models/models-101#one-big-table-and-dashboarding).
+- **Explore Dashboards** - Standardized _opinionated_ dashboards with consistent data components, visualizations, and layout structure that promote slice-and-dice discovery and interactive data exploration. These are built over a **single metrics view** using the [One Big Table approach](/developers/build/models/models-101#one-big-table-and-dashboarding).
 - **Canvas Dashboards** - Traditional dashboards that allow users to customize visualizations and layout according to their specific requirements utilizing **multiple metrics views**.
 
 ## Explore Dashboards
 
-**[Explore dashboards](/build/dashboards/explore)** are designed for interactive data exploration and analysis. They provide a powerful "slice and dice" experience focused on a single metrics view. Some key features of our Explore dashboards include:
+**[Explore dashboards](/developers/build/dashboards/explore)** are designed for interactive data exploration and analysis. They provide a powerful "slice and dice" experience focused on a single metrics view. Some key features of our Explore dashboards include:
 
-- [Pivot Tables](/explore/dashboard-101/pivot)
-- [Time Dimension Detail](/explore/dashboard-101/tdd)
-- [Leaderboards](/explore/dashboard-101/multi-metrics)
+- [Pivot Tables](/users/explore/dashboard-101/pivot)
+- [Time Dimension Detail](/users/explore/dashboard-101/tdd)
+- [Leaderboards](/users/explore/dashboard-101/multi-metrics)
 
 <img src = '/img/build/dashboard/explore.png' class='rounded-gif' /> <br/>
 
@@ -32,7 +32,7 @@ See both dashboard types in action with our interactive demos:
 
 ## Canvas Dashboards
 
-**[Canvas dashboards](/build/dashboards/canvas)** provide a traditional dashboard experience where you can combine multiple metrics views and create custom layouts. See our [list of components](/build/dashboards/canvas-widgets) to start creating your custom dashboard.
+**[Canvas dashboards](/developers/build/dashboards/canvas)** provide a traditional dashboard experience where you can combine multiple metrics views and create custom layouts. See our [list of components](/developers/build/dashboards/canvas-widgets) to start creating your custom dashboard.
 
 
 <img src = '/img/build/dashboard/canvas/RTBAds-Canvas-2.png' class='rounded-gif' /> <br/>
@@ -55,12 +55,12 @@ Both dashboard types share common capabilities that make them powerful for data 
 
 ## Learn More About Using Dashboards
 
-For comprehensive guidance on using dashboards as an analyst, see our [Analyst's Guide to Dashboards](/explore/dashboard-101), which covers:
+For comprehensive guidance on using dashboards as an analyst, see our [Analyst's Guide to Dashboards](/users/explore/dashboard-101), which covers:
 
-- [Dashboard navigation and interface](/explore/dashboard-101)
-- [Filtering and comparisons](/explore/filters)
-- [Pivot tables](/explore/dashboard-101/pivot)
-- [Time dimension details](/explore/dashboard-101/tdd)
-- [Bookmarks and sharing](/explore/bookmarks)
-- [Alerts and notifications](/explore/alerts)
+- [Dashboard navigation and interface](/users/explore/dashboard-101)
+- [Filtering and comparisons](/users/explore/filters)
+- [Pivot tables](/users/explore/dashboard-101/pivot)
+- [Time dimension details](/users/explore/dashboard-101/tdd)
+- [Bookmarks and sharing](/users/explore/bookmarks)
+- [Alerts and notifications](/users/explore/alerts)
 

@@ -5,7 +5,7 @@ sidebar_label: "Custom API Integration"
 sidebar_position: 20
 ---
 
-Rill exposes [custom APIs](/build/custom-apis) you have created with `type: api` as HTTP endpoints 
+Rill exposes [custom APIs](/developers/build/custom-apis) you have created with `type: api` as HTTP endpoints 
 at `https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<name of api>`.
 
 ## Accessing custom APIs
@@ -43,7 +43,7 @@ There are three types of access tokens you can use with custom APIs.
 
 These tokens are tied to your personal user and access permissions. They are useful for local scripting and experimentation. Not recommended for production use. 
 
-Use the `rill token issue` CLI command to obtain a personal access token. See the [CLI reference](../reference/cli/token) for details.
+Use the `rill token issue` CLI command to obtain a personal access token. See the [CLI reference](/reference/cli/token) for details.
 
 ### Service tokens
 
@@ -51,7 +51,7 @@ These tokens are tied to your Rill organization and persist even if the creating
 
 Since service tokens have admin permissions, they MUST NOT be embedded directly in your frontend or otherwise shared with end users. See "Ephemeral tokens" below for how to create safe, short-lived access tokens.
 
-Use the `rill service create` CLI command to create a service account and issue a token for it. See the [CLI reference](../reference/cli/service) for details.
+Use the `rill service create` CLI command to create a service account and issue a token for it. See the [CLI reference](/reference/cli/service) for details.
 
 :::note
 When using security policies with service accounts, the `{{ .user.admin }}` user attribute is `true`, but apart from that, the service account does not have any other user attributes. This means if your security policy uses templating like `{{ .user.email }}`, it must have fallback logic in place for when no `email` is present.

@@ -6,7 +6,7 @@ sidebar_position: 00
 ---
 
 
-A metrics view is a 'centralized framework' used to define and organize **key measures and dimensions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools. Each metrics view is powered by a single [model or table](/build/metrics-view/underlying-model).
+A metrics view is a 'centralized framework' used to define and organize **key measures and dimensions** for your organization. Having a centralized layer allows an organization to easily manage and reuse calculations across various reports, dashboards, and data tools. Each metrics view is powered by a single [model or table](/developers/build/metrics-view/underlying-model).
 
 Rill metrics views are analogous to the **semantic layer** and **metrics layer** concepts found in other business intelligence and analytics tools. It provides a consistent, reusable abstraction over your underlying data, enabling standardized definitions of business metrics that can be shared across different dashboards and reports.
 
@@ -17,14 +17,14 @@ Rill metrics views are analogous to the **semantic layer** and **metrics layer**
 
 
 In Rill, your metrics view is defined by _metric definitions_. Metric definitions are composed of:
-* [_**model/table**_](/build/metrics-view/underlying-model) - A data model or underlying table created with the concept of [One Big Table](/build/models/models-101#one-big-table-and-dashboarding) that will power the metrics view.
-* [_**timeseries**_](/build/metrics-view/time-series) - A column from your model that will underlie x-axis data in Rill's Explore dashboards and Canvas dashboards. Time can be truncated into different time periods.
-* [_**dimensions**_](/build/metrics-view/dimensions) - Categorical columns from your data model whose values are shown in _leaderboards_ in explore dashboard and allow you to look at segments or attributes of your data (and filter/slice accordingly) as well as selectable axis in Canvas dashboard components.
-* _[**measures**](/build/metrics-view/measures)_ - Numerical aggregates of columns from your data model shown on the y-axis of the explore charts and canvas components and the "big number" summaries.
+* [_**model/table**_](/developers/build/metrics-view/underlying-model) - A data model or underlying table created with the concept of [One Big Table](/developers/build/models/models-101#one-big-table-and-dashboarding) that will power the metrics view.
+* [_**timeseries**_](/developers/build/metrics-view/time-series) - A column from your model that will underlie x-axis data in Rill's Explore dashboards and Canvas dashboards. Time can be truncated into different time periods.
+* [_**dimensions**_](/developers/build/metrics-view/dimensions) - Categorical columns from your data model whose values are shown in _leaderboards_ in explore dashboard and allow you to look at segments or attributes of your data (and filter/slice accordingly) as well as selectable axis in Canvas dashboard components.
+* _[**measures**](/developers/build/metrics-view/measures)_ - Numerical aggregates of columns from your data model shown on the y-axis of the explore charts and canvas components and the "big number" summaries.
 
 ## Creating a Metrics view
 
-Once your [model or underlying table](/build/metrics-view/underlying-model) is ready to visualize, you'll need to create a metrics view to define your measures and dimensions. This can be done in a few ways. Either create a blank YAML file, use the Add metrics view button, or "Generate Metrics with AI" from the model.
+Once your [model or underlying table](/developers/build/metrics-view/underlying-model) is ready to visualize, you'll need to create a metrics view to define your measures and dimensions. This can be done in a few ways. Either create a blank YAML file, use the Add metrics view button, or "Generate Metrics with AI" from the model.
 
 
 
@@ -55,7 +55,7 @@ measures:
 
 :::tip Set project-wide time defaults
 Configure default time modifiers like first day of week and smallest time grain for all metrics views.
-[Learn more about metrics view defaults →](/build/project-configuration#metrics-views-time-modifiers)
+[Learn more about metrics view defaults →](/developers/build/project-configuration#metrics-views-time-modifiers)
 :::
 ### Using the Visual Metrics Editor
 

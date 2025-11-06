@@ -5,7 +5,7 @@ sidebar_label: Canvas Dashboards
 sidebar_position: 05
 ---
 
-While Rill's signature **[Explore dashboards](/build/dashboards/explore)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations and arrange them into your preferred layout.
+While Rill's signature **[Explore dashboards](/developers/build/dashboards/explore)** let you slice, dice, and interact with your data in our suggested layout, **Canvas dashboards** let you define your own visualizations and arrange them into your preferred layout.
 
 
 Canvas dashboards are built using various components that can display data, create visualizations, and add rich content from independent metrics views. You can create components dynamically through the visual Canvas Dashboard interface or define them in individual YAML files.
@@ -14,13 +14,13 @@ Canvas dashboards are built using various components that can display data, crea
 
 Canvas dashboards support three main types of components:
 
-- **[Data components](/build/dashboards/canvas-widgets/data)** - Display structured data and key metrics (KPIs, leaderboards, tables)
-- **[Chart components](/build/dashboards/canvas-widgets/chart)** - Create rich visualizations (bar charts, line charts, heat maps, etc.)
-- **[Miscellaneous components](/build/dashboards/canvas-widgets/misc)** - Add text, images, and other content
+- **[Data components](/developers/build/dashboards/canvas-widgets/data)** - Display structured data and key metrics (KPIs, leaderboards, tables)
+- **[Chart components](/developers/build/dashboards/canvas-widgets/chart)** - Create rich visualizations (bar charts, line charts, heat maps, etc.)
+- **[Miscellaneous components](/developers/build/dashboards/canvas-widgets/misc)** - Add text, images, and other content
 
 Each component page shows both the visual result and the corresponding YAML code, making it easy to understand how to implement them in your own dashboards.
 
-For a complete overview of all available components, see our [**Canvas components**](/build/dashboards/canvas-widgets) reference.
+For a complete overview of all available components, see our [**Canvas components**](/developers/build/dashboards/canvas-widgets) reference.
 
 ## Creating a Canvas Dashboard
 ### A Visual Editing Experience 
@@ -44,7 +44,7 @@ Optionally toggle on the **global filter bar** under Canvas properties to give d
 <br/>
 
 ### Making changes to the YAML 
-While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](/build/dashboards/customization) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
+While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](/developers/build/dashboards/customization) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
 
 
 <img src = '/img/build/dashboard/canvas/code-toggle.png' class='rounded-gif' />
@@ -52,7 +52,7 @@ While we encourage creating Canvas dashboards via the visual editing experience 
 
 :::tip Customize default time ranges
 Set project-wide default time ranges and available options for all canvas dashboards.
-[Learn more about canvas defaults →](/build/project-configuration#canvas-defaults)
+[Learn more about canvas defaults →](/developers/build/project-configuration#canvas-defaults)
 ::: 
 
 <!-- 

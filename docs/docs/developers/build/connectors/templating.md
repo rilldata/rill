@@ -19,7 +19,7 @@ Unless explicitly defined, Rill Developer will use a `dev` environment. If you w
 
 ## Setting Up Environmental Variables
 
-You can set up environmental variables in several locations in Rill. Please review our [configure local credentials documentation](/build/connectors/credentials#setting-credentials-for-rill-developer) for more information.
+You can set up environmental variables in several locations in Rill. Please review our [configure local credentials documentation](/developers/build/connectors/credentials#setting-credentials-for-rill-developer) for more information.
 
 ## Environment-Specific Connectors
 
@@ -93,7 +93,7 @@ dsn: "postgres://user:password@localhost:5432/database"
 ```
 
 ## Additional Resources
-- [Performance Optimization Guide](/guides/performance)
+- [Performance Optimization Guide](/developers/guides/performance)
 - [Official docs](https://pkg.go.dev/text/template) (Go)
 - [Learn Go Template Syntax](https://developer.hashicorp.com/nomad/tutorials/templates/go-template-syntax) (HashiCorp)
 - [Sprig Function Documentation](http://masterminds.github.io/sprig/)

@@ -7,7 +7,7 @@ sidebar_position: 20
 
 [Apache Pinot](https://docs.pinot.apache.org/) is a real-time distributed OLAP datastore purpose-built for low-latency, high-throughput analytics, and is perfect for user-facing analytical workloads.
 
-Rill supports connecting to an existing Pinot cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing Pinot cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/developers/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 
 ## Configuring Rill Developer with Pinot
@@ -60,7 +60,7 @@ olap_connector: pinot
 
 :::info Interested in using multiple OLAP engines in the same project?
 
-Please see our [Using Multiple OLAP Engines](/build/connectors/olap/multiple-olap) page.
+Please see our [Using Multiple OLAP Engines](/developers/build/connectors/olap/multiple-olap) page.
 
 :::
 
@@ -93,4 +93,4 @@ Pinot does not support the unnest function, so don't set the `unnest` property t
 ## Additional Notes
 
 - At the moment, we do not support modeling with Pinot. If this is something you're interested in, please [contact us](/contact).
-- For dashboards powered by Pinot, [measure definitions](/build/metrics-view/#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.
+- For dashboards powered by Pinot, [measure definitions](/developers/build/metrics-view/#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.

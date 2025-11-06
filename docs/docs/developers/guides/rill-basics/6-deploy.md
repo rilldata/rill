@@ -9,7 +9,7 @@ tags:
 ---
 :::tip Rill Cloud Trial
 
-If this is the first time you have deployed a project onto Rill Cloud, you will automatically start your [Rill Cloud Trial](/other/plans#trial-plan) upon deployment of your Rill project. Your trial will last for 30 days. Please refer to our documentation for more information on the details of your trial.
+If this is the first time you have deployed a project onto Rill Cloud, you will automatically start your [Rill Cloud Trial](/developers/other/plans#trial-plan) upon deployment of your Rill project. Your trial will last for 30 days. Please refer to our documentation for more information on the details of your trial.
 
 :::
 

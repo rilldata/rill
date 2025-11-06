@@ -7,11 +7,11 @@ className: connect-connect
 ---
 
 
-By default, Rill will use a managed embedded analytics engine (**DuckDB** or **ClickHouse**) to support data ingestion.  Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities. Once you have connected to your data source you can create [downstream models](/build/models), [metrics views](/build/metrics-view) and [visualize your data](/build/dashboards).
+By default, Rill will use a managed embedded analytics engine (**DuckDB** or **ClickHouse**) to support data ingestion.  Whether you're working with cloud data warehouses, databases, file storage, or streaming data sources, Rill provides seamless connectivity and data ingestion capabilities. Once you have connected to your data source you can create [downstream models](/developers/build/models), [metrics views](/developers/build/metrics-view) and [visualize your data](/developers/build/dashboards).
 
 :::tip using clickhouse?
 
-Don't forget to [create a managed ClickHouse server](/build/connectors/olap/clickhouse#rill-managed-clickhouse) before getting started!
+Don't forget to [create a managed ClickHouse server](/developers/build/connectors/olap/clickhouse#rill-managed-clickhouse) before getting started!
 
 
 ```yaml
@@ -32,7 +32,7 @@ import ConnectorIcon from '@site/src/components/ConnectorIcon';
 In order to connect and browse through your data, you'll need to create a connector file. Browse through the options below for our supported connectors. Each connector is designed to handle the specific authentication and configuration requirements of your data source.
 
 :::warning OLAP Engine Limitations
-Rill supports connecting your data to both [DuckDB](/build/connectors/olap/duckdb) and [ClickHouse](/build/connectors/olap/clickhouse). However, there are still some features in development for managed ClickHouse. For more information see our [managed ClickHouse docs](/build/connectors/olap/clickhouse#rill-managed-clickhouse). If you've still got questions, [contact our team](/contact) for more information and scheduled feature releases!
+Rill supports connecting your data to both [DuckDB](/developers/build/connectors/olap/duckdb) and [ClickHouse](/developers/build/connectors/olap/clickhouse). However, there are still some features in development for managed ClickHouse. For more information see our [managed ClickHouse docs](/developers/build/connectors/olap/clickhouse#rill-managed-clickhouse). If you've still got questions, [contact our team](/contact) for more information and scheduled feature releases!
 :::
 
 
@@ -229,9 +229,9 @@ When deciding on which managed OLAP engine to use with Rill, you'll need to deci
 
 In the case of **sub 100GB of data**, we recommend keeping the default engine, DuckDB, in order to minimize the integration complexity. The reason for this is that [DuckDB has built-in functions](https://duckdb.org/docs/stable/data/data_sources) to support the connectors listed on this page. 
 
-On the other hand, if you need to analyze **100s of GB of data**, we would recommend using Managed ClickHouse. This will add some complexity ([staging tables](/build/models/staging-models)), but will in turn provide better dashboard performance. 
+On the other hand, if you need to analyze **100s of GB of data**, we would recommend using Managed ClickHouse. This will add some complexity ([staging tables](/developers/build/models/staging-models)), but will in turn provide better dashboard performance. 
 
-If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/build/models/models-101#intermediate-processing) or using [arithmetic functions](/build/metrics-view) in the metrics view, you'll need to utilize the engine's built-in functions.
+If data leans either way, a good deciding factor for which OLAP engine to use is your **familiarity with their SQL syntax**. Whether you're [creating models](/developers/build/models/models-101#intermediate-processing) or using [arithmetic functions](/developers/build/metrics-view) in the metrics view, you'll need to utilize the engine's built-in functions.
 
 
 :::note Supported Connectors

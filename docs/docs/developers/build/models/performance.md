@@ -10,11 +10,11 @@ By following these best practices, you can create models that provide both speed
 
 ## Local Development / Rill Developer
 
-As discussed in the [templating section](/build/models/templating), there are a few key recommendations to increase model performance in Rill Developer:
+As discussed in the [templating section](/developers/build/models/templating), there are a few key recommendations to increase model performance in Rill Developer:
 
-1. [Limiting the source data](/build/models/templating#applying-a-one-week-sample-to-the-source-bucket-for-local-development) to a smaller time range (e.g., one week's worth of data instead of the full year)
-2. Creating smaller models for development by [applying a raw limit](/build/models/templating#example-conditional-sql-limiting-dev-rows), which will then serve as the starting point for your actual downstream models/modeling
-3. [Applying a filter](/build/models/templating#example-leveraging-variables-to-apply-a-filter-and-row-limit-dynamically-to-a-model) to the data to work with only a subset of data
+1. [Limiting the source data](/developers/build/models/templating#applying-a-one-week-sample-to-the-source-bucket-for-local-development) to a smaller time range (e.g., one week's worth of data instead of the full year)
+2. Creating smaller models for development by [applying a raw limit](/developers/build/models/templating#example-conditional-sql-limiting-dev-rows), which will then serve as the starting point for your actual downstream models/modeling
+3. [Applying a filter](/developers/build/models/templating#example-leveraging-variables-to-apply-a-filter-and-row-limit-dynamically-to-a-model) to the data to work with only a subset of data
 
 ## Model Performance
 
@@ -34,7 +34,7 @@ We strongly recommend materializing final models that are being used directly in
 
 ### Materialization
 
-Model materialization is something to consider when creating intermediate models. Other than [source models](/build/models/source-models), intermediate models are not, by default, materialized and are views in your underlying database engine. There are some pros and cons to enabling it during the development process.
+Model materialization is something to consider when creating intermediate models. Other than [source models](/developers/build/models/source-models), intermediate models are not, by default, materialized and are views in your underlying database engine. There are some pros and cons to enabling it during the development process.
 
 ```sql
 -- model.sql
@@ -77,7 +77,7 @@ If unsure, we would generally recommend leaving the defaults and/or [reaching ou
 
 ## Query Optimization
 
-Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](/build/connectors/olap), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource-intensive it is to build models, how fast profiling queries run, and more.
+Query optimization is crucial for maintaining high performance and efficiency, especially when working with data-intensive applications. As Rill dashboards are powered by [OLAP engines](/developers/build/connectors/olap), designed for analytical queries, ensuring that our queries are well-optimized can help maximize the responsiveness and speed of our dashboards. There are also additional potential second-order benefits to optimizing queries in Rill, such as improving ingestion times, how long it takes to build models, how resource-intensive it is to build models, how fast profiling queries run, and more.
 
 ### Use appropriate data types and avoid casting when possible
 
@@ -87,7 +87,7 @@ Similarly, choosing the right data type for each column is also important. Small
 
 ### Select the columns you need and avoid `SELECT *` when possible
 
-Because most [OLAP databases](/build/connectors/olap) store data in a columnar format, including [DuckDB](/build/connectors/olap/duckdb), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries, so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processing times and improve the query execution speed.
+Because most [OLAP databases](/developers/build/connectors/olap) store data in a columnar format, including [DuckDB](/developers/build/connectors/olap/duckdb), selecting only the columns that you need during the modeling phase ensures that DuckDB will only ingest and store the data _it actually needs_ (speeding up model build times and reducing footprint). Furthermore, columnar formats are optimized for analytical queries, so by selecting only the columns that you need (instead of a blanket `SELECT *`), this will help to minimize data processing times and improve the query execution speed.
 
 ### Consider sorting your data by an appropriate timestamp column
 
@@ -101,11 +101,11 @@ Sorting, especially in DuckDB, _can also be computationally intensive_ and most 
 
 ### Use joins efficiently
 
-Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/build/connectors/olap), DuckDB included, will optimize join operations, but ensuring the join keys are well chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set.
+Plan your joins carefully, especially when working with large datasets. Most [OLAP engines](/developers/build/connectors/olap), DuckDB included, will optimize join operations, but ensuring the join keys are well chosen and considering the size of the datasets being joined can reduce processing time. For example, if you're looking to perform a cross or cartesian join across a very wide table, be sure it's necessary as it can otherwise explode the size of your result set.
 
 ### Apply filters early and use WHERE clauses wisely
 
-When possible, it can be good practice to apply filtering early in your queries with `WHERE` clauses to reduce the amount of data being processed in subsequent steps (or downstream models/queries). This can both help to reduce the amount of data being scanned and, given the columnar nature of most [OLAP engines](/build/connectors/olap), significantly speed up queries.
+When possible, it can be good practice to apply filtering early in your queries with `WHERE` clauses to reduce the amount of data being processed in subsequent steps (or downstream models/queries). This can both help to reduce the amount of data being scanned and, given the columnar nature of most [OLAP engines](/developers/build/connectors/olap), significantly speed up queries.
 
 ### Optimize your subqueries to leverage joins or CTEs when possible
 
@@ -113,7 +113,7 @@ Subqueries can very often prove to be inefficient and result in suboptimal query
 
 ### Rather than UNION, consider using UNION ALL when possible
 
-Depending on the [OLAP engine](/build/connectors/olap), `UNION` can be a very expensive operation and much more computationally intensive than `UNION ALL`. For example, when using [DuckDB](/build/connectors/olap/duckdb), a `UNION` will require performing full duplicate eliminations _across all columns_ while a `UNION ALL` will simply concatenate the tables together. If a concatenation is sufficient (for the query), this will be both much quicker and significantly less resource intensive for the query to complete.
+Depending on the [OLAP engine](/developers/build/connectors/olap), `UNION` can be a very expensive operation and much more computationally intensive than `UNION ALL`. For example, when using [DuckDB](/developers/build/connectors/olap/duckdb), a `UNION` will require performing full duplicate eliminations _across all columns_ while a `UNION ALL` will simply concatenate the tables together. If a concatenation is sufficient (for the query), this will be both much quicker and significantly less resource intensive for the query to complete.
 
 
 ## Time Series Transformation

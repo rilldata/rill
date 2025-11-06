@@ -45,7 +45,7 @@ You can also use the Add Data form in Rill Developer, which will automatically c
 
 When ingesting data locally, consider setting parameters in your connector file to limit how much data is retrieved, since costs can scale with the data source. This also helps other developers clone the project and iterate quickly by reducing ingestion time.
 
-For more details, see our [Dev/Prod setup docs](/build/connectors/templating).
+For more details, see our [Dev/Prod setup docs](/developers/build/connectors/templating).
 
 ## Deploy to Rill Cloud
 

@@ -36,7 +36,7 @@ _[string]_ - Extra instructions for LLM/AI features. Used to guide natural langu
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
 :::info Curious about OLAP Engines?
-Please see our reference documentation on [OLAP Engines](/build/connectors/olap).
+Please see our reference documentation on [OLAP Engines](/developers/build/connectors/olap).
 :::
 
 
@@ -59,7 +59,7 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::info Hierarchy of inheritance and property overrides
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
 1. Individual [models](models.md)/[metrics_views](metrics-views.md)/[explore](explore-dashboards.md) object level properties (e.g. `models.yaml` or `explore-dashboards.yaml`)
-2. [Environment](/build/models/templating) level properties (e.g. a specific property that have been set for `dev`)
+2. [Environment](/developers/build/models/templating) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](#project-wide-defaults) for a specific property and resource type
 :::
 
@@ -109,7 +109,7 @@ canvases:
 
 ## Setting variables
 
-Primarily useful for [templating](/build/connectors/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
+Primarily useful for [templating](/developers/build/connectors/templating), variables can be set in the `rill.yaml` file directly. This allows variables to be set for your projects deployed to Rill Cloud while still being able to use different variable values locally if you prefer. 
 :::info Overriding variables locally
 Variables also follow an order of precedence and can be overridden locally. By default, any variables defined will be inherited from `rill.yaml`. However, if you manually pass in a variable when starting Rill Developer locally via the CLI, this value will be used instead for the current instance of your running project:
 ```bash
@@ -121,7 +121,7 @@ Variables can also be set through your project's `<RILL_PROJECT_HOME>/.env` file
 ```bash
 variable=xyz
 ```
-Similar to how [connector credentials can be pushed / pulled](/build/connectors/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
+Similar to how [connector credentials can be pushed / pulled](/developers/build/connectors/credentials#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 :::
 
 
@@ -159,7 +159,7 @@ ignore_paths:
 
 ## Testing access policies
 
-During development, it is always a good idea to check if your [access policies](/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+During development, it is always a good idea to check if your [access policies](/developers/build/metrics-view/security) are behaving the way you designed them to before pushing these changes into production. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
 :::info The View as selector is not visible in my dashboard, why?
 This feature is _only_ enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by every user.
 :::

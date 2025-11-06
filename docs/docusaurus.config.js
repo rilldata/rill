@@ -227,7 +227,7 @@ const config = {
         redirects: [
           {
             from: '/install',
-            to: '/get-started/install',
+            to: '/developers/get-started/install',
           },
           {
             from: '/home/example-repository',
@@ -235,75 +235,75 @@ const config = {
           },
           {
             from: '/develop/import-data',
-            to: '/build/connectors/'
+            to: '/developers/build/connectors/'
           },
           {
             from: '/develop/sql-models',
-            to: '/build/models'
+            to: '/developers/build/models'
           },
           {
             from: '/develop/metrics-dashboard',
-            to: '/build/dashboards'
+            to: '/developers/build/dashboards'
           },
           {
             from: '/develop/security',
-            to: '/build/metrics-view/security'
+            to: '/developers/build/metrics-view/security'
           },
           {
             from: '/manage/security',
-            to: '/build/metrics-view/security'
+            to: '/developers/build/metrics-view/security'
           },
           {
             from: '/deploy/credentials/',
-            to: '/build/connectors/credentials/'
+            to: '/developers/build/connectors/credentials/'
           },
           {
             from: '/build/credentials',
-            to: '/build/connectors/credentials/'
+            to: '/developers/build/connectors/credentials/'
           },
           {
             from: '/deploy/credentials/s3',
-            to: '/build/connectors/data-source/s3'
+            to: '/developers/build/connectors/data-source/s3'
           },
           {
             from: '/deploy/credentials/gcs',
-            to: '/build/connectors/data-source/gcs'
+            to: '/developers/build/connectors/data-source/gcs'
           },
           {
             from: '/deploy/credentials/azure',
-            to: '/build/connectors/data-source/azure'
+            to: '/developers/build/connectors/data-source/azure'
           },
           {
             from: '/deploy/credentials/athena',
-            to: '/build/connectors/data-source/athena'
+            to: '/developers/build/connectors/data-source/athena'
           },
           {
             from: '/deploy/credentials/bigquery',
-            to: '/build/connectors/data-source/bigquery'
+            to: '/developers/build/connectors/data-source/bigquery'
           },
           {
             from: '/deploy/credentials/snowflake',
-            to: '/build/connectors/data-source/snowflake'
+            to: '/developers/build/connectors/data-source/snowflake'
           },
           {
             from: '/deploy/credentials/postgres',
-            to: '/build/connectors/data-source/postgres'
+            to: '/developers/build/connectors/data-source/postgres'
           },
           {
             from: '/deploy/credentials/salesforce',
-            to: '/build/connectors/data-source/salesforce'
+            to: '/developers/build/connectors/data-source/salesforce'
           },
           {
             from: '/deploy/credentials/motherduck',
-            to: '/build/connectors/olap/motherduck'
+            to: '/developers/build/connectors/olap/motherduck'
           },
           {
             from: '/deploy/source-refresh',
-            to: '/build/models/data-refresh'
+            to: '/developers/build/models/data-refresh'
           },
           {
             from: '/reference/templating',
-            to: '/build/connectors/templating'
+            to: '/developers/build/connectors/templating'
           },
           {
             from: '/example-projects',
@@ -311,109 +311,109 @@ const config = {
           },
           {
             from: '/integration/embedding',
-            to: '/integrate/embedding'
+            to: '/developers/integrate/embedding'
           },
           {
             from: '/share/user-management',
-            to: '/manage/user-management'
+            to: '/users/manage/user-management'
           },
           {
             from: '/share/roles-permissions',
-            to: '/manage/roles-permissions'
+            to: '/users/manage/roles-permissions'
           },
           {
             from: '/share/scheduled-reports',
-            to: '/explore/exports'
+            to: '/users/explore/exports'
           },
           // OLAP Engine redirects
           {
             from: '/reference/olap-engines/',
-            to: '/build/connectors/olap/'
+            to: '/developers/build/connectors/olap/'
           },
           {
             from: '/reference/olap-engines/duckdb',
-            to: '/build/connectors/olap/duckdb'
+            to: '/developers/build/connectors/olap/duckdb'
           },
           {
             from: '/reference/olap-engines/clickhouse',
-            to: '/build/connectors/olap/clickhouse'
+            to: '/developers/build/connectors/olap/clickhouse'
           },
           {
             from: '/reference/olap-engines/pinot',
-            to: '/build/connectors/olap/pinot'
+            to: '/developers/build/connectors/olap/pinot'
           },
           {
             from: '/reference/olap-engines/druid',
-            to: '/build/connectors/olap/druid'
+            to: '/developers/build/connectors/olap/druid'
           },
           {
             from: '/reference/olap-engines/multiple-olap',
-            to: '/build/connectors/olap/multiple-olap'
+            to: '/developers/build/connectors/olap/multiple-olap'
           },
           // Connector redirects
           {
             from: '/reference/connectors/',
-            to: '/build/connectors/'
+            to: '/developers/build/connectors/'
           },
           {
             from: '/reference/connectors/gcs',
-            to: '/build/connectors/data-source/gcs'
+            to: '/developers/build/connectors/data-source/gcs'
           },
           {
             from: '/reference/connectors/azure',
-            to: '/build/connectors/data-source/azure'
+            to: '/developers/build/connectors/data-source/azure'
           },
           {
             from: '/reference/connectors/s3',
-            to: '/build/connectors/data-source/s3'
+            to: '/developers/build/connectors/data-source/s3'
           },
           {
             from: '/reference/connectors/snowflake',
-            to: '/build/connectors/data-source/snowflake'
+            to: '/developers/build/connectors/data-source/snowflake'
           },
           {
             from: '/reference/connectors/bigquery',
-            to: '/build/connectors/data-source/bigquery'
+            to: '/developers/build/connectors/data-source/bigquery'
           },
           {
             from: '/reference/connectors/redshift',
-            to: '/build/connectors/data-source/redshift'
+            to: '/developers/build/connectors/data-source/redshift'
           },
           {
             from: '/reference/connectors/postgres',
-            to: '/build/connectors/data-source/postgres'
+            to: '/developers/build/connectors/data-source/postgres'
           },
           {
             from: '/reference/connectors/athena',
-            to: '/build/connectors/data-source/athena'
+            to: '/developers/build/connectors/data-source/athena'
           },
           {
             from: '/reference/connectors/mysql',
-            to: '/build/connectors/data-source/mysql'
+            to: '/developers/build/connectors/data-source/mysql'
           },
           {
             from: '/reference/connectors/sqlite',
-            to: '/build/connectors/data-source/sqlite'
+            to: '/developers/build/connectors/data-source/sqlite'
           },
           {
             from: '/reference/connectors/salesforce',
-            to: '/build/connectors/data-source/salesforce'
+            to: '/developers/build/connectors/data-source/salesforce'
           },
           {
             from: '/reference/connectors/sheets',
-            to: '/build/connectors/data-source/googlesheets'
+            to: '/developers/build/connectors/data-source/googlesheets'
           },
           {
             from: '/reference/connectors/slack',
-            to: '/build/connectors/data-source/slack'
+            to: '/developers/build/connectors/data-source/slack'
           },
           {
             from: '/reference/connectors/local-file',
-            to: '/build/connectors/data-source/local-file'
+            to: '/developers/build/connectors/data-source/local-file'
           },
           {
             from: '/reference/connectors/https',
-            to: '/build/connectors/data-source/https'
+            to: '/developers/build/connectors/data-source/https'
           },
           // ADvand Model Redirects
           {
@@ -422,418 +422,586 @@ const config = {
           },
           {
             from: '/deploy/templating',
-            to: '/build/connectors/templating'
+            to: '/developers/build/connectors/templating'
           },
           {
             from: '/manage/account-management/billing',
-            to: '/other/plans'
+            to: '/developers/other/plans'
           },
           {
             from: '/manage/granting/azure-storage-container',
-            to: '/other/granting/azure-storage-container'
+            to: '/developers/other/granting/azure-storage-container'
           },
           {
             from: '/manage/granting/gcs-bucket',
-            to: '/other/granting/gcs-bucket'
+            to: '/developers/other/granting/gcs-bucket'
           },
           {
             from: '/manage/granting/google-bigquery',
-            to: '/other/granting/google-bigquery'
+            to: '/developers/other/granting/google-bigquery'
           },
           {
             from: '/manage/granting/aws-s3-bucket',
-            to: '/other/granting/aws-s3-bucket'
+            to: '/developers/other/granting/aws-s3-bucket'
           },
           {
             from: '/manage/granting/',
-            to: '/other/granting/'
+            to: '/developers/other/granting/'
           },
           {
             from: '/home/FAQ',
-            to: '/other/FAQ'
+            to: '/developers/other/FAQ'
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/get-started/concepts/cloud-vs-developer'
+            to: '/developers/get-started/concepts/cloud-vs-developer'
           },
           {
             from: '/home/concepts/developerVsCloud',
-            to: '/get-started/concepts/cloud-vs-developer'
+            to: '/developers/get-started/concepts/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',
-            to: '/build/connectors/olap#what-is-olap'
+            to: '/developers/build/connectors/olap#what-is-olap'
           },
           {
             from: '/home/concepts/OLAP',
-            to: '/build/connectors/olap#what-is-olap'
+            to: '/developers/build/connectors/olap#what-is-olap'
           },
           {
             from: '/concepts/architecture',
-            to: '/get-started/concepts/architecture'
+            to: '/developers/get-started/concepts/architecture'
           },
           {
             from: '/home/concepts/architecture',
-            to: '/get-started/concepts/architecture'
+            to: '/developers/get-started/concepts/architecture'
           },
           {
             from: '/concepts/operational',
-            to: '/get-started/concepts/operational'
+            to: '/developers/get-started/concepts/operational'
           },
           {
             from: '/home/concepts/operational',
-            to: '/get-started/concepts/operational'
+            to: '/developers/get-started/concepts/operational'
           },
           {
             from: '/concepts/metrics-layer',
-            to: '/build/metrics-view'
+            to: '/developers/build/metrics-view'
           },
           {
             from: '/concepts/bi-as-code',
-            to: '/get-started/concepts/bi-as-code'
+            to: '/developers/get-started/concepts/bi-as-code'
           },
           {
             from: '/home/concepts/bi-as-code',
-            to: '/get-started/concepts/bi-as-code'
+            to: '/developers/get-started/concepts/bi-as-code'
           },
           {
             from: '/build/advanced-models/',
-            to: '/build/models/'
+            to: '/developers/build/models/'
           },
           {
             from: '/build/advanced-models/incremental-models',
-            to: '/build/models/incremental-models'
+            to: '/developers/build/models/incremental-models'
           },
           {
             from: '/build/advanced-models/partitions',
-            to: '/build/models/partitioned-models'
+            to: '/developers/build/models/partitioned-models'
           },
           {
             from: '/build/advanced-models/staging',
-            to: '/build/models/staging-models'
+            to: '/developers/build/models/staging-models'
           },
           {
             from: '/home/concepts/metrics-layer',
-            to: '/build/metrics-view'
+            to: '/developers/build/metrics-view'
           },
           {
             from: '/integrate/custom-apis',
-            to: '/build/custom-apis'
+            to: '/developers/build/custom-apis'
           },
           {
             from: '/integrate/custom-apis/metrics-sql-api',
-            to: '/build/custom-apis'
+            to: '/developers/build/custom-apis'
           },
           {
             from: '/integrate/custom-apis/sql-api',
-            to: '/build/custom-apis'
+            to: '/developers/build/custom-apis'
           },
           {
             from: '/explore/filters/filters',
-            to: '/explore/filters'
+            to: '/users/explore/filters'
           },
           {
             from: '/explore/filters/time-series',
-            to: '/explore/time-series'
+            to: '/users/explore/time-series'
           },
           {
             from: '/build/metrics-view/advanced-expressions/case-statements',
-            to: '/build/metrics-view/measures/case-statements'
+            to: '/developers/build/metrics-view/measures/case-statements'
           },
           {
             from: '/build/metrics-view/advanced-expressions/fixed-metrics',
-            to: '/build/metrics-view/measures/fixed-measures'
+            to: '/developers/build/metrics-view/measures/fixed-measures'
           },
           {
             from: '/build/metrics-view/advanced-expressions/metric-formatting',
-            to: '/build/metrics-view/measures/measures-formatting'
+            to: '/developers/build/metrics-view/measures/measures-formatting'
           },
           {
             from: '/build/metrics-view/advanced-expressions/quantiles',
-            to: '/build/metrics-view/measures/quantiles'
+            to: '/developers/build/metrics-view/measures/quantiles'
           },
           {
             from: '/build/metrics-view/advanced-expressions/referencing',
-            to: '/build/metrics-view/measures/referencing'
+            to: '/developers/build/metrics-view/measures/referencing'
           },
           {
             from: '/build/metrics-view/advanced-expressions/unnesting',
-            to: '/build/metrics-view/dimensions/unnesting'
+            to: '/developers/build/metrics-view/dimensions/unnesting'
           },
           {
             from: '/build/metrics-view/advanced-expressions/windows',
-            to: '/build/metrics-view/measures/windows'
+            to: '/developers/build/metrics-view/measures/windows'
           },
           {
             from: '/build/metrics-view/advanced-expressions/advanced-expressions',
-            to: '/build/metrics-view/measures'
+            to: '/developers/build/metrics-view/measures'
           },
           {
             from: '/build/metrics-view/customize',
-            to: '/build/metrics-view'
+            to: '/developers/build/metrics-view'
           },
           {
             from: '/deploy/performance',
-            to: '/guides/performance'
+            to: '/developers/guides/performance'
           },
           {
             from: '/home/install',
-            to: '/get-started/install'
+            to: '/developers/get-started/install'
           },
           {
             from: '/home/get-started',
-            to: '/get-started/quickstart'
+            to: '/developers/get-started/quickstart'
           },
           {
             from: '/build/canvas/canvas',
-            to: '/build/dashboards/canvas',
+            to: '/developers/build/dashboards/canvas',
           },
           {
             from: '/build/canvas/customization',
-            to: '/build/dashboards/customization',
+            to: '/developers/build/dashboards/customization',
           },
           {
             from: '/build/canvas',
-            to: '/build/dashboards/canvas',
+            to: '/developers/build/dashboards/canvas',
           },
           // Redirect old /connect/ paths to new /build/connectors/ paths
           {
             from: '/connect',
-            to: '/build/connectors',
+            to: '/developers/build/connectors',
           },
           // Redirect /build/connect/ to /build/connectors/ for backward compatibility
           {
             from: '/build/connect',
-            to: '/build/connectors',
+            to: '/developers/build/connectors',
           },
           {
             from: '/build/connect/credentials',
-            to: '/build/connectors/credentials',
+            to: '/developers/build/connectors/credentials',
           },
           {
             from: '/build/connect/templating',
-            to: '/build/connectors/templating',
+            to: '/developers/build/connectors/templating',
           },
           {
             from: '/build/connect/olap',
-            to: '/build/connectors/olap',
+            to: '/developers/build/connectors/olap',
           },
           {
             from: '/build/connect/olap/duckdb',
-            to: '/build/connectors/olap/duckdb',
+            to: '/developers/build/connectors/olap/duckdb',
           },
           {
             from: '/build/connect/olap/clickhouse',
-            to: '/build/connectors/olap/clickhouse',
+            to: '/developers/build/connectors/olap/clickhouse',
           },
           {
             from: '/build/connect/olap/druid',
-            to: '/build/connectors/olap/druid',
+            to: '/developers/build/connectors/olap/druid',
           },
           {
             from: '/build/connect/olap/pinot',
-            to: '/build/connectors/olap/pinot',
+            to: '/developers/build/connectors/olap/pinot',
           },
           {
             from: '/build/connect/olap/motherduck',
-            to: '/build/connectors/olap/motherduck',
+            to: '/developers/build/connectors/olap/motherduck',
           },
           {
             from: '/build/connect/olap/multiple-olap',
-            to: '/build/connectors/olap/multiple-olap',
+            to: '/developers/build/connectors/olap/multiple-olap',
           },
           {
             from: '/build/connect/data-source',
-            to: '/build/connectors/data-source',
+            to: '/developers/build/connectors/data-source',
           },
           {
             from: '/build/connect/data-source/s3',
-            to: '/build/connectors/data-source/s3',
+            to: '/developers/build/connectors/data-source/s3',
           },
           {
             from: '/build/connect/data-source/gcs',
-            to: '/build/connectors/data-source/gcs',
+            to: '/developers/build/connectors/data-source/gcs',
           },
           {
             from: '/build/connect/data-source/azure',
-            to: '/build/connectors/data-source/azure',
+            to: '/developers/build/connectors/data-source/azure',
           },
           {
             from: '/build/connect/data-source/athena',
-            to: '/build/connectors/data-source/athena',
+            to: '/developers/build/connectors/data-source/athena',
           },
           {
             from: '/build/connect/data-source/bigquery',
-            to: '/build/connectors/data-source/bigquery',
+            to: '/developers/build/connectors/data-source/bigquery',
           },
           {
             from: '/build/connect/data-source/snowflake',
-            to: '/build/connectors/data-source/snowflake',
+            to: '/developers/build/connectors/data-source/snowflake',
           },
           {
             from: '/build/connect/data-source/redshift',
-            to: '/build/connectors/data-source/redshift',
+            to: '/developers/build/connectors/data-source/redshift',
           },
           {
             from: '/build/connect/data-source/postgres',
-            to: '/build/connectors/data-source/postgres',
+            to: '/developers/build/connectors/data-source/postgres',
           },
           {
             from: '/build/connect/data-source/mysql',
-            to: '/build/connectors/data-source/mysql',
+            to: '/developers/build/connectors/data-source/mysql',
           },
           {
             from: '/build/connect/data-source/sqlite',
-            to: '/build/connectors/data-source/sqlite',
+            to: '/developers/build/connectors/data-source/sqlite',
           },
           {
             from: '/build/connect/data-source/salesforce',
-            to: '/build/connectors/data-source/salesforce',
+            to: '/developers/build/connectors/data-source/salesforce',
           },
           {
             from: '/build/connect/data-source/duckdb',
-            to: '/build/connectors/data-source/duckdb',
+            to: '/developers/build/connectors/data-source/duckdb',
           },
           {
             from: '/build/connect/data-source/googlesheets',
-            to: '/build/connectors/data-source/googlesheets',
+            to: '/developers/build/connectors/data-source/googlesheets',
           },
           {
             from: '/build/connect/data-source/slack',
-            to: '/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/data-source/slack',
           },
           {
             from: '/build/connect/data-source/local-file',
-            to: '/build/connectors/data-source/local-file',
+            to: '/developers/build/connectors/data-source/local-file',
           },
           {
             from: '/build/connect/data-source/https',
-            to: '/build/connectors/data-source/https',
+            to: '/developers/build/connectors/data-source/https',
           },
           {
             from: '/build/connect/data-source/kafka',
-            to: '/build/connectors/data-source/kafka',
+            to: '/developers/build/connectors/data-source/kafka',
           },
           {
             from: '/build/connect/data-source/openai',
-            to: '/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/data-source/openai',
           },
           {
             from: '/connect/credentials',
-            to: '/build/connectors/credentials',
+            to: '/developers/build/connectors/credentials',
           },
           {
             from: '/connect/templating',
-            to: '/build/connectors/templating',
+            to: '/developers/build/connectors/templating',
           },
           {
             from: '/connect/olap',
-            to: '/build/connectors/olap',
+            to: '/developers/build/connectors/olap',
           },
           {
             from: '/connect/olap/duckdb',
-            to: '/build/connectors/olap/duckdb',
+            to: '/developers/build/connectors/olap/duckdb',
           },
           {
             from: '/connect/olap/clickhouse',
-            to: '/build/connectors/olap/clickhouse',
+            to: '/developers/build/connectors/olap/clickhouse',
           },
           {
             from: '/connect/olap/druid',
-            to: '/build/connectors/olap/druid',
+            to: '/developers/build/connectors/olap/druid',
           },
           {
             from: '/connect/olap/pinot',
-            to: '/build/connectors/olap/pinot',
+            to: '/developers/build/connectors/olap/pinot',
           },
           {
             from: '/connect/olap/motherduck',
-            to: '/build/connectors/olap/motherduck',
+            to: '/developers/build/connectors/olap/motherduck',
           },
           {
             from: '/connect/olap/multiple-olap',
-            to: '/build/connectors/olap/multiple-olap',
+            to: '/developers/build/connectors/olap/multiple-olap',
           },
           {
             from: '/connect/data-source',
-            to: '/build/connectors/data-source',
+            to: '/developers/build/connectors/data-source',
           },
           {
             from: '/connect/data-source/s3',
-            to: '/build/connectors/data-source/s3',
+            to: '/developers/build/connectors/data-source/s3',
           },
           {
             from: '/connect/data-source/gcs',
-            to: '/build/connectors/data-source/gcs',
+            to: '/developers/build/connectors/data-source/gcs',
           },
           {
             from: '/connect/data-source/azure',
-            to: '/build/connectors/data-source/azure',
+            to: '/developers/build/connectors/data-source/azure',
           },
           {
             from: '/connect/data-source/athena',
-            to: '/build/connectors/data-source/athena',
+            to: '/developers/build/connectors/data-source/athena',
           },
           {
             from: '/connect/data-source/bigquery',
-            to: '/build/connectors/data-source/bigquery',
+            to: '/developers/build/connectors/data-source/bigquery',
           },
           {
             from: '/connect/data-source/snowflake',
-            to: '/build/connectors/data-source/snowflake',
+            to: '/developers/build/connectors/data-source/snowflake',
           },
           {
             from: '/connect/data-source/redshift',
-            to: '/build/connectors/data-source/redshift',
+            to: '/developers/build/connectors/data-source/redshift',
           },
           {
             from: '/connect/data-source/postgres',
-            to: '/build/connectors/data-source/postgres',
+            to: '/developers/build/connectors/data-source/postgres',
           },
           {
             from: '/connect/data-source/mysql',
-            to: '/build/connectors/data-source/mysql',
+            to: '/developers/build/connectors/data-source/mysql',
           },
           {
             from: '/connect/data-source/sqlite',
-            to: '/build/connectors/data-source/sqlite',
+            to: '/developers/build/connectors/data-source/sqlite',
           },
           {
             from: '/connect/data-source/salesforce',
-            to: '/build/connectors/data-source/salesforce',
+            to: '/developers/build/connectors/data-source/salesforce',
           },
           {
             from: '/connect/data-source/duckdb',
-            to: '/build/connectors/data-source/duckdb',
+            to: '/developers/build/connectors/data-source/duckdb',
           },
           {
             from: '/connect/data-source/googlesheets',
-            to: '/build/connectors/data-source/googlesheets',
+            to: '/developers/build/connectors/data-source/googlesheets',
           },
           {
             from: '/connect/data-source/slack',
-            to: '/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/data-source/slack',
           },
           {
             from: '/connect/data-source/local-file',
-            to: '/build/connectors/data-source/local-file',
+            to: '/developers/build/connectors/data-source/local-file',
           },
           {
             from: '/connect/data-source/https',
-            to: '/build/connectors/data-source/https',
+            to: '/developers/build/connectors/data-source/https',
           },
           {
             from: '/connect/data-source/kafka',
-            to: '/build/connectors/data-source/kafka',
+            to: '/developers/build/connectors/data-source/kafka',
           },
           {
             from: '/connect/data-source/openai',
-            to: '/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/data-source/openai',
           },
-          // {
-          //   from: '/old-page',
-          //   to: '/new-page',
-          // }
+
+          // Build section moved to developers/build
+          {
+            from: '/build',
+            to: '/developers/build',
+          },
+          {
+            from: '/build/getting-started',
+            to: '/developers/build/getting-started',
+          },
+          {
+            from: '/build/project-configuration',
+            to: '/developers/build/project-configuration',
+          },
+
+          // Deploy section moved to developers/deploy
+          {
+            from: '/deploy',
+            to: '/developers/deploy',
+          },
+          {
+            from: '/deploy/deploy-credentials',
+            to: '/developers/deploy/deploy-credentials',
+          },
+          {
+            from: '/deploy/project-errors',
+            to: '/developers/deploy/project-errors',
+          },
+
+          // Get started section
+          {
+            from: '/get-started',
+            to: '/',
+          },
+          {
+            from: '/get-started/get-started',
+            to: '/',
+          },
+          {
+            from: '/get-started/install',
+            to: '/developers/get-started/install',
+          },
+
+          // Home to get-started
+          {
+            from: '/home',
+            to: '/',
+          },
+          {
+            from: '/home/home',
+            to: '/',
+          },
+
+          // Guides section
+          {
+            from: '/guides',
+            to: '/developers/guides',
+          },
+          {
+            from: '/guides/clone-a-project',
+            to: '/developers/guides/clone-a-project',
+          },
+          {
+            from: '/guides/performance',
+            to: '/developers/guides/performance',
+          },
+
+          // Integrate section
+          {
+            from: '/integrate',
+            to: '/developers/integrate',
+          },
+          {
+            from: '/integrate/custom-api',
+            to: '/developers/integrate/custom-api',
+          },
+          {
+            from: '/integrate/embed-api',
+            to: '/developers/integrate/embed-iframe-api',
+          },
+          {
+            from: '/integrate/embedding',
+            to: '/developers/integrate/embedding',
+          },
+
+          // Other section
+          {
+            from: '/other',
+            to: '/developers/other/FAQ',
+          },
+          {
+            from: '/other/FAQ',
+            to: '/developers/other/FAQ',
+          },
+          {
+            from: '/other/plans',
+            to: '/developers/other/plans',
+          },
+
+          // Explore section moved to users/explore
+          {
+            from: '/explore',
+            to: '/users/explore',
+          },
+          {
+            from: '/explore/ai-chat',
+            to: '/users/explore/ai-chat',
+          },
+          {
+            from: '/explore/bookmarks',
+            to: '/users/explore/bookmarks',
+          },
+          {
+            from: '/explore/exports',
+            to: '/users/explore/exports',
+          },
+          {
+            from: '/explore/filters',
+            to: '/users/explore/filters',
+          },
+          {
+            from: '/explore/mcp',
+            to: '/users/explore/mcp',
+          },
+          {
+            from: '/explore/public-url',
+            to: '/users/explore/public-url',
+          },
+          {
+            from: '/explore/time-series',
+            to: '/users/explore/time-series',
+          },
+
+          // Manage section moved to users/manage
+          {
+            from: '/manage',
+            to: '/users/manage',
+          },
+          {
+            from: '/manage/organization-management',
+            to: '/users/manage/organization-management',
+          },
+          {
+            from: '/manage/roles-permissions',
+            to: '/users/manage/roles-permissions',
+          },
+          {
+            from: '/manage/user-management',
+            to: '/users/manage/user-management',
+          },
+          {
+            from: '/manage/usergroup-management',
+            to: '/users/manage/usergroup-management',
+          },
+
+          // Specific demo guides that moved to users
+          {
+            from: '/guides/cost-monitoring-analytics',
+            to: '/users/guides/demos/cost-monitoring-analytics',
+          },
+          {
+            from: '/guides/github-analytics',
+            to: '/users/guides/demos/github-analytics',
+          },
+          {
+            from: '/guides/openrtb-analytics',
+            to: '/users/guides/demos/openrtb-analytics',
+          },
+          {
+            from: '/guides/setting-up-mcp',
+            to: '/users/guides/setting-up-mcp',
+          },
         ],
       },
     ],

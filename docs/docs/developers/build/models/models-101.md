@@ -17,13 +17,13 @@ You can change the default [OLAP engine](https://docs.rilldata.com/build/connect
 
 :::tip Supported OLAP engines for modeling
 
-We support modeling on [ClickHouse\*](/build/connectors/olap/clickhouse), [DuckDB](/build/connectors/olap/duckdb), and [MotherDuck\*](/build/connectors/olap/motherduck). For more information, see each OLAP engine page for further details.
+We support modeling on [ClickHouse\*](/developers/build/connectors/olap/clickhouse), [DuckDB](/developers/build/connectors/olap/duckdb), and [MotherDuck\*](/developers/build/connectors/olap/motherduck). For more information, see each OLAP engine page for further details.
 
 \* indicates some caveats with modeling, and we encourage you to read the documentation before getting started.
 
 :::
 
-For additional tips on advanced expressions (either in models or measure definitions), visit our [advanced expressions page](/build/metrics-view).
+For additional tips on advanced expressions (either in models or measure definitions), visit our [advanced expressions page](/developers/build/metrics-view).
 
 ### Intermediate Processing
 
@@ -60,11 +60,11 @@ This information helps you validate your model configuration and ensure data qua
 
 The power of this approach lies in translating many ad hoc questions into a data framework that can answer a class of questions at scale. For example, high-level company insights (how much revenue did we make last week?) become more actionable for employees when contextualized to their role (how did my campaign increase revenue last week?).
 
-To experience the full potential of Rill, model your data sources into "One Big Table" – a granular resource that contains as much information as possible and can be rolled up in a meaningful way. This flexible OBT can be combined with a generalizable [metrics definition](/build/metrics-view) to enable ad hoc slice-and-dice discovery through Rill's interactive dashboard.
+To experience the full potential of Rill, model your data sources into "One Big Table" – a granular resource that contains as much information as possible and can be rolled up in a meaningful way. This flexible OBT can be combined with a generalizable [metrics definition](/developers/build/metrics-view) to enable ad hoc slice-and-dice discovery through Rill's interactive dashboard.
 
 :::tip Materializing metrics-powered models
 
-We recommend materializing the model that powers your [metrics view](/build/metrics-view). You can materialize a SQL model by adding this to the top of the file. This will greatly improve the performance of your dashboards.
+We recommend materializing the model that powers your [metrics view](/developers/build/metrics-view). You can materialize a SQL model by adding this to the top of the file. This will greatly improve the performance of your dashboards.
 
 ```sql
 -- @materialize: true

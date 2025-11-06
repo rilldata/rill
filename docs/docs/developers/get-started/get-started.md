@@ -8,7 +8,7 @@ sidebar_position: 00
 import TileIcon from '@site/src/components/TileIcon';
 
 ## Install 
-Install Rill using the command below, then launch your first project to explore core features hands-on. For more installation methods, see our [complete installation instructions docs](/get-started/install). 
+Install Rill using the command below, then launch your first project to explore core features hands-on. For more installation methods, see our [complete installation instructions docs](/developers/get-started/install). 
 
 ```bash
 curl https://rill.sh | sh
@@ -17,9 +17,9 @@ rill start my-rill-project
 
 ## Quickstart
 
-Take a look at our [Quick start](/get-started/quickstart) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/build/connectors) for the exact steps to connect to your data.
+Take a look at our [Quick start](/developers/get-started/quickstart) for a quick guide to get started with your own data! We use a public GCS dataset but you can follow along with your own data. Take a look at our [connectors docs](/developers/build/connectors) for the exact steps to connect to your data.
 
-Or, if you're looking for more guides, check out our [Guides](/guides) section!
+Or, if you're looking for more guides, check out our [Guides](/developers/guides) section!
 
 ## Examples
 

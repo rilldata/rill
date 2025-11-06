@@ -12,7 +12,7 @@ import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as ne
 
 <LoomVideo loomId='b96143c386104576bcfe6cabe1038c38' /> <br />
 
-Rill supports connecting to an existing ClickHouse cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
+Rill supports connecting to an existing ClickHouse cluster via a "live connector" and using it as an OLAP engine  built against [external tables](/developers/build/connectors/olap#external-olap-tables) to power Rill dashboards. This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 
 :::note Supported Versions
@@ -111,7 +111,7 @@ driver: clickhouse
 managed: true
 ```
 
-Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/guides/rill-clickhouse/r_ch_ingest).
+Data ingestion features are not yet available in the UI, please refer to our [model documentation](/reference/project-files/models) on how to ingest data into ClickHouse. For a guide, see [ingesting data directly into ClickHouse](/developers/guides/rill-clickhouse/r_ch_ingest).
 
 
 ## Read Only Connector
@@ -155,16 +155,16 @@ olap_connector: clickhouse
 
 :::info Interested in using multiple OLAP engines in the same project?
 
-Please see our [Using Multiple OLAP Engines](/build/connectors/olap/multiple-olap) page.
+Please see our [Using Multiple OLAP Engines](/developers/build/connectors/olap/multiple-olap) page.
 
 :::
 
 ## Reading from Multiple Schemas
 
-Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer, and all accessible tables (given the permission set of the underlying user) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/build/dashboards).
+Rill supports reading from multiple schemas in ClickHouse from within the same project in Rill Developer, and all accessible tables (given the permission set of the underlying user) should automatically be listed in the lower left-hand tab, which can then be used to [create dashboards](/developers/build/dashboards).
 
 ## Additional Notes
 
 - At the moment, we do not officially support modeling with ClickHouse; however, this is available via a feature flag. If this is something you're interested in, please [contact us](/contact).
-- For dashboards powered by ClickHouse, [measure definitions](/build/metrics-view/#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
+- For dashboards powered by ClickHouse, [measure definitions](/developers/build/metrics-view/#measures) are required to follow standard [ClickHouse SQL](https://clickhouse.com/docs/en/sql-reference) syntax.
 - Because string columns in ClickHouse can theoretically contain [arbitrary binary data](https://github.com/ClickHouse/ClickHouse/issues/2976#issuecomment-416694860), if your column contains invalid UTF-8 characters, you may want to first cast the column by applying the `toValidUTF8` function ([see ClickHouse documentation](https://clickhouse.com/docs/en/sql-reference/functions/string-functions#tovalidutf8)) before reading the table into Rill to avoid any downstream issues.

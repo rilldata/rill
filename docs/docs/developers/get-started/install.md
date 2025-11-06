@@ -19,7 +19,7 @@ rill --help
 
 :::tip Sharing dashboards in Rill Cloud? Clone your Git repo first
 
-If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](/get-started/install#quick-install) in your cloned location locally to make deployment easier.
+If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](/developers/get-started/install#quick-install) in your cloned location locally to make deployment easier.
 
 More details on deploying Rill via Git are in our [Deploy section](../deploy/deploy-dashboard).
 :::

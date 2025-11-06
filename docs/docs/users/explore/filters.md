@@ -37,7 +37,7 @@ Rill is particularly suited for exploratory analysis - to be able to slice & dic
 :::tip Human readable URL
 With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordingly. 
 
-.../explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
+./users/explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
 :::
 
 ## Add / Hide Dimensions and Metrics
@@ -49,7 +49,7 @@ Users can add or hide dimensions and metrics to a subset of fields they wish to 
 
 
 :::tip hiding metrics and dimensions by default
-You can also change settings in the dashboard configuration to hide certain fields by default. You may want to do this to make dashboards easier to use (less complicated, narrowed to most commonly used) and to improve performance (hide high cardinality dimensions or complicated expressions in metrics). For more details, check out [dashboard customizations](/build/dashboards/customization#setting-default-views-for-dashboards).
+You can also change settings in the dashboard configuration to hide certain fields by default. You may want to do this to make dashboards easier to use (less complicated, narrowed to most commonly used) and to improve performance (hide high cardinality dimensions or complicated expressions in metrics). For more details, check out [dashboard customizations](/developers/build/dashboards/customization#setting-default-views-for-dashboards).
 
 Or, an administrator can set the default view of a dashboard by [bookmarking the view](bookmarks) as Home. 
 :::
@@ -77,7 +77,7 @@ Deselect the comparison option or clear the filter bar to remove your comparison
 <img src = '/img/explore/filters/comparison.gif' class='rounded-gif' />
 <br />
 :::note
-For more advanced time and dimension comparisons, visit the [Time Dimension Detail](/explore/dashboard-101/tdd) page.
+For more advanced time and dimension comparisons, visit the [Time Dimension Detail](/users/explore/dashboard-101/tdd) page.
 :::
 
 

@@ -9,7 +9,7 @@ Query-time joins or more simply, lookup dimensions, provide a powerful way to in
 
 :::note
 
-The lookup function is dependent on the type of [OLAP engine](/build/connectors/olap) that you are using for your project.
+The lookup function is dependent on the type of [OLAP engine](/developers/build/connectors/olap) that you are using for your project.
 
 :::
 
@@ -57,7 +57,7 @@ dimensions:
 
 ## DuckDB/MotherDuck Lookups
 
-Unfortunately, DuckDB does not have a dimension lookup **function** and instead relies on upstream modeling to join the lookup table and create a [one big table](/build/models/models-101#one-big-table-and-dashboarding) for dashboarding. Take a look through [DuckDB docs](https://duckdb.org/docs/stable/sql/introduction) for further information!
+Unfortunately, DuckDB does not have a dimension lookup **function** and instead relies on upstream modeling to join the lookup table and create a [one big table](/developers/build/models/models-101#one-big-table-and-dashboarding) for dashboarding. Take a look through [DuckDB docs](https://duckdb.org/docs/stable/sql/introduction) for further information!
 
 ```sql
 SELECT 
@@ -78,7 +78,7 @@ Alternatively, you can use DuckDB's `map` function to create a lookup table by m
 
 ## Performance Implications
 
-While joins can kill the performance of [OLAP engines](/build/connectors/olap), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
+While joins can kill the performance of [OLAP engines](/developers/build/connectors/olap), lookups (key-value pairs) are common to reduce data size and improve query speeds. Lookups can be done during ingestion time (a static lookup to enrich the source data) or at query time (dynamic lookups).
 
 **Static Lookups** 
 

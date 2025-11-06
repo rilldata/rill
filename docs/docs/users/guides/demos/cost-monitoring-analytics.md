@@ -59,7 +59,7 @@ rill-cost-monitoring/
 
 ## Step 3: Data Sources
 
-The source connects to our static public dataset containing operational cost and revenue data. You can modify this [source](/build/connectors) to point to your own data export.
+The source connects to our static public dataset containing operational cost and revenue data. You can modify this [source](/developers/build/connectors) to point to your own data export.
 
 ```yaml
 # Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
@@ -76,7 +76,7 @@ uri: "https://storage.googleapis.com/rilldata-public/metrics_margin_monitoring.p
 - **Time series data** – Daily granular data for trend analysis
 
 **What this source does:**
-- Connects to our public GCS bucket (if modified, will need to be verified via [credentials](/build/connectors/credentials))
+- Connects to our public GCS bucket (if modified, will need to be verified via [credentials](/developers/build/connectors/credentials))
 - Ingests the data into Rill's OLAP Engine (DuckDB)
 - Provides the foundation for margin analysis and business intelligence
 
@@ -84,7 +84,7 @@ uri: "https://storage.googleapis.com/rilldata-public/metrics_margin_monitoring.p
 
 ## Step 4: Data Models
 :::tip Modeling
-In our example, we've already processed the data, but if you need to do some last-mile ETL in Rill, this is possible via a [model](/build/models).
+In our example, we've already processed the data, but if you need to do some last-mile ETL in Rill, this is possible via a [model](/developers/build/models).
 :::
 
 
