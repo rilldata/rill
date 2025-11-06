@@ -279,7 +279,6 @@
 
   $: timeGrainOptions = getAllowedGrains(minTimeGrain);
 
-  // $: console.log({ activeTimeGrain, minTimeGrain });
   $: grainAllowed = isGrainAllowed(activeTimeGrain, minTimeGrain);
 
   $: annotationsForMeasures = renderedMeasures.map((measure) =>

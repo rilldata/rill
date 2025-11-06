@@ -29,7 +29,7 @@ export enum RillTimeLabel {
 }
 
 export type RillTimeAsOfLabel = {
-  label: RillTimeLabel;
+  label: RillTimeLabel | string;
   snap: string | undefined;
   offset: number;
 };

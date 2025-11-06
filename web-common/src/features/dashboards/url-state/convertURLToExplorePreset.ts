@@ -337,7 +337,6 @@ export function fromTimeRangesParams(
     try {
       const parsed = parseRillTime(preset.timeRange ?? "");
       const grain = getAggregationGrain(parsed);
-      console.log("HELLO", { grain });
 
       preset.timeGrain = grain;
     } catch {

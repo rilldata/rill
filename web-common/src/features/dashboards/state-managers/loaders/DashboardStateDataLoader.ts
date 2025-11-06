@@ -325,15 +325,6 @@ export class DashboardStateDataLoader {
       exploreSpec,
     );
 
-    console.log({
-      partialExploreStateFromUrl,
-      exploreStateFromSessionStorage,
-      mostRecentPartialExploreState,
-      bookmarkOrTokenExploreState,
-      exploreStateFromYAMLConfig,
-      rillDefaultExploreState,
-    });
-
     const shouldSkipOtherSources =
       // If the url has some params that do not map to session storage then we need to only use state from url back-filled with rill defaults.
       (urlSearchParams.size > 0 && !exploreStateFromSessionStorage) ||

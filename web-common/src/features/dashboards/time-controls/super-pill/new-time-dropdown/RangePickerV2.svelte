@@ -109,11 +109,8 @@
   );
 
   function handleRangeSelect(range: string, ignoreSnap?: boolean) {
-    console.log({ range });
     try {
       const parsed = parseRillTime(range);
-
-      console.log({ parsed: structuredClone(parsed) });
 
       const isPeriodToDate =
         parsed.interval instanceof RillPeriodToGrainInterval;
@@ -277,7 +274,7 @@
       bind:searchValue
       onSelectRange={(range) => {
         open = false;
-        console.log({ range });
+
         handleRangeSelect(range);
       }}
     />
