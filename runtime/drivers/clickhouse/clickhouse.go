@@ -578,7 +578,7 @@ func (c *Connection) periodicallyEmitStats() {
 	defer sensitiveTicker.Stop()
 
 	// Regular ticker for non-sensitive stats
-	regularTicker := time.NewTicker(30 * time.Second)
+	regularTicker := time.NewTicker(10 * time.Minute)
 	defer regularTicker.Stop()
 
 	// Cache invalidation ticker to reset billing table existence cache
