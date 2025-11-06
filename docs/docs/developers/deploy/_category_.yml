@@ -1,4 +1,4 @@
 position: 30
 label: Deploy
-collapsible: true
-collapsed: true
+collapsible: false
+collapsed: false

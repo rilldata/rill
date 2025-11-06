@@ -121,21 +121,13 @@ export function getUserCounts(organization: string) {
     [
       getOrgUserMembers({ organization, guestOnly: false }),
       getOrgUserMembers({ organization, guestOnly: true }),
-      getOrgUserInvites(organization),
       getOrgUsergroups(organization),
     ],
-    ([
-      allOrgUserMembersResp,
-      guestOrgUserMembersResp,
-      orgUserInvitesResp,
-      orgUsergroupsResp,
-    ]) => {
+    ([allOrgUserMembersResp, guestOrgUserMembersResp, orgUsergroupsResp]) => {
       const allUsersCounts =
         allOrgUserMembersResp.data?.pages?.[0]?.totalCount ?? 0;
       const guestUsersCounts =
         guestOrgUserMembersResp.data?.pages?.[0]?.totalCount ?? 0;
-      const userInvitesCounts =
-        orgUserInvitesResp.data?.pages?.[0]?.totalCount ?? 0;
 
       // Count only non-managed groups
       const groupsCount =
@@ -143,7 +135,7 @@ export function getUserCounts(organization: string) {
           .length ?? 0;
 
       return {
-        membersCount: allUsersCounts + userInvitesCounts - guestUsersCounts,
+        membersCount: allUsersCounts - guestUsersCounts,
         guestsCount: guestUsersCounts,
         groupsCount,
       };
