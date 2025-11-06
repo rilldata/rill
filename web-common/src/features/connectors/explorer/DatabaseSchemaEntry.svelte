@@ -9,6 +9,7 @@
   import { useInfiniteListTables } from "../selectors";
   import Button from "../../../components/button/Button.svelte";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
+  import { onMount } from "svelte";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
@@ -38,6 +39,19 @@
     isFetchingNextPage,
     fetchNextPage,
   } = $tablesQuery);
+
+  let loadMoreContainer: HTMLDivElement;
+  let isNarrow = false;
+
+  onMount(() => {
+    if (!loadMoreContainer) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0].contentRect.width;
+      isNarrow = width < 220; // switch to shorter copy on narrow sidebar
+    });
+    observer.observe(loadMoreContainer);
+    return () => observer.disconnect();
+  });
 
   // Normalize V1TableInfo[] from ListTables into the TableEntry input shape
   $: typedData = data?.tables?.map((table: V1TableInfo) => ({
@@ -120,7 +134,10 @@
       </ol>
 
       {#if hasNextPage}
-        <div class="load-more {database ? 'pl-[78px]' : 'pl-[60px]'}">
+        <div
+          class="load-more {database ? 'pl-[78px]' : 'pl-[60px]'}"
+          bind:this={loadMoreContainer}
+        >
           {#if error}
             <span class="error">Failed to load more tables.</span>
             <Button type="plain" small onClick={() => fetchNextPage()}>
@@ -132,11 +149,11 @@
               small
               disabled={isFetchingNextPage}
               loading={isFetchingNextPage}
-              loadingCopy="Loading tables..."
+              loadingCopy={isNarrow ? "Loading..." : "Loading tables..."}
               class="w-full"
               onClick={() => fetchNextPage()}
             >
-              Load more tables
+              {isNarrow ? "Load more" : "Load more tables"}
             </Button>
           {/if}
         </div>
