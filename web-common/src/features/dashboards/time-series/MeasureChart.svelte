@@ -288,10 +288,7 @@
   >
     <Axis measureFormatter={axisFormat} side="right" />
     <Grid />
-    <MeasurePan
-      on:pan={(e) => updateRange(e.detail.start, e.detail.end)}
-      hovering={hovered}
-    />
+    <MeasurePan onPan={(e) => updateRange(e.start, e.end)} hovering={hovered} />
     <Body>
       <ChartBody
         {data}
@@ -391,9 +388,8 @@
       {isScrubbing}
       {labelAccessor}
       {mouseoverTimeFormat}
-      on:reset={() => resetScrub()}
-      on:update={(e) =>
-        updateScrub(e.detail.start, e.detail.stop, e.detail.isScrubbing)}
+      onReset={() => resetScrub()}
+      onUpdate={(e) => updateScrub(e.start, e.stop, e.isScrubbing)}
       on:zoom={() => zoomScrub()}
       start={scrubStart}
       stop={scrubEnd}
