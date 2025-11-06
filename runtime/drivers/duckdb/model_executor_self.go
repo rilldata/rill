@@ -61,6 +61,24 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	asView := !materialize
 	tableName := outputProps.Table
 
+	// Add InternalCreateSecretSQL statements that create temporary secrets for object store connectors.
+	for _, connector := range e.c.config.secretConnectors() {
+		createSecretSQL, dropSecretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
+		}
+		if inputProps.InternalCreateSecretSQL == "" {
+			inputProps.InternalCreateSecretSQL = createSecretSQL
+		} else {
+			inputProps.InternalCreateSecretSQL += ";" + createSecretSQL
+		}
+		if inputProps.InternalDropSecretSQL == "" {
+			inputProps.InternalDropSecretSQL = dropSecretSQL
+		} else {
+			inputProps.InternalDropSecretSQL += ";" + dropSecretSQL
+		}
+	}
+
 	// Backward compatibility for the old duckdb SQL:
 	// It was possible to set a duckdb SQL which ingests data from an object store without setting the object store credentials.
 	// We did rewriting for path to rewrite object store paths to paths of locally downloaded files.
@@ -93,24 +111,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 	}
 
-	// Add PreExec statements that create temporary secrets for object store connectors.
-	for _, connector := range e.c.config.secretConnectors() {
-		createSecretSQL, dropSecretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
-		}
-		if inputProps.InternalCreateSecretSQL == "" {
-			inputProps.InternalCreateSecretSQL = createSecretSQL
-		} else {
-			inputProps.InternalCreateSecretSQL += ";" + createSecretSQL
-		}
-		if inputProps.InternalDropSecretSQL == "" {
-			inputProps.InternalDropSecretSQL = dropSecretSQL
-		} else {
-			inputProps.InternalDropSecretSQL += ";" + dropSecretSQL
-		}
-	}
-
 	originalPreExec := inputProps.PreExec
 	if inputProps.InternalCreateSecretSQL != "" {
 		if inputProps.PreExec == "" {
@@ -131,7 +131,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			var anonymErr error
 			duration, anonymErr = e.createOrInsertIntoDuckDB(ctx, opts, inputProps, outputProps, tableName, asView)
 			if anonymErr != nil {
-				return nil, errors.Join(err, anonymErr)
+				// throwing the original error
+				return nil, err
 			}
 		} else {
 			return nil, err
