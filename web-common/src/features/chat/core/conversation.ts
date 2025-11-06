@@ -16,6 +16,7 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import { MessageContentType, MessageType, ToolName } from "./types";
 import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
 
 /**
@@ -322,9 +323,9 @@ export class Conversation {
     const userMessage: V1Message = {
       id: getOptimisticMessageId(),
       role: "user",
-      type: "call",
-      tool: "router_agent",
-      contentType: "json",
+      type: MessageType.CALL,
+      tool: ToolName.ROUTER_AGENT,
+      contentType: MessageContentType.JSON,
       contentData: JSON.stringify({ prompt }),
       createdOn: new Date().toISOString(),
       updatedOn: new Date().toISOString(),

@@ -8,7 +8,8 @@
   import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
   import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
   import type { V1Message } from "../../../../runtime-client";
-  import { isHiddenAgentTool, parseChartData } from "../utils";
+  import { isHiddenAgentTool, MessageContentType, ToolName } from "../types";
+  import { parseChartData } from "../utils";
   import ChartBlock from "./ChartBlock.svelte";
 
   export let message: V1Message;
@@ -23,7 +24,7 @@
 
   // Result message properties
   $: hasResult = !!resultMessage;
-  $: isError = resultMessage?.contentType === "error";
+  $: isError = resultMessage?.contentType === MessageContentType.ERROR;
   $: resultContent = resultMessage ? formatContentData(resultMessage) : "";
 
   // Chart detection and parsing
@@ -40,7 +41,7 @@
     const rawContent = msg.contentData || "";
 
     switch (msg.contentType) {
-      case "json":
+      case MessageContentType.JSON:
         try {
           const obj = JSON.parse(rawContent);
           return JSON.stringify(obj, null, 2);
@@ -48,10 +49,10 @@
           return rawContent;
         }
 
-      case "text":
+      case MessageContentType.TEXT:
         return rawContent;
 
-      case "error":
+      case MessageContentType.ERROR:
         return rawContent;
 
       default:
@@ -61,7 +62,7 @@
   }
 
   function isChartCall(message: V1Message): boolean {
-    return message.tool === "create_chart";
+    return message.tool === ToolName.CREATE_CHART;
   }
 </script>
 

@@ -6,6 +6,7 @@
  */
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";
+import { MessageContentType, ToolName } from "./types";
 
 // =============================================================================
 // ID GENERATION
@@ -62,9 +63,9 @@ export function extractMessageText(message: V1Message): string {
   const rawContent = message.contentData || "";
 
   switch (message.contentType) {
-    case "json":
+    case MessageContentType.JSON:
       // For router_agent, parse JSON and extract prompt/response field
-      if (message.tool === "router_agent") {
+      if (message.tool === ToolName.ROUTER_AGENT) {
         try {
           const parsed = JSON.parse(rawContent);
           return parsed.prompt || parsed.response || rawContent;
@@ -76,10 +77,10 @@ export function extractMessageText(message: V1Message): string {
       // For non-router_agent JSON messages, return raw content
       return rawContent;
 
-    case "text":
+    case MessageContentType.TEXT:
       return rawContent;
 
-    case "error":
+    case MessageContentType.ERROR:
       return rawContent;
 
     default:
@@ -88,52 +89,8 @@ export function extractMessageText(message: V1Message): string {
 }
 
 // =============================================================================
-// APP CONTEXT DETECTION
+// CHART UTILITIES
 // =============================================================================
-
-/**
- * Detect app context based on current route
- * Determines what resources/context the chat can see
- */
-/*
-// Commented out since V1AppContext is no longer used.
-export function detectAppContext(page: Page): V1AppContext | null {
-  const routeId = page.route.id;
-
-  switch (routeId) {
-    case "/[organization]/[project]/-/ai":
-    case "/[organization]/[project]/-/ai/[conversationId]":
-      return {
-        contextType: V1AppContextType.APP_CONTEXT_TYPE_PROJECT_CHAT,
-      };
-    case "/[organization]/[project]/explore/[dashboard]":
-      return {
-        contextType: V1AppContextType.APP_CONTEXT_TYPE_EXPLORE_DASHBOARD,
-        contextMetadata: {
-          dashboard_name: page.params.dashboard,
-        },
-      };
-    case "/(viz)/explore/[name]":
-      return {
-        contextType: V1AppContextType.APP_CONTEXT_TYPE_EXPLORE_DASHBOARD,
-        contextMetadata: {
-          dashboard_name: page.params.name,
-        },
-      };
-    default:
-      return null;
-  }
-}
-*/
-
-// High-level agent tools that should not be rendered in the UI (for now)
-// These are internal orchestration agents, not user-facing tools
-const HIDDEN_AGENT_TOOLS = ["router_agent", "analyst_agent", "developer_agent"];
-
-// Helper to check if a tool call should be hidden from the UI
-export function isHiddenAgentTool(toolName: string | undefined): boolean {
-  return !!toolName && HIDDEN_AGENT_TOOLS.includes(toolName);
-}
 
 // Helper to check if a tool result contains chart data
 export function isChartToolResult(toolResult: any, toolCall: any): boolean {
