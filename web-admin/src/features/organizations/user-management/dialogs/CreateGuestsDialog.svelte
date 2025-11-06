@@ -23,6 +23,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -54,6 +55,8 @@
     },
   );
   $: projects = $projectsQuery?.data?.projects ?? ([] as V1Project[]);
+  $: projectsErrorMessage =
+    getRpcErrorMessage($projectsQuery?.error) ?? $projectsQuery?.error?.message;
 
   async function handleCreate(email: string) {
     // Loop selected projects and add as selectedRole
@@ -199,7 +202,16 @@
         {#if $projectsQuery?.isLoading}
           <DelayedSpinner isLoading={$projectsQuery?.isLoading} size="1rem" />
         {:else if $projectsQuery?.error}
-          <div class="text-xs text-red-500">Failed to load projects</div>
+          <div class="flex items-center gap-2">
+            <div class="text-xs text-red-500">
+              Failed to load projects{projectsErrorMessage
+                ? `: ${projectsErrorMessage}`
+                : ""}
+            </div>
+            <Button type="plain" onClick={() => $projectsQuery?.refetch()}
+              >Retry</Button
+            >
+          </div>
         {:else if projects.length === 0}
           <div class="text-xs text-slate-500">No projects</div>
         {:else}
