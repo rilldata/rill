@@ -299,7 +299,7 @@ func scanTables(rows []*rduckdb.Table) ([]*drivers.OlapTable, error) {
 			// For views that depend on secrets, we have an inaccessible schema since
 			// the secret is only set at write time.
 			if strings.HasPrefix(colName.(string), "error(") && databaseType == "\"NULL\"" {
-				return nil, fmt.Errorf("failed to get schema (try setting `materialize: true` — this usually happens for non-materialized views): %s", colName.(string))
+				continue
 			}
 			colType, err := databaseTypeToPB(databaseType, nullable)
 			if err != nil {
