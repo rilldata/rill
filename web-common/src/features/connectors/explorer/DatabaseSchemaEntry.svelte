@@ -73,11 +73,11 @@
   </button>
 
   {#if expanded}
-    {#if error}
+    {#if error && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
         Error: {error.message}
       </div>
-    {:else if isLoading}
+    {:else if isLoading && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
         Loading tables...
       </div>
@@ -119,13 +119,20 @@
 
       {#if hasNextPage}
         <div class="load-more {database ? 'pl-[78px]' : 'pl-[60px]'}">
-          <button
-            class="load-more-btn"
-            disabled={isFetchingNextPage}
-            on:click={() => fetchNextPage()}
-          >
-            {isFetchingNextPage ? "Loading..." : "Load more"}
-          </button>
+          {#if error}
+            <span class="error">Failed to load more tables.</span>
+            <button class="load-more-btn" on:click={() => fetchNextPage()}>
+              Retry
+            </button>
+          {:else}
+            <button
+              class="load-more-btn"
+              disabled={isFetchingNextPage}
+              on:click={() => fetchNextPage()}
+            >
+              {isFetchingNextPage ? "Loading..." : "Load more"}
+            </button>
+          {/if}
         </div>
       {/if}
     {/if}
