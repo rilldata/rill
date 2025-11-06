@@ -92,6 +92,8 @@ export function makeTablePreviewHref(
       return `/connector/druid/${connectorName}/${databaseSchema}/${table}`;
     case "duckdb":
       return `/connector/duckdb/${connectorName}/${database}/${databaseSchema}/${table}`;
+    case "snowflake":
+      return `/connector/snowflake/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
     // Non-OLAP connectors: table preview not implemented yet
