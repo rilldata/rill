@@ -7,7 +7,6 @@
   import TableIcon from "../../../components/icons/TableIcon.svelte";
   import TableMenuItems from "./TableMenuItems.svelte";
   import TableSchema from "./TableSchema.svelte";
-  import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
@@ -16,13 +15,11 @@
     makeTablePreviewHref,
   } from "../connectors-utils";
 
-  export let instanceId: string;
   export let driver: string;
   export let connector: string;
   export let database: string; // The backend interprets an empty string as the default database
   export let databaseSchema: string; // The backend interprets an empty string as the default schema
   export let table: string;
-  export let hasUnsupportedDataTypes: boolean = false;
   export let store: ConnectorExplorerStore;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
@@ -95,16 +92,6 @@
         {table}
       </span>
     </svelte:element>
-
-    {#if hasUnsupportedDataTypes && isOlapConnector}
-      <UnsupportedTypesIndicator
-        {instanceId}
-        {connector}
-        {database}
-        {databaseSchema}
-        {table}
-      />
-    {/if}
 
     {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>

@@ -58,7 +58,6 @@
     name: table.name ?? "",
     database,
     databaseSchema,
-    hasUnsupportedDataTypes: false,
     view: table.view ?? false,
   }));
 </script>
@@ -113,7 +112,6 @@
       <ol>
         {#each typedData as tableInfo (tableInfo)}
           <TableEntry
-            {instanceId}
             driver={connector.driver.name}
             connector={connectorName}
             showGenerateMetricsAndDashboard={(connector.driver.implementsOlap ||
@@ -127,7 +125,6 @@
             {database}
             {databaseSchema}
             table={tableInfo.name}
-            hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes ?? false}
             {store}
           />
         {/each}
