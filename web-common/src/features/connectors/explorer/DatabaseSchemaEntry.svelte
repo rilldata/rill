@@ -27,7 +27,7 @@
     connectorName,
     database,
     databaseSchema,
-    5,
+    100,
     expanded,
   );
 
