@@ -85,7 +85,6 @@
       searchParamsObj.get(ExploreStateURLParams.TimeZone) || "UTC";
 
     try {
-      //For each metricsview in the metricsview names array, derive interval to parse RillTime range expressions correctly
       const promises = metricsViewNames.map((mvName) =>
         deriveInterval(timeRange.expression || "", mvName, timeZone),
       );
