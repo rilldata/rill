@@ -5,7 +5,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
-  import { createAdminServiceListUsergroupMemberUsers } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceListUsergroupMemberUsers,
+    adminServiceListUsergroupMemberUsers,
+  } from "@rilldata/web-admin/client";
+  import type { V1UsergroupMemberUser } from "@rilldata/web-admin/client";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
@@ -21,14 +25,61 @@
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     groupName,
-    { pageSize: PREVIEW_COUNT },
+    // Fetch server default (20) like the share modal, then slice client-side
+    undefined,
     {
       query: {
         enabled: hovered && (usersCount ?? 0) > 0,
       },
     },
   );
-  $: previewUsers = $listUsergroupMemberUsers.data?.members ?? [];
+  let loadedUsers: V1UsergroupMemberUser[] = [];
+  let nextPageToken: string = "";
+  let isFetchingMore = false;
+
+  $: {
+    const data = $listUsergroupMemberUsers.data;
+    if (data) {
+      // Reset on fresh fetch
+      loadedUsers = data.members ?? [];
+      nextPageToken = data.nextPageToken ?? "";
+    }
+  }
+
+  async function ensureMinPreview() {
+    if (isFetchingMore) return;
+    if (!hovered) return;
+    if ((usersCount ?? 0) <= (loadedUsers?.length ?? 0)) return;
+    if ((loadedUsers?.length ?? 0) >= PREVIEW_COUNT) return;
+
+    try {
+      isFetchingMore = true;
+      while (
+        nextPageToken &&
+        loadedUsers.length < PREVIEW_COUNT &&
+        (usersCount ?? 0) > loadedUsers.length
+      ) {
+        const resp = await adminServiceListUsergroupMemberUsers(
+          organization,
+          groupName,
+          { pageSize: PREVIEW_COUNT, pageToken: nextPageToken },
+        );
+        loadedUsers = [...loadedUsers, ...(resp.members ?? [])];
+        nextPageToken = resp.nextPageToken ?? "";
+      }
+    } finally {
+      isFetchingMore = false;
+    }
+  }
+
+  $: if (hovered && (usersCount ?? 0) > 0) {
+    // Best-effort: ensure we show up to 6 even if first page is short
+    // (e.g., due to pagination window)
+    void ensureMinPreview();
+  }
+
+  $: previewUsers = loadedUsers;
+  $: visiblePreviewCount = Math.min(PREVIEW_COUNT, previewUsers.length);
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -79,8 +130,8 @@
         {:else}
           <ul>
             {#each previewUsers.slice(0, PREVIEW_COUNT) as u}
-              {@const displayName = u.userName || u.userEmail}
-              {@const colorSeed = u.userEmail || u.userName}
+              {@const displayName = u.userName}
+              {@const colorSeed = u.userEmail}
               <div class="flex items-center gap-1 py-1">
                 <!-- Use email first to seed color for stable, unique avatar colors;
                      visible text and alt prefer name for readability. -->
@@ -94,8 +145,8 @@
                 <li>{displayName}</li>
               </div>
             {/each}
-            {#if (usersCount ?? 0) > PREVIEW_COUNT}
-              <li>and {(usersCount ?? 0) - PREVIEW_COUNT} more</li>
+            {#if (usersCount ?? 0) > visiblePreviewCount}
+              <li>and {(usersCount ?? 0) - visiblePreviewCount} more</li>
             {/if}
           </ul>
         {/if}
