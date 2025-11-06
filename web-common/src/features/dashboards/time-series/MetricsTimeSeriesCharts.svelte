@@ -63,10 +63,7 @@
   } from "@rilldata/web-common/lib/time/new-grains";
   import { featureFlags } from "../../feature-flags";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import WarningIcon from "@rilldata/web-common/components/icons/WarningIcon.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
-  import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 

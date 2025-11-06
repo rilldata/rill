@@ -1,7 +1,6 @@
 import {
   RillLegacyDaxInterval,
   RillLegacyIsoInterval,
-  RillPeriodToGrainInterval,
   type RillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";

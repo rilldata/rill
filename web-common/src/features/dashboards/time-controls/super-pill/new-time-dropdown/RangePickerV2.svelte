@@ -24,10 +24,7 @@
   } from "../../../url-state/time-ranges/RillTime";
   import {
     getGrainOrder,
-    getLowerOrderGrain,
-    getSmallestGrainFromISODuration,
     getTruncationGrain,
-    GrainAliasToV1TimeGrain,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
