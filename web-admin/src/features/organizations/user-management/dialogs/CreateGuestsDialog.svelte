@@ -291,8 +291,8 @@
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
           {failedInvites.length === 1
-            ? `${failedInvites[0]} already failed to invite`
-            : `${failedInvites.join(", ")} failed to invite`}
+            ? `Failed to invite ${failedInvites[0]}`
+            : `Failed to invite: ${failedInvites.join(", ")}`}
         </div>
       {/if}
     </form>
