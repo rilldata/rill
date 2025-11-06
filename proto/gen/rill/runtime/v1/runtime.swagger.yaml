@@ -2075,6 +2075,10 @@ paths:
               timeDimension:
                 type: string
                 description: Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension.
+              refOverride:
+                type: string
+                format: date-time
+                description: Optional override to refs of time ranges, watermark, latest or now are all replaced with this if provided.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:

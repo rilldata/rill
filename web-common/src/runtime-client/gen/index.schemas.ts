@@ -2881,6 +2881,8 @@ export type QueryServiceMetricsViewTimeRangesBody = {
   timeZone?: string;
   /** Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension. */
   timeDimension?: string;
+  /** Optional override to refs of time ranges, watermark, latest or now are all replaced with this if provided. */
+  refOverride?: string;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {

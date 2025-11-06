@@ -844,6 +844,8 @@ message MetricsViewTimeRangesRequest {
   string time_zone = 5;
   // Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension.
   string time_dimension = 6;
+  // Optional override to refs of time ranges, watermark, latest or now are all replaced with this if provided.
+  optional google.protobuf.Timestamp ref_override = 7;
 }
 
 message MetricsViewTimeRangesResponse {
