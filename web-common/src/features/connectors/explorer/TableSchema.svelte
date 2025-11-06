@@ -31,8 +31,9 @@
   $: isLoading = $newTableQuery?.isLoading;
 
   function prettyPrintType(type: string) {
-    // If the type starts with "CODE_", remove it
-    return type.replace(/^CODE_/, "");
+    // Remove CODE_ prefix and normalize unsupported types to just "UNKNOWN"
+    const normalized = type.replace(/^CODE_/, "");
+    return normalized.startsWith("UNKNOWN(") ? "UNKNOWN" : normalized;
   }
 </script>
 
