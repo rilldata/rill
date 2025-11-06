@@ -18,17 +18,10 @@
 
 <style lang="postcss">
   .progress-message {
-    max-width: 90%;
-    align-self: flex-start;
+    @apply max-w-[90%] self-start;
   }
 
   .progress-content {
-    padding: 0.375rem 0.5rem;
-    border-radius: 1rem;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    word-break: break-word;
-    color: #6b7280;
-    font-style: italic;
+    @apply px-2 py-1.5 rounded-2xl text-sm leading-relaxed break-words text-gray-500 italic;
   }
 </style>

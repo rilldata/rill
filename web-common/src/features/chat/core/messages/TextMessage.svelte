@@ -48,23 +48,19 @@
 
 <style lang="postcss">
   .chat-message {
-    max-width: 90%;
+    @apply max-w-[90%];
   }
 
   .chat-message--user {
-    align-self: flex-end;
+    @apply self-end;
   }
 
   .chat-message--assistant {
-    align-self: flex-start;
+    @apply self-start;
   }
 
   .chat-message-content {
-    padding: 0.375rem 0.5rem;
-    border-radius: 1rem;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    word-break: break-word;
+    @apply px-2 py-1.5 rounded-2xl text-sm leading-relaxed break-words;
   }
 
   .chat-message--user .chat-message-content {
@@ -72,6 +68,6 @@
   }
 
   .chat-message--assistant .chat-message-content {
-    color: #374151;
+    @apply text-gray-700;
   }
 </style>

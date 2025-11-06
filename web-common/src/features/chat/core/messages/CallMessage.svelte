@@ -117,92 +117,56 @@
 
 <style lang="postcss">
   .tool-container {
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    background: #fafafa;
-    width: 100%;
-    max-width: 90%;
-    align-self: flex-start;
+    @apply w-full max-w-[90%] self-start;
+    @apply border border-gray-200 rounded-lg bg-gray-50;
   }
 
   .chart-container {
-    width: 100%;
-    max-width: 100%;
-    margin-top: 0.5rem;
-    align-self: flex-start;
+    @apply w-full max-w-full mt-2 self-start;
   }
 
   .tool-header {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: background-color 0.15s ease;
+    @apply w-full flex items-center gap-2 p-2;
+    @apply bg-transparent border-none cursor-pointer;
+    @apply text-sm transition-colors;
   }
 
   .tool-header:hover {
-    background: #f3f4f6;
+    @apply bg-gray-100;
   }
 
   .tool-icon {
-    color: #6b7280;
-    display: flex;
-    align-items: center;
+    @apply text-gray-500 flex items-center;
   }
 
   .tool-name {
-    font-weight: 500;
-    color: #374151;
-    flex: 1;
-    text-align: left;
+    @apply font-medium text-gray-700 flex-1 text-left;
   }
 
   .tool-content {
-    border-top: 1px solid #e5e7eb;
-    background: #ffffff;
-    border-radius: 0 0 0.5rem 0.5rem;
+    @apply border-t border-gray-200 bg-white rounded-b-lg;
   }
 
   .tool-section {
-    padding: 0.5rem;
+    @apply p-2;
   }
 
   .tool-section:not(:last-child) {
-    border-bottom: 1px solid #f3f4f6;
+    @apply border-b border-gray-50;
   }
 
   .tool-section-title {
-    font-size: 0.625rem;
-    font-weight: 600;
-    color: #6b7280;
-    margin-bottom: 0.375rem;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
+    @apply text-[0.625rem] font-semibold text-gray-500 mb-1.5;
+    @apply uppercase tracking-wide;
   }
 
   .tool-section-content {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
-    overflow: hidden;
+    @apply bg-gray-50 border border-gray-200;
+    @apply rounded-md overflow-hidden;
   }
 
   .tool-json {
-    font-family:
-      "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
-      "Courier New", monospace;
-    font-size: 0.75rem;
-    line-height: 1.4;
-    color: #374151;
-    padding: 0.5rem;
-    margin: 0;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
+    @apply font-mono text-xs leading-snug text-gray-700;
+    @apply p-2 m-0 overflow-x-auto whitespace-pre-wrap break-all;
   }
 </style>
