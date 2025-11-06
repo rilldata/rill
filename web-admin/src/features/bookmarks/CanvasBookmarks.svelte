@@ -3,9 +3,6 @@
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import { getCanvasCategorisedBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
-  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
-  import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { writable } from "svelte/store";
