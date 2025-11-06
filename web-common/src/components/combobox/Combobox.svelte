@@ -3,7 +3,7 @@
   import { Combobox } from "bits-ui";
   import type { Selected } from "bits-ui";
   import { Check } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { onMount, afterUpdate } from "svelte";
 
   type Option = {
     value: string;
@@ -33,6 +33,7 @@
   let initialSelectedItems: Selected<string>[] = [];
   let contentEl: HTMLElement | null = null;
   let isRequestInFlight = false;
+  let lastSearchValue = "";
 
   onMount(() => {
     // Initialize the selected state for bits-ui combobox
@@ -90,6 +91,25 @@
       });
     }
   }
+
+  // Reset scroll when search changes
+  $: if (searchValue !== lastSearchValue) {
+    lastSearchValue = searchValue;
+    if (contentEl) contentEl.scrollTop = 0;
+  }
+
+  // If the list doesn't overflow yet and there are more pages, pull more to fill the viewport
+  afterUpdate(() => {
+    if (!contentEl || !loadMore) return;
+    if (!hasMore || isLoadingMore || isRequestInFlight) return;
+    const { clientHeight, scrollHeight } = contentEl;
+    if (scrollHeight <= clientHeight + loadMoreThresholdPx) {
+      isRequestInFlight = true;
+      Promise.resolve(loadMore()).finally(() => {
+        isRequestInFlight = false;
+      });
+    }
+  });
 </script>
 
 <Combobox.Root
