@@ -45,8 +45,10 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 		panic("nested WithConnection")
 	}
 
-	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, priority)
+	// Acquire a connection from write pool, since this is meant to be used for operations that may write (e.g. creating temp tables).
+	// Beware that this means that if later calls to acquireOLAPConn even with the write flag not set with the same context then they will get the same connection from the write pool.
+	// But I think this is the expected behavior as we want to have a single connection for the whole WithConnection block.
+	conn, release, err := c.acquireOLAPConn(ctx, priority, true)
 	if err != nil {
 		return err
 	}
@@ -90,7 +92,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	}
 
 	// Use write connection for Exec operations
-	conn, release, err := c.acquireWriteConn(ctx)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, true)
 	if err != nil {
 		return err
 	}
@@ -169,7 +171,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}()
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, false)
 	acquiredTime = time.Now()
 	if err != nil {
 		return nil, err
@@ -222,7 +224,7 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args))
 	}
 
-	conn, release, err := c.acquireOLAPConn(ctx, 0)
+	conn, release, err := c.acquireOLAPConn(ctx, 0, false)
 	if err != nil {
 		return nil, err
 	}
@@ -298,8 +300,8 @@ func (c *Connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 }
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
-// It returns a function that puts the connection back in the pool (if applicable).
-func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.Conn, func() error, error) {
+// It returns a function that puts the connection back in the pool (if applicable). write bool indicates if the connection is for an exec query.
+func (c *Connection) acquireOLAPConn(ctx context.Context, priority int, write bool) (*sqlx.Conn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
@@ -313,7 +315,12 @@ func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	}
 
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	var releaseConn func() error
+	if write {
+		conn, releaseConn, err = c.acquireWriteConn(ctx)
+	} else {
+		conn, releaseConn, err = c.acquireConn(ctx)
+	}
 	if err != nil {
 		c.olapSem.Release()
 		return nil, nil, err
@@ -344,7 +351,7 @@ func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 	return conn, release, nil
 }
 
-// acquireWriteConn returns a ClickHouse write connection for write operations.
+// acquireWriteConn returns a ClickHouse write connection for write operations. It should only be used internally in acquireOLAPConn.
 func (c *Connection) acquireWriteConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
 	conn, err := c.writeDB.Connx(ctx)
 	if err != nil {
