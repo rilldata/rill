@@ -33,7 +33,7 @@
     data: { bookmarks, categorizedBookmarks },
   } = $categorizedBookmarksStore);
 
-  $: defaultHomeBookmarkUrl = $page.url.pathname;
+  // $: defaultHomeBookmarkUrl = $page.url.pathname;
 </script>
 
 <Bookmarks
@@ -44,7 +44,7 @@
     bookmarks,
     categorizedBookmarks,
     showFiltersOnly: false,
-    defaultHomeBookmarkUrl,
+    defaultHomeBookmarkUrl: "?home=true",
   }}
   {metricsViewNames}
 />

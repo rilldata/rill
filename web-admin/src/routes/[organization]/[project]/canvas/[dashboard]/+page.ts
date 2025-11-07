@@ -1,8 +1,13 @@
 import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 import { redirect } from "@sveltejs/kit";
 
-export const load = async ({ url: { searchParams }, params }) => {
-  const urlSearchParams = searchParams.toString();
+export const load = async ({ url, params }) => {
+  console.log("test");
+  const urlSearchParams = url.searchParams.toString();
+
+  if (url.searchParams.get("home") !== null) {
+    throw redirect(307, url.pathname);
+  }
   const canvasName = params.dashboard;
   const snapshotSearchParams = lastVisitedState.get(canvasName);
 
