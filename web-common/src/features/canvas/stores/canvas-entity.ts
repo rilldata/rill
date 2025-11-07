@@ -37,12 +37,12 @@ import { Grid } from "./grid";
 import { TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
-import {
-  adminServiceListBookmarks,
-  type V1User,
-} from "@rilldata/web-admin/client";
+// import {
+//   // adminServiceListBookmarks,
+//   type V1User,
+// } from "@rilldata/web-admin/client";
 import { redirect } from "@sveltejs/kit";
-import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
+// import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -54,6 +54,21 @@ export type SearchParamsStore = {
   set: (key: string, value?: string, checkIfSet?: boolean) => boolean;
   clearAll: () => void;
 };
+
+export interface V1UserQuotas {
+  singleuserOrgs?: number;
+  trialOrgs?: number;
+}
+
+export interface V1User {
+  id?: string;
+  email?: string;
+  displayName?: string;
+  photoUrl?: string;
+  quotas?: V1UserQuotas;
+  createdOn?: string;
+  updatedOn?: string;
+}
 
 export class CanvasEntity {
   components = new Map<string, BaseCanvasComponent>();
@@ -213,14 +228,12 @@ export class CanvasEntity {
     searchParams,
     pathname,
     projectId,
-    user,
     builderContext,
   }: {
     canvasName: string;
     searchParams: URLSearchParams;
     pathname: string;
     projectId?: string;
-    user?: V1User;
     builderContext?: true;
   }) => {
     // If there are no URL params, check for last visited state or home bookmark
@@ -237,9 +250,10 @@ export class CanvasEntity {
       }
 
       if (projectId && !builderContext) {
-        if (!user) {
-          redirectToLogin();
-        }
+        const { adminServiceListBookmarks } = await import(
+          "@rilldata/web-admin/client"
+        );
+
         const response = await adminServiceListBookmarks({
           projectId,
           resourceKind: ResourceKind.Canvas,

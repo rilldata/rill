@@ -4,7 +4,6 @@ export const load = async ({ url, params, parent }) => {
   const canvasName = params.dashboard;
   const {
     project: { id },
-    user,
   } = await parent();
 
   await CanvasEntity.handleCanvasRedirect({
@@ -12,7 +11,6 @@ export const load = async ({ url, params, parent }) => {
     searchParams: url.searchParams,
     pathname: url.pathname,
     projectId: id,
-    user,
   });
 
   return { canvasName };
