@@ -2258,6 +2258,11 @@ definitions:
           security:
             description: Security rules to apply for access to the canvas dashboard
             $ref: '#/definitions/dashboard_security_policy_properties'
+          variables:
+            type: array
+            description: Variables that can be used in the canvas
+            items:
+              $ref: '#/definitions/component_variable_properties'
         required:
           - type
           - display_name
@@ -2567,9 +2572,9 @@ definitions:
             type: string
             const: api
             description: Refers to the resource type and must be `api`
-          openai:
+          openapi:
             type: object
-            description: OpenAI specification for the API endpoint
+            description: OpenAPI specification for the API endpoint
             properties:
               summary:
                 type: string
