@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
+  import AvatarListItem from "../avatar/AvatarListItem.svelte";
   import { Combobox } from "bits-ui";
   import type { Selected } from "bits-ui";
   import { Check } from "lucide-svelte";
