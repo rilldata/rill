@@ -1,6 +1,5 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "./setup/base";
-import { page } from "$app/state";
 
 async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
   return new Promise<void>((resolve) => {
