@@ -1023,7 +1023,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		)
 		defer func() {
 			s.logger.Debug("completion finished",
-				zap.Int("iterations", opts.MaxIterations),
+				zap.Int("iterations", iterations),
 				zap.Int("iterations_with_truncation", truncations),
 				zap.Int("added_messages", len(messages)-len(opts.Messages)),
 				zap.Int("total_messages", len(messages)),
