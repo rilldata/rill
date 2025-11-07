@@ -4,6 +4,7 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
@@ -54,17 +55,18 @@
   }
 
   async function gotoExplorePage() {
-    const url = new URL(window.location.origin);
-    if (token) {
-      url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
-    } else {
-      url.pathname = `/${organization}/${project}/explore/${exploreName}`;
-    }
-
     const exploreStateParams = await getExplorePageUrlSearchParams(
       $dashboardStateForAlert.data.exploreName,
       $dashboardStateForAlert.data.exploreState,
     );
+
+    const url = new URL(window.location.origin);
+    if (token) {
+      url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
+      exploreStateParams.delete(ExploreStateURLParams.Filters);
+    } else {
+      url.pathname = `/${organization}/${project}/explore/${exploreName}`;
+    }
 
     url.search = exploreStateParams.toString();
     return goto(url.toString());
