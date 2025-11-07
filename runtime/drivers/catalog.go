@@ -85,19 +85,16 @@ type ModelPartition struct {
 	Error string
 	// Elapsed is the duration of the last execution of the partition.
 	Elapsed time.Duration
-	// ExplicitlyTriggered indicates if the partition was explicitly triggered for execution.
-	ExplicitlyTriggered bool
 }
 
 // FindModelPartitionsOptions is used to filter model partitions.
 type FindModelPartitionsOptions struct {
-	ModelID                  string
-	Limit                    int
-	WherePending             bool
-	WhereErrored             bool
-	WhereExplicitlyTriggered bool
-	BeforeExecutedOn         time.Time
-	AfterKey                 string
+	ModelID          string
+	Limit            int
+	WherePending     bool
+	WhereErrored     bool
+	BeforeExecutedOn time.Time
+	AfterKey         string
 }
 
 // InstanceHealth represents the health of an instance.

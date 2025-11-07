@@ -1031,8 +1031,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	defer release()
 
 	// First step is to resolve and sync the partitions.
-	// Skip this if we're doing an explicit partition refresh (TriggerPartitions), as we only want to execute the explicitly triggered partitions
-	if !model.Spec.TriggerPartitions {
+	if !model.Spec.TriggerPartitions || model.Spec.TriggerFull {
 		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
 		if err != nil {
 			return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
@@ -1049,9 +1048,8 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		ModelID: model.State.PartitionsModelId,
 	}
 
-	// When partitions are explicitly triggered, process both explicitly triggered partitions AND any pending partitions in the same run
+	// Always process pending partitions
 	partitionFilter.WherePending = true
-	partitionFilter.WhereExplicitlyTriggered = model.Spec.TriggerPartitions
 
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
 	// This enables the first partition to create the initial result (such as a table) that the other partitions incrementally build upon.
@@ -1240,7 +1238,6 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	partition.ExecutedOn = &now
 	partition.Error = errStr
 	partition.Elapsed = time.Since(start)
-	partition.ExplicitlyTriggered = false
 	logArgs = append(logArgs, zap.Duration("elapsed", partition.Elapsed))
 
 	err = catalog.UpdateModelPartition(ctx, mdl.State.PartitionsModelId, partition)
