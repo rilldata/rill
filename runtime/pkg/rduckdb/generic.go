@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pagination"
