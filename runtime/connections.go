@@ -17,20 +17,23 @@ var ErrAINotConfigured = fmt.Errorf("an AI service is not configured for this in
 
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
-		if c.Name == connector {
-			var raw map[string]any
-			if c.Config != nil {
-				raw = c.Config.AsMap()
-			}
-			cfg := lowerKeys(raw)
-			cfg["allow_host_access"] = r.opts.AllowHostAccess
-			return r.getConnection(ctx, cachedConnectionConfig{
-				instanceID: "",
-				name:       connector,
-				driver:     c.Type,
-				config:     cfg,
-			})
+		if c.Name != connector {
+			continue
 		}
+		var raw map[string]any
+		if c.Config != nil {
+			raw = c.Config.AsMap()
+		} else {
+			raw = make(map[string]any, 1)
+		}
+		cfg := lowerKeys(raw)
+		cfg["allow_host_access"] = r.opts.AllowHostAccess
+		return r.getConnection(ctx, cachedConnectionConfig{
+			instanceID: "",
+			name:       connector,
+			driver:     c.Type,
+			config:     cfg,
+		})
 	}
 	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
 }

@@ -191,7 +191,7 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 
 		// Search among dedicated connectors
 		for _, c := range a.parser.Resources {
-			if c.ConnectorSpec != nil && c.Name.Name == connector {
+			if c.ConnectorSpec != nil && c.ConnectorSpec.Properties != nil && c.Name.Name == connector {
 				defaultConfig = c.ConnectorSpec.Properties.AsMap()
 				break
 			}
