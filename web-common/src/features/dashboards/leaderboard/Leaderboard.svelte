@@ -369,7 +369,6 @@
       >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
-            {tableWidth}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -391,7 +390,6 @@
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
           {itemData}
-          {tableWidth}
           {dimensionName}
           {isBeingCompared}
           {filterExcludeMode}

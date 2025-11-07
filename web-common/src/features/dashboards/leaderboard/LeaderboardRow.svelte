@@ -22,7 +22,6 @@
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let tableWidth: number;
   export let borderTop = false;
   export let borderBottom = false;
   export let isBeingCompared: boolean;
