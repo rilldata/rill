@@ -18,18 +18,18 @@
   export let required = false;
   export let error: string | undefined = undefined;
   export let selectedValues: string[] = [];
-  export let onSelectedChange: (
-    value: Selected<string>[] | undefined,
-  ) => void = () => {};
   export let getMetadata: (
     value: string,
   ) => { name: string; photoUrl?: string } | undefined = () => undefined;
   export let enableClientFiltering = true; // When false, pass options as-is (for server-side filtering)
-  // Infinite scrolling support (optional)
-  export let loadMore: (() => void | Promise<void>) | undefined = undefined;
   export let hasMore: boolean = false;
   export let isLoadingMore: boolean = false;
-  export let loadMoreThresholdPx: number = 24;
+  export let loadMore: (() => void | Promise<void>) | undefined = undefined;
+  export let onSelectedChange: (
+    value: Selected<string>[] | undefined,
+  ) => void = () => {};
+
+  const LOAD_MORE_THRESHOLD_PX = 24;
 
   let initialSelectedItems: Selected<string>[] = [];
   let contentEl: HTMLElement | null = null;
@@ -84,7 +84,7 @@
     const target = contentEl;
     const { scrollTop, clientHeight, scrollHeight } = target;
     const nearBottom =
-      scrollTop + clientHeight >= scrollHeight - loadMoreThresholdPx;
+      scrollTop + clientHeight >= scrollHeight - LOAD_MORE_THRESHOLD_PX;
     if (nearBottom && hasMore && !isLoadingMore && !isRequestInFlight) {
       isRequestInFlight = true;
       Promise.resolve(loadMore()).finally(() => {
@@ -104,7 +104,7 @@
     if (!contentEl || !loadMore) return;
     if (!hasMore || isLoadingMore || isRequestInFlight) return;
     const { clientHeight, scrollHeight } = contentEl;
-    if (scrollHeight <= clientHeight + loadMoreThresholdPx) {
+    if (scrollHeight <= clientHeight + LOAD_MORE_THRESHOLD_PX) {
       isRequestInFlight = true;
       Promise.resolve(loadMore()).finally(() => {
         isRequestInFlight = false;
