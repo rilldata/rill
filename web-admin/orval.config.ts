@@ -56,6 +56,13 @@ export default defineConfig({
               useInfiniteQueryParam: "pageToken",
             },
           },
+          AdminService_ListUsergroupMemberUsers: {
+            query: {
+              useQuery: true,
+              useInfinite: true,
+              useInfiniteQueryParam: "pageToken",
+            },
+          },
         },
       },
     },

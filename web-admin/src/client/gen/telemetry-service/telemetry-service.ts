@@ -5,111 +5,95 @@
  * It is used to manage organizations, projects, deployments, users, and roles.
  * OpenAPI spec version: v1
  */
-import { createMutation } from "@tanstack/svelte-query";
+import {
+  createMutation
+} from '@tanstack/svelte-query';
 import type {
   CreateMutationOptions,
   CreateMutationResult,
   MutationFunction,
-  QueryClient,
-} from "@tanstack/svelte-query";
+  QueryClient
+} from '@tanstack/svelte-query';
 
 import type {
   RpcStatus,
   V1RecordEventsRequest,
-  V1RecordEventsResponse,
-} from "../index.schemas";
+  V1RecordEventsResponse
+} from '../index.schemas';
 
-import { httpClient } from "../../http-client";
+import { httpClient } from '../../http-client';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
+
+
 
 /**
  * @summary RecordEvents sends a batch of telemetry events.
 The events must conform to the schema described in rill/runtime/pkg/activity/README.md.
  */
 export const telemetryServiceRecordEvents = (
-  v1RecordEventsRequest: V1RecordEventsRequest,
-  signal?: AbortSignal,
+    v1RecordEventsRequest: V1RecordEventsRequest,
+ signal?: AbortSignal
 ) => {
-  return httpClient<V1RecordEventsResponse>({
-    url: `/v1/telemetry/events`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: v1RecordEventsRequest,
-    signal,
-  });
-};
+      
+      
+      return httpClient<V1RecordEventsResponse>(
+      {url: `/v1/telemetry/events`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: v1RecordEventsRequest, signal
+    },
+      );
+    }
+  
 
-export const getTelemetryServiceRecordEventsMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
-    TError,
-    { data: V1RecordEventsRequest },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
-  TError,
-  { data: V1RecordEventsRequest },
-  TContext
-> => {
-  const mutationKey = ["telemetryServiceRecordEvents"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
-    { data: V1RecordEventsRequest }
-  > = (props) => {
-    const { data } = props ?? {};
+export const getTelemetryServiceRecordEventsMutationOptions = <TError = RpcStatus,
+    TContext = unknown>(options?: { mutation?:CreateMutationOptions<Awaited<ReturnType<typeof telemetryServiceRecordEvents>>, TError,{data: V1RecordEventsRequest}, TContext>, }
+): CreateMutationOptions<Awaited<ReturnType<typeof telemetryServiceRecordEvents>>, TError,{data: V1RecordEventsRequest}, TContext> => {
 
-    return telemetryServiceRecordEvents(data);
-  };
+const mutationKey = ['telemetryServiceRecordEvents'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  return { mutationFn, ...mutationOptions };
-};
+      
 
-export type TelemetryServiceRecordEventsMutationResult = NonNullable<
-  Awaited<ReturnType<typeof telemetryServiceRecordEvents>>
->;
-export type TelemetryServiceRecordEventsMutationBody = V1RecordEventsRequest;
-export type TelemetryServiceRecordEventsMutationError = RpcStatus;
 
-/**
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof telemetryServiceRecordEvents>>, {data: V1RecordEventsRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  telemetryServiceRecordEvents(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TelemetryServiceRecordEventsMutationResult = NonNullable<Awaited<ReturnType<typeof telemetryServiceRecordEvents>>>
+    export type TelemetryServiceRecordEventsMutationBody = V1RecordEventsRequest
+    export type TelemetryServiceRecordEventsMutationError = RpcStatus
+
+    /**
  * @summary RecordEvents sends a batch of telemetry events.
 The events must conform to the schema described in rill/runtime/pkg/activity/README.md.
  */
-export const createTelemetryServiceRecordEvents = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
-      TError,
-      { data: V1RecordEventsRequest },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
-  TError,
-  { data: V1RecordEventsRequest },
-  TContext
-> => {
-  const mutationOptions =
-    getTelemetryServiceRecordEventsMutationOptions(options);
+export const createTelemetryServiceRecordEvents = <TError = RpcStatus,
+    TContext = unknown>(options?: { mutation?:CreateMutationOptions<Awaited<ReturnType<typeof telemetryServiceRecordEvents>>, TError,{data: V1RecordEventsRequest}, TContext>, }
+ , queryClient?: QueryClient): CreateMutationResult<
+        Awaited<ReturnType<typeof telemetryServiceRecordEvents>>,
+        TError,
+        {data: V1RecordEventsRequest},
+        TContext
+      > => {
 
-  return createMutation(mutationOptions, queryClient);
-};
+      const mutationOptions = getTelemetryServiceRecordEventsMutationOptions(options);
+
+      return createMutation(mutationOptions , queryClient);
+    }
+    

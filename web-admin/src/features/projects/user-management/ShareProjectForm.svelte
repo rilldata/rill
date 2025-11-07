@@ -7,7 +7,7 @@
     createAdminServiceListProjectInvites,
     createAdminServiceListProjectMemberUsergroups,
     createAdminServiceListProjectMemberUsers,
-    createAdminServiceListUsergroupMemberUsers,
+    createAdminServiceListUsergroupMemberUsersInfinite,
   } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import GeneralAccessSelectorDropdown from "@rilldata/web-admin/features/projects/user-management/GeneralAccessSelectorDropdown.svelte";
@@ -119,15 +119,23 @@
       },
     },
   );
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
+  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsersInfinite(
     organization,
     "autogroup:members",
-    undefined,
+    {
+      pageSize: 50,
+    },
     {
       query: {
         enabled,
         refetchOnMount: true,
         refetchOnWindowFocus: true,
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken && lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
       },
     },
   );
@@ -140,9 +148,17 @@
 
   $: orgMemberUsergroups =
     $listOrganizationMemberUsergroups?.data?.members ?? [];
-  $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
+  $: userGroupMemberUsers =
+    $listUsergroupMemberUsers?.data?.pages?.flatMap(
+      (page) => page?.members ?? [],
+    ) ?? [];
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
+
+  // Fetch all pages when enabled
+  $: if (enabled && $listUsergroupMemberUsers.hasNextPage && !$listUsergroupMemberUsers.isFetchingNextPage) {
+    $listUsergroupMemberUsers.fetchNextPage();
+  }
   $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
   $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
 
