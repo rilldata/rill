@@ -261,7 +261,6 @@ export class CanvasEntity {
           console.error("Error fetching bookmarks for canvas redirect:", e);
         }
 
-        console.log({ homeBookmarkUrlSearch });
         if (homeBookmarkUrlSearch) {
           throw redirect(307, homeBookmarkUrlSearch);
         }
