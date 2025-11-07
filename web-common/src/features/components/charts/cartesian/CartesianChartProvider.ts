@@ -168,6 +168,13 @@ export class CartesianChartProvider {
           !Array.isArray(config.x?.sort) &&
           !!dimensionName;
 
+        console.log(
+          "topNXQueryOptionsStore",
+          config.x?.type,
+          config.x?.field,
+          enabled,
+        );
+
         const topNWhere = getFilterWithNullHandling(where, config.x);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(

@@ -15,7 +15,8 @@ import {
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { CartesianChartSpec } from "../CartesianChartProvider";
+import { type CartesianChartSpec } from "../CartesianChartProvider";
+import { createVegaTransformPivotConfig } from "../util";
 
 export function generateVLStackedBarChartSpec(
   config: CartesianChartSpec,
@@ -54,15 +55,13 @@ export function generateVLStackedBarChartSpec(
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
     xBand: config.x?.type === "temporal" ? 0.5 : undefined,
-    pivot:
-      xField && yField && colorField && multiValueTooltipChannel?.length
-        ? {
-            // Use color_with_comparison field when in comparison mode to include both current and previous values
-            field: hasComparison ? "color_with_comparison" : colorField,
-            value: yField,
-            groupby: [xField],
-          }
-        : undefined,
+    pivot: createVegaTransformPivotConfig(
+      xField,
+      yField,
+      colorField,
+      !!hasComparison,
+      !!multiValueTooltipChannel?.length,
+    ),
   });
 
   const barLayer: UnitSpec<Field> = {
@@ -80,6 +79,15 @@ export function generateVLStackedBarChartSpec(
       config.x?.field,
       config.y?.field,
       colorField,
+    );
+
+    spec.transform = transforms;
+    barLayer.encoding!.xOffset = createComparisonXOffsetEncoding();
+    barLayer.encoding!.opacity = createComparisonOpacityEncoding(yField);
+  } else if (hasComparison) {
+    const transforms = createComparisonTransforms(
+      config.x?.field,
+      config.y?.field,
     );
 
     spec.transform = transforms;

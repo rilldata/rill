@@ -17,6 +17,7 @@ export interface CreateEmbedOptionsParams {
   expressionFunctions?: ExpressionFunction;
   useExpressionInterpreter?: boolean;
   colorMapping: ColorMapping;
+  hasComparison?: boolean;
 }
 
 export function createEmbedOptions({
@@ -29,6 +30,7 @@ export function createEmbedOptions({
   expressionFunctions = {},
   useExpressionInterpreter = true,
   colorMapping,
+  hasComparison,
 }: CreateEmbedOptionsParams): EmbedOptions {
   const jwt = get(runtime).jwt;
 
@@ -37,7 +39,7 @@ export function createEmbedOptions({
     renderer,
     tooltip: {
       theme: themeMode,
-      ...(colorMapping?.length
+      ...(hasComparison || colorMapping.length
         ? { formatTooltip: getTooltipFormatter(colorMapping) }
         : {}),
     },

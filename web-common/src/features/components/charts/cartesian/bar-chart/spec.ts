@@ -16,6 +16,7 @@ import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
+import { createVegaTransformPivotConfig } from "../util";
 
 export function generateVLBarChartSpec(
   config: CartesianChartSpec,
@@ -40,6 +41,8 @@ export function generateVLBarChartSpec(
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
+  console.log(multiValueTooltipChannel);
+
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
 
@@ -53,19 +56,17 @@ export function generateVLBarChartSpec(
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
     xBand: config.x?.type === "temporal" ? 0.5 : undefined,
-    pivot:
-      xField && yField && colorField && multiValueTooltipChannel?.length
-        ? {
-            // Use color_with_comparison field when in comparison mode to include both current and previous values
-            field: hasComparison ? "color_with_comparison" : colorField,
-            value: yField,
-            groupby: [xField],
-          }
-        : undefined,
+    pivot: createVegaTransformPivotConfig(
+      xField,
+      yField,
+      colorField,
+      !!hasComparison,
+      !!multiValueTooltipChannel?.length,
+    ),
   });
 
   const barLayer: UnitSpec<Field> = {
-    mark: { type: "bar", clip: true },
+    mark: { type: "bar", clip: true, width: { band: 0.9 } },
     encoding: {
       y: createPositionEncoding(config.y, data),
       color: createColorEncoding(config.color, data),
