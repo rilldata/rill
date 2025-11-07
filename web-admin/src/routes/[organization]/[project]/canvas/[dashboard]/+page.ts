@@ -2,7 +2,6 @@ import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/ca
 import { redirect } from "@sveltejs/kit";
 
 export const load = async ({ url, params }) => {
-  console.log("test");
   const urlSearchParams = url.searchParams.toString();
 
   if (url.searchParams.get("home") !== null) {

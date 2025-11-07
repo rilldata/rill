@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import { getCanvasCategorisedBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
@@ -32,8 +31,6 @@
   $: ({
     data: { bookmarks, categorizedBookmarks },
   } = $categorizedBookmarksStore);
-
-  // $: defaultHomeBookmarkUrl = $page.url.pathname;
 </script>
 
 <Bookmarks
