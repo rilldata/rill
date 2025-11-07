@@ -43,26 +43,27 @@
       },
     );
 
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsersInfinite(
-    organization,
-    "autogroup:members",
-    {
-      pageSize: 50,
-    },
-    {
-      query: {
-        enabled: open,
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-        getNextPageParam: (lastPage) => {
-          if (lastPage.nextPageToken && lastPage.nextPageToken !== "") {
-            return lastPage.nextPageToken;
-          }
-          return undefined;
+  $: listUsergroupMemberUsers =
+    createAdminServiceListUsergroupMemberUsersInfinite(
+      organization,
+      "autogroup:members",
+      {
+        pageSize: 50,
+      },
+      {
+        query: {
+          enabled: open,
+          refetchOnMount: true,
+          refetchOnWindowFocus: true,
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken && lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
         },
       },
-    },
-  );
+    );
 
   $: userGroupMemberUsers =
     $listUsergroupMemberUsers?.data?.pages?.flatMap(
@@ -71,7 +72,11 @@
   $: userGroupMemberUsersCount = userGroupMemberUsers?.length ?? 0;
 
   // Fetch all pages when dropdown opens
-  $: if (open && $listUsergroupMemberUsers.hasNextPage && !$listUsergroupMemberUsers.isFetchingNextPage) {
+  $: if (
+    open &&
+    $listUsergroupMemberUsers.hasNextPage &&
+    !$listUsergroupMemberUsers.isFetchingNextPage
+  ) {
     $listUsergroupMemberUsers.fetchNextPage();
   }
   $: projectMemberUserGroupsList =

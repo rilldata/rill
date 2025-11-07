@@ -50,26 +50,27 @@
   }
 
   $: organization = $page.params.organization;
-  $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsersInfinite(
-    organization,
-    groupName,
-    {
-      pageSize: 50,
-    },
-    {
-      query: {
-        enabled: open,
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-        getNextPageParam: (lastPage) => {
-          if (lastPage.nextPageToken && lastPage.nextPageToken !== "") {
-            return lastPage.nextPageToken;
-          }
-          return undefined;
+  $: listUsergroupMemberUsers =
+    createAdminServiceListUsergroupMemberUsersInfinite(
+      organization,
+      groupName,
+      {
+        pageSize: 50,
+      },
+      {
+        query: {
+          enabled: open,
+          refetchOnMount: true,
+          refetchOnWindowFocus: true,
+          getNextPageParam: (lastPage) => {
+            if (lastPage.nextPageToken && lastPage.nextPageToken !== "") {
+              return lastPage.nextPageToken;
+            }
+            return undefined;
+          },
         },
       },
-    },
-  );
+    );
 
   $: userGroupMembersUsers =
     $listUsergroupMemberUsers.data?.pages?.flatMap(
@@ -77,7 +78,11 @@
     ) ?? [];
 
   // Fetch all pages when dialog opens
-  $: if (open && $listUsergroupMemberUsers.hasNextPage && !$listUsergroupMemberUsers.isFetchingNextPage) {
+  $: if (
+    open &&
+    $listUsergroupMemberUsers.hasNextPage &&
+    !$listUsergroupMemberUsers.isFetchingNextPage
+  ) {
     $listUsergroupMemberUsers.fetchNextPage();
   }
 
