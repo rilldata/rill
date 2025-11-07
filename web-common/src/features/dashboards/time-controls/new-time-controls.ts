@@ -4,16 +4,14 @@
 // IntervalStore and MetricsTimeControls are WIP references, but are not currently being used
 // The functions below UTILS are being used
 
+import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
   overrideRillTimeRef,
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
-import {
-  getQueryServiceMetricsViewTimeRangesQueryKey,
-  V1TimeGrain,
-} from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   DateTime,
   type DateTimeUnit,
@@ -23,7 +21,6 @@ import {
   Interval,
   type WeekdayNumbers,
 } from "luxon";
-import { queryServiceMetricsViewTimeRanges } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 
 // CONSTANTS -> time-control-constants.ts
@@ -318,7 +315,6 @@ import {
   GrainAliasToV1TimeGrain,
   V1TimeGrainToAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   RillLegacyDaxInterval,
   RillLegacyIsoInterval,
@@ -355,26 +351,12 @@ export async function deriveInterval(
     const instanceId = get(runtime).instanceId;
     const cacheBust = name.includes("now");
 
-    const queryKey = getQueryServiceMetricsViewTimeRangesQueryKey(
+    const response = await fetchTimeRanges({
       instanceId,
       metricsViewName,
-      { expressions: [name], timeZone: activeTimeZone, priority: 100 },
-    );
-
-    if (cacheBust) {
-      await queryClient.invalidateQueries({
-        queryKey: queryKey,
-      });
-    }
-
-    const response = await queryClient.fetchQuery({
-      queryKey: queryKey,
-      queryFn: () =>
-        queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {
-          expressions: [name],
-          timeZone: activeTimeZone,
-        }),
-      staleTime: Infinity,
+      rillTimes: [name],
+      timeZone: activeTimeZone,
+      cacheBust,
     });
 
     const timeRange = response.resolvedTimeRanges?.[0];
