@@ -27,6 +27,8 @@ type Instance struct {
 	ID string
 	// Environment is the environment that the instance represents
 	Environment string
+	// ProjectDisplayName is the display name from rill.yaml
+	ProjectDisplayName string `db:"project_display_name"`
 	// Driver name to connect to for OLAP
 	OLAPConnector string
 	// ProjectOLAPConnector is an override of OLAPConnector that may be set in rill.yaml.
@@ -99,6 +101,9 @@ type InstanceConfig struct {
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
 	MetricsExactifyDruidTopN bool `mapstructure:"rill.metrics.exactify_druid_topn"`
+	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
+	// Can be "", "none", "new", "pushdown".
+	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
 	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`

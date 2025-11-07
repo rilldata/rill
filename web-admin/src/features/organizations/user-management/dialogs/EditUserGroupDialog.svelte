@@ -3,14 +3,13 @@
   import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
+    createAdminServiceListOrganizationMemberUsers,
     createAdminServiceListUsergroupMemberUsers,
     createAdminServiceRemoveUsergroupMemberUser,
     createAdminServiceRenameUsergroup,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import { getOrgUserMembers } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
   import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -34,26 +33,53 @@
   export let groupName: string;
   export let currentUserEmail: string = "";
 
-  let searchText = "";
+  let searchInput = "";
+  let debouncedSearchText = "";
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
   let initialized = false;
+
+  // Debounce search input to avoid too many API calls
+  $: {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      debouncedSearchText = searchInput;
+    }, 300);
+  }
 
   $: organization = $page.params.organization;
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     groupName,
   );
-  $: orgMemberUsersInfiniteQuery = getOrgUserMembers({
-    organization,
-    guestOnly: false,
-  });
+
   $: userGroupMembersUsers = $listUsergroupMemberUsers.data?.members ?? [];
+
+  // Query organization users when user types (debounced)
+  // Use a more stable pattern - create query once and let params drive it
+  $: organizationUsersQuery = createAdminServiceListOrganizationMemberUsers(
+    organization,
+    debouncedSearchText
+      ? {
+          pageSize: 50,
+          searchPattern: `${debouncedSearchText}%`,
+        }
+      : { pageSize: 50 }, // Pass params even when no search to keep query stable
+    {
+      query: {
+        enabled: debouncedSearchText.length > 0,
+      },
+    },
+  );
+
   $: allOrganizationUsers =
-    $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
-      (page) => page.members ?? [],
+    $organizationUsersQuery.data?.members?.filter(
+      (u) =>
+        !selectedUsers.some((selected) => selected.userEmail === u.userEmail),
     ) ?? [];
+
   $: if (
     userGroupMembersUsers.length > 0 &&
     selectedUsers.length === 0 &&
@@ -62,6 +88,7 @@
     selectedUsers = [...userGroupMembersUsers];
     initialized = true;
   }
+
   // TODO: we need to get role from a separate query and fill in selectedUsers
   //       organizationUsers is not guaranteed to have the user present in the group.
 
@@ -69,12 +96,6 @@
   const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
   const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
   const renameUserGroup = createAdminServiceRenameUsergroup();
-
-  async function ensureAllUsersLoaded() {
-    while ($orgMemberUsersInfiniteQuery.hasNextPage) {
-      await $orgMemberUsersInfiniteQuery.fetchNextPage();
-    }
-  }
 
   function handleRemove(email: string) {
     selectedUsers = selectedUsers.filter((user) => user.userEmail !== email);
@@ -143,11 +164,7 @@
         });
       }
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
-
+      // Invalidate only the necessary queries
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
           organization,
@@ -218,13 +235,21 @@
     },
   );
 
-  $: coercedUsersToOptions = allOrganizationUsers.map((user) => ({
-    value: user.userEmail,
-    label: user.userName,
-  }));
+  $: coercedUsersToOptions = [
+    ...selectedUsers.map((user) => ({
+      value: user.userEmail,
+      label: user.userName,
+    })),
+    ...allOrganizationUsers.map((user) => ({
+      value: user.userEmail,
+      label: user.userName,
+    })),
+  ];
 
   function getMetadata(email: string) {
-    const user = allOrganizationUsers.find((user) => user.userEmail === email);
+    const user =
+      selectedUsers.find((u) => u.userEmail === email) ||
+      allOrganizationUsers.find((u) => u.userEmail === email);
     return user
       ? { name: user.userName, photoUrl: user.userPhotoUrl }
       : undefined;
@@ -233,14 +258,9 @@
   // Check if form has been modified
   $: hasFormChanges = $form.newName !== initialValues.newName;
 
-  // Load all users when dialog opens
-  $: if (open) {
-    ensureAllUsersLoaded();
-  }
-
   function handleClose() {
     open = false;
-    searchText = "";
+    searchInput = "";
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
@@ -294,10 +314,11 @@
             Users
           </label>
           <Combobox
-            searchValue={searchText}
+            bind:searchValue={searchInput}
             options={coercedUsersToOptions}
             placeholder="Search to add/remove users"
             {getMetadata}
+            enableClientFiltering={false}
             selectedValues={[
               ...new Set(
                 [

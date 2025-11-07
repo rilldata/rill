@@ -47,13 +47,13 @@ var defaultFeatureFlags = map[string]string{
 	// Controls visibility of report creation functionality
 	"reports": "true",
 	// Controls visibility of theme switching between light/dark modes
-	"dark_mode": "false",
+	"dark_mode": "true",
 	// Controls visibility of project-level chat functionality
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality
 	"dashboard_chat": "false",
 	// Controls whether charts are rendered in AI chats
-	"chat_charts": "false",
+	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
 }

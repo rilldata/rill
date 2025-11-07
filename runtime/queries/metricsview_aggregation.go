@@ -165,7 +165,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	path, err := e.Export(ctx, qry, nil, format, headers)
+	path, err := e.Export(ctx, qry, q.ExecutionTime, format, headers)
 	if err != nil {
 		return err
 	}

@@ -226,6 +226,7 @@ export interface V1Bookmark {
   displayName?: string;
   description?: string;
   data?: string;
+  urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
   projectId?: string;
@@ -241,12 +242,18 @@ export interface V1CancelBillingSubscriptionResponse {
 }
 
 export interface V1CompleteRequest {
+  /** Input message(s) for the AI to complete. */
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
+  outputJsonSchema?: string;
 }
 
 export interface V1CompleteResponse {
   message?: V1CompletionMessage;
+  /** Number of tokens in the input. */
+  inputTokens?: number;
+  /** Number of tokens in the output. */
+  outputTokens?: number;
 }
 
 export interface V1CompletionMessage {
@@ -285,7 +292,7 @@ export interface V1CreateAssetResponse {
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
-  data?: string;
+  urlSearch?: string;
   resourceKind?: string;
   resourceName?: string;
   projectId?: string;
@@ -1440,7 +1447,7 @@ export interface V1UpdateBookmarkRequest {
   bookmarkId?: string;
   displayName?: string;
   description?: string;
-  data?: string;
+  urlSearch?: string;
   default?: boolean;
   shared?: boolean;
 }

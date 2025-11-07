@@ -4,16 +4,14 @@
 // IntervalStore and MetricsTimeControls are WIP references, but are not currently being used
 // The functions below UTILS are being used
 
+import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges.ts";
 import {
   overrideRillTimeRef,
   parseRillTime,
 } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
-import {
-  getQueryServiceMetricsViewTimeRangesQueryKey,
-  V1TimeGrain,
-} from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   DateTime,
   type DateTimeUnit,
@@ -23,7 +21,6 @@ import {
   Interval,
   type WeekdayNumbers,
 } from "luxon";
-import { queryServiceMetricsViewTimeRanges } from "@rilldata/web-common/runtime-client";
 import { get, writable, type Writable } from "svelte/store";
 
 // CONSTANTS -> time-control-constants.ts
@@ -318,7 +315,6 @@ import {
   GrainAliasToV1TimeGrain,
   V1TimeGrainToAlias,
 } from "@rilldata/web-common/lib/time/new-grains";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   RillLegacyDaxInterval,
   RillLegacyIsoInterval,
@@ -355,29 +351,15 @@ export async function deriveInterval(
     const instanceId = get(runtime).instanceId;
     const cacheBust = name.includes("now");
 
-    const queryKey = getQueryServiceMetricsViewTimeRangesQueryKey(
+    const response = await fetchTimeRanges({
       instanceId,
       metricsViewName,
-      { expressions: [name], timeZone: activeTimeZone, priority: 100 },
-    );
-
-    if (cacheBust) {
-      await queryClient.invalidateQueries({
-        queryKey: queryKey,
-      });
-    }
-
-    const response = await queryClient.fetchQuery({
-      queryKey: queryKey,
-      queryFn: () =>
-        queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {
-          expressions: [name],
-          timeZone: activeTimeZone,
-        }),
-      staleTime: Infinity,
+      rillTimes: [name],
+      timeZone: activeTimeZone,
+      cacheBust,
     });
 
-    const timeRange = response.timeRanges?.[0];
+    const timeRange = response.resolvedTimeRanges?.[0];
 
     if (!timeRange?.start || !timeRange?.end) {
       return { interval: Interval.invalid("Invalid time range") };
@@ -466,6 +448,19 @@ export function getSmallestUnit(
   if (units.months) return "month";
   if (units.quarters) return "quarter";
   if (units.years) return "year";
+
+  return null;
+}
+
+export function getSmallestUnitInDateTime(time: DateTime): DateTimeUnit | null {
+  if (time.millisecond) return "millisecond";
+  if (time.second) return "second";
+  if (time.minute) return "minute";
+  if (time.hour) return "hour";
+  if (time.day) return "day";
+  if (time.month) return "month";
+  if (time.quarter) return "quarter";
+  if (time.year) return "year";
 
   return null;
 }

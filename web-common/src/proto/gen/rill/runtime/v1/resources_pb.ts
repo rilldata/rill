@@ -1626,6 +1626,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   lookupDefaultExpression = "";
 
   /**
+   * The smallest time grain for the dimension. Only populated for time dimensions.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
+   */
+  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
    * The data type of the dimension. Only populated in ValidSpec.
    *
    * @generated from field: rill.runtime.v1.Type data_type = 12;
@@ -1651,6 +1658,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
 

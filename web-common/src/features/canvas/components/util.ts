@@ -46,6 +46,15 @@ export const commonOptions: Record<
       placeholder: "Add additional context for this component",
     },
   },
+  show_description_as_tooltip: {
+    type: "boolean",
+    optional: true,
+    showInUI: true,
+    label: "Show description as tooltip",
+    meta: {
+      layout: "grouped",
+    },
+  },
 };
 
 export function getFilterOptions(

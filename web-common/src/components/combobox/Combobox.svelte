@@ -23,6 +23,7 @@
   export let getMetadata: (
     value: string,
   ) => { name: string; photoUrl?: string } | undefined = () => undefined;
+  export let enableClientFiltering = true; // When false, pass options as-is (for server-side filtering)
 
   let initialSelectedItems: Selected<string>[] = [];
 
@@ -39,15 +40,16 @@
     options = [];
   }
 
-  $: filteredItems = searchValue
-    ? options.filter((option) => {
-        if (!option?.value || !option?.label) return false;
-        return (
-          option.value.toLowerCase().includes(searchValue.toLowerCase()) ||
-          option.label.toLowerCase().includes(searchValue.toLowerCase())
-        );
-      })
-    : options;
+  $: filteredItems =
+    enableClientFiltering && searchValue
+      ? options.filter((option) => {
+          if (!option?.value || !option?.label) return false;
+          return (
+            option.value.toLowerCase().includes(searchValue.toLowerCase()) ||
+            option.label.toLowerCase().includes(searchValue.toLowerCase())
+          );
+        })
+      : options;
 
   // Update initialSelectedItems when selectedValues changes
   $: initialSelectedItems = selectedValues.map((value) => ({

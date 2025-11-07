@@ -23,6 +23,7 @@
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
   import { OLAP_ENGINES, ALL_CONNECTORS, SOURCES } from "./constants";
   import { ICONS } from "./icons";
+  import { resetConnectorStep } from "./connectorStepStore";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -95,15 +96,12 @@
     }
   }
 
-  function handleSubmittingChange(event: CustomEvent) {
-    isSubmittingForm = event.detail.submitting;
-  }
-
   function resetModal() {
     const state = { step: 0, selectedConnector: null, requestConnector: false };
     window.history.pushState(state, "", "");
     dispatchEvent(new PopStateEvent("popstate", { state: state }));
     isSubmittingForm = false;
+    resetConnectorStep();
   }
 
   async function onCancelDialog() {
@@ -123,6 +121,7 @@
 
   // FIXME: excluding salesforce until we implement the table discovery APIs
   $: isConnectorType =
+    selectedConnector?.name === "gcs" ||
     selectedConnector?.implementsOlap ||
     selectedConnector?.implementsSqlStore ||
     (selectedConnector?.implementsWarehouse &&
@@ -237,7 +236,7 @@
             formType={isConnectorType ? "connector" : "source"}
             onClose={resetModal}
             onBack={back}
-            on:submitting={handleSubmittingChange}
+            bind:isSubmitting={isSubmittingForm}
           />
         {/if}
       {/if}
