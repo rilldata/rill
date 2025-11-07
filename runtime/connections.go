@@ -18,7 +18,10 @@ var ErrAINotConfigured = fmt.Errorf("an AI service is not configured for this in
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
-			raw := c.Config.AsMap()
+			var raw map[string]any
+			if c.Config != nil {
+				raw = c.Config.AsMap()
+			}
 			cfg := lowerKeys(raw)
 			cfg["allow_host_access"] = r.opts.AllowHostAccess
 			return r.getConnection(ctx, cachedConnectionConfig{
@@ -190,7 +193,9 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	for _, c := range inst.Connectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Preset = c.Config.AsMap()
+			if c.Config != nil {
+				res.Preset = c.Config.AsMap()
+			}
 			if c.Provision {
 				res.Provision = c.Provision
 				res.ProvisionArgs = c.ProvisionArgs.AsMap()
@@ -290,10 +295,10 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 // resolveConnectorProperties resolves templating in the provided connector's properties.
 // It always returns a clone of the properties, even if no templating is found, so the output is safe for further mutations.
 func resolveConnectorProperties(environment string, vars map[string]string, c *runtimev1.Connector) (map[string]any, error) {
-	res := c.Config.AsMap()
-	if res == nil {
-		res = make(map[string]any)
+	if c.Config == nil {
+		return make(map[string]any), nil
 	}
+	res := c.Config.AsMap()
 
 	td := parser.TemplateData{
 		Environment: environment,
