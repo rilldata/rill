@@ -51,6 +51,7 @@ func (p *Parser) parseConnector(node *Node) error {
 		}
 	}
 
+	// Find out if any properties are templated
 	templatedProps, err := analyzeTemplatedProperties(tmp.Properties)
 	if err != nil {
 		return fmt.Errorf("failed to analyze templated properties: %w", err)
@@ -79,6 +80,7 @@ func (p *Parser) parseConnector(node *Node) error {
 	return nil
 }
 
+// analyzeTemplatedProperties returns a slice of map keys that have a value which contains templating tags.
 func analyzeTemplatedProperties(m map[string]any) ([]string, error) {
 	var res []string
 	for k, v := range m {

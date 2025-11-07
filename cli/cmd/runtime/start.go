@@ -222,13 +222,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
+			// Init runtime
 			metastoreConfig, err := structpb.NewStruct(map[string]any{
 				"dsn": conf.MetastoreURL,
 			})
 			if err != nil {
 				logger.Fatal("error: could not creat metastore metastore config", zap.Error(err))
 			}
-			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,
 				MetastoreConnector:           "metastore",
