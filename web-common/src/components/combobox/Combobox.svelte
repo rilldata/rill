@@ -4,6 +4,7 @@
   import type { Selected } from "bits-ui";
   import { Check } from "lucide-svelte";
   import { onMount, afterUpdate } from "svelte";
+  import LoadingSpinner from "../icons/LoadingSpinner.svelte";
 
   type Option = {
     value: string;
@@ -173,7 +174,7 @@
           <div
             class="px-4 py-2 text-xs text-gray-500 flex items-center justify-center"
           >
-            Loading...
+            <LoadingSpinner size="16px" />
           </div>
         {/if}
       {/if}
