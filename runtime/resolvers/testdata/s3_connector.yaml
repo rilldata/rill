@@ -75,6 +75,11 @@ project_files:
     type: source
     connector: duckdb
     sql: "select * from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
+  all_datatypes_duckdb_public_bucket.yaml:
+    type: model
+    connector: duckdb
+    materialize: true
+    sql: "select * from read_parquet('s3://rilldata-public/integration-test/all_datatypes.parquet')"
 tests:
   - name: query_all_result_duckdb_source_csv
     resolver: sql
@@ -346,3 +351,10 @@ tests:
       4,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
       5,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
       6,,,,,,,,,,,,,,,,,,,
+  - name: query_count_duckdb_public_bucket
+    resolver: sql
+    properties:
+      sql: "select count(*) as count from all_datatypes_duckdb_public_bucket"
+    result_csv: |
+      count
+      3
