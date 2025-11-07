@@ -1784,6 +1784,9 @@ definitions:
           ai_instructions:
             type: string
             description: Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing.
+          parent:
+            type: string
+            description: Refers to the parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view
           model:
             type: string
             description: Refers to the model powering the dashboard (either model or table is required)
@@ -1943,6 +1946,12 @@ definitions:
                 - display_name
                 - expression
 
+          parent_dimensions:
+            description: Optional field selectors for dimensions to inherit from the parent metrics view.
+            $ref: '#/definitions/field_selector_properties'
+          parent_measures:
+            description: Optional field selectors for measures to inherit from the parent metrics view.
+            $ref: '#/definitions/field_selector_properties'
           annotations:
             type: array
             description: Used to define annotations that can be displayed on charts
@@ -2012,10 +2021,20 @@ definitions:
           security:
               $ref: '#/definitions/security_policy_properties'
               description: Defines a security policy for the dashboard
+          explore:
+            type: object
+            description: Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
+            properties:
+              skip:
+                type: boolean
+                description: If true, disables the explore view for this metrics view.
+              name:
+                type: string
+                description: Name of the explore view.
         required:
           - type
           - model
-      
+
       - $ref: '#/definitions/common_properties'
 
   # Canvas Dashboards
