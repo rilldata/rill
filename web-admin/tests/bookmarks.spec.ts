@@ -507,7 +507,7 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Last 24 hours")).toBeVisible();
         await expect(adminPage.getByText("No filters selected")).toBeVisible();
         // make sure the url has the correct params
-        assertUrlParams(adminPage, `tr=PT24H&grain=hour&compare_tr=rill-PD`);
+        assertUrlParams(adminPage, `tr=PT24H&compare_tr=rill-PD`);
         // Assert filters applied
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
