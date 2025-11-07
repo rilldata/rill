@@ -261,6 +261,7 @@ export class TimeControls {
     const didSet = this.set.range(
       initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
       true,
+      true,
     );
 
     const newComparisonRange = getComparisonTimeRange(
@@ -276,7 +277,7 @@ export class TimeControls {
       defaultPreset?.comparisonMode ===
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
     ) {
-      this.set.comparison(newComparisonRange.name, true);
+      this.set.comparison(newComparisonRange.name, true, true);
     }
   };
 
@@ -380,31 +381,42 @@ export class TimeControls {
   };
 
   set = {
-    zone: (timeZone: string, checkIfSet = false) => {
+    zone: (timeZone: string, checkIfSet = false, replaceState = false) => {
       return this.searchParamsStore.set(
         ExploreStateURLParams.TimeZone,
         timeZone,
         checkIfSet,
+        replaceState,
       );
     },
-    range: (range: string, checkIfSet = false) => {
+    range: (range: string, checkIfSet = false, replaceState = false) => {
       return this.searchParamsStore.set(
         ExploreStateURLParams.TimeRange,
         range,
         checkIfSet,
+        replaceState,
       );
     },
-    grain: (timeGrain: V1TimeGrain, checkIfSet = false) => {
+    grain: (
+      timeGrain: V1TimeGrain,
+      checkIfSet = false,
+      replaceState = false,
+    ) => {
       const mappedTimeGrain = ToURLParamTimeGrainMapMap[timeGrain];
       if (mappedTimeGrain) {
         return this.searchParamsStore.set(
           ExploreStateURLParams.TimeGrain,
           mappedTimeGrain,
           checkIfSet,
+          replaceState,
         );
       }
     },
-    comparison: (range: boolean | string, checkIfSet = false) => {
+    comparison: (
+      range: boolean | string,
+      checkIfSet = false,
+      replaceState = false,
+    ) => {
       const showTimeComparison = Boolean(range);
 
       if (showTimeComparison) {
@@ -419,12 +431,14 @@ export class TimeControls {
             ExploreStateURLParams.ComparisonTimeRange,
             toTimeRangeParam(selectedComparisonTimeRange),
             checkIfSet,
+            replaceState,
           );
         } else if (typeof range === "string") {
           return this.searchParamsStore.set(
             ExploreStateURLParams.ComparisonTimeRange,
             range,
             checkIfSet,
+            replaceState,
           );
         }
       } else {
@@ -432,6 +446,7 @@ export class TimeControls {
           ExploreStateURLParams.ComparisonTimeRange,
           undefined,
           checkIfSet,
+          replaceState,
         );
       }
     },

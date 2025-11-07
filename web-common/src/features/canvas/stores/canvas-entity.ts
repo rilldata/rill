@@ -37,12 +37,7 @@ import { Grid } from "./grid";
 import { TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
-// import {
-//   // adminServiceListBookmarks,
-//   type V1User,
-// } from "@rilldata/web-admin/client";
 import { redirect } from "@sveltejs/kit";
-// import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -51,24 +46,14 @@ export const lastVisitedState = new Map<string, string>();
 // Set returns a boolean indicating whether the value was set
 export type SearchParamsStore = {
   subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
-  set: (key: string, value?: string, checkIfSet?: boolean) => boolean;
+  set: (
+    key: string,
+    value?: string,
+    checkIfSet?: boolean,
+    replaceState?: boolean,
+  ) => boolean;
   clearAll: () => void;
 };
-
-export interface V1UserQuotas {
-  singleuserOrgs?: number;
-  trialOrgs?: number;
-}
-
-export interface V1User {
-  id?: string;
-  email?: string;
-  displayName?: string;
-  photoUrl?: string;
-  quotas?: V1UserQuotas;
-  createdOn?: string;
-  updatedOn?: string;
-}
 
 export class CanvasEntity {
   components = new Map<string, BaseCanvasComponent>();
@@ -115,7 +100,12 @@ export class CanvasEntity {
     const searchParamsStore: SearchParamsStore = (() => {
       return {
         subscribe: this.searchParams.subscribe,
-        set: (key: string, value: string | undefined, checkIfSet = false) => {
+        set: (
+          key: string,
+          value: string | undefined,
+          checkIfSet = false,
+          replaceState = false,
+        ) => {
           const url = get(page).url;
 
           if (checkIfSet && url.searchParams.has(key)) return false;
@@ -126,7 +116,7 @@ export class CanvasEntity {
             url.searchParams.set(key, value);
           }
 
-          goto(url.toString()).catch(console.error);
+          goto(url.toString(), { replaceState }).catch(console.error);
           return true;
         },
         clearAll: () => {
@@ -250,22 +240,30 @@ export class CanvasEntity {
       }
 
       if (projectId && !builderContext) {
-        const { adminServiceListBookmarks } = await import(
-          "@rilldata/web-admin/client"
-        );
+        let homeBookmarkUrlSearch: string | undefined = undefined;
+        try {
+          const { adminServiceListBookmarks } = await import(
+            "@rilldata/web-admin/client"
+          );
 
-        const response = await adminServiceListBookmarks({
-          projectId,
-          resourceKind: ResourceKind.Canvas,
-          resourceName: canvasName,
-        });
+          const response = await adminServiceListBookmarks({
+            projectId,
+            resourceKind: ResourceKind.Canvas,
+            resourceName: canvasName,
+          });
 
-        const homeBookmark = response.bookmarks?.find(
-          (bookmark) => bookmark.default,
-        );
+          const homeBookmark = response.bookmarks?.find(
+            (bookmark) => bookmark.default,
+          );
 
-        if (homeBookmark?.urlSearch) {
-          throw redirect(307, homeBookmark.urlSearch);
+          homeBookmarkUrlSearch = homeBookmark?.urlSearch;
+        } catch (e) {
+          console.error("Error fetching bookmarks for canvas redirect:", e);
+        }
+
+        console.log({ homeBookmarkUrlSearch });
+        if (homeBookmarkUrlSearch) {
+          throw redirect(307, homeBookmarkUrlSearch);
         }
       }
     } else if (searchParams.get("default")) {
