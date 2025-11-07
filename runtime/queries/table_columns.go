@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 type TableColumns struct {
@@ -68,12 +70,68 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 	if !supportedTableHeadDialects[olap.Dialect()] {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
+	if olap.Dialect() == drivers.DialectDuckDB {
+		return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
+			// views return duplicate column names, so we need to create a temporary table
+			temporaryTableName := tempName("profile_columns_")
+			err = olap.Exec(ctx, &drivers.Statement{
+				Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE %s AS (SELECT * FROM %s LIMIT 1)`, temporaryTableName, olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
+				Priority:         priority,
+				ExecutionTimeout: defaultExecutionTimeout,
+			})
+			if err != nil {
+				return err
+			}
+			defer func() {
+				// NOTE: Using ensuredCtx
+				_ = olap.Exec(ensuredCtx, &drivers.Statement{
+					Query:            `DROP TABLE "` + temporaryTableName + `"`,
+					Priority:         priority,
+					ExecutionTimeout: defaultExecutionTimeout,
+				})
+			}()
 
+			rows, err := olap.Query(ctx, &drivers.Statement{
+				Query: fmt.Sprintf(`
+					SELECT column_name AS name, data_type AS type
+					FROM information_schema.columns
+					WHERE table_catalog = 'temp' AND table_name = '%s'`, temporaryTableName),
+				Priority:         priority,
+				ExecutionTimeout: defaultExecutionTimeout,
+			})
+			if err != nil {
+				return err
+			}
+			defer rows.Close()
+
+			var pcs []*runtimev1.ProfileColumn
+			i := 0
+			for rows.Next() {
+				pc := runtimev1.ProfileColumn{}
+				if err := rows.Scan(&pc.Name, &pc.Type); err != nil {
+					return err
+				}
+				// TODO: Find a better way to handle this, this is ugly
+				if strings.Contains(pc.Type, "ENUM") {
+					pc.Type = "VARCHAR"
+				}
+				pcs = append(pcs, &pc)
+				i++
+			}
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
+			q.Result = &runtimev1.TableColumnsResponse{
+				ProfileColumns: pcs[0:i],
+			}
+			return nil
+		})
+	}
 	tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
 	if err != nil {
 		return err
 	}
-
 	q.Result = &runtimev1.TableColumnsResponse{
 		ProfileColumns:     make([]*runtimev1.ProfileColumn, len(tbl.Schema.Fields)),
 		UnsupportedColumns: tbl.UnsupportedCols,
