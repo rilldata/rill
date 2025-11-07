@@ -19,16 +19,16 @@
   $: ({ instanceId } = $runtime);
 
   $: ({
-    canvasEntity: { saveSnapshot, onUrlParamsChange, theme },
-  } = getCanvasStore(canvasName, instanceId));
+    url: { searchParams },
+  } = $page);
 
-  $: onUrlParamsChange($page.url.searchParams);
+  $: ({
+    canvasEntity: { onUrlParamsChange, theme },
+  } = getCanvasStore(canvasName, instanceId));
 
   $: ({ width: clientWidth } = contentRect);
 
-  $: searchParams = $page.url.searchParams.toString();
-
-  $: if (searchParams) saveSnapshot(searchParams);
+  $: onUrlParamsChange(searchParams, !embedded).catch(console.error);
 </script>
 
 <ThemeProvider theme={$theme}>

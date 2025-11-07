@@ -37,6 +37,12 @@ import { Grid } from "./grid";
 import { TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
+import {
+  adminServiceListBookmarks,
+  type V1User,
+} from "@rilldata/web-admin/client";
+import { redirect } from "@sveltejs/kit";
+import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -74,6 +80,7 @@ export class CanvasEntity {
   themeName = writable<string | undefined>(undefined);
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
+  private searchParams = writable<URLSearchParams>(new URLSearchParams());
 
   constructor(
     public name: string,
@@ -92,8 +99,7 @@ export class CanvasEntity {
 
     const searchParamsStore: SearchParamsStore = (() => {
       return {
-        subscribe: derived(page, ({ url: { searchParams } }) => searchParams)
-          .subscribe,
+        subscribe: this.searchParams.subscribe,
         set: (key: string, value: string | undefined, checkIfSet = false) => {
           const url = get(page).url;
 
@@ -104,7 +110,8 @@ export class CanvasEntity {
           } else {
             url.searchParams.set(key, value);
           }
-          goto(url.toString(), { replaceState: true }).catch(console.error);
+
+          goto(url.toString()).catch(console.error);
           return true;
         },
         clearAll: () => {
@@ -176,13 +183,87 @@ export class CanvasEntity {
     );
   }
 
-  onUrlParamsChange = (urlParams: URLSearchParams) => {
+  onUrlParamsChange = async (
+    urlParams: URLSearchParams,
+    builderContext?: boolean,
+  ) => {
+    if (builderContext) {
+      const redirected = await CanvasEntity.handleCanvasRedirect({
+        canvasName: this.name,
+        searchParams: urlParams,
+        pathname: window.location.pathname,
+        builderContext: true,
+      });
+
+      if (redirected) return;
+    }
+
+    this.searchParams.set(urlParams);
     this.themeName.set(urlParams.get("theme") ?? undefined);
+    this.saveSnapshot(urlParams.toString());
   };
 
   // Not currently being used
   unsubscribe = () => {
     // this.unsubscriber();
+  };
+
+  static handleCanvasRedirect = async ({
+    canvasName,
+    searchParams,
+    pathname,
+    projectId,
+    user,
+    builderContext,
+  }: {
+    canvasName: string;
+    searchParams: URLSearchParams;
+    pathname: string;
+    projectId?: string;
+    user?: V1User;
+    builderContext?: true;
+  }) => {
+    // If there are no URL params, check for last visited state or home bookmark
+    if (searchParams.size === 0) {
+      const snapshotSearchParams = lastVisitedState.get(canvasName);
+
+      if (snapshotSearchParams) {
+        if (builderContext) {
+          await goto(`?${snapshotSearchParams}`, { replaceState: true });
+          return true;
+        } else {
+          throw redirect(307, `?${snapshotSearchParams}`);
+        }
+      }
+
+      if (projectId && !builderContext) {
+        if (!user) {
+          redirectToLogin();
+        }
+        const response = await adminServiceListBookmarks({
+          projectId,
+          resourceKind: ResourceKind.Canvas,
+          resourceName: canvasName,
+        });
+
+        const homeBookmark = response.bookmarks?.find(
+          (bookmark) => bookmark.default,
+        );
+
+        if (homeBookmark?.urlSearch) {
+          throw redirect(307, homeBookmark.urlSearch);
+        }
+      }
+    } else if (searchParams.get("default")) {
+      // If the default parameter exists, we clear last visited state and redirect to clean URL
+      lastVisitedState.set(canvasName, "");
+      if (builderContext) {
+        await goto(pathname, { replaceState: true });
+        return true;
+      } else {
+        throw redirect(307, pathname);
+      }
+    }
   };
 
   saveSnapshot = (filterState: string) => {

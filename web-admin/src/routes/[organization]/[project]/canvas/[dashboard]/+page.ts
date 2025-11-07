@@ -1,16 +1,19 @@
-import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
-import { redirect } from "@sveltejs/kit";
+import { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 
-export const load = async ({ url, params }) => {
-  const urlSearchParams = url.searchParams.toString();
-
-  if (url.searchParams.get("home") !== null) {
-    throw redirect(307, url.pathname);
-  }
+export const load = async ({ url, params, parent }) => {
   const canvasName = params.dashboard;
-  const snapshotSearchParams = lastVisitedState.get(canvasName);
+  const {
+    project: { id },
+    user,
+  } = await parent();
 
-  if (snapshotSearchParams && !urlSearchParams) {
-    throw redirect(307, `?${snapshotSearchParams}`);
-  }
+  await CanvasEntity.handleCanvasRedirect({
+    canvasName,
+    searchParams: url.searchParams,
+    pathname: url.pathname,
+    projectId: id,
+    user,
+  });
+
+  return { canvasName };
 };

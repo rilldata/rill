@@ -9,12 +9,10 @@
   import { EntityStatus } from "../entity-management/types";
 
   export let resource: V1Resource;
+  export let canvasName: string;
   export let navigationEnabled: boolean = true;
 
   $: ({ instanceId } = $runtime);
-
-  $: meta = resource?.meta;
-  $: canvasName = meta?.name?.name as string;
 
   $: canvas = resource?.canvas;
   $: maxWidth = canvas?.spec?.maxWidth || DEFAULT_DASHBOARD_WIDTH;

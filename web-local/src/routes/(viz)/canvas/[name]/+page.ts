@@ -8,16 +8,17 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error } from "@sveltejs/kit";
 import type { QueryFunction } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
-import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
-import { redirect } from "@sveltejs/kit";
+import { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 
 export const load = async ({ params, url, depends }) => {
   const canvasName = params.name;
-  const snapshotSearchParams = lastVisitedState.get(canvasName);
 
-  if (snapshotSearchParams && !url.search.toString()) {
-    throw redirect(307, `?${snapshotSearchParams}`);
-  }
+  await CanvasEntity.handleCanvasRedirect({
+    canvasName,
+    searchParams: url.searchParams,
+    pathname: url.pathname,
+  });
+
   const { instanceId } = get(runtime);
 
   depends(canvasName, "dashboard");

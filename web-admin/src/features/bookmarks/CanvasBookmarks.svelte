@@ -41,7 +41,7 @@
     bookmarks,
     categorizedBookmarks,
     showFiltersOnly: false,
-    defaultHomeBookmarkUrl: "?home=true",
+    defaultHomeBookmarkUrl: "?default=true",
   }}
   {metricsViewNames}
 />

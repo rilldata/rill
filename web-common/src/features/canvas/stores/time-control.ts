@@ -110,6 +110,10 @@ export class TimeControls {
           return undefined;
         }
 
+        if (!searchParams.toString() && !this.isWidgetInstance) {
+          this.processSpec(spec.data);
+        }
+
         const {
           timeRange,
           selectedComparisonTimeRange,
@@ -147,7 +151,6 @@ export class TimeControls {
 
         const result = await deriveInterval(
           finalRange,
-
           firstMetricsViewName,
           timeZone,
         );
@@ -230,48 +233,52 @@ export class TimeControls {
     if (!componentName) {
       this.specStore.subscribe((spec) => {
         if (!spec?.data) return;
-        const defaultPreset = spec.data?.canvas?.defaultPreset;
-        const timeRanges = spec?.data?.canvas?.timeRanges;
-
-        const minTimeGrain = deriveMinTimeGrain(this.componentName, spec?.data);
-
-        this.minTimeGrain.set(minTimeGrain);
-
-        const defaultRange = defaultPreset?.timeRange;
-
-        const allTimeRange = get(this.allTimeRange);
-        const selectedTimezone = get(this.selectedTimezone);
-
-        const initialRange = isoDurationToFullTimeRange(
-          defaultPreset?.timeRange,
-          allTimeRange.start,
-          allTimeRange.end,
-          selectedTimezone,
-        );
-
-        const didSet = this.set.range(
-          initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
-          true,
-        );
-
-        const newComparisonRange = getComparisonTimeRange(
-          timeRanges,
-          get(this.allTimeRange),
-          { name: defaultRange } as DashboardTimeControls,
-          undefined,
-        );
-
-        if (
-          newComparisonRange?.name &&
-          didSet &&
-          defaultPreset?.comparisonMode ===
-            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
-        ) {
-          this.set.comparison(newComparisonRange.name, true);
-        }
+        this.processSpec(spec.data);
       });
     }
   }
+
+  processSpec = (spec: CanvasResponse) => {
+    const defaultPreset = spec?.canvas?.defaultPreset;
+    const timeRanges = spec?.canvas?.timeRanges;
+
+    const minTimeGrain = deriveMinTimeGrain(this.componentName, spec);
+
+    this.minTimeGrain.set(minTimeGrain);
+
+    const defaultRange = defaultPreset?.timeRange;
+
+    const allTimeRange = get(this.allTimeRange);
+    const selectedTimezone = get(this.selectedTimezone);
+
+    const initialRange = isoDurationToFullTimeRange(
+      defaultPreset?.timeRange,
+      allTimeRange.start,
+      allTimeRange.end,
+      selectedTimezone,
+    );
+
+    const didSet = this.set.range(
+      initialRange.name ?? fallbackInitialRanges[minTimeGrain] ?? "PT24H",
+      true,
+    );
+
+    const newComparisonRange = getComparisonTimeRange(
+      timeRanges,
+      get(this.allTimeRange),
+      { name: defaultRange } as DashboardTimeControls,
+      undefined,
+    );
+
+    if (
+      newComparisonRange?.name &&
+      didSet &&
+      defaultPreset?.comparisonMode ===
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+    ) {
+      this.set.comparison(newComparisonRange.name, true);
+    }
+  };
 
   combinedTimeRangeSummaryStore = (
     runtime: Writable<Runtime>,
