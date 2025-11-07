@@ -128,10 +128,10 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		Name:  "Rill test user",
 		Email: "test.user@rilldata.com",
 	}
-	err = gitutil.CommitAndForcePush(t.Context(), tempDir, &gitutil.Config{
+	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
 		Remote:        *repo.CloneURL,
 		DefaultBranch: "main",
-	}, "", author)
+	}, "", author, true)
 	require.NoError(t, err, "failed to push to github repo")
 
 	// deploy project backed by github

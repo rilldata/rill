@@ -27,10 +27,6 @@ type GitStatus struct {
 	RemoteCommits int32
 }
 
-func (s GitStatus) Equal(v GitStatus) bool {
-	return s.Branch == v.Branch && s.LocalCommits == v.LocalCommits && s.RemoteCommits == v.RemoteCommits && s.LocalChanges == v.LocalChanges
-}
-
 func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
 	var args []string
 	if subpath == "" {
@@ -72,11 +68,11 @@ func RunGitStatus(path, subpath, remoteName string) (GitStatus, error) {
 		}
 	}
 
-	localCommits, err := countCommitsAhead(path, fmt.Sprintf("%s/%s", remoteName, status.Branch), status.Branch, subpath)
+	localCommits, err := countCommitsAhead(path, subpath, fmt.Sprintf("%s/%s", remoteName, status.Branch), status.Branch)
 	if err == nil {
 		status.LocalCommits = localCommits
 	}
-	remoteCommits, err := countCommitsAhead(path, status.Branch, fmt.Sprintf("%s/%s", remoteName, status.Branch), subpath)
+	remoteCommits, err := countCommitsAhead(path, subpath, status.Branch, fmt.Sprintf("%s/%s", remoteName, status.Branch))
 	if err == nil {
 		status.RemoteCommits = remoteCommits
 	}
@@ -108,8 +104,8 @@ func RunGitFetch(ctx context.Context, path, remote string) error {
 }
 
 // RunGitPull runs a git pull command in the specified path.
-func RunGitPull(ctx context.Context, path string, discardLocal, overwriteLocal bool, remote, remoteName string) (string, error) {
-	if discardLocal && overwriteLocal {
+func RunGitPull(ctx context.Context, path string, discardLocal, preferLocal bool, remote, remoteName string) (string, error) {
+	if discardLocal && preferLocal {
 		return "", errors.New("cannot discard and overwrite local changes at the same time")
 	}
 	// current status of the full repo
@@ -148,8 +144,8 @@ func RunGitPull(ctx context.Context, path string, discardLocal, overwriteLocal b
 	if remote != "" {
 		args = append(args, remote, st.Branch)
 	}
-	if overwriteLocal {
-		args = append(args, "--strategy=ours")
+	if preferLocal {
+		args = append(args, "--strategy=ours", "--no-rebase")
 	}
 
 	cmd := exec.CommandContext(ctx, "git", args...)
@@ -169,7 +165,7 @@ func RunGitPull(ctx context.Context, path string, discardLocal, overwriteLocal b
 func RunGitPush(ctx context.Context, path, remoteName, branchName string, force bool) error {
 	var cmd *exec.Cmd
 	if force {
-		// instead of simply doing a push --force we do a pull and then push to not loose history
+		// instead of simply doing a push --force we do a pull and then push to not loose commit history
 		_, err := RunGitPull(ctx, path, false, true, "", remoteName)
 		if err != nil {
 			return fmt.Errorf("git pull before push failed: %w", err)
@@ -228,7 +224,7 @@ func isGitIgnored(repoRoot, subpath string) (bool, error) {
 }
 
 // countCommitsAhead counts the number of commits in `from` branch not present in `to` branch.
-func countCommitsAhead(to, from, path, subpath string) (int32, error) {
+func countCommitsAhead(path, subpath, to, from string) (int32, error) {
 	var args []string
 	if subpath == "" {
 		args = []string{"-C", path, "rev-list", "--count", fmt.Sprintf("%s..%s", to, from)}
@@ -238,7 +234,7 @@ func countCommitsAhead(to, from, path, subpath string) (int32, error) {
 	cmd := exec.Command("git", args...)
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return 0, fmt.Errorf("failed to count commits: %w", err)
+		return 0, fmt.Errorf("failed to count commits: %s(%w)", data, err)
 	}
 	count, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 32)
 	if err != nil {
