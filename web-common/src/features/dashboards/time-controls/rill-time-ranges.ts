@@ -13,7 +13,7 @@ export async function resolveTimeRanges(
   exploreSpec: V1ExploreSpec,
   timeRanges: (DashboardTimeControls | undefined)[],
   timeZone: string | undefined,
-  refOverride: string | undefined = undefined,
+  executionTime: string | undefined = undefined,
 ) {
   const rillTimes: string[] = [];
   const rillTimeToTimeRange = new Map<number, number>();
@@ -47,7 +47,7 @@ export async function resolveTimeRanges(
       queryKey: getQueryServiceMetricsViewTimeRangesQueryKey(
         instanceId,
         metricsViewName,
-        { expressions: rillTimes, timeZone, refOverride },
+        { expressions: rillTimes, timeZone, executionTime },
       ),
       queryFn: () =>
         queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {

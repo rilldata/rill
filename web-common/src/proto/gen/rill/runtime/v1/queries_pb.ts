@@ -3564,11 +3564,11 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
   timeDimension = "";
 
   /**
-   * Optional override to refs of time ranges, watermark, latest or now are all replaced with this if provided.
+   * Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
    *
-   * @generated from field: optional google.protobuf.Timestamp ref_override = 7;
+   * @generated from field: optional google.protobuf.Timestamp execution_time = 7;
    */
-  refOverride?: Timestamp;
+  executionTime?: Timestamp;
 
   constructor(data?: PartialMessage<MetricsViewTimeRangesRequest>) {
     super();
@@ -3584,7 +3584,7 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "ref_override", kind: "message", T: Timestamp, opt: true },
+    { no: 7, name: "execution_time", kind: "message", T: Timestamp, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesRequest {

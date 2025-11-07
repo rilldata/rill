@@ -458,14 +458,14 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	if err != nil {
 		return nil, err
 	}
-	if req.RefOverride != nil {
+	if req.ExecutionTime != nil {
 		// If override is set, we use it for every ref except `min`
 		ts = metricsview.TimestampsResult{
 			Min:       ts.Min,
-			Max:       req.RefOverride.AsTime(),
-			Watermark: req.RefOverride.AsTime(),
+			Max:       req.ExecutionTime.AsTime(),
+			Watermark: req.ExecutionTime.AsTime(),
 		}
-		now = req.RefOverride.AsTime()
+		now = req.ExecutionTime.AsTime()
 	}
 
 	timeDimension := req.TimeDimension
