@@ -51,8 +51,6 @@
         })
       : options;
 
-  $: console.log("filteredItems:", filteredItems);
-
   // Update initialSelectedItems when selectedValues changes
   $: initialSelectedItems = selectedValues.map((value) => ({
     value,
