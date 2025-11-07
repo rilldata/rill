@@ -39,14 +39,16 @@
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
-  // Debounce search input to avoid too many API calls
-  $: searchInput,
-    (function () {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        debouncedSearchText = searchInput;
-      }, 300);
-    })();
+  // Debounce search input to avoid too many API calls.
+  // Use a standard Svelte reactive block: it re-runs whenever `searchInput` changes.
+  // We capture `searchInput` into a local constant to avoid race conditions in the timeout.
+  $: {
+    const current = searchInput;
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      debouncedSearchText = current;
+    }, 300);
+  }
 
   $: organization = $page.params.organization;
 
