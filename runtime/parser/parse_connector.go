@@ -84,19 +84,46 @@ func (p *Parser) parseConnector(node *Node) error {
 func analyzeTemplatedProperties(m map[string]any) ([]string, error) {
 	var res []string
 	for k, v := range m {
-		// Only analyze root level string values.
-		s, ok := v.(string)
-		if !ok {
-			continue
-		}
-		meta, err := AnalyzeTemplate(s)
+		hasTemplate, err := containsTemplating(v)
 		if err != nil {
 			return nil, err
 		}
-		if !meta.UsesTemplating {
-			continue
+		if hasTemplate {
+			res = append(res, k)
 		}
-		res = append(res, k)
 	}
 	return res, nil
+}
+
+// containsTemplating recursively checks whether a value (string/map/array) uses templating.
+func containsTemplating(v any) (bool, error) {
+	switch val := v.(type) {
+	case string:
+		meta, err := AnalyzeTemplate(val)
+		if err != nil {
+			return false, err
+		}
+		return meta.UsesTemplating, nil
+	case map[string]any:
+		for _, sub := range val {
+			ok, err := containsTemplating(sub)
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+		}
+	case []any:
+		for _, item := range val {
+			ok, err := containsTemplating(item)
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }

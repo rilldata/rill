@@ -305,23 +305,6 @@ func resolveConnectorProperties(environment string, vars map[string]string, c *r
 		if !ok {
 			continue
 		}
-		// because we only added root value string properties in TemplatedProperties while parsing
-		s, ok := v.(string)
-		if !ok {
-			continue
-		}
-		v, err := parser.ResolveTemplate(s, td, true)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve templated property %q: %w", k, err)
-		}
-		res[k] = v
-	}
-	// Resolve the remaining keys.
-	for k, v := range res {
-		// if value is root level string properties is must have already be resolved using TemplatedProperties
-		if _, ok := v.(string); !ok {
-			continue
-		}
 		v, err := parser.ResolveTemplateRecursively(v, td, true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve template: %w", err)
