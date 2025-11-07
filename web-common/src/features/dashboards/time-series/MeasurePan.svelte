@@ -3,15 +3,14 @@
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
 
   export let hovering = true;
+  export let onPan: (data: { start: Date; end: Date }) => void;
 
   type PanDirection = "left" | "right";
 
-  const dispatch = createEventDispatcher();
   const plotConfig: Writable<PlotConfig> = getContext(contexts.config);
 
   const StateManagers = getStateManagers();
@@ -33,7 +32,7 @@
     const panRange = $getNewPanRange(direction);
     if (!panRange) return;
     const { start, end } = panRange;
-    dispatch("pan", { start, end });
+    onPan({ start, end });
   }
 </script>
 
