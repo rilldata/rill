@@ -13,7 +13,6 @@
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
@@ -39,6 +38,16 @@
   import * as yup from "yup";
   import type { Interval } from "luxon";
 
+  const baseFilterState = {
+    filters: createAndExpression([]),
+    dimensionsWithInlistFilter: [],
+    dimensionThresholdFilters: [],
+    queryTimeStart: "",
+    queryTimeEnd: "",
+    displayTimeRange: { expression: "" } as V1TimeRange,
+    selectedTimeRange: "",
+  };
+
   export let organization: string;
   export let project: string;
   export let projectId: string;
@@ -49,15 +58,7 @@
   export let metricsViewNames: string[];
   export let onClose = () => {};
 
-  let filterState = {
-    whereFilter: createAndExpression([]),
-    dimensionsWithInlistFilter: [],
-    dimensionThresholdFilters: [],
-    start: "",
-    end: "",
-    timeRange: { expression: "" } as V1TimeRange,
-    selectedTimeRange: "",
-  };
+  let filterState = baseFilterState;
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
 
@@ -108,12 +109,8 @@
         }
       });
 
-      const start = intervalWithLatestEndPoint.interval.start
-        ? intervalWithLatestEndPoint.interval.start.toISO()
-        : "";
-      const end = intervalWithLatestEndPoint.interval.end
-        ? intervalWithLatestEndPoint.interval.end.toISO()
-        : "";
+      const start = intervalWithLatestEndPoint.interval.start.toISO();
+      const end = intervalWithLatestEndPoint.interval.end.toISO();
 
       const grain =
         (searchParamsObj.get(ExploreStateURLParams.TimeGrain) as V1TimeGrain) ||
@@ -129,25 +126,17 @@
 
       const selectedTimeRange = formatTimeRange(start, end, grain, timeZone);
 
-      return {
+      return <typeof baseFilterState>{
         dimensionThresholdFilters,
         dimensionsWithInlistFilter,
-        whereFilter: dimensionFilters,
-        start,
-        end,
-        timeRange,
+        filters: dimensionFilters,
+        queryTimeStart: start,
+        queryTimeEnd: end,
+        displayTimeRange: timeRange,
         selectedTimeRange,
       };
     } catch {
-      return {
-        dimensionThresholdFilters: [],
-        dimensionsWithInlistFilter: [],
-        whereFilter: createAndExpression([]),
-        start: "",
-        end: "",
-        timeRange,
-        selectedTimeRange: "Invalid time range",
-      };
+      return baseFilterState;
     }
   }
 
@@ -259,15 +248,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
             Inherited from underlying dashboard view.
           </div>
         </Label>
-        <ExploreFilterChipsReadOnly
-          dimensionThresholdFilters={filterState.dimensionThresholdFilters}
-          dimensionsWithInlistFilter={filterState.dimensionsWithInlistFilter}
-          filters={filterState.whereFilter}
-          {metricsViewNames}
-          displayTimeRange={filterState.timeRange}
-          queryTimeStart={filterState.start}
-          queryTimeEnd={filterState.end}
-        />
+        <ExploreFilterChipsReadOnly {...filterState} {metricsViewNames} />
       </div>
       <ProjectAccessControls {organization} {project}>
         <Select

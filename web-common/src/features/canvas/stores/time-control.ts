@@ -51,9 +51,8 @@ type AllTimeRange = TimeRange & { isFetching: boolean };
 
 let lastAllTimeRange: AllTimeRange | undefined;
 
-// This class is used for both local and global time controls on Canvas
-// To avoid methods running in widgets, make them
-// conditional on the isWidgetInstance flag
+// This class is used for global and widget time controls on Canvas
+// To avoid methods running in widgets, use isWidgetInstance flag
 export class TimeControls {
   isWidgetInstance: boolean;
   selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
@@ -119,8 +118,7 @@ export class TimeControls {
           selectedComparisonTimeRange,
           showTimeComparison,
           timeZone,
-          // This is not supported on the Canvas surface at the moment - bgh
-          // grain: urlGrain,
+          // grain: urlGrain,  // Not supported on the Canvas surface at the moment - bgh
         } = parseSearchParams(searchParams);
 
         // Component does not have local time range

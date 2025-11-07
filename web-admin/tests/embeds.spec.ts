@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { test } from "./setup/base";
+import { page } from "$app/state";
 
 async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
   return new Promise<void>((resolve) => {
@@ -224,6 +225,8 @@ test.describe("Embeds", () => {
       const logMessages: string[] = [];
       await waitForReadyMessage(embedPage, logMessages);
       const frame = embedPage.frameLocator("iframe");
+
+      await embedPage.waitForTimeout(500);
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
