@@ -12,6 +12,8 @@ import { CompletionMessage, Tool } from "../../ai/v1/ai_pb.js";
  */
 export class CompleteRequest extends Message<CompleteRequest> {
   /**
+   * Input message(s) for the AI to complete.
+   *
    * @generated from field: repeated rill.ai.v1.CompletionMessage messages = 1;
    */
   messages: CompletionMessage[] = [];
@@ -65,9 +67,25 @@ export class CompleteRequest extends Message<CompleteRequest> {
  */
 export class CompleteResponse extends Message<CompleteResponse> {
   /**
+   * The AI-generated output message.
+   *
    * @generated from field: rill.ai.v1.CompletionMessage message = 1;
    */
   message?: CompletionMessage;
+
+  /**
+   * Number of tokens in the input.
+   *
+   * @generated from field: uint32 input_tokens = 2;
+   */
+  inputTokens = 0;
+
+  /**
+   * Number of tokens in the output.
+   *
+   * @generated from field: uint32 output_tokens = 3;
+   */
+  outputTokens = 0;
 
   constructor(data?: PartialMessage<CompleteResponse>) {
     super();
@@ -78,6 +96,8 @@ export class CompleteResponse extends Message<CompleteResponse> {
   static readonly typeName = "rill.admin.v1.CompleteResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "message", kind: "message", T: CompletionMessage },
+    { no: 2, name: "input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "output_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteResponse {
