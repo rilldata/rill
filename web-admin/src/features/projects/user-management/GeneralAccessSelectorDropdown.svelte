@@ -19,7 +19,6 @@
   export let organization: string;
   export let project: string;
 
-  let open = false;
   let accessDropdownOpen = false;
   let accessType: "everyone" | "invite-only" = "everyone";
 
@@ -36,7 +35,7 @@
       undefined,
       {
         query: {
-          enabled: open,
+          enabled: accessDropdownOpen,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
         },
@@ -52,7 +51,7 @@
       },
       {
         query: {
-          enabled: open,
+          enabled: accessDropdownOpen,
           refetchOnMount: true,
           refetchOnWindowFocus: true,
           getNextPageParam: (lastPage) => {
@@ -73,7 +72,7 @@
 
   // Fetch all pages when dropdown opens
   $: if (
-    open &&
+    accessDropdownOpen &&
     $listUsergroupMemberUsers.hasNextPage &&
     !$listUsergroupMemberUsers.isFetchingNextPage
   ) {
