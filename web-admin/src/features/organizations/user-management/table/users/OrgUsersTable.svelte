@@ -39,6 +39,10 @@
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
   export let guestOnly: boolean;
+  export let userSortDirection: "asc" | "desc" | null = "asc";
+  export let onUserSortChange: (
+    direction: "asc" | "desc" | null,
+  ) => void = () => {};
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
@@ -50,7 +54,7 @@
   const UserCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "user",
     header: "User",
-    enableSorting: false,
+    enableSorting: true,
     cell: ({ row }) =>
       flexRender(UserCompositeCell, {
         name: row.original.userName ?? row.original.email,
@@ -161,4 +165,9 @@
   emptyStateMessage="No users found"
   {headerIcons}
   {scrollToTopTrigger}
+  externalSorting={{
+    columnId: "user",
+    direction: userSortDirection,
+    onSortChange: onUserSortChange,
+  }}
 />

@@ -26,28 +26,43 @@
   export let maxHeight = "auto";
   export let headerIcons: Record<string, { icon: any; href: string }> = {};
   export let scrollToTopTrigger: any = null;
+  export let externalSorting: {
+    columnId: string;
+    direction: "asc" | "desc" | null;
+    onSortChange: (direction: "asc" | "desc" | null) => void;
+  } | null = null;
 
   let virtualListEl: HTMLDivElement;
   let sorting: SortingState = [];
 
-  // Initialize sorting for sortDescFirst column
-  const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
-  if (sortDescFirstColumn) {
-    const columnId =
-      "id" in sortDescFirstColumn
-        ? sortDescFirstColumn.id
-        : "accessorKey" in sortDescFirstColumn
-          ? sortDescFirstColumn.accessorKey
-          : "accessorFn" in sortDescFirstColumn
-            ? (sortDescFirstColumn.header as string)
-            : Object.keys(sortDescFirstColumn)[0];
-
+  // Initialize sorting based on external sorting or sortDescFirst column
+  if (externalSorting && externalSorting.direction) {
     sorting = [
       {
-        id: columnId as string,
-        desc: true,
+        id: externalSorting.columnId,
+        desc: externalSorting.direction === "desc",
       },
     ];
+  } else {
+    // Initialize sorting for sortDescFirst column
+    const sortDescFirstColumn = columns.find((col) => col.sortDescFirst);
+    if (sortDescFirstColumn) {
+      const columnId =
+        "id" in sortDescFirstColumn
+          ? sortDescFirstColumn.id
+          : "accessorKey" in sortDescFirstColumn
+            ? sortDescFirstColumn.accessorKey
+            : "accessorFn" in sortDescFirstColumn
+              ? (sortDescFirstColumn.header as string)
+              : Object.keys(sortDescFirstColumn)[0];
+
+      sorting = [
+        {
+          id: columnId as string,
+          desc: true,
+        },
+      ];
+    }
   }
 
   $: safeData = Array.isArray(data) ? data : [];
@@ -61,10 +76,29 @@
   }
 
   const setSorting: OnChangeFn<SortingState> = (updater) => {
-    if (updater instanceof Function) {
-      sorting = updater(sorting);
+    const newSorting = updater instanceof Function ? updater(sorting) : updater;
+
+    // Handle external sorting
+    if (externalSorting) {
+      const columnSort = newSorting.find(
+        (s) => s.id === externalSorting.columnId,
+      );
+      if (columnSort) {
+        // Cycle through: asc -> desc -> asc
+        const currentDirection = externalSorting.direction;
+        const newDirection = currentDirection === "asc" ? "desc" : "asc";
+        externalSorting.onSortChange(newDirection);
+        sorting = [
+          {
+            id: externalSorting.columnId,
+            desc: newDirection === "desc",
+          },
+        ];
+      } else {
+        sorting = newSorting;
+      }
     } else {
-      sorting = updater;
+      sorting = newSorting;
     }
 
     options.update((old) => ({
@@ -76,6 +110,23 @@
     }));
   };
 
+  // Update sorting when external sorting changes
+  $: if (externalSorting && externalSorting.direction) {
+    sorting = [
+      {
+        id: externalSorting.columnId,
+        desc: externalSorting.direction === "desc",
+      },
+    ];
+    options.update((old) => ({
+      ...old,
+      state: {
+        ...old.state,
+        sorting,
+      },
+    }));
+  }
+
   $: options = writable<TableOptions<any>>({
     data: safeData,
     columns,
@@ -86,6 +137,8 @@
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableSortingRemoval: false,
+    // Disable internal sorting when using external sorting
+    manualSorting: externalSorting !== null,
   });
 
   $: table = createSvelteTable(options);

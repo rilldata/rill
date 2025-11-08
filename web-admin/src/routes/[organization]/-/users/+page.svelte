@@ -38,6 +38,9 @@
   let searchText = "";
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
 
+  // Sorting state for User column
+  let userSortDirection: "asc" | "desc" | null = "asc";
+
   let scrollToTopTrigger = null;
   $: {
     // Update trigger when filter selection changes to scroll to top
@@ -106,9 +109,23 @@
       return matchesSearch && matchesRole;
     })
     .sort((a, b) => {
-      // Sort by current user first
+      // Sort by current user first (always on top)
       if (a.userEmail === $currentUser.data?.user.email) return -1;
       if (b.userEmail === $currentUser.data?.user.email) return 1;
+
+      // If user column sorting is enabled, apply it
+      if (userSortDirection) {
+        const aName =
+          ("userName" in a ? a.userName : null) ?? a.userEmail ?? "";
+        const bName =
+          ("userName" in b ? b.userName : null) ?? b.userEmail ?? "";
+
+        const comparison = aName
+          .toLowerCase()
+          .localeCompare(bName.toLowerCase());
+        return userSortDirection === "asc" ? comparison : -comparison;
+      }
+
       return 0;
     });
 
@@ -158,6 +175,10 @@
           {organizationPermissions}
           billingContact={$billingContactUser?.email}
           {scrollToTopTrigger}
+          {userSortDirection}
+          onUserSortChange={(direction) => {
+            userSortDirection = direction;
+          }}
           guestOnly={false}
           onAttemptRemoveBillingContactUser={() =>
             (isRemovingBillingContactDialogOpen = true)}
