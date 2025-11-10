@@ -33,8 +33,9 @@ func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.Res
 	return nil
 }
 
-// hasStreamingRef returns true if one or more of the refs have data that may be updated outside of a reconcile.
-func hasStreamingRef(ctx context.Context, c *runtime.Controller, refs []*runtimev1.ResourceName) bool {
+// checkStreamingRef returns true if one or more of the refs have data that may be updated outside of a reconcile.
+// If so, it also returns whether any ref may scale to zero.
+func checkStreamingRef(ctx context.Context, c *runtime.Controller, refs []*runtimev1.ResourceName) (ok, mayScaleToZero bool, err error) {
 	for _, ref := range refs {
 		// Currently only metrics views can be streaming.
 		if ref.Kind != runtime.ResourceKindMetricsView {
@@ -43,16 +44,38 @@ func hasStreamingRef(ctx context.Context, c *runtime.Controller, refs []*runtime
 
 		res, err := c.Get(ctx, ref, false)
 		if err != nil {
-			// Broken refs are not streaming.
-			continue
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				// Broken refs are not streaming.
+				continue
+			}
+			return false, false, err
 		}
 		mv := res.GetMetricsView()
 
-		if mv.State.Streaming {
-			return true
+		// Don't consider invalid metrics views.
+		if mv.State.ValidSpec == nil {
+			continue
 		}
+
+		// Don't consider non-streaming metrics views.
+		if !mv.State.Streaming {
+			continue
+		}
+
+		// We found a streaming ref
+		ok = true
+
+		// Check if it may scale to zero
+		olap, release, err := c.AcquireOLAP(ctx, mv.State.ValidSpec.Connector)
+		if err != nil {
+			return false, false, err
+		}
+		if olap.MayBeScaledToZero(ctx) {
+			mayScaleToZero = true
+		}
+		release()
 	}
-	return false
+	return ok, mayScaleToZero, nil
 }
 
 // nextRefreshTime returns the earliest time AFTER t that the schedule should trigger.
