@@ -95,8 +95,7 @@ To minimize costs:
 - Your data is already in the source database/warehouse
 - You want real-time access to the latest data from the source
 - You're building internal tools where query costs are acceptable
-- Your data is too large to ingest into DuckDB
-- You need to leverage source-specific features or optimizations
+- [Querying partitions](/build/models/partitioned-models) from underlying data source to ingest data in partitions in Rill
 
 **When to use DuckDB (default):**
 - You need fast, low-cost queries for end-user facing APIs
