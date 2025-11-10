@@ -31,4 +31,7 @@
   });
 </script>
 
-<CanvasDashboardEmbed resource={data.dashboard} />
+<CanvasDashboardEmbed
+  resource={data.dashboard}
+  canvasName={data.dashboardName}
+/>

@@ -32,8 +32,6 @@
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
   import { Search } from "@rilldata/web-common/components/search";
-  import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -43,17 +41,13 @@
   export let organization: string;
   export let project: string;
   export let resource: { name: string; kind: ResourceKind };
+  export let metricsViewNames: string[];
   export let bookmarkData: {
     bookmarks: V1Bookmark[];
     categorizedBookmarks: Bookmarks;
     defaultUrlParams?: URLSearchParams;
     defaultHomeBookmarkUrl?: string;
     showFiltersOnly?: boolean;
-  };
-  export let dashboardState: {
-    metricsViewNames: string[];
-    filtersState: FiltersState;
-    timeControlState: TimeControlState;
   };
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
@@ -156,6 +150,7 @@
   let open = false;
 
   let searchText: string;
+
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 </script>
 
@@ -256,7 +251,7 @@
     {resource}
     {defaultUrlParams}
     {showFiltersOnly}
-    {dashboardState}
+    {metricsViewNames}
     onClose={() => {
       showDialog = false;
       bookmark = null;
