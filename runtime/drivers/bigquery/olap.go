@@ -54,7 +54,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	if c.config.LogQueries {
 		c.logger.Info("bigquery query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, err
 	}
