@@ -276,7 +276,7 @@ func (c *Connection) InformationSchema() drivers.OLAPInformationSchema {
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
 // It returns a function that puts the connection back in the pool (if applicable).
-func (c *Connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+func (c *Connection) acquireMetaConn(ctx context.Context) (*SQLConn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
@@ -308,7 +308,7 @@ func (c *Connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
 // It returns a function that puts the connection back in the pool (if applicable). write bool indicates if the connection is for an exec query.
-func (c *Connection) acquireOLAPConn(ctx context.Context, priority int, write bool) (*sqlx.Conn, func() error, error) {
+func (c *Connection) acquireOLAPConn(ctx context.Context, priority int, write bool) (*SQLConn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
@@ -344,7 +344,7 @@ func (c *Connection) acquireOLAPConn(ctx context.Context, priority int, write bo
 }
 
 // acquireConn returns a ClickHouse connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
-func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+func (c *Connection) acquireConn(ctx context.Context) (*SQLConn, func() error, error) {
 	conn, err := c.readDB.Connx(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -355,11 +355,11 @@ func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 		c.used()
 		return conn.Close()
 	}
-	return conn, release, nil
+	return &SQLConn{Conn: conn}, release, nil
 }
 
 // acquireWriteConn returns a ClickHouse write connection for write operations. It should only be used internally in acquireOLAPConn.
-func (c *Connection) acquireWriteConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+func (c *Connection) acquireWriteConn(ctx context.Context) (*SQLConn, func() error, error) {
 	conn, err := c.writeDB.Connx(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -370,7 +370,7 @@ func (c *Connection) acquireWriteConn(ctx context.Context) (*sqlx.Conn, func() e
 		c.used()
 		return conn.Close()
 	}
-	return conn, release, nil
+	return &SQLConn{Conn: conn}, release, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
@@ -404,6 +404,49 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
+}
+
+type SQLConn struct {
+	*sqlx.Conn
+}
+
+func (sc *SQLConn) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
+	rows, err := sc.Conn.QueryxContext(ctx, query, args...)
+	if err != nil && isReadonlyMaxExecTimeError(err) && hasDeadline(ctx) {
+		ctx2, cancel := contextWithoutDeadline(ctx)
+		defer cancel()
+		return sc.Conn.QueryxContext(ctx2, query, args...)
+	}
+	return rows, err
+}
+
+func (sc *SQLConn) QueryRowContext(ctx context.Context, query string, args ...any) *sqlx.Row {
+	row := sc.Conn.QueryRowxContext(ctx, query, args...)
+	err := row.Err()
+	if err != nil && isReadonlyMaxExecTimeError(err) && hasDeadline(ctx) {
+		ctx2, cancel := contextWithoutDeadline(ctx)
+		defer cancel()
+		row = sc.Conn.QueryRowxContext(ctx2, query, args...)
+	}
+	return row
+}
+
+func isReadonlyMaxExecTimeError(err error) bool {
+	return strings.Contains(err.Error(), "Cannot modify 'max_execution_time' setting in readonly mode")
+}
+
+func hasDeadline(ctx context.Context) bool {
+	_, ok := ctx.Deadline()
+	return ok
+}
+
+func contextWithoutDeadline(parent context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-parent.Done()
+		cancel()
+	}()
+	return ctx, cancel
 }
 
 // databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
