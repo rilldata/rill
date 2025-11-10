@@ -84,21 +84,3 @@ security:
   access: true
   row_filter: customer_id = '{{ .user.customer_id }}'
 ```
-
-### Ephemeral user tokens
-
-You can use a service token to issue a short-lived, ephemeral access token with arbitrary user attributes. This enables you to create tokens that mimic an end user, even for users who are not signed up for Rill. Unlike service tokens, the access permissions of an ephemeral token are scoped to a specific project and user attributes.
-
-The primary use case for these tokens is to have your backend issue a short-lived token that represents your current user, which your frontend can use to make direct calls to APIs in Rill. This is the same feature that powers Rill's embedded dashboards.
-
-To get an ephemeral user token, you need to use a service token to perform a handshake with Rill's credentials API at `https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/credentials`. For example:
-```bash
-curl -X POST https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/credentials \
-  -H "Authorization: Bearer <service-account-token>" \
-  --data-raw '{ "user_email":"<user-email>" }'
-``` 
-
-The API accepts the following parameters:
-- `user_email`: Optional user email that the token should represent. The user does not need to exist in Rill.
-- `attributes`: Optional raw JSON payload of user attributes. This setting is not compatible with `user_email`. When using this, make sure to explicitly pass all the attributes used in your security policies, like `email` or `domain`.
-- `ttl_seconds`: Optional time-to-live for the token. Defaults to 24 hours (86400 seconds).

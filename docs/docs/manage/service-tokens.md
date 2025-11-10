@@ -149,10 +149,6 @@ Delete a service token to immediately revoke its access:
 rill service delete my-service --org my-org
 ```
 
-:::tip Token rotation
-For security, periodically rotate service tokens by creating a new token, updating your applications, and deleting the old token.
-:::
-
 ## Issuing Ephemeral Tokens
 
 Service tokens can issue short-lived ephemeral tokens for end users. This is useful for:
