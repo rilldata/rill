@@ -69,15 +69,17 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
 	// Instead, we set the settings in the context.
 	// TODO: Fix query_settings_override not honoured here.
-	settings := map[string]any{
-		"cast_keep_nullable":        1,
-		"insert_distributed_sync":   1,
-		"prefer_global_in_and_join": 1,
-		"session_timezone":          "UTC",
-		"join_use_nulls":            1,
-	}
 	ctx = contextWithQueryID(ctx)
-	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+	if c.supportSettings {
+		settings := map[string]any{
+			"cast_keep_nullable":        1,
+			"insert_distributed_sync":   1,
+			"prefer_global_in_and_join": 1,
+			"session_timezone":          "UTC",
+			"join_use_nulls":            1,
+		}
+		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+	}
 
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
