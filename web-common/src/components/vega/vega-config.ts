@@ -2,7 +2,6 @@ import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/conf
 import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/palette-store";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
-import chroma from "chroma-js";
 import type { Config } from "vega-lite";
 
 function resolveCSSVariable(

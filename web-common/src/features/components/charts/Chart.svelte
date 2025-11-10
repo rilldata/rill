@@ -12,7 +12,6 @@
   } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-  import chroma from "chroma-js";
   import type { Readable } from "svelte/store";
   import type { View } from "vega-typings";
   import type { ChartDataResult, ChartType } from "./types";

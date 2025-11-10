@@ -5,7 +5,7 @@
  * for data visualization.
  */
 
-import chroma, { type Color } from "chroma-js";
+import { type Color } from "chroma-js";
 import {
   generatePalette,
   DEFAULT_STEP_COUNT,

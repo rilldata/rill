@@ -2,7 +2,7 @@ import type {
   V1ThemeColors,
   V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import chroma, { type Color } from "chroma-js";
+import { type Color } from "chroma-js";
 import { generateColorPalette } from "./palette-generator";
 import { TailwindColorSpacing } from "./color-config";
 import { primary } from "./colors";
