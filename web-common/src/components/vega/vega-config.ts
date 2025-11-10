@@ -1,7 +1,7 @@
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/palette-store";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
-import chroma from "chroma-js";
+import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
 import type { Config } from "vega-lite";
 
 function resolveCSSVariable(
@@ -42,7 +42,7 @@ export const getRillTheme: (
 
   if (theme?.primary) {
     // Use theme's primary color directly
-    const primary = chroma(theme.primary);
+    const primary = getChroma(theme.primary);
     lineColor = primary.darken(0.2).css();
     barColor = primary.css();
     areaGradientLight = primary.brighten(2).css();

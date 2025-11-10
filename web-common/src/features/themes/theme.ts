@@ -2,11 +2,11 @@ import type {
   V1ThemeColors,
   V1ThemeSpec,
 } from "@rilldata/web-common/runtime-client";
-import chroma, { type Color } from "chroma-js";
+import { type Color } from "chroma-js";
 import { generateColorPalette } from "./palette-generator";
 import { TailwindColorSpacing } from "./color-config";
 import { primary } from "./colors";
-import { resolveThemeObject } from "./theme-utils";
+import { getChroma, resolveThemeObject } from "./theme-utils";
 
 export class Theme {
   colors: { light: Colors; dark: Colors };
@@ -97,7 +97,7 @@ export class Theme {
     const { primary, secondary, variables } = colors;
 
     if (primary) {
-      const primaryReference = chroma(primary);
+      const primaryReference = getChroma(primary);
       const primaryPalette = generateColorPalette(primaryReference);
       for (const [i, color] of primaryPalette.entries()) {
         finalColors[`color-theme-${TailwindColorSpacing[i]}`] = color;
@@ -106,7 +106,7 @@ export class Theme {
     }
 
     if (secondary) {
-      const secondaryReference = chroma(secondary);
+      const secondaryReference = getChroma(secondary);
       const secondaryPalette = generateColorPalette(secondaryReference);
       for (const [i, color] of secondaryPalette.entries()) {
         finalColors[`color-theme-secondary-${TailwindColorSpacing[i]}`] = color;
@@ -116,7 +116,7 @@ export class Theme {
 
     for (const [k, v] of Object.entries(variables ?? {})) {
       if (!v) continue;
-      finalColors[k] = chroma(v);
+      finalColors[k] = getChroma(v);
     }
 
     return finalColors;

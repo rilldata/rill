@@ -28,7 +28,7 @@ export function generatePalette(
 
   if (desaturateNearGray && c < 0.05) {
     const spectrum = chroma
-      .scale([chroma("black"), refColor, chroma("white")])
+      .scale([BLACK, refColor, WHITE])
       .mode(MODE)
       .gamma(1)
       .colors(102, null);
@@ -56,7 +56,7 @@ export function generatePalette(
           .slice(1),
       ],
       light: chroma
-        .scale([chroma("white"), chroma("black")])
+        .scale([WHITE, BLACK])
         .mode(MODE)
         .gamma(1)
         .colors(stepCount + 2, null)
@@ -69,13 +69,13 @@ export function generatePalette(
   const lightRef = chroma.oklch(clamp(0, l, 0.82), c, h);
 
   const darkSpectrum = chroma
-    .scale([chroma("black"), darkRef, chroma("white")])
+    .scale([BLACK, darkRef, WHITE])
     .mode(MODE)
     .gamma(1)
     .colors(102, null);
 
   const lightSpectrum = chroma
-    .scale([chroma("black"), lightRef, chroma("white")])
+    .scale([BLACK, lightRef, WHITE])
     .mode(MODE)
     .gamma(1)
     .colors(102, null);
