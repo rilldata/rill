@@ -17,6 +17,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(HibernateCmd(ch))
 	projectCmd.AddCommand(ResetCmd(ch))
 	projectCmd.AddCommand(DumpResources(ch))
+	projectCmd.AddCommand(VirtualFilesCmd(ch))
 
 	return projectCmd
 }
