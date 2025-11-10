@@ -12,17 +12,15 @@ import type {
   V1ThemeColors,
 } from "@rilldata/web-common/runtime-client";
 import chroma, { type Color } from "chroma-js";
-import {
-  defaultPrimaryColors,
-  defaultSecondaryColors,
-  TailwindColorSpacing,
-} from "./color-config";
+import { TailwindColorSpacing } from "./color-config";
 import { sanitizeThemeVariables } from "./css-sanitizer";
 import {
   generatePalette,
   DEFAULT_STEP_COUNT,
   DEFAULT_GAMMA,
 } from "./color-generation";
+import { primary, secondary } from "./colors";
+import { getChroma } from "./theme-utils";
 
 const CUSTOM_THEME_STYLE_ID = "rill-custom-theme";
 
@@ -129,8 +127,8 @@ class ThemeManager {
   ): { primary: Color; secondary: Color } {
     if (!themeSpec) {
       return {
-        primary: chroma(`hsl(${defaultPrimaryColors[500]})`),
-        secondary: chroma(`hsl(${defaultSecondaryColors[500]})`),
+        primary: primary[`500`],
+        secondary: secondary[`500`],
       };
     }
 
@@ -149,12 +147,8 @@ class ThemeManager {
       (!isThemeModeDark ? themeSpec.secondaryColorRaw : undefined);
 
     return {
-      primary: primaryColor
-        ? chroma(primaryColor)
-        : chroma(`hsl(${defaultPrimaryColors[500]})`),
-      secondary: secondaryColor
-        ? chroma(secondaryColor)
-        : chroma(`hsl(${defaultSecondaryColors[500]})`),
+      primary: primaryColor ? getChroma(primaryColor) : primary[`500`],
+      secondary: secondaryColor ? getChroma(secondaryColor) : secondary[`500`],
     };
   }
 
@@ -277,7 +271,7 @@ class ThemeManager {
     if (primaryColor && typeof primaryColor === "string") {
       try {
         const palette = generatePalette(
-          chroma(primaryColor),
+          getChroma(primaryColor),
           false,
           DEFAULT_STEP_COUNT,
           DEFAULT_GAMMA,
@@ -298,7 +292,7 @@ class ThemeManager {
     if (secondaryColor && typeof secondaryColor === "string") {
       try {
         const palette = generatePalette(
-          chroma(secondaryColor),
+          getChroma(secondaryColor),
           false,
           DEFAULT_STEP_COUNT,
           DEFAULT_GAMMA,
