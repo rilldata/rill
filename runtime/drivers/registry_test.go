@@ -48,11 +48,17 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.Greater(t, time.Minute, time.Since(inst.CreatedOn))
 	require.Greater(t, time.Minute, time.Since(inst.UpdatedOn))
 
+	// edit instance
+	inst.ProjectDisplayName = "My Project"
+	err = reg.EditInstance(ctx, inst)
+	require.NoError(t, err)
+
 	res, err := reg.FindInstance(ctx, inst.ID)
 	require.NoError(t, err)
 	require.Equal(t, inst.OLAPConnector, res.OLAPConnector)
 	require.Equal(t, inst.RepoConnector, res.RepoConnector)
 	require.Equal(t, inst.CatalogConnector, res.CatalogConnector)
+	require.Equal(t, "My Project", res.ProjectDisplayName)
 	require.ElementsMatch(t, inst.Connectors, res.Connectors)
 
 	err = reg.CreateInstance(ctx, &drivers.Instance{OLAPConnector: "druid"})
