@@ -23,6 +23,7 @@
   export let renderer: "canvas" | "svg" = "canvas";
   export let themeMode: "light" | "dark" = "light";
   export let config: Config | undefined = undefined;
+  export let hasComparison: boolean = false;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let colorMapping: ColorMapping = [];
   export let viewVL: View;
@@ -53,12 +54,13 @@
     themeMode,
     expressionFunctions,
     colorMapping,
+    hasComparison,
   });
 
   // Create a more efficient key for component remounting
   $: configKey = config ? Object.keys(config).sort().join(",") : "default";
   $: colorMappingKey =
-    colorMapping?.map((m) => `${m.value}:${m.color}`).join("|") ?? "";
+    colorMapping?.map((m) => `${m.value}:${m.color}`)?.join("|") ?? "";
   $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
 
   const onError = (e: CustomEvent<{ error: Error }>) => {

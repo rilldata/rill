@@ -21,6 +21,7 @@ import {
   resolveCSSVariable,
   sanitizeSortFieldForVega,
 } from "@rilldata/web-common/features/components/charts/util";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   BarHighlightColorDark,
   BarHighlightColorLight,
@@ -36,11 +37,14 @@ import type { Config } from "vega-lite";
 import type {
   ColorDef,
   Field,
+  NumericMarkPropDef,
+  OffsetDef,
   PositionFieldDef,
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
+import type { Transform } from "vega-lite/build/src/transform";
 import type { ExprRef, SignalRef } from "vega-typings";
 
 export function createMultiLayerBaseSpec() {
@@ -79,12 +83,11 @@ export function createPositionEncoding(
     title: metaData?.displayName || field.field,
     type: field.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
-    ...(field.sort &&
-      field.type !== "temporal" && {
-        sort:
-          data.domainValues?.[field.field] ??
-          sanitizeSortFieldForVega(field.sort),
-      }),
+    ...(field.type !== "temporal" && {
+      sort:
+        data.domainValues?.[field.field] ??
+        sanitizeSortFieldForVega(field.sort),
+    }),
     ...(field.type === "quantitative" && {
       scale: {
         ...(field.zeroBasedOrigin !== true && { zero: false }),
@@ -335,27 +338,77 @@ export function buildHoverPointOverlay(): UnitSpec<Field> {
 /**
  * Creates a multiValueTooltipChannel for cartesian charts (area, line, bar, stacked-bar)
  * Maps data values based on colorField and includes x-field information
+ * In comparison mode, includes both current and previous period values
  */
 export function createCartesianMultiValueTooltipChannel(
-  config: { x?: FieldConfig; colorField?: string; yField?: string },
+  config: { x?: FieldConfig; colorField?: string | undefined; yField?: string },
   data: ChartDataResult,
 ): TooltipValue[] | undefined {
   const { x: xConfig, colorField, yField } = config;
 
-  if (!colorField || !xConfig || !yField) {
+  if (!xConfig || !yField) {
     return undefined;
   }
 
   const xField = sanitizeValueForVega(xConfig.field);
   const sanitizedYField = sanitizeValueForVega(yField);
+  const yFormatType = sanitizeFieldName(yField);
 
   let multiValueTooltipChannel: TooltipValue[] | undefined;
 
-  multiValueTooltipChannel = data.domainValues?.[colorField]?.map((value) => ({
-    field: sanitizeValueForVega(value as string),
-    type: "quantitative" as const,
-    formatType: sanitizeFieldName(sanitizedYField),
-  }));
+  // In comparison mode, we need to include both current and previous values
+  // The pivot will create fields like "CategoryA", "CategoryA_prev", "CategoryB", "CategoryB_prev"
+  if (data.hasComparison && colorField) {
+    const tooltipFields: TooltipValue[] = [];
+    const domainValues = data.domainValues?.[colorField] as
+      | string[]
+      | undefined;
+
+    if (domainValues) {
+      for (const value of domainValues) {
+        // Add current period value
+        tooltipFields.push({
+          field: sanitizeValueForVega(value),
+          type: "quantitative" as const,
+          formatType: yFormatType,
+        });
+
+        // Add previous period value
+        tooltipFields.push({
+          field: sanitizeValueForVega(value) + "_prev",
+          type: "quantitative" as const,
+          formatType: yFormatType,
+        });
+      }
+    }
+
+    multiValueTooltipChannel = tooltipFields;
+  } else if (data.hasComparison) {
+    const yTitle = data.fields[yField]?.displayName || yField;
+    multiValueTooltipChannel = [
+      {
+        field: sanitizedYField,
+        title: yTitle,
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      },
+      {
+        field: sanitizedYField + "_prev",
+        title: yTitle + "_prev",
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      },
+    ];
+  } else if (colorField) {
+    // Normal mode without comparison
+    multiValueTooltipChannel = data.domainValues?.[colorField]?.map(
+      (value) => ({
+        field: sanitizeValueForVega(value as string),
+        type: "quantitative" as const,
+        formatType: yFormatType,
+      }),
+    );
+  }
 
   if (multiValueTooltipChannel) {
     multiValueTooltipChannel.unshift({
@@ -449,5 +502,90 @@ export function buildHoverRuleLayer(args: {
         },
       },
     ],
+  };
+}
+
+/**
+ * Creates Vega-Lite transforms for period-over-period comparison.
+ * This function generates the fold and calculate transforms needed to
+ * display current and comparison data side-by-side.
+ *
+ * The data structure has current and previous values as separate measure fields:
+ * e.g., "total_bids" (current) and "total_bids_prev" (comparison)
+ */
+export function createComparisonTransforms(
+  xField: string | undefined,
+  measureField: string | undefined,
+  colorField?: string,
+): Transform[] {
+  if (!xField || !measureField) return [];
+
+  const sanitizedMeasure = sanitizeValueForVega(measureField);
+  const sanitizedComparisonMeasure = sanitizeValueForVega(
+    measureField + ComparisonDeltaPreviousSuffix,
+  );
+  const transforms: Transform[] = [];
+
+  // Fold the current and previous measure fields
+  // This creates two rows per original row: one for current, one for previous
+  transforms.push({
+    fold: [sanitizedMeasure, sanitizedComparisonMeasure],
+    as: ["measure_key", sanitizedMeasure],
+  });
+
+  // If there's a color field, create a synthetic nominal field for grouping
+  // This combines the color dimension with the comparison key for proper stacking
+  if (colorField) {
+    const sanitizedColor = sanitizeValueForVega(colorField);
+    transforms.push({
+      calculate: `datum['${sanitizedColor}'] + (datum.measure_key === '${sanitizedComparisonMeasure}' ? '_prev' : '')`,
+      as: "color_with_comparison",
+    });
+
+    // Add a sort order field that groups by color first, then by period
+    // This ensures the order is: A_current, A_previous, B_current, B_previous
+    transforms.push({
+      calculate: `datum['${sanitizedColor}'] + '_' + (datum.measure_key === '${sanitizedComparisonMeasure}' ? '1' : '0')`,
+      as: "sortOrder",
+    });
+  } else {
+    // Add a sort order field to ensure current appears before comparison
+    transforms.push({
+      calculate: `datum.measure_key === '${sanitizedComparisonMeasure}' ? 1 : 0`,
+      as: "sortOrder",
+    });
+  }
+
+  return transforms;
+}
+
+/**
+ * Creates an opacity encoding for comparison mode.
+ */
+export function createComparisonOpacityEncoding(
+  measureField: string,
+): NumericMarkPropDef<Field> {
+  const sanitizedComparisonMeasure = sanitizeValueForVega(
+    measureField + ComparisonDeltaPreviousSuffix,
+  );
+  return {
+    condition: [
+      {
+        test: `datum.measure_key === '${sanitizedComparisonMeasure}'`,
+        value: 0.4,
+      },
+    ],
+    value: 1,
+  };
+}
+
+/**
+ * Creates an xOffset encoding for comparison mode.
+ * This positions current and comparison bars/lines side-by-side.
+ */
+export function createComparisonXOffsetEncoding(): OffsetDef<Field> {
+  return {
+    field: "measure_key",
+    sort: { field: "sortOrder" },
   };
 }

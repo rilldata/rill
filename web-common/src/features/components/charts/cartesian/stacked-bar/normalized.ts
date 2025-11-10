@@ -1,8 +1,14 @@
-import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
+import {
+  sanitizeFieldName,
+  sanitizeValueForVega,
+} from "@rilldata/web-common/components/vega/util";
 import type { ChartDataResult } from "@rilldata/web-common/features/components/charts";
 import {
   buildHoverRuleLayer,
   createCartesianMultiValueTooltipChannel,
+  createComparisonOpacityEncoding,
+  createComparisonTransforms,
+  createComparisonXOffsetEncoding,
   createConfigWithLegend,
   createDefaultTooltipEncoding,
   createEncoding,
@@ -21,6 +27,96 @@ export function generateVLStackedBarNormalizedSpec(
   data: ChartDataResult,
 ): VisualizationSpec {
   const spec = createMultiLayerBaseSpec();
+
+  // Check if comparison mode is enabled
+  const hasComparison = data.hasComparison;
+  const comparisonColorField =
+    typeof config.color === "object" ? config.color.field : undefined;
+
+  // For comparison mode with normalized stacks, we disable comparison
+  // as normalized stacks with comparison would be confusing
+  if (hasComparison && comparisonColorField) {
+    // Fall back to regular stacked bar with comparison
+    const transforms = createComparisonTransforms(
+      config.x?.field,
+      config.y?.field,
+      comparisonColorField,
+    );
+
+    spec.transform = transforms;
+    spec.encoding = {
+      x: createPositionEncoding(config.x, data),
+    };
+
+    const barLayer: UnitSpec<Field> = {
+      mark: { type: "bar", clip: true, width: { band: 1 } },
+      encoding: {
+        y: {
+          field: "measure_value",
+          type: "quantitative",
+          title:
+            data.fields[config.y?.field || ""]?.displayName || config.y?.field,
+        },
+        color: {
+          field: sanitizeValueForVega(comparisonColorField),
+          type: "nominal",
+          title:
+            data.fields[comparisonColorField]?.displayName ||
+            comparisonColorField,
+          legend: null,
+        },
+        opacity: createComparisonOpacityEncoding(config.y?.field || ""),
+        xOffset: createComparisonXOffsetEncoding(comparisonColorField),
+        tooltip: [
+          {
+            field: config.x?.field,
+            type: config.x?.type === "temporal" ? "temporal" : "nominal",
+            title:
+              data.fields[config.x?.field || ""]?.displayName ||
+              config.x?.field,
+            ...(config.x?.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
+          },
+          {
+            field: "measure_value",
+            type: "quantitative",
+            title:
+              data.fields[config.y?.field || ""]?.displayName ||
+              config.y?.field,
+            formatType: sanitizeFieldName(config.y?.field || ""),
+          },
+          {
+            field: sanitizeValueForVega(comparisonColorField),
+            type: "nominal",
+            title:
+              data.fields[comparisonColorField]?.displayName ||
+              comparisonColorField,
+          },
+        ],
+      },
+      params: [
+        {
+          name: "hover",
+          select: {
+            type: "point",
+            on: "pointerover",
+            clear: "pointerout",
+            encodings: ["x", "xOffset", "color"],
+          },
+        },
+      ],
+    };
+
+    spec.layer = [barLayer];
+
+    return {
+      ...spec,
+      ...(createConfigWithLegend(config, config.color) && {
+        config: createConfigWithLegend(config, config.color),
+      }),
+    };
+  }
+
+  // Normal normalized mode without comparison
   const baseEncoding = createEncoding(config, data);
   const vegaConfig = createConfigWithLegend(config, config.color);
 

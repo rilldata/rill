@@ -32,7 +32,7 @@
 
   let viewVL: View;
 
-  $: ({ data, domainValues, isFetching, error } = $chartData);
+  $: ({ data, domainValues, hasComparison, isFetching, error } = $chartData);
 
   $: hasNoData = !isFetching && data.length === 0;
 
@@ -112,6 +112,7 @@
     {colorMapping}
     renderer="canvas"
     {expressionFunctions}
+    {hasComparison}
     config={getRillTheme(true, isThemeModeDark, theme)}
   />
 {/if}

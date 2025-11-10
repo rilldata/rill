@@ -12,6 +12,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import chroma from "chroma-js";
 import { derived, type Readable } from "svelte/store";
+import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
 import type {
   ChartDataQuery,
   ChartDataResult,
@@ -20,7 +21,6 @@ import type {
   TimeDimensionDefinition,
 } from "./types";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";
-import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
 
 export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   config: T;
@@ -118,6 +118,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
       }
 
       const domainValues = getDomainValues();
+      const hasComparison = $timeAndFilterStore.showTimeComparison;
 
       return {
         data: data || [],
@@ -126,6 +127,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         fields: fieldSpecMap,
         domainValues,
         isDarkMode: isThemeModeDark,
+        hasComparison,
         theme: {
           primary:
             theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.primary ||

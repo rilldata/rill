@@ -17,6 +17,7 @@ export interface CreateEmbedOptionsParams {
   expressionFunctions?: ExpressionFunction;
   useExpressionInterpreter?: boolean;
   colorMapping: ColorMapping;
+  hasComparison?: boolean;
 }
 
 export function createEmbedOptions({
@@ -29,6 +30,7 @@ export function createEmbedOptions({
   expressionFunctions = {},
   useExpressionInterpreter = true,
   colorMapping,
+  hasComparison,
 }: CreateEmbedOptionsParams): EmbedOptions {
   const jwt = get(runtime).jwt;
 
@@ -37,7 +39,7 @@ export function createEmbedOptions({
     renderer,
     tooltip: {
       theme: themeMode,
-      ...(colorMapping?.length
+      ...(hasComparison || colorMapping.length
         ? { formatTooltip: getTooltipFormatter(colorMapping) }
         : {}),
     },
@@ -66,21 +68,96 @@ export function createEmbedOptions({
 }
 
 export function getTooltipFormatter(colorMapping: ColorMapping) {
-  return (items: any, sanitize: (value: any) => string) => {
-    const rows = Object.entries(items)
-      .map(([key, val]) => {
-        if (val === undefined) return "";
-        const colorEntry = colorMapping?.find(
-          (mapping) => mapping.value === key,
+  const colorMap = new Map<string, string>(
+    (colorMapping ?? []).map((m) => [m.value, m.color]),
+  );
+
+  return (
+    items: Record<string, unknown>,
+    sanitize: (value: unknown) => string,
+  ) => {
+    const groupedItems = new Map<
+      string,
+      { current?: unknown; previous?: unknown }
+    >();
+    const nonComparisonItems: Array<[string, unknown]> = [];
+    let headerValue: string | null = null;
+    let hasComparison = false;
+
+    for (const [key, val] of Object.entries(items)) {
+      if (val === undefined) continue;
+
+      if (key.endsWith("_prev")) {
+        const baseKey = key.slice(0, -"_prev".length);
+        const existing = groupedItems.get(baseKey) || {};
+        groupedItems.set(baseKey, { ...existing, previous: val });
+        hasComparison = true;
+      } else {
+        const prevKey = key + "_prev";
+        if (prevKey in items) {
+          const existing = groupedItems.get(key) || {};
+          groupedItems.set(key, { ...existing, current: val });
+          hasComparison = true;
+        } else {
+          // Standalone field: first string becomes header, don't add it to rows
+          if (headerValue === null && typeof val === "string") {
+            headerValue = sanitize(val);
+          } else {
+            nonComparisonItems.push([key, val]);
+          }
+        }
+      }
+    }
+
+    const rows: string[] = [];
+
+    // Header row (if any)
+    if (headerValue) {
+      rows.push(
+        `<tr><td colspan="10" style="text-align: left; font-weight: 600; padding-bottom: 4px;">${headerValue}</td></tr>`,
+      );
+    }
+
+    // Helper: key color SVG (if present)
+    const keyColorSvg = (color?: string) =>
+      color
+        ? `<svg class="key-color"><circle cx="6" cy="6" r="6" style="fill:${color};"/></svg>`
+        : "";
+
+    // Non-comparison rows first
+    for (const [key, val] of nonComparisonItems) {
+      const color = colorMap.get(key);
+      const keyHtml = `<td class="key">${keyColorSvg(color)}<span>${sanitize(key)}</span></td>`;
+      const valHtml = `<td class="value">${sanitize(val)}</td>`;
+      if (hasComparison) {
+        rows.push(
+          `<tr>${keyHtml}${valHtml}<td class="value empty-cell"></td></tr>`,
         );
-        const keyColor = colorEntry
-          ? `<svg  class="key-color">
-            <circle cx="6" cy="6" r="6" style="fill:${colorEntry.color};"/>
-          </svg>`
-          : "";
-        return `<tr><td class="key">${keyColor}<span>${sanitize(key)}</span></td><td class="value">${sanitize(val)}</td></tr>`;
-      })
-      .join("");
-    return `<table><tbody>${rows}</tbody></table>`;
+      } else {
+        rows.push(`<tr>${keyHtml}${valHtml}</tr>`);
+      }
+    }
+
+    // Grouped comparison (or single) rows
+    for (const [key, values] of groupedItems.entries()) {
+      const color = colorMap.get(key);
+      const keyHtml = `<td class="key">${keyColorSvg(color)}<span>${sanitize(key)}</span></td>`;
+
+      if (hasComparison) {
+        const currentValue =
+          values.current !== undefined ? sanitize(values.current) : "";
+        const previousValue =
+          values.previous !== undefined ? sanitize(values.previous) : "";
+        rows.push(
+          `<tr>${keyHtml}<td class="value current-value">${currentValue}</td><td class="value previous-value">${previousValue}</td></tr>`,
+        );
+      } else {
+        const valueHtml =
+          values.current !== undefined ? sanitize(values.current) : "";
+        rows.push(`<tr>${keyHtml}<td class="value">${valueHtml}</td></tr>`);
+      }
+    }
+
+    return `<table><tbody>${rows.join("")}</tbody></table>`;
   };
 }
