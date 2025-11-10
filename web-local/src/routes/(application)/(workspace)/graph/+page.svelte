@@ -1,6 +1,7 @@
 <script lang="ts">
   import ResourceGraphContainer from "@rilldata/web-common/features/resource-graph/ResourceGraphContainer.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import StatsHeader from "@rilldata/web-common/features/resource-graph/StatsHeader.svelte";
   import { page } from "$app/stores";
 
   // Collect `seed` params from URL (supports multiple)
@@ -13,7 +14,10 @@
 
 <WorkspaceContainer inspector={false}>
   <div slot="header" class="header">
-    <h1>Project graph</h1>
+    <div class="header-title">
+      <h1>Project graph</h1>
+      <StatsHeader {seeds} />
+    </div>
     <p>Visualize dependencies between sources, models, dashboards, and more.</p>
   </div>
 
@@ -29,6 +33,10 @@
 
   .header h1 {
     @apply text-lg font-semibold text-foreground;
+  }
+
+  .header-title {
+    @apply flex items-center;
   }
 
   .header p {

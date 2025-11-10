@@ -15,6 +15,8 @@
 
   export let resources: V1Resource[] = [];
   export let title: string | null = null;
+  // Unique flow id to isolate multiple SvelteFlow instances
+  export let flowId: string | undefined = undefined;
 
   let hasNodes = false;
   const nodesStore = writable<Node<ResourceNodeData>[]>([]);
@@ -23,6 +25,8 @@
 
   // Props and events for expansion control
   export let showControls = false;
+  // Controls bar: toggle visibility of the lock/interactive button
+  export let showLock = true;
   export let enableExpand = true;
   export let fillParent = false;
   import { createEventDispatcher } from "svelte";
@@ -54,7 +58,24 @@
     const edges = $edgesStore as Edge[];
     const selectedIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
     if (!selectedIds.size) {
-      edgesViewStore.set(edges);
+      const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+      edgesViewStore.set(
+        edges.map((e) => {
+          const s = nodeMap.get(e.source);
+          const t = nodeMap.get(e.target);
+          let offset = 8;
+          if (s && t) {
+            const sx = (s.position?.x ?? 0) + (s.width ?? 0) / 2;
+            const sy = (s.position?.y ?? 0) + (s.height ?? 0);
+            const tx = (t.position?.x ?? 0) + (t.width ?? 0) / 2;
+            const ty = (t.position?.y ?? 0);
+            const dx = Math.abs(tx - sx);
+            const dy = Math.abs(ty - sy);
+            if (dx < 12) offset = 4; else offset = Math.max(6, Math.min(18, Math.round(dy / 10)));
+          }
+          return { ...e, pathOptions: { offset, borderRadius: 6 } };
+        }),
+      );
       // clear route highlight flags if nothing is selected
       nodesStore.update((nds) => nds.map((n) => ({
         ...n,
@@ -101,11 +122,30 @@
       ...downstreamVisited,
     ]);
 
+    // Compute a dynamic offset for smoother, straighter routes.
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
     edgesViewStore.set(
-      edges.map((e) => ({
-        ...e,
-        style: highlighted.has(e.id) ? HIGHLIGHT_EDGE_STYLE : DIM_EDGE_STYLE,
-      })),
+      edges.map((e) => {
+        const s = nodeMap.get(e.source);
+        const t = nodeMap.get(e.target);
+        let offset = 8; // default
+        if (s && t) {
+          const sx = (s.position?.x ?? 0) + (s.width ?? 0) / 2;
+          const sy = (s.position?.y ?? 0) + (s.height ?? 0); // bottom handle
+          const tx = (t.position?.x ?? 0) + (t.width ?? 0) / 2;
+          const ty = (t.position?.y ?? 0); // top handle
+          const dx = Math.abs(tx - sx);
+          const dy = Math.abs(ty - sy);
+          // If almost vertical, keep offset tiny; if further apart, allow a bit more to avoid kinks
+          if (dx < 12) offset = 4;
+          else offset = Math.max(6, Math.min(18, Math.round(dy / 10)));
+        }
+        return {
+          ...e,
+          style: highlighted.has(e.id) ? HIGHLIGHT_EDGE_STYLE : DIM_EDGE_STYLE,
+          pathOptions: { offset, borderRadius: 6 },
+        };
+      }),
     );
 
     // Mark nodes along the traced paths as highlighted
@@ -177,28 +217,31 @@
         </button>
       {/if}
 
-      <SvelteFlow
-        nodes={nodesStore}
-        edges={edgesViewStore}
-        nodeTypes={nodeTypes}
-        proOptions={{ hideAttribution: true }}
-        fitView
-        fitViewOptions={{ padding: 0.22, minZoom: 0.05, maxZoom: 1.25, duration: 200 }}
-        preventScrolling={fillParent}
-        zoomOnScroll={fillParent}
-        panOnScroll={false}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable
-        selectionOnDrag
-        onlyRenderVisibleElements={false}
-        defaultEdgeOptions={edgeOptions}
-      >
-        <Background gap={24} />
-        {#if showControls}
-          <Controls position="top-right" />
-        {/if}
-      </SvelteFlow>
+      {#key flowId}
+        <SvelteFlow
+          id={flowId}
+          nodes={nodesStore}
+          edges={edgesViewStore}
+          nodeTypes={nodeTypes}
+          proOptions={{ hideAttribution: true }}
+          fitView
+          fitViewOptions={{ padding: 0.22, minZoom: 0.05, maxZoom: 1.25, duration: 200 }}
+          preventScrolling={fillParent}
+          zoomOnScroll={fillParent}
+          panOnScroll={false}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable
+          selectionOnDrag
+          onlyRenderVisibleElements={false}
+          defaultEdgeOptions={edgeOptions}
+        >
+          <Background gap={24} />
+          {#if showControls}
+            <Controls position="top-right" showLock={showLock} />
+          {/if}
+        </SvelteFlow>
+      {/key}
     </div>
   {:else}
     <div class="state">

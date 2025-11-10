@@ -79,6 +79,7 @@ Rendering Details and Options
 - `ResourceGraphCanvas.svelte` props:
   - `enableExpand` (default true): shows the expand button on the card.
   - `showControls`: adds SvelteFlow’s Controls inside the graph.
+  - `showLock` (default true): shows the lock/interactive toggle in Controls; set to `false` for expanded graphs.
   - `fillParent`: makes the canvas fill its container’s height (used in expanded overlay).
 - `ResourceGraph.svelte` handles:
   - Seeding logic and auto-expand on seeds.
@@ -115,4 +116,3 @@ Useful References
 - Graph renderer and overlay: `web-common/src/features/resource-graph/ResourceGraph.svelte`
 - Graph canvas and SvelteFlow setup: `web-common/src/features/resource-graph/ResourceGraphCanvas.svelte`
 - Graph data + layout builders: `web-common/src/features/resource-graph/build-resource-graph.ts`
-

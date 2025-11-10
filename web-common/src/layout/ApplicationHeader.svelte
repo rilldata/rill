@@ -127,6 +127,7 @@
       type="secondary"
       label="View Graph"
       href="/graph"
+      dataAttributes={{ 'data-sveltekit-reload': 'true' }}
       class="graph-button"
     >
       View Graph

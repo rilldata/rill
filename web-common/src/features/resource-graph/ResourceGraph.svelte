@@ -98,6 +98,7 @@
     <div class={"graph-grid " + (expandedGroup ? 'blur-[1px] pointer-events-none' : '')}>
       {#each resourceGroups as group, index (group.id)}
         <ResourceGraphCanvas
+          flowId={group.id}
           resources={group.resources}
           title={formatGroupTitle(group, index)}
           on:expand={() => {
@@ -118,9 +119,11 @@
         </div>
         <div class="graph-overlay-body">
           <ResourceGraphCanvas
+            flowId={`${expandedGroup.id}-expanded`}
             resources={expandedGroup.resources}
             title={null}
             showControls={true}
+            showLock={false}
             enableExpand={false}
             fillParent={true}
           />
