@@ -26,6 +26,43 @@ curl -X POST https://api.rilldata.com/v1/organizations/<org-name>/projects/<proj
   -d '{"param1": "value1", "param2": "value2"}'
 ```
 
+## Testing custom APIs locally
+
+When developing and testing custom APIs with Rill Developer on localhost, you can access your APIs without authentication at:
+
+```
+http://localhost:9009/v1/instances/default/api/<filename>
+```
+
+Where `<filename>` is the name of your API file (without the `.yaml` extension).
+
+### Local API examples
+
+For a custom API defined in `my-api.yaml`:
+
+**GET request:**
+```bash
+curl "http://localhost:9009/v1/instances/default/api/my-api?param1=value1&param2=value2"
+```
+
+**POST request:**
+```bash
+curl -X POST http://localhost:9009/v1/instances/default/api/my-api \
+  -H "Content-Type: application/json" \
+  -d '{"param1": "value1", "param2": "value2"}'
+```
+
+### Local OpenAPI schema
+
+You can also access the OpenAPI spec locally without authentication:
+```bash
+curl http://localhost:9009/v1/instances/default/api/openapi -o openapi.json
+```
+
+:::note
+Local development URLs do not require authentication tokens. This makes it easy to test your APIs during development, but remember to implement proper authentication when deploying to production.
+:::
+
 ## OpenAPI schema
 
 Rill automatically generates an OpenAPI spec that combines the built-in metrics APIs with your custom API definitions. You can use this OpenAPI spec to generate a typed client for accessing Rill from your programming language of choice. You can download the customized OpenAPI spec with:

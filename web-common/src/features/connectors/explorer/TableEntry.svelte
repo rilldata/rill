@@ -80,7 +80,7 @@
     <svelte:element
       this={element}
       class="clickable-text"
-      {...allowNavigateToTable && href ? { href } : {}}
+      {...allowNavigateToTable && isOlapConnector && href ? { href } : {}}
       role="menuitem"
       tabindex="0"
       on:click={() => {
