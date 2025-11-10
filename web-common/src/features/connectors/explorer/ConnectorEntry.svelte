@@ -28,11 +28,8 @@
   $: implementsWarehouse = connector.driver?.implementsWarehouse;
 
   // Show connectors that can provide table browsing (OLAP, SQL stores, or warehouses)
-  $: canBrowseTables = !!(
-    implementsOlap ||
-    implementsSqlStore ||
-    implementsWarehouse
-  );
+  $: canBrowseTables =
+    implementsOlap || implementsSqlStore || implementsWarehouse;
 </script>
 
 <!-- Show all connectors that support table browsing -->
