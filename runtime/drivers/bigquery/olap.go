@@ -127,11 +127,10 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 
 // Lookup implements drivers.OLAPInformationSchema.
 func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	defer client.Close()
 
 	table := client.Dataset(schema).Table(name)
 	meta, err := table.Metadata(ctx)
