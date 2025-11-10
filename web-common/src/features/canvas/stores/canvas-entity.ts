@@ -242,15 +242,18 @@ export class CanvasEntity {
       if (projectId && !builderContext) {
         let homeBookmarkUrlSearch: string | undefined = undefined;
         try {
-          const { adminServiceListBookmarks } = await import(
+          // Only gets imported in admin context
+          const { getAdminServiceListBookmarksQueryOptions } = await import(
             "@rilldata/web-admin/client"
           );
 
-          const response = await adminServiceListBookmarks({
+          const queryOptions = getAdminServiceListBookmarksQueryOptions({
             projectId,
             resourceKind: ResourceKind.Canvas,
             resourceName: canvasName,
           });
+
+          const response = await queryClient.fetchQuery(queryOptions);
 
           const homeBookmark = response.bookmarks?.find(
             (bookmark) => bookmark.default,
