@@ -430,8 +430,8 @@
   {canvasName}
   {maxWidth}
   {filtersEnabled}
-  onClick={resetSelection}
   showGrabCursor={activelyDragging}
+  onClick={resetSelection}
   bind:clientWidth
 >
   {#each layoutRows as row, rowIndex (rowIndex)}

@@ -18,7 +18,6 @@ import {
   writable,
   type Readable,
   type Unsubscriber,
-  type Writable,
 } from "svelte/store";
 import { parseDocument } from "yaml";
 import type { FileArtifact } from "../../entity-management/file-artifact";
@@ -38,18 +37,25 @@ import { Grid } from "./grid";
 import { TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
+import { redirect } from "@sveltejs/kit";
+
+export const lastVisitedState = new Map<string, string>();
 
 // Store for managing URL search parameters
 // Which may be in the URL or in the Canvas YAML
 // Set returns a boolean indicating whether the value was set
 export type SearchParamsStore = {
   subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
-  set: (key: string, value?: string, checkIfSet?: boolean) => boolean;
+  set: (
+    key: string,
+    value?: string,
+    checkIfSet?: boolean,
+    replaceState?: boolean,
+  ) => boolean;
   clearAll: () => void;
 };
 
 export class CanvasEntity {
-  name: string;
   components = new Map<string, BaseCanvasComponent>();
 
   _rows: Grid = new Grid(this);
@@ -74,15 +80,10 @@ export class CanvasEntity {
   themeName = writable<string | undefined>(undefined);
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber;
-  lastVisitedState: Writable<string | null> = writable(null);
-
-  defaultUrlParamsStore: Readable<{
-    data: URLSearchParams;
-    isPending: boolean;
-  }>;
+  private searchParams = writable<URLSearchParams>(new URLSearchParams());
 
   constructor(
-    name: string,
+    public name: string,
     private instanceId: string,
   ) {
     this.specStore = useCanvas(
@@ -96,13 +97,15 @@ export class CanvasEntity {
       queryClient,
     );
 
-    this.name = name;
-
     const searchParamsStore: SearchParamsStore = (() => {
       return {
-        subscribe: derived(page, ({ url: { searchParams } }) => searchParams)
-          .subscribe,
-        set: (key: string, value: string | undefined, checkIfSet = false) => {
+        subscribe: this.searchParams.subscribe,
+        set: (
+          key: string,
+          value: string | undefined,
+          checkIfSet = false,
+          replaceState = false,
+        ) => {
           const url = get(page).url;
 
           if (checkIfSet && url.searchParams.has(key)) return false;
@@ -112,7 +115,8 @@ export class CanvasEntity {
           } else {
             url.searchParams.set(key, value);
           }
-          goto(url.toString(), { replaceState: true }).catch(console.error);
+
+          goto(url.toString(), { replaceState }).catch(console.error);
           return true;
         },
         clearAll: () => {
@@ -177,9 +181,6 @@ export class CanvasEntity {
       }
     });
 
-    // TODO: merge more stores once we add support for defaults for those.
-    this.defaultUrlParamsStore = this.timeControls.defaultUrlParamsStore;
-
     this.theme = createResolvedThemeStore(
       this.themeName,
       this.specStore,
@@ -187,8 +188,24 @@ export class CanvasEntity {
     );
   }
 
-  onUrlParamsChange = (urlParams: URLSearchParams) => {
+  onUrlParamsChange = async (
+    urlParams: URLSearchParams,
+    builderContext?: boolean,
+  ) => {
+    if (builderContext) {
+      const redirected = await CanvasEntity.handleCanvasRedirect({
+        canvasName: this.name,
+        searchParams: urlParams,
+        pathname: window.location.pathname,
+        builderContext: true,
+      });
+
+      if (redirected) return;
+    }
+
+    this.searchParams.set(urlParams);
     this.themeName.set(urlParams.get("theme") ?? undefined);
+    this.saveSnapshot(urlParams.toString());
   };
 
   // Not currently being used
@@ -196,18 +213,75 @@ export class CanvasEntity {
     // this.unsubscriber();
   };
 
-  saveSnapshot = (filterState: string) => {
-    this.lastVisitedState.set(filterState);
+  static handleCanvasRedirect = async ({
+    canvasName,
+    searchParams,
+    pathname,
+    projectId,
+    builderContext,
+  }: {
+    canvasName: string;
+    searchParams: URLSearchParams;
+    pathname: string;
+    projectId?: string;
+    builderContext?: true;
+  }) => {
+    // If there are no URL params, check for last visited state or home bookmark
+    if (searchParams.size === 0) {
+      const snapshotSearchParams = lastVisitedState.get(canvasName);
+
+      if (snapshotSearchParams) {
+        if (builderContext) {
+          await goto(`?${snapshotSearchParams}`, { replaceState: true });
+          return true;
+        } else {
+          throw redirect(307, `?${snapshotSearchParams}`);
+        }
+      }
+
+      if (projectId && !builderContext) {
+        let homeBookmarkUrlSearch: string | undefined = undefined;
+        try {
+          // Only gets imported in admin context
+          const { getAdminServiceListBookmarksQueryOptions } = await import(
+            "@rilldata/web-admin/client"
+          );
+
+          const queryOptions = getAdminServiceListBookmarksQueryOptions({
+            projectId,
+            resourceKind: ResourceKind.Canvas,
+            resourceName: canvasName,
+          });
+
+          const response = await queryClient.fetchQuery(queryOptions);
+
+          const homeBookmark = response.bookmarks?.find(
+            (bookmark) => bookmark.default,
+          );
+
+          homeBookmarkUrlSearch = homeBookmark?.urlSearch;
+        } catch (e) {
+          console.error("Error fetching bookmarks for canvas redirect:", e);
+        }
+
+        if (homeBookmarkUrlSearch) {
+          throw redirect(307, homeBookmarkUrlSearch);
+        }
+      }
+    } else if (searchParams.get("default")) {
+      // If the default parameter exists, we clear last visited state and redirect to clean URL
+      lastVisitedState.set(canvasName, "");
+      if (builderContext) {
+        await goto(pathname, { replaceState: true });
+        return true;
+      } else {
+        throw redirect(307, pathname);
+      }
+    }
   };
 
-  restoreSnapshot = async (initState: string | undefined) => {
-    const stateToRestore = get(this.lastVisitedState) ?? initState;
-
-    if (stateToRestore) {
-      await goto(`?${stateToRestore}`, {
-        replaceState: true,
-      });
-    }
+  saveSnapshot = (filterState: string) => {
+    lastVisitedState.set(this.name, filterState);
   };
 
   duplicateItem = (id: string) => {

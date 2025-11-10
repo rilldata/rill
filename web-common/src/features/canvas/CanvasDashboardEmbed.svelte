@@ -7,13 +7,10 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let resource: V1Resource;
+  export let canvasName: string;
   export let navigationEnabled: boolean = true;
-  export let homeBookmarkUrlSearch: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
-
-  $: meta = resource?.meta;
-  $: canvasName = meta?.name?.name as string;
 
   $: canvas = resource?.canvas;
   $: maxWidth = canvas?.spec?.maxWidth || DEFAULT_DASHBOARD_WIDTH;
@@ -31,7 +28,6 @@
     {canvasName}
     filtersEnabled={canvas?.spec?.filtersEnabled}
     embedded
-    {homeBookmarkUrlSearch}
   >
     {#each rows as row, rowIndex (rowIndex)}
       <StaticCanvasRow
