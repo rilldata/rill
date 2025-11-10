@@ -97,7 +97,7 @@ type Connection struct {
 	storage *storage.Client
 	logger  *zap.Logger
 
-	client    *bigquery.Client // lazily populated using acquireClient
+	client    *bigquery.Client // lazily populated using getClient
 	clientErr error
 	clientMu  *semaphore.Weighted
 }
@@ -106,7 +106,7 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
@@ -225,8 +225,8 @@ func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-// acquireClient initializes and caches a BigQuery client
-func (c *Connection) acquireClient(ctx context.Context) (*bigquery.Client, error) {
+// getClient initializes and caches a BigQuery client
+func (c *Connection) getClient(ctx context.Context) (*bigquery.Client, error) {
 	err := c.clientMu.Acquire(ctx, 1)
 	if err != nil {
 		return nil, err
