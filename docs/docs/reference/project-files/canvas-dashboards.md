@@ -192,6 +192,22 @@ _[oneOf]_ - Name of the theme to use. Only one of theme and embedded_theme can b
 
       - **`secondary`** - _[string]_ - Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
+    - **`light`** - _[object]_ - Light theme color configuration 
+
+      - **`primary`** - _[string]_ - Primary color for light theme. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+      - **`secondary`** - _[string]_ - Secondary color for light theme. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+      - **`variables`** - _[object]_ - Custom CSS variables for light theme 
+
+    - **`dark`** - _[object]_ - Dark theme color configuration 
+
+      - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+      - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+
+      - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
+
 ### `security`
 
 _[object]_ - Defines [security rules and access control policies](/build/metrics-view/security) for dashboards (without row filtering) 
