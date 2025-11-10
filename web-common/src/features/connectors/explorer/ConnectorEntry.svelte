@@ -13,7 +13,6 @@
 
   export let connector: V1AnalyzedConnector;
   export let store: ConnectorExplorerStore;
-  export let olapOnly: boolean = false;
 
   $: connectorName = connector?.name as string;
   $: expandedStore = store.getItem(connectorName);
@@ -28,12 +27,12 @@
   $: implementsSqlStore = connector.driver?.implementsSqlStore;
   $: implementsWarehouse = connector.driver?.implementsWarehouse;
 
-  // Show connectors:
-  // - Only OLAP when olapOnly is true
-  // - Otherwise allow table browsing via OLAP, SQL stores, or warehouses
-  $: canBrowseTables = olapOnly
-    ? !!implementsOlap
-    : !!(implementsOlap || implementsSqlStore || implementsWarehouse);
+  // Show connectors that can provide table browsing (OLAP, SQL stores, or warehouses)
+  $: canBrowseTables = !!(
+    implementsOlap ||
+    implementsSqlStore ||
+    implementsWarehouse
+  );
 </script>
 
 <!-- Show all connectors that support table browsing -->

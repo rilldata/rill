@@ -40,7 +40,7 @@
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data.connectors as connector (connector.name)}
-          <ConnectorEntry {connector} {store} {olapOnly} />
+          <ConnectorEntry {connector} {store} />
         {/each}
       </ol>
     {/if}
