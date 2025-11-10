@@ -248,6 +248,7 @@
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
+    $errors = {};
     // Only reset the form if it has been modified
     if (hasFormChanges) {
       $form.name = initialValues.name;
