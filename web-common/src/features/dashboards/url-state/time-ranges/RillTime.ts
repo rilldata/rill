@@ -498,7 +498,7 @@ export class RillLegacyDaxInterval implements RillTimeInterval {
   public getGrain() {
     const entry = PERIOD_TO_DATE_RANGES[this.name];
 
-    return entry?.minimumTimeGrain;
+    return entry?.defaultGrain;
   }
 
   public toString() {

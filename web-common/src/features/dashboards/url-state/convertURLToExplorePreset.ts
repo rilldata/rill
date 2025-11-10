@@ -20,6 +20,7 @@ import {
   FromURLParamTimeDimensionMap,
   FromURLParamTimeGrainMap,
   FromURLParamViewMap,
+  ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   parseRillTime,
@@ -122,6 +123,8 @@ export function convertURLToExplorePreset(
     searchParams,
     dimensions,
   );
+
+  console.log({ trPreset, trErrors });
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
@@ -328,6 +331,7 @@ export function fromTimeRangesParams(
 
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
+
     if (tg in FromURLParamTimeGrainMap) {
       preset.timeGrain = tg;
     } else {
@@ -338,7 +342,11 @@ export function fromTimeRangesParams(
       const parsed = parseRillTime(preset.timeRange ?? "");
       const grain = getAggregationGrain(parsed);
 
-      preset.timeGrain = grain;
+      if (grain && grain in ToURLParamTimeGrainMapMap) {
+        preset.timeGrain = ToURLParamTimeGrainMapMap[grain];
+      } else {
+        errors.push(getSingleFieldError("time grain", grain ?? "undefined"));
+      }
     } catch {
       // ignore
     }

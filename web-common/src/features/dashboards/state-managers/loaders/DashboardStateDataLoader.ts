@@ -331,6 +331,16 @@ export class DashboardStateDataLoader {
       // The exception to this is when back button is pressed and the user landed on empty url.
       backButtonUsed;
 
+    console.log({
+      exploreStateFromSessionStorage,
+      partialExploreStateFromUrl,
+      mostRecentPartialExploreState,
+      bookmarkOrTokenExploreState,
+      exploreStateFromYAMLConfig,
+      rillDefaultExploreState,
+      shouldSkipOtherSources,
+    });
+
     const exploreStateOrder = [
       // 1st priority is the state from url params. For certain params the state is from session storage.
       // We need the state from session storage to make sure any state is not cleared while the user is still on the page but came back from a different dashboard.
@@ -358,6 +368,7 @@ export class DashboardStateDataLoader {
       nonEmptyExploreStateOrder,
     ) as ExploreState;
 
+    console.log({ finalExploreState });
     return finalExploreState;
   }
 }
