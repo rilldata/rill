@@ -31,7 +31,7 @@ sql: SELECT * from table where column = {{partition.num}}
 
 #### Using Other Connectors for Partition Queries
 
-You can use **Athena**, **BigQuery**, **MySQL**, **Postgres**, **Redshift**, or **Snowflake** as the OLAP engine for your partition queries by specifying a `connector` in the `partitions` section. This is particularly useful when:
+You can query partitions directly from data sources like **Athena**, **BigQuery**, **MySQL**, **Postgres**, **Redshift**, or **Snowflake** by specifying a `connector` in the `partitions` section. This is particularly useful when:
 - Your source data is already in these data warehouses or databases
 - You want to leverage native partitioning features (like BigQuery's `_PARTITIONTIME`)
 - You need to query large tables that benefit from the warehouse's optimization
