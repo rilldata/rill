@@ -128,12 +128,14 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
-	if c.config.QuerySettingsOverride != "" {
-		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
-	} else {
-		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
-		if c.config.QuerySettings != "" {
-			stmt.Query += ", " + c.config.QuerySettings
+	if c.supportSettings {
+		if c.config.QuerySettingsOverride != "" {
+			stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
+		} else {
+			stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+			if c.config.QuerySettings != "" {
+				stmt.Query += ", " + c.config.QuerySettings
+			}
 		}
 	}
 
@@ -355,7 +357,7 @@ func (c *Connection) acquireConn(ctx context.Context) (*SQLConn, func() error, e
 		c.used()
 		return conn.Close()
 	}
-	return &SQLConn{Conn: conn}, release, nil
+	return &SQLConn{Conn: conn, supportSettings: c.supportSettings}, release, nil
 }
 
 // acquireWriteConn returns a ClickHouse write connection for write operations. It should only be used internally in acquireOLAPConn.
@@ -370,7 +372,7 @@ func (c *Connection) acquireWriteConn(ctx context.Context) (*SQLConn, func() err
 		c.used()
 		return conn.Close()
 	}
-	return &SQLConn{Conn: conn}, release, nil
+	return &SQLConn{Conn: conn, supportSettings: c.supportSettings}, release, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
@@ -408,45 +410,32 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 type SQLConn struct {
 	*sqlx.Conn
+	supportSettings bool
 }
 
 func (sc *SQLConn) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	rows, err := sc.Conn.QueryxContext(ctx, query, args...)
-	if err != nil && isReadonlyMaxExecTimeError(err) && hasDeadline(ctx) {
-		ctx2, cancel := contextWithoutDeadline(ctx)
-		defer cancel()
-		return sc.Conn.QueryxContext(ctx2, query, args...)
+	if sc.supportSettings {
+		return sc.Conn.QueryxContext(ctx, query, args...)
 	}
-	return rows, err
+	ctx2 := contextWithoutDeadline(ctx)
+	return sc.Conn.QueryxContext(ctx2, query, args...)
 }
 
 func (sc *SQLConn) QueryRowContext(ctx context.Context, query string, args ...any) *sqlx.Row {
-	row := sc.Conn.QueryRowxContext(ctx, query, args...)
-	err := row.Err()
-	if err != nil && isReadonlyMaxExecTimeError(err) && hasDeadline(ctx) {
-		ctx2, cancel := contextWithoutDeadline(ctx)
-		defer cancel()
-		row = sc.Conn.QueryRowxContext(ctx2, query, args...)
+	if sc.supportSettings {
+		return sc.Conn.QueryRowxContext(ctx, query, args...)
 	}
-	return row
+	ctx2 := contextWithoutDeadline(ctx)
+	return sc.Conn.QueryRowxContext(ctx2, query, args...)
 }
 
-func isReadonlyMaxExecTimeError(err error) bool {
-	return strings.Contains(err.Error(), "Cannot modify 'max_execution_time' setting in readonly mode")
-}
-
-func hasDeadline(ctx context.Context) bool {
-	_, ok := ctx.Deadline()
-	return ok
-}
-
-func contextWithoutDeadline(parent context.Context) (context.Context, context.CancelFunc) {
+func contextWithoutDeadline(parent context.Context) context.Context {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		<-parent.Done()
 		cancel()
 	}()
-	return ctx, cancel
+	return ctx
 }
 
 // databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
