@@ -47,7 +47,7 @@
     formEl: HTMLFormElement;
     cancel: () => void;
     result: Extract<ActionResult, { type: "success" | "failure" }>;
-  }) => Promise<void>;
+  }) => Promise<void> = async (_event) => {};
 
   const formManager = new AddDataFormManager({
     connector,
