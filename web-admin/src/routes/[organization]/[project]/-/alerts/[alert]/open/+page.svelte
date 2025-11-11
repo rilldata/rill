@@ -43,6 +43,7 @@
     },
     {
       exploreProtoState: alertSpec?.annotations?.web_open_state,
+      ignoreFilters: !!token,
     },
   );
 

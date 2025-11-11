@@ -36,6 +36,7 @@
       exploreProtoState:
         reportResource?.report?.spec?.annotations?.web_open_state,
       forceOpenPivot: true,
+      ignoreFilters: !!token,
     },
   );
 

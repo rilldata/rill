@@ -59,6 +59,7 @@ export async function getDashboardFromAggregationRequest({
   metricsView,
   explore,
   exploreProtoState,
+  ignoreFilters,
   forceOpenPivot,
 }: TransformerArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
@@ -82,14 +83,18 @@ export async function getDashboardFromAggregationRequest({
     executionTime,
   );
 
-  if (req.where) {
+  if (!ignoreFilters && req.where) {
     const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
       req.where,
     );
     dashboard.whereFilter = dimensionFilters;
     dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
   }
-  if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
+  if (
+    !ignoreFilters &&
+    req.having?.cond?.exprs?.length &&
+    req.dimensions?.[0]?.name
+  ) {
     const dimension = req.dimensions[0].name;
     if (exprHasComparison(req.having)) {
       // We do not support comparison based dimension threshold filter in dashboards right now.
