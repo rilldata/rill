@@ -37,9 +37,9 @@ _[object]_ - Light theme color configuration
 
 _[object]_ - Dark theme color configuration 
 
-  - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`primary`** - _[string]_ - Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
-  - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
+  - **`secondary`** - _[string]_ - Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. 
 
   - **`variables`** - _[object]_ - Custom CSS variables for dark theme 
 
