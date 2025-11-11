@@ -238,15 +238,15 @@ time_ranges:
   - rill-PYC
 theme:
   light:
-    primary: "14B8A6"  # Teal-500
-    secondary: "10B981"  # Emerald-500
+    primary: "#14B8A6"  # Teal-500
+    secondary: "#10B981"  # Emerald-500
     variables:
       color-sequential-1: "hsl(180deg 80% 95%)"
       color-sequential-5: "hsl(180deg 80% 50%)"
       color-sequential-9: "hsl(180deg 80% 25%)"
   dark:
-    primary: "2DD4BF"  # Teal-400
-    secondary: "34D399"  # Emerald-400
+    primary: "#2DD4BF"  # Teal-400
+    secondary: "#34D399"  # Emerald-400
 
 security:
     access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies '{{ .user.domain }}' == 'example.com'"  # only access can be set on dashboard level, see metric view for detailed access policies
