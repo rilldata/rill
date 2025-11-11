@@ -175,7 +175,17 @@ function estimateNodeWidth(label?: string | null) {
   );
 }
 
-export function buildResourceGraph(resources: V1Resource[]) {
+type BuildGraphOptions = {
+  // Namespace for caching node positions. Using a per-graph id avoids reusing
+  // coordinates from unrelated graphs, which can place nodes far away.
+  positionNs?: string;
+  // If true, skip using cached positions and rely on Dagre layout.
+  // Helpful to recover from stale caches that can cause overlaps.
+  ignoreCache?: boolean;
+};
+
+export function buildResourceGraph(resources: V1Resource[], opts?: BuildGraphOptions) {
+  const positionNs = opts?.positionNs?.trim() || "global";
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setGraph({
     rankdir: "TB",
@@ -291,11 +301,12 @@ export function buildResourceGraph(resources: V1Resource[]) {
       x: dagreNode.x - nodeWidth / 2,
       y: dagreNode.y - (node.height ?? DEFAULT_NODE_HEIGHT) / 2,
     };
-    const cached = lastPositions.get(node.id);
+    const posKey = `${positionNs}|${node.id}`;
+    const cached = opts?.ignoreCache ? undefined : lastPositions.get(posKey);
     node.position = cached ?? computed;
     node.targetPosition = Position.Top;
     node.sourcePosition = Position.Bottom;
-    lastPositions.set(node.id, node.position);
+    lastPositions.set(posKey, node.position);
   }
 
   // Persist positions for future renders

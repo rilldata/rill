@@ -9,12 +9,19 @@
   import '@xyflow/svelte/dist/base.css';
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { writable } from "svelte/store";
+  import { onMount, onDestroy } from "svelte";
   import { buildResourceGraph } from "./build-resource-graph";
   import ResourceNode from "./ResourceNode.svelte";
   import type { ResourceNodeData } from "./types";
 
   export let resources: V1Resource[] = [];
   export let title: string | null = null;
+  // Fine-grained title rendering: base label + error count with conditional coloring
+  export let titleLabel: string | null = null;
+  export let titleErrorCount: number | null = null;
+  export let anchorError: boolean = false;
+  // Preselect specific nodes by id on initial render (e.g., the seeded anchor)
+  export let preselectNodeIds: string[] | undefined = undefined;
   // Unique flow id to isolate multiple SvelteFlow instances
   export let flowId: string | undefined = undefined;
 
@@ -22,6 +29,28 @@
   const nodesStore = writable<Node<ResourceNodeData>[]>([]);
   const edgesStore = writable<Edge[]>([]);
   const edgesViewStore = writable<Edge[]>([]);
+  let flowKey = "";
+  let containerKey = "";
+  let containerEl: HTMLDivElement | null = null;
+  let ro: ResizeObserver | null = null;
+
+  onMount(() => {
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        const next = `${Math.round(width)}x${Math.round(height)}`;
+        if (next !== containerKey) containerKey = next;
+      });
+      if (containerEl) ro.observe(containerEl);
+    }
+  });
+
+  onDestroy(() => {
+    try { ro?.disconnect(); } catch {}
+    ro = null;
+  });
 
   // Props and events for expansion control
   export let showControls = false;
@@ -156,7 +185,7 @@
   })();
 
   $: {
-    const graph = buildResourceGraph(resources ?? []);
+    const graph = buildResourceGraph(resources ?? [], { positionNs: flowId, ignoreCache: true });
     const nodeIds = new Set(graph.nodes.map((n) => n.id));
     const filteredEdges = graph.edges.filter(
       (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
@@ -164,12 +193,30 @@
     nodesStore.set(graph.nodes as Node<ResourceNodeData>[]);
     edgesStore.set(filteredEdges);
     hasNodes = graph.nodes.length > 0;
+    // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes
+    try {
+      const nodeSig = graph.nodes.map((n) => n.id).sort().join(",");
+      const edgeSig = filteredEdges
+        .map((e) => e.id || `${e.source}->${e.target}`)
+        .sort()
+        .join(",");
+      flowKey = `${flowId ?? 'flow'}|${fillParent ? 'E' : 'N'}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
+    } catch {
+      flowKey = `${flowId ?? 'flow'}|${fillParent ? 'E' : 'N'}|${Date.now()}`;
+    }
     console.log("ResourceGraph graph", {
       title,
       nodes: graph.nodes.map((n) => n.id),
       edges: filteredEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
     });
   }
+
+  // Apply preselection for seeded anchors (runs when preselectNodeIds or nodes change)
+  $: (function applyPreselection() {
+    const ids = new Set(preselectNodeIds ?? []);
+    // Always set selected based on current ids; if empty, clear selection
+    nodesStore.update((nds) => nds.map((n) => ({ ...n, selected: ids.has(n.id) })));
+  })();
 
   // $: {
   //   const graph = buildResourceGraph(resources ?? []);
@@ -200,12 +247,22 @@
 </script>
 
 <section class="graph-instance">
-  {#if title}
+  {#if titleLabel != null}
+    <h2 class="graph-title">
+      <span class={anchorError ? 'text-red-600' : ''}>{titleLabel}</span>
+      {#if titleErrorCount && titleErrorCount > 0}
+        <span class={anchorError ? 'text-red-600' : 'text-red-600'}>
+          {' '}
+          • {titleErrorCount} error{titleErrorCount === 1 ? '' : 's'}
+        </span>
+      {/if}
+    </h2>
+  {:else if title}
     <h2 class="graph-title">{title}</h2>
   {/if}
 
   {#if hasNodes}
-    <div class={"graph-container " + containerHeightClass}>
+    <div class={"graph-container " + containerHeightClass} bind:this={containerEl}>
       {#if enableExpand}
         <button
           class="expand-btn"
@@ -217,7 +274,7 @@
         </button>
       {/if}
 
-      {#key flowId}
+      {#key flowKey}
         <SvelteFlow
           id={flowId}
           nodes={nodesStore}
@@ -226,8 +283,8 @@
           proOptions={{ hideAttribution: true }}
           fitView
           fitViewOptions={{ padding: 0.22, minZoom: 0.05, maxZoom: 1.25, duration: 200 }}
-          preventScrolling={fillParent}
-          zoomOnScroll={fillParent}
+          preventScrolling={false}
+          zoomOnScroll={false}
           panOnScroll={false}
           nodesDraggable={false}
           nodesConnectable={false}
@@ -268,7 +325,7 @@
   }
 
   .expand-btn {
-    @apply absolute right-2 top-2 z-10 h-7 w-7 rounded border border-gray-300 bg-white text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-800;
+    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border border-gray-300 bg-white text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-800;
     line-height: 1.25rem;
   }
 </style>

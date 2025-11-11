@@ -33,6 +33,16 @@ URL Seeds (deep links)
   - If you pass only `name` (no `:`), it defaults to a metrics view: `?seed=Orders`
 - Multiple seeds example: `?seed=metrics:Orders&seed=model:clean_orders`
 
+Kind Seeds (expand to all)
+
+- You can pass a kind token without a name to expand into one seed per visible resource of that kind (1 graph per resource):
+  - `?seed=metrics` → one graph per MetricsView
+  - `?seed=sources` → one graph per Source (includes models that are defined-as-source)
+  - `?seed=models` → one graph per Model
+  - `?seed=dashboards` → one graph per Explore
+- These tokens can be combined with explicit seeds, e.g. `?seed=metrics&seed=model:clean_orders`.
+- If you actually have a metrics view named "metrics", target it explicitly with `?seed=metrics:metrics`.
+
 Seed Aliases
 
 - The following aliases map to runtime kinds in `ResourceGraph.svelte`:

@@ -55,10 +55,71 @@
     return mapped ? ({ kind: mapped, name: namePart } as V1ResourceName) : s;
   }
 
-  $: normalizedSeeds = (seeds ?? []).map((s) => normalizeSeed(s));
+  function isKindToken(s: string): ResourceKind | undefined {
+    const key = s.trim().toLowerCase();
+    switch (key) {
+      case "metrics":
+      case "metric":
+      case "metricsview":
+        return ResourceKind.MetricsView;
+      case "dashboards":
+      case "dashboard":
+      case "explore":
+      case "explores":
+        return ResourceKind.Explore;
+      case "models":
+      case "model":
+        return ResourceKind.Model;
+      case "sources":
+      case "source":
+        return ResourceKind.Source;
+      default:
+        return undefined;
+    }
+  }
+
+  function expandSeedsByKind(seedStrings: string[] | undefined, resList: V1Resource[]) {
+    const input = seedStrings ?? [];
+    const expanded: (string | V1ResourceName)[] = [];
+    const seen = new Set<string>();
+    const pushSeed = (s: string | V1ResourceName) => {
+      const id = typeof s === "string" ? s : `${s.kind}:${s.name}`;
+      if (seen.has(id)) return;
+      seen.add(id);
+      expanded.push(s);
+    };
+    const visible = resList.filter(
+      (r) => ALLOWED.has(coerceKind(r) as ResourceKind) && !r.meta?.hidden,
+    );
+    for (const raw of input) {
+      if (!raw) continue;
+      if (raw.includes(":")) {
+        pushSeed(normalizeSeed(raw));
+        continue;
+      }
+      const tokenKind = isKindToken(raw);
+      if (!tokenKind) {
+        pushSeed(normalizeSeed(raw));
+        continue;
+      }
+      for (const r of visible) {
+        if (coerceKind(r) !== tokenKind) continue;
+        const name = r.meta?.name?.name;
+        const kind = r.meta?.name?.kind;
+        if (!name || !kind) continue;
+        pushSeed({ kind, name } as V1ResourceName);
+      }
+    }
+    return expanded;
+  }
+
+  $: normalizedSeeds = expandSeedsByKind(seeds, resources);
 
   // Counts
-  $: allowedResources = resources.filter((r) => ALLOWED.has(coerceKind(r) as ResourceKind));
+  // Only count visible resources to match what the graph renders
+  $: allowedResources = resources.filter(
+    (r) => ALLOWED.has(coerceKind(r) as ResourceKind) && !r.meta?.hidden,
+  );
   $: sourcesCount = allowedResources.filter((r) => coerceKind(r) === ResourceKind.Source).length;
   $: modelsCount = allowedResources.filter((r) => coerceKind(r) === ResourceKind.Model).length;
   $: metricsCount = allowedResources.filter((r) => coerceKind(r) === ResourceKind.MetricsView).length;
