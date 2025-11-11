@@ -74,7 +74,8 @@ export async function getDashboardFromAggregationRequest({
     loadedFromState = true;
   }
 
-  fillTimeRange(
+  await fillTimeRange(
+    explore,
     dashboard,
     req.timeRange,
     req.comparisonTimeRange,

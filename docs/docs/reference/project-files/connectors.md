@@ -503,10 +503,6 @@ bucket: "my-gcs-bucket" # Name of gcs bucket
 
 _[string]_ - Refers to the driver type and must be driver `https` _(required)_
 
-### `path`
-
-_[string]_ - The full HTTPS URI to fetch data from _(required)_
-
 ### `headers`
 
 _[object]_ - HTTP headers to include in the request 
@@ -515,7 +511,6 @@ _[object]_ - HTTP headers to include in the request
 # Example: HTTPS connector configuration
 type: connector # Must be `connector` (required)
 driver: https # Must be `https` _(required)_
-path: "https://api.example.com/data.csv" # The full HTTPS URI to fetch data from  
 headers:
     "Authorization": "Bearer my-token" # HTTP headers to include in the request
 ```
