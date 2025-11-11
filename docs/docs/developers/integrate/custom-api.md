@@ -5,7 +5,7 @@ sidebar_label: "Custom API Integration"
 sidebar_position: 20
 ---
 
-Rill exposes [custom APIs](/build/custom-apis) you have created with `type: api` as HTTP endpoints 
+Rill exposes [custom APIs](/developers/build/custom-apis) you have created with `type: api` as HTTP endpoints 
 at `https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/<name of api>`.
 
 ## Accessing custom APIs
@@ -105,15 +105,15 @@ rill service create my-api \
 
 :::tip Token Documentation
 For comprehensive guidance on token types, roles, custom attributes, and management:
-- **[User Tokens](/manage/user-tokens)** - Personal access tokens for development
-- **[Service Tokens](/manage/service-tokens)** - Long-lived tokens for production systems
-- **[Roles and Permissions](/manage/user-management#organization-and-project-roles)** - Understand access levels
+- **[User Tokens](/users/manage/user-tokens)** - Personal access tokens for development
+- **[Service Tokens](/users/manage/service-tokens)** - Long-lived tokens for production systems
+- **[Roles and Permissions](/users/manage/roles-permissions)** - Understand access levels
 
 :::
 
 ### Using custom attributes with security policies
 
-Service tokens can include custom attributes for fine-grained access control. Reference these attributes in your [security policies](/build/metrics-view/security#advanced-example-custom-attributes-embed-dashboards):
+Service tokens can include custom attributes for fine-grained access control. Reference these attributes in your [security policies](/developers/build/metrics-view/security#advanced-example-custom-attributes-embed-dashboards):
 
 ```yaml
 # In your metrics view

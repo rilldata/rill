@@ -5,7 +5,7 @@ sidebar_label: Service Tokens
 sidebar_position: 27
 ---
 
-Service tokens (also called service accounts) provide programmatic access to Rill Cloud for production systems, scheduled jobs, backend APIs, and other automated workflows. Unlike [user tokens](/manage/user-tokens), service tokens persist even if the creating user is removed from the organization.
+Service tokens (also called service accounts) provide programmatic access to Rill Cloud for production systems, scheduled jobs, backend APIs, and other automated workflows. Unlike [user tokens](/users/manage/user-tokens), service tokens persist even if the creating user is removed from the organization.
 
 ## Overview
 
@@ -34,7 +34,7 @@ rill service create my-service --project my-project --project-role viewer
 
 ### With Custom Attributes
 
-Custom attributes allow you to pass metadata that can be used in [security policies](/build/metrics-view/security). This is particularly useful for multi-tenant applications or when you need fine-grained access control.
+Custom attributes allow you to pass metadata that can be used in [security policies](/developers/build/metrics-view/security). This is particularly useful for multi-tenant applications or when you need fine-grained access control.
 
 ```bash
 rill service create my-service \
@@ -72,7 +72,7 @@ Service tokens have powerful permissions. Store them securely in a secrets manag
 
 ## Roles and Permissions
 
-Service tokens can be assigned roles at both the organization and project levels. For more details on using attributes with security policies, see the [security policies](/build/metrics-view/security) documentation.
+Service tokens can be assigned roles at both the organization and project levels. For more details on using attributes with security policies, see the [security policies](/developers/build/metrics-view/security) documentation.
 
 
 ## Managing Service Tokens
@@ -189,4 +189,3 @@ curl -X POST https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>
 
 The response contains a short-lived JWT token that can be used to access Rill APIs on behalf of the user.
 
-For more details, see [Custom API Integration](/integrate/custom-api#ephemeral-user-tokens).

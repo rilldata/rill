@@ -50,7 +50,7 @@ rill service create <service_name> --project <project_name> --project-role viewe
 ```
 
 :::info
-For comprehensive documentation on service tokens, including roles, custom attributes, and management, see [Service Tokens](/manage/service-tokens). Also see the [CLI reference](../reference/cli/service) for command details.
+For comprehensive documentation on service tokens, including roles, custom attributes, and management, see [Service Tokens](/users/manage/service-tokens). Also see the [CLI reference](/reference/cli/service) for command details.
 :::
 
 :::caution
@@ -282,7 +282,7 @@ The API accepts the following parameters:
 | resource    | The name of the dashboard to embed                                                                                                                                                                                                                                                                       | No (if not specified, `navigation` should be set to `true`)                   |
 | type        | The type of the dashboard identified by `resource` (options: `explore`, `canvas`)                                                                                                                                                                                                                        | No (defaults to `explore`)                                                    |
 | navigation  | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation)                                                                                                                          | No (defaults to `false`)                                                      |
-| theme       | If [themes](/build/dashboards/customization#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                                                                                                                                                                | No (set to the name of the theme)                                             |
+| theme       | If [themes](/developers/build/dashboards/customization#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                                                                                                                                                     | No (set to the name of the theme)                                             |
 | user_id     | The id of the user to embed the dashboard for                                                                                                                                                                                                                                                            | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
 | user_email  | The email of the user to embed the dashboard for                                                                                                                                                                                                                                                         | No (only one of `user_id`, `user_email`, or `attributes` should be passed in) |
 | attributes  | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy like `email`, `domain` and `admin` and any other custom attributes such as `tenantId`, `customerId`, etc. | No (It is also possible to add custom attributes here)                        |
@@ -333,7 +333,7 @@ The response of the above POST request will then contain an `iframeSrc` value th
 
 ### Testing the dashboard
 
-While it is possible to create the iframeSrc URL via the CLI or code to _test_ your embedded dashboard, it might be easier to start off using [Rill Developer's mock users](/build/metrics-view/security#advanced-example-custom-attributes-embed-dashboards), especially if you have multiple attribute views that you want to test before deploying to Rill Cloud. You can pass specific custom_attributes as you would during iframe URL generation to view the pre-filtered explore dashboard. 
+While it is possible to create the iframeSrc URL via the CLI or code to _test_ your embedded dashboard, it might be easier to start off using [Rill Developer's mock users](/developers/build/metrics-view/security#advanced-example-custom-attributes-embed-dashboards), especially if you have multiple attribute views that you want to test before deploying to Rill Cloud. You can pass specific custom_attributes as you would during iframe URL generation to view the pre-filtered explore dashboard. 
 
 ```yaml
 - email: embed@rilldata.com

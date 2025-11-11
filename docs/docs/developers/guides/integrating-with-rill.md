@@ -19,7 +19,7 @@ Rill's Admin API allows you to programmatically manage your Rill organization, i
 
 This guide assumes you have completed the following prerequisites:
 
-1. Installed the Rill developer CLI - see [Install Rill Developer](/get-started/install)
+1. Installed the Rill developer CLI - see [Install Rill Developer](/developers/get-started/install)
 2. A Rill Cloud organization and workspace - see [Rill Quickstart Guide](https://docs.rilldata.com/quickstart)
 3. Administrative access to your Rill organization
 
@@ -29,7 +29,7 @@ This guide can be completed with user tokens. These tokens are tied to your pers
 
 - [Rill Admin OpenAPI Specification](/api/admin)
 - [Service Account CLI Reference](/reference/cli/service)
-- [Custom API Integration Guide](/integrate/custom-api)
+- [Custom API Integration Guide](/developers/integrate/custom-api)
 
 ## Example: Managing Users with a Rill Service Account
 

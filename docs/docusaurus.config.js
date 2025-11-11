@@ -973,11 +973,7 @@ const config = {
           {
             from: '/guides/openrtb-analytics',
             to: '/developers/guides/demos/openrtb-analytics',
-          },
-          {
-            from: '/guides/setting-up-mcp',
-            to: '/users/guides/setting-up-mcp',
-          },
+          }
         ],
       },
     ],

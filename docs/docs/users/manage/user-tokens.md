@@ -60,7 +60,7 @@ User tokens inherit your personal permissions from your user account:
 - **Project permissions** - Your role in specific projects (admin, editor, viewer)
 - **Security policies** - Applied based on your user attributes (email, domain, groups)
 
-For more details on roles, see [Roles and Permissions](/manage/roles-permissions).
+For more details on roles, see [Roles and Permissions](/users/manage/roles-permissions).
 
 ## Managing User Tokens
 
@@ -109,5 +109,5 @@ curl https://api.rilldata.com/v1/organizations/<org>/projects/<project>/runtime/
   -H "Authorization: Bearer <user-token>"
 ```
 
-For more details, see [Custom API Integration](/integrate/custom-api).
+For more details, see [Custom API Integration](/developers/integrate/custom-api).
 
