@@ -35,8 +35,6 @@
 
   let saveAnyway = false;
   let showSaveAnyway = false;
-  let isSourceForm: boolean;
-  let isConnectorForm: boolean;
   let connectionTab: ConnectorType = "parameters";
 
   // Wire manager-provided onUpdate after declaration below
@@ -58,10 +56,10 @@
     onDsnUpdate: (e: any) => handleOnUpdate(e),
   });
 
-  $: isMultiStepConnector = formManager.isMultiStepConnector;
-  $: isSourceForm = formManager.isSourceForm;
-  $: isConnectorForm = formManager.isConnectorForm;
-  $: onlyDsn = hasOnlyDsn(connector, isConnectorForm);
+  const isMultiStepConnector = formManager.isMultiStepConnector;
+  const isSourceForm = formManager.isSourceForm;
+  const isConnectorForm = formManager.isConnectorForm;
+  const onlyDsn = hasOnlyDsn(connector, isConnectorForm);
   $: stepState = $connectorStepStore;
   $: stepProperties =
     isMultiStepConnector && stepState.step === "source"
