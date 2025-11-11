@@ -123,7 +123,6 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
-  let clickhouseHandleSaveAnyway: () => Promise<void>;
 
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -202,15 +201,19 @@
       return;
     }
 
-    // For ClickHouse, delegate to the child component's handleSaveAnyway function
-    if (connector.name === "clickhouse") {
-      await clickhouseHandleSaveAnyway();
-      return;
-    }
-
     // For other connectors, use manager helper
     saveAnyway = true;
-    const values = onlyDsn || connectionTab === "dsn" ? $dsnForm : $paramsForm;
+    const values =
+      connector.name === "clickhouse"
+        ? connectionTab === "dsn"
+          ? $clickhouseDsnForm
+          : $clickhouseParamsForm
+        : onlyDsn || connectionTab === "dsn"
+          ? $dsnForm
+          : $paramsForm;
+    if (connector.name === "clickhouse") {
+      clickhouseSubmitting = true;
+    }
     const result = await formManager.saveConnectorAnyway({
       queryClient,
       values,
@@ -219,7 +222,15 @@
     if (result.ok) {
       onClose();
     } else {
-      if (onlyDsn || connectionTab === "dsn") {
+      if (connector.name === "clickhouse") {
+        if (connectionTab === "dsn") {
+          dsnError = result.message;
+          dsnErrorDetails = result.details;
+        } else {
+          paramsError = result.message;
+          paramsErrorDetails = result.details;
+        }
+      } else if (onlyDsn || connectionTab === "dsn") {
         dsnError = result.message;
         dsnErrorDetails = result.details;
       } else {
@@ -228,6 +239,9 @@
       }
     }
     saveAnyway = false;
+    if (connector.name === "clickhouse") {
+      clickhouseSubmitting = false;
+    }
   }
 
   $: yamlPreview = formManager.computeYamlPreview({
@@ -298,7 +312,6 @@
           bind:paramsForm={clickhouseParamsForm}
           bind:dsnForm={clickhouseDsnForm}
           bind:showSaveAnyway={clickhouseShowSaveAnyway}
-          bind:handleSaveAnyway={clickhouseHandleSaveAnyway}
         />
       {:else if hasDsnFormOption}
         <Tabs
