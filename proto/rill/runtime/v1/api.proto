@@ -929,9 +929,19 @@ message Message {
   repeated rill.ai.v1.ContentBlock content = 11; // Convenience field
 }
 
+// Client types that can create conversations
+enum ClientType {
+  CLIENT_TYPE_UNSPECIFIED = 0;  // Returns all conversations when used as a filter
+  CLIENT_TYPE_RILL = 1;         // Rill Developer and Rill Cloud applications
+  CLIENT_TYPE_MCP = 2;          // MCP-based clients (Claude Desktop, VS Code, Cursor, etc.)
+}
+
 // Request message for RuntimeService.ListConversations
 message ListConversationsRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Optional filter to return conversations from a specific client type.
+  // If unspecified (CLIENT_TYPE_UNSPECIFIED), returns conversations from all clients.
+  ClientType client_type = 2;
 }
 
 // Response message for RuntimeService.ListConversations

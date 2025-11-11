@@ -358,13 +358,27 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 	return err
 }
 
-func (c *catalogStore) FindAISessions(ctx context.Context, ownerID string) ([]*drivers.AISession, error) {
-	rows, err := c.db.QueryxContext(ctx, `
+func (c *catalogStore) FindAISessions(ctx context.Context, ownerID string, clientType int32) ([]*drivers.AISession, error) {
+	query := `
 		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
 		FROM ai_sessions
 		WHERE instance_id = ? AND owner_id = ?
-		ORDER BY updated_on DESC
-	`, c.instanceID, ownerID)
+	`
+	args := []interface{}{c.instanceID, ownerID}
+
+	// Filter by client type based on user_agent prefix
+	// ClientType enum values: 0 = UNSPECIFIED (all), 1 = RILL, 2 = MCP
+	switch clientType {
+	case 1: // CLIENT_TYPE_RILL
+		query += " AND user_agent LIKE 'rill%'"
+	case 2: // CLIENT_TYPE_MCP
+		query += " AND user_agent LIKE 'mcp%'"
+		// 0 or any other value: no filter, return all
+	}
+
+	query += " ORDER BY updated_on DESC"
+
+	rows, err := c.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceListConversationsQueryKey,
   getRuntimeServiceListConversationsQueryOptions,
+  V1ClientType,
   type RpcStatus,
   type V1Conversation,
   type V1GetConversationResponse,
@@ -88,7 +89,10 @@ export class ConversationManager {
     RpcStatus
   > {
     return createQuery(
-      getRuntimeServiceListConversationsQueryOptions(this.instanceId),
+      getRuntimeServiceListConversationsQueryOptions(this.instanceId, {
+        // Filter to only show Rill client conversations, excluding MCP conversations
+        clientType: V1ClientType.CLIENT_TYPE_RILL,
+      }),
       queryClient,
     );
   }

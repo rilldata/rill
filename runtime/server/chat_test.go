@@ -145,4 +145,34 @@ measures:
 	})
 	require.NoError(t, err)
 	require.Len(t, list3.Conversations, 0)
+
+	// Check client type filtering works correctly
+	ctx = auth.WithClaims(t.Context(), &runtime.SecurityClaims{
+		UserID:      "foo",
+		Permissions: []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+	})
+
+	// Filter for RILL client conversations only
+	list4, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+		InstanceId: instanceID,
+		ClientType: runtimev1.ClientType_CLIENT_TYPE_RILL,
+	})
+	require.NoError(t, err)
+	require.Len(t, list4.Conversations, 2)
+
+	// Filter for MCP client conversations (should be none since all conversations are rill)
+	list5, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+		InstanceId: instanceID,
+		ClientType: runtimev1.ClientType_CLIENT_TYPE_MCP,
+	})
+	require.NoError(t, err)
+	require.Len(t, list5.Conversations, 0)
+
+	// No filter (UNSPECIFIED) returns all conversations
+	list6, err := srv.ListConversations(ctx, &runtimev1.ListConversationsRequest{
+		InstanceId: instanceID,
+		ClientType: runtimev1.ClientType_CLIENT_TYPE_UNSPECIFIED,
+	})
+	require.NoError(t, err)
+	require.Len(t, list6.Conversations, 2)
 }

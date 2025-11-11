@@ -699,6 +699,22 @@ paths:
           in: path
           required: true
           type: string
+        - name: clientType
+          description: |-
+            Optional filter to return conversations from a specific client type.
+            If unspecified (CLIENT_TYPE_UNSPECIFIED), returns conversations from all clients.
+
+             - CLIENT_TYPE_UNSPECIFIED: Returns all conversations when used as a filter
+             - CLIENT_TYPE_RILL: Rill Developer and Rill Cloud applications
+             - CLIENT_TYPE_MCP: MCP-based clients (Claude Desktop, VS Code, Cursor, etc.)
+          in: query
+          required: false
+          type: string
+          enum:
+            - CLIENT_TYPE_UNSPECIFIED
+            - CLIENT_TYPE_RILL
+            - CLIENT_TYPE_MCP
+          default: CLIENT_TYPE_UNSPECIFIED
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}:
@@ -4066,6 +4082,18 @@ definitions:
       line:
         type: integer
         format: int64
+  v1ClientType:
+    type: string
+    enum:
+      - CLIENT_TYPE_UNSPECIFIED
+      - CLIENT_TYPE_RILL
+      - CLIENT_TYPE_MCP
+    default: CLIENT_TYPE_UNSPECIFIED
+    description: |-
+      - CLIENT_TYPE_UNSPECIFIED: Returns all conversations when used as a filter
+       - CLIENT_TYPE_RILL: Rill Developer and Rill Cloud applications
+       - CLIENT_TYPE_MCP: MCP-based clients (Claude Desktop, VS Code, Cursor, etc.)
+    title: Client types that can create conversations
   v1Color:
     type: object
     properties:

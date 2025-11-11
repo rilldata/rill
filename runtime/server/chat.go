@@ -44,7 +44,7 @@ func (s *Server) ListConversations(ctx context.Context, req *runtimev1.ListConve
 	}
 	defer release()
 
-	sessions, err := catalog.FindAISessions(ctx, claims.UserID)
+	sessions, err := catalog.FindAISessions(ctx, claims.UserID, int32(req.ClientType))
 	if err != nil {
 		return nil, err
 	}

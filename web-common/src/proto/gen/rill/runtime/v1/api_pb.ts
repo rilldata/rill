@@ -109,6 +109,40 @@ proto3.util.setEnumType(ResourceEvent, "rill.runtime.v1.ResourceEvent", [
 ]);
 
 /**
+ * Client types that can create conversations
+ *
+ * @generated from enum rill.runtime.v1.ClientType
+ */
+export enum ClientType {
+  /**
+   * Returns all conversations when used as a filter
+   *
+   * @generated from enum value: CLIENT_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Rill Developer and Rill Cloud applications
+   *
+   * @generated from enum value: CLIENT_TYPE_RILL = 1;
+   */
+  RILL = 1,
+
+  /**
+   * MCP-based clients (Claude Desktop, VS Code, Cursor, etc.)
+   *
+   * @generated from enum value: CLIENT_TYPE_MCP = 2;
+   */
+  MCP = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ClientType)
+proto3.util.setEnumType(ClientType, "rill.runtime.v1.ClientType", [
+  { no: 0, name: "CLIENT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "CLIENT_TYPE_RILL" },
+  { no: 2, name: "CLIENT_TYPE_MCP" },
+]);
+
+/**
  * Request message for RuntimeService.Ping
  *
  * @generated from message rill.runtime.v1.PingRequest
@@ -4337,6 +4371,14 @@ export class ListConversationsRequest extends Message$1<ListConversationsRequest
    */
   instanceId = "";
 
+  /**
+   * Optional filter to return conversations from a specific client type.
+   * If unspecified (CLIENT_TYPE_UNSPECIFIED), returns conversations from all clients.
+   *
+   * @generated from field: rill.runtime.v1.ClientType client_type = 2;
+   */
+  clientType = ClientType.UNSPECIFIED;
+
   constructor(data?: PartialMessage<ListConversationsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4346,6 +4388,7 @@ export class ListConversationsRequest extends Message$1<ListConversationsRequest
   static readonly typeName = "rill.runtime.v1.ListConversationsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "client_type", kind: "enum", T: proto3.getEnumType(ClientType) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConversationsRequest {
