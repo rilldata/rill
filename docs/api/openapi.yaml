@@ -309,6 +309,7 @@ components:
         v1CompleteRequest:
             properties:
                 messages:
+                    description: Input message(s) for the AI to complete.
                     items:
                         $ref: '#/components/schemas/v1CompletionMessage'
                     type: array
@@ -323,8 +324,16 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                inputTokens:
+                    description: Number of tokens in the input.
+                    format: int64
+                    type: integer
                 message:
                     $ref: '#/components/schemas/v1CompletionMessage'
+                outputTokens:
+                    description: Number of tokens in the output.
+                    format: int64
+                    type: integer
             type: object
         v1CompletionMessage:
             properties:
@@ -2189,7 +2198,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.74.4
+    version: v0.75.2
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
