@@ -260,12 +260,18 @@ export class AddDataFormManager {
     };
   }
 
-  onStringInputChange = (event: Event) => {
+  onStringInputChange = (
+    event: Event,
+    taintedFields?: Record<string, unknown> | null,
+  ) => {
     const target = event.target as HTMLInputElement;
     const { name, value } = target;
     if (name === "path") {
-      const tainted: any = get(this.params.tainted) as any;
-      if (tainted?.name) return;
+      const nameTainted =
+        taintedFields && typeof taintedFields === "object"
+          ? Boolean((taintedFields as any)?.name)
+          : false;
+      if (nameTainted) return;
       const inferred = inferSourceName(this.connector, value);
       if (inferred)
         (this.params.form as any).update(

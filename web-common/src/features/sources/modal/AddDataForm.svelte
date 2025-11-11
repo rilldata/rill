@@ -282,7 +282,7 @@
   }
 
   function onStringInputChange(event: Event) {
-    formManager.onStringInputChange(event);
+    formManager.onStringInputChange(event, $paramsTainted);
   }
 </script>
 
