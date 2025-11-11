@@ -31,10 +31,10 @@ export class AddDataFormManager {
   dsnFormId: string;
   hasDsnFormOption: boolean;
   hasOnlyDsn: boolean;
-  properties: any[];
-  filteredParamsProperties: any[];
-  dsnProperties: any[];
-  filteredDsnProperties: any[];
+  properties: ConnectorDriverProperty[];
+  filteredParamsProperties: ConnectorDriverProperty[];
+  dsnProperties: ConnectorDriverProperty[];
+  filteredDsnProperties: ConnectorDriverProperty[];
 
   // superforms instances
   params: ReturnType<typeof superForm>;
