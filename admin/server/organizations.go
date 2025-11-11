@@ -664,15 +664,10 @@ func (s *Server) GetOrganizationMemberUser(ctx context.Context, req *adminv1.Get
 	}
 
 	// Find the organization member
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, "", true, "", 1, user.Email)
+	member, err := s.admin.DB.FindOrganizationMemberUser(ctx, org.ID, user.ID)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if len(members) == 0 {
-		return nil, status.Error(codes.NotFound, "user is not a member of the organization")
-	}
-
-	member := members[0]
 
 	return &adminv1.GetOrganizationMemberUserResponse{
 		Member: orgMemberUserToPB(member),

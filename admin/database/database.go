@@ -221,6 +221,7 @@ type DB interface {
 	ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*ProjectRole, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*OrganizationMemberUser, error)
+	FindOrganizationMemberUser(ctx context.Context, orgID, userID string) (*OrganizationMemberUser, error)
 	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, searchPattern string) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)

@@ -1381,8 +1381,7 @@ func TestRBAC(t *testing.T) {
 			Email: u1.Email,
 		})
 		require.NoError(t, err)
-		require.Equal(t, "123", resp.Member.Attributes.Fields["restaurant_id"].GetStringValue())
-		require.Equal(t, "engineering", resp.Member.Attributes.Fields["department"].GetStringValue())
+		require.Equal(t, attrs, resp.Member.Attributes.AsMap())
 
 		// Test updating attributes
 		newAttrs := map[string]interface{}{
@@ -1405,9 +1404,7 @@ func TestRBAC(t *testing.T) {
 			Email: u1.Email,
 		})
 		require.NoError(t, err)
-		require.Equal(t, "456", updatedResp.Member.Attributes.Fields["restaurant_id"].GetStringValue())
-		require.Equal(t, "platform", updatedResp.Member.Attributes.Fields["team"].GetStringValue())
-		require.False(t, updatedResp.Member.Attributes.Fields["department"] != nil)
+		require.Equal(t, newAttrs, updatedResp.Member.Attributes.AsMap())
 	})
 
 }

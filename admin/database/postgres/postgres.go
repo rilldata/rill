@@ -1889,6 +1889,40 @@ func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgI
 	return res, nil
 }
 
+func (c *connection) FindOrganizationMemberUser(ctx context.Context, orgID, userID string) (*database.OrganizationMemberUser, error) {
+	qry := `SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes,
+			(
+				SELECT COUNT(*) FROM projects p WHERE p.org_id = $1 AND p.id IN (
+					SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = u.id
+					UNION
+					SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = u.id
+				)
+			) as projects_count,
+			(
+				SELECT COUNT(*)
+				FROM usergroups_users uus
+				JOIN usergroups ugu ON uus.usergroup_id = ugu.id
+				WHERE ugu.org_id = $1 AND uus.user_id = u.id
+			) as usergroups_count
+		FROM users u
+		JOIN users_orgs_roles uor ON u.id = uor.user_id
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id = $1 AND uor.user_id = $2`
+
+	var dto organizationMemberUserDTO
+	err := c.getDB(ctx).QueryRowxContext(ctx, qry, orgID, userID).StructScan(&dto)
+	if err != nil {
+		return nil, parseErr("org member", err)
+	}
+
+	user, err := dto.organizationMemberUserFromDTO()
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error) {
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
 		SELECT
