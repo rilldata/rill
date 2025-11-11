@@ -5,7 +5,7 @@ sidebar_label: "Project Management"
 sidebar_position: 20
 ---
 
-Once an organization is created, you can populate it with projects. Each project is connected to a [single GitHub repository](https://docs.rilldata.com/deploy/deploy-dashboard/#syncing-your-github-repository) and has its own set or sources, models, metric views, and explore dashboards. A defined object in a project cannot be shared to another project. 
+Once an organization is created, you can populate it with projects. Each project is connected to a [single GitHub repository](https://docs.rilldata.com/developers/deploy/deploy-dashboard/#syncing-your-github-repository) and has its own set or sources, models, metric views, and explore dashboards. A defined object in a project cannot be shared to another project. 
 
 ## Project
 

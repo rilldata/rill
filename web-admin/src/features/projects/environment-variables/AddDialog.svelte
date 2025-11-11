@@ -298,7 +298,7 @@
     </DialogHeader>
     <DialogDescription>
       For help, see <a
-        href="https://docs.rilldata.com/manage/project-management/variables-and-credentials"
+        href="https://docs.rilldata.com/users/manage/project-management/variables-and-credentials"
         target="_blank">documentation</a
       >
     </DialogDescription>

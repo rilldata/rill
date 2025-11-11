@@ -102,7 +102,7 @@ Without going into a full deep dive, this involves joining the commit details an
 
 ```sql
 -- Model SQL
--- Reference documentation: https://docs.rilldata.com/build/models
+-- Reference documentation: https://docs.rilldata.com/developers/build/models
 -- @materialize: true
 
 SELECT

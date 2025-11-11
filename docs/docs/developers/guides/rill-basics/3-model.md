@@ -56,7 +56,7 @@ We will grab all the columns from `commits` and only a few from `modified_files`
 
 ```SQL
 -- Model SQL
--- Reference documentation: https://docs.rilldata.com/build/models
+-- Reference documentation: https://docs.rilldata.com/developers/build/models
 -- @materialize: true
 
 SELECT

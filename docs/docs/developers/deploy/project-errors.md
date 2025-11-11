@@ -71,7 +71,7 @@ data:
     where_error: true
 
 # Send notifications in Slack.
-# Follow these steps to configure a Slack token: https://docs.rilldata.com/explore/alerts/slack.
+# Follow these steps to configure a Slack token: https://docs.rilldata.com/users/explore/alerts/slack.
 notify:
   slack:
     channels: [rill-alerts]

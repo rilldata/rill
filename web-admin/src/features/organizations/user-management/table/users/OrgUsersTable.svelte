@@ -145,7 +145,7 @@
   const headerIcons = {
     roleName: {
       icon: ExternalLinkIcon,
-      href: "https://docs.rilldata.com/manage/roles-permissions#organization-level-permissions",
+      href: "https://docs.rilldata.com/users/manage/roles-permissions#organization-level-permissions",
     },
   };
 </script>
