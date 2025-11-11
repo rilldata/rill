@@ -59,7 +59,6 @@
   });
 
   $: isMultiStepConnector = formManager.isMultiStepConnector;
-
   $: isSourceForm = formManager.isSourceForm;
   $: isConnectorForm = formManager.isConnectorForm;
   $: onlyDsn = hasOnlyDsn(connector, isConnectorForm);
@@ -68,8 +67,7 @@
     isMultiStepConnector && stepState.step === "source"
       ? (connector.sourceProperties ?? [])
       : properties;
-
-  // Update form when transitioning to step 2
+  $: formHeight = formManager.formHeight;
   $: if (
     isMultiStepConnector &&
     stepState.step === "source" &&
@@ -84,7 +82,6 @@
 
     paramsForm.update(() => combinedValues, { taint: false });
   }
-  $: formHeight = formManager.formHeight;
 
   // Form 1: Individual parameters
   const paramsFormId = formManager.paramsFormId;
