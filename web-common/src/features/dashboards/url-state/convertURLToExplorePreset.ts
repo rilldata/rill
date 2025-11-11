@@ -124,7 +124,6 @@ export function convertURLToExplorePreset(
     dimensions,
   );
 
-  console.log({ trPreset, trErrors });
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
