@@ -7,7 +7,6 @@
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import ExploreChat from "@rilldata/web-common/features/chat/ExploreChat.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
@@ -97,9 +96,7 @@
       <div class="flex-1 overflow-hidden">
         <StateManagersProvider {metricsViewName} {exploreName}>
           <DashboardStateManager {exploreName}>
-            <DashboardThemeProvider>
-              <Dashboard {metricsViewName} {exploreName} />
-            </DashboardThemeProvider>
+            <Dashboard {metricsViewName} {exploreName} />
           </DashboardStateManager>
         </StateManagersProvider>
       </div>

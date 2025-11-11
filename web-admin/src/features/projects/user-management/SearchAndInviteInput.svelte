@@ -350,7 +350,7 @@
       )}
     >
       <div
-        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1"
+        class="chips-and-input flex flex-wrap gap-1 w-full min-h-[24px] px-1 max-h-[120px] overflow-y-auto pr-1"
       >
         {#each selected as identifier (identifier)}
           <span
@@ -384,7 +384,9 @@
       </div>
 
       {#if roleSelect && (selected.length > 0 || input.trim())}
-        <UserRoleSelect bind:value={role} />
+        <div class="shrink-0 ml-2">
+          <UserRoleSelect bind:value={role} />
+        </div>
       {/if}
     </div>
 

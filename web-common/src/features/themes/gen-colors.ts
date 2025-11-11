@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { allColors } from "./colors.ts";
-import { createDarkVariation } from "./actions.ts";
+import { createDarkVariation } from "./color-generation.ts";
 import { TailwindColorSpacing } from "./color-config.ts";
 import { execFile } from "child_process";
 import type { Color } from "chroma-js";

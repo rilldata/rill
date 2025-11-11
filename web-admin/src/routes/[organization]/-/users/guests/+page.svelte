@@ -7,6 +7,7 @@
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddUsersDialog.svelte";
+  import AddGuestsDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddGuestsDialog.svelte";
   import ConvertGuestToMemberDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ConvertGuestToMemberDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/user-management/OrgUsersFilters.svelte";
@@ -15,9 +16,11 @@
     getOrgUserInvites,
     getOrgUserMembers,
   } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
+  import { Button } from "@rilldata/web-common/components/button";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
+  import { Plus } from "lucide-svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -28,6 +31,7 @@
   let isSuperUser = false;
 
   let isAddUserDialogOpen = false;
+  let isAddGuestsDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let editingUserGroupName = "";
   let convertGuestUser: V1OrganizationMemberUser | undefined = undefined;
@@ -128,6 +132,14 @@
           showBorderOnFocus={false}
         />
         <OrgUsersFilters bind:filterSelection showMembers={false} />
+        <Button
+          type="primary"
+          large
+          onClick={() => (isAddGuestsDialogOpen = true)}
+        >
+          <Plus size="16px" />
+          <span>Add guest</span>
+        </Button>
       </div>
       <div class="mt-6">
         <OrgUsersTable
@@ -162,6 +174,8 @@
   role={userRole}
   {isSuperUser}
 />
+
+<AddGuestsDialog bind:open={isAddGuestsDialogOpen} />
 
 {#if editingUserGroupName}
   <EditUserGroupDialog

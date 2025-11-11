@@ -9,6 +9,13 @@ Rill provides a comprehensive platform for building end-to-end data analytics so
 ### What is a Rill project?
 - [**Getting Started with your Rill Project**](/build/getting-started) - Understand Rill project structure and configuration
 
+### Connect to your Data
+- [**Connectors Overview**](/build/connectors) - Learn about connecting Rill to data sources and OLAP engines
+- [**OLAP Engines**](/build/connectors/olap) - Configure DuckDB, ClickHouse, Druid, or Pinot for analytics
+- [**Data Sources**](/build/connectors/data-source) - Connect to S3, GCS, BigQuery, Snowflake, and more
+- [**Configure Local Credentials**](/build/connectors/credentials) - Set up credentials for local development
+- [**Dev/Prod Connectors**](/build/connectors/templating) - Separate your production and development data sources 
+  
 ### Modeling and Last Mile ETL
 - [**Models Overview**](/build/models) - Overview of models available in Rill
 - [**Getting Started with Models**](/build/models/models-101) - What are models and important topics to remember as you create your own.

@@ -242,6 +242,7 @@ export interface V1CancelBillingSubscriptionResponse {
 }
 
 export interface V1CompleteRequest {
+  /** Input message(s) for the AI to complete. */
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
   outputJsonSchema?: string;
@@ -249,6 +250,10 @@ export interface V1CompleteRequest {
 
 export interface V1CompleteResponse {
   message?: V1CompletionMessage;
+  /** Number of tokens in the input. */
+  inputTokens?: number;
+  /** Number of tokens in the output. */
+  outputTokens?: number;
 }
 
 export interface V1CompletionMessage {

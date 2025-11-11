@@ -1964,6 +1964,7 @@ measures:
 				DisplayName:   "D1",
 				TimeDimension: "t",
 				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+					{Name: "t", DisplayName: ToDisplayName("t"), Column: "t"},
 					{Name: "foo", DisplayName: "Foo", Column: "foo"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_Measure{

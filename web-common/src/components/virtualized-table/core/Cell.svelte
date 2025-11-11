@@ -155,15 +155,12 @@
       justify="left"
       showBackground={false}
       value={barValue}
-      compact={true}
+      compact
     >
       <button
         aria-label={label}
-        class="
-          {isTextColumn ? 'text-left' : 'text-right'}
-          {isDimensionTable ? '' : 'px-4'}
-          w-full truncate
-          "
+        class="{isTextColumn ? 'text-left' : 'text-right'} w-full truncate"
+        class:px-4={!isDimensionTable}
         on:click={modified({
           shift: shiftClick,
         })}

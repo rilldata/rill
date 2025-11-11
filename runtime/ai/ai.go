@@ -949,6 +949,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
+		if !tool.CheckAccess(ctx) {
+			continue
+		}
 		var inputSchema string
 		if tool.Spec.InputSchema != nil {
 			inputSchemaBytes, err := json.Marshal(tool.Spec.InputSchema)
@@ -1010,9 +1013,42 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 
 		// TODO: For durable execution, add messages from current scope.
 
-		// Log start
-		s.logger.Debug("completion started", zap.Int("messages_count", len(messages)), zap.Int("tools_count", len(tools)), zap.Int("max_iterations", opts.MaxIterations), observability.ZapCtx(ctx))
-		defer s.logger.Debug("completion finished", zap.Int("iterations", opts.MaxIterations), zap.Int("messages_total", len(messages)), zap.Int("messages_added", len(messages)-len(opts.Messages)), zap.Error(outErr), observability.ZapCtx(ctx))
+		// Telemetry
+		var iterations, truncations, inputTokens, outputTokens int
+		s.logger.Debug("completion started",
+			zap.Int("initial_messages", len(messages)),
+			zap.Int("tools_count", len(tools)),
+			zap.Int("max_iterations", opts.MaxIterations),
+			observability.ZapCtx(ctx),
+		)
+		defer func() {
+			s.logger.Debug("completion finished",
+				zap.Int("iterations", iterations),
+				zap.Int("iterations_with_truncation", truncations),
+				zap.Int("added_messages", len(messages)-len(opts.Messages)),
+				zap.Int("total_messages", len(messages)),
+				zap.Error(outErr),
+				observability.ZapCtx(ctx),
+			)
+
+			var outErrStr string
+			if outErr != nil {
+				outErrStr = outErr.Error()
+			}
+			s.activity.Record(ctx, activity.EventTypeLog, "ai_completion",
+				attribute.String("parent_message_id", s.ParentID),
+				attribute.String("parent_tool", name),
+				attribute.String("error", outErrStr),
+				attribute.Int("iterations", iterations),
+				attribute.Int("iterations_with_truncation", truncations),
+				attribute.Int("max_iterations", opts.MaxIterations),
+				attribute.Int("tools_count", len(tools)),
+				attribute.Int("initial_messages", len(opts.Messages)),
+				attribute.Int("added_messages", len(messages)-len(opts.Messages)),
+				attribute.Int("input_tokens", inputTokens),
+				attribute.Int("output_tokens", outputTokens),
+			)
+		}()
 
 		// Complete and execute tool calls in a loop.
 		var result *aiv1.CompletionMessage
@@ -1027,46 +1063,68 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			// Truncate messages to fit within LLM context window.
 			truncMessages := maybeTruncateMessages(messages)
 
+			// Telemetry
+			iterations++
+			if len(truncMessages) < len(messages) {
+				truncations++
+			}
+
 			// Log iteration
 			s.logger.Debug("completion iteration started", zap.Int("iteration", i), zap.Bool("iteration_is_final", final), zap.Int("messages_count", len(messages)), zap.Int("truncated_messages_count", len(truncMessages)), observability.ZapCtx(ctx))
 
 			// Call the LLM to complete the messages.
 			llmCtx, llmCancel := context.WithTimeout(ctx, llmRequestTimeout)
-			res, err := llm.Complete(llmCtx, truncMessages, tools, outputSchema)
+			res, err := llm.Complete(llmCtx, &drivers.CompleteOptions{
+				Messages:     truncMessages,
+				Tools:        tools,
+				OutputSchema: outputSchema,
+			})
 			llmCancel()
+
+			// Handle telemetry before checking the error
+			var resMsgsCount int
+			if res != nil {
+				resMsgsCount = len(res.Message.Content)
+				inputTokens += res.InputTokens
+				outputTokens += res.OutputTokens
+			}
+			s.logger.Debug("completion iteration got response", zap.Int("iteration", i), zap.Int("response_messages_count", resMsgsCount), zap.Error(err), observability.ZapCtx(ctx))
+
+			// Handle LLM completion error
 			if err != nil {
 				return nil, fmt.Errorf("completion failed: %w", err)
 			}
 
-			// Telemetry
-			s.logger.Debug("completion iteration got response", zap.Int("iteration", i), zap.Int("response_blocks_count", len(res.Content)), observability.ZapCtx(ctx))
-			// TODO: Emit `llm_completion` metric messages_count, input_text_length, output_text_length, input_tokens, output_tokens
-
 			// Break the tool call loop if no tool calls were requested.
 			var hasCall bool
-			for _, block := range res.Content {
+			for _, block := range res.Message.Content {
 				if call := block.GetToolCall(); call != nil {
 					hasCall = true
 					break
 				}
 			}
 			if !hasCall {
-				result = res
+				result = res.Message
 				break
 			}
 
 			// Add returned blocks as messages.
 			// Run the requested tool calls.
 			// TODO: How to do durable execution here?
-			for _, block := range res.Content {
+			for _, block := range res.Message.Content {
 				switch block := block.BlockType.(type) {
 				case *aiv1.ContentBlock_Text:
-					s.AddMessage(&AddMessageOptions{
+					msg := s.AddMessage(&AddMessageOptions{
 						Role:        RoleAssistant,
 						Type:        MessageTypeProgress,
 						ContentType: MessageContentTypeText,
 						Content:     block.Text,
 					})
+					msgPB, err := s.NewCompletionMessage(msg)
+					if err != nil {
+						return nil, err
+					}
+					messages = append(messages, msgPB)
 				case *aiv1.ContentBlock_ToolCall:
 					toolResult, err := s.CallToolWithOptions(ctx, &CallToolOptions{
 						Role: RoleAssistant,

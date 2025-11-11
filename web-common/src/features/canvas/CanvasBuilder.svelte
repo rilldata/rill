@@ -32,26 +32,13 @@
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { activeDivider, dropZone } from "./stores/ui-stores";
+  import ReconcilingSpinner from "../entity-management/ReconcilingSpinner.svelte";
 
   const activelyEditing = writable(false);
 
   export let fileArtifact: FileArtifact;
   export let canvasName: string;
   export let openSidebar: () => void;
-
-  $: ({
-    canvasEntity: {
-      setSelectedComponent,
-      selectedComponent,
-      components,
-      processRows,
-      specStore,
-      unsubscribe,
-      _rows,
-    },
-  } = getCanvasStore(canvasName, instanceId));
-
-  $: layoutRows = $_rows;
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number;
@@ -64,7 +51,24 @@
   let openSidebarAfterSelection = false;
   let pendingComponentDelete: string | undefined = undefined;
 
+  $: ({
+    canvasEntity: {
+      setSelectedComponent,
+      selectedComponent,
+      components,
+      processRows,
+      specStore,
+      unsubscribe,
+      _rows,
+      firstLoad,
+    },
+  } = getCanvasStore(canvasName, instanceId));
+
+  $: layoutRows = $_rows;
+
   $: ({ instanceId } = $runtime);
+
+  $: canvasData = $specStore.data;
   $: metricsViews = Object.entries(canvasData?.metricsViews ?? {});
 
   $: metricsViewQuery = useDefaultMetrics(instanceId, metricsViews?.[0]?.[0]);
@@ -72,7 +76,6 @@
   $: ({ editorContent, updateEditorContent } = fileArtifact);
   $: contents = parseDocument($editorContent ?? "");
 
-  $: canvasData = $specStore.data;
   $: resolvedComponents = canvasData?.components;
 
   $: spec = canvasData?.canvas ?? {
@@ -430,8 +433,8 @@
   {canvasName}
   {maxWidth}
   {filtersEnabled}
-  onClick={resetSelection}
   showGrabCursor={activelyDragging}
+  onClick={resetSelection}
   bind:clientWidth
 >
   {#each layoutRows as row, rowIndex (rowIndex)}
@@ -493,28 +496,34 @@
       }}
     />
   {:else}
-    <RowWrapper
-      gridTemplate="12fr"
-      zIndex={0}
-      {maxWidth}
-      id="add-component-row"
-    >
-      <ItemWrapper zIndex={0}>
-        {#if defaultMetrics}
-          <AddComponentDropdown
-            componentForm
-            onMouseEnter={() => {
-              if (timeout) clearTimeout(timeout);
-            }}
-            onItemClick={(type) => {
-              initializeRow(specCanvasRows.length, type);
-            }}
-          />
-        {:else if canvasData}
-          <ComponentError error="No valid metrics view in project" />
-        {/if}
-      </ItemWrapper>
-    </RowWrapper>
+    {#if $firstLoad}
+      <div class="h-72 flex items-center justify-center">
+        <ReconcilingSpinner />
+      </div>
+    {:else}
+      <RowWrapper
+        gridTemplate="12fr"
+        zIndex={0}
+        {maxWidth}
+        id="add-component-row"
+      >
+        <ItemWrapper type="table" zIndex={0}>
+          {#if defaultMetrics}
+            <AddComponentDropdown
+              componentForm
+              onMouseEnter={() => {
+                if (timeout) clearTimeout(timeout);
+              }}
+              onItemClick={(type) => {
+                initializeRow(specCanvasRows.length, type);
+              }}
+            />
+          {:else if canvasData}
+            <ComponentError error="No valid metrics view in project" />
+          {/if}
+        </ItemWrapper>
+      </RowWrapper>
+    {/if}
   {/each}
 </CanvasDashboardWrapper>
 
