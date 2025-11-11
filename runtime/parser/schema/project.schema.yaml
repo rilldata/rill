@@ -2593,17 +2593,17 @@ definitions:
       - # Example: Basic theme with light and dark mode colors
         type: theme
         light:
-          primary: "4F46E5"  # Indigo-600
-          secondary: "8B5CF6"  # Purple-500
+          primary: "#4F46E5"  # Indigo-600
+          secondary: "#8B5CF6"  # Purple-500
         dark:
-          primary: "818CF8"  # Indigo-400
-          secondary: "A78BFA"  # Purple-400
+          primary: "#818CF8"  # Indigo-400
+          secondary: "#A78BFA"  # Purple-400
 
       - # Example: Advanced theme with custom color palettes
         type: theme
         light:
-          primary: "14B8A6"  # Teal
-          secondary: "10B981"  # Emerald
+          primary: "#14B8A6"  # Teal
+          secondary: "#10B981"  # Emerald
           variables:
             color-sequential-1: "hsl(180deg 80% 95%)"
             color-sequential-5: "hsl(180deg 80% 50%)"
