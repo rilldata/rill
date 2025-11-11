@@ -75,19 +75,7 @@
     display: none;
 }
 
-@media (max-width: 600px) {
-  .navbar .navbar__items--right .DocSearch-Button {
-    width: 100%;
-    min-width: 0;
-    margin-left: 0;
-    height: 36px;
-    box-sizing: border-box;
-  }
-  .navbar .navbar__items--right  .DocSearch-Button::after {
-    display: none;
-  }
 
-}
 
 @media (max-width: 996px) {
   /* Make custom HTML navbar items look like menu__link in mobile menu */
@@ -109,7 +97,29 @@
     display: none;
   }
 
+  .navbar .navbar__items--right .navbar-icon-link {
+    display: none;
+  }
 } 
+
+@media (max-width: 768px) {
+  .navbar .navbar__item {
+    display: none 
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar .navbar__items--right .DocSearch-Button {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    height: 36px;
+    box-sizing: border-box;
+  }
+  .navbar .navbar__items--right  .DocSearch-Button::after {
+    display: none;
+  }
+}
 
 /* =========================
    Navbar Icon Link Styles
