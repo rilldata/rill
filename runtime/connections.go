@@ -20,14 +20,16 @@ func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (dr
 		if c.Name != connector {
 			continue
 		}
-		var raw map[string]any
+		raw := make(map[string]any)
 		if c.Config != nil {
 			raw = c.Config.AsMap()
-		} else {
-			raw = make(map[string]any, 1)
 		}
-		cfg := lowerKeys(raw)
+		cfg := make(map[string]any, len(raw)+1)
+		for k, v := range raw {
+			cfg[strings.ToLower(k)] = v
+		}
 		cfg["allow_host_access"] = r.opts.AllowHostAccess
+
 		return r.getConnection(ctx, cachedConnectionConfig{
 			instanceID: "",
 			name:       connector,
@@ -347,14 +349,14 @@ func (c *ConnectorConfig) Resolve() map[string]any {
 		return nil
 	}
 	cfg := make(map[string]any, n)
-	for k, v := range lowerKeys(c.Project) {
-		cfg[k] = v
+	for k, v := range c.Project {
+		cfg[strings.ToLower(k)] = v
 	}
 	for k, v := range c.Env {
 		cfg[strings.ToLower(k)] = v
 	}
-	for k, v := range lowerKeys(c.Preset) {
-		cfg[k] = v
+	for k, v := range c.Preset {
+		cfg[strings.ToLower(k)] = v
 	}
 	return cfg
 }
@@ -369,17 +371,4 @@ func (c *ConnectorConfig) setPreset(k, v string, force bool) {
 		c.Preset = make(map[string]any)
 	}
 	c.Preset[k] = v
-}
-
-func lowerKeys(m map[string]any) map[string]any {
-	res := make(map[string]any, len(m))
-	for k, v := range m {
-		lk := strings.ToLower(k)
-		if nested, ok := v.(map[string]any); ok {
-			res[lk] = lowerKeys(nested)
-		} else {
-			res[lk] = v
-		}
-	}
-	return res
 }
