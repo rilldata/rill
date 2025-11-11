@@ -147,7 +147,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 
 	// Validate the metrics view schema.
 	if res.IsZero() { // All dimensions and measures need to be valid to compute the schema.
-		err = e.validateSchema(ctx, res)
+		err = e.validateAndRewriteSchema(ctx, res)
 		if err != nil {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
 		}
@@ -245,15 +245,27 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 	e.metricsView.CacheEnabled = parent.CacheEnabled
 	e.metricsView.CacheKeySql = parent.CacheKeySql
 	e.metricsView.CacheKeyTtlSeconds = parent.CacheKeyTtlSeconds
+	// If the metrics view doesn't have a time dimension, use the parent's time dimension
+	if e.metricsView.TimeDimension == "" {
+		e.metricsView.TimeDimension = parent.TimeDimension
+	}
 
 	// Override the dimensions and measures in the normalized metrics view if defined in the current metrics view.
 	names := make([]string, 0, len(parent.Dimensions))
+	timeDim := ""
 	for _, d := range parent.Dimensions {
+		if strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+			timeDim = d.Name
+		}
 		names = append(names, d.Name)
 	}
 	names, err = fieldselectorpb.Resolve(e.metricsView.ParentDimensions, names)
 	if err != nil {
 		return fmt.Errorf("failed to resolve parent dimensions selector: %w", err)
+	}
+	// add timeDim to the list of names if it exists and not selected by field selector
+	if timeDim != "" && !slices.Contains(names, timeDim) {
+		names = append(names, timeDim)
 	}
 	filteredDims := make([]*runtimev1.MetricsViewSpec_Dimension, 0, len(parent.Dimensions))
 	for _, d := range parent.Dimensions {
@@ -298,10 +310,6 @@ func (e *Executor) resolveParentMetricsView(ctx context.Context) error {
 		e.metricsView.SecurityRules = append(e.metricsView.SecurityRules, rule)
 	}
 
-	// If the metrics view doesn't have a time dimension, use the parent's time dimension
-	if e.metricsView.TimeDimension == "" {
-		e.metricsView.TimeDimension = parent.TimeDimension
-	}
 	// If the metrics view doesn't have a watermark expression, use the parent's watermark expression
 	if e.metricsView.WatermarkExpression == "" {
 		e.metricsView.WatermarkExpression = parent.WatermarkExpression
@@ -624,8 +632,11 @@ func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m 
 	return err
 }
 
-// validateSchema validates that the metrics view's measures are numeric. Also populates the DataType field of each measure and dimension in the metrics view.
-func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
+// validateAndRewriteSchema validates that the metrics view's measures are numeric.
+// Makes two changes to the spec -
+//  1. Populates the DataType field of each measure and dimension in the metrics view.
+//  2. Separates the time dimensions from regular dimensions and populates the TimeDimensions field in the metrics view.
+func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
 	// Resolve the schema of the metrics view's dimensions and measures
 	schema, err := e.Schema(ctx)
 	if err != nil {
@@ -654,10 +665,17 @@ func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewR
 		m.DataType = typ
 	}
 
+	// Populate the dimension types and data types
 	for _, d := range e.metricsView.Dimensions {
 		if typ, ok := types[d.Name]; ok {
 			d.DataType = typ
 		} // ignore dimensions that don't have a type in the schema
+		switch d.DataType.GetCode() {
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		default:
+			d.Type = runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL
+		}
 	}
 
 	return nil

@@ -1523,6 +1523,32 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
 }
 
 /**
+ * @generated from enum rill.runtime.v1.MetricsViewSpec.DimensionType
+ */
+export enum MetricsViewSpec_DimensionType {
+  /**
+   * @generated from enum value: DIMENSION_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_CATEGORICAL = 1;
+   */
+  CATEGORICAL = 1,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_TIME = 2;
+   */
+  TIME = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_DimensionType)
+proto3.util.setEnumType(MetricsViewSpec_DimensionType, "rill.runtime.v1.MetricsViewSpec.DimensionType", [
+  { no: 0, name: "DIMENSION_TYPE_UNSPECIFIED" },
+  { no: 1, name: "DIMENSION_TYPE_CATEGORICAL" },
+  { no: 2, name: "DIMENSION_TYPE_TIME" },
+]);
+
+/**
  * Type of measure query to generate
  *
  * @generated from enum rill.runtime.v1.MetricsViewSpec.MeasureType
@@ -1566,6 +1592,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    * @generated from field: string name = 1;
    */
   name = "";
+
+  /**
+   * The dimension type. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.DimensionType type = 14;
+   */
+  type = MetricsViewSpec_DimensionType.UNSPECIFIED;
 
   /**
    * @generated from field: string display_name = 3;
@@ -1642,6 +1675,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Dimension";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_DimensionType) },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },

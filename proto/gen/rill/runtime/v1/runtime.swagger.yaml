@@ -3404,6 +3404,9 @@ definitions:
     properties:
       name:
         type: string
+      type:
+        $ref: '#/definitions/MetricsViewSpecDimensionType'
+        description: The dimension type. Only populated in ValidSpec.
       displayName:
         type: string
       description:
@@ -3444,6 +3447,13 @@ definitions:
         type: boolean
         title: Only for when ordering (optional)
     title: Selector for a dimension
+  MetricsViewSpecDimensionType:
+    type: string
+    enum:
+      - DIMENSION_TYPE_UNSPECIFIED
+      - DIMENSION_TYPE_CATEGORICAL
+      - DIMENSION_TYPE_TIME
+    default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
     properties:
