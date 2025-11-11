@@ -12,7 +12,12 @@ import {
   submitAddSourceForm,
 } from "./submitAddDataForm";
 import { normalizeConnectorError } from "./utils";
-import { MULTI_STEP_CONNECTORS } from "./constants";
+import {
+  FORM_HEIGHT_DEFAULT,
+  FORM_HEIGHT_TALL,
+  MULTI_STEP_CONNECTORS,
+  TALL_FORM_CONNECTORS,
+} from "./constants";
 import {
   connectorStepStore,
   setConnectorConfig,
@@ -58,11 +63,9 @@ export class AddDataFormManager {
     this.formType = formType;
 
     // Layout height
-    this.formHeight = ["clickhouse", "snowflake", "salesforce"].includes(
-      connector.name ?? "",
-    )
-      ? "max-h-[38.5rem] min-h-[38.5rem]"
-      : "max-h-[34.5rem] min-h-[34.5rem]";
+    this.formHeight = TALL_FORM_CONNECTORS.has(connector.name ?? "")
+      ? FORM_HEIGHT_TALL
+      : FORM_HEIGHT_DEFAULT;
 
     // IDs
     this.paramsFormId = `add-data-${connector.name}-form`;
