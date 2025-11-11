@@ -7,7 +7,7 @@
 
 import { themeManager } from "./theme-manager";
 import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
-import type { Color } from "chroma-js";
+import chroma, { type Color } from "chroma-js";
 
 export const resolveThemeColors = (
   themeSpec: V1ThemeSpec | undefined,
@@ -20,3 +20,17 @@ export const resolveThemeObject = (
   isThemeModeDark: boolean,
 ): Record<string, string> | undefined =>
   themeManager.resolveThemeObject(themeSpec, isThemeModeDark);
+
+export function getChroma(colorString: string | undefined): Color {
+  if (!colorString) {
+    return chroma("red");
+  }
+
+  try {
+    const trimmedString = colorString?.trim();
+    return chroma(trimmedString);
+  } catch (e) {
+    console.error("Invalid color string:", colorString, e);
+    return chroma("red");
+  }
+}

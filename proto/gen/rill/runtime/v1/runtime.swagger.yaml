@@ -2075,6 +2075,10 @@ paths:
               timeDimension:
                 type: string
                 description: Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension.
+              executionTime:
+                type: string
+                format: date-time
+                description: Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -3400,6 +3404,9 @@ definitions:
     properties:
       name:
         type: string
+      type:
+        $ref: '#/definitions/MetricsViewSpecDimensionType'
+        description: The dimension type. Only populated in ValidSpec.
       displayName:
         type: string
       description:
@@ -3440,6 +3447,13 @@ definitions:
         type: boolean
         title: Only for when ordering (optional)
     title: Selector for a dimension
+  MetricsViewSpecDimensionType:
+    type: string
+    enum:
+      - DIMENSION_TYPE_UNSPECIFIED
+      - DIMENSION_TYPE_CATEGORICAL
+      - DIMENSION_TYPE_TIME
+    default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
     properties:

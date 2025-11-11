@@ -322,7 +322,7 @@ export const primary = {
   950: chroma.oklch(0.25, 0.1016, 280.81),
 };
 
-const secondary = {
+export const secondary = {
   50: chroma.oklch(0.98, 0.0134, 226.56),
   100: chroma.oklch(0.95, 0.0275, 232.66),
   200: chroma.oklch(0.91, 0.0603, 226.17),
