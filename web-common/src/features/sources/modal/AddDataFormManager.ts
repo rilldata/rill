@@ -123,8 +123,6 @@ export class AddDataFormManager {
     } as any);
   }
 
-  destroy() {}
-
   get isSourceForm(): boolean {
     return this.formType === "source";
   }
