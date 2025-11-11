@@ -59,8 +59,8 @@ measures:
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					InputProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: testruntime.Must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
 					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
@@ -68,7 +68,7 @@ measures:
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
 					ResultConnector:   "duckdb",
-					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
+					ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
 				},
 			},
@@ -90,14 +90,14 @@ measures:
 				Spec: &runtimev1.ModelSpec{
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 					InputConnector:  "duckdb",
-					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+					InputProperties: testruntime.Must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 					OutputConnector: "duckdb",
 					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
 					ResultConnector:   "duckdb",
-					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "bar", "used_model_name": true, "view": true})),
+					ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": "bar", "used_model_name": true, "view": true})),
 					ResultTable:       "bar",
 				},
 			},
@@ -161,7 +161,7 @@ path
 				Spec: &runtimev1.ModelSpec{
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 					InputConnector:  "duckdb",
-					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+					InputProperties: testruntime.Must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
 					OutputConnector: "duckdb",
 					ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 				},
@@ -226,8 +226,8 @@ path: data/foo.csv
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					InputProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: testruntime.Must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
 					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
@@ -235,7 +235,7 @@ path: data/foo.csv
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
 					ResultConnector:   "duckdb",
-					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
+					ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
 				},
 			},
@@ -314,8 +314,8 @@ path: data/foo.csv
 				Spec: &runtimev1.ModelSpec{
 					InputConnector:   "local_file",
 					OutputConnector:  "duckdb",
-					InputProperties:  must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
-					OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+					InputProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"path": "data/foo.csv", "local_files_hash": localFileHash(t, rt, id, []string{"data/foo.csv"})})),
+					OutputProperties: testruntime.Must(structpb.NewStruct(map[string]any{"materialize": true})),
 					RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 					DefinedAsSource:  true,
 					ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
@@ -323,7 +323,7 @@ path: data/foo.csv
 				State: &runtimev1.ModelState{
 					ExecutorConnector: "duckdb",
 					ResultConnector:   "duckdb",
-					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
+					ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": "foo", "used_model_name": true, "view": false})),
 					ResultTable:       "foo",
 				},
 			},
@@ -569,7 +569,7 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	modelRes.Meta.Name.Name = "bar_new"
 	modelRes.Meta.FilePaths[0] = "/models/bar_new.sql"
-	model.State.ResultProperties = must(structpb.NewStruct(map[string]any{"table": "bar_new", "used_model_name": true, "view": true}))
+	model.State.ResultProperties = testruntime.Must(structpb.NewStruct(map[string]any{"table": "bar_new", "used_model_name": true, "view": true}))
 	model.State.ResultTable = "bar_new"
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar_new")
@@ -581,7 +581,7 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	modelRes.Meta.Name.Name = "Bar_New"
 	modelRes.Meta.FilePaths[0] = "/models/Bar_New.sql"
-	model.State.ResultProperties = must(structpb.NewStruct(map[string]any{"table": "Bar_New", "used_model_name": true, "view": true}))
+	model.State.ResultProperties = testruntime.Must(structpb.NewStruct(map[string]any{"table": "Bar_New", "used_model_name": true, "view": true}))
 	model.State.ResultTable = "Bar_New"
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "Bar_New")
@@ -1223,8 +1223,8 @@ func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.R
 		Spec: &runtimev1.ModelSpec{
 			InputConnector:   "local_file",
 			OutputConnector:  "duckdb",
-			InputProperties:  must(structpb.NewStruct(map[string]any{"path": path, "local_files_hash": localFileHash})),
-			OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+			InputProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"path": path, "local_files_hash": localFileHash})),
+			OutputProperties: testruntime.Must(structpb.NewStruct(map[string]any{"materialize": true})),
 			RefreshSchedule:  &runtimev1.Schedule{RefUpdate: true},
 			DefinedAsSource:  true,
 			ChangeMode:       runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
@@ -1232,7 +1232,7 @@ func newSource(name, path, localFileHash string) (*runtimev1.Model, *runtimev1.R
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
 			ResultConnector:   "duckdb",
-			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": false})),
+			ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": false})),
 			ResultTable:       name,
 		},
 	}
@@ -1254,14 +1254,14 @@ func newModel(query, name, source string) (*runtimev1.Model, *runtimev1.Resource
 		Spec: &runtimev1.ModelSpec{
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			InputConnector:  "duckdb",
-			InputProperties: must(structpb.NewStruct(map[string]any{"sql": query})),
+			InputProperties: testruntime.Must(structpb.NewStruct(map[string]any{"sql": query})),
 			OutputConnector: "duckdb",
 			ChangeMode:      runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET,
 		},
 		State: &runtimev1.ModelState{
 			ExecutorConnector: "duckdb",
 			ResultConnector:   "duckdb",
-			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": true})),
+			ResultProperties:  testruntime.Must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": true})),
 			ResultTable:       name,
 		},
 	}
@@ -1468,7 +1468,7 @@ name: my-gcs
 		},
 		Resource: &runtimev1.Resource_Connector{
 			Connector: &runtimev1.ConnectorV2{
-				Spec:  &runtimev1.ConnectorSpec{Driver: "s3", Properties: map[string]string{"region": "us-west-2"}},
+				Spec:  &runtimev1.ConnectorSpec{Driver: "s3", Properties: testruntime.Must(structpb.NewStruct(map[string]any{"region": "us-west-2"}))},
 				State: &runtimev1.ConnectorState{},
 			},
 		},
@@ -1486,13 +1486,6 @@ name: my-gcs
 			},
 		},
 	})
-}
-
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
 }
 
 func localFileHash(t *testing.T, rt *runtime.Runtime, id string, paths []string) string {

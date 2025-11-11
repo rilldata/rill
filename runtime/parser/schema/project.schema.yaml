@@ -494,9 +494,6 @@ definitions:
               type: string
               description: Refers to the driver type and must be driver `https`
               const: https
-            path:
-              type: string
-              description: The full HTTPS URI to fetch data from
             headers:
               type: object
               description: HTTP headers to include in the request
@@ -506,8 +503,6 @@ definitions:
             - # Example: HTTPS connector configuration
               type: connector                                  # Must be `connector` (required)
               driver: https                                    # Must be `https` _(required)_
-
-              path: "https://api.example.com/data.csv"         # The full HTTPS URI to fetch data from  
               headers:
                 "Authorization": "Bearer my-token"            # HTTP headers to include in the request
           required:

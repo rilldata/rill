@@ -3825,18 +3825,12 @@ definitions:
         title: Connector driver metadata
       config:
         type: object
-        additionalProperties:
-          type: string
         title: Combined config properties for the connector
       presetConfig:
         type: object
-        additionalProperties:
-          type: string
         title: Config properties preset by the runtime or when the instance was created
       projectConfig:
         type: object
-        additionalProperties:
-          type: string
         title: Config properties set in project YAML files
       envConfig:
         type: object
@@ -4460,8 +4454,6 @@ definitions:
         title: Name of the connector
       config:
         type: object
-        additionalProperties:
-          type: string
         title: Config for the connector
       templatedProperties:
         type: array
@@ -4531,8 +4523,6 @@ definitions:
         type: string
       properties:
         type: object
-        additionalProperties:
-          type: string
       templatedProperties:
         type: array
         items:

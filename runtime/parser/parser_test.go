@@ -392,11 +392,8 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindConnector, Name: "postgres"},
 			Paths: []string{"/connectors/postgres.yaml"},
 			ConnectorSpec: &runtimev1.ConnectorSpec{
-				Driver: "postgres",
-				Properties: map[string]string{
-					"database": "postgres",
-					"schema":   "default",
-				},
+				Driver:     "postgres",
+				Properties: must(structpb.NewStruct(map[string]any{"database": "postgres", "schema": "default"})),
 			},
 		},
 		// s3
@@ -404,10 +401,8 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindConnector, Name: "s3"},
 			Paths: []string{"/connectors/s3.yaml"},
 			ConnectorSpec: &runtimev1.ConnectorSpec{
-				Driver: "s3",
-				Properties: map[string]string{
-					"region": "us-east-1",
-				},
+				Driver:     "s3",
+				Properties: must(structpb.NewStruct(map[string]any{"region": "us-east-1"})),
 			},
 		},
 	}
@@ -2124,7 +2119,7 @@ time_zone: America/Los_Angeles
 		Paths: []string{"/connectors/clickhouse.yaml"},
 		ConnectorSpec: &runtimev1.ConnectorSpec{
 			Driver:        "clickhouse",
-			Properties:    map[string]string{"time_zone": "America/Los_Angeles"},
+			Properties:    must(structpb.NewStruct(map[string]any{"time_zone": "America/Los_Angeles"})),
 			Provision:     true,
 			ProvisionArgs: must(structpb.NewStruct(map[string]any{"hello": "world"})),
 		},

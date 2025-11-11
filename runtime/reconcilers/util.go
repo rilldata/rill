@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/robfig/cron/v3"
 )
 
@@ -116,4 +117,32 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 		return t1, nil
 	}
 	return t2, nil
+}
+
+// analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference instance variables.
+// It returns a map of variable names referenced in the props mapped to their current value (if known).
+func analyzeTemplatedVariables(ctx context.Context, c *runtime.Controller, props map[string]any) (map[string]string, error) {
+	res := make(map[string]string)
+	err := parser.AnalyzeTemplateRecursively(props, res)
+	if err != nil {
+		return nil, err
+	}
+
+	inst, err := c.Runtime.Instance(ctx, c.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	vars := inst.ResolveVariables(false)
+
+	for k := range res {
+		// Project variables are referenced with .env.name (current) or .vars.name (deprecated).
+		// Other templated variable names are not project variable references.
+		if k2 := strings.TrimPrefix(k, "env."); k != k2 {
+			res[k] = vars[k2]
+		} else if k2 := strings.TrimPrefix(k, "vars."); k != k2 {
+			res[k] = vars[k2]
+		}
+	}
+
+	return res, nil
 }
