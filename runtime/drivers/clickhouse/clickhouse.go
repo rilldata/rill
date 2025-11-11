@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -614,6 +615,20 @@ func (c *Connection) periodicallyEmitStats() {
 				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
 		case <-regularTicker.C:
+			// Skip if it hasn't been used recently and may be scaled to zero.
+			if !(c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*time.Minute) && !skipEstimatedSizeEmission {
+				// Emit the estimated size per table.
+				tableSizes, err := c.estimatePerTableSize(c.ctx)
+				if err == nil {
+					for _, ts := range tableSizes {
+						c.activity.RecordMetric(c.ctx, "clickhouse_per_table_estimated_size_bytes", float64(ts.size), attribute.String("database", ts.database), attribute.String("table", ts.table))
+					}
+				} else if !errors.Is(err, c.ctx.Err()) {
+					c.logger.Warn("failed to estimate clickhouse per-table sizes", zap.Error(err))
+				}
+			}
+
+			// Check if billing.events table exists (with caching).
 			billingTableExists, err := c.checkBillingTableExists(c.ctx, c.config.Cluster)
 			if err != nil {
 				if !errors.Is(err, c.ctx.Err()) {
@@ -662,6 +677,35 @@ func (c *Connection) estimateSize(ctx context.Context) (int64, error) {
 	}
 
 	return size, nil
+}
+
+// estimatePerTableSize returns the estimated average disk size per table in bytes.
+func (c *Connection) estimatePerTableSize(ctx context.Context) ([]*tableSize, error) {
+	var query string
+	if c.config.Cluster == "" {
+		query = `SELECT database, table, sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`
+	} else {
+		query = fmt.Sprintf(`SELECT database, table, sum(bytes_on_disk) AS size FROM cluster('%s', system.parts) WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system') GROUP BY database, table`, c.config.Cluster)
+	}
+	rows, err := c.readDB.QueryxContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tableSizes []*tableSize
+	for rows.Next() {
+		var ts tableSize
+		if err := rows.Scan(&ts.database, &ts.table, &ts.size); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		tableSizes = append(tableSizes, &ts)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over rows: %w", err)
+	}
+
+	return tableSizes, nil
 }
 
 // latestRCUPerService returns the sum latest RCU value reported for nodes in each service i.e. read/write.
@@ -746,9 +790,6 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		}
 		opts.DialTimeout = d
 	}
-	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
-		opts.DialTimeout = time.Second * 60
-	}
 
 	if conf.ReadTimeout != "" {
 		d, err := time.ParseDuration(conf.ReadTimeout)
@@ -761,15 +802,38 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		opts.ReadTimeout = time.Second * 300
 	}
 
+	// NOTE: After https://github.com/ClickHouse/clickhouse-go/pull/1709, we can remove the manual TCP dial and
+	// the default 60s DialTimeout.
+	// The manual dial currently ensures that the host and port are reachable.
+	// This check only verifies that the TCP socket is open — it will succeed even if the ClickHouse instance is scaled to zero.
+	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
+	if conf.Host != "" && conf.Port != 0 {
+		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
+		conn, err := net.DialTimeout("tcp", target, 25*time.Second)
+		if err != nil {
+			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
+		}
+		conn.Close()
+	}
+	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
+		opts.DialTimeout = time.Second * 60
+	}
+
 	// Open the connection
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 	err := db.Ping()
 	if err != nil {
-		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
-			return nil, err
+		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
+		if strings.Contains(err.Error(), "EOF") ||
+			strings.Contains(err.Error(), "[handshake] unexpected packet [21]") ||
+			(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+			return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
 		}
-
-		if conf.DSN != "" {
+		// Return immediately without retrying in the following cases:
+		//   1. The current protocol is already HTTP (no need to retry with HTTP again).
+		//   2. A DSN was explicitly provided (respect the user’s configuration).
+		//   3. The error is not "unexpected packet [72]" → The native protocol hit an HTTP endpoint.
+		if opts.Protocol == clickhouse.HTTP || conf.DSN != "" || !strings.Contains(err.Error(), "[handshake] unexpected packet [72]") {
 			return nil, err
 		}
 		// may be the port is http, also try with http protocol if DSN is not provided
@@ -777,6 +841,11 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 		err := db.Ping()
 		if err != nil {
+			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
+			if strings.Contains(err.Error(), "EOF") ||
+				(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+				return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
+			}
 			return nil, err
 		}
 		// connection with http protocol is successful
@@ -795,4 +864,10 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	}
 
 	return db, nil
+}
+
+type tableSize struct {
+	database string
+	table    string
+	size     int64
 }

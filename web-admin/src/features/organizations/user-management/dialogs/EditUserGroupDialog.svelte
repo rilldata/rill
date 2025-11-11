@@ -10,7 +10,7 @@
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
+  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import {

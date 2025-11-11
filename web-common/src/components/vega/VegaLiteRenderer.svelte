@@ -57,9 +57,8 @@
 
   // Create a more efficient key for component remounting
   $: configKey = config ? Object.keys(config).sort().join(",") : "default";
-  $: colorMappingKey = colorMapping
-    .map((m) => `${m.value}:${m.color}`)
-    .join("|");
+  $: colorMappingKey =
+    colorMapping?.map((m) => `${m.value}:${m.color}`).join("|") ?? "";
   $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
 
   const onError = (e: CustomEvent<{ error: Error }>) => {

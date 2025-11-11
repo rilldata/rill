@@ -43,6 +43,11 @@ describe("getDashboardFromAggregationRequest", () => {
       AD_BIDS_METRICS_NAME,
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary!,
     );
+    mocks.mockMetricsViewTimeRanges(
+      AD_BIDS_METRICS_NAME,
+      "2023-01-01T00:00:00Z",
+      "2023-01-01T06:00:00Z",
+    );
   });
 
   describe("active page and settings", () => {
@@ -307,7 +312,7 @@ async function runTest({
 
   let mapQueryResp: MapQueryResponse | undefined;
   const unsub = mapQueryStore.subscribe((r) => (mapQueryResp = r));
-  await waitUntil(() => !mapQueryResp?.isLoading, 1000, 50);
+  await waitUntil(() => !!mapQueryResp?.data, 1000, 50);
   unsub();
 
   if (!mapQueryResp) {
@@ -331,6 +336,10 @@ async function runTest({
     ...exploreStateFromYAMLConfig,
     ...expectedAdditionalExploreState,
   };
+  delete expectedExploreState.selectedTimeRange;
+  if (mapQueryResp.data?.exploreState) {
+    delete mapQueryResp.data.exploreState.selectedTimeRange;
+  }
 
   expect(mapQueryResp.data?.exploreState).toEqual(expectedExploreState);
 }

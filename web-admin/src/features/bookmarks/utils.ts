@@ -133,7 +133,7 @@ export function parseBookmarks(
 ) {
   return bookmarkResp.map((bookmarkResource) => {
     const bookmarkUrlSearch =
-      bookmarkResource.urlSearch ??
+      bookmarkResource.urlSearch ||
       dataTransformer(bookmarkResource.data ?? "");
 
     const bookmarkUrlParams = new URLSearchParams(bookmarkUrlSearch);

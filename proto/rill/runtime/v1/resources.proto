@@ -192,6 +192,8 @@ message MetricsViewSpec {
   // Dimensions are columns to filter and group by
   message Dimension {
     string name = 1;
+    // The dimension type. Only populated in ValidSpec.
+    DimensionType type = 14;
     string display_name = 3;
     string description = 4;
     string column = 2;
@@ -207,6 +209,11 @@ message MetricsViewSpec {
     TimeGrain smallest_time_grain = 13;
     // The data type of the dimension. Only populated in ValidSpec.
     Type data_type = 12;
+  }
+  enum DimensionType {
+    DIMENSION_TYPE_UNSPECIFIED = 0;
+    DIMENSION_TYPE_CATEGORICAL = 1;
+    DIMENSION_TYPE_TIME = 2;
   }
   // Selector for a dimension
   message DimensionSelector {
