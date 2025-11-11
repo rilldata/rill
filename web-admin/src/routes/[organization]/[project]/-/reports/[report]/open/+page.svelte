@@ -36,6 +36,8 @@
       exploreProtoState:
         reportResource?.report?.spec?.annotations?.web_open_state,
       forceOpenPivot: true,
+      // When opening a report from a link with token we should remove the filters from request.
+      // The filters are already baked into the token, each query will have them added in the backend.
       ignoreFilters: !!token,
     },
   );

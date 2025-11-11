@@ -43,6 +43,8 @@
     },
     {
       exploreProtoState: alertSpec?.annotations?.web_open_state,
+      // When opening an alert from a link with token we should remove the filters from request.
+      // The filters are already baked into the token, each query will have them added in the backend.
       ignoreFilters: !!token,
     },
   );
