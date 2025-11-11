@@ -163,7 +163,7 @@
   }
 
   function onSelectAsOfOption(
-    ref: RillTimeLabel | undefined,
+    ref: RillTimeLabel | string | undefined,
     inclusive: boolean,
   ) {
     if (!timeString) return;
