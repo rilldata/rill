@@ -652,6 +652,10 @@ export interface V1GetUsergroupResponse {
   nextPageToken?: string;
 }
 
+export interface V1GetVirtualFileResponse {
+  file?: V1VirtualFile;
+}
+
 export type V1GithubPermission =
   (typeof V1GithubPermission)[keyof typeof V1GithubPermission];
 
@@ -2007,6 +2011,18 @@ It is optional. If the call is made with a deployment access token, it defaults 
    * Page token for pagination.
    */
   pageToken?: string;
+};
+
+export type AdminServiceGetVirtualFileParams = {
+  /**
+ * The environment to get the virtual file for.
+It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+ */
+  environment?: string;
+  /**
+   * The path of the virtual file to get.
+   */
+  path?: string;
 };
 
 export type AdminServiceGetReportMetaBody = {

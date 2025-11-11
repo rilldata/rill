@@ -158,6 +158,46 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	}, nil
 }
 
+func (s *Server) GetVirtualFile(ctx context.Context, req *adminv1.GetVirtualFileRequest) (*adminv1.GetVirtualFileResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.path", req.Path),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ReadProdStatus && !permissions.ReadDevStatus {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
+	}
+
+	environment := req.Environment
+	if environment == "" {
+		if claims.OwnerType() == auth.OwnerTypeDeployment {
+			depl, err := s.admin.DB.FindDeployment(ctx, claims.OwnerID())
+			if err != nil {
+				return nil, status.Error(codes.NotFound, "deployment not found")
+			}
+			environment = depl.Environment
+		} else {
+			environment = "prod"
+		}
+	}
+
+	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, environment, req.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.GetVirtualFileResponse{
+		File: virtualFileToDTO(vf),
+	}, nil
+}
+
 func virtualFileToDTO(vf *database.VirtualFile) *adminv1.VirtualFile {
 	return &adminv1.VirtualFile{
 		Path:      vf.Path,

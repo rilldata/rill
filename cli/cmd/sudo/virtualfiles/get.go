@@ -1,4 +1,4 @@
-package virtual_files
+package virtualfiles
 
 import (
 	"context"
@@ -16,8 +16,8 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	var timeout time.Duration
 
 	getCmd := &cobra.Command{
-		Use:   "get <org> <project> <path>",
-		Args:  cobra.ExactArgs(3),
+		Use:   "get <project> <path>",
+		Args:  cobra.ExactArgs(2),
 		Short: "Get the content of a specific virtual file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -34,49 +34,37 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			org := args[0]
-			project := args[1]
-			path := args[2]
+			project := args[0]
+			path := args[1]
 
 			environment, err := adminenv.Infer(ch.AdminURL())
 			if err != nil {
 				return err
 			}
 
-			const pageSize = 100
-
-			allFiles, err := pullVirtualFiles(ctx, client, project, environment, uint32(pageSize))
+			resp, err := client.GetVirtualFile(ctx, &adminv1.GetVirtualFileRequest{
+				ProjectId:   project,
+				Environment: environment,
+				Path:        path,
+			})
 			if err != nil {
 				return err
 			}
 
-			// Find the file with matching path
-			var file *adminv1.VirtualFile
-			for _, f := range allFiles {
-				if f.Path == path {
-					file = f
-					break
-				}
-			}
-
-			if file == nil {
-				return fmt.Errorf("no file found at path %q", path)
-			}
-
-			if file.Deleted {
+			if resp.File.Deleted {
 				ch.PrintfWarn("File at path %q is marked as deleted\n", path)
 				return nil
 			}
 
 			fileType := GetFileType(path)
-			ch.PrintfSuccess("Content of virtual file %q in project %q (org %q):\n", path, project, org)
+			ch.PrintfSuccess("Content of virtual file %q in project %q:\n", path, project)
 			if fileType != FileTypeUnknown {
 				ch.PrintfSuccess("Type: %s\n", fileType)
 			}
 
-			data := string(file.Data)
+			data := string(resp.File.Data)
 			var obj interface{}
-			if err := yaml.Unmarshal(file.Data, &obj); err != nil {
+			if err := yaml.Unmarshal(resp.File.Data, &obj); err != nil {
 				// fallback to plain text
 				fmt.Println(data)
 				return nil
@@ -94,6 +82,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	getCmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
+	getCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 
 	return getCmd
 }

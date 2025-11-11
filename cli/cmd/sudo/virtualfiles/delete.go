@@ -1,4 +1,4 @@
-package virtual_files
+package virtualfiles
 
 import (
 	"fmt"
@@ -12,8 +12,8 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	var force bool
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <org> <project> <path>",
-		Args:  cobra.ExactArgs(3),
+		Use:   "delete <project> <path>",
+		Args:  cobra.ExactArgs(2),
 		Short: "Delete a specific virtual file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -23,9 +23,9 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			org := args[0]
-			project := args[1]
-			path := args[2]
+			project := args[0]
+			path := args[1]
+			org := ch.Org
 
 			if org == "" || project == "" || path == "" {
 				return fmt.Errorf("org, project, and path cannot be empty")
@@ -78,6 +78,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	deleteCmd.Flags().BoolVarP(&force, "force", "f", false, "Skip confirmation prompt")
+	deleteCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 
 	return deleteCmd
 }

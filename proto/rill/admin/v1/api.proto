@@ -856,6 +856,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual"};
   }
 
+	// GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+  rpc GetVirtualFile(GetVirtualFileRequest) returns (GetVirtualFileResponse) {
+    option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual/file"};
+  }
+
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
   rpc GetReportMeta(GetReportMetaRequest) returns (GetReportMetaResponse) {
     option (google.api.http) = {
@@ -2427,6 +2432,21 @@ message PullVirtualRepoResponse {
   repeated VirtualFile files = 1;
   // Next page token for pagination.
   string next_page_token = 2;
+}
+
+message GetVirtualFileRequest {
+  // The project ID to get the virtual file for.
+  string project_id = 1;
+  // The environment to get the virtual file for.
+  // It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+  string environment = 4;
+  // The path of the virtual file to get.
+  string path = 2;
+}
+
+message GetVirtualFileResponse {
+  // The virtual file.
+  VirtualFile file = 1;
 }
 
 message GetReportMetaRequest {

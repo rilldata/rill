@@ -1,4 +1,4 @@
-package virtual_files
+package virtualfiles
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/adminenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -14,8 +15,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize int
 
 	listCmd := &cobra.Command{
-		Use:   "list <org> <project>",
-		Args:  cobra.ExactArgs(2),
+		Use:   "list <project>",
+		Args:  cobra.ExactArgs(1),
 		Short: "List all virtual files in a project's virtual repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -25,8 +26,9 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			org := args[0]
-			project := args[1]
+			project := args[0]
+
+			org := ch.Org
 			environment, err := adminenv.Infer(ch.AdminURL())
 			if err != nil {
 				return err
@@ -36,9 +38,34 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("page-size must be greater than 0")
 			}
 
-			files, err := pullVirtualFiles(ctx, client, project, environment, uint32(pageSize))
-			if err != nil {
-				return err
+			// Retrieve all virtual files with pagination
+			var files []*adminv1.VirtualFile
+			pageToken := ""
+			ps := uint32(pageSize)
+			if ps > 1000 {
+				ps = 1000
+			}
+			for {
+				res, err := client.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
+					ProjectId:   project,
+					Environment: environment,
+					PageSize:    ps,
+					PageToken:   pageToken,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to pull virtual repo: %w", err)
+				}
+
+				if res.Files == nil {
+					break
+				}
+
+				files = append(files, res.Files...)
+
+				if res.NextPageToken == "" {
+					break
+				}
+				pageToken = res.NextPageToken
 			}
 
 			if len(files) == 0 {
@@ -70,6 +97,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	listCmd.Flags().IntVar(&pageSize, "page-size", 100, "Number of files per page")
+	listCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 
 	return listCmd
 }

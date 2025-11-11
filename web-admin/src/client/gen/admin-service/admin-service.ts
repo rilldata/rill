@@ -55,6 +55,7 @@ import type {
   AdminServiceGetReportMetaBody,
   AdminServiceGetUserParams,
   AdminServiceGetUsergroupParams,
+  AdminServiceGetVirtualFileParams,
   AdminServiceHibernateProjectParams,
   AdminServiceIssueMagicAuthTokenBody,
   AdminServiceIssueUserAuthTokenBody,
@@ -157,6 +158,7 @@ import type {
   V1GetServiceResponse,
   V1GetUserResponse,
   V1GetUsergroupResponse,
+  V1GetVirtualFileResponse,
   V1HibernateProjectResponse,
   V1IssueMagicAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
@@ -11979,6 +11981,114 @@ export function createAdminServicePullVirtualRepo<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getAdminServicePullVirtualRepoQueryOptions(
+    projectId,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+ */
+export const adminServiceGetVirtualFile = (
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetVirtualFileResponse>({
+    url: `/v1/projects/${projectId}/repo/virtual/file`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetVirtualFileQueryKey = (
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+) => {
+  return [
+    `/v1/projects/${projectId}/repo/virtual/file`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceGetVirtualFileQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetVirtualFileQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetVirtualFile>>
+  > = ({ signal }) => adminServiceGetVirtualFile(projectId, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetVirtualFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetVirtualFile>>
+>;
+export type AdminServiceGetVirtualFileQueryError = RpcStatus;
+
+/**
+ * @summary GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+ */
+
+export function createAdminServiceGetVirtualFile<
+  TData = Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetVirtualFileQueryOptions(
     projectId,
     params,
     options,

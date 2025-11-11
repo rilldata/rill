@@ -3596,6 +3596,39 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/projects/{projectId}/repo/virtual/file:
+    get:
+      summary: GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+      operationId: AdminService_GetVirtualFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetVirtualFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          description: The project ID to get the virtual file for.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            The environment to get the virtual file for.
+            It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+          in: query
+          required: false
+          type: string
+        - name: path
+          description: The path of the virtual file to get.
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/projects/{projectId}/reports/meta:
     post:
       summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
@@ -5267,6 +5300,12 @@ definitions:
         $ref: '#/definitions/v1Usergroup'
       nextPageToken:
         type: string
+  v1GetVirtualFileResponse:
+    type: object
+    properties:
+      file:
+        $ref: '#/definitions/v1VirtualFile'
+        description: The virtual file.
   v1GithubPermission:
     type: string
     enum:

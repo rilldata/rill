@@ -32200,6 +32200,245 @@ var _ interface {
 	ErrorName() string
 } = PullVirtualRepoResponseValidationError{}
 
+// Validate checks the field values on GetVirtualFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetVirtualFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetVirtualFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetVirtualFileRequestMultiError, or nil if none found.
+func (m *GetVirtualFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetVirtualFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	// no validation rules for Environment
+
+	// no validation rules for Path
+
+	if len(errors) > 0 {
+		return GetVirtualFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetVirtualFileRequestMultiError is an error wrapping multiple validation
+// errors returned by GetVirtualFileRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetVirtualFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetVirtualFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetVirtualFileRequestMultiError) AllErrors() []error { return m }
+
+// GetVirtualFileRequestValidationError is the validation error returned by
+// GetVirtualFileRequest.Validate if the designated constraints aren't met.
+type GetVirtualFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetVirtualFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetVirtualFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetVirtualFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetVirtualFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetVirtualFileRequestValidationError) ErrorName() string {
+	return "GetVirtualFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetVirtualFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetVirtualFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetVirtualFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetVirtualFileRequestValidationError{}
+
+// Validate checks the field values on GetVirtualFileResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetVirtualFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetVirtualFileResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetVirtualFileResponseMultiError, or nil if none found.
+func (m *GetVirtualFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetVirtualFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFile()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetVirtualFileResponseValidationError{
+					field:  "File",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetVirtualFileResponseValidationError{
+					field:  "File",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFile()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetVirtualFileResponseValidationError{
+				field:  "File",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetVirtualFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetVirtualFileResponseMultiError is an error wrapping multiple validation
+// errors returned by GetVirtualFileResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetVirtualFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetVirtualFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetVirtualFileResponseMultiError) AllErrors() []error { return m }
+
+// GetVirtualFileResponseValidationError is the validation error returned by
+// GetVirtualFileResponse.Validate if the designated constraints aren't met.
+type GetVirtualFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetVirtualFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetVirtualFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetVirtualFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetVirtualFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetVirtualFileResponseValidationError) ErrorName() string {
+	return "GetVirtualFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetVirtualFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetVirtualFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetVirtualFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetVirtualFileResponseValidationError{}
+
 // Validate checks the field values on GetReportMetaRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

@@ -11583,6 +11583,101 @@ export class PullVirtualRepoResponse extends Message<PullVirtualRepoResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.GetVirtualFileRequest
+ */
+export class GetVirtualFileRequest extends Message<GetVirtualFileRequest> {
+  /**
+   * The project ID to get the virtual file for.
+   *
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * The environment to get the virtual file for.
+   * It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+   *
+   * @generated from field: string environment = 4;
+   */
+  environment = "";
+
+  /**
+   * The path of the virtual file to get.
+   *
+   * @generated from field: string path = 2;
+   */
+  path = "";
+
+  constructor(data?: PartialMessage<GetVirtualFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetVirtualFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetVirtualFileRequest {
+    return new GetVirtualFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetVirtualFileRequest {
+    return new GetVirtualFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetVirtualFileRequest {
+    return new GetVirtualFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetVirtualFileRequest | PlainMessage<GetVirtualFileRequest> | undefined, b: GetVirtualFileRequest | PlainMessage<GetVirtualFileRequest> | undefined): boolean {
+    return proto3.util.equals(GetVirtualFileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetVirtualFileResponse
+ */
+export class GetVirtualFileResponse extends Message<GetVirtualFileResponse> {
+  /**
+   * The virtual file.
+   *
+   * @generated from field: rill.admin.v1.VirtualFile file = 1;
+   */
+  file?: VirtualFile;
+
+  constructor(data?: PartialMessage<GetVirtualFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetVirtualFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "file", kind: "message", T: VirtualFile },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetVirtualFileResponse {
+    return new GetVirtualFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetVirtualFileResponse {
+    return new GetVirtualFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetVirtualFileResponse {
+    return new GetVirtualFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetVirtualFileResponse | PlainMessage<GetVirtualFileResponse> | undefined, b: GetVirtualFileResponse | PlainMessage<GetVirtualFileResponse> | undefined): boolean {
+    return proto3.util.equals(GetVirtualFileResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetReportMetaRequest
  */
 export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
