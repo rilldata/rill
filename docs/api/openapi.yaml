@@ -719,6 +719,11 @@ components:
                     format: int64
                     type: integer
             type: object
+        v1GetOrganizationMemberUserResponse:
+            properties:
+                member:
+                    $ref: '#/components/schemas/v1OrganizationMemberUser'
+            type: object
         v1GetOrganizationNameForDomainResponse:
             properties:
                 name:
@@ -1261,6 +1266,8 @@ components:
             type: object
         v1OrganizationMemberUser:
             properties:
+                attributes:
+                    type: object
                 createdOn:
                     format: date-time
                     type: string
@@ -2048,6 +2055,8 @@ components:
             type: object
         v1UpdateBookmarkResponse:
             type: object
+        v1UpdateOrganizationMemberUserAttributesResponse:
+            type: object
         v1UpdateOrganizationResponse:
             properties:
                 organization:
@@ -2102,6 +2111,8 @@ components:
             type: object
         v1UserAuthToken:
             properties:
+                attributes:
+                    type: object
                 authClientDisplayName:
                     type: string
                 authClientId:
@@ -2524,6 +2535,7 @@ paths:
                     description: An unexpected error response.
             summary: RemoveOrganizationMemberUser removes member from the organization
             x-visibility: public
+    /v1/orgs/{org}/members/{email}/attributes: {}
     /v1/orgs/{org}/members/current: {}
     /v1/orgs/{org}/project/{project}/usergroups: {}
     /v1/orgs/{org}/projects:
