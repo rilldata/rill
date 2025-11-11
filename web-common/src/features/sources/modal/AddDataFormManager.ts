@@ -42,6 +42,11 @@ export class AddDataFormManager {
   private connector: V1ConnectorDriver;
   private formType: AddDataFormType;
 
+  // Centralized error normalization for this manager
+  private normalizeError(e: unknown): { message: string; details?: string } {
+    return normalizeConnectorError(this.connector.name ?? "", e);
+  }
+
   constructor(args: {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
@@ -242,10 +247,7 @@ export class AddDataFormManager {
           onClose();
         }
       } catch (e) {
-        const { message, details } = normalizeConnectorError(
-          connector.name ?? "",
-          e,
-        );
+        const { message, details } = this.normalizeError(e);
         const connectionTab = getConnectionTab();
         if (isConnectorForm && (this.hasOnlyDsn || connectionTab === "dsn")) {
           setDsnError(message, details);
@@ -446,10 +448,7 @@ export class AddDataFormManager {
       );
       return { ok: true } as const;
     } catch (e) {
-      const { message, details } = normalizeConnectorError(
-        this.connector.name ?? "",
-        e,
-      );
+      const { message, details } = this.normalizeError(e);
       return { ok: false, message, details } as const;
     }
   }
