@@ -162,7 +162,7 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 		args = append(args, opts.BeforeExecutedOn, opts.BeforeExecutedOn, opts.AfterKey)
 	}
 
-	qry.WriteString(" ORDER BY executed_on DESC, key")
+	qry.WriteString(" ORDER BY executed_on DESC, idx")
 
 	if opts.Limit != 0 {
 		qry.WriteString(" LIMIT ?")

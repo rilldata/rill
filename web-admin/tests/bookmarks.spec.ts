@@ -438,7 +438,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&grain=hour&f=advertiser_name IN ('Instacart','Leafly')`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name IN ('Instacart','Leafly')`,
         );
         // Assert filters applied
         await expect(
@@ -507,7 +507,7 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Last 24 hours")).toBeVisible();
         await expect(adminPage.getByText("No filters selected")).toBeVisible();
         // make sure the url has the correct params
-        assertUrlParams(adminPage, `tr=PT24H&grain=hour&compare_tr=rill-PD`);
+        assertUrlParams(adminPage, `tr=PT24H&compare_tr=rill-PD`);
         // Assert filters applied
         await expect(
           adminPage.getByLabel("overall_spend KPI data"),
@@ -559,7 +559,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&grain=hour&f=adomain IN ('hyundaiusa.com','instacart.com')`,
+          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=adomain IN ('hyundaiusa.com','instacart.com')`,
         );
       });
 
@@ -604,7 +604,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&grain=hour&f=adomain IN ('hyundaiusa.com','instacart.com')`,
+          `tr=7D+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=adomain IN ('hyundaiusa.com','instacart.com')`,
         );
       });
 
