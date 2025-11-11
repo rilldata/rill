@@ -202,7 +202,7 @@ export type ColorMapping = { value: string; color: string }[];
 export type ColorRangeMapping =
   | {
       mode: "scheme";
-      scheme: ColorScheme;
+      scheme: ColorScheme | "sequential" | "diverging";
     }
   | {
       mode: "gradient";

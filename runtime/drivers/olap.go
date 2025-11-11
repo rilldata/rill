@@ -205,6 +205,7 @@ const (
 	DialectAthena
 	DialectRedshift
 	DialectMySQL
+	DialectPostgres
 )
 
 func (d Dialect) String() string {
@@ -229,6 +230,8 @@ func (d Dialect) String() string {
 		return "redshift"
 	case DialectMySQL:
 		return "mysql"
+	case DialectPostgres:
+		return "postgres"
 	default:
 		panic("not implemented")
 	}
@@ -243,7 +246,18 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
+
+	switch d {
+	case DialectMySQL, DialectBigQuery:
+		// MySQL uses backticks for quoting identifiers
+		// Replace any backticks inside the identifier with double backticks.
+		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
+
+	default:
+		// Most other dialects follow ANSI SQL: use double quotes.
+		// Replace any internal double quotes with escaped double quotes.
+		return fmt.Sprintf(`"%s"`, strings.ReplaceAll(ident, `"`, `""`)) // nolint:gocritic
+	}
 }
 
 func (d Dialect) EscapeStringValue(s string) string {

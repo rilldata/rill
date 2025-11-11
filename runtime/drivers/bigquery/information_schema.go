@@ -12,11 +12,10 @@ import (
 )
 
 func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	defer client.Close()
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	it := client.Datasets(ctx)
 	pi := it.PageInfo()
@@ -84,11 +83,10 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, bigquery.QueryParameter{Name: "limit", Value: limit + 1})
 	}
 
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	defer client.Close()
 
 	cq := client.Query(q)
 	cq.Parameters = args
@@ -139,11 +137,10 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 	ORDER BY c.ordinal_position
 	`, database, databaseSchema, database, databaseSchema)
 
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	defer client.Close()
 	cq := client.Query(q)
 	cq.Parameters = []bigquery.QueryParameter{
 		{Name: "table", Value: table},

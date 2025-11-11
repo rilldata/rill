@@ -4726,6 +4726,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CompletionMessage'
+        description: Input message(s) for the AI to complete.
       tools:
         type: array
         items:
@@ -4740,6 +4741,15 @@ definitions:
     properties:
       message:
         $ref: '#/definitions/v1CompletionMessage'
+        description: The AI-generated output message.
+      inputTokens:
+        type: integer
+        format: int64
+        description: Number of tokens in the input.
+      outputTokens:
+        type: integer
+        format: int64
+        description: Number of tokens in the output.
   v1CompletionMessage:
     type: object
     properties:
