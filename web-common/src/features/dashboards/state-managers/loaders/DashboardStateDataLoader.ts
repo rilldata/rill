@@ -325,6 +325,15 @@ export class DashboardStateDataLoader {
       exploreSpec,
     );
 
+    console.log({
+      exploreStateFromSessionStorage,
+      partialExploreStateFromUrl,
+      mostRecentPartialExploreState,
+      bookmarkOrTokenExploreState,
+      exploreStateFromYAMLConfig,
+      rillDefaultExploreState,
+    });
+
     const shouldSkipOtherSources =
       // If the url has some params that do not map to session storage then we need to only use state from url back-filled with rill defaults.
       (urlSearchParams.size > 0 && !exploreStateFromSessionStorage) ||
@@ -357,6 +366,8 @@ export class DashboardStateDataLoader {
     const finalExploreState = cascadingExploreStateMerge(
       nonEmptyExploreStateOrder,
     ) as ExploreState;
+
+    console.log({ finalExploreState });
 
     return finalExploreState;
   }
