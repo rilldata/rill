@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 	"text/template"
 	"text/template/parse"
@@ -38,6 +39,7 @@ import (
 //     .meta: access the current resource's metadata (resolve time)
 //     .spec: access the current resource's spec (resolve time)
 //     .state: access the current resource's state (resolve time)
+//     as_sql_list: convert an array to SQL IN clause format with proper escaping (resolve time)
 //     (All functions from Sprig except OS functions. See http://masterminds.github.io/sprig/ for details.)
 //
 
@@ -367,6 +369,58 @@ func ResolveTemplateRecursively(val any, data TemplateData, errOnMissingTemplKey
 	}
 }
 
+// asSQLList converts a slice or array to a SQL IN clause format with proper escaping.
+func asSQLList(input interface{}) (string, error) {
+	if input == nil {
+		return "()", nil
+	}
+
+	var values []string
+
+	switch v := input.(type) {
+	case []interface{}, []string, []int, []float64, []bool:
+		rv := reflect.ValueOf(v)
+		for i := 0; i < rv.Len(); i++ {
+			escaped := escapeSQLValue(rv.Index(i).Interface())
+			values = append(values, escaped)
+		}
+	default:
+		escaped := escapeSQLValue(input)
+		values = append(values, escaped)
+	}
+
+	if len(values) == 0 {
+		return "()", nil
+	}
+
+	return "(" + strings.Join(values, ", ") + ")", nil
+}
+
+// escapeSQLValue escapes a single value for safe inclusion in SQL.
+func escapeSQLValue(value interface{}) string {
+	if value == nil {
+		return "NULL"
+	}
+
+	switch v := value.(type) {
+	case string:
+		return duckdbsql.EscapeStringValue(v)
+	case int, int8, int16, int32, int64:
+		return fmt.Sprintf("%d", v)
+	case uint, uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", v)
+	case float32, float64:
+		return fmt.Sprintf("%g", v)
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	default:
+		return duckdbsql.EscapeStringValue(fmt.Sprintf("%v", v))
+	}
+}
+
 // newFuncMap creates a base func map for templates.
 func newFuncMap(environment string, state map[string]any) template.FuncMap {
 	// Add Sprig template functions (removing functions that leak host info)
@@ -381,6 +435,8 @@ func newFuncMap(environment string, state map[string]any) template.FuncMap {
 
 	// Add helper for checking .state.incremental
 	funcMap["incremental"] = func() bool { return state != nil && state["incremental"] == true }
+
+	funcMap["as_sql_list"] = asSQLList
 
 	return funcMap
 }

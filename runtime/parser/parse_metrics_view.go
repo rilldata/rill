@@ -303,7 +303,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	if tmp.Parent != "" {
 		if len(tmp.Dimensions) > 0 || len(tmp.Measures) > 0 {
-			return fmt.Errorf("cannot define dimensions or measures in a derived metrics view, use dimension_selector and measure_selector to select from parent %q", tmp.Parent)
+			return fmt.Errorf("cannot define dimensions or measures in a derived metrics view, use parent_dimensions and parent_measures to select from parent %q", tmp.Parent)
 		}
 		if tmp.Database != "" || tmp.DatabaseSchema != "" || tmp.Table != "" || tmp.Model != "" {
 			return fmt.Errorf("cannot set data source in a derived metrics view (parent %q)", tmp.Parent)
@@ -326,7 +326,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	names := make(map[string]uint8)
 	names[strings.ToLower(tmp.TimeDimension)] = nameIsDimension
-	timeSeen := false
+	timeDimSeenInDimList := false
 
 	dimensions := make([]*runtimev1.MetricsViewSpec_Dimension, 0, len(tmp.Dimensions))
 	for i, dim := range tmp.Dimensions {
@@ -378,12 +378,12 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if _, ok := names[lower]; ok {
 			// allow time dimension to be defined in the dimensions list once
 			if strings.EqualFold(lower, tmp.TimeDimension) {
-				if timeSeen {
+				if timeDimSeenInDimList {
 					return fmt.Errorf("time dimension %q defined multiple times", tmp.TimeDimension)
 				} else if dim.Name != tmp.TimeDimension {
 					return fmt.Errorf("dimension name %q does not match the case of time dimension %q", dim.Name, tmp.TimeDimension)
 				}
-				timeSeen = true
+				timeDimSeenInDimList = true
 			} else {
 				return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 			}
@@ -753,6 +753,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	spec.Dimensions = dimensions
 	spec.Measures = measures
+
+	// if time dimension is not defined in the dimensions list but is defined in the `timeseries` key, we prepend it to the dimensions list here
+	if !timeDimSeenInDimList && tmp.TimeDimension != "" {
+		spec.Dimensions = append([]*runtimev1.MetricsViewSpec_Dimension{
+			{
+				Name:        tmp.TimeDimension,
+				Column:      tmp.TimeDimension,
+				DisplayName: ToDisplayName(tmp.TimeDimension),
+			},
+		}, spec.Dimensions...)
+	}
 
 	for _, annotation := range tmp.Annotations {
 		if annotation == nil {
