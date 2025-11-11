@@ -162,6 +162,11 @@ measures:
 				SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
 					{
+						Name:        "ts1",
+						DisplayName: "Ts1",
+						Column:      "ts1",
+					},
+					{
 						Name:        "id",
 						DisplayName: "Id",
 						Column:      "id",

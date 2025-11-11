@@ -584,9 +584,9 @@ export class Connector extends Message$1<Connector> {
   /**
    * Config for the connector
    *
-   * @generated from field: map<string, string> config = 3;
+   * @generated from field: google.protobuf.Struct config = 3;
    */
-  config: { [key: string]: string } = {};
+  config?: Struct;
 
   /**
    * Properties in config that use templating
@@ -617,7 +617,7 @@ export class Connector extends Message$1<Connector> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "config", kind: "message", T: Struct },
     { no: 5, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "provision_args", kind: "message", T: Struct },
@@ -3820,23 +3820,23 @@ export class AnalyzedConnector extends Message$1<AnalyzedConnector> {
   /**
    * Combined config properties for the connector
    *
-   * @generated from field: map<string, string> config = 3;
+   * @generated from field: google.protobuf.Struct config = 3;
    */
-  config: { [key: string]: string } = {};
+  config?: Struct;
 
   /**
    * Config properties preset by the runtime or when the instance was created
    *
-   * @generated from field: map<string, string> preset_config = 4;
+   * @generated from field: google.protobuf.Struct preset_config = 4;
    */
-  presetConfig: { [key: string]: string } = {};
+  presetConfig?: Struct;
 
   /**
    * Config properties set in project YAML files
    *
-   * @generated from field: map<string, string> project_config = 5;
+   * @generated from field: google.protobuf.Struct project_config = 5;
    */
-  projectConfig: { [key: string]: string } = {};
+  projectConfig?: Struct;
 
   /**
    * Config properties set as dynamic variables
@@ -3890,9 +3890,9 @@ export class AnalyzedConnector extends Message$1<AnalyzedConnector> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "driver", kind: "message", T: ConnectorDriver },
-    { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 4, name: "preset_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 5, name: "project_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "config", kind: "message", T: Struct },
+    { no: 4, name: "preset_config", kind: "message", T: Struct },
+    { no: 5, name: "project_config", kind: "message", T: Struct },
     { no: 6, name: "env_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "provision_args", kind: "message", T: Struct },

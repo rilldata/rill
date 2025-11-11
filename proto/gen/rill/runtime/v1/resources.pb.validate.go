@@ -12177,7 +12177,34 @@ func (m *ConnectorSpec) validate(all bool) error {
 
 	// no validation rules for Driver
 
-	// no validation rules for Properties
+	if all {
+		switch v := interface{}(m.GetProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConnectorSpecValidationError{
+					field:  "Properties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConnectorSpecValidationError{
+					field:  "Properties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConnectorSpecValidationError{
+				field:  "Properties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for Provision
 
@@ -12413,6 +12440,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for Name
+
+	// no validation rules for Type
 
 	// no validation rules for DisplayName
 

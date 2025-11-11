@@ -65,7 +65,8 @@
 
   $: queryArgsJson =
     (alertSpec?.resolverProperties?.query_args_json as string) ||
-    alertSpec?.queryArgsJson;
+    alertSpec?.queryArgsJson ||
+    "{}";
   $: queryName =
     alertSpec?.queryName ||
     (alertSpec?.resolverProperties?.query_name as string);

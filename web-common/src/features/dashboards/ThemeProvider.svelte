@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { Theme } from "../themes/theme";
 
   export let theme: Theme | undefined;
@@ -16,8 +17,10 @@
 </script>
 
 <div
-  class="dashboard-theme-boundary flex flex-col size-full"
+  class="dashboard-theme-boundary flex flex-col overflow-hidden"
   bind:this={themeBoundary}
+  class:w-full={$dynamicHeight}
+  class:size-full={!$dynamicHeight}
 >
   <style bind:this={styleEl}></style>
   <slot />
