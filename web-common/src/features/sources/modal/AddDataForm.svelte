@@ -67,7 +67,6 @@
     isMultiStepConnector && stepState.step === "source"
       ? (connector.sourceProperties ?? [])
       : properties;
-  $: formHeight = formManager.formHeight;
   $: if (
     isMultiStepConnector &&
     stepState.step === "source" &&
@@ -280,7 +279,9 @@
   <div
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
-    <div class="flex flex-col flex-grow {formHeight} overflow-y-auto p-6">
+    <div
+      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
+    >
       {#if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
