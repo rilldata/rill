@@ -62,24 +62,22 @@ const config = {
         },
       }),
     ],
-    // [
-    //   'redocusaurus',
-    //   {
-    //     config: path.join(__dirname, 'redocly.yaml'),
-    //     specs: [
-    //       {
-    //         id: 'admin-api',
-    //         spec: 'api/rill/admin/v1/public.swagger.yaml',
-    //         route: '/api/admin/',
-    //         layout: {
-    //           title: "Rill Public API",
-    //           description: "Public Rill API documentation",
-    //         },
-    //       },
-    //     ],
-    //     theme: {},
-    //   },
-    // ]
+    [
+      'redocusaurus',
+      {
+        config: path.join(__dirname, 'redocly.yaml'),
+        specs: [
+          {
+            id: 'public',
+            spec: 'api/openapi.yaml',
+            route: '/api/admin/',
+          },
+        ],
+        theme: {
+          primaryColor: '#3524c7',
+        },
+      },
+    ]
   ],
 
   themeConfig:
@@ -142,23 +140,17 @@ const config = {
             label: "Reference",
           },
 
-          // {
-          //   to: "/api/admin/",
-          //   position: "left",
-          //   label: "API",
-          // },
+          {
+            to: "/api/admin/",
+            position: "left",
+            label: "API",
+          },
 
           {
             type: "docSidebar",
             sidebarId: "contactSidebar",
             position: "left",
             label: "Contact Us",
-          },
-
-          {
-            type: "html",
-            position: "right",
-            value: '<a href="https://docs.rilldata.com/notes" class="navbar-release-notes-mobile navbar-icon-link" aria-label="Release Notes">Release Notes</i></a>',
           },
 
           // Right side items
@@ -177,22 +169,6 @@ const config = {
             type: "search",
             position: "right"
           },
-          {
-            type: "html",
-            position: "right",
-            value: '<span class="navbar-divider"></span>',
-          },
-          // {
-          //   type: "html",
-          //   position: "right",
-          //   value: '<button id="dark-mode-toggle" class="navbar-icon-link" aria-label="Toggle dark mode"><div class="icon-container"></div></button>',
-          // },
-
-          // {
-          //   type: "html",
-          //   position: "right",
-          //   value: '<a href="https://ui.rilldata.com" class="navbar-cloud-btn" target="_blank" rel="noopener">Rill Cloud</a>',
-          // },
         ],
       },
       footer: {

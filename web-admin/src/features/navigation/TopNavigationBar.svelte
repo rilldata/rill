@@ -177,7 +177,7 @@
   ];
 
   $: exploreQuery = useExplore(instanceId, dashboard, {
-    enabled: !!instanceId && !!dashboard,
+    enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
   });
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
@@ -258,6 +258,7 @@
         {/key}
       {/if}
     {/if}
+
     {#if onCanvasDashboardPage}
       <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />

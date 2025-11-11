@@ -109,7 +109,7 @@
             removable
             fullWidth
             type={displayMap[field]?.type ?? "dimension"}
-            on:remove={() => handleRemove(field)}
+            onRemove={() => handleRemove(field)}
           >
             <span class="font-bold truncate" slot="body">
               {displayMap[field]?.label || field}

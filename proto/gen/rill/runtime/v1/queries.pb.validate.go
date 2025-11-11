@@ -9859,6 +9859,39 @@ func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	if m.ExecutionTime != nil {
+
+		if all {
+			switch v := interface{}(m.GetExecutionTime()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTimeRangesRequestValidationError{
+						field:  "ExecutionTime",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTimeRangesRequestValidationError{
+						field:  "ExecutionTime",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetExecutionTime()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTimeRangesRequestValidationError{
+					field:  "ExecutionTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewTimeRangesRequestMultiError(errors)
 	}
@@ -9961,6 +9994,69 @@ func (m *MetricsViewTimeRangesResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFullTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+					field:  "FullTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+					field:  "FullTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFullTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewTimeRangesResponseValidationError{
+				field:  "FullTimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetResolvedTimeRanges() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("ResolvedTimeRanges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("ResolvedTimeRanges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTimeRangesResponseValidationError{
+					field:  fmt.Sprintf("ResolvedTimeRanges[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	for idx, item := range m.GetTimeRanges() {
 		_, _ = idx, item
@@ -10076,6 +10172,174 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewTimeRangesResponseValidationError{}
+
+// Validate checks the field values on ResolvedTimeRange with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ResolvedTimeRange) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolvedTimeRange with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResolvedTimeRangeMultiError, or nil if none found.
+func (m *ResolvedTimeRange) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolvedTimeRange) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetStart()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolvedTimeRangeValidationError{
+					field:  "Start",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolvedTimeRangeValidationError{
+					field:  "Start",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStart()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolvedTimeRangeValidationError{
+				field:  "Start",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetEnd()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolvedTimeRangeValidationError{
+					field:  "End",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolvedTimeRangeValidationError{
+					field:  "End",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetEnd()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolvedTimeRangeValidationError{
+				field:  "End",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Grain
+
+	// no validation rules for TimeDimension
+
+	// no validation rules for TimeZone
+
+	// no validation rules for Expression
+
+	if len(errors) > 0 {
+		return ResolvedTimeRangeMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolvedTimeRangeMultiError is an error wrapping multiple validation errors
+// returned by ResolvedTimeRange.ValidateAll() if the designated constraints
+// aren't met.
+type ResolvedTimeRangeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolvedTimeRangeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolvedTimeRangeMultiError) AllErrors() []error { return m }
+
+// ResolvedTimeRangeValidationError is the validation error returned by
+// ResolvedTimeRange.Validate if the designated constraints aren't met.
+type ResolvedTimeRangeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolvedTimeRangeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolvedTimeRangeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolvedTimeRangeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolvedTimeRangeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolvedTimeRangeValidationError) ErrorName() string {
+	return "ResolvedTimeRangeValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolvedTimeRangeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolvedTimeRange.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolvedTimeRangeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolvedTimeRangeValidationError{}
 
 // Validate checks the field values on MetricsViewAnnotationsRequest with the
 // rules defined in the proto definition for this message. If any rules are

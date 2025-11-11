@@ -3,6 +3,7 @@
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
+  import { MessageType, ToolName } from "../types";
   import Error from "./Error.svelte";
   import Message from "./Message.svelte";
 
@@ -28,6 +29,22 @@
 
   // Data
   $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
+
+  // Build a map of result messages by parent ID for correlation with calls (excluding router_agent)
+  $: resultMessagesByParentId = new Map(
+    messages
+      .filter(
+        (msg) =>
+          msg.type === MessageType.RESULT && msg.tool !== ToolName.ROUTER_AGENT,
+      )
+      .map((msg) => [msg.parentId, msg]),
+  );
+
+  // Filter out tool result messages (but keep router_agent results which are assistant responses)
+  $: displayMessages = messages.filter(
+    (msg) =>
+      msg.type !== MessageType.RESULT || msg.tool === ToolName.ROUTER_AGENT,
+  );
 
   // Auto-scroll to bottom when messages change or loading state changes
   afterUpdate(() => {
@@ -66,8 +83,11 @@
       <div class="chat-empty-subtitle">Happy to help explore your data</div>
     </div>
   {:else}
-    {#each messages as msg (msg.id)}
-      <Message message={msg} />
+    {#each displayMessages as msg (msg.id)}
+      <Message
+        message={msg}
+        resultMessage={resultMessagesByParentId.get(msg.id)}
+      />
     {/each}
   {/if}
   {#if isStreaming}

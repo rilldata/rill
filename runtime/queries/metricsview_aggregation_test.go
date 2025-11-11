@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -22,9 +23,8 @@ import (
 
 func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	// t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-	if testing.Short() {
-		t.Skip("clickhouse: skipping test in short mode")
-	}
+	testmode.Expensive(t)
+
 	rt, instanceID := testruntime.NewInstanceWithClickhouseProject(t, true)
 	t.Run("testMetricsViewsAggregation", func(t *testing.T) { testMetricsViewsAggregation(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregationURI", func(t *testing.T) { testMetricsViewsAggregationURI(t, rt, instanceID) })
@@ -275,7 +275,7 @@ func testMetricsViewsAggregation_export_day(t *testing.T, rt *runtime.Runtime, i
 	rows := q.Result.Data
 
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "timestamp (day)"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "Timestamp (day)"))
 }
 
 func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, instanceID string) {
@@ -317,7 +317,7 @@ func testMetricsViewsAggregation_export_hour(t *testing.T, rt *runtime.Runtime, 
 	rows := q.Result.Data
 
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "timestamp (hour)"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "Timestamp (hour)"))
 }
 
 func testMetricsViewsAggregation_no_limit(t *testing.T, rt *runtime.Runtime, instanceID string) {
@@ -584,7 +584,7 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T
 
 	require.Equal(t, 5, len(q.Result.Schema.Fields))
 	require.Equal(t, "Publisher", q.Result.Schema.Fields[0].Name)
-	require.Equal(t, "day (day)", q.Result.Schema.Fields[1].Name)
+	require.Equal(t, "Timestamp (day)", q.Result.Schema.Fields[1].Name)
 	require.Equal(t, "2022-01-01 00:00:00_Average bid price", q.Result.Schema.Fields[2].Name)
 	require.Equal(t, "2022-02-01 00:00:00_Average bid price", q.Result.Schema.Fields[3].Name)
 	require.Equal(t, "2022-03-01 00:00:00_Average bid price", q.Result.Schema.Fields[4].Name)

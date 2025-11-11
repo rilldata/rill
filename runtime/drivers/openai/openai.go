@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/mitchellh/mapstructure"
-	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ai"
@@ -233,6 +231,19 @@ func (o *openai) Ping(ctx context.Context) error {
 }
 
 // Complete implements drivers.AIService.
-func (o *openai) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error) {
-	return o.aiClient.Complete(ctx, msgs, tools, outputSchema)
+func (o *openai) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
+	res, err := o.aiClient.Complete(ctx, &ai.CompleteOptions{
+		Messages:     opts.Messages,
+		Tools:        opts.Tools,
+		OutputSchema: opts.OutputSchema,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &drivers.CompleteResult{
+		Message:      res.Message,
+		InputTokens:  res.InputTokens,
+		OutputTokens: res.OutputTokens,
+	}, nil
 }

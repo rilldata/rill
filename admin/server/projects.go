@@ -1075,8 +1075,10 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		invitedByUserID = user.ID
-		invitedByName = user.DisplayName
+		if user != nil {
+			invitedByUserID = user.ID
+			invitedByName = user.DisplayName
+		}
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
