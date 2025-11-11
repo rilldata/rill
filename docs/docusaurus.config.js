@@ -131,13 +131,13 @@ const config = {
           {
             type: "html",
             position: "left",
-            value: '<a href="/" class="navbar__link navbar-icon-link" aria-label="Docs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Docs</a>',
+            value: '<a href="/" class="navbar__link navbar-icon-link" aria-label="Docs"><img src="/icons/BookOpen.svg" alt="Docs" class="navbar-icon-link-img" />Docs </a>',
           },
 
           {
             type: "html",
             position: "left",
-            value: '<a href="/reference/rill-iso-extensions" class="navbar__link navbar-icon-link" aria-label="Reference"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Reference</a>',
+            value: '<a href="/reference/rill-iso-extensions" class="navbar__link navbar-icon-link" aria-label="Reference"><img src="/icons/Book.svg" alt="Reference" class="navbar-icon-link-img" />Reference</a>',
           },
 
           // {
@@ -149,7 +149,7 @@ const config = {
           {
             type: "html",
             position: "left",
-            value: '<a href="/contact/contact" class="navbar__link navbar-icon-link" aria-label="Contact Us"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Contact Us</a>',
+            value: '<a href="/contact/contact" class="navbar__link navbar-icon-link" aria-label="Contact Us"><img src="/icons/MessageSquare.svg" alt="Contact Us" class="navbar-icon-link-img" />Contact Us</a>',
           },
 
           // Right side items

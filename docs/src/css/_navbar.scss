@@ -2,6 +2,18 @@
 /* =========================
    Search Bar Custom Styles
    ========================= */
+.navbar__item {
+  display: flex;
+  align-items: center;
+  padding-top: 8px;
+  height: 100%;
+}
+.navbar-icon-link-img {
+  width: 24px;
+  height: 24px;
+  margin-right: 6px;
+}
+
 .navbar .navbar__items--right .DocSearch-Button {
   background: transparent;
   border: 0.5px solid #e5e7eb;
@@ -90,6 +102,11 @@
     margin: 0;
     background: none;
     box-shadow: none;
+  }
+
+  .navbar .menu__list .navbar-icon-link i,
+  .navbar .menu__list .navbar-icon-link .navbar-icon-link-img {
+    display: none;
   }
 
 } 
