@@ -156,8 +156,8 @@ light:
     # ... up to color-qualitative-24
 
 dark:
-  primary: "818CF8"  # Indigo-400
-  secondary: "A78BFA"  # Purple-400
+  primary: "#818CF8"  # Indigo-400
+  secondary: "#A78BFA"  # Purple-400
   variables:
     # Sequential palette - adjusted for dark backgrounds
     color-sequential-1: "hsl(210deg 20% 25%)"
