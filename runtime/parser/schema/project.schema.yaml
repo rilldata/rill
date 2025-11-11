@@ -2642,10 +2642,10 @@ definitions:
             properties:
               primary:
                 type: string
-                description: Primary color for light theme. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+                description: Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
               secondary:
                 type: string
-                description: Secondary color for light theme. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+                description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
               variables:
                 type: object
                 description: Custom CSS variables for light theme

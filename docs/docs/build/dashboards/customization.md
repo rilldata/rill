@@ -106,15 +106,15 @@ time_zones:
 
 ## Changing Themes & Colors
 
-In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard.
+In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard. All properties in the file are optional—any values you omit will fall back to Rill's standard theme defaults.
 
 First, create the YAML file as below. You can define separate color schemes for light and dark modes:
 
 ```yaml
 type: theme
 light:
-  primary: "4F46E5"  # Indigo-600
-  secondary: "8B5CF6"  # Purple-500
+  primary: "#4F46E5"  # Indigo-600
+  secondary: "#8B5CF6"  # Purple-500
   variables:
     # Sequential palette - for ordered data that progresses from low to high
     color-sequential-1: "hsl(211deg 79% 94%)"
@@ -181,7 +181,7 @@ The `light` and `dark` properties allow you to customize:
   - **Qualitative palette** (color-qualitative-1 through 24): For categorical data
 
 Colors can be specified using:
-- Hex values (without the '#' character, e.g., `4F46E5` or with it, e.g., `"#4F46E5"`)
+- Hex values (with or without the '#' character, e.g., `4F46E5`. `"#4F46E5"`)
 - Named colors (e.g., `plum`, `violet`)
 - HSL format (e.g., `hsl(180, 100%, 50%)`)
 
