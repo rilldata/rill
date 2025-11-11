@@ -238,6 +238,9 @@ export class ConversationManager {
   private updateConversationListCache(conversationId: string): void {
     const listConversationsKey = getRuntimeServiceListConversationsQueryKey(
       this.instanceId,
+      {
+        clientType: V1ClientType.CLIENT_TYPE_RILL,
+      },
     );
 
     // Check if we have existing cached data
