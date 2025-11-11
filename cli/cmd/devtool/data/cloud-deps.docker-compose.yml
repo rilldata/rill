@@ -84,7 +84,7 @@ services:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/stripe-config.toml:/etc/stripe-config.toml
   clickhouse:
     <<: *service
-    image: 'clickhouse/clickhouse-server:24.11.1.2557'
+    image: 'clickhouse/clickhouse-server:25.5.1.2782'
     volumes:
       - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./clickhouse-users.xml:/etc/clickhouse-server/users.d/users.xml
