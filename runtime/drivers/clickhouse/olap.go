@@ -432,7 +432,7 @@ func (sc *SQLConn) QueryRowContext(ctx context.Context, query string, args ...an
 }
 
 func contextWithoutDeadline(parent context.Context) context.Context {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.WithoutCancel(parent))
 	go func() {
 		<-parent.Done()
 		cancel()

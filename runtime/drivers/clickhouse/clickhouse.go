@@ -336,7 +336,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	supportSettings := true
-	if _, err := db.Exec("SET max_execution_time = 61"); err != nil {
+	if _, err := db.Exec("SET cast_keep_nullable = 1"); err != nil {
 		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
 			supportSettings = false
 		}
