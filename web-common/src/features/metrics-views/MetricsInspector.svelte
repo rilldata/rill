@@ -50,9 +50,9 @@
   {#if !$remoteContent}
     <SimpleMessage
       message={`For help building dashboards, see:<br /><a
-        href="https://docs.rilldata.com/build/dashboards"
+        href="https://docs.rilldata.com/developers/build/dashboards"
         target="_blank"
-        rel="noopener noreferrer">https://docs.rilldata.com/build/dashboards</a>`}
+        rel="noopener noreferrer">https://docs.rilldata.com/developers/build/dashboards</a>`}
       includesHtml
     />
   {:else if $parseError}

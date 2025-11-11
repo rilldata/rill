@@ -26,7 +26,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "BigQuery",
 	Description: "Import data from BigQuery.",
-	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/bigquery",
+	DocsURL:     "https://docs.rilldata.com/developers/build/connectors/data-source/bigquery",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "project_id",

@@ -36,7 +36,7 @@
         Learn more about tables in our <a
           target="_blank"
           rel="noopener"
-          href="https://docs.rilldata.com/explore/filters/pivot">docs</a
+          href="https://docs.rilldata.com/users/explore/filters/pivot">docs</a
         >.
       </div>
     {/if}
@@ -59,7 +59,7 @@
       <div class="text-gray-600">
         Learn more about tables in our <a
           target="_blank"
-          href="https://docs.rilldata.com/explore/filters/pivot">docs</a
+          href="https://docs.rilldata.com/users/explore/filters/pivot">docs</a
         >.
       </div>
     {/if}
