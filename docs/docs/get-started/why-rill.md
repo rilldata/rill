@@ -1,6 +1,6 @@
 ---
 title: Why Rill?
-sidebar_label: Why Rill? 
+sidebar_label: Why Rill?
 sidebar_position: 01
 ---
 
@@ -8,7 +8,7 @@ Rill's strategy for fast dashboards is threefold:
 
 1) *Define metrics & dimensions up front*, and use these definitions to automatically aggregate and prune the raw tables. This modest modeling pain yields massive gains: the data footprint of aggregated metrics is typically 10–100x smaller than the underlying raw events in data lakes or warehouses.
 
-2) *Use an integrated OLAP database* to drive dashboards, by orchestrating (and aggregating, per above) data out of cloud data warehouses, lakehouses, or object stores.
+2) *Use an [integrated OLAP database](/build/connectors/olap)* to drive dashboards, by orchestrating (and aggregating, per above) data out of cloud data warehouses, lakehouses, or object stores.
 
 3) *Implement BI-as-code* to bring version control, collaboration, and automation to your analytics stack. This approach allows engineering teams to maintain control while enabling business users to make UI-based adjustments when needed. [Learn more about BI-as-code](#bi-as-code).
 

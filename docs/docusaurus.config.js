@@ -449,15 +449,15 @@ const config = {
           },
           {
             from: '/concepts/developerVsCloud',
-            to: '/get-started/core-concepts#what-is-rill-cloud-and-rill-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/home/concepts/developerVsCloud',
-            to: '/get-started/core-concepts#what-is-rill-cloud-and-rill-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/get-started/concepts/cloud-vs-developer',
-            to: '/get-started/core-concepts#what-is-rill-cloud-and-rill-developer'
+            to: '/deploy/cloud-vs-developer'
           },
           {
             from: '/concepts/OLAP',

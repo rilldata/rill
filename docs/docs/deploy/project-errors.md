@@ -104,3 +104,4 @@ To resolve metrics view and dashboard errors:
 
 1. Verify that all referenced models are building successfully
 2. Check the measures and dimensions in your metrics YAML in GitHub or Rill Developer matches an existing column in your data
+3. Check that any changes to the metrics dimensions and measures are reflected in the explore YAML.
