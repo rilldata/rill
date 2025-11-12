@@ -85,6 +85,16 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		"session_timezone":          "UTC",
 		"join_use_nulls":            1,
 	}
+
+	// Add query attributes to settings with SQL_ prefix
+	for k, v := range stmt.QueryAttributes {
+		settingKey := k
+		if !strings.HasPrefix(strings.ToUpper(k), "SQL_") {
+			settingKey = "SQL_" + k
+		}
+		settings[settingKey] = v
+	}
+
 	ctx = contextWithQueryID(ctx)
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 
@@ -741,6 +751,7 @@ func splitStructFieldStr(fieldStr string) (string, string, bool) {
 
 // appendQueryAttributes appends query attributes to a ClickHouse query.
 // It detects if a SETTINGS clause exists and appends appropriately.
+// Keys are prefixed with SQL_ per ClickHouse custom settings convention.
 func appendQueryAttributes(query string, attrs map[string]string) string {
 	if len(attrs) == 0 {
 		return query
@@ -756,7 +767,14 @@ func appendQueryAttributes(query string, attrs map[string]string) string {
 	for _, k := range keys {
 		v := attrs[k]
 		escapedValue := strings.ReplaceAll(strings.ReplaceAll(v, `\`, `\\`), `'`, `''`)
-		attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", k, escapedValue))
+
+		// Ensure the key is prefixed with SQL_ for ClickHouse custom settings
+		settingKey := k
+		if !strings.HasPrefix(strings.ToUpper(k), "SQL_") {
+			settingKey = "SQL_" + k
+		}
+
+		attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", settingKey, escapedValue))
 	}
 
 	upperQuery := strings.ToUpper(query)
