@@ -63,7 +63,7 @@
   } from "@rilldata/web-common/lib/time/new-grains";
   import { featureFlags } from "../../feature-flags";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { Tooltip } from "bits-ui";
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
@@ -382,12 +382,15 @@
                   <Tooltip.Trigger>
                     <AlertCircleOutline className="size-3.5 text-red-600" />
                   </Tooltip.Trigger>
-                  <Tooltip.Content side="top" class="z-50">
+                  <Tooltip.Content side="top" class="z-50 w-64" sideOffset={8}>
                     <TooltipContent>
-                      {V1TimeGrainToDateTimeUnit[activeTimeGrain]} granularity not
-                      allowed for this dashboard. Displaying by {V1TimeGrainToDateTimeUnit[
-                        minTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE
-                      ]} instead.
+                      <i>{V1TimeGrainToDateTimeUnit[activeTimeGrain]}</i>
+                      aggregation not supported on this dashboard. Displaying by
+                      <i
+                        >{V1TimeGrainToDateTimeUnit[
+                          minTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE
+                        ]}</i
+                      > instead.
                     </TooltipContent>
                   </Tooltip.Content>
                 </Tooltip.Root>
