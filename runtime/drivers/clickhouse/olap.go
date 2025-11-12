@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -152,20 +153,8 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		}
 	}
 
-	if len(stmt.QueryAttributes) > 0 {
-		stmt.Query += ", "
-		var attrPairs []string
-		for k, v := range stmt.QueryAttributes {
-			// ClickHouse convention: prefix settings keys with SQL_
-			prefixedKey := k
-			if !strings.HasPrefix(k, "SQL_") {
-				prefixedKey = "SQL_" + k
-			}
-			escapedValue := strings.ReplaceAll(strings.ReplaceAll(v, `\`, `\\`), `'`, `''`)
-			attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", prefixedKey, escapedValue))
-		}
-		stmt.Query += strings.Join(attrPairs, ", ")
-	}
+	// Append query attributes to SETTINGS clause
+	stmt.Query = appendQueryAttributes(stmt.Query, stmt.QueryAttributes)
 
 	// Gather metrics only for actual queries
 	var acquiredTime time.Time
@@ -748,4 +737,32 @@ func splitStructFieldStr(fieldStr string) (string, string, bool) {
 	typeStr := strings.TrimLeft(fieldStr[idx:], " ")
 
 	return nameStr, typeStr, true
+}
+
+// appendQueryAttributes appends query attributes to a ClickHouse query.
+// It detects if a SETTINGS clause exists and appends appropriately.
+func appendQueryAttributes(query string, attrs map[string]string) string {
+	if len(attrs) == 0 {
+		return query
+	}
+
+	keys := make([]string, 0, len(attrs))
+	for k := range attrs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var attrPairs []string
+	for _, k := range keys {
+		v := attrs[k]
+		escapedValue := strings.ReplaceAll(strings.ReplaceAll(v, `\`, `\\`), `'`, `''`)
+		attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", k, escapedValue))
+	}
+
+	upperQuery := strings.ToUpper(query)
+	if strings.Contains(upperQuery, "SETTINGS") {
+		return query + ", " + strings.Join(attrPairs, ", ")
+	}
+
+	return query + "\n SETTINGS " + strings.Join(attrPairs, ", ")
 }
