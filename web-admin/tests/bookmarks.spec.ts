@@ -203,7 +203,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&grain=hour&compare_tr=rill-PP&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&grain=hour&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
         );
 
         // Open bookmark dropdown and verify the "filled" state for the bookmark
@@ -438,7 +438,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1hcompare_tr=rill-PD&f=advertiser_name IN ('Instacart','Leafly')`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PD&f=advertiser_name IN ('Instacart','Leafly')`,
         );
         // Assert filters applied
         await expect(
