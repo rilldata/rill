@@ -164,13 +164,13 @@
   }
 
   .navbar .navbar-icon-link {
-    // display: none !important;
-  }
-.navbar-docs-link::before,
-.navbar-reference-link::before,
-.navbar-contact-link::before {
     display: none !important;
   }
+// .navbar-docs-link::before,
+// .navbar-reference-link::before,
+// .navbar-contact-link::before {
+//     display: none !important;
+//   }
 
 
 } 
