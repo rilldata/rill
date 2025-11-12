@@ -146,8 +146,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 			if !strings.HasPrefix(k, "SQL_") {
 				prefixedKey = "SQL_" + k
 			}
-			// Escape single quotes in the value
-			escapedValue := strings.ReplaceAll(v, "'", "''")
+			escapedValue := strings.ReplaceAll(strings.ReplaceAll(v, `\`, `\\`), `'`, `''`)
 			attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", prefixedKey, escapedValue))
 		}
 		stmt.Query += strings.Join(attrPairs, ", ")
