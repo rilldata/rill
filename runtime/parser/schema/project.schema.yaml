@@ -494,9 +494,6 @@ definitions:
               type: string
               description: Refers to the driver type and must be driver `https`
               const: https
-            path:
-              type: string
-              description: The full HTTPS URI to fetch data from
             headers:
               type: object
               description: HTTP headers to include in the request
@@ -506,8 +503,6 @@ definitions:
             - # Example: HTTPS connector configuration
               type: connector                                  # Must be `connector` (required)
               driver: https                                    # Must be `https` _(required)_
-
-              path: "https://api.example.com/data.csv"         # The full HTTPS URI to fetch data from  
               headers:
                 "Authorization": "Bearer my-token"            # HTTP headers to include in the request
           required:
@@ -2589,13 +2584,34 @@ definitions:
       In your Rill project directory, create a `<theme_name>.yaml` file in any directory containing `type: theme`. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud.
       
       To apply that theme to a dashboard, add `default_theme: <name of theme>` to the yaml file for that dashboard. Alternatively, you can add this to the end of the URL in your browser: `?theme=<name of theme>`
-    examples: 
-      - # Example: You can copy this directly into your <theme_name>.yaml file
+    examples:
+      - # Example: Basic theme with light and dark mode colors
         type: theme
-        
-        colors:
-          primary: plum
-          secondary: violet
+        light:
+          primary: "#4F46E5"  # Indigo-600
+          secondary: "#8B5CF6"  # Purple-500
+        dark:
+          primary: "#818CF8"  # Indigo-400
+          secondary: "#A78BFA"  # Purple-400
+
+      - # Example: Advanced theme with custom color palettes
+        type: theme
+        light:
+          primary: "#14B8A6"  # Teal
+          secondary: "#10B981"  # Emerald
+          variables:
+            color-sequential-1: "hsl(180deg 80% 95%)"
+            color-sequential-5: "hsl(180deg 80% 50%)"
+            color-sequential-9: "hsl(180deg 80% 25%)"
+            color-qualitative-1: "hsl(156deg 56% 52%)"
+            color-qualitative-2: "hsl(27deg 100% 65%)"
+        dark:
+          primary: "2DD4BF"
+          secondary: "34D399"
+          variables:
+            color-sequential-1: "hsl(180deg 40% 30%)"
+            color-sequential-5: "hsl(180deg 50% 50%)"
+            color-sequential-9: "hsl(180deg 60% 70%)"
     allOf:
       - title: Properties
         type: object
@@ -2615,7 +2631,37 @@ definitions:
                 type: string
                 description: Secondary color
             additionalProperties: true
-      
+          light:
+            type: object
+            description: Light theme color configuration
+            properties:
+              primary:
+                type: string
+                description: Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              secondary:
+                type: string
+                description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              variables:
+                type: object
+                description: Custom CSS variables for light theme
+                additionalProperties:
+                  type: string
+          dark:
+            type: object
+            description: Dark theme color configuration
+            properties:
+              primary:
+                type: string
+                description: Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              secondary:
+                type: string
+                description: Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+              variables:
+                type: object
+                description: Custom CSS variables for dark theme
+                additionalProperties:
+                  type: string
+
         required:
           - type
           - display_name
@@ -2906,15 +2952,45 @@ definitions:
         properties:
           primary:
             type: string
-            description: Overrides the primary blue color in the dashboard. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
+            description: Overrides the primary blue color in the dashboard. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats. Note that the hue of the input colors is used for variants but the saturation and lightness is copied over from the [blue color palette](https://tailwindcss.com/docs/customizing-colors).
           secondary:
             type: string
-            description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex (without the '#' character), [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+            description: Overrides the secondary color in the dashboard. Applies to the loading spinner only as of now. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
         anyOf:
           - required:
               - primary
           - required:
               - secondary
+      light:
+        type: object
+        description: Light theme color configuration
+        properties:
+          primary:
+            type: string
+            description: Primary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          secondary:
+            type: string
+            description: Secondary color for light theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          variables:
+            type: object
+            description: Custom CSS variables for light theme
+            additionalProperties:
+              type: string
+      dark:
+        type: object
+        description: Dark theme color configuration
+        properties:
+          primary:
+            type: string
+            description: Primary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          secondary:
+            type: string
+            description: Secondary color for dark theme. Can have any hex, [named colors](https://www.w3.org/TR/css-color-4/#named-colors) or hsl() formats.
+          variables:
+            type: object
+            description: Custom CSS variables for dark theme
+            additionalProperties:
+              type: string
   api_data_properties:
     oneOf:
       - title: SQL Query

@@ -8,10 +8,6 @@
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import { getBookmarksQueryOptions } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import { createUrlForExploreYAMLDefaultState } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
-  import {
-    getFilterStateFromNameStore,
-    getTimeControlsStateFromNameStore,
-  } from "@rilldata/web-common/features/dashboards/stores/utils.ts";
   import { createRillDefaultExploreUrlParamsV2 } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { createQuery } from "@tanstack/svelte-query";
@@ -37,11 +33,6 @@
   // To keep bookmarks exhaustive, these are added on top of current url params while creating bookmarks.
   const rillDefaultExploreURLParams =
     createRillDefaultExploreUrlParamsV2(exploreNameStore);
-
-  // Get part of explore state relevant to bookmarks.
-  // We need to do this to reuse the Bookmarks component in canvas.
-  const filtersStore = getFilterStateFromNameStore(exploreNameStore);
-  const timeControlsStore = getTimeControlsStateFromNameStore(exploreNameStore);
 
   // Transformer for legacy bookmark data that was stored in proto format.
   const exploreBookmarkLegacyDataTransformer =
@@ -78,9 +69,5 @@
     defaultUrlParams: $rillDefaultExploreURLParams,
     defaultHomeBookmarkUrl: $urlForExploreYAMLDefaultState,
   }}
-  dashboardState={{
-    metricsViewNames: [metricsViewName],
-    filtersState: $filtersStore,
-    timeControlState: $timeControlsStore,
-  }}
+  metricsViewNames={[metricsViewName]}
 />

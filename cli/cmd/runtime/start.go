@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	// Load connectors and reconcilers for runtime
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
@@ -222,6 +223,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			// Init runtime
+			metastoreConfig, err := structpb.NewStruct(map[string]any{
+				"dsn": conf.MetastoreURL,
+			})
+			if err != nil {
+				logger.Fatal("error: could not creat metastore metastore config", zap.Error(err))
+			}
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,
 				MetastoreConnector:           "metastore",
@@ -234,7 +241,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					{
 						Type:   conf.MetastoreDriver,
 						Name:   "metastore",
-						Config: map[string]string{"dsn": conf.MetastoreURL},
+						Config: metastoreConfig,
 					},
 				},
 				Version: ch.Version,

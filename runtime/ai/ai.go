@@ -75,29 +75,11 @@ type SessionOptions struct {
 
 // Session creates or loads an AI session.
 func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Session, resErr error) {
-	// Setup logger
-	logger := r.Runtime.Logger.Named("ai").With(
-		zap.String("instance_id", opts.InstanceID),
-		zap.String("ai_session_id", opts.SessionID),
-		zap.String("user_id", opts.Claims.UserID),
-	)
-
 	// Load instance metadata to get project instructions
 	instance, err := r.Runtime.Instance(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance %q: %w", opts.InstanceID, err)
 	}
-
-	// Setup scoped activity client
-	attrs := []attribute.KeyValue{
-		attribute.String("instance_id", instance.ID),
-		attribute.String("ai_session_id", opts.SessionID),
-		attribute.String(activity.AttrKeyUserID, opts.Claims.UserID),
-	}
-	for k, v := range instance.Annotations {
-		attrs = append(attrs, attribute.String(k, v))
-	}
-	activityClient := r.Activity.With(attrs...)
 
 	// Open catalog
 	catalog, release, err := r.Runtime.Catalog(ctx, opts.InstanceID)
@@ -154,6 +136,24 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	if opts.Claims.UserID != session.OwnerID {
 		return nil, fmt.Errorf("access denied to session %q", session.ID)
 	}
+
+	// Setup logger
+	logger := r.Runtime.Logger.Named("ai").With(
+		zap.String("instance_id", opts.InstanceID),
+		zap.String("ai_session_id", session.ID),
+		zap.String("user_id", opts.Claims.UserID),
+	)
+
+	// Setup scoped activity client
+	attrs := []attribute.KeyValue{
+		attribute.String("instance_id", instance.ID),
+		attribute.String("ai_session_id", session.ID),
+		attribute.String(activity.AttrKeyUserID, opts.Claims.UserID),
+	}
+	for k, v := range instance.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+	activityClient := r.Activity.With(attrs...)
 
 	// Create the session
 	base := &BaseSession{

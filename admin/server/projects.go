@@ -1121,8 +1121,10 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		invitedByUserID = user.ID
-		invitedByName = user.DisplayName
+		if user != nil {
+			invitedByUserID = user.ID
+			invitedByName = user.DisplayName
+		}
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -1192,7 +1194,7 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	}
 
 	// Add the user to the project. set resources to nil as any role will have more access than just viewer role with access to specific resources
-	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil)
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil, nil)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -1361,7 +1363,7 @@ func (s *Server) AddProjectMemberUserResources(ctx context.Context, req *adminv1
 	}
 
 	// Add the user to the project.
-	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, resources)
+	err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil, resources)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, err
@@ -1809,7 +1811,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 		}
 	} else {
 		// Add the user as a project member.
-		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil)
+		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -2049,7 +2051,7 @@ func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv
 
 	for _, user := range newUsers {
 		// Add the user to the project.
-		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil)
+		err = s.admin.InsertProjectMemberUser(ctx, proj.OrganizationID, proj.ID, user.ID, role.ID, nil, nil)
 		if err != nil {
 			return nil, err
 		}

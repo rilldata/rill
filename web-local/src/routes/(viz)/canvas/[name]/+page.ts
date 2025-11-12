@@ -8,16 +8,24 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error } from "@sveltejs/kit";
 import type { QueryFunction } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
+import { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 
-export const load = async ({ params, depends }) => {
+export const load = async ({ params, url, depends }) => {
+  const canvasName = params.name;
+
+  await CanvasEntity.handleCanvasRedirect({
+    canvasName,
+    searchParams: url.searchParams,
+    pathname: url.pathname,
+  });
+
   const { instanceId } = get(runtime);
 
-  const dashboardName = params.name;
-  depends(dashboardName, "dashboard");
+  depends(canvasName, "dashboard");
 
   const queryParams = {
     "name.kind": ResourceKind.Canvas,
-    "name.name": dashboardName,
+    "name.name": canvasName,
   };
 
   const queryKey = getRuntimeServiceGetResourceQueryKey(
@@ -43,7 +51,7 @@ export const load = async ({ params, depends }) => {
     }
 
     return {
-      dashboardName,
+      dashboardName: canvasName,
       dashboard,
     };
   } catch (e) {
