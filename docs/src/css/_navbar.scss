@@ -56,20 +56,27 @@
 
 .navbar-docs-link::before {
   background-image: url("/icons/BookOpen.svg");
+  width: 16px;
+  height: 16px;
 }
 
 .navbar-reference-link::before {
   background-image: url("/icons/Book.svg");
+  width: 16px;
+  height: 16px;
 }
 
 .navbar-contact-link::before {
   background-image: url("/icons/MessageSquare.svg");
+  width: 16px;
+  height: 16px;
 }
 
-.navbar-icon-link-img {
+.navbar-icon-link {
   width: 24px;
   height: 24px;
   margin-right: 6px;
+  margin-left: 6px;
 }
 
 .navbar .navbar__items--right .DocSearch-Button {
