@@ -6,8 +6,10 @@ import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Duration } from "luxon";
-import type { DateObjectUnits } from "luxon/src/datetime";
+import type { DateObjectUnits, DateTimeUnit } from "luxon/src/datetime";
 import {
+  DateTimeUnitToV1TimeGrain,
+  getGrainOrder,
   getLowerOrderGrain,
   getMinGrain,
   getSmallestGrain,
@@ -400,7 +402,23 @@ export class RillIsoInterval implements RillTimeInterval {
   }
 
   public getGrain() {
-    return undefined;
+    let smallestGrain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_YEAR;
+    if (this.start.dateObject.month || this.end?.dateObject.month) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_MONTH;
+    }
+    if (this.start.dateObject.day || this.end?.dateObject.day) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_DAY;
+    }
+    if (this.start.dateObject.hour || this.end?.dateObject.hour) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_HOUR;
+    }
+    if (this.start.dateObject.minute || this.end?.dateObject.minute) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_MINUTE;
+    }
+    if (this.start.dateObject.second || this.end?.dateObject.second) {
+      smallestGrain = V1TimeGrain.TIME_GRAIN_SECOND;
+    }
+    return smallestGrain;
   }
 
   public toString() {
@@ -649,7 +667,7 @@ export class RillLabelledPointInTime implements RillPointInTimeVariant {
 }
 
 export class RillAbsoluteTime implements RillPointInTimeVariant {
-  private readonly dateObject: DateObjectUnits = {};
+  readonly dateObject: DateObjectUnits = {};
 
   public constructor(private readonly timeStr: string) {
     const absTimeMatch = absTimeRegex.exec(timeStr);
