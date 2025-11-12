@@ -25,5 +25,3 @@
 </svelte:head>
 
 <TablePreviewWorkspace connector={name} {database} {databaseSchema} {table} />
-
-
