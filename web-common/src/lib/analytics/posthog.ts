@@ -1,30 +1,37 @@
-import posthog, { type Properties } from "posthog-js";
+import posthog, {
+  type Properties,
+  type CaptureResult,
+  type BeforeSendFn,
+} from "posthog-js";
 
-let exceptionCaptureFilterRegistered = false;
+const allowedExceptionHostnames = new Set([
+  "ui.rilldata.com",
+  "localhost",
+  "127.0.0.1",
+]);
+
+const filterExceptionEvents: BeforeSendFn = (event: CaptureResult | null) => {
+  if (event?.event !== "$exception") {
+    return event;
+  }
+
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  // For $exception events, only send them from specific hostnames.
+  // This was motivated by the desire to decrease our potential for large event tracking bills from PostHog.
+  const hostname = window.location.hostname;
+  if (allowedExceptionHostnames.has(hostname)) {
+    return event;
+  }
+
+  return null;
+};
 
 const POSTHOG_API_KEY = import.meta.env.RILL_UI_PUBLIC_POSTHOG_API_KEY;
 
 export function initPosthog(rillVersion: string, sessionId?: string | null) {
-  if (!exceptionCaptureFilterRegistered && typeof window !== "undefined") {
-    exceptionCaptureFilterRegistered = true;
-    posthog.on("capture", (event) => {
-      if (event?.event !== "$exception") {
-        return event;
-      }
-
-      // For $exception events, only send them from specific hostnames.
-      // This was motivated by the desire to decrease our potential for large event tracking bills from PostHog.
-      const hostname = window.location.hostname;
-      const allowedHostnames = ["ui.rilldata.com", "localhost", "127.0.0.1"];
-      if (allowedHostnames.includes(hostname)) {
-        return event;
-      }
-
-      // Drop $exception events for all other hostnames.
-      return null;
-    });
-  }
-
   // No need to proceed if PostHog is already initialized
   if (posthog.__loaded) return;
 
@@ -44,6 +51,7 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
     },
     autocapture: true,
     enable_heatmaps: true,
+    before_send: filterExceptionEvents,
     bootstrap: {
       sessionID: sessionId ?? undefined,
     },
