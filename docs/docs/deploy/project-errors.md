@@ -20,7 +20,6 @@ If you have already created YAML alerts, when deploying to Rill Cloud for the fi
 
 Besides alerting on project errors, it is possible to configure generic alerts in your dashboards based on specific thresholds or conditions being met. For more details, check out our [alerts documentation](/explore/alerts)!
 
-:::
 
 ### Configure an email alert
 
@@ -49,7 +48,6 @@ This will give you a good idea of what object has an issue, and you can browse t
 
 After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
-:::
 
 ### Configure a Slack alert
 
@@ -74,11 +72,7 @@ notify:
   slack:
     channels: [rill-alerts]
 ```
-HTTP 401: Unauthorized
-HTTP 403: Forbidden
 
-Insufficient privileges to operate on table 'SCHEMA.TABLE'
-Invalid username or password
 
 After making these changes, you should commit and [push these changes](/deploy/deploy-dashboard/github-101#pushing-changes) to your git repository.
 
@@ -94,7 +88,7 @@ To troubleshoot model errors:
 1. Check the model's status in the project status page
 2. Review the error message for specific details about what failed
 3. Verify that all referenced tables and views exist and are accessible in prod environment 
-   1. Run the following from the CLI to see list of tables and size usage: `rill project tables --project <project_nane>`
+   1. Run the following from the CLI to see list of tables and size usage: `rill project tables --project <project_name>`
 4. Verify Credentials are correct for prod environment.
 
 If after going through the above steps, you are still unable to resolve the issue, [contact us!](/contact)
@@ -109,4 +103,4 @@ Metrics view and dashboard errors often stem from issues with the underlying mod
 To resolve metrics view and dashboard errors:
 
 1. Verify that all referenced models are building successfully
-2. Check that dimensions and measures reference valid fields
+2. Check the measures and dimensions in your metrics YAML in GitHub or Rill Developer matches an existing column in your data

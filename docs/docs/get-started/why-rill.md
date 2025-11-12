@@ -1,7 +1,7 @@
 ---
-title: Why Use Rill?
-sidebar_label: Why Use Rill? 
-sidebar_position: 00
+title: Why Rill?
+sidebar_label: Why Rill? 
+sidebar_position: 01
 ---
 
 Rill's strategy for fast dashboards is threefold:
@@ -72,7 +72,7 @@ Rill's BI-as-code approach enables powerful AI integration that transforms how a
 - **Intelligent Code Generation**: Agents can write SQL models, define metrics views, and configure dashboards based on your data structure and analytical needs
 
 **Natural Language Workflows**
-- **Conversational Analytics**: Create and modify dashboards through natural language commands like "Show me revenue trends by region" or "Modify the defaule view to show last quarter data"
+- **Conversational Analytics**: Create and modify dashboards through natural language commands like "Show me revenue trends by region" or "Modify the default view to show last quarter data"
 - **Iterative Refinement**: Use natural language to refine existing visualizations: "Make this dashboard show monthly data instead of daily" or "Add a comparison with last year"
 - **Business User Friendly**: Non-technical team members can request changes and new analyses without writing code or learning complex interfaces
 
