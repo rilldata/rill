@@ -30,7 +30,8 @@
 /* Active state styling for navbar links */
 .navbar__link--active.navbar-docs-link,
 .navbar__link--active.navbar-reference-link,
-.navbar__link--active.navbar-contact-link {
+.navbar__link--active.navbar-contact-link,
+.navbar__link--active.navbar-icon-link {
   font-weight: 600;
   color: var(--ifm-color-primary);
   border-radius: 8px 8px 0 0;
@@ -163,8 +164,15 @@
   }
 
   .navbar .navbar-icon-link {
+    // display: none !important;
+  }
+.navbar-docs-link::before,
+.navbar-reference-link::before,
+.navbar-contact-link::before {
     display: none !important;
   }
+
+
 } 
 
 @media (max-width: 768px) {
