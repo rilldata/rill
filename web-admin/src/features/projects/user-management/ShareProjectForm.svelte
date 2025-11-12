@@ -23,6 +23,12 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config.ts";
+  import { createInfiniteQuery } from "@tanstack/svelte-query";
+  import {
+    adminServiceListProjectMemberUsers,
+    getAdminServiceListProjectMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import type { V1ProjectMemberUser } from "@rilldata/web-admin/client";
 
   export let organization: string;
   export let project: string;
@@ -107,6 +113,36 @@
       },
     },
   );
+
+  $: projectMembersInfiniteQuery = createInfiniteQuery({
+    queryKey: getAdminServiceListProjectMemberUsersQueryKey(
+      organization,
+      project,
+      {
+        pageSize: PAGE_SIZE,
+      },
+    ),
+    queryFn: ({ signal, pageParam }) =>
+      adminServiceListProjectMemberUsers(
+        organization,
+        project,
+        {
+          pageSize: PAGE_SIZE,
+          pageToken: pageParam ?? "",
+        },
+        signal,
+      ),
+    getNextPageParam: (lastPage) => {
+      return lastPage?.nextPageToken !== ""
+        ? lastPage?.nextPageToken
+        : undefined;
+    },
+    initialPageParam: "",
+    enabled,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
   $: listProjectInvites = createAdminServiceListProjectInvites(
     organization,
     project,
@@ -143,7 +179,22 @@
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
-  $: projectMemberUsersList = $listProjectMemberUsers?.data?.members ?? [];
+  $: projectMemberUsersList = (() => {
+    const infiniteMembers =
+      $projectMembersInfiniteQuery?.data?.pages?.flatMap(
+        (p) => p?.members ?? [],
+      ) ?? null;
+    const base = (infiniteMembers ??
+      $listProjectMemberUsers?.data?.members ??
+      []) as V1ProjectMemberUser[];
+    const currentUserEmail = $currentUser.data?.user?.email;
+    if (!currentUserEmail) return base;
+    return [...base].sort((a, b) => {
+      if (a.userEmail === currentUserEmail) return -1;
+      if (b.userEmail === currentUserEmail) return 1;
+      return 0;
+    });
+  })();
   $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
 
   // Memoized Sets for efficient O(1) lookups instead of expensive O(n) .some() operations
@@ -176,6 +227,24 @@
   );
 
   $: accessType = hasAutogroupMembers ? "everyone" : "invite-only";
+
+  // Scroll handling to fetch next page of members
+  let membersScrollEl: HTMLDivElement;
+  function handleMembersScroll(e: Event) {
+    const el = e.currentTarget as HTMLDivElement;
+    const threshold = 48; // px from bottom
+    const nearBottom =
+      el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
+    const hasNext = $projectMembersInfiniteQuery?.hasNextPage ?? false;
+    const isFetchingNext =
+      $projectMembersInfiniteQuery?.isFetchingNextPage ?? false;
+    if (nearBottom && hasNext && !isFetchingNext) {
+      const fetchNext = $projectMembersInfiniteQuery?.fetchNextPage;
+      if (typeof fetchNext === "function") {
+        fetchNext();
+      }
+    }
+  }
 </script>
 
 <div class="flex flex-col p-4">
@@ -184,7 +253,11 @@
     <div class="grow"></div>
   </div>
   <UserAndGroupInviteForm {organization} {project} {searchList} />
-  <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[350px] mt-2">
+  <div
+    class="flex flex-col gap-y-1 overflow-y-auto max-h-[350px] mt-2"
+    bind:this={membersScrollEl}
+    on:scroll={handleMembersScroll}
+  >
     <div class="mt-2">
       {#each projectMemberUsersList as user}
         <UserItem
