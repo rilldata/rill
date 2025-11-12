@@ -8,7 +8,7 @@
   const { readOnly } = featureFlags;
 
   $: name = $page.params.name;
-  // BigQuery: database => project, schema => dataset
+  // Athena typically uses a catalog and database; we map to database and schema here
   $: database = $page.params.database;
   $: databaseSchema = $page.params.schema;
   $: table = $page.params.table;

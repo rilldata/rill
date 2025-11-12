@@ -98,6 +98,8 @@ export function makeTablePreviewHref(
       return `/connector/bigquery/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "redshift":
       return `/connector/redshift/${connectorName}/${database}/${databaseSchema}/${table}`;
+    case "athena":
+      return `/connector/athena/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
     default:
