@@ -6,7 +6,6 @@
   display: flex;
   align-items: center;
   padding-top: 8px;
-  height: 100%;
 }
 
 .navbar-sidebar__brand {
@@ -16,10 +15,7 @@
 }
 
 .navbar-sidebar__brand .mobile-nav-icon-links {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-left: auto;
+  display: none;
 }
 
 .navbar-sidebar__brand .mobile-nav-icon-link {
