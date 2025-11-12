@@ -9,11 +9,11 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { get, type Writable, writable } from "svelte/store";
 
-export class ConversationContext {
+export class MessageContext {
   public record: Writable<ContextRecord> = writable({});
 
   public static fromMessage(message: V1Message) {
-    const context = new ConversationContext();
+    const context = new MessageContext();
 
     if (!message.contentType || !message.contentData) {
       return context;

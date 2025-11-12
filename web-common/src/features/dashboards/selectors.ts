@@ -15,6 +15,7 @@ import {
 import {
   getQueryServiceMetricsViewSchemaQueryOptions,
   getQueryServiceMetricsViewTimeRangeQueryOptions,
+  getRuntimeServiceListResourcesQueryOptions,
   type RpcStatus,
   type V1Expression,
   type V1GetResourceResponse,
@@ -57,6 +58,23 @@ export function useValidExplores(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
     data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
   );
+}
+
+export function getValidDashboardsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      {
+        kind: ResourceKind.Explore,
+      },
+      {
+        query: {
+          select: (data) =>
+            data?.resources?.filter((res) => !!res.explore?.state?.validSpec),
+        },
+      },
+    );
+  });
 }
 
 export function useValidCanvases(instanceId: string) {

@@ -6,7 +6,7 @@
   import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Collapsible from "@rilldata/web-common/components/collapsible";
-  import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
+  import { MessageContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
   import ReadonlyConversationContext from "@rilldata/web-common/features/chat/core/context/ReadonlyConversationContext.svelte";
   import {
     getCitationUrlRewriter,
@@ -40,7 +40,7 @@
       ? getCitationUrlRewriter($mapperStore.data!)
       : undefined;
 
-  $: context = ConversationContext.fromMessage(message);
+  $: context = MessageContext.fromMessage(message);
   $: contextRecord = context.record;
   $: hasContext = Object.keys($contextRecord).length > 0;
   let contextOpened = false;

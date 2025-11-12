@@ -1,4 +1,4 @@
-import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
+import { MessageContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryKey,
@@ -36,7 +36,7 @@ export class Conversation {
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
-  public readonly context = new ConversationContext();
+  public readonly context = new MessageContext();
 
   // Private state
   private sseClient: SSEFetchClient | null = null;

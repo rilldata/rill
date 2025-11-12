@@ -2,7 +2,7 @@
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2/index.ts";
   import { FILTER_CONTEXT_TYPES } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
-  import { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
+  import { MessageContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
   import {
     createTimeRangeFormatter,
     createWhereFiltersFormatter,
@@ -10,7 +10,7 @@
   import { getAttrs, builderActions } from "bits-ui";
   import { ConversationContextType } from "web-common/src/features/chat/core/context/context-type-data.ts";
 
-  export let context: ConversationContext;
+  export let context: MessageContext;
 
   $: contextRecord = context.record;
 

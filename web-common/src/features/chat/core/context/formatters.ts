@@ -1,5 +1,5 @@
 import { ConversationContextType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
-import type { ConversationContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
+import type { MessageContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import {
   type V1Expression,
@@ -10,7 +10,7 @@ import {
 import { DateTime, Interval } from "luxon";
 import { derived } from "svelte/store";
 
-export function createTimeRangeFormatter(context: ConversationContext) {
+export function createTimeRangeFormatter(context: MessageContext) {
   return derived(context.record, (contextRecord) => {
     const timeRange = contextRecord[ConversationContextType.TimeRange];
     return formatV1TimeRange(timeRange);
@@ -29,7 +29,7 @@ export function formatV1TimeRange(timeRange: V1TimeRange | undefined) {
   );
 }
 
-export function createWhereFiltersFormatter(context: ConversationContext) {
+export function createWhereFiltersFormatter(context: MessageContext) {
   return derived(context.record, (contextRecord) => {
     const whereFilters = contextRecord[ConversationContextType.Where];
     return formatV1Expression(whereFilters);

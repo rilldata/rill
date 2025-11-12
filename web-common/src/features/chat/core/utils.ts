@@ -5,8 +5,6 @@
  * and maintain consistency in error handling, ID generation, and cache management.
  */
 import type { V1Message } from "@rilldata/web-common/runtime-client";
-
-import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "./types";
 
 // =============================================================================

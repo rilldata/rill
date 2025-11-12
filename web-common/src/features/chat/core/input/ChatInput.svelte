@@ -1,9 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import MessageContextDropdown from "@rilldata/web-common/features/chat/core/context/MessageContextDropdown.svelte";
   import SynchedFiltersContext from "@rilldata/web-common/features/chat/core/context/SynchedFiltersContext.svelte";
+  import ChatInputTextarea from "@rilldata/web-common/features/chat/core/input/ChatInputTextarea.svelte";
   import { getDashboardResourceFromPage } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { AlertCircleIcon } from "lucide-svelte";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
@@ -15,7 +16,8 @@
   export let noMargin = false;
   export let height: string | undefined = undefined;
 
-  let textarea: HTMLTextAreaElement;
+  // let textarea: HTMLTextAreaElement;
+  let editorRef;
   let placeholder = "Ask about your data...";
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
@@ -32,6 +34,7 @@
   $: pageDashboardResource = getDashboardResourceFromPage($page);
   $: onExplorePage = pageDashboardResource?.kind === ResourceKind.Explore;
   $: showContext = !!currentConversation && onExplorePage;
+  $: exploreName = pageDashboardResource.name;
 
   function handleInput(e: Event) {
     const target = e.target as HTMLTextAreaElement;
@@ -61,7 +64,7 @@
 
     // Let the parent component manage the input value
     await tick();
-    textarea?.focus();
+    // textarea?.focus();
   }
 
   function cancelStream() {
@@ -69,17 +72,17 @@
   }
 
   function autoResize() {
-    if (textarea && !height) {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    }
+    // if (textarea && !height) {
+    //   textarea.style.height = "auto";
+    //   textarea.style.height = textarea.scrollHeight + "px";
+    // }
   }
 
   // Public method to focus input (can be called from parent)
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        textarea?.focus();
+        // textarea?.focus();
       }, 100);
     });
   }
@@ -107,24 +110,30 @@
     <SynchedFiltersContext conversation={currentConversation} />
   {/if}
   <div class="w-full">
-    <textarea
-      bind:this={textarea}
-      {value}
-      class="chat-input"
-      class:fixed-height={!!height}
-      style:height
-      {placeholder}
-      rows="1"
-      on:keydown={handleKeydown}
-      on:input={handleInput}
+    <!--    <textarea-->
+    <!--      bind:this={textarea}-->
+    <!--      {value}-->
+    <!--      class="chat-input"-->
+    <!--      class:fixed-height={!!height}-->
+    <!--      style:height-->
+    <!--      {placeholder}-->
+    <!--      rows="1"-->
+    <!--      on:keydown={handleKeydown}-->
+    <!--      on:input={handleInput}-->
+    <!--    />-->
+    <ChatInputTextarea
+      bind:this={editorRef}
+      onChange={(newValue) => draftMessageStore.set(newValue)}
     />
   </div>
   <div class="chat-input-footer">
     <div class="chat-input-dashboard-scope">
-      {#if showContext}
-        <!-- TODO: tooltip -->
-        <AlertCircleIcon size="14px" />
-        <span>Scoped to current dashboard</span>
+      {#if showContext && exploreName}
+        <MessageContextDropdown
+          {exploreName}
+          onAdd={(value, label) =>
+            editorRef?.insertChatContext({ label, values: [value] })}
+        />
       {/if}
     </div>
     <div>
