@@ -129,15 +129,25 @@ const config = {
         },
         items: [
           {
-            type: "html",
+            to: "/",
+            label: "Docs",
             position: "left",
-            value: '<a href="/" class="navbar__link navbar-icon-link" aria-label="Docs"><img src="/icons/BookOpen.svg" alt="Docs" class="navbar-icon-link-img" />Docs </a>',
+            className: "navbar-docs-link",
+            activeBaseRegex: "^/$", // Only active on homepage
           },
-
           {
-            type: "html",
+            to: "/reference/rill-iso-extensions",
+            label: "Reference",
             position: "left",
-            value: '<a href="/reference/rill-iso-extensions" class="navbar__link navbar-icon-link" aria-label="Reference"><img src="/icons/Book.svg" alt="Reference" class="navbar-icon-link-img" />Reference</a>',
+            className: "navbar-reference-link",
+            activeBasePath: "/reference",
+          },
+          {
+            to: "/contact",
+            label: "Contact Us",
+            position: "left",
+            className: "navbar-contact-link",
+            activeBasePath: "/contact",
           },
 
           // {
@@ -146,22 +156,16 @@ const config = {
           //   label: "API",
           // },
 
-          {
-            type: "html",
-            position: "left",
-            value: '<a href="/contact/contact" class="navbar__link navbar-icon-link" aria-label="Contact Us"><img src="/icons/MessageSquare.svg" alt="Contact Us" class="navbar-icon-link-img" />Contact Us</a>',
-          },
-
           // Right side items
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer"><img src="/icons/Github.svg" alt="GitHub" /></a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer"><img src="/icons/MessageSquareQuote.svg" alt="Blog" /></a>',
           },
 
           {

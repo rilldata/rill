@@ -8,6 +8,64 @@
   padding-top: 8px;
   height: 100%;
 }
+
+.navbar-sidebar__brand {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.navbar-sidebar__brand .mobile-nav-icon-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.navbar-sidebar__brand .mobile-nav-icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+
+/* Active state styling for navbar links */
+.navbar__link--active.navbar-docs-link,
+.navbar__link--active.navbar-reference-link,
+.navbar__link--active.navbar-contact-link {
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+  border-radius: 8px 8px 0 0;
+  border-bottom: 2px solid var(--ifm-color-primary);
+}
+
+.navbar-docs-link::before,
+.navbar-reference-link::before,
+.navbar-contact-link::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+  vertical-align: middle;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.navbar-docs-link::before {
+  background-image: url("/icons/BookOpen.svg");
+}
+
+.navbar-reference-link::before {
+  background-image: url("/icons/Book.svg");
+}
+
+.navbar-contact-link::before {
+  background-image: url("/icons/MessageSquare.svg");
+}
+
 .navbar-icon-link-img {
   width: 24px;
   height: 24px;
@@ -79,9 +137,12 @@
 
 @media (max-width: 996px) {
   /* Make custom HTML navbar items look like menu__link in mobile menu */
+  .navbar .menu__list .menu__link,
   .navbar .menu__list .navbar-icon-link {
-    display: block;
+    display: flex;
+    align-items: center;
     width: 100%;
+    gap: 6px;
     padding: 2.5px 9px;
     color: var(--ifm-menu-color);
     font-size: var(--default-font);
@@ -92,13 +153,14 @@
     box-shadow: none;
   }
 
-  .navbar .menu__list .navbar-icon-link i,
-  .navbar .menu__list .navbar-icon-link .navbar-icon-link-img {
-    display: none;
+  .navbar .navbar__items--left .navbar-icon-link {
+    width: 100%;
+    display: flex;
+    align-items: center;
   }
 
-  .navbar .navbar__items--right .navbar-icon-link {
-    display: none;
+  .navbar .navbar-icon-link {
+    display: none !important;
   }
 } 
 
@@ -116,7 +178,7 @@
     height: 36px;
     box-sizing: border-box;
   }
-  .navbar .navbar__items--right  .DocSearch-Button::after {
+  .navbar .navbar__items--right .navbar__item .navbar__item-img .DocSearch-Button::after {
     display: none;
   }
 }
@@ -140,49 +202,9 @@
   }
 }
 
-.navbar .navbar-icon-link:hover,
-.navbar .navbar-icon-link:focus {
-  color: var(--ifm-menu-color-active);
-  text-decoration: none;
-}
-
-/* Active state for navbar icon links */
-.navbar .navbar-icon-link.navbar__link--active {
-  color: var(--ifm-navbar-link-active-color);
-}
-
-/* Specific styling for left navbar items */
-.navbar .navbar__items--left .navbar-icon-link {
-  font-weight: var(--ifm-font-weight-semibold);
-}
-
-/* Specific styling for right navbar items */
-.navbar .navbar__items--right .navbar-icon-link {
-  padding: 0.25rem 0.5rem;
-  
-  i {
-    font-size: 1.1em;
-  }
-}
-
-/* Mobile menu styles */
-@media (max-width: 996px) {
-  .navbar .navbar__items--left .navbar-icon-link {
-    width: 100%;
-    display: flex;
-    align-items: center;
-  }
-}
-
 /* Hide text on very small screens for right-side items */
 @media (max-width: 480px) {
   .navbar .navbar__items--right .navbar-icon-link {
-    font-size: 0;
-    padding: 0.25rem;
-    
-    i {
-      font-size: 1.2rem;
-      margin-right: 0;
-    }
+    display: none;
   }
 } 
