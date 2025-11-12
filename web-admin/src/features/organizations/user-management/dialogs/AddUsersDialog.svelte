@@ -5,7 +5,13 @@
     getAdminServiceListOrganizationInvitesQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+  } from "@rilldata/web-common/components/dropdown-menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     Dialog,
@@ -22,6 +28,8 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
+
+  import { ORG_ROLES_OPTIONS } from "../../constants";
 
   export let open = false;
   export let email: string;
@@ -160,6 +168,7 @@
     role = "";
     isSuperUser = false;
     failedInvites = [];
+    $form.emails = [""];
   }}
   onOpenChange={(open) => {
     if (!open) {
@@ -167,6 +176,7 @@
       role = "";
       isSuperUser = false;
       failedInvites = [];
+      $form.emails = [""];
     }
   }}
 >
@@ -186,14 +196,45 @@
       <MultiInput
         id="emails"
         placeholder="Add emails, separated by commas"
-        contentClassName="relative"
+        contentClassName="relative [&>div:first-child]:max-h-[120px] [&>div:first-child]:overflow-y-auto"
         bind:values={$form.emails}
         errors={$errors.emails}
         singular="email"
         plural="emails"
       >
         <div slot="within-input" class="flex items-center h-full">
-          <UserRoleSelect bind:value={$form.role} />
+          <DropdownMenu typeahead={false}>
+            <DropdownMenuTrigger
+              class="w-18 flex flex-row gap-1 items-center rounded-sm px-2 py-1 hover:bg-slate-100"
+            >
+              <div class="text-xs">
+                {ORG_ROLES_OPTIONS.find((o) => o.value === $form.role)?.label}
+              </div>
+              <CaretDownIcon size="12px" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="bottom"
+              align="end"
+              class="w-[260px]"
+              strategy="fixed"
+            >
+              {#each ORG_ROLES_OPTIONS as { value, label, description } (value)}
+                <DropdownMenuItem
+                  on:click={() => ($form.role = value)}
+                  class="text-xs hover:bg-slate-100 {$form.role === value
+                    ? 'bg-slate-50'
+                    : ''}"
+                >
+                  <div class="flex flex-col">
+                    <div class="text-xs font-medium text-slate-700">
+                      {label}
+                    </div>
+                    <div class="text-slate-500 text-[11px]">{description}</div>
+                  </div>
+                </DropdownMenuItem>
+              {/each}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <svelte:fragment slot="beside-input" let:hasSomeValue>
           <Button
@@ -208,6 +249,7 @@
           </Button>
         </svelte:fragment>
       </MultiInput>
+
       {#if failedInvites.length > 0}
         <div class="text-sm text-red-500 py-2">
           {failedInvites.length === 1

@@ -187,7 +187,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_UUID
 	case "VARIANT", "OBJECT", "ARRAY", "STRUCT":
 		t.Code = runtimev1.Type_CODE_JSON
-	case "GEOMETRY":
+	case "GEOMETRY", "GEOGRAPHY":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "NULL":
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED
