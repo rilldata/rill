@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/parser"
 )
 
@@ -11,6 +12,13 @@ import (
 func (e *Executor) resolveQueryAttributes(ctx context.Context) (map[string]string, error) {
 	if len(e.metricsView.QueryAttributes) == 0 {
 		return nil, nil
+	}
+
+	claims := runtime.ClaimsFromContext(ctx)
+
+	var user map[string]any
+	if claims != nil && claims.UserAttributes != nil {
+		user = claims.UserAttributes
 	}
 
 	// Get instance for template data
@@ -22,6 +30,7 @@ func (e *Executor) resolveQueryAttributes(ctx context.Context) (map[string]strin
 	td := parser.TemplateData{
 		Environment: inst.Environment,
 		Variables:   inst.ResolveVariables(false),
+		User:        user,
 	}
 
 	// Resolve templates
