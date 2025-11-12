@@ -209,7 +209,6 @@
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
-  // Flatten invites from infinite query (fallback to single query)
   $: projectInvitesList =
     $projectInvitesInfiniteQuery?.data?.pages?.flatMap(
       (p) => p?.invites ?? [],
