@@ -45,6 +45,7 @@
       exploreProtoState: alertSpec?.annotations?.web_open_state,
       // When opening an alert from a link with token we should remove the filters from request.
       // The filters are already baked into the token, each query will have them added in the backend.
+      // So adding them again will essentially apply filters twice. It will lead to incorrect results for threshold filters.
       ignoreFilters: !!token,
     },
   );
@@ -66,7 +67,6 @@
     const url = new URL(window.location.origin);
     if (token) {
       url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
-      exploreStateParams.delete(ExploreStateURLParams.Filters);
     } else {
       url.pathname = `/${organization}/${project}/explore/${exploreName}`;
     }
