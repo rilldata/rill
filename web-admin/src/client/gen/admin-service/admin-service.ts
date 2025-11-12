@@ -28,6 +28,7 @@ import type {
 import type {
   AdminServiceAddOrganizationMemberUserBody,
   AdminServiceAddProjectMemberUserBody,
+  AdminServiceAddProjectMemberUserResourcesBodyBody,
   AdminServiceCancelBillingSubscriptionParams,
   AdminServiceConnectProjectToGithubBody,
   AdminServiceCreateAlertBodyBody,
@@ -97,7 +98,9 @@ import type {
   RpcStatus,
   V1AddOrganizationMemberUserResponse,
   V1AddOrganizationMemberUsergroupResponse,
+  V1AddProjectMemberUserResourcesResponse,
   V1AddProjectMemberUserResponse,
+  V1AddProjectMemberUsergroupResourcesResponse,
   V1AddProjectMemberUsergroupResponse,
   V1AddUsergroupMemberUserResponse,
   V1ApproveProjectAccessResponse,
@@ -200,7 +203,9 @@ import type {
   V1RemoveOrganizationMemberUserResponse,
   V1RemoveOrganizationMemberUsergroupResponse,
   V1RemoveProjectMemberServiceResponse,
+  V1RemoveProjectMemberUserResourcesResponse,
   V1RemoveProjectMemberUserResponse,
+  V1RemoveProjectMemberUsergroupResourcesResponse,
   V1RemoveProjectMemberUsergroupResponse,
   V1RemoveProjectWhitelistedDomainResponse,
   V1RemoveUsergroupMemberUserResponse,
@@ -6141,6 +6146,244 @@ export const createAdminServiceSetProjectMemberUserRole = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
+ * @summary AddProjectMemberUserResources grants resource-scoped access to an existing or invited user (viewer role implied).
+ */
+export const adminServiceAddProjectMemberUserResources = (
+  org: string,
+  project: string,
+  email: string,
+  adminServiceAddProjectMemberUserResourcesBodyBody: AdminServiceAddProjectMemberUserResourcesBodyBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1AddProjectMemberUserResourcesResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/members/${email}/resources`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceAddProjectMemberUserResourcesBodyBody,
+    signal,
+  });
+};
+
+export const getAdminServiceAddProjectMemberUserResourcesMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceAddProjectMemberUserResources>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      email: string;
+      data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceAddProjectMemberUserResources>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    email: string;
+    data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceAddProjectMemberUserResources"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceAddProjectMemberUserResources>>,
+    {
+      org: string;
+      project: string;
+      email: string;
+      data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+    }
+  > = (props) => {
+    const { org, project, email, data } = props ?? {};
+
+    return adminServiceAddProjectMemberUserResources(org, project, email, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceAddProjectMemberUserResourcesMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceAddProjectMemberUserResources>>
+  >;
+export type AdminServiceAddProjectMemberUserResourcesMutationBody =
+  AdminServiceAddProjectMemberUserResourcesBodyBody;
+export type AdminServiceAddProjectMemberUserResourcesMutationError = RpcStatus;
+
+/**
+ * @summary AddProjectMemberUserResources grants resource-scoped access to an existing or invited user (viewer role implied).
+ */
+export const createAdminServiceAddProjectMemberUserResources = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceAddProjectMemberUserResources>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        email: string;
+        data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceAddProjectMemberUserResources>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    email: string;
+    data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceAddProjectMemberUserResourcesMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary RemoveProjectMemberUserResources revokes resource-scoped access for a project member.
+ */
+export const adminServiceRemoveProjectMemberUserResources = (
+  org: string,
+  project: string,
+  email: string,
+  adminServiceAddProjectMemberUserResourcesBodyBody: AdminServiceAddProjectMemberUserResourcesBodyBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1RemoveProjectMemberUserResourcesResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/members/${email}/resources:remove`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceAddProjectMemberUserResourcesBodyBody,
+    signal,
+  });
+};
+
+export const getAdminServiceRemoveProjectMemberUserResourcesMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUserResources>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      email: string;
+      data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUserResources>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    email: string;
+    data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+  },
+  TContext
+> => {
+  const mutationKey = ["adminServiceRemoveProjectMemberUserResources"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUserResources>>,
+    {
+      org: string;
+      project: string;
+      email: string;
+      data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+    }
+  > = (props) => {
+    const { org, project, email, data } = props ?? {};
+
+    return adminServiceRemoveProjectMemberUserResources(
+      org,
+      project,
+      email,
+      data,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceRemoveProjectMemberUserResourcesMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUserResources>>
+  >;
+export type AdminServiceRemoveProjectMemberUserResourcesMutationBody =
+  AdminServiceAddProjectMemberUserResourcesBodyBody;
+export type AdminServiceRemoveProjectMemberUserResourcesMutationError =
+  RpcStatus;
+
+/**
+ * @summary RemoveProjectMemberUserResources revokes resource-scoped access for a project member.
+ */
+export const createAdminServiceRemoveProjectMemberUserResources = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUserResources>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        email: string;
+        data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUserResources>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    email: string;
+    data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceRemoveProjectMemberUserResourcesMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
  * @summary RedeployProject creates a new production deployment for a project.
 If the project currently has another production deployment, the old deployment will be deprovisioned.
 This RPC can be used to redeploy a project that has been hibernated.
@@ -7913,6 +8156,264 @@ export const createAdminServiceSetProjectMemberUsergroupRole = <
 > => {
   const mutationOptions =
     getAdminServiceSetProjectMemberUsergroupRoleMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary AddProjectMemberUsergroupResources grants resource-scoped access to an existing project user group.
+ */
+export const adminServiceAddProjectMemberUsergroupResources = (
+  org: string,
+  project: string,
+  usergroup: string,
+  adminServiceAddProjectMemberUserResourcesBodyBody: AdminServiceAddProjectMemberUserResourcesBodyBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1AddProjectMemberUsergroupResourcesResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/usergroups/${usergroup}/roles/resources`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceAddProjectMemberUserResourcesBodyBody,
+    signal,
+  });
+};
+
+export const getAdminServiceAddProjectMemberUsergroupResourcesMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceAddProjectMemberUsergroupResources>
+      >,
+      TError,
+      {
+        org: string;
+        project: string;
+        usergroup: string;
+        data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+      },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceAddProjectMemberUsergroupResources>>,
+    TError,
+    {
+      org: string;
+      project: string;
+      usergroup: string;
+      data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+    },
+    TContext
+  > => {
+    const mutationKey = ["adminServiceAddProjectMemberUsergroupResources"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceAddProjectMemberUsergroupResources>
+      >,
+      {
+        org: string;
+        project: string;
+        usergroup: string;
+        data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+      }
+    > = (props) => {
+      const { org, project, usergroup, data } = props ?? {};
+
+      return adminServiceAddProjectMemberUsergroupResources(
+        org,
+        project,
+        usergroup,
+        data,
+      );
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceAddProjectMemberUsergroupResourcesMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceAddProjectMemberUsergroupResources>>
+  >;
+export type AdminServiceAddProjectMemberUsergroupResourcesMutationBody =
+  AdminServiceAddProjectMemberUserResourcesBodyBody;
+export type AdminServiceAddProjectMemberUsergroupResourcesMutationError =
+  RpcStatus;
+
+/**
+ * @summary AddProjectMemberUsergroupResources grants resource-scoped access to an existing project user group.
+ */
+export const createAdminServiceAddProjectMemberUsergroupResources = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceAddProjectMemberUsergroupResources>
+      >,
+      TError,
+      {
+        org: string;
+        project: string;
+        usergroup: string;
+        data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceAddProjectMemberUsergroupResources>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    usergroup: string;
+    data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceAddProjectMemberUsergroupResourcesMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary RemoveProjectMemberUsergroupResources revokes resource-scoped access for a project user group.
+ */
+export const adminServiceRemoveProjectMemberUsergroupResources = (
+  org: string,
+  project: string,
+  usergroup: string,
+  adminServiceAddProjectMemberUserResourcesBodyBody: AdminServiceAddProjectMemberUserResourcesBodyBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1RemoveProjectMemberUsergroupResourcesResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/usergroups/${usergroup}/roles/resources:remove`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceAddProjectMemberUserResourcesBodyBody,
+    signal,
+  });
+};
+
+export const getAdminServiceRemoveProjectMemberUsergroupResourcesMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceRemoveProjectMemberUsergroupResources>
+      >,
+      TError,
+      {
+        org: string;
+        project: string;
+        usergroup: string;
+        data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+      },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceRemoveProjectMemberUsergroupResources>
+    >,
+    TError,
+    {
+      org: string;
+      project: string;
+      usergroup: string;
+      data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+    },
+    TContext
+  > => {
+    const mutationKey = ["adminServiceRemoveProjectMemberUsergroupResources"];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceRemoveProjectMemberUsergroupResources>
+      >,
+      {
+        org: string;
+        project: string;
+        usergroup: string;
+        data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+      }
+    > = (props) => {
+      const { org, project, usergroup, data } = props ?? {};
+
+      return adminServiceRemoveProjectMemberUsergroupResources(
+        org,
+        project,
+        usergroup,
+        data,
+      );
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceRemoveProjectMemberUsergroupResourcesMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceRemoveProjectMemberUsergroupResources>
+    >
+  >;
+export type AdminServiceRemoveProjectMemberUsergroupResourcesMutationBody =
+  AdminServiceAddProjectMemberUserResourcesBodyBody;
+export type AdminServiceRemoveProjectMemberUsergroupResourcesMutationError =
+  RpcStatus;
+
+/**
+ * @summary RemoveProjectMemberUsergroupResources revokes resource-scoped access for a project user group.
+ */
+export const createAdminServiceRemoveProjectMemberUsergroupResources = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceRemoveProjectMemberUsergroupResources>
+      >,
+      TError,
+      {
+        org: string;
+        project: string;
+        usergroup: string;
+        data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUsergroupResources>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    usergroup: string;
+    data: AdminServiceAddProjectMemberUserResourcesBodyBody;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceRemoveProjectMemberUsergroupResourcesMutationOptions(
+      options,
+    );
 
   return createMutation(mutationOptions, queryClient);
 };

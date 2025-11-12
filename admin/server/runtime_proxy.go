@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/server/auth"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -75,11 +76,17 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 		}
 
 		var attr map[string]any
+		var rules []*runtimev1.SecurityRule
 		switch claims.OwnerType() {
 		case auth.OwnerTypeAnon:
 			// No attributes
 		case auth.OwnerTypeUser:
 			attr, err = s.jwtAttributesForUser(r.Context(), claims.OwnerID(), proj.OrganizationID, permissions)
+			if err != nil {
+				return httputil.Error(http.StatusInternalServerError, err)
+			}
+
+			rules, err = s.securityRulesForUserResources(r.Context(), proj.ID, claims.OwnerID())
 			if err != nil {
 				return httputil.Error(http.StatusInternalServerError, err)
 			}
@@ -109,7 +116,8 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			InstancePermissions: map[string][]runtime.Permission{
 				depl.RuntimeInstanceID: instancePermissions,
 			},
-			Attributes: attr,
+			Attributes:    attr,
+			SecurityRules: rules,
 		})
 		if err != nil {
 			return httputil.Error(http.StatusInternalServerError, err)

@@ -427,6 +427,8 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to assign an admin role")
 	}
 
+	// TODO if the role is non guest then check if the user has any resources level access on projects in the org directly or through usergroup and clear those
+
 	var invitedByUserID, invitedByName string
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())

@@ -446,12 +446,82 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 		return nil, err
 	}
 
-	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
+	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return &adminv1.AddProjectMemberUsergroupResponse{}, nil
+}
+
+func (s *Server) AddProjectMemberUsergroupResources(ctx context.Context, req *adminv1.AddProjectMemberUsergroupResourcesRequest) (*adminv1.AddProjectMemberUsergroupResourcesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.usergroup", req.Usergroup),
+	)
+
+	if len(req.Resources) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "no resources provided to add")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to add project user group role")
+	}
+
+	role, err := s.admin.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
+	if err != nil {
+		return nil, err
+	}
+
+	resources := resourceNamesFromProto(req.Resources)
+
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, resources)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotUnique) {
+			return nil, err
+		}
+		currentRole, err := s.admin.DB.FindProjectMemberUsergroupRole(ctx, usergroup.ID, proj.ID)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, err
+			}
+		}
+
+		if currentRole.Name != database.ProjectRoleNameViewer {
+			return nil, status.Error(codes.InvalidArgument, "resource-scoped access can only be set for viewer user groups")
+		}
+
+		existingResources, err := s.admin.DB.FindProjectMemberUsergroupResources(ctx, usergroup.ID, proj.ID)
+		if err != nil {
+			return nil, err
+		}
+		if len(existingResources) == 0 {
+			// No existing resources, meaning usergroup is already a full viewer, nothing to do
+			return &adminv1.AddProjectMemberUsergroupResourcesResponse{}, nil
+		}
+		merged := mergeResourceNames(existingResources, resources)
+		if len(merged) != len(existingResources) {
+			err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, currentRole.ID, merged)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return &adminv1.AddProjectMemberUsergroupResourcesResponse{}, nil
+	}
+
+	return &adminv1.AddProjectMemberUsergroupResourcesResponse{}, nil
 }
 
 func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1.SetProjectMemberUsergroupRoleRequest) (*adminv1.SetProjectMemberUsergroupRoleResponse, error) {
@@ -493,12 +563,71 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
-	err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
+	err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return &adminv1.SetProjectMemberUsergroupRoleResponse{}, nil
+}
+
+func (s *Server) RemoveProjectMemberUsergroupResources(ctx context.Context, req *adminv1.RemoveProjectMemberUsergroupResourcesRequest) (*adminv1.RemoveProjectMemberUsergroupResourcesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.usergroup", req.Usergroup),
+	)
+
+	if len(req.Resources) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "must provide at least one resource to remove")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to edit project user groups")
+	}
+
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
+	if err != nil {
+		return nil, err
+	}
+
+	role, err := s.admin.DB.FindProjectMemberUsergroupRole(ctx, usergroup.ID, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+	if role.Name != database.ProjectRoleNameViewer {
+		return nil, status.Error(codes.FailedPrecondition, "resource-scoped access is only available for viewer user groups")
+	}
+
+	existing, err := s.admin.DB.FindProjectMemberUsergroupResources(ctx, usergroup.ID, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+	if len(existing) == 0 {
+		return nil, status.Error(codes.FailedPrecondition, "user group does not have scoped resources")
+	}
+
+	remaining := subtractResourceNames(existing, resourceNamesFromProto(req.Resources))
+	if len(remaining) == len(existing) {
+		return &adminv1.RemoveProjectMemberUsergroupResourcesResponse{}, nil
+	}
+
+	if len(remaining) == 0 {
+		err = s.admin.DB.DeleteProjectMemberUsergroup(ctx, usergroup.ID, proj.ID)
+	} else {
+		err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, remaining)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.RemoveProjectMemberUsergroupResourcesResponse{}, nil
 }
 
 func (s *Server) RemoveProjectMemberUsergroup(ctx context.Context, req *adminv1.RemoveProjectMemberUsergroupRequest) (*adminv1.RemoveProjectMemberUsergroupResponse, error) {
@@ -707,5 +836,6 @@ func memberUsergroupToPB(member *database.MemberUsergroup) *adminv1.MemberUsergr
 		UsersCount:   uint32(member.UsersCount),
 		CreatedOn:    timestamppb.New(member.CreatedOn),
 		UpdatedOn:    timestamppb.New(member.UpdatedOn),
+		Resources:    resourceNamesToPB(member.Resources),
 	}
 }

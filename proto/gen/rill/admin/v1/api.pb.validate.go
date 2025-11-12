@@ -17787,6 +17787,336 @@ var _ interface {
 	ErrorName() string
 } = AddProjectMemberUserResponseValidationError{}
 
+// Validate checks the field values on AddProjectMemberUserResourcesRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *AddProjectMemberUserResourcesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AddProjectMemberUserResourcesRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// AddProjectMemberUserResourcesRequestMultiError, or nil if none found.
+func (m *AddProjectMemberUserResourcesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddProjectMemberUserResourcesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := AddProjectMemberUserResourcesRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := AddProjectMemberUserResourcesRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = AddProjectMemberUserResourcesRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AddProjectMemberUserResourcesRequestValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AddProjectMemberUserResourcesRequestValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AddProjectMemberUserResourcesRequestValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AddProjectMemberUserResourcesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *AddProjectMemberUserResourcesRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *AddProjectMemberUserResourcesRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
+}
+
+// AddProjectMemberUserResourcesRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// AddProjectMemberUserResourcesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AddProjectMemberUserResourcesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddProjectMemberUserResourcesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddProjectMemberUserResourcesRequestMultiError) AllErrors() []error { return m }
+
+// AddProjectMemberUserResourcesRequestValidationError is the validation error
+// returned by AddProjectMemberUserResourcesRequest.Validate if the designated
+// constraints aren't met.
+type AddProjectMemberUserResourcesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddProjectMemberUserResourcesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddProjectMemberUserResourcesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddProjectMemberUserResourcesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddProjectMemberUserResourcesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddProjectMemberUserResourcesRequestValidationError) ErrorName() string {
+	return "AddProjectMemberUserResourcesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddProjectMemberUserResourcesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddProjectMemberUserResourcesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddProjectMemberUserResourcesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddProjectMemberUserResourcesRequestValidationError{}
+
+// Validate checks the field values on AddProjectMemberUserResourcesResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *AddProjectMemberUserResourcesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AddProjectMemberUserResourcesResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// AddProjectMemberUserResourcesResponseMultiError, or nil if none found.
+func (m *AddProjectMemberUserResourcesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddProjectMemberUserResourcesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for PendingSignup
+
+	if len(errors) > 0 {
+		return AddProjectMemberUserResourcesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddProjectMemberUserResourcesResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// AddProjectMemberUserResourcesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type AddProjectMemberUserResourcesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddProjectMemberUserResourcesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddProjectMemberUserResourcesResponseMultiError) AllErrors() []error { return m }
+
+// AddProjectMemberUserResourcesResponseValidationError is the validation error
+// returned by AddProjectMemberUserResourcesResponse.Validate if the
+// designated constraints aren't met.
+type AddProjectMemberUserResourcesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddProjectMemberUserResourcesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddProjectMemberUserResourcesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddProjectMemberUserResourcesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddProjectMemberUserResourcesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddProjectMemberUserResourcesResponseValidationError) ErrorName() string {
+	return "AddProjectMemberUserResourcesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddProjectMemberUserResourcesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddProjectMemberUserResourcesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddProjectMemberUserResourcesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddProjectMemberUserResourcesResponseValidationError{}
+
 // Validate checks the field values on RemoveProjectMemberUserRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -18379,6 +18709,336 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SetProjectMemberUserRoleResponseValidationError{}
+
+// Validate checks the field values on RemoveProjectMemberUserResourcesRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *RemoveProjectMemberUserResourcesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// RemoveProjectMemberUserResourcesRequest with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// RemoveProjectMemberUserResourcesRequestMultiError, or nil if none found.
+func (m *RemoveProjectMemberUserResourcesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveProjectMemberUserResourcesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := RemoveProjectMemberUserResourcesRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := RemoveProjectMemberUserResourcesRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = RemoveProjectMemberUserResourcesRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, RemoveProjectMemberUserResourcesRequestValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, RemoveProjectMemberUserResourcesRequestValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return RemoveProjectMemberUserResourcesRequestValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return RemoveProjectMemberUserResourcesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *RemoveProjectMemberUserResourcesRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *RemoveProjectMemberUserResourcesRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
+}
+
+// RemoveProjectMemberUserResourcesRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// RemoveProjectMemberUserResourcesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type RemoveProjectMemberUserResourcesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveProjectMemberUserResourcesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveProjectMemberUserResourcesRequestMultiError) AllErrors() []error { return m }
+
+// RemoveProjectMemberUserResourcesRequestValidationError is the validation
+// error returned by RemoveProjectMemberUserResourcesRequest.Validate if the
+// designated constraints aren't met.
+type RemoveProjectMemberUserResourcesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveProjectMemberUserResourcesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveProjectMemberUserResourcesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveProjectMemberUserResourcesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveProjectMemberUserResourcesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveProjectMemberUserResourcesRequestValidationError) ErrorName() string {
+	return "RemoveProjectMemberUserResourcesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveProjectMemberUserResourcesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveProjectMemberUserResourcesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveProjectMemberUserResourcesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveProjectMemberUserResourcesRequestValidationError{}
+
+// Validate checks the field values on RemoveProjectMemberUserResourcesResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *RemoveProjectMemberUserResourcesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// RemoveProjectMemberUserResourcesResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// RemoveProjectMemberUserResourcesResponseMultiError, or nil if none found.
+func (m *RemoveProjectMemberUserResourcesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveProjectMemberUserResourcesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RemoveProjectMemberUserResourcesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveProjectMemberUserResourcesResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// RemoveProjectMemberUserResourcesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RemoveProjectMemberUserResourcesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveProjectMemberUserResourcesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveProjectMemberUserResourcesResponseMultiError) AllErrors() []error { return m }
+
+// RemoveProjectMemberUserResourcesResponseValidationError is the validation
+// error returned by RemoveProjectMemberUserResourcesResponse.Validate if the
+// designated constraints aren't met.
+type RemoveProjectMemberUserResourcesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveProjectMemberUserResourcesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveProjectMemberUserResourcesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveProjectMemberUserResourcesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveProjectMemberUserResourcesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveProjectMemberUserResourcesResponseValidationError) ErrorName() string {
+	return "RemoveProjectMemberUserResourcesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveProjectMemberUserResourcesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveProjectMemberUserResourcesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveProjectMemberUserResourcesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveProjectMemberUserResourcesResponseValidationError{}
 
 // Validate checks the field values on
 // ListUsergroupsForOrganizationAndUserRequest with the rules defined in the
@@ -21432,6 +22092,285 @@ var _ interface {
 	ErrorName() string
 } = AddProjectMemberUsergroupResponseValidationError{}
 
+// Validate checks the field values on
+// AddProjectMemberUsergroupResourcesRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AddProjectMemberUsergroupResourcesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// AddProjectMemberUsergroupResourcesRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// AddProjectMemberUsergroupResourcesRequestMultiError, or nil if none found.
+func (m *AddProjectMemberUsergroupResourcesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddProjectMemberUsergroupResourcesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := AddProjectMemberUsergroupResourcesRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := AddProjectMemberUsergroupResourcesRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUsergroup()) < 1 {
+		err := AddProjectMemberUsergroupResourcesRequestValidationError{
+			field:  "Usergroup",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AddProjectMemberUsergroupResourcesRequestValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AddProjectMemberUsergroupResourcesRequestValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AddProjectMemberUsergroupResourcesRequestValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AddProjectMemberUsergroupResourcesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddProjectMemberUsergroupResourcesRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// AddProjectMemberUsergroupResourcesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AddProjectMemberUsergroupResourcesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddProjectMemberUsergroupResourcesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddProjectMemberUsergroupResourcesRequestMultiError) AllErrors() []error { return m }
+
+// AddProjectMemberUsergroupResourcesRequestValidationError is the validation
+// error returned by AddProjectMemberUsergroupResourcesRequest.Validate if the
+// designated constraints aren't met.
+type AddProjectMemberUsergroupResourcesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddProjectMemberUsergroupResourcesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddProjectMemberUsergroupResourcesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddProjectMemberUsergroupResourcesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddProjectMemberUsergroupResourcesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddProjectMemberUsergroupResourcesRequestValidationError) ErrorName() string {
+	return "AddProjectMemberUsergroupResourcesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddProjectMemberUsergroupResourcesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddProjectMemberUsergroupResourcesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddProjectMemberUsergroupResourcesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddProjectMemberUsergroupResourcesRequestValidationError{}
+
+// Validate checks the field values on
+// AddProjectMemberUsergroupResourcesResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AddProjectMemberUsergroupResourcesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// AddProjectMemberUsergroupResourcesResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// AddProjectMemberUsergroupResourcesResponseMultiError, or nil if none found.
+func (m *AddProjectMemberUsergroupResourcesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddProjectMemberUsergroupResourcesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return AddProjectMemberUsergroupResourcesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddProjectMemberUsergroupResourcesResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// AddProjectMemberUsergroupResourcesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type AddProjectMemberUsergroupResourcesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddProjectMemberUsergroupResourcesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddProjectMemberUsergroupResourcesResponseMultiError) AllErrors() []error { return m }
+
+// AddProjectMemberUsergroupResourcesResponseValidationError is the validation
+// error returned by AddProjectMemberUsergroupResourcesResponse.Validate if
+// the designated constraints aren't met.
+type AddProjectMemberUsergroupResourcesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddProjectMemberUsergroupResourcesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddProjectMemberUsergroupResourcesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddProjectMemberUsergroupResourcesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddProjectMemberUsergroupResourcesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddProjectMemberUsergroupResourcesResponseValidationError) ErrorName() string {
+	return "AddProjectMemberUsergroupResourcesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddProjectMemberUsergroupResourcesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddProjectMemberUsergroupResourcesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddProjectMemberUsergroupResourcesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddProjectMemberUsergroupResourcesResponseValidationError{}
+
 // Validate checks the field values on SetProjectMemberUsergroupRoleRequest
 // with the rules defined in the proto definition for this message. If any
 // rules are violated, the first error encountered is returned, or nil if
@@ -21685,6 +22624,289 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SetProjectMemberUsergroupRoleResponseValidationError{}
+
+// Validate checks the field values on
+// RemoveProjectMemberUsergroupResourcesRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *RemoveProjectMemberUsergroupResourcesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// RemoveProjectMemberUsergroupResourcesRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// RemoveProjectMemberUsergroupResourcesRequestMultiError, or nil if none found.
+func (m *RemoveProjectMemberUsergroupResourcesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveProjectMemberUsergroupResourcesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := RemoveProjectMemberUsergroupResourcesRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := RemoveProjectMemberUsergroupResourcesRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUsergroup()) < 1 {
+		err := RemoveProjectMemberUsergroupResourcesRequestValidationError{
+			field:  "Usergroup",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, RemoveProjectMemberUsergroupResourcesRequestValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, RemoveProjectMemberUsergroupResourcesRequestValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return RemoveProjectMemberUsergroupResourcesRequestValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return RemoveProjectMemberUsergroupResourcesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveProjectMemberUsergroupResourcesRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// RemoveProjectMemberUsergroupResourcesRequest.ValidateAll() if the
+// designated constraints aren't met.
+type RemoveProjectMemberUsergroupResourcesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveProjectMemberUsergroupResourcesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveProjectMemberUsergroupResourcesRequestMultiError) AllErrors() []error { return m }
+
+// RemoveProjectMemberUsergroupResourcesRequestValidationError is the
+// validation error returned by
+// RemoveProjectMemberUsergroupResourcesRequest.Validate if the designated
+// constraints aren't met.
+type RemoveProjectMemberUsergroupResourcesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveProjectMemberUsergroupResourcesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveProjectMemberUsergroupResourcesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveProjectMemberUsergroupResourcesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveProjectMemberUsergroupResourcesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveProjectMemberUsergroupResourcesRequestValidationError) ErrorName() string {
+	return "RemoveProjectMemberUsergroupResourcesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveProjectMemberUsergroupResourcesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveProjectMemberUsergroupResourcesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveProjectMemberUsergroupResourcesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveProjectMemberUsergroupResourcesRequestValidationError{}
+
+// Validate checks the field values on
+// RemoveProjectMemberUsergroupResourcesResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *RemoveProjectMemberUsergroupResourcesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// RemoveProjectMemberUsergroupResourcesResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// RemoveProjectMemberUsergroupResourcesResponseMultiError, or nil if none found.
+func (m *RemoveProjectMemberUsergroupResourcesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveProjectMemberUsergroupResourcesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RemoveProjectMemberUsergroupResourcesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveProjectMemberUsergroupResourcesResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// RemoveProjectMemberUsergroupResourcesResponse.ValidateAll() if the
+// designated constraints aren't met.
+type RemoveProjectMemberUsergroupResourcesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveProjectMemberUsergroupResourcesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveProjectMemberUsergroupResourcesResponseMultiError) AllErrors() []error { return m }
+
+// RemoveProjectMemberUsergroupResourcesResponseValidationError is the
+// validation error returned by
+// RemoveProjectMemberUsergroupResourcesResponse.Validate if the designated
+// constraints aren't met.
+type RemoveProjectMemberUsergroupResourcesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveProjectMemberUsergroupResourcesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveProjectMemberUsergroupResourcesResponseValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e RemoveProjectMemberUsergroupResourcesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveProjectMemberUsergroupResourcesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveProjectMemberUsergroupResourcesResponseValidationError) ErrorName() string {
+	return "RemoveProjectMemberUsergroupResourcesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveProjectMemberUsergroupResourcesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveProjectMemberUsergroupResourcesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveProjectMemberUsergroupResourcesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveProjectMemberUsergroupResourcesResponseValidationError{}
 
 // Validate checks the field values on RemoveProjectMemberUsergroupRequest with
 // the rules defined in the proto definition for this message. If any rules
@@ -41715,6 +42937,40 @@ func (m *ProjectMemberUser) validate(all bool) error {
 		}
 	}
 
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectMemberUserValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectMemberUserValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectMemberUserValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ProjectMemberUserMultiError(errors)
 	}
@@ -42100,6 +43356,40 @@ func (m *ProjectInvite) validate(all bool) error {
 	// no validation rules for OrgRoleName
 
 	// no validation rules for InvitedBy
+
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ProjectInviteValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ProjectInviteValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ProjectInviteValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return ProjectInviteMultiError(errors)
@@ -44073,6 +45363,40 @@ func (m *MemberUsergroup) validate(all bool) error {
 				cause:  err,
 			}
 		}
+	}
+
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MemberUsergroupValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MemberUsergroupValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MemberUsergroupValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
 	if len(errors) > 0 {

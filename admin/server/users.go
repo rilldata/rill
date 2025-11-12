@@ -633,6 +633,7 @@ func projMemberUserToPB(m *database.ProjectMemberUser) *adminv1.ProjectMemberUse
 		OrgRoleName:  m.OrgRoleName,
 		CreatedOn:    timestamppb.New(m.CreatedOn),
 		UpdatedOn:    timestamppb.New(m.UpdatedOn),
+		Resources:    resourceNamesToPB(m.Resources),
 	}
 }
 
@@ -661,6 +662,7 @@ func projInviteToPB(i *database.ProjectInviteWithRole) *adminv1.ProjectInvite {
 		RoleName:    i.RoleName,
 		OrgRoleName: i.OrgRoleName,
 		InvitedBy:   i.InvitedBy,
+		Resources:   resourceNamesToPB(i.Resources),
 	}
 }
 
@@ -727,4 +729,118 @@ func (s *Server) findUserAuthTokenFuzzy(ctx context.Context, input string) (*dat
 		}
 	}
 	return nil, status.Error(codes.NotFound, "token not found")
+}
+
+func resourceNamesToPB(resources []database.ResourceName) []*adminv1.ResourceName {
+	if len(resources) == 0 {
+		return nil
+	}
+	rs := make([]*adminv1.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		if r.Type == "" || r.Name == "" {
+			continue
+		}
+		rs = append(rs, &adminv1.ResourceName{
+			Type: r.Type,
+			Name: r.Name,
+		})
+	}
+	if len(rs) == 0 {
+		return nil
+	}
+	return rs
+}
+
+func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {
+	if len(resources) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(resources))
+	res := make([]database.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		if r == nil || r.Type == "" || r.Name == "" {
+			continue
+		}
+		key := normalizeResourceKey(r.Type, r.Name)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		res = append(res, database.ResourceName{Type: r.Type, Name: r.Name})
+	}
+	if len(res) == 0 {
+		return nil
+	}
+	return res
+}
+
+func mergeResourceNames(base, additions []database.ResourceName) []database.ResourceName {
+	if len(additions) == 0 {
+		// Ensure we never return nil if base was non-nil to avoid accidental null writes.
+		return append([]database.ResourceName{}, base...)
+	}
+
+	seen := make(map[string]struct{}, len(base)+len(additions))
+	merged := make([]database.ResourceName, 0, len(base)+len(additions))
+
+	for _, r := range base {
+		if r.Type == "" || r.Name == "" {
+			continue
+		}
+		key := normalizeResourceKey(r.Type, r.Name)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		merged = append(merged, r)
+	}
+
+	for _, r := range additions {
+		if r.Type == "" || r.Name == "" {
+			continue
+		}
+		key := normalizeResourceKey(r.Type, r.Name)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		merged = append(merged, r)
+	}
+
+	return merged
+}
+
+func normalizeResourceKey(typ, name string) string {
+	return strings.ToLower(typ) + "|" + strings.ToLower(name)
+}
+
+func subtractResourceNames(base, removals []database.ResourceName) []database.ResourceName {
+	if len(base) == 0 {
+		return nil
+	}
+	if len(removals) == 0 {
+		return append([]database.ResourceName{}, base...)
+	}
+
+	removeSet := make(map[string]struct{}, len(removals))
+	for _, r := range removals {
+		if r.Type == "" || r.Name == "" {
+			continue
+		}
+		removeSet[normalizeResourceKey(r.Type, r.Name)] = struct{}{}
+	}
+
+	out := make([]database.ResourceName, 0, len(base))
+	for _, r := range base {
+		if _, ok := removeSet[normalizeResourceKey(r.Type, r.Name)]; ok {
+			continue
+		}
+		out = append(out, r)
+	}
+
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
