@@ -133,7 +133,7 @@ const config = {
             label: "Docs",
             position: "left",
             className: "navbar-docs-link",
-            activeBaseRegex: "^/$", // Only active on homepage
+            activeBaseRegex: "^(?!/(reference|contact|notes)).*", // Keep Docs active for all doc pages
           },
           {
             to: "/reference/project-files",

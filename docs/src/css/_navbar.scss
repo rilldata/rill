@@ -5,7 +5,14 @@
 .navbar__item {
   display: flex;
   align-items: center;
-  padding-top: 8px;
+
+    padding: 8px 12px;
+}
+
+.navbar__link:hover {
+  background: var(--palette_slate_50);
+  border-radius: 8px;
+
 }
 
 .navbar-sidebar__brand {
