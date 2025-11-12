@@ -238,7 +238,9 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       const hasCurrencySymbol = includesCurrencySymbol(measureSpec.formatD3);
       const hasPercentSymbol = measureSpec.formatD3.includes("%");
       return (value: number | string | T) => {
-        if (typeof value !== "number") return value;
+        if (typeof value !== "number") {
+          return maybeFormatUndefined(value);
+        }
 
         // For the Big Number, Axis and Tooltips, override the d3formatter
         // with humanized values that respect the locale configuration
@@ -282,5 +284,11 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   }
 
   return (value: number | T) =>
-    typeof value === "number" ? humanizer(value, formatPreset) : value;
+    typeof value === "number"
+      ? humanizer(value, formatPreset)
+      : maybeFormatUndefined(value);
+}
+
+function maybeFormatUndefined(val) {
+  return val === undefined ? "n/a" : val;
 }
