@@ -6,10 +6,8 @@ import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DateTime, Duration } from "luxon";
-import type { DateObjectUnits, DateTimeUnit } from "luxon/src/datetime";
+import type { DateObjectUnits } from "luxon/src/datetime";
 import {
-  DateTimeUnitToV1TimeGrain,
-  getGrainOrder,
   getLowerOrderGrain,
   getMinGrain,
   getSmallestGrain,
@@ -403,6 +401,7 @@ export class RillIsoInterval implements RillTimeInterval {
 
   public getGrain() {
     let smallestGrain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_YEAR;
+
     if (this.start.dateObject.month || this.end?.dateObject.month) {
       smallestGrain = V1TimeGrain.TIME_GRAIN_MONTH;
     }
