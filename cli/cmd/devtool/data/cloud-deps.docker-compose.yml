@@ -28,7 +28,7 @@ x-postgres: &postgres
 services:
   postgres:
     <<: *postgres
-    profiles: ["cloud", "minimal"]
+    profiles: ["full", "minimal"]
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
@@ -38,20 +38,20 @@ services:
       - "6432:5432"
   redis:
     <<: *service
-    profiles: ["cloud", "e2e", "minimal"]
+    profiles: ["full", "e2e", "minimal"]
     image: redis
     ports:
       - "6379:6379"
   zipkin:
     <<: *service
-    profiles: ["cloud", "observability"]
+    profiles: ["full"]
     container_name: zipkin
     image: openzipkin/zipkin:3
     ports:
       - "9411:9411"
   mailpit:
     <<: *service
-    profiles: ["cloud", "devtools"]
+    profiles: ["full"]
     container_name: mailpit
     image: axllent/mailpit
     ports:
@@ -63,7 +63,7 @@ services:
       MP_SMTP_AUTH: "user:passwd"
   prometheus:
     <<: *service
-    profiles: ["cloud", "observability"]
+    profiles: ["full"]
     container_name: prometheus
     image: prom/prometheus:v2.55.1
     volumes:
@@ -72,7 +72,7 @@ services:
       - "9412:9090"
   riverui:
     <<: *service
-    profiles: ["cloud", "devtools"]
+    profiles: ["full"]
     container_name: riverui
     image: ghcr.io/riverqueue/riverui:latest
     environment:
@@ -83,7 +83,7 @@ services:
       - postgres
   otel-collector:
     <<: *service
-    profiles: ["cloud", "observability"]
+    profiles: ["full"]
     container_name: otel-collector
     image: otel/opentelemetry-collector:0.90.0
     command: ["--config=/etc/otel-collector-config.yaml"]
@@ -99,14 +99,14 @@ services:
       - zipkin
   stripe-cli:
     <<: *service
-    profiles: ["dev-tools"]
+    profiles: ["full"]
     image: stripe/stripe-cli:v1.21.11
     command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/stripe-config.toml:/etc/stripe-config.toml
   clickhouse:
     <<: *service
-    profiles: ["cloud"]
+    profiles: ["full"]
     image: "clickhouse/clickhouse-server:24.11.1.2557"
     volumes:
       - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/config.xml
@@ -122,7 +122,7 @@ services:
           cpus: "0.5"
   pgweb:
     <<: *service
-    profiles: ["cloud", "devtools"]
+    profiles: ["full"]
     image: sosedoff/pgweb
     ports:
       - "8082:8081"

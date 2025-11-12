@@ -37,6 +37,8 @@ const (
 )
 
 const (
+	// minimalProvisionerSet is used with the --minimal flag.
+	// It differs from the usual dev provisioner set in not having a Clickhouse provisioner.
 	minimalProvisionerSet = `{"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}`
 )
 
@@ -46,14 +48,14 @@ var (
 	logInfo = color.New(color.FgHiGreen)
 )
 
-var presets = []string{"cloud", "local", "e2e", "other"}
+var presets = []string{"cloud", "minimal", "local", "e2e", "other"}
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var verbose, reset, refreshDotenv bool
 	services := &servicesCfg{}
 
 	cmd := &cobra.Command{
-		Use:   "start [cloud|local|e2e]",
+		Use:   "start [cloud|minimal|local|e2e]",
 		Short: "Start a local development environment",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var preset string
@@ -67,7 +69,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				preset = res
 			}
 
-			err := services.parse()
+			err := services.parse(preset)
 			if err != nil {
 				return fmt.Errorf("failed to parse services: %w", err)
 			}
@@ -99,7 +101,9 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 
 	switch preset {
 	case "cloud":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "cloud", services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "full", services)
+	case "minimal":
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "minimal", services)
 	case "e2e":
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", services)
 	case "other":
@@ -188,7 +192,6 @@ type servicesCfg struct {
 	deps    bool
 	runtime bool
 	ui      bool
-	minimal bool
 	only    []string
 	except  []string
 }
@@ -196,22 +199,9 @@ type servicesCfg struct {
 func (s *servicesCfg) addFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&s.only, "only", []string{}, "Only start the listed services (options: admin, deps, runtime, ui)")
 	cmd.Flags().StringSliceVar(&s.except, "except", []string{}, "Start all except the listed services (options: admin, deps, runtime, ui)")
-	cmd.Flags().BoolVar(&s.minimal, "minimal", false, "Start minimal services: deps (postgres, redis), runtime, and admin")
 }
 
-func (s *servicesCfg) parse() error {
-	if s.minimal {
-		if len(s.only) > 0 || len(s.except) > 0 {
-			return errors.New("cannot use --minimal with --only or --except")
-		}
-		s.deps = true
-		s.runtime = true
-		s.admin = true
-		s.ui = false
-
-		return nil
-	}
-
+func (s *servicesCfg) parse(preset string) error {
 	if len(s.only) > 0 && len(s.except) > 0 {
 		return errors.New("cannot use both --only and --except")
 	}
@@ -288,13 +278,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
-		var profiles []string
-		if services.minimal {
-			profiles = []string{"minimal"}
-		} else {
-			profiles = []string{preset} // e.g., "cloud", "e2e"
-		}
-		g.Go(func() error { return s.runDeps(ctx, verbose, profiles) })
+		g.Go(func() error { return s.runDeps(ctx, verbose, []string{preset}) })
 	}
 
 	depsReadyCh := make(chan struct{})
@@ -318,7 +302,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			if err := awaitClose(ctx, depsReadyCh); err != nil {
 				return err
 			}
-			return s.runAdmin(ctx, verbose, services.minimal)
+			return s.runAdmin(ctx, verbose, preset)
 		})
 	}
 
@@ -327,7 +311,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			if err := awaitClose(ctx, depsReadyCh); err != nil {
 				return err
 			}
-			return s.runRuntime(ctx, verbose, services.minimal)
+			return s.runRuntime(ctx, verbose, preset)
 		})
 	}
 
@@ -500,19 +484,18 @@ func (s cloud) awaitRedis(ctx context.Context) error {
 	}
 }
 
-func (s cloud) runAdmin(ctx context.Context, verbose, minimal bool) (err error) {
+func (s cloud) runAdmin(ctx context.Context, verbose bool, preset string) (err error) {
 	logInfo.Printf("Starting admin\n")
 	defer logInfo.Printf("Stopped admin\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "admin", "start")
 	env := os.Environ()
-	if minimal {
+	if preset == "minimal" {
 		env = append(env,
 			"RILL_ADMIN_METRICS_EXPORTER="+string(observability.NoopExporter),
 			"RILL_ADMIN_TRACES_EXPORTER="+string(observability.NoopExporter),
 			"RILL_ADMIN_PROVISIONER_SET_JSON="+minimalProvisionerSet,
 		)
-		logInfo.Printf("Minimal mode: Disabled OTEL and Prometheus exporters\n")
 	}
 	if verbose {
 		env = append(env, "RILL_ADMIN_LOG_LEVEL=debug")
@@ -548,13 +531,13 @@ func (s cloud) awaitAdmin(ctx context.Context) error {
 	}
 }
 
-func (s cloud) runRuntime(ctx context.Context, verbose, minimal bool) (err error) {
+func (s cloud) runRuntime(ctx context.Context, verbose bool, preset string) (err error) {
 	logInfo.Printf("Starting runtime\n")
 	defer logInfo.Printf("Stopped runtime\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "runtime", "start")
 	env := os.Environ()
-	if minimal {
+	if preset == "minimal" {
 		env = append(env,
 			"RILL_RUNTIME_METRICS_EXPORTER="+string(observability.NoopExporter),
 			"RILL_RUNTIME_TRACES_EXPORTER="+string(observability.NoopExporter),
