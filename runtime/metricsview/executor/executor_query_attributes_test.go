@@ -339,3 +339,175 @@ query_attributes:
 	require.NoError(t, err)
 	require.NotNil(t, cacheKey)
 }
+
+// TestResolveQueryAttributesWithUserContext verifies that user attributes are properly templated
+func TestResolveQueryAttributesWithUserContext(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: duckdb",
+			"model.sql": `
+SELECT now() AS timestamp, 'publisher1' AS publisher
+`,
+			"metrics.yaml": `
+type: metrics_view
+model: model
+dimensions:
+  - column: publisher
+measures:
+  - expression: count(*)
+query_attributes:
+  partner_id: '{{ .user.partner_id }}'
+  user_email: '{{ .user.email }}'
+  user_group: '{{ .user.group }}'
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
+	spec := mv.GetMetricsView().Spec
+
+	// Create context with user attributes
+	ctx := context.Background()
+	ctx = runtime.ContextWithClaims(ctx, &runtime.SecurityClaims{
+		UserAttributes: map[string]any{
+			"partner_id": "acme_corp",
+			"email":      "test@example.com",
+			"group":      "premium",
+		},
+	})
+
+	e, err := executor.New(ctx, rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	require.NoError(t, err)
+	defer e.Close()
+
+	// Verify cache key is computed successfully with user context
+	cacheKey, _, err := e.CacheKey(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, cacheKey)
+}
+
+// TestResolveQueryAttributesMissingUserAttribute verifies graceful handling of missing user attributes
+func TestResolveQueryAttributesMissingUserAttribute(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: duckdb",
+			"model.sql": `
+SELECT now() AS timestamp, 'publisher1' AS publisher
+`,
+			"metrics.yaml": `
+type: metrics_view
+model: model
+dimensions:
+  - column: publisher
+measures:
+  - expression: count(*)
+query_attributes:
+  partner_id: '{{ .user.partner_id }}'
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
+	spec := mv.GetMetricsView().Spec
+
+	// Create context without user attributes
+	ctx := context.Background()
+	ctx = runtime.ContextWithClaims(ctx, &runtime.SecurityClaims{
+		UserAttributes: map[string]any{}, // Empty user attributes
+	})
+
+	e, err := executor.New(ctx, rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	require.NoError(t, err)
+	defer e.Close()
+
+	// Verify cache key computation handles missing attributes (should resolve to empty string)
+	cacheKey, _, err := e.CacheKey(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, cacheKey)
+}
+
+// TestResolveQueryAttributesNoUserClaims verifies handling when no user claims are present
+func TestResolveQueryAttributesNoUserClaims(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: duckdb",
+			"model.sql": `
+SELECT now() AS timestamp, 'publisher1' AS publisher
+`,
+			"metrics.yaml": `
+type: metrics_view
+model: model
+dimensions:
+  - column: publisher
+measures:
+  - expression: count(*)
+query_attributes:
+  partner_id: '{{ .user.partner_id }}'
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
+	spec := mv.GetMetricsView().Spec
+
+	// Create context without any claims
+	ctx := context.Background()
+
+	e, err := executor.New(ctx, rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	require.NoError(t, err)
+	defer e.Close()
+
+	// Verify cache key computation handles missing user claims
+	cacheKey, _, err := e.CacheKey(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, cacheKey)
+}
+
+// TestResolveQueryAttributesComplexTemplate verifies complex template expressions
+func TestResolveQueryAttributesComplexTemplate(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: duckdb",
+			"model.sql": `
+SELECT now() AS timestamp, 'publisher1' AS publisher
+`,
+			"metrics.yaml": `
+type: metrics_view
+model: model
+dimensions:
+  - column: publisher
+measures:
+  - expression: count(*)
+query_attributes:
+  compound_attr: '{{ .user.org_id }}_{{ .user.tenant_id }}'
+  conditional_attr: '{{ if .user.is_premium }}premium{{ else }}standard{{ end }}'
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
+	spec := mv.GetMetricsView().Spec
+
+	// Create context with user attributes
+	ctx := context.Background()
+	ctx = runtime.ContextWithClaims(ctx, &runtime.SecurityClaims{
+		UserAttributes: map[string]any{
+			"org_id":     "org123",
+			"tenant_id":  "tenant456",
+			"is_premium": true,
+		},
+	})
+
+	e, err := executor.New(ctx, rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	require.NoError(t, err)
+	defer e.Close()
+
+	// Verify cache key is computed successfully with complex templates
+	cacheKey, _, err := e.CacheKey(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, cacheKey)
+}
