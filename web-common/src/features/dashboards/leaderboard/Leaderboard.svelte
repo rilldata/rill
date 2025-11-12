@@ -86,7 +86,10 @@
 
   const observer = new IntersectionObserver(
     ([entry]) => {
-      visible = entry.isIntersecting;
+      if (entry.isIntersecting) {
+        visible = true;
+        observer.unobserve(container);
+      }
     },
     {
       root: parentElement,
