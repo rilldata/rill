@@ -69,7 +69,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				preset = res
 			}
 
-			err := services.parse(preset)
+			err := services.parse()
 			if err != nil {
 				return fmt.Errorf("failed to parse services: %w", err)
 			}
@@ -201,7 +201,7 @@ func (s *servicesCfg) addFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&s.except, "except", []string{}, "Start all except the listed services (options: admin, deps, runtime, ui)")
 }
 
-func (s *servicesCfg) parse(preset string) error {
+func (s *servicesCfg) parse() error {
 	if len(s.only) > 0 && len(s.except) > 0 {
 		return errors.New("cannot use both --only and --except")
 	}
