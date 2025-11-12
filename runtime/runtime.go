@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime")
@@ -136,15 +137,20 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	tmp := *inst
 	inst = &tmp
 
+	inst.ProjectDisplayName = rillYAML.DisplayName
 	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
 
 	// Dedupe connectors
 	connMap := make(map[string]*runtimev1.Connector)
 	for _, c := range rillYAML.Connectors {
+		config, err := structpb.NewStruct(c.Defaults)
+		if err != nil {
+			return err
+		}
 		connMap[c.Name] = &runtimev1.Connector{
 			Type:   c.Type,
 			Name:   c.Name,
-			Config: c.Defaults,
+			Config: config,
 		}
 	}
 	for _, r := range p.Resources {

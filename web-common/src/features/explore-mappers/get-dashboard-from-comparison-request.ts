@@ -12,12 +12,14 @@ export async function getDashboardFromComparisonRequest({
   req,
   dashboard,
   metricsView,
+  explore,
   timeRangeSummary,
   executionTime,
 }: TransformerArgs<V1MetricsViewComparisonRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
 
-  fillTimeRange(
+  await fillTimeRange(
+    explore,
     dashboard,
     req.timeRange,
     req.comparisonTimeRange,

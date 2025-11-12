@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Default instance config on local.
@@ -120,11 +121,15 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	// Create a local runtime with an in-memory metastore
+	metastoreConfig, err := structpb.NewStruct(map[string]any{"dsn": "file:rill?mode=memory&cache=shared"})
+	if err != nil {
+		return nil, err
+	}
 	systemConnectors := []*runtimev1.Connector{
 		{
 			Type:   "sqlite",
 			Name:   "metastore",
-			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Config: metastoreConfig,
 		},
 	}
 
@@ -195,40 +200,56 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	}
 
 	// Add default OLAP connector
+	olapConfig, err := structpb.NewStruct(map[string]any{
+		"pool_size":   "4",
+		"log_queries": strconv.FormatBool(opts.Debug),
+	})
+	if err != nil {
+		return nil, err
+	}
 	olapConnector := &runtimev1.Connector{
-		Type: "duckdb",
-		Name: "duckdb",
-		Config: map[string]string{
-			"pool_size":   "4", // Default pool size for DuckDB
-			"log_queries": strconv.FormatBool(opts.Debug),
-		},
+		Type:   "duckdb",
+		Name:   "duckdb",
+		Config: olapConfig,
 	}
 	connectors = append(connectors, olapConnector)
 
 	// The repo connector is the local project directory
+	repoConfig, err := structpb.NewStruct(map[string]any{"dsn": projectPath})
+	if err != nil {
+		return nil, err
+	}
 	repoConnector := &runtimev1.Connector{
 		Type:   "file",
 		Name:   "repo",
-		Config: map[string]string{"dsn": projectPath},
+		Config: repoConfig,
 	}
 	connectors = append(connectors, repoConnector)
 
 	// The catalog connector is a SQLite database in the project directory's tmp folder
+	catalogConfig, err := structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))})
+	if err != nil {
+		return nil, err
+	}
 	catalogConnector := &runtimev1.Connector{
 		Type:   "sqlite",
 		Name:   "catalog",
-		Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))},
+		Config: catalogConfig,
 	}
 	connectors = append(connectors, catalogConnector)
 
 	// Use the admin service for AI
+	aiConfig, err := structpb.NewStruct(map[string]any{
+		"admin_url":    opts.Ch.AdminURL(),
+		"access_token": opts.Ch.AdminToken(),
+	})
+	if err != nil {
+		return nil, err
+	}
 	aiConnector := &runtimev1.Connector{
-		Name: "admin",
-		Type: "admin",
-		Config: map[string]string{
-			"admin_url":    opts.Ch.AdminURL(),
-			"access_token": opts.Ch.AdminToken(),
-		},
+		Name:   "admin",
+		Type:   "admin",
+		Config: aiConfig,
 	}
 	connectors = append(connectors, aiConnector)
 
@@ -415,10 +436,9 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 		// We sleep before the first health check as a slightly hacky way to protect against the situation where
 		// another Rill server is already running, which will pass the health check as a false positive.
 		// By sleeping first, the ctx is in practice sure to have been cancelled with a "port taken" error at that point.
-		time.Sleep(250 * time.Millisecond)
-
-		// Check for cancellation
-		if ctx.Err() != nil {
+		select {
+		case <-time.After(250 * time.Millisecond):
+		case <-ctx.Done():
 			return
 		}
 

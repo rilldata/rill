@@ -293,7 +293,6 @@
   // This includes both above-the-fold and below-the-fold data for accurate scaling
   $: maxValues = getLeaderboardMaxValues(
     [...aboveTheFold, ...belowTheFoldRows],
-    leaderboardTotals,
     leaderboardMeasures,
   );
 
@@ -370,7 +369,6 @@
       >
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
-            {tableWidth}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -392,7 +390,6 @@
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
           {itemData}
-          {tableWidth}
           {dimensionName}
           {isBeingCompared}
           {filterExcludeMode}

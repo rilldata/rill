@@ -324,14 +324,6 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		return nil, err
 	}
 
-	// Mark the project as transferred so that the local project folder can detect the correct remote project
-	if proj.ManagedGitRepoID != nil && proj.GitRemote != nil {
-		_, err = s.admin.DB.InsertGitRepoTransfer(ctx, *proj.GitRemote, req.Remote)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return &adminv1.ConnectProjectToGithubResponse{}, nil
 }
 
@@ -478,7 +470,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// exchange code to get an auth token and create a github client with user auth
-	githubClient, refreshToken, err := s.userAuthGithubClient(ctx, code)
+	githubClient, githubToken, err := s.userAuthGithubClient(ctx, code)
 	if err != nil {
 		http.Error(w, "unauthorised user", http.StatusUnauthorized)
 		return
@@ -500,13 +492,15 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err = s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:         user.DisplayName,
-		PhotoURL:            user.PhotoURL,
-		GithubUsername:      githubUser.GetLogin(),
-		GithubRefreshToken:  refreshToken,
-		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-		QuotaTrialOrgs:      user.QuotaTrialOrgs,
-		PreferenceTimeZone:  user.PreferenceTimeZone,
+		DisplayName:          user.DisplayName,
+		PhotoURL:             user.PhotoURL,
+		GithubUsername:       githubUser.GetLogin(),
+		GithubToken:          githubToken.AccessToken,
+		GithubTokenExpiresOn: &githubToken.Expiry,
+		GithubRefreshToken:   githubToken.RefreshToken,
+		QuotaSingleuserOrgs:  user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:       user.QuotaTrialOrgs,
+		PreferenceTimeZone:   user.PreferenceTimeZone,
 	})
 	if err != nil {
 		s.logger.Error("failed to update user's github username")
@@ -680,7 +674,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// exchange code to get an auth token and create a github client with user auth
-	c, refreshToken, err := s.userAuthGithubClient(ctx, code)
+	c, ghToken, err := s.userAuthGithubClient(ctx, code)
 	if err != nil {
 		// todo :: check for unauthorised user error
 		http.Error(w, fmt.Sprintf("internal error %s", err.Error()), http.StatusInternalServerError)
@@ -707,13 +701,15 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:         user.DisplayName,
-		PhotoURL:            user.PhotoURL,
-		GithubUsername:      gitUser.GetLogin(),
-		GithubRefreshToken:  refreshToken,
-		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-		QuotaTrialOrgs:      user.QuotaTrialOrgs,
-		PreferenceTimeZone:  user.PreferenceTimeZone,
+		DisplayName:          user.DisplayName,
+		PhotoURL:             user.PhotoURL,
+		GithubUsername:       gitUser.GetLogin(),
+		GithubRefreshToken:   ghToken.RefreshToken,
+		GithubToken:          ghToken.AccessToken,
+		GithubTokenExpiresOn: &ghToken.Expiry,
+		QuotaSingleuserOrgs:  user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:       user.QuotaTrialOrgs,
+		PreferenceTimeZone:   user.PreferenceTimeZone,
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to save user information %s", err.Error()), http.StatusInternalServerError)
@@ -849,7 +845,7 @@ func (s *Server) githubStatus(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
-func (s *Server) userAuthGithubClient(ctx context.Context, code string) (*github.Client, string, error) {
+func (s *Server) userAuthGithubClient(ctx context.Context, code string) (*github.Client, *admin.GithubToken, error) {
 	oauthConf := &oauth2.Config{
 		ClientID:     s.opts.GithubClientID,
 		ClientSecret: s.opts.GithubClientSecret,
@@ -858,11 +854,11 @@ func (s *Server) userAuthGithubClient(ctx context.Context, code string) (*github
 
 	token, err := oauthConf.Exchange(ctx, code)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	oauthClient := oauthConf.Client(ctx, token)
-	return github.NewClient(oauthClient), token.RefreshToken, nil
+	return github.NewClient(oauthClient), &admin.GithubToken{AccessToken: token.AccessToken, Expiry: token.Expiry, RefreshToken: token.RefreshToken}, nil
 }
 
 // isCollaborator checks if the user is a collaborator of the repository identified by owner and repo
@@ -908,6 +904,10 @@ func (s *Server) checkGithubRateLimit(route string) middleware.CheckFunc {
 }
 
 func (s *Server) userAccessToken(ctx context.Context, user *database.User) (string, error) {
+	if user.GithubTokenExpiresOn != nil && user.GithubTokenExpiresOn.After(time.Now().Add(5*time.Minute)) {
+		return user.GithubToken, nil
+	}
+
 	if user.GithubRefreshToken == "" {
 		return "", errors.New("refresh token is empty")
 	}
@@ -925,15 +925,16 @@ func (s *Server) userAccessToken(ctx context.Context, user *database.User) (stri
 	}
 
 	// refresh token changes after using it for getting a new token
-	// so saving the updated refresh token
 	_, err = s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:         user.DisplayName,
-		PhotoURL:            user.PhotoURL,
-		GithubUsername:      user.GithubUsername,
-		GithubRefreshToken:  oauthToken.RefreshToken,
-		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-		QuotaTrialOrgs:      user.QuotaTrialOrgs,
-		PreferenceTimeZone:  user.PreferenceTimeZone,
+		DisplayName:          user.DisplayName,
+		PhotoURL:             user.PhotoURL,
+		GithubUsername:       user.GithubUsername,
+		GithubToken:          oauthToken.AccessToken,
+		GithubTokenExpiresOn: &oauthToken.Expiry,
+		GithubRefreshToken:   oauthToken.RefreshToken,
+		QuotaSingleuserOrgs:  user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:       user.QuotaTrialOrgs,
+		PreferenceTimeZone:   user.PreferenceTimeZone,
 	})
 	if err != nil {
 		s.logger.Error("failed to update user's github refresh token")

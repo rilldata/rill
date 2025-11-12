@@ -121,8 +121,12 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 			cfg.config = maps.Clone(cfg.config)
 			cfg.config["managed"] = true
 
-			if inst.AdminConnector == "" {
-				// Provisioning has been requested, but the instance does not have an admin connector.
+			// As a special carve-out, we never try to provision DuckDB through the admin service.
+			// (Since the driver just starts an embedded DuckDB when `managed: true`.)
+			skipAdminProvisioning := cfg.driver == "duckdb"
+
+			// Provisioning has been requested, but the instance does not have an admin connector.
+			if inst.AdminConnector == "" || skipAdminProvisioning {
 				// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
 				cfg.config["provision"] = true
 				cfg.config["provision_args"] = cfg.provisionArgs
@@ -152,7 +156,7 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}
-	r.activity.Record(ctx, "connection_open", activity.EventTypeLog,
+	r.activity.Record(ctx, activity.EventTypeLog, "connection_open",
 		attribute.String("instance_id", cfg.instanceID),
 		attribute.String("driver", cfg.driver),
 		attribute.String("name", cfg.name),

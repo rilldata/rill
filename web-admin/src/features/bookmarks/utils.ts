@@ -125,12 +125,15 @@ export function formatTimeRange(
 export function parseBookmarks(
   bookmarkResp: V1Bookmark[],
   curUrlParams: URLSearchParams,
-  defaultUrlParams: URLSearchParams | undefined,
+  // Default url params are a concept on in explore dashboard.
+  // There we have a few param and value combos that we omit from url to decrease the size.
+  // In canvas we do not have this concept, defaultUrlParams will be null in that case.
+  defaultUrlParams: URLSearchParams | null = null,
   dataTransformer: (data: string) => string = (data) => data,
 ) {
   return bookmarkResp.map((bookmarkResource) => {
     const bookmarkUrlSearch =
-      bookmarkResource.urlSearch ??
+      bookmarkResource.urlSearch ||
       dataTransformer(bookmarkResource.data ?? "");
 
     const bookmarkUrlParams = new URLSearchParams(bookmarkUrlSearch);

@@ -106,7 +106,8 @@ export function makeTablePreviewHref(
  */
 export function getConnectorIconKey(connector: V1AnalyzedConnector): string {
   // Special case: MotherDuck connectors use md: path prefix
-  if (connector.config?.path?.startsWith("md:")) {
+  const path = connector.config?.path;
+  if (typeof path === "string" && path.startsWith("md:")) {
     return "motherduck";
   }
 

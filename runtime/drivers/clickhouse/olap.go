@@ -45,8 +45,10 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 		panic("nested WithConnection")
 	}
 
-	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, priority)
+	// Acquire a connection from write pool, since this is meant to be used for operations that may write (e.g. creating temp tables).
+	// Beware that this means that if later calls to acquireOLAPConn even with the write flag not set with the same context then they will get the same connection from the write pool.
+	// But I think this is the expected behavior as we want to have a single connection for the whole WithConnection block.
+	conn, release, err := c.acquireOLAPConn(ctx, priority, true)
 	if err != nil {
 		return err
 	}
@@ -90,7 +92,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	}
 
 	// Use write connection for Exec operations
-	conn, release, err := c.acquireWriteConn(ctx)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, true)
 	if err != nil {
 		return err
 	}
@@ -169,7 +171,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}()
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, false)
 	acquiredTime = time.Now()
 	if err != nil {
 		return nil, err
@@ -215,14 +217,14 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 }
 
 func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) (*runtimev1.StructType, error) {
-	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema. describe_compact_output returns only name and type.
-	query = fmt.Sprintf("DESCRIBE (%s) SETTINGS describe_compact_output=1", query)
+	// ClickHouse does not return schema with LIMIT 0, so we need to wrap query inside DESCRIBE to explicitly get the schema
+	query = fmt.Sprintf("DESCRIBE (%s)", query)
 
 	if c.config.LogQueries {
 		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(query)), zap.Any("args", args))
 	}
 
-	conn, release, err := c.acquireOLAPConn(ctx, 0)
+	conn, release, err := c.acquireOLAPConn(ctx, 0, false)
 	if err != nil {
 		return nil, err
 	}
@@ -238,15 +240,23 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 	defer rows.Close()
 
 	schema := &runtimev1.StructType{}
-	var name, cType string
+	m := make(map[string]any)
 	for rows.Next() {
-		if err = rows.Scan(&name, &cType); err != nil {
+		if err = rows.MapScan(m); err != nil {
 			return nil, fmt.Errorf("failed to scan schema: %w", err)
 		}
 		// Convert ClickHouse data type to runtimev1.StructType_Field_Type
+		cType, ok := m["type"].(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse clickHouse type from schema")
+		}
 		t, err := databaseTypeToPB(cType, false)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert clickHouse type '%s': %w", cType, err)
+			return nil, fmt.Errorf("failed to convert clickHouse type %q: %w", cType, err)
+		}
+		name, ok := m["name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse column name from schema")
 		}
 		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
 			Name: name,
@@ -257,7 +267,6 @@ func (c *Connection) QuerySchema(ctx context.Context, query string, args []any) 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error scanning schema: %w", err)
 	}
-
 	return schema, nil
 }
 
@@ -298,8 +307,8 @@ func (c *Connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 }
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
-// It returns a function that puts the connection back in the pool (if applicable).
-func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.Conn, func() error, error) {
+// It returns a function that puts the connection back in the pool (if applicable). write bool indicates if the connection is for an exec query.
+func (c *Connection) acquireOLAPConn(ctx context.Context, priority int, write bool) (*sqlx.Conn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
@@ -313,7 +322,12 @@ func (c *Connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	}
 
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	var releaseConn func() error
+	if write {
+		conn, releaseConn, err = c.acquireWriteConn(ctx)
+	} else {
+		conn, releaseConn, err = c.acquireConn(ctx)
+	}
 	if err != nil {
 		c.olapSem.Release()
 		return nil, nil, err
@@ -344,7 +358,7 @@ func (c *Connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 	return conn, release, nil
 }
 
-// acquireWriteConn returns a ClickHouse write connection for write operations.
+// acquireWriteConn returns a ClickHouse write connection for write operations. It should only be used internally in acquireOLAPConn.
 func (c *Connection) acquireWriteConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
 	conn, err := c.writeDB.Connx(ctx)
 	if err != nil {

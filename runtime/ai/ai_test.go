@@ -6,29 +6,25 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
-	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/google/uuid"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
-// newTest sets up a new runtime instance and AI chat session for it.
-func newTest(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, string, *ai.Session) {
-	// Create test runtime instance
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, opts)
-
+// newSession sets up a new AI session for testing.
+// It is suitable for testing tool calls that do not require LLM completions.
+// If LLM completions are needed, use newEval instead.
+func newSession(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Session {
 	// Create test AI session
 	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
 	r := ai.NewRunner(rt, activity.NewNoopClient())
@@ -43,25 +39,22 @@ func newTest(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, 
 		require.NoError(t, err)
 	})
 
-	return rt, instanceID, s
+	return s
 }
 
-// newEval sets up a new eval and returns a runtime instance and AI chat session for it.
-// It differs from newTest in that a) it's disabled in CI/short mode, and b) the messages and LLM calls are recorded to ./evals for later inspection.
-func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, string, *ai.Session) {
-	// Skip AI tests in short mode since they're comparatively expensive.
+// newEval sets up a new eval AI session for a runtime instance.
+// It differs from newSession in a two ways:
+// - It records messages and LLM calls to the ./evals directory for later inspection.
+// - It ensures the test is skipped in CI (short mode).
+func newEval(t *testing.T, rt *runtime.Runtime, instanceID string) *ai.Session {
+	// Eval tests are expensive, but we don't use testmode.Expensive here because it should have already been called before ingesting data.
+	// Most of the time, the test should have been marked expensive when EnableLLM was set, and we can check it wasn't forgotten by checking testing.Short().
 	if testing.Short() {
-		t.SkipNow()
-	}
-
-	// Add openai to the test connectors if not already present.
-	// This enables LLM completions.
-	if !slices.Contains(opts.TestConnectors, "openai") {
-		opts.TestConnectors = append(opts.TestConnectors, "openai")
+		t.Fatal("eval test was not marked expensive; did you forget to set EnableLLM in testruntime.InstanceOptions?")
 	}
 
 	// Create test runtime instance and AI session
-	rt, instanceID, s := newTest(t, opts)
+	s := newSession(t, rt, instanceID)
 
 	// Wrap the session's LLM with a recordingAIService to capture every LLM call.
 	ai, release, err := rt.AI(t.Context(), instanceID)
@@ -77,6 +70,7 @@ func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, 
 		// Setup the output destination
 		dir := "evals"
 		name := strings.TrimPrefix(t.Name(), "Test")
+		name = strings.ReplaceAll(name, "/", "_") // Replace slashes in sub-test names
 		err = os.MkdirAll(dir, 0755)
 		require.NoError(t, err)
 
@@ -99,7 +93,7 @@ func newEval(t *testing.T, opts testruntime.InstanceOptions) (*runtime.Runtime, 
 		require.NoError(t, err)
 	})
 
-	return rt, instanceID, s
+	return s
 }
 
 // recordingAIService wraps a drivers.AIService and records all interactions with it.
@@ -113,7 +107,7 @@ type recordingAICall struct {
 	Index    int                  `yaml:"index"`
 	Input    []recordingAIMessage `yaml:"input"`
 	Error    string               `yaml:"error,omitempty"`
-	Response recordingAIMessage   `yaml:"response,omitempty"`
+	Response []recordingAIMessage `yaml:"response,omitempty"`
 }
 
 // recordingAIMessage represents a recorded message in a recordingAIService.
@@ -129,47 +123,52 @@ type recordingAIMessage struct {
 var _ drivers.AIService = &recordingAIService{}
 
 // Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error)
-func (r *recordingAIService) Complete(ctx context.Context, msgs []*aiv1.CompletionMessage, tools []*aiv1.Tool, outputSchema *jsonschema.Schema) (*aiv1.CompletionMessage, error) {
+func (r *recordingAIService) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
 	// Create a recorded call
 	call := &recordingAICall{Index: len(r.calls) + 1}
-	for _, m := range msgs {
-		call.Input = append(call.Input, newRecordingAIMessage(m))
+	for _, m := range opts.Messages {
+		call.Input = append(call.Input, newRecordingAIMessages(m)...)
 	}
 	r.calls = append(r.calls, call)
 
 	// Forward to the underlying AI service
-	res, err := r.ai.Complete(ctx, msgs, tools, outputSchema)
+	res, err := r.ai.Complete(ctx, opts)
 	if err != nil {
 		call.Error = err.Error()
 		return nil, err
 	}
-	call.Response = newRecordingAIMessage(res)
+	call.Response = newRecordingAIMessages(res.Message)
 	return res, nil
 }
 
-// newRecordingAIMessage creates a new recordingAIMessage from a CompletionMessage.
-func newRecordingAIMessage(msg *aiv1.CompletionMessage) recordingAIMessage {
-	res := recordingAIMessage{
-		Role: msg.Role,
+// newRecordingAIMessages creates new recordingAIMessages from a CompletionMessage.
+func newRecordingAIMessages(msg *aiv1.CompletionMessage) []recordingAIMessage {
+	var res []recordingAIMessage
+	for _, b := range msg.Content {
+		resMsg := recordingAIMessage{
+			Role: msg.Role,
+		}
+		switch b := b.BlockType.(type) {
+		case *aiv1.ContentBlock_Text:
+			resMsg.ContentType = "text"
+			resMsg.Content = b.Text
+		case *aiv1.ContentBlock_ToolCall:
+			resMsg.ContentType = "tool_call"
+			resMsg.ID = b.ToolCall.Id
+			resMsg.ToolName = b.ToolCall.Name
+			data, _ := json.Marshal(b.ToolCall.Input.AsMap())
+			resMsg.Content = string(data)
+		case *aiv1.ContentBlock_ToolResult:
+			resMsg.ContentType = "tool_response"
+			resMsg.ID = b.ToolResult.Id
+			resMsg.IsError = b.ToolResult.IsError
+			resMsg.Content = b.ToolResult.Content
+		default:
+			resMsg.ContentType = "unknown"
+			resMsg.Content = ""
+		}
+		res = append(res, resMsg)
 	}
-	switch b := msg.Content[0].BlockType.(type) {
-	case *aiv1.ContentBlock_Text:
-		res.ContentType = "text"
-		res.Content = b.Text
-	case *aiv1.ContentBlock_ToolCall:
-		res.ContentType = "tool_call"
-		res.ID = b.ToolCall.Id
-		res.ToolName = b.ToolCall.Name
-		data, _ := json.Marshal(b.ToolCall.Input.AsMap())
-		res.Content = string(data)
-	case *aiv1.ContentBlock_ToolResult:
-		res.ContentType = "tool_response"
-		res.ID = b.ToolResult.Id
-		res.IsError = b.ToolResult.IsError
-		res.Content = b.ToolResult.Content
-	default:
-		res.ContentType = "unknown"
-		res.Content = ""
-	}
+
 	return res
 }

@@ -604,6 +604,24 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              explore:
+                type: string
+              dimensions:
+                type: array
+                items:
+                  type: string
+              measures:
+                type: array
+                items:
+                  type: string
+              where:
+                $ref: '#/definitions/v1Expression'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -642,6 +660,24 @@ paths:
                 title: If not provided, creates a new conversation
               prompt:
                 type: string
+              explore:
+                type: string
+              dimensions:
+                type: array
+                items:
+                  type: string
+              measures:
+                type: array
+                items:
+                  type: string
+              where:
+                $ref: '#/definitions/v1Expression'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -1960,7 +1996,9 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
     post:
-      summary: MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+      summary: |-
+        MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+        Deprecated: use MetricsViewTimeRanges instead.
       operationId: QueryService_MetricsViewTimeRange
       responses:
         "200":
@@ -1996,6 +2034,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
     post:
+      summary: MetricsViewTimeRanges resolves time ranges for a metrics view.
       operationId: QueryService_MetricsViewTimeRanges
       responses:
         "200":
@@ -2025,15 +2064,21 @@ paths:
                 type: array
                 items:
                   type: string
+                description: Optional time range expressions to resolve (uses the rilltime expression syntax).
               priority:
                 type: integer
                 format: int32
+                description: Optional query priority.
               timeZone:
                 type: string
-                title: Optional timezone param to easily override time-range expressions
+                description: Optional time zone that overrides the time zones used when resolving the time range expressions.
               timeDimension:
                 type: string
-                title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+                description: Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension.
+              executionTime:
+                type: string
+                format: date-time
+                description: Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -3359,6 +3404,9 @@ definitions:
     properties:
       name:
         type: string
+      type:
+        $ref: '#/definitions/MetricsViewSpecDimensionType'
+        description: The dimension type. Only populated in ValidSpec.
       displayName:
         type: string
       description:
@@ -3380,6 +3428,9 @@ definitions:
         type: string
       lookupDefaultExpression:
         type: string
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: The smallest time grain for the dimension. Only populated for time dimensions.
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the dimension. Only populated in ValidSpec.
@@ -3396,6 +3447,13 @@ definitions:
         type: boolean
         title: Only for when ordering (optional)
     title: Selector for a dimension
+  MetricsViewSpecDimensionType:
+    type: string
+    enum:
+      - DIMENSION_TYPE_UNSPECIFIED
+      - DIMENSION_TYPE_CATEGORICAL
+      - DIMENSION_TYPE_TIME
+    default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
     properties:
@@ -3767,18 +3825,12 @@ definitions:
         title: Connector driver metadata
       config:
         type: object
-        additionalProperties:
-          type: string
         title: Combined config properties for the connector
       presetConfig:
         type: object
-        additionalProperties:
-          type: string
         title: Config properties preset by the runtime or when the instance was created
       projectConfig:
         type: object
-        additionalProperties:
-          type: string
         title: Config properties set in project YAML files
       envConfig:
         type: object
@@ -4402,8 +4454,6 @@ definitions:
         title: Name of the connector
       config:
         type: object
-        additionalProperties:
-          type: string
         title: Config for the connector
       templatedProperties:
         type: array
@@ -4473,8 +4523,6 @@ definitions:
         type: string
       properties:
         type: object
-        additionalProperties:
-          type: string
       templatedProperties:
         type: array
         items:
@@ -5049,6 +5097,8 @@ definitions:
       instanceId:
         type: string
       environment:
+        type: string
+      projectDisplayName:
         type: string
       olapConnector:
         type: string
@@ -5936,11 +5986,23 @@ definitions:
   v1MetricsViewTimeRangesResponse:
     type: object
     properties:
+      fullTimeRange:
+        $ref: '#/definitions/v1TimeRangeSummary'
+        description: The full time range summary for the requested time dimension.
+      resolvedTimeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResolvedTimeRange'
+        description: The resolved time ranges for the requested rilltime expressions.
       timeRanges:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1TimeRange'
+        description: |-
+          The same values as resolved_time_ranges for backwards compatibility.
+          Deprecated: use resolved_time_ranges instead.
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:
@@ -6753,6 +6815,29 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
+  v1ResolvedTimeRange:
+    type: object
+    properties:
+      start:
+        type: string
+        format: date-time
+        description: The start of the resolved time range.
+      end:
+        type: string
+        format: date-time
+        description: The end of the resolved time range.
+      grain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: The time grain of the resolved time range.
+      timeDimension:
+        type: string
+        description: The time dimension that was used to resolve the time range.
+      timeZone:
+        type: string
+        description: The time zone that was used to resolve the time range.
+      expression:
+        type: string
+        description: The original expression used to resolve the time range.
   v1Resource:
     type: object
     properties:

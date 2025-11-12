@@ -1523,6 +1523,32 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
 }
 
 /**
+ * @generated from enum rill.runtime.v1.MetricsViewSpec.DimensionType
+ */
+export enum MetricsViewSpec_DimensionType {
+  /**
+   * @generated from enum value: DIMENSION_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_CATEGORICAL = 1;
+   */
+  CATEGORICAL = 1,
+
+  /**
+   * @generated from enum value: DIMENSION_TYPE_TIME = 2;
+   */
+  TIME = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_DimensionType)
+proto3.util.setEnumType(MetricsViewSpec_DimensionType, "rill.runtime.v1.MetricsViewSpec.DimensionType", [
+  { no: 0, name: "DIMENSION_TYPE_UNSPECIFIED" },
+  { no: 1, name: "DIMENSION_TYPE_CATEGORICAL" },
+  { no: 2, name: "DIMENSION_TYPE_TIME" },
+]);
+
+/**
  * Type of measure query to generate
  *
  * @generated from enum rill.runtime.v1.MetricsViewSpec.MeasureType
@@ -1566,6 +1592,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    * @generated from field: string name = 1;
    */
   name = "";
+
+  /**
+   * The dimension type. Only populated in ValidSpec.
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.DimensionType type = 14;
+   */
+  type = MetricsViewSpec_DimensionType.UNSPECIFIED;
 
   /**
    * @generated from field: string display_name = 3;
@@ -1620,6 +1653,13 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   lookupDefaultExpression = "";
 
   /**
+   * The smallest time grain for the dimension. Only populated for time dimensions.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
+   */
+  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
    * The data type of the dimension. Only populated in ValidSpec.
    *
    * @generated from field: rill.runtime.v1.Type data_type = 12;
@@ -1635,6 +1675,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Dimension";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_DimensionType) },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -1645,6 +1686,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
 
@@ -5478,9 +5520,9 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   driver = "";
 
   /**
-   * @generated from field: map<string, string> properties = 2;
+   * @generated from field: google.protobuf.Struct properties = 7;
    */
-  properties: { [key: string]: string } = {};
+  properties?: Struct;
 
   /**
    * @generated from field: repeated string templated_properties = 4;
@@ -5506,7 +5548,7 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   static readonly typeName = "rill.runtime.v1.ConnectorSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "properties", kind: "message", T: Struct },
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },

@@ -22,7 +22,7 @@ import (
 var spec = drivers.Spec{
 	DisplayName: "Amazon S3",
 	Description: "Connect to AWS S3 Storage.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/s3",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "aws_access_key_id",

@@ -20,16 +20,33 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
   import ExploreFilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/ExploreFilterChipsReadOnly.svelte";
-  import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
-  import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import { deriveInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import {
+    V1TimeGrain,
+    type V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
   import { InfoIcon } from "lucide-svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
+  import type { Interval } from "luxon";
+
+  const baseFilterState = {
+    filters: createAndExpression([]),
+    dimensionsWithInlistFilter: [],
+    dimensionThresholdFilters: [],
+    queryTimeStart: "",
+    queryTimeEnd: "",
+    displayTimeRange: { expression: "" } as V1TimeRange,
+    selectedTimeRange: "",
+  };
 
   export let organization: string;
   export let project: string;
@@ -37,33 +54,91 @@
   export let resource: { name: string; kind: ResourceKind };
   export let bookmark: BookmarkEntry | null = null;
   export let defaultUrlParams: URLSearchParams | undefined = undefined;
-  export let dashboardState: {
-    metricsViewNames: string[];
-    filtersState: FiltersState;
-    timeControlState: TimeControlState;
-  };
+  export let showFiltersOnly: boolean = true;
+  export let metricsViewNames: string[];
   export let onClose = () => {};
 
+  let filterState = baseFilterState;
+
   $: ({ name: resourceName, kind: resourceKind } = resource);
-  $: ({ metricsViewNames, filtersState, timeControlState } = dashboardState);
 
   $: ({ url } = $page);
   $: curUrlParams = url.searchParams;
 
-  $: start = timeControlState?.selectedTimeRange?.start?.toISOString() ?? "";
-  $: end = timeControlState?.selectedTimeRange?.end?.toISOString() ?? "";
-  $: timeRange = <V1TimeRange>{
-    isoDuration: timeControlState.selectedTimeRange?.name,
-    start,
-    end,
-  };
+  $: bookmarkUrl = bookmark?.url || $page.url.searchParams.toString();
 
-  $: selectedTimeRange = formatTimeRange(
-    start,
-    end,
-    timeControlState.selectedTimeRange?.interval,
-    timeControlState?.selectedTimezone,
-  );
+  $: processUrl(bookmarkUrl)
+    .then((state) => {
+      filterState = state;
+    })
+    .catch(console.error);
+
+  async function processUrl(searchParams: string) {
+    const searchParamsObj = new URLSearchParams(searchParams);
+    const rangeExpression = searchParamsObj.get(
+      ExploreStateURLParams.TimeRange,
+    );
+    const timeRange = <V1TimeRange>{
+      expression: rangeExpression || "",
+    };
+
+    const timeZone =
+      searchParamsObj.get(ExploreStateURLParams.TimeZone) || "UTC";
+
+    try {
+      const promises = metricsViewNames.map((mvName) =>
+        deriveInterval(timeRange.expression || "", mvName, timeZone),
+      );
+
+      const intervals = await Promise.all(promises);
+      let intervalWithLatestEndPoint:
+        | {
+            interval: Interval;
+            grain?: V1TimeGrain | undefined;
+            error?: string;
+          }
+        | undefined;
+      intervals.forEach((response) => {
+        if (
+          !intervalWithLatestEndPoint ||
+          (response.interval.end && intervalWithLatestEndPoint.interval.end
+            ? response.interval.end > intervalWithLatestEndPoint.interval.end
+            : false)
+        ) {
+          intervalWithLatestEndPoint = response;
+        }
+      });
+
+      const start = intervalWithLatestEndPoint.interval.start.toISO();
+      const end = intervalWithLatestEndPoint.interval.end.toISO();
+
+      const grain =
+        (searchParamsObj.get(ExploreStateURLParams.TimeGrain) as V1TimeGrain) ||
+        intervalWithLatestEndPoint.grain ||
+        V1TimeGrain.TIME_GRAIN_MINUTE;
+
+      const { expr, dimensionsWithInlistFilter } = getFiltersFromText(
+        searchParamsObj.get(ExploreStateURLParams.Filters) || "",
+      );
+
+      const { dimensionFilters, dimensionThresholdFilters } =
+        splitWhereFilter(expr);
+
+      const selectedTimeRange = formatTimeRange(start, end, grain, timeZone);
+
+      return <typeof baseFilterState>{
+        dimensionThresholdFilters,
+        dimensionsWithInlistFilter,
+        filters: dimensionFilters,
+        queryTimeStart: start,
+        queryTimeEnd: end,
+        displayTimeRange: timeRange,
+        selectedTimeRange,
+      };
+    } catch {
+      return baseFilterState;
+    }
+  }
 
   // Adding it here to get a newline in
   const CategoryTooltip = `Your bookmarks can only be viewed by you.
@@ -173,15 +248,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
             Inherited from underlying dashboard view.
           </div>
         </Label>
-        <ExploreFilterChipsReadOnly
-          dimensionThresholdFilters={filtersState.dimensionThresholdFilters}
-          dimensionsWithInlistFilter={filtersState.dimensionsWithInlistFilter}
-          filters={filtersState.whereFilter}
-          {metricsViewNames}
-          displayTimeRange={timeRange}
-          queryTimeStart={start}
-          queryTimeEnd={end}
-        />
+        <ExploreFilterChipsReadOnly {...filterState} {metricsViewNames} />
       </div>
       <ProjectAccessControls {organization} {project}>
         <Select
@@ -196,27 +263,33 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
           tooltip={CategoryTooltip}
         />
       </ProjectAccessControls>
-      <div class="flex items-center space-x-2">
-        <Switch
-          bind:checked={$form["filtersOnly"]}
-          id="filtersOnly"
-          label="Filters only"
-        />
-        <Label class="font-normal flex gap-x-1 items-center" for="filtersOnly">
-          <span>Save filters only</span>
-          <Tooltip distance={8}>
-            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
-            <TooltipContent
-              class="whitespace-pre-line"
-              maxWidth="600px"
-              slot="tooltip-content"
-            >
-              Toggling this on will only save the filter set above, not the full
-              dashboard layout and state.
-            </TooltipContent>
-          </Tooltip>
-        </Label>
-      </div>
+      {#if showFiltersOnly}
+        <div class="flex items-center space-x-2">
+          <Switch
+            bind:checked={$form["filtersOnly"]}
+            id="filtersOnly"
+            label="Filters only"
+          />
+
+          <Label
+            class="font-normal flex gap-x-1 items-center"
+            for="filtersOnly"
+          >
+            <span>Save filters only</span>
+            <Tooltip distance={8}>
+              <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+              <TooltipContent
+                class="whitespace-pre-line"
+                maxWidth="600px"
+                slot="tooltip-content"
+              >
+                Toggling this on will only save the filter set above, not the
+                full dashboard layout and state.
+              </TooltipContent>
+            </Tooltip>
+          </Label>
+        </div>
+      {/if}
       <div class="flex items-center space-x-2">
         <Switch
           bind:checked={$form["absoluteTimeRange"]}
@@ -238,7 +311,9 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
               </TooltipContent>
             </Tooltip>
           </div>
-          <div class="text-gray-500 text-sm">{selectedTimeRange}</div>
+          <div class="text-gray-500 text-sm">
+            {filterState.selectedTimeRange}
+          </div>
         </Label>
       </div>
     </form>

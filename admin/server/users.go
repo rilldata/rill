@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	// Load time zone data for time.ParseInLocation
@@ -148,13 +149,15 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 
 	// Update user quota here
 	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:         user.DisplayName,
-		PhotoURL:            user.PhotoURL,
-		GithubUsername:      user.GithubUsername,
-		GithubRefreshToken:  user.GithubRefreshToken,
-		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-		QuotaTrialOrgs:      user.QuotaTrialOrgs,
-		PreferenceTimeZone:  valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
+		DisplayName:          user.DisplayName,
+		PhotoURL:             user.PhotoURL,
+		GithubUsername:       user.GithubUsername,
+		GithubToken:          user.GithubToken,
+		GithubTokenExpiresOn: user.GithubTokenExpiresOn,
+		GithubRefreshToken:   user.GithubRefreshToken,
+		QuotaSingleuserOrgs:  user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:       user.QuotaTrialOrgs,
+		PreferenceTimeZone:   valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
 	})
 	if err != nil {
 		return nil, err
@@ -529,13 +532,15 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 
 	// Update user quota here
 	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:         user.DisplayName,
-		PhotoURL:            user.PhotoURL,
-		GithubUsername:      user.GithubUsername,
-		GithubRefreshToken:  user.GithubRefreshToken,
-		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, int32(user.QuotaSingleuserOrgs))),
-		QuotaTrialOrgs:      int(valOrDefault(req.TrialOrgs, int32(user.QuotaTrialOrgs))),
-		PreferenceTimeZone:  user.PreferenceTimeZone,
+		DisplayName:          user.DisplayName,
+		PhotoURL:             user.PhotoURL,
+		GithubUsername:       user.GithubUsername,
+		GithubToken:          user.GithubToken,
+		GithubTokenExpiresOn: user.GithubTokenExpiresOn,
+		GithubRefreshToken:   user.GithubRefreshToken,
+		QuotaSingleuserOrgs:  int(valOrDefault(req.SingleuserOrgs, int32(user.QuotaSingleuserOrgs))),
+		QuotaTrialOrgs:       int(valOrDefault(req.TrialOrgs, int32(user.QuotaTrialOrgs))),
+		PreferenceTimeZone:   user.PreferenceTimeZone,
 	})
 	if err != nil {
 		return nil, err
@@ -606,6 +611,13 @@ func userToPB(u *database.User) *adminv1.User {
 }
 
 func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.OrganizationMemberUser {
+	var attributes *structpb.Struct
+	if len(m.Attributes) > 0 {
+		if s, err := structpb.NewStruct(m.Attributes); err == nil {
+			attributes = s
+		}
+	}
+
 	return &adminv1.OrganizationMemberUser{
 		UserId:          m.ID,
 		UserEmail:       m.Email,
@@ -616,6 +628,7 @@ func orgMemberUserToPB(m *database.OrganizationMemberUser) *adminv1.Organization
 		UsergroupsCount: uint32(m.UsergroupsCount),
 		CreatedOn:       timestamppb.New(m.CreatedOn),
 		UpdatedOn:       timestamppb.New(m.UpdatedOn),
+		Attributes:      attributes,
 	}
 }
 

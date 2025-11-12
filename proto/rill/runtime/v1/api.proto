@@ -7,6 +7,7 @@ import "google/protobuf/struct.proto";
 import "rill/ai/v1/ai.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/resources.proto";
+import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
@@ -326,6 +327,7 @@ message InstanceHealth {
 message Instance {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string environment = 20;
+  string project_display_name = 25;
   string olap_connector = 2;
   string repo_connector = 4;
   string admin_connector = 19;
@@ -348,7 +350,7 @@ message Connector {
   // Name of the connector
   string name = 2;
   // Config for the connector
-  map<string, string> config = 3;
+  google.protobuf.Struct config = 3;
   // Properties in config that use templating
   repeated string templated_properties = 5;
   // Provision settings if its a managed connector
@@ -849,11 +851,11 @@ message AnalyzedConnector {
   // Connector driver metadata
   ConnectorDriver driver = 2;
   // Combined config properties for the connector
-  map<string, string> config = 3;
+  google.protobuf.Struct config = 3;
   // Config properties preset by the runtime or when the instance was created
-  map<string, string> preset_config = 4;
+  google.protobuf.Struct preset_config = 4;
   // Config properties set in project YAML files
-  map<string, string> project_config = 5;
+  google.protobuf.Struct project_config = 5;
   // Config properties set as dynamic variables
   map<string, string> env_config = 6;
   // Provision indicates if its a managed connector
@@ -954,6 +956,12 @@ message CompleteRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string conversation_id = 2; // If not provided, creates a new conversation
   string prompt = 3;
+  string explore = 4;
+  repeated string dimensions = 5;
+  repeated string measures = 6;
+  rill.runtime.v1.Expression where = 7;
+  google.protobuf.Timestamp time_start = 8;
+  google.protobuf.Timestamp time_end = 9;
 }
 
 // Response message for RuntimeService.Complete
@@ -967,6 +975,12 @@ message CompleteStreamingRequest {
   string instance_id = 1;
   string conversation_id = 2; // If not provided, creates a new conversation
   string prompt = 3;
+  string explore = 4;
+  repeated string dimensions = 5;
+  repeated string measures = 6;
+  rill.runtime.v1.Expression where = 7;
+  google.protobuf.Timestamp time_start = 8;
+  google.protobuf.Timestamp time_end = 9;
 }
 
 // Response message for RuntimeService.CompleteStreaming

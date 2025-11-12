@@ -24,6 +24,19 @@ type TableHead struct {
 
 var _ runtime.Query = &TableHead{}
 
+var supportedTableHeadDialects = map[drivers.Dialect]bool{
+	drivers.DialectDuckDB:     true,
+	drivers.DialectClickHouse: true,
+	drivers.DialectDruid:      true,
+	drivers.DialectPinot:      true,
+	drivers.DialectBigQuery:   true,
+	drivers.DialectSnowflake:  true,
+	drivers.DialectAthena:     true,
+	drivers.DialectRedshift:   true,
+	drivers.DialectMySQL:      true,
+	drivers.DialectPostgres:   true,
+}
+
 func (q *TableHead) Key() string {
 	return fmt.Sprintf("TableHead:%s:%d", q.TableName, q.Limit)
 }
@@ -64,7 +77,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectPinot {
+	if !supportedTableHeadDialects[olap.Dialect()] {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -188,7 +201,7 @@ func supportedColumns(ctx context.Context, olap drivers.OLAPStore, db, schema, t
 	}
 	var columns []string
 	for _, field := range tbl.Schema.Fields {
-		columns = append(columns, safeName(field.Name))
+		columns = append(columns, olap.Dialect().EscapeIdentifier(field.Name))
 	}
 	return columns, nil
 }

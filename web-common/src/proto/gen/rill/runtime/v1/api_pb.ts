@@ -8,6 +8,7 @@ import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/proto
 import { StructType } from "./schema_pb.js";
 import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { ContentBlock } from "../../ai/v1/ai_pb.js";
+import { Expression } from "./expression_pb.js";
 
 /**
  * FileEvent describes a file change.
@@ -444,6 +445,11 @@ export class Instance extends Message$1<Instance> {
   environment = "";
 
   /**
+   * @generated from field: string project_display_name = 25;
+   */
+  projectDisplayName = "";
+
+  /**
    * @generated from field: string olap_connector = 2;
    */
   olapConnector = "";
@@ -523,6 +529,7 @@ export class Instance extends Message$1<Instance> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 20, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 25, name: "project_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -577,9 +584,9 @@ export class Connector extends Message$1<Connector> {
   /**
    * Config for the connector
    *
-   * @generated from field: map<string, string> config = 3;
+   * @generated from field: google.protobuf.Struct config = 3;
    */
-  config: { [key: string]: string } = {};
+  config?: Struct;
 
   /**
    * Properties in config that use templating
@@ -610,7 +617,7 @@ export class Connector extends Message$1<Connector> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "config", kind: "message", T: Struct },
     { no: 5, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "provision_args", kind: "message", T: Struct },
@@ -3813,23 +3820,23 @@ export class AnalyzedConnector extends Message$1<AnalyzedConnector> {
   /**
    * Combined config properties for the connector
    *
-   * @generated from field: map<string, string> config = 3;
+   * @generated from field: google.protobuf.Struct config = 3;
    */
-  config: { [key: string]: string } = {};
+  config?: Struct;
 
   /**
    * Config properties preset by the runtime or when the instance was created
    *
-   * @generated from field: map<string, string> preset_config = 4;
+   * @generated from field: google.protobuf.Struct preset_config = 4;
    */
-  presetConfig: { [key: string]: string } = {};
+  presetConfig?: Struct;
 
   /**
    * Config properties set in project YAML files
    *
-   * @generated from field: map<string, string> project_config = 5;
+   * @generated from field: google.protobuf.Struct project_config = 5;
    */
-  projectConfig: { [key: string]: string } = {};
+  projectConfig?: Struct;
 
   /**
    * Config properties set as dynamic variables
@@ -3883,9 +3890,9 @@ export class AnalyzedConnector extends Message$1<AnalyzedConnector> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "driver", kind: "message", T: ConnectorDriver },
-    { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 4, name: "preset_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 5, name: "project_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "config", kind: "message", T: Struct },
+    { no: 4, name: "preset_config", kind: "message", T: Struct },
+    { no: 5, name: "project_config", kind: "message", T: Struct },
     { no: 6, name: "env_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "provision_args", kind: "message", T: Struct },
@@ -4510,6 +4517,36 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   prompt = "";
 
+  /**
+   * @generated from field: string explore = 4;
+   */
+  explore = "";
+
+  /**
+   * @generated from field: repeated string dimensions = 5;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_start = 8;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 9;
+   */
+  timeEnd?: Timestamp;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4521,6 +4558,12 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "time_start", kind: "message", T: Timestamp },
+    { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -4608,6 +4651,36 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   prompt = "";
 
+  /**
+   * @generated from field: string explore = 4;
+   */
+  explore = "";
+
+  /**
+   * @generated from field: repeated string dimensions = 5;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * @generated from field: repeated string measures = 6;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression where = 7;
+   */
+  where?: Expression;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_start = 8;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 9;
+   */
+  timeEnd?: Timestamp;
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4619,6 +4692,12 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 8, name: "time_start", kind: "message", T: Timestamp },
+    { no: 9, name: "time_end", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {

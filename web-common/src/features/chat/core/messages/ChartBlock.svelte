@@ -54,6 +54,6 @@
     {project}
     showExploreLink
     {organization}
-    theme="light"
+    themeMode="light"
   />
 </div>
