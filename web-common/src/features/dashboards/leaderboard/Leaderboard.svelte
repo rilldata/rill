@@ -63,9 +63,10 @@
   export let dimensionColumnWidth: number;
   export let filterExcludeMode: boolean;
   export let isBeingCompared: boolean;
-  export let parentElement: HTMLElement;
+  export let parentElement: HTMLElement | undefined = undefined;
   export let allowExpandTable = true;
   export let allowDimensionComparison = true;
+  export let visible = false;
   export let formatters: Record<
     string,
     (value: number | string | null | undefined) => string | null | undefined
@@ -84,26 +85,27 @@
     dimensionName: string | undefined,
   ) => void = () => {};
 
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      if (entry.isIntersecting) {
-        visible = true;
-        observer.unobserve(container);
-      }
-    },
-    {
-      root: parentElement,
-      rootMargin: "120px",
-      threshold: 0,
-    },
-  );
-
   onMount(() => {
+    if (!parentElement) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          visible = true;
+          observer.unobserve(container);
+        }
+      },
+      {
+        root: parentElement,
+        rootMargin: "120px",
+        threshold: 0,
+      },
+    );
     observer.observe(container);
   });
 
   let container: HTMLElement;
-  let visible = false;
+
   let hovered: boolean;
 
   $: queryLimit = slice + 1;
