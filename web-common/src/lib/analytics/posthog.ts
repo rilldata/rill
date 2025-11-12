@@ -31,22 +31,20 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
       });
     },
     before_send: (event) => {
-      // Only filter $exception (error tracking) events by URL
-      if (!event) return null;
-      if (event.event === "$exception") {
-        const hostname = window.location.hostname;
-        if (
-          hostname === "ui.rilldata.com" ||
-          hostname === "localhost" ||
-          hostname === "127.0.0.1"
-        ) {
-          return event;
-        }
-        // Drop $exception events for all other URLs
-        return null;
+      if (event?.event !== "$exception") {
+        return event;
       }
-      // Allow all other events
-      return event;
+
+      // For $exception events, only send them from specific hostnames.
+      // TODO: A ONE-LINE COMMENT THAT EXPLAINS WHY WE NEED TO DO THIS
+      const hostname = window.location.hostname;
+      const allowedHostnames = ["ui.rilldata.com", "localhost", "127.0.0.1"];
+      if (allowedHostnames.includes(hostname)) {
+        return event;
+      }
+
+      // Drop $exception events for all other hostnames.
+      return null;
     },
   });
 }
