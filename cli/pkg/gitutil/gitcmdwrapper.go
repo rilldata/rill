@@ -104,10 +104,7 @@ func RunGitFetch(ctx context.Context, path, remote string) error {
 }
 
 // RunGitPull runs a git pull command in the specified path.
-func RunGitPull(ctx context.Context, path string, discardLocal, preferLocal bool, remote, remoteName string) (string, error) {
-	if discardLocal && preferLocal {
-		return "", errors.New("cannot discard and overwrite local changes at the same time")
-	}
+func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, remoteName string) (string, error) {
 	// current status of the full repo
 	st, err := RunGitStatus(path, "", remoteName)
 	if err != nil {
@@ -144,9 +141,6 @@ func RunGitPull(ctx context.Context, path string, discardLocal, preferLocal bool
 	if remote != "" {
 		args = append(args, remote, st.Branch)
 	}
-	if preferLocal {
-		args = append(args, "--strategy=ours", "--no-rebase")
-	}
 
 	cmd := exec.CommandContext(ctx, "git", args...)
 	_, err = cmd.Output()
@@ -162,18 +156,26 @@ func RunGitPull(ctx context.Context, path string, discardLocal, preferLocal bool
 	return "", nil
 }
 
-func RunGitPush(ctx context.Context, path, remoteName, branchName string, force bool) error {
-	var cmd *exec.Cmd
-	if force {
-		// instead of simply doing a push --force we do a pull and then push to not loose commit history
-		_, err := RunGitPull(ctx, path, false, true, "", remoteName)
-		if err != nil {
-			return fmt.Errorf("git pull before push failed: %w", err)
-		}
-		cmd = exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
+func RunUpstreamMerge(ctx context.Context, path, branch string, favourLocal bool) error {
+	var args []string
+	if favourLocal {
+		args = []string{"-C", path, "merge", "-X", "ours", fmt.Sprintf("origin/%s", branch)}
 	} else {
-		cmd = exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
+		args = []string{"-C", path, "merge", fmt.Sprintf("origin/%s", branch)}
 	}
+	cmd := exec.CommandContext(ctx, "git", args...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		var execErr *exec.ExitError
+		if errors.As(err, &execErr) {
+			return fmt.Errorf("git merge failed: %s(%s)", string(out), string(execErr.Stderr))
+		}
+		return fmt.Errorf("git merge failed: %w", err)
+	}
+	return nil
+}
+
+func RunGitPush(ctx context.Context, path, remoteName, branchName string) error {
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		if strings.Contains(string(out), "Updates were rejected because the tip of your current branch is behind") {
 			return ErrLocalBehind

@@ -130,7 +130,7 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		return nil, err
 	}
 
-	out, err := gitutil.RunGitPull(ctx, gitPath, r.Msg.DiscardLocal, false, remote, config.RemoteName())
+	out, err := gitutil.RunGitPull(ctx, gitPath, r.Msg.DiscardLocal, remote, config.RemoteName())
 	if err != nil {
 		return nil, err
 	}

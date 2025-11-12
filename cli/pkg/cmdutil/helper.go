@@ -562,36 +562,58 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 }
 
 func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature) error {
-	err := gitutil.CommitAndPush(ctx, root, config, commitMsg, author, false)
-	if err == nil {
-		return nil
-	}
-	if !errors.Is(err, gitutil.ErrLocalBehind) {
+	// 1. Fetch latest from remote
+	remote, err := config.FullyQualifiedRemote()
+	if err != nil {
 		return err
 	}
-	// local is behind remote
+	err = gitutil.RunGitFetch(ctx, root, remote)
+	if err != nil {
+		return fmt.Errorf("failed to fetch from remote %q: %w", remote, err)
+	}
+
+	// 2. Check status of the subpath
+	status, err := gitutil.RunGitStatus(root, config.Subpath, remote)
+	if err != nil {
+		return fmt.Errorf("failed to get git status: %w", err)
+	}
+	if status.Branch != config.DefaultBranch {
+		return fmt.Errorf("current branch %q does not match expected branch %q", status.Branch, config.DefaultBranch)
+	}
+
+	// 3. Warn if there are remote commits
 	choice := "1"
-	if h.Interactive {
-		h.PrintfWarn("The remote repository has changes ahead of your local branch.")
-		h.PrintfWarn("Please choose one of the following options to proceed:\n")
-		h.PrintfWarn("1: Merge remote changes to your local branch and fail on conflicts\n")
-		h.PrintfWarn("2: Overwrite remote changes with your local changes\n")
-		h.PrintfWarn("3: Abort deploy and merge manually\n")
-		choice, err = SelectPrompt("Choose how to resolve remote changes", []string{"1", "2", "3"}, "1")
-		if err != nil {
-			return err
+	if status.RemoteCommits != 0 {
+		if h.Interactive {
+			h.PrintfWarn("Warning: There are changes on the remote branch that are not in your local branch.")
+			h.PrintfWarn("It's recommended to pull the latest changes before pushing to avoid overwriting remote changes.\n")
+			h.PrintfWarn("Please choose one of the following options to proceed:\n")
+			h.PrintfWarn("1: Merge remote changes to your local branch and fail on conflicts\n")
+			h.PrintfWarn("2: Overwrite remote changes with your local changes\n")
+			h.PrintfWarn("3: Abort deploy and merge manually\n")
+			choice, err = SelectPrompt("Choose how to resolve remote changes", []string{"1", "2", "3"}, "1")
+			if err != nil {
+				return err
+			}
 		}
 	}
 
+	// 4. Merge + push
+	// The push can still fail if there were new remote commits since the fetch. But that's okay, the user can just retry.
 	switch choice {
 	case "1":
-		_, err := gitutil.RunGitPull(ctx, root, false, false, "", "origin")
+		err := gitutil.RunUpstreamMerge(ctx, root, status.Branch, false)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
-		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author, false)
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	case "2":
-		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author, true)
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history and do not push local changes outside of the subpath.
+		err := gitutil.RunUpstreamMerge(ctx, root, status.Branch, true)
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	default:
 		return fmt.Errorf("aborting deploy")
 	}

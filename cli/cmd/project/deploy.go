@@ -473,7 +473,7 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			Remote:        opts.pushToProject.GitRemote,
 			DefaultBranch: opts.pushToProject.ProdBranch,
 		}
-		err = gitutil.CommitAndPush(ctx, opts.GitPath, config, "", nil, false)
+		err = gitutil.CommitAndPush(ctx, opts.GitPath, config, "", nil)
 		if err != nil {
 			return err
 		}

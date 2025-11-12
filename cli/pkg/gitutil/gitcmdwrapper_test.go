@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -195,127 +196,29 @@ func TestGitPull(t *testing.T) {
 	tempDir, remoteDir := setupTestRepository(t)
 
 	// Test case: Pull with no local changes
-	output, err := RunGitPull(context.Background(), tempDir, false, false, "", "origin")
+	output, err := RunGitPull(context.Background(), tempDir, false, "", "origin")
 	require.NoError(t, err, "GitPull failed with no local changes")
 	require.Empty(t, output, "unexpected output from GitPull with no local changes")
 
 	// Test case: Pull with local changes (discardLocal = false)
 	createCommit(t, tempDir, "local.txt", "local content", "local commit")
 	createRemoteCommit(t, remoteDir, "local.txt", "remote content", "remote commit")
-	output, err = RunGitPull(context.Background(), tempDir, false, false, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, false, "", "origin")
 	if len(output) == 0 && err == nil {
 		t.Fatalf("expected GitPull to fail with local changes and discardLocal=false, but it succeeded")
 	}
 	require.Contains(t, output, "Need to specify how to reconcile divergent branches", "unexpected output from GitPull with local changes")
 
 	// Test case: Pull with local changes (discardLocal = true)
-	output, err = RunGitPull(context.Background(), tempDir, true, false, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, true, "", "origin")
 	require.NoError(t, err, "GitPull failed with local changes and discardLocal=true")
 	require.Empty(t, output, "unexpected output from GitPull with discardLocal=true")
 
 	// Test case: Pull with remote changes
 	createRemoteCommit(t, remoteDir, "remote.txt", "remote content", "remote commit")
-	output, err = RunGitPull(context.Background(), tempDir, false, false, "", "origin")
+	output, err = RunGitPull(context.Background(), tempDir, false, "", "origin")
 	require.NoError(t, err, "GitPull failed with remote changes")
 	require.Empty(t, output, "unexpected output from GitPull with remote changes")
-}
-
-// TestRunGitPull_Monorepo tests RunGitPull behavior in monorepo scenarios
-func TestRunGitPull_Monorepo(t *testing.T) {
-	tempDir, remoteDir := setupMonorepoTestRepository(t)
-
-	// Test case 1: Pull with remote commits in one subproject
-	createRemoteCommit(t, remoteDir, "subproject1/feature.txt", "feature", "subproject1: add feature")
-	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes")
-
-	// Verify status before pull
-	status, err := RunGitStatus(tempDir, "subproject1", "origin")
-	require.NoError(t, err, "RunGitStatus failed")
-	require.Equal(t, int32(1), status.RemoteCommits, "expected 1 remote commit before pull")
-
-	// Pull the changes
-	output, err := RunGitPull(context.Background(), tempDir, false, false, "", "origin")
-	require.NoError(t, err, "RunGitPull failed")
-	require.Empty(t, output, "unexpected output from RunGitPull")
-
-	// Verify remote commits are now local
-	status, err = RunGitStatus(tempDir, "subproject1", "origin")
-	require.NoError(t, err, "RunGitStatus failed after pull")
-	require.Equal(t, int32(0), status.RemoteCommits, "expected no remote commits after pull")
-
-	// Test case 2: Pull with divergent branches - local commit in subproject1, remote in subproject2
-	createCommit(t, tempDir, "subproject1/local.txt", "local content", "subproject1: local commit")
-	createRemoteCommit(t, remoteDir, "subproject2/remote.txt", "remote content", "subproject2: remote commit")
-	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes")
-
-	// This should fail because of divergent branches (no strategy specified)
-	output, err = RunGitPull(context.Background(), tempDir, false, false, "", "origin")
-	if len(output) == 0 && err == nil {
-		t.Fatalf("expected RunGitPull to fail with divergent branches, but it succeeded")
-	}
-	require.Contains(t, output, "Need to specify how to reconcile divergent branches", "expected divergent branches error")
-
-	// Test case 3: Pull with preferLocal=true to resolve divergence with local winning
-	output, err = RunGitPull(context.Background(), tempDir, false, true, "", "origin")
-	require.NoError(t, err, "RunGitPull with preferLocal failed")
-	require.Empty(t, output, "unexpected output from RunGitPull with preferLocal")
-
-	// After merge, we now have a merge commit that includes both local and remote changes
-	// The merge commit will show as a local commit until pushed
-	status, err = RunGitStatus(tempDir, "subproject1", "origin")
-	require.NoError(t, err, "RunGitStatus failed for subproject1")
-	require.Equal(t, int32(0), status.RemoteCommits, "subproject1 should have no remote commits after merge")
-	// Note: LocalCommits will be > 0 because the merge commit hasn't been pushed yet
-
-	status, err = RunGitStatus(tempDir, "subproject2", "origin")
-	require.NoError(t, err, "RunGitStatus failed for subproject2")
-	require.Equal(t, int32(0), status.RemoteCommits, "subproject2 should have no remote commits")
-
-	// Verify local file in subproject1 still exists (local changes preserved)
-	localFilePath := filepath.Join(tempDir, "subproject1", "local.txt")
-	_, err = os.Stat(localFilePath)
-	require.NoError(t, err, "local file should exist after preferLocal merge")
-
-	content, err := os.ReadFile(localFilePath)
-	require.NoError(t, err, "failed to read local file")
-	require.Equal(t, "local content", string(content), "local file content should be preserved")
-
-	// Test case 4: Pull with conflicting changes and preferLocal=true (local wins)
-	// Modify the same file locally and remotely
-	conflictFile := filepath.Join(tempDir, "subproject1", "file1.txt")
-	err = os.WriteFile(conflictFile, []byte("local modified content"), 0644)
-	require.NoError(t, err, "failed to modify file locally")
-	createCommit(t, tempDir, "subproject1/file1.txt", "local modified content", "subproject1: modify file1")
-
-	createRemoteCommit(t, remoteDir, "subproject1/file1.txt", "remote modified content", "subproject1: remote modify file1")
-	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes")
-
-	// Pull with preferLocal=true should keep local version
-	output, err = RunGitPull(context.Background(), tempDir, false, true, "", "origin")
-	require.NoError(t, err, "RunGitPull with preferLocal and conflicts failed")
-	require.Empty(t, output, "unexpected output from RunGitPull")
-
-	// Verify local version is preserved
-	content, err = os.ReadFile(conflictFile)
-	require.NoError(t, err, "failed to read conflict file")
-	require.Equal(t, "local modified content", string(content), "local version should win in conflict")
-
-	// Test case 5: Pull with discardLocal=true to completely discard local work
-	createCommit(t, tempDir, "subproject1/discard.txt", "will be discarded", "subproject1: commit to discard")
-	createRemoteCommit(t, remoteDir, "subproject1/keep.txt", "will be kept", "subproject1: commit to keep")
-	require.NoError(t, GitFetch(t.Context(), tempDir, nil), "failed to fetch changes")
-
-	output, err = RunGitPull(context.Background(), tempDir, true, false, "", "origin")
-	require.NoError(t, err, "RunGitPull with discardLocal failed")
-	require.Empty(t, output, "unexpected output from RunGitPull with discardLocal")
-
-	// Verify local commit is discarded
-	_, err = os.Stat(filepath.Join(tempDir, "subproject1", "discard.txt"))
-	require.True(t, os.IsNotExist(err), "discarded file should not exist")
-
-	// Verify remote commit is pulled
-	_, err = os.Stat(filepath.Join(tempDir, "subproject1", "keep.txt"))
-	require.NoError(t, err, "remote file should exist after pull")
 }
 
 func TestInferGitRepoRoot_InRepoRoot(t *testing.T) {
@@ -410,6 +313,77 @@ func TestInferGitRepoRoot_SymlinkToNonRepo(t *testing.T) {
 	require.Error(t, err, "expected error when symlink points to non-repo")
 	require.ErrorIs(t, err, ErrNotAGitRepository)
 	require.Equal(t, "", root, "expected empty root for error case")
+}
+
+func TestRunUpstreamMerge(t *testing.T) {
+	tempDir, remoteDir := setupTestRepository(t)
+
+	// Test case 1: Simple upstream merge without conflicts
+	createRemoteCommit(t, remoteDir, "upstream1.txt", "upstream content 1", "upstream commit 1")
+	require.NoError(t, GitFetch(context.Background(), tempDir, nil), "failed to fetch changes")
+
+	branch := getCurrentBranch(t, tempDir)
+	err := RunUpstreamMerge(context.Background(), tempDir, branch, false)
+	require.NoError(t, err, "RunUpstreamMerge failed")
+
+	// Verify file exists after merge
+	assertFileExists(t, tempDir, "upstream1.txt")
+
+	// Test case 2: Upstream merge with local commit (no conflict)
+	createCommit(t, tempDir, "local1.txt", "local content 1", "local commit 1")
+	createRemoteCommit(t, remoteDir, "upstream2.txt", "upstream content 2", "upstream commit 2")
+	require.NoError(t, GitFetch(context.Background(), tempDir, nil), "failed to fetch changes")
+
+	err = RunUpstreamMerge(context.Background(), tempDir, branch, false)
+	require.NoError(t, err, "RunUpstreamMerge failed with local commits")
+
+	// Both files should exist
+	assertFileExists(t, tempDir, "local1.txt")
+	assertFileExists(t, tempDir, "upstream2.txt")
+
+	// Test case 3: Conflicting changes - first try without favourLocal (should fail), then with favourLocal (local wins)
+	createCommit(t, tempDir, "conflict.txt", "local version", "add conflict file locally")
+
+	createRemoteCommit(t, remoteDir, "conflict.txt", "upstream version", "add conflict file upstream")
+	require.NoError(t, GitFetch(context.Background(), tempDir, nil), "failed to fetch changes")
+
+	// First try without favourLocal - should fail
+	err = RunUpstreamMerge(context.Background(), tempDir, branch, false)
+	require.Error(t, err, "RunUpstreamMerge should fail with conflicts and favourLocal=false")
+	require.Contains(t, err.Error(), "git merge failed", "expected merge failure error")
+
+	// Reset to before the failed merge attempt
+	cmd := exec.Command("git", "-C", tempDir, "merge", "--abort")
+	_ = cmd.Run() // Ignore error if no merge in progress
+
+	// Now try with favourLocal=true - should succeed
+	err = RunUpstreamMerge(context.Background(), tempDir, branch, true)
+	require.NoError(t, err, "RunUpstreamMerge failed with conflicts and favourLocal=true")
+
+	require.Equal(t, "local version", readFile(t, tempDir, "conflict.txt"), "local version should win with favourLocal=true")
+
+	// Test case 4: Mixed changes - remote changes in A and B, local changes in A and C
+	// Create local changes to file A and C
+	createCommit(t, tempDir, "fileA.txt", "local content A", "add fileA locally")
+	createCommit(t, tempDir, "fileC.txt", "local content C", "add fileC locally")
+
+	// Create remote changes to file A and B
+	createRemoteCommit(t, remoteDir, "fileA.txt", "upstream content A", "add fileA upstream")
+	createRemoteCommit(t, remoteDir, "fileB.txt", "upstream content B", "add fileB upstream")
+	require.NoError(t, GitFetch(context.Background(), tempDir, nil), "failed to fetch changes")
+
+	err = RunUpstreamMerge(context.Background(), tempDir, branch, true)
+	require.NoError(t, err, "RunUpstreamMerge failed with mixed changes")
+
+	// Verify local version of A is preserved
+	require.Equal(t, "local content A", readFile(t, tempDir, "fileA.txt"), "local version of A should be preserved")
+
+	// Verify remote version of B is present
+	assertFileExists(t, tempDir, "fileB.txt")
+	require.Equal(t, "upstream content B", readFile(t, tempDir, "fileB.txt"), "remote version of B should be present")
+
+	// Verify local version of C is preserved
+	require.Equal(t, "local content C", readFile(t, tempDir, "fileC.txt"), "local version of C should be preserved")
 }
 
 // Helper: compare canonicalized paths
@@ -620,4 +594,30 @@ func setupGitConfig(t *testing.T, repoPath string) {
 	cmd = exec.Command("git", "-C", repoPath, "config", "user.email", "test@rilldata.com")
 	err = cmd.Run()
 	require.NoError(t, err, "failed to set user email in git config")
+}
+
+// getCurrentBranch gets the current branch name for the repository at repoPath
+func getCurrentBranch(t *testing.T, repoPath string) string {
+	t.Helper()
+	cmd := exec.Command("git", "-C", repoPath, "branch", "--show-current")
+	output, err := cmd.Output()
+	require.NoError(t, err, "failed to get current branch")
+	return strings.TrimSpace(string(output))
+}
+
+// assertFileExists checks if a file exists at the specified path relative to repoPath
+func assertFileExists(t *testing.T, repoPath, relativePath string) {
+	t.Helper()
+	filePath := filepath.Join(repoPath, relativePath)
+	_, err := os.Stat(filePath)
+	require.NoError(t, err, "file %s should exist", relativePath)
+}
+
+// readFile reads and returns the content of a file at the specified path relative to repoPath
+func readFile(t *testing.T, repoPath, relativePath string) string {
+	t.Helper()
+	filePath := filepath.Join(repoPath, relativePath)
+	content, err := os.ReadFile(filePath)
+	require.NoError(t, err, "failed to read file %s", relativePath)
+	return string(content)
 }
