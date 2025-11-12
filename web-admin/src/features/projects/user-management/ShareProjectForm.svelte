@@ -264,14 +264,14 @@
 
   $: accessType = hasAutogroupMembers ? "everyone" : "invite-only";
 
-  // IntersectionObserver-based infinite loading for smoother UX
+  // IntersectionObserver-based infinite loading using an observed element
   let membersScrollEl: HTMLDivElement;
-  let loadMoreSentinel: HTMLDivElement;
-  let sentinelObserver: IntersectionObserver | null = null;
+  let loadMoreTrigger: HTMLDivElement;
+  let observer: IntersectionObserver | null = null;
 
   onMount(() => {
-    if (!loadMoreSentinel) return;
-    sentinelObserver = new IntersectionObserver((entries) => {
+    if (!loadMoreTrigger) return;
+    observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
         const hasNext = $projectMembersInfiniteQuery?.hasNextPage ?? false;
@@ -290,13 +290,13 @@
         }
       }
     });
-    sentinelObserver.observe(loadMoreSentinel);
+    observer.observe(loadMoreTrigger);
   });
 
   onDestroy(() => {
-    if (sentinelObserver) {
-      sentinelObserver.disconnect();
-      sentinelObserver = null;
+    if (observer) {
+      observer.disconnect();
+      observer = null;
     }
   });
 </script>
@@ -347,7 +347,7 @@
         <span class="text-xs text-gray-500">Loading more…</span>
       {/if}
     </div>
-    <div class="h-2" bind:this={loadMoreSentinel} />
+    <div class="h-2" bind:this={loadMoreTrigger} />
   </div>
   <div class="mt-2 general-access-container bg-white pt-2">
     <div class="text-xs text-gray-500 font-semibold uppercase">
