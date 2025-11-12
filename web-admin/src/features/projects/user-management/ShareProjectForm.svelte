@@ -24,9 +24,14 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config.ts";
   import { createInfiniteQuery } from "@tanstack/svelte-query";
+  import { onMount, onDestroy } from "svelte";
   import {
     adminServiceListProjectMemberUsers,
     getAdminServiceListProjectMemberUsersQueryKey,
+  } from "@rilldata/web-admin/client";
+  import {
+    adminServiceListProjectInvites,
+    getAdminServiceListProjectInvitesQueryKey,
   } from "@rilldata/web-admin/client";
   import type { V1ProjectMemberUser } from "@rilldata/web-admin/client";
 
@@ -155,6 +160,31 @@
       },
     },
   );
+  // Infinite query for project invites
+  $: projectInvitesInfiniteQuery = createInfiniteQuery({
+    queryKey: getAdminServiceListProjectInvitesQueryKey(organization, project, {
+      pageSize: PAGE_SIZE,
+    }),
+    queryFn: ({ signal, pageParam }) =>
+      adminServiceListProjectInvites(
+        organization,
+        project,
+        {
+          pageSize: PAGE_SIZE,
+          pageToken: pageParam ?? "",
+        },
+        signal,
+      ),
+    getNextPageParam: (lastPage) => {
+      return lastPage?.nextPageToken !== ""
+        ? lastPage?.nextPageToken
+        : undefined;
+    },
+    initialPageParam: "",
+    enabled,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
     "autogroup:members",
@@ -179,6 +209,13 @@
   $: userGroupMemberUsers = $listUsergroupMemberUsers?.data?.members ?? [];
   $: projectMemberUserGroupsList =
     $listProjectMemberUsergroups.data?.members ?? [];
+  // Flatten invites from infinite query (fallback to single query)
+  $: projectInvitesList =
+    $projectInvitesInfiniteQuery?.data?.pages?.flatMap(
+      (p) => p?.invites ?? [],
+    ) ??
+    $listProjectInvites?.data?.invites ??
+    [];
   $: projectMemberUsersList = (() => {
     const infiniteMembers =
       $projectMembersInfiniteQuery?.data?.pages?.flatMap(
@@ -195,7 +232,6 @@
       return 0;
     });
   })();
-  $: projectInvitesList = $listProjectInvites?.data?.invites ?? [];
 
   // Memoized Sets for efficient O(1) lookups instead of expensive O(n) .some() operations
   $: projectMemberEmailSet = new Set(
@@ -228,23 +264,41 @@
 
   $: accessType = hasAutogroupMembers ? "everyone" : "invite-only";
 
-  // Scroll handling to fetch next page of members
+  // IntersectionObserver-based infinite loading for smoother UX
   let membersScrollEl: HTMLDivElement;
-  function handleMembersScroll(e: Event) {
-    const el = e.currentTarget as HTMLDivElement;
-    const threshold = 48; // px from bottom
-    const nearBottom =
-      el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
-    const hasNext = $projectMembersInfiniteQuery?.hasNextPage ?? false;
-    const isFetchingNext =
-      $projectMembersInfiniteQuery?.isFetchingNextPage ?? false;
-    if (nearBottom && hasNext && !isFetchingNext) {
-      const fetchNext = $projectMembersInfiniteQuery?.fetchNextPage;
-      if (typeof fetchNext === "function") {
-        fetchNext();
+  let loadMoreSentinel: HTMLDivElement;
+  let sentinelObserver: IntersectionObserver | null = null;
+
+  onMount(() => {
+    if (!loadMoreSentinel) return;
+    sentinelObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const hasNext = $projectMembersInfiniteQuery?.hasNextPage ?? false;
+        const isFetchingNext =
+          $projectMembersInfiniteQuery?.isFetchingNextPage ?? false;
+        if (hasNext && !isFetchingNext) {
+          const fetchNext = $projectMembersInfiniteQuery?.fetchNextPage;
+          if (typeof fetchNext === "function") fetchNext();
+        }
+        const hasNextInv = $projectInvitesInfiniteQuery?.hasNextPage ?? false;
+        const isFetchingNextInv =
+          $projectInvitesInfiniteQuery?.isFetchingNextPage ?? false;
+        if (hasNextInv && !isFetchingNextInv) {
+          const fetchNextInv = $projectInvitesInfiniteQuery?.fetchNextPage;
+          if (typeof fetchNextInv === "function") fetchNextInv();
+        }
       }
+    });
+    sentinelObserver.observe(loadMoreSentinel);
+  });
+
+  onDestroy(() => {
+    if (sentinelObserver) {
+      sentinelObserver.disconnect();
+      sentinelObserver = null;
     }
-  }
+  });
 </script>
 
 <div class="flex flex-col p-4">
@@ -256,7 +310,6 @@
   <div
     class="flex flex-col gap-y-1 overflow-y-auto max-h-[350px] mt-2"
     bind:this={membersScrollEl}
-    on:scroll={handleMembersScroll}
   >
     <div class="mt-2">
       {#each projectMemberUsersList as user}
@@ -289,6 +342,12 @@
         />
       {/each}
     </div>
+    <div class="flex items-center justify-center py-2">
+      {#if ($projectMembersInfiniteQuery?.isFetchingNextPage ?? false) || ($projectInvitesInfiniteQuery?.isFetchingNextPage ?? false)}
+        <span class="text-xs text-gray-500">Loading more…</span>
+      {/if}
+    </div>
+    <div class="h-2" bind:this={loadMoreSentinel} />
   </div>
   <div class="mt-2 general-access-container bg-white pt-2">
     <div class="text-xs text-gray-500 font-semibold uppercase">
