@@ -136,7 +136,7 @@ const config = {
             activeBaseRegex: "^/$", // Only active on homepage
           },
           {
-            to: "/reference/rill-iso-extensions",
+            to: "/reference/project-files",
             label: "Reference",
             position: "left",
             className: "navbar-reference-link",
