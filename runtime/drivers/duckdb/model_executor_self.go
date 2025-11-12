@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -29,6 +31,8 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 	}
 	return 1, true
 }
+
+var createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\b`)
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &ModelInputProperties{}
@@ -61,23 +65,26 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	asView := !materialize
 	tableName := outputProps.Table
 
-	// Add InternalCreateSecretSQL statements that create temporary secrets for object store connectors.
-	for _, connector := range e.c.config.secretConnectors() {
-		createSecretSQL, dropSecretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
-		}
-		if inputProps.InternalCreateSecretSQL == "" {
-			inputProps.InternalCreateSecretSQL = createSecretSQL
-		} else {
-			inputProps.InternalCreateSecretSQL += ";" + createSecretSQL
-		}
-		if inputProps.InternalDropSecretSQL == "" {
-			inputProps.InternalDropSecretSQL = dropSecretSQL
-		} else {
-			inputProps.InternalDropSecretSQL += ";" + dropSecretSQL
-		}
+	if !createSecretRegex.MatchString(inputProps.PreExec) {
+
 	}
+	// Add InternalCreateSecretSQL statements that create temporary secrets for object store connectors.
+	// for _, connector := range e.c.config.secretConnectors() {
+	// 	createSecretSQL, dropSecretSQL, err := objectStoreSecretSQL(ctx, opts, connector, "", nil)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to create secret for connector %q: %w", connector, err)
+	// 	}
+	// 	if inputProps.InternalCreateSecretSQL == "" {
+	// 		inputProps.InternalCreateSecretSQL = createSecretSQL
+	// 	} else {
+	// 		inputProps.InternalCreateSecretSQL += ";" + createSecretSQL
+	// 	}
+	// 	if inputProps.InternalDropSecretSQL == "" {
+	// 		inputProps.InternalDropSecretSQL = dropSecretSQL
+	// 	} else {
+	// 		inputProps.InternalDropSecretSQL += ";" + dropSecretSQL
+	// 	}
+	// }
 
 	// Backward compatibility for the old duckdb SQL:
 	// It was possible to set a duckdb SQL which ingests data from an object store without setting the object store credentials.
@@ -432,4 +439,38 @@ func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool
 	}
 
 	return ast.Format()
+}
+
+// secretConnectors returns the list of connectors to create secrets for.
+// A user can explicitly specify a comma-separated list of connector names specific to a model in model configuration.
+// A user can also specify the list in the duckdb driver configuration which will be used for all models using duckdb driver. This is only used if the model specific configuration is not set.
+// The boolean return value is true if the returned list was auto-detected.
+func secretConnectors(modelSecrets *string, duckdbSecrets string, allConnectors []*runtimev1.Connector) ([]string, bool) {
+	var configuredSecret string
+	if modelSecrets != nil {
+		fmt.Printf("Using model specific secret configuration: %q\n", *modelSecrets)
+		configuredSecret = *modelSecrets
+	} else {
+		// fallback to driver level configuration
+		configuredSecret = duckdbSecrets
+	}
+	if configuredSecret == "" {
+		// no secrets to be created
+		return nil, false
+	}
+	if configuredSecret != "*" {
+		res := strings.Split(configuredSecret, ",")
+		for i, s := range res {
+			res[i] = strings.TrimSpace(s)
+		}
+		return res, false
+	}
+	// all applicable connectors
+	var res []string
+	for _, c := range allConnectors {
+		if c.Type == "s3" || c.Type == "azure" || c.Type == "gcs" {
+			res = append(res, c.Name)
+		}
+	}
+	return res, true
 }
