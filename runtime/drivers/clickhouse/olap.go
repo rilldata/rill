@@ -63,7 +63,15 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		fields = append(fields, observability.ZapCtx(ctx))
+		c.logger.Info("clickhouse query", fields...)
 	}
 
 	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
@@ -113,7 +121,14 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("clickhouse query", fields...)
 	}
 
 	// We use the meta conn for dry run queries

@@ -68,7 +68,15 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("duckdb query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", stmt.Query),
+			zap.Any("args", stmt.Args),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		fields = append(fields, observability.ZapCtx(ctx))
+		c.logger.Info("duckdb query", fields...)
 	}
 
 	// We use the meta conn for dry run queries
