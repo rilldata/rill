@@ -44,6 +44,9 @@ The main feature-set component for dashboard filters
     dimensionsWithInlistFilter,
   );
 
+  $: console.log("filters", filters);
+  $: console.log("dimensionFilters:", dimensionFilters);
+
   $: measureIdMap = getMapFromArray(
     measures,
     (measure) => measure.name as string,

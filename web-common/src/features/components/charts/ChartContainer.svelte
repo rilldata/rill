@@ -10,12 +10,14 @@
   import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
+  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import type { Readable } from "svelte/store";
   import { derived, readable } from "svelte/store";
+  import { Theme } from "../../themes/theme";
   import { CHART_CONFIG } from "./config";
   import { getChartData } from "./data-provider";
   import type { ChartProvider, ChartSpec, ChartType } from "./types";
-  import { Theme } from "../../themes/theme";
 
   export let chartType: ChartType;
   export let spec: Readable<ChartSpec>;
@@ -43,10 +45,17 @@
     $spec.metrics_view,
   );
 
+  $: dimensions = metricsViewSelectors.getDimensionsForMetricView(
+    $spec.metrics_view,
+  );
+
   $: chartDataQuery = chartProvider.createChartDataQuery(
     runtime,
     timeAndFilterStore,
   );
+
+  $: ({ dimensionFilters: whereFilter, dimensionThresholdFilters } =
+    splitWhereFilter($timeAndFilterStore.where));
 
   $: chartData = getChartData({
     config: $spec,
@@ -98,7 +107,27 @@
   <div class="size-full flex flex-col">
     {#if chartTitle}
       <div class="flex items-center justify-between px-4 py-2">
-        <h4 class="text-base font-semibold ui-copy-inactive">{chartTitle}</h4>
+        <div
+          class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
+        >
+          <h4 class="text-base font-semibold ui-copy-inactive">{chartTitle}</h4>
+          {#if "metrics_view" in $spec}
+            <Filter size="16px" className="text-gray-400" />
+            <FilterChipsReadOnly
+              metricsViewNames={[$spec.metrics_view]}
+              dimensions={$dimensions}
+              measures={$measures}
+              {dimensionThresholdFilters}
+              dimensionsWithInlistFilter={[]}
+              filters={whereFilter}
+              displayTimeRange={$timeAndFilterStore.timeRange}
+              queryTimeStart={$timeAndFilterStore.timeRange.start}
+              queryTimeEnd={$timeAndFilterStore.timeRange.end}
+              hasBoldTimeRange={false}
+              chipLayout="scroll"
+            />
+          {/if}
+        </div>
         {#if showExploreLink && $exploreAvailability.isAvailable}
           <ExploreLink
             exploreName={$exploreName}
