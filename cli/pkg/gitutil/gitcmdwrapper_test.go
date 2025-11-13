@@ -129,6 +129,72 @@ func TestInferGitRepoRoot_NotRepo(t *testing.T) {
 	require.Equal(t, "", root, "expected empty root for error case")
 }
 
+func TestInferGitRepoRoot_SymlinkToRepoRoot(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+
+	// Create a separate temp directory for symlinks
+	symlinkBase := t.TempDir()
+	symlinkDir := filepath.Join(symlinkBase, "repo_symlink")
+	err := os.Symlink(tempDir, symlinkDir)
+	require.NoError(t, err, "failed to create symlink to repo root")
+
+	root, err := InferGitRepoRoot(symlinkDir)
+	require.NoError(t, err, "InferGitRepoRoot failed on symlink to repo root")
+
+	// Get the canonical path of the expected repo root
+	expectedRoot, err := filepath.EvalSymlinks(tempDir)
+	require.NoError(t, err, "failed to resolve symlinks in expected root")
+
+	// Get the canonical path of the actual result
+	actualRoot, err := filepath.EvalSymlinks(root)
+	require.NoError(t, err, "failed to resolve symlinks in actual root")
+
+	require.Equal(t, expectedRoot, actualRoot, "repo root should match after symlink resolution")
+}
+
+func TestInferGitRepoRoot_SymlinkChain(t *testing.T) {
+	tempDir, _ := setupTestRepository(t)
+
+	// Create a separate temp directory for symlinks
+	symlinkBase := t.TempDir()
+	symlink1 := filepath.Join(symlinkBase, "symlink1")
+	symlink2 := filepath.Join(symlinkBase, "symlink2")
+
+	err := os.Symlink(tempDir, symlink1)
+	require.NoError(t, err, "failed to create first symlink")
+
+	err = os.Symlink(symlink1, symlink2)
+	require.NoError(t, err, "failed to create second symlink")
+
+	root, err := InferGitRepoRoot(symlink2)
+	require.NoError(t, err, "InferGitRepoRoot failed on symlink chain")
+
+	// Get the canonical path of the expected repo root
+	expectedRoot, err := filepath.EvalSymlinks(tempDir)
+	require.NoError(t, err, "failed to resolve symlinks in expected root")
+
+	// Get the canonical path of the actual result
+	actualRoot, err := filepath.EvalSymlinks(root)
+	require.NoError(t, err, "failed to resolve symlinks in actual root")
+
+	require.Equal(t, expectedRoot, actualRoot, "repo root should match after symlink resolution")
+}
+
+func TestInferGitRepoRoot_SymlinkToNonRepo(t *testing.T) {
+	nonRepoDir := t.TempDir()
+
+	// Create a symlink to a non-repo directory in a different temp directory
+	tempDirParent := t.TempDir()
+	symlinkDir := filepath.Join(tempDirParent, "nonrepo_symlink")
+	err := os.Symlink(nonRepoDir, symlinkDir)
+	require.NoError(t, err, "failed to create symlink to non-repo directory")
+
+	root, err := InferGitRepoRoot(symlinkDir)
+	require.Error(t, err, "expected error when symlink points to non-repo")
+	require.ErrorIs(t, err, ErrNotAGitRepository)
+	require.Equal(t, "", root, "expected empty root for error case")
+}
+
 // Helper: compare canonicalized paths
 func assertPathsEqual(t *testing.T, p1, p2 string) {
 	t.Helper()

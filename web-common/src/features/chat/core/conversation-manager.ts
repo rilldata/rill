@@ -16,7 +16,7 @@ import {
   URLConversationSelector,
   type ConversationSelector,
 } from "./conversation-selector";
-import { NEW_CONVERSATION_ID } from "./utils";
+import { extractMessageText, NEW_CONVERSATION_ID } from "./utils";
 
 export type ConversationStateType = "url" | "browserStorage";
 
@@ -300,8 +300,10 @@ export class ConversationManager {
     // If we have conversation data with messages, generate title from first user message
     if (conversationData?.messages) {
       for (const message of conversationData.messages) {
-        if (message.role === "user" && message.content?.[0]?.text) {
-          let title = message.content[0].text.trim();
+        if (message.role === "user") {
+          let title = extractMessageText(message);
+
+          if (!title) continue;
 
           // Truncate to 50 characters and add ellipsis if needed
           if (title.length > 50) {

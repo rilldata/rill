@@ -7,7 +7,6 @@
     TokenBannerPriority,
   } from "@rilldata/web-common/components/banner/constants";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -61,12 +60,10 @@
         {exploreName}
         storageNamespacePrefix={`${organization}__${project}__`}
       >
-        <DashboardThemeProvider>
-          <Dashboard
-            {exploreName}
-            metricsViewName={explore.metricsView.meta.name.name}
-          />
-        </DashboardThemeProvider>
+        <Dashboard
+          {exploreName}
+          metricsViewName={explore.metricsView.meta.name.name}
+        />
       </DashboardStateManager>
     </StateManagersProvider>
   {/if}

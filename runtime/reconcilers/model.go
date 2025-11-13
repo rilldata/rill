@@ -418,6 +418,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 }
 
 func (r *ModelReconciler) ResolveTransitiveAccess(ctx context.Context, claims *runtime.SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error) {
+	if res.GetModel() == nil {
+		return nil, fmt.Errorf("not a model resource")
+	}
 	return []*runtimev1.SecurityRule{{Rule: runtime.SelfAllowRuleAccess(res)}}, nil
 }
 
@@ -482,7 +485,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.IncrementalStateResolverProperties.AsMap())
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.IncrementalStateResolverProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -503,7 +506,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.PartitionsResolverProperties.AsMap())
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.PartitionsResolverProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -529,7 +532,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.InputProperties.AsMap())
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.InputProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -550,7 +553,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.OutputProperties.AsMap())
+		res, err := analyzeTemplatedVariables(ctx, r.C, spec.OutputProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -1641,34 +1644,6 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		return nil, fmt.Errorf("failed to resolve template: %w", err)
 	}
 	return val.(map[string]any), nil
-}
-
-// analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference instance variables.
-// It returns a map of variable names referenced in the props mapped to their current value (if known).
-func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props map[string]any) (map[string]string, error) {
-	res := make(map[string]string)
-	err := parser.AnalyzeTemplateRecursively(props, res)
-	if err != nil {
-		return nil, err
-	}
-
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-	vars := inst.ResolveVariables(false)
-
-	for k := range res {
-		// Project variables are referenced with .env.name (current) or .vars.name (deprecated).
-		// Other templated variable names are not project variable references.
-		if k2 := strings.TrimPrefix(k, "env."); k != k2 {
-			res[k] = vars[k2]
-		} else if k2 := strings.TrimPrefix(k, "vars."); k != k2 {
-			res[k] = vars[k2]
-		}
-	}
-
-	return res, nil
 }
 
 // shouldTrigger determines if a model should trigger based on its change mode and the current state.

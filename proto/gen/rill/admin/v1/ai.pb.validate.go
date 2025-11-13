@@ -256,6 +256,10 @@ func (m *CompleteResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for InputTokens
+
+	// no validation rules for OutputTokens
+
 	if len(errors) > 0 {
 		return CompleteResponseMultiError(errors)
 	}

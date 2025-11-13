@@ -50,16 +50,7 @@ func (e *Executor) Summary(ctx context.Context) (*SummaryResult, error) {
 			continue
 		}
 
-		// Check if this dimension is a time dimension (has timestamp data type)
-		isTimeDimension := false
-		if dim.DataType != nil {
-			switch dim.DataType.Code {
-			case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
-				isTimeDimension = true
-			}
-		}
-
-		if isTimeDimension {
+		if dim.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME {
 			timeDimensions = append(timeDimensions, dim)
 		} else {
 			dimensions = append(dimensions, dim)

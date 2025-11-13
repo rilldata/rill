@@ -5,20 +5,13 @@ extends:
 
 decorators:
   remove-unused-components: on
-  filter-in:
-    property: tags
-    values: ["rill.admin.v1.AdminService"]
-
-theme:
-  # See https://redocly.com/docs/redoc/config/
-  openapi:
-    disableSearch: true
-    # See https://redocly.com/docs/api-reference-docs/configuration/theming/
-    theme:
-      colors:
-        primary:
-          main: "#3524c7"
+  remove-unused-tags: on
 
 openapi:
   schemasExpansionLevel: 2
   showExtensions: true
+
+# Point to the filtered public API spec
+apis:
+  public@v1:
+    root: api/openapi.yaml

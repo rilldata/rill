@@ -18,7 +18,7 @@ type Connector struct {
 	Name            string
 	Driver          string
 	Spec            *drivers.Spec
-	DefaultConfig   map[string]string
+	DefaultConfig   map[string]any
 	Resources       []*Resource
 	AnonymousAccess bool
 	Err             error
@@ -179,7 +179,7 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 	res, ok := a.result[connector]
 	if !ok {
 		// Search rill.yaml for default config properties for this connector
-		var defaultConfig map[string]string
+		var defaultConfig map[string]any
 		if a.parser.RillYAML != nil {
 			for _, c := range a.parser.RillYAML.Connectors {
 				if c.Name == connector {
@@ -191,8 +191,8 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 
 		// Search among dedicated connectors
 		for _, c := range a.parser.Resources {
-			if c.ConnectorSpec != nil && c.Name.Name == connector {
-				defaultConfig = c.ConnectorSpec.Properties
+			if c.ConnectorSpec != nil && c.ConnectorSpec.Properties != nil && c.Name.Name == connector {
+				defaultConfig = c.ConnectorSpec.Properties.AsMap()
 				break
 			}
 		}

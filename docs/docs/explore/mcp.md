@@ -113,11 +113,15 @@ If you prefer to manually configure the connection or need to connect to a local
 Note: If you select this option, you must have Node.js installed on your system which can be downloaded from [nodejs.org](https://nodejs.org/en)
 
 ### Create a Rill Personal Access Token (if your project is on Rill Cloud)
-You can navigate to the AI tab in your project to retrieve both the JSON and create a Rill personal access token.
+
+**Via UI (recommended):**
+
+Navigate to the AI tab in your project to retrieve both the JSON config and create a personal access token automatically:
+
 <img src='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
 <br />
 
-Alternatively, if you want to create the token via the CLI:
+**Via CLI:**
 
 ```bash
 # Install the Rill CLI if you haven't already
@@ -127,7 +131,11 @@ curl https://rill.sh | sh
 rill token issue
 ```
 
-### Edit Claude Desktop Configuration
+:::tip Learn more about user tokens
+For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/manage/user-tokens).
+:::
+
+### Configure Claude Desktop
 
 Edit your `claude_desktop_config.json` file. 
 By default, the JSON file is found in the following directories:

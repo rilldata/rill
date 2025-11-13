@@ -53,7 +53,7 @@ var defaultFeatureFlags = map[string]string{
 	// Controls visibility of dashboard-level chat functionality
 	"dashboard_chat": "false",
 	// Controls whether charts are rendered in AI chats
-	"chat_charts": "false",
+	"chat_charts": "true",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
 }

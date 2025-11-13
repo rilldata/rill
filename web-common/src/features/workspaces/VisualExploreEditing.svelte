@@ -489,10 +489,13 @@
           updateProperties({ theme: value });
         }
       }}
-      onColorChange={(primary, secondary) => {
+      onColorChange={(primary, secondary, isDarkMode) => {
+        // TODO: Update to support dark mode - currently always sets light mode
+        // Use new theme structure: theme.light or theme.dark
+        const modeKey = isDarkMode ? "dark" : "light";
         updateProperties({
           theme: {
-            colors: {
+            [modeKey]: {
               primary,
               secondary,
             },
