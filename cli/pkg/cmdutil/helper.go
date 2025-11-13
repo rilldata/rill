@@ -566,19 +566,9 @@ var DefaultPushChoice = "1"
 
 func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature) error {
 	// 1. Fetch latest from remote
-	var remote string
-	var err error
-	if config.Username != "" {
-		remote, err = config.FullyQualifiedRemote()
-		if err != nil {
-			return err
-		}
-	} else {
-		remote = config.RemoteName()
-	}
-	err = gitutil.RunGitFetch(ctx, root, remote)
+	err := gitutil.GitFetch(ctx, root, config)
 	if err != nil {
-		return fmt.Errorf("failed to fetch from remote %q: %w", remote, err)
+		return fmt.Errorf("failed to fetch from remote: %w", err)
 	}
 
 	// 2. Check status of the subpath
@@ -611,7 +601,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	// The push can still fail if there were new remote commits since the fetch. But that's okay, the user can just retry.
 	switch choice {
 	case "1":
-		err := gitutil.RunUpstreamMerge(ctx, root, status.Branch, false)
+		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, false)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}
@@ -625,7 +615,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
 			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
 		}
-		err := gitutil.RunUpstreamMerge(ctx, root, status.Branch, true)
+		err := gitutil.RunUpstreamMerge(ctx, config.RemoteName(), root, status.Branch, true)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
 		}

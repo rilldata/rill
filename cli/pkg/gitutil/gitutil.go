@@ -338,7 +338,7 @@ func GitFetch(ctx context.Context, path string, config *Config) error {
 	if err != nil {
 		return fmt.Errorf("failed to open git repository: %w", err)
 	}
-	if config == nil {
+	if config == nil || config.Username == "" {
 		// uses default git configuration
 		// go-git does not support fetching from a private repo without auth
 		// so we will trigger the git command directly

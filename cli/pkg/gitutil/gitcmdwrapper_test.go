@@ -323,7 +323,7 @@ func TestRunUpstreamMerge(t *testing.T) {
 	require.NoError(t, GitFetch(context.Background(), tempDir, nil), "failed to fetch changes")
 
 	branch := getCurrentBranch(t, tempDir)
-	err := RunUpstreamMerge(context.Background(), tempDir, branch, false)
+	err := RunUpstreamMerge(context.Background(), "origin", tempDir, branch, false)
 	require.NoError(t, err, "RunUpstreamMerge failed")
 
 	// Verify file exists after merge
@@ -334,7 +334,7 @@ func TestRunUpstreamMerge(t *testing.T) {
 	createRemoteCommit(t, remoteDir, "upstream2.txt", "upstream content 2", "upstream commit 2")
 	require.NoError(t, GitFetch(context.Background(), tempDir, nil), "failed to fetch changes")
 
-	err = RunUpstreamMerge(context.Background(), tempDir, branch, false)
+	err = RunUpstreamMerge(context.Background(), "origin", tempDir, branch, false)
 	require.NoError(t, err, "RunUpstreamMerge failed with local commits")
 
 	// Both files should exist
@@ -348,7 +348,7 @@ func TestRunUpstreamMerge(t *testing.T) {
 	require.NoError(t, GitFetch(context.Background(), tempDir, nil), "failed to fetch changes")
 
 	// First try without favourLocal - should fail
-	err = RunUpstreamMerge(context.Background(), tempDir, branch, false)
+	err = RunUpstreamMerge(context.Background(), "origin", tempDir, branch, false)
 	require.Error(t, err, "RunUpstreamMerge should fail with conflicts and favourLocal=false")
 	require.Contains(t, err.Error(), "git merge failed", "expected merge failure error")
 
@@ -357,7 +357,7 @@ func TestRunUpstreamMerge(t *testing.T) {
 	_ = cmd.Run() // Ignore error if no merge in progress
 
 	// Now try with favourLocal=true - should succeed
-	err = RunUpstreamMerge(context.Background(), tempDir, branch, true)
+	err = RunUpstreamMerge(context.Background(), "origin", tempDir, branch, true)
 	require.NoError(t, err, "RunUpstreamMerge failed with conflicts and favourLocal=true")
 
 	require.Equal(t, "local version", readFile(t, tempDir, "conflict.txt"), "local version should win with favourLocal=true")
@@ -372,7 +372,7 @@ func TestRunUpstreamMerge(t *testing.T) {
 	createRemoteCommit(t, remoteDir, "fileB.txt", "upstream content B", "add fileB upstream")
 	require.NoError(t, GitFetch(context.Background(), tempDir, nil), "failed to fetch changes")
 
-	err = RunUpstreamMerge(context.Background(), tempDir, branch, true)
+	err = RunUpstreamMerge(context.Background(), "origin", tempDir, branch, true)
 	require.NoError(t, err, "RunUpstreamMerge failed with mixed changes")
 
 	// Verify local version of A is preserved

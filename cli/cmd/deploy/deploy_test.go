@@ -2,6 +2,7 @@ package deploy_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -205,8 +206,21 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 	}, "", author)
 	require.NoError(t, err, "failed to push to github repo")
 
-	// deploy project1 from monorepo
-	project1Path := filepath.Join(tempDir, "project1")
+	// Clone two separate copies of the same repo to simulate independent working directories
+	// This demonstrates that different subpaths can be worked on independently
+	clone1Dir := t.TempDir()
+	clone2Dir := t.TempDir()
+
+	// Clone repo to first directory
+	err = cloneRepo(t.Context(), *repo.CloneURL, clone1Dir)
+	require.NoError(t, err, "failed to clone repo to first directory")
+
+	// Clone repo to second directory
+	err = cloneRepo(t.Context(), *repo.CloneURL, clone2Dir)
+	require.NoError(t, err, "failed to clone repo to second directory")
+
+	// deploy project1 from first clone
+	project1Path := filepath.Join(clone1Dir, "project1")
 	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-monorepo-test", "--project=monorepo-project1", "--skip-deploy=true", "--path="+project1Path)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
@@ -220,13 +234,8 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 	require.Empty(t, resp1.Project.ManagedGitId)
 	require.Equal(t, "project1", resp1.Project.Subpath)
 
-	// check remote configured in directory
-	remote, err := gitutil.ExtractGitRemote(tempDir, "origin", false)
-	require.NoError(t, err)
-	require.Equal(t, *repo.CloneURL, remote.URL)
-
-	// deploy project2 from same monorepo
-	project2Path := filepath.Join(tempDir, "project2")
+	// deploy project2 from second clone (independent of first clone)
+	project2Path := filepath.Join(clone2Dir, "project2")
 	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-monorepo-test", "--project=monorepo-project2", "--skip-deploy=true", "--path="+project2Path)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
@@ -241,33 +250,33 @@ func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghCl
 	require.Equal(t, "project2", resp2.Project.Subpath)
 	require.Equal(t, resp1.Project.GitRemote, resp2.Project.GitRemote)
 
-	// make changes to project1 only
+	// make changes to project1 in first clone only
 	changesProject1 := map[string]string{
 		"project1/models/model.sql": `SELECT 1 AS one`,
 	}
-	putFiles(t, tempDir, changesProject1)
+	putFiles(t, clone1Dir, changesProject1)
 
-	// redeploy project1 with changes
+	// redeploy project1 with changes from first clone
 	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-monorepo-test", "--project=monorepo-project1", "--skip-deploy=true", "--path="+project1Path)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
 	// verify changes are pushed to Github repo in project1 subpath
 	verifyGithubRepoContents(t, ghClient, resp1.Project.GitRemote, changesProject1)
 
-	// make changes to project2 only
+	// make changes to project2 in second clone independently
 	changesProject2 := map[string]string{
 		"project2/models/model.sql": `SELECT 2 AS two`,
 	}
-	putFiles(t, tempDir, changesProject2)
+	putFiles(t, clone2Dir, changesProject2)
 
-	// redeploy project2 with changes
+	// redeploy project2 with changes from second clone
 	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-monorepo-test", "--project=monorepo-project2", "--skip-deploy=true", "--path="+project2Path)
 	require.Equal(t, 0, result.ExitCode, result.Output)
 
 	// verify changes are pushed to Github repo in project2 subpath
 	verifyGithubRepoContents(t, ghClient, resp2.Project.GitRemote, changesProject2)
 
-	// verify both projects' changes exist in the repo
+	// verify both projects' changes exist in the repo, demonstrating independence
 	allChanges := map[string]string{
 		"project1/models/model.sql": `SELECT 1 AS one`,
 		"project2/models/model.sql": `SELECT 2 AS two`,
@@ -369,4 +378,13 @@ olap_connector: duckdb`,
 	})
 
 	return tempDir
+}
+
+func cloneRepo(ctx context.Context, repoURL, path string) error {
+	cmd := exec.CommandContext(ctx, "git", "clone", repoURL, path)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("clone repo failed with error: %s(%s)", out, err)
+	}
+	return nil
 }

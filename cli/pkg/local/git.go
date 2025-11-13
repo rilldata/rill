@@ -14,7 +14,7 @@ import (
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
-		connect.NewError(connect.CodeFailedPrecondition, errors.New("must authenticate before performing this action"))
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("must authenticate before performing this action"))
 	}
 
 	// TODO: cache project inference
@@ -23,18 +23,18 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
-		connect.NewError(connect.CodeFailedPrecondition, errors.New("not connected to any rill project"))
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("not connected to any rill project"))
 	}
 	project := projects[0]
 
 	gitPath, subPath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
 	if err != nil {
-		// Possibility not a git repo then throw a 400 error
+		// Not a git repo
 		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 	}
 	if subPath != project.Subpath {
-		// TODO: subpath does not match
-		return nil, connect.NewError(connect.CodeUnknown, errors.New("current path is not within the project's git subpath"))
+		// unlikely but just in case
+		return nil, connect.NewError(connect.CodeUnknown, errors.New("detected subpath within git repo does not match project subpath"))
 	}
 
 	// get ephemeral git credentials
@@ -103,17 +103,17 @@ func (s *Server) GitPull(ctx context.Context, r *connect.Request[localv1.GitPull
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
-		return nil, errors.New("git credentials not set and repo is not connected to a project")
+		return nil, errors.New("repo is not connected to a project")
 	}
 	project := projects[0]
 
 	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
-	// Possibility not a git repo then throw a 400 error
 	if err != nil {
+		// Not a git repo
 		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 	}
 	if project.Subpath != subpath {
-		return nil, errors.New("detected path does not match project git subpath")
+		return nil, errors.New("detected subpath within git repo does not match project subpath")
 	}
 
 	config, err := s.app.ch.GitHelper(s.app.ch.Org, project.Name, gitPath).GitConfig(ctx)
@@ -150,17 +150,17 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
-		return nil, errors.New("git credentials not set and repo is not connected to a project")
+		return nil, errors.New("repo is not connected to a project")
 	}
 	project := projects[0]
 
 	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
-	// Possibility not a git repo then throw a 400 error
+	// Not a git repo
 	if err != nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 	}
 	if project.Subpath != subpath {
-		return nil, errors.New("detected path does not match project git subpath")
+		return nil, errors.New("detected subpath within git repo does not match project subpath")
 	}
 
 	author, err := s.app.ch.GitSignature(ctx, gitPath)

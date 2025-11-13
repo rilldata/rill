@@ -14,10 +14,7 @@ import (
 	"strings"
 )
 
-var (
-	errDetachedHead = errors.New("detached HEAD state detected, please checkout a branch")
-	ErrLocalBehind  = errors.New("local branch is behind the remote branch")
-)
+var errDetachedHead = errors.New("detached HEAD state detected, please checkout a branch")
 
 type GitStatus struct {
 	Branch        string
@@ -156,12 +153,12 @@ func RunGitPull(ctx context.Context, path string, discardLocal bool, remote, rem
 	return "", nil
 }
 
-func RunUpstreamMerge(ctx context.Context, path, branch string, favourLocal bool) error {
+func RunUpstreamMerge(ctx context.Context, remote, path, branch string, favourLocal bool) error {
 	var args []string
 	if favourLocal {
-		args = []string{"-C", path, "merge", "-X", "ours", fmt.Sprintf("origin/%s", branch)}
+		args = []string{"-C", path, "merge", "-X", "ours", fmt.Sprintf("%s/%s", remote, branch)}
 	} else {
-		args = []string{"-C", path, "merge", fmt.Sprintf("origin/%s", branch)}
+		args = []string{"-C", path, "merge", fmt.Sprintf("%s/%s", remote, branch)}
 	}
 	cmd := exec.CommandContext(ctx, "git", args...)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -177,9 +174,6 @@ func RunUpstreamMerge(ctx context.Context, path, branch string, favourLocal bool
 func RunGitPush(ctx context.Context, path, remoteName, branchName string) error {
 	cmd := exec.CommandContext(ctx, "git", "-C", path, "push", remoteName, branchName)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		if strings.Contains(string(out), "Updates were rejected because the tip of your current branch is behind") {
-			return ErrLocalBehind
-		}
 		var execErr *exec.ExitError
 		if errors.As(err, &execErr) {
 			return fmt.Errorf("git push failed: %s(%s)", string(out), string(execErr.Stderr))
