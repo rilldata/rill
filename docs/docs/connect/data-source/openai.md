@@ -6,7 +6,7 @@ sidebar_position: 42
 ---
 
 
-[OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features.
+[OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features. 
 
 ## API Key
 
