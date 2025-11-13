@@ -107,7 +107,7 @@ services:
   clickhouse:
     <<: *service
     profiles: ["full"]
-    image: "clickhouse/clickhouse-server:24.11.1.2557"
+    image: 'clickhouse/clickhouse-server:25.5.1.2782'
     volumes:
       - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./clickhouse-users.xml:/etc/clickhouse-server/users.d/users.xml
