@@ -1,0 +1,32 @@
+connectors:
+  - clickhouse
+project_files:
+  json_type.yaml:
+    type: model
+    materialize: true
+    sql: |
+      SELECT '{
+        "a": 1,
+        "b": "x",
+        "c": true,
+        "d": null,
+        "e": {
+          "f": 2.5
+        },
+        "g": [3, 4, 5],
+        "h": ["y"],
+        "i": [
+          { "j": "z" }
+        ]
+      }'::JSON AS data
+  rill.yaml:
+    olap_connector: clickhouse
+tests:
+  - name: query_json_type
+    resolver: sql
+    properties:
+      connector: clickhouse
+      sql: "select * from json_type"
+    result_csv: |
+      data
+      "{""a"":1,""b"":""x"",""c"":true,""e"":{""f"":2.5},""g"":[3,4,5],""h"":[""y""],""i"":[{""j"":""z""}]}"
