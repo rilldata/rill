@@ -20,6 +20,9 @@ test.describe("canvas charts", () => {
       .click();
 
     await page.locator(".chart-icons").getByLabel("Donut").click();
+
+    await page.waitForTimeout(1000);
+
     await page
       .getByLabel("A arc chart with embedded")
       .locator("canvas")
