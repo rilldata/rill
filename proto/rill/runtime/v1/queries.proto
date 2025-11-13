@@ -274,6 +274,16 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
+
+  // Markdown APIs
+
+  // ResolveTemplatedString resolves a markdown string with Rill templating.
+  rpc ResolveTemplatedString(ResolveTemplatedStringRequest) returns (ResolveTemplatedStringResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/resolve-templated-string",
+      body: "*"
+    };
+  }
 }
 
 message QueryRequest {
@@ -1315,4 +1325,20 @@ message TableRowsRequest {
 
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
+}
+
+message ResolveTemplatedStringRequest {
+  string instance_id = 1;
+  // Any string with Go templating
+  string data = 2;
+  // If true, output format tokens instead of raw values.
+  bool use_format_tokens = 3;
+  // Additional filters to inject into metrics SQL queries
+  Expression additional_where = 4;
+  // Additional time range to add to metrics SQL queries
+  Expression additional_time_range = 5;
+}
+
+message ResolveTemplatedStringResponse {
+  string resolved_data = 1;
 }

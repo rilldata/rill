@@ -2398,7 +2398,7 @@ export function createQueryServiceColumnNumericHistogram<
 }
 
 /**
- * @summary ResolveTemplatedString resolves a templated strings.
+ * @summary ResolveTemplatedString resolves a markdown string with Rill templating.
  */
 export const queryServiceResolveTemplatedString = (
   instanceId: string,
@@ -2460,7 +2460,7 @@ export type QueryServiceResolveTemplatedStringMutationError =
   ErrorType<RpcStatus>;
 
 /**
- * @summary ResolveTemplatedString resolves a templated strings.
+ * @summary ResolveTemplatedString resolves a markdown string with Rill templating.
  */
 export const createQueryServiceResolveTemplatedString = <
   TError = ErrorType<RpcStatus>,

@@ -2346,7 +2346,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/resolve-templated-string:
     post:
-      summary: ResolveTemplatedString resolves a templated strings.
+      summary: ResolveTemplatedString resolves a markdown string with Rill templating.
       operationId: QueryService_ResolveTemplatedString
       responses:
         "200":
@@ -2368,19 +2368,17 @@ paths:
           schema:
             type: object
             properties:
-              body:
+              data:
                 type: string
                 title: Any string with Go templating
               useFormatTokens:
                 type: boolean
                 description: If true, output format tokens instead of raw values.
-              additionalWhereByMetricsView:
-                type: object
-                additionalProperties:
-                  $ref: '#/definitions/v1Expression'
-                title: Additional filters to inject into metrics SQL queries by metrics view name
+              additionalWhere:
+                $ref: '#/definitions/v1Expression'
+                title: Additional filters to inject into metrics SQL queries
               additionalTimeRange:
-                $ref: '#/definitions/v1TimeRange'
+                $ref: '#/definitions/v1Expression'
                 title: Additional time range to add to metrics SQL queries
       tags:
         - QueryService
@@ -6723,7 +6721,7 @@ definitions:
   v1ResolveTemplatedStringResponse:
     type: object
     properties:
-      body:
+      resolvedData:
         type: string
   v1ResolvedTimeRange:
     type: object
