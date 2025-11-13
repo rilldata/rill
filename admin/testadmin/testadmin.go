@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -214,8 +216,14 @@ func newGithub(t *testing.T) admin.Github {
 	if testing.Short() {
 		return &mockGithub{}
 	}
-	err := godotenv.Load("../../../.env")
-	require.NoError(t, err, "failed to load env file. Run `rill devtool dotenv refresh` to create one")
+
+	_, currentFile, _, _ := runtime.Caller(0)
+	envPath := filepath.Join(currentFile, "..", "..", "..", ".env")
+	_, err := os.Stat(envPath)
+	if err == nil {
+		err := godotenv.Load(envPath)
+		require.NoError(t, err)
+	}
 
 	githubAppID, err := strconv.ParseInt(os.Getenv("RILL_ADMIN_TEST_GITHUB_APP_ID"), 10, 64)
 	require.NoError(t, err)

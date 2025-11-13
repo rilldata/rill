@@ -11,6 +11,7 @@
   import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -191,6 +192,10 @@
     <DialogHeader>
       <DialogTitle>Add guest users</DialogTitle>
     </DialogHeader>
+    <DialogDescription>
+      Guests are users outside your organization with limited access to selected
+      projects and assigned roles.
+    </DialogDescription>
     <form
       id={formId}
       on:submit|preventDefault={submit}
