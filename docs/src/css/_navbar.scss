@@ -2,37 +2,22 @@
 /* =========================
    Search Bar Custom Styles
    ========================= */
-.navbar__item {
+.navbar {
+  height: 60px;
+}   
+// all of the navbar items
+.navbar__link {
+  height: 100%;
   display: flex;
   align-items: center;
-
-    padding: 8px 12px;
+  justify-content: center;
 }
 
+// on hover of navbar items
 .navbar__link:hover {
   background: var(--palette_slate_50);
   border-radius: 8px;
-
 }
-
-.navbar-sidebar__brand {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.navbar-sidebar__brand .mobile-nav-icon-links {
-  display: none;
-}
-
-.navbar-sidebar__brand .mobile-nav-icon-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-}
-
 
 /* Active state styling for navbar links */
 .navbar__link--active.navbar-docs-link,
@@ -45,10 +30,13 @@
   border-bottom: 2px solid var(--ifm-color-primary);
 }
 
+// NavBar Icons
 .navbar-docs-link::before,
 .navbar-reference-link::before,
 .navbar-contact-link::before {
   content: "";
+  padding-top: 0px;
+  padding-bottom: 0px;
   display: inline-block;
   width: 20px;
   height: 20px;
@@ -58,31 +46,35 @@
   background-repeat: no-repeat;
 }
 
+// NavBar Docs Link Icon
 .navbar-docs-link::before {
   background-image: url("/icons/BookOpen.svg");
   width: 16px;
   height: 16px;
 }
 
+// NavBar Reference Link Icon
 .navbar-reference-link::before {
   background-image: url("/icons/Book.svg");
   width: 16px;
   height: 16px;
 }
 
+// NavBar Contact Link Icon
 .navbar-contact-link::before {
   background-image: url("/icons/MessageSquare.svg");
   width: 16px;
   height: 16px;
 }
+// NavBar Icon Link (GitHub and Blog)
+// .navbar-icon-link {
+//   width: 24px;
+//   height: 24px;
+//   margin-right: 6px;
+//   margin-left: 6px;
+// }
 
-.navbar-icon-link {
-  width: 24px;
-  height: 24px;
-  margin-right: 6px;
-  margin-left: 6px;
-}
-
+// NavBar Search Bar
 .navbar .navbar__items--right .DocSearch-Button {
   background: transparent;
   border: 0.5px solid #e5e7eb;
@@ -106,7 +98,7 @@
   }
 }
 
-/* Dark mode specific fixes */
+// Dark mode specific fixes for Search Bar
 [data-theme='dark'] .navbar .navbar__items--right .DocSearch-Button {
     background: transparent;
     border: 0.5px solid var(--docsearch-muted-color);
@@ -120,18 +112,20 @@
     border: 0.5px solid var(--ifm-color-primary);
 } 
 
+// On hover of Search Bar
 .navbar .navbar__items--right .DocSearch-Button:hover {
   box-shadow: none;
   color: var(--docsearch-muted-color);
   border: 0.5px solid var(--ifm-color-primary);
 }
 
+// Search Bar Search Icon
 .navbar .navbar__items--right .DocSearch-Search-Icon {
   height: 16px;
   width: 16px;
-  color: var(--docsearch-muted-color);
 }
 
+// Search Bar Search Placeholder
 .navbar .navbar__items--right .DocSearch-Button-Placeholder {
   font-size: 0.875rem;
 }
@@ -173,12 +167,6 @@
   .navbar .navbar-icon-link {
     display: none !important;
   }
-// .navbar-docs-link::before,
-// .navbar-reference-link::before,
-// .navbar-contact-link::before {
-//     display: none !important;
-//   }
-
 
 } 
 
@@ -201,24 +189,7 @@
   }
 }
 
-/* =========================
-   Navbar Icon Link Styles
-   ========================= */
-.navbar .navbar-icon-link {
-  color: var(--ifm-menu-color);
-  text-decoration: none;
-  background: none;
-  box-shadow: none;
-  transition: color 0.2s;
-  display: inline-flex;
-  align-items: center;
 
-  
-  i {
-    margin-right: 6px;
-    font-size: 0.9em;
-  }
-}
 
 /* Hide text on very small screens for right-side items */
 @media (max-width: 480px) {
@@ -226,3 +197,16 @@
     display: none;
   }
 } 
+
+
+.navbar-sidebar__brand .mobile-nav-icon-links {
+  display: none;
+}
+
+.navbar-sidebar__brand .mobile-nav-icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
