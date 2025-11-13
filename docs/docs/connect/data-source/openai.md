@@ -55,7 +55,7 @@ If your project has already been deployed to Rill Cloud with configured credenti
 
 Once configured, OpenAI integration enables various AI-powered features in Rill:
 
-- **Natural Language Queries**: Ask questions about your data in plain English on the dashboard or project level.
+- **Natural Language Queries**: Ask questions about your data using everyday conversational language on the dashboard or project level.
 - **Data Insights**: Get AI-generated insights and recommendations
 - **Intelligent Suggestions**: Receive suggestions for dashboard improvements and data exploration
 
