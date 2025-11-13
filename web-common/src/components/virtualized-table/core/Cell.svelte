@@ -23,6 +23,7 @@
   export let column;
   export let value;
   export let formattedValue: string | null = null;
+  export let tooltipFormattedValue: string | null = null;
   export let type;
   export let barValue = 0;
   export let rowActive = false;
@@ -103,14 +104,18 @@
       ? "ui-measure-bar-included-selected"
       : "ui-measure-bar-included";
 
-  // Use preformatted values for non-string types to avoid showing raw floats
-  // (e.g., 111432.16000000002). For string-like types, keep the existing
-  // truncation behavior for very long strings.
-  $: tooltipValue = STRING_LIKES.has(type)
-    ? typeof value === "string" && value.length >= TOOLTIP_STRING_LIMIT
-      ? value.slice(0, TOOLTIP_STRING_LIMIT) + "..."
-      : value
-    : (formattedValue ?? value);
+  // Prefer explicit tooltipFormattedValue when provided (e.g., for delta columns).
+  // Otherwise:
+  //  - string-like types: truncate long strings
+  //  - other types: use preformatted value to avoid raw float artifacts
+  $: tooltipValue =
+    tooltipFormattedValue !== null && tooltipFormattedValue !== undefined
+      ? tooltipFormattedValue
+      : STRING_LIKES.has(type)
+        ? typeof value === "string" && value.length >= TOOLTIP_STRING_LIMIT
+          ? value.slice(0, TOOLTIP_STRING_LIMIT) + "..."
+          : value
+        : (formattedValue ?? value);
 
   $: formattedDataTypeStyle = excluded
     ? "font-normal ui-copy-disabled-faint"
