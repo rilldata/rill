@@ -314,16 +314,24 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 	return nil
 }
 
-// rendererRefs tracks all metrics views found in canvas component renderer properties.
-// It currently only tracks metrics views, but in the future we may want to add an option to also track metrics view fields and filters.
-// We did that previously, but removed it since such granular security was considered too strict (it also impacts ability to filter by fields not present on the canvas).
-// See this PR for details in case we want to reintroduce it: https://github.com/rilldata/rill/pull/8370
-type rendererRefs struct {
-	metricsViews map[string]bool
-}
-
-// populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.
-func (r *rendererRefs) populateRendererRefs(_ string, rendererProps map[string]any) error {
+// populateRendererRefs extracts all metricsview and its field names and filters from renderer properties based on the renderer type
+// Depending on the component, fields will be named differently - Also there can be computed time dimension like <time_dim>_rill_TIME_GRAIN_<GRAIN>
+//
+//		"leaderboard" - "dimensions" and "measures"
+//		"kpi_grid" - "dimensions" and "measures"
+//		"table" - "columns" (can have computed time dim)
+//		"pivot" - "row_dimensions", "col_dimensions" and "measures" (row/col can have computed time dim)
+//		"heatmap" - "color"."field", "x"."field" and "y"."field"
+//	 	"multi_metric_chart" - "measures" and "x"."field"
+//		"funnel_chart" - "stage"."field", "measure"."field"
+//		"donut_chart" - "color"."field", "measure"."field"
+//		"bar_chart" - "color"."field", "x"."field" and "y"."field"
+//		"line_chart" - "color"."field", "x"."field" and "y"."field"
+//		"area_chart" - "color"."field", "x"."field" and "y"."field"
+//		"stacked_bar" - "color"."field", "x"."field" and "y"."field"
+//		"stacked_bar_normalized" - "color"."field", "x"."field" and "y"."field"
+//		"markdown" - content may contain metrics_sql template functions; metrics views are resolved at query time via ResolveTemplatedString RPC
+func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[string]any) error {
 	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
 	if !ok {
 		return nil
