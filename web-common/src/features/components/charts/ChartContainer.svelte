@@ -110,9 +110,9 @@
         <div
           class="flex items-center gap-x-2 w-full max-w-full overflow-x-auto chip-scroll-container"
         >
-          <h4 class="text-base font-semibold ui-copy-inactive">{chartTitle}</h4>
+          <h4 class="title">{chartTitle}</h4>
           {#if "metrics_view" in $spec}
-            <Filter size="16px" className="text-gray-400" />
+            <Filter size="16px" className="text-gray-400 flex-shrink-0" />
             <FilterChipsReadOnly
               metricsViewNames={[$spec.metrics_view]}
               dimensions={$dimensions}
@@ -152,3 +152,12 @@
     </div>
   </div>
 {/if}
+
+<style lang="postcss">
+  .title {
+    font-size: 15px;
+    line-height: 26px;
+    @apply flex-shrink-0;
+    @apply font-medium text-gray-800 truncate;
+  }
+</style>
