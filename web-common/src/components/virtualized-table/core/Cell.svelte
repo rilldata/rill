@@ -104,10 +104,6 @@
       ? "ui-measure-bar-included-selected"
       : "ui-measure-bar-included";
 
-  // Prefer explicit tooltipFormattedValue when provided (e.g., for delta columns).
-  // Otherwise:
-  //  - string-like types: truncate long strings
-  //  - other types: use preformatted value to avoid raw float artifacts
   $: tooltipValue =
     tooltipFormattedValue !== null && tooltipFormattedValue !== undefined
       ? tooltipFormattedValue

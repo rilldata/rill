@@ -22,7 +22,6 @@
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      numberFormat: { measureFormatters, activeMeasureFormatter },
       dimensionFilters: { isFilterExcludeMode },
       dimensions: { visibleDimensions },
       comparison: { isBeingCompared: isBeingComparedReadable },
