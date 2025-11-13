@@ -43,7 +43,7 @@ export default function NotFoundContent({
                         color: "#1a1a1a",
                         fontSize: "1.125rem",
                         fontWeight: 600,
-                        lineHeight: "0.875rem",
+                        lineHeight: "1.5rem",
                         marginBottom: "1rem",
                     }}
                 >
