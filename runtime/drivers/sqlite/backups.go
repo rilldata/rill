@@ -26,49 +26,59 @@ var (
 	// Queries to backup as Parquet.
 	// Each will be exported to {output_dir}/{key}.parquet.
 	parquetBackupQueries = map[string]string{
-		"instances":        "SELECT * EXCLUDE (variables, project_variables, feature_flags, annotations, connectors, project_connectors, public_paths) FROM instances",
-		"instance_health":  "SELECT * FROM instance_health",
-		"catalog":          "SELECT * EXCLUDE (data) FROM catalogv2",
+		// Table `instances`.
+		// It excludes the JSON columns due to a type mess up: the columns are TEXT, but we've been saving BLOB values to them.
+		// SQLite weirdly allows this, but DuckDB chokes on it.
+		"instances": "SELECT * EXCLUDE (variables, project_variables, feature_flags, annotations, connectors, project_connectors, public_paths) FROM instances",
+		// Table `instance_health`
+		"instance_health": "SELECT * FROM instance_health",
+		// Table `catalogv2`, excluding the `data` column which is a serialized protobuf blob that downstream logic can't easily decode anyway.
+		"catalog": "SELECT * EXCLUDE (data) FROM catalogv2",
+		// Table `model_partitions`
 		"model_partitions": "SELECT * FROM model_partitions",
-		"ai_sessions":      "SELECT * FROM ai_sessions",
-		"ai_messages":      "SELECT * FROM ai_messages",
+		// Table `ai_sessions`
+		"ai_sessions": "SELECT * FROM ai_sessions",
+		// Table `ai_messages`
+		"ai_messages": "SELECT * FROM ai_messages",
 	}
 )
 
 // startBackups starts a background goroutine that performs periodic backups of the SQLite file to object storage.
 //
-// It is also a no-op unless the following pre-requisites are in place:
+// It is a no-op unless the following pre-requisites are in place:
 // 1. An external bucket is configured on the storage client.
 // 2. A backup ID is provided in the connection config (through the "id" config parameter, currently propagates from RILL_RUNTIME_METASTORE_ID).
+// 3. The SQLite database is file-based and doesn't exceed backupMaxSizeBytes in size.
 //
 // It is a best-effort backup used for analytics. There are currently no guarantees on backups and no restore functionality.
 // Backups are performed at midnight UTC every day if the runtime is running at that time.
 //
-// Backups are stored in the external bucket under the path "shared/metastore/{backupID}/" (the "shared/metastore" prefix is applied by the code that opens the connection).
+// Backups are stored in the external bucket under the path "shared/metastore/{backupID}/" (the "shared/metastore" prefix is not applied here, but where the connection is opened).
 // The directory will contain a snapshot.db SQLite file and Parquet files for each of the tables defined in parquetBackupQueries.
 func (c *connection) startBackups() {
-	// No-op if no backup ID is provided.
+	// It's a no-op if no backup ID is provided.
 	if c.backupID == "" {
 		return
 	}
 
-	// No-op if no external bucket is configured.
+	// Open bucket scoped to the backup directory.
+	// Return early (no-op) if a bucket isn't available.
 	bucket, ok, err := c.storage.OpenBucket(c.ctx, c.backupID)
 	if err != nil {
-		c.logger.Error("sqlite: could not open backup bucket", zap.Error(err))
+		c.logger.Error("sqlite: could not open backup bucket", zap.Error(err), zap.String("backup_id", c.backupID))
 		return
 	}
 	if !ok {
 		return
 	}
 
-	// No-op if the SQLite file is in-memory.
-	ok, err = c.isInMemory(c.ctx)
+	// Exit early if the database is in-memory.
+	dbPath, err := c.dbFilePath(c.ctx)
 	if err != nil {
-		c.logger.Error("sqlite: could not check database type for backups", zap.Error(err))
+		c.logger.Error("sqlite: could not find database file path", zap.Error(err), zap.String("backup_id", c.backupID))
 		return
 	}
-	if ok {
+	if dbPath == "" {
 		return
 	}
 
@@ -93,7 +103,8 @@ func (c *connection) startBackups() {
 
 		// Perform backup.
 		c.logger.Info("sqlite: backup started", zap.String("backup_id", c.backupID))
-		if err := c.backup(c.ctx, bucket); err != nil {
+		err := c.backup(c.ctx, bucket)
+		if err != nil {
 			c.logger.Error("sqlite: backup failed", zap.String("backup_id", c.backupID), zap.Error(err))
 		} else {
 			c.logger.Info("sqlite: backup completed successfully", zap.String("backup_id", c.backupID))
@@ -109,6 +120,19 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 	ctx, cancel := context.WithTimeout(ctx, backupMaxDuration)
 	defer cancel()
 
+	// Check if the database file is too large.
+	dbPath, err := c.dbFilePath(c.ctx)
+	if err != nil {
+		return fmt.Errorf("could not get database file path: %w", err)
+	}
+	info, err := os.Stat(dbPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat SQLite snapshot: %w", err)
+	}
+	if info.Size() > backupMaxSizeBytes {
+		return fmt.Errorf("SQLite snapshot size is too big: %d bytes", info.Size())
+	}
+
 	// Setup a temporary directory for intermediate files
 	tmpDir, err := os.MkdirTemp("", "sqlite-backup-*")
 	if err != nil {
@@ -121,15 +145,6 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 	_, err = c.db.ExecContext(ctx, fmt.Sprintf("VACUUM INTO '%s'", snapshotPath))
 	if err != nil {
 		return fmt.Errorf("failed to create SQLite snapshot: %w", err)
-	}
-
-	// Check snapshot has a reasonable size
-	info, err := os.Stat(snapshotPath)
-	if err != nil {
-		return fmt.Errorf("failed to stat SQLite snapshot: %w", err)
-	}
-	if info.Size() >= backupMaxSizeBytes {
-		return fmt.Errorf("SQLite snapshot size is too small: %d bytes", info.Size())
 	}
 
 	// Upload the snapshot file itself for safekeeping.
@@ -160,10 +175,11 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 		return fmt.Errorf("failed to attach SQLite database to DuckDB: %w", err)
 	}
 	for name, query := range parquetBackupQueries {
-		// Use a lamda so we can use defer for cleanup inside the loop.
+		// Use a lambda so we can use defer for cleanup inside the loop.
 		err := func() error {
 			// Export name to Parquet
-			exportPath := filepath.Join(tmpDir, fmt.Sprintf("%s.parquet", name))
+			fname := fmt.Sprintf("%s.parquet", name)
+			exportPath := filepath.Join(tmpDir, fname)
 			_, err = duckdb.ExecContext(ctx, fmt.Sprintf("COPY (%s) TO '%s' (FORMAT PARQUET)", query, exportPath))
 			if err != nil {
 				return fmt.Errorf("failed to export query %q: %w", name, err)
@@ -178,8 +194,7 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 			defer f.Close()
 
 			// Upload the Parquet files to the storage bucket.
-			blobKey := fmt.Sprintf("%s.parquet", name)
-			err = bucket.Upload(ctx, blobKey, f, &blob.WriterOptions{
+			err = bucket.Upload(ctx, fname, f, &blob.WriterOptions{
 				ContentType: "application/octet-stream",
 			})
 			if err != nil {
@@ -195,17 +210,16 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 	return nil
 }
 
-// isInMemory checks if the SQLite database is in-memory.
-func (c *connection) isInMemory(ctx context.Context) (bool, error) {
-	var seq int
-	var name, file string
-	row := c.db.QueryRowContext(ctx, "PRAGMA database_list;")
-	err := row.Scan(&seq, &name, &file)
+// dbFilePath gets the file path of the SQLite database.
+// It returns the empty string if the database is in-memory.
+func (c *connection) dbFilePath(ctx context.Context) (string, error) {
+	var file string
+	err := c.db.QueryRowContext(ctx, `SELECT file FROM pragma_database_list WHERE name = 'main';`).Scan(&file)
 	if err != nil {
-		return false, err
+		return "", err
 	}
 	if file == "" || file == ":memory:" || file == "file::memory:" {
-		return true, nil
+		return "", nil
 	}
-	return false, nil
+	return file, nil
 }

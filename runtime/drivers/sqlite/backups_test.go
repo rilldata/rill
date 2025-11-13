@@ -87,16 +87,17 @@ func TestBackup(t *testing.T) {
 	}
 }
 
-func TestIsInMemory(t *testing.T) {
+func TestDBFilePath(t *testing.T) {
+	tmpDir, _ := filepath.EvalSymlinks(t.TempDir())
 	cases := []struct {
 		dsn      string
-		expected bool
+		expected string
 	}{
-		{":memory:", true},
-		{"file:rill?mode=memory&cache=shared", true},
-		{"file::memory:?cache=shared", true},
-		{filepath.Join(t.TempDir(), "data.sqlite"), false},
-		{"file:" + filepath.Join(t.TempDir(), "data.sqlite"), false},
+		{":memory:", ""},
+		{"file:rill?mode=memory&cache=shared", ""},
+		{"file::memory:?cache=shared", ""},
+		{filepath.Join(tmpDir, "data.sqlite"), filepath.Join(tmpDir, "data.sqlite")},
+		{"file:" + filepath.Join(tmpDir, "data.sqlite"), filepath.Join(tmpDir, "data.sqlite")},
 	}
 	for idx, tc := range cases {
 		t.Run(fmt.Sprintf("case-%d", idx), func(t *testing.T) {
@@ -105,9 +106,9 @@ func TestIsInMemory(t *testing.T) {
 			require.NoError(t, err)
 			defer h.Close()
 
-			ok, err := h.(*connection).isInMemory(t.Context())
+			dbPath, err := h.(*connection).dbFilePath(t.Context())
 			require.NoError(t, err)
-			require.Equal(t, tc.expected, ok)
+			require.Equal(t, tc.expected, dbPath)
 		})
 	}
 }

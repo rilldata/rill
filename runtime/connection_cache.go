@@ -153,7 +153,7 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 	}
 
 	// Create storage client with a path prefix scoped to the instance and connector.
-	// For shared connections, we use "shared" as the instance ID.
+	// For shared connections, we use "shared" as the path prefix.
 	var storage *storage.Client
 	if cfg.instanceID != "" {
 		storage = r.storage.WithPrefix(cfg.instanceID, cfg.name)
