@@ -44,8 +44,8 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 
 	q := fmt.Sprintf(`
 	SELECT
-		schema_name
-	FROM information_schema.schemata
+		 name as schema_name
+	FROM system.databases
 	WHERE %s 
 	ORDER BY schema_name 
 	LIMIT ?
@@ -93,10 +93,10 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	q := `
 	SELECT
-		table_name,
-		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view
-	FROM information_schema.tables
-	WHERE table_schema = ?
+		name AS table_name,
+		CASE WHEN match(engine, 'View') THEN true ELSE false END AS view
+	FROM system.tables
+	WHERE is_temporary = 0 AND database = ?
 	`
 	args := []any{databaseSchema}
 	if pageToken != "" {
@@ -159,14 +159,14 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
 
 	q := `
     SELECT
-        CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS view,
-        c.column_name,
-        c.data_type
-    FROM information_schema.tables t
-    LEFT JOIN information_schema.columns c 
-		ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-    WHERE t.table_schema = ? AND t.table_name = ?
-    ORDER BY c.ordinal_position
+        CASE WHEN match(engine, 'View') THEN true ELSE false END AS view,
+        c.name AS column_name,
+        c.type AS data_type
+    FROM system.tables t
+    LEFT JOIN system.columns c
+		ON t.database = c.database AND t.name = c.table
+    WHERE t.database = ? AND t.name = ?
+    ORDER BY c.position
     `
 	rows, err := conn.QueryxContext(ctx, q, databaseSchema, table)
 	if err != nil {
