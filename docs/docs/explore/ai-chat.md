@@ -7,7 +7,7 @@ sidebar_position: 00
 
 ## Overview
 
-AI Chat in Rill Cloud allows you to have natural language conversations with your data directly in your browser. Instead of building queries or navigating through dashboards, simply ask questions in plain English and get instant insights backed by your metrics views—complete with **interactive charts and visualizations** that render right in the chat interface, plus **direct links** to your existing dashboards for deeper exploration.
+AI Chat in Rill Cloud allows you to have natural language conversations with your data directly in your browser. Instead of building queries or navigating through dashboards, simply ask questions using everyday conversational language and get instant insights backed by your metrics views—complete with **interactive charts and visualizations** that render right in the chat interface, plus **direct links** to your existing dashboards for deeper exploration.
 
 AI Chat is powered by [Rill's Model Context Protocol (MCP)](/explore/mcp) integration, which ensures that responses are accurate, governed, and consistent with the metrics displayed in your dashboards. By querying data with **predefined measures and dimensions**, you can trust that the answers you receive are as reliable as the data in your Rill dashboards. 
 
