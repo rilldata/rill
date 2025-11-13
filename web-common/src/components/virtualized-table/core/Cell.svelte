@@ -103,10 +103,14 @@
       ? "ui-measure-bar-included-selected"
       : "ui-measure-bar-included";
 
-  $: tooltipValue =
-    value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
-      ? value?.slice(0, TOOLTIP_STRING_LIMIT) + "..."
-      : value;
+  // Use preformatted values for non-string types to avoid showing raw floats
+  // (e.g., 111432.16000000002). For string-like types, keep the existing
+  // truncation behavior for very long strings.
+  $: tooltipValue = STRING_LIKES.has(type)
+    ? typeof value === "string" && value.length >= TOOLTIP_STRING_LIMIT
+      ? value.slice(0, TOOLTIP_STRING_LIMIT) + "..."
+      : value
+    : (formattedValue ?? value);
 
   $: formattedDataTypeStyle = excluded
     ? "font-normal ui-copy-disabled-faint"
@@ -179,7 +183,7 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType slot="name" value={tooltipValue} />
+      <FormattedDataType slot="name" {type} value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>
