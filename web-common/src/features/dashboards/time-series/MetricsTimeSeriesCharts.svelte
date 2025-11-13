@@ -35,10 +35,7 @@
     TimeRangePreset,
     type AvailableTimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import {
-    V1TimeGrain,
-    type MetricsViewSpecMeasure,
-  } from "@rilldata/web-common/runtime-client";
+  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
@@ -377,7 +374,7 @@
               <span class:-rotate-90={open} class="transition-transform">
                 <CaretDownIcon />
               </span>
-              {#if !grainAllowed}
+              {#if !grainAllowed && minTimeGrain}
                 <Tooltip.Root portal="body">
                   <Tooltip.Trigger>
                     <AlertCircleOutline className="size-3.5 text-red-600" />
@@ -386,11 +383,7 @@
                     <TooltipContent>
                       <i>{V1TimeGrainToDateTimeUnit[activeTimeGrain]}</i>
                       aggregation not supported on this dashboard. Displaying by
-                      <i
-                        >{V1TimeGrainToDateTimeUnit[
-                          minTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE
-                        ]}</i
-                      > instead.
+                      <i>{V1TimeGrainToDateTimeUnit[minTimeGrain]}</i> instead.
                     </TooltipContent>
                   </Tooltip.Content>
                 </Tooltip.Root>

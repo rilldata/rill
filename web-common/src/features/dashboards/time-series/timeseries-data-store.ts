@@ -66,7 +66,7 @@ export function createMetricsViewTimeSeries(
       useTimeControlStore(ctx),
     ],
     ([runtime, metricsViewName, dashboardStore, timeControls], set) => {
-      const interval = isGrainAllowed(
+      const timeGrain = isGrainAllowed(
         timeControls.selectedTimeRange?.interval,
         timeControls.minTimeGrain,
       )
@@ -91,7 +91,7 @@ export function createMetricsViewTimeSeries(
           timeEnd: isComparison
             ? timeControls.comparisonAdjustedEnd
             : timeControls.adjustedEnd,
-          timeGranularity: interval,
+          timeGranularity: timeGrain,
           timeZone: dashboardStore.selectedTimezone,
         },
         {
