@@ -47,8 +47,8 @@ TableCells – the cell contents.
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
    * to render on initial load.
    */
-  export let rowOverscanAmount = 40;
-  export let columnOverscanAmount = 5;
+  export let rowOverscanAmount = 120;
+  export let columnOverscanAmount = 12;
 
   let container: HTMLDivElement;
 
@@ -102,6 +102,7 @@ TableCells – the cell contents.
     getScrollElement: () => container,
     count: rows.length,
     estimateSize: () => config.rowHeight,
+    getItemKey: (index) => String(rows?.[index]?.[dimensionName] ?? index),
     overscan: rowOverscanAmount,
     paddingStart: config.columnHeaderHeight,
     initialOffset: rowScrollOffset,
@@ -191,17 +192,15 @@ TableCells – the cell contents.
     bind:this={container}
     on:scroll={() => {
       horizontalScrolling = container?.scrollLeft > 0;
-    }}
-    style:width="100%"
-    style:height="100%"
-    class="overflow-auto grid max-w-fit"
-    style:grid-template-columns="max-content auto"
-    on:scroll={() => {
       /** capture to suppress cell tooltips. Otherwise,
        * there's quite a bit of rendering jank.
        */
       scrolling = true;
     }}
+    style:width="100%"
+    style:height="100%"
+    class="overflow-auto grid max-w-fit"
+    style:grid-template-columns="max-content auto"
   >
     {#if $rowVirtualizer}
       <div
@@ -211,6 +210,7 @@ TableCells – the cell contents.
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}
         style:will-change="transform, contents"
+        style:contain="content"
         style:width="{virtualWidth}px"
         style:height="{virtualHeight}px"
       >
