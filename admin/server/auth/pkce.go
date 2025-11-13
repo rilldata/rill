@@ -22,7 +22,7 @@ const (
 	refreshTokenGrantType      = "refresh_token"
 )
 
-var firstPartyAuthClients = []string{"12345678-0000-0000-0000-000000000001", "12345678-0000-0000-0000-000000000002"} // Rill Web, Rill CLI
+var firstPartyAuthClients = []string{database.AuthClientIDRillWeb, database.AuthClientIDRillCLI, database.AuthClientIDRillSupport, database.AuthClientIDRillWebLocal, database.AuthClientIDRillManual}
 
 func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI string) {
 	// Generate a unique authorization code
@@ -191,7 +191,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	}
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
-		internalServerError(w, fmt.Errorf("0082failed to marshal response, %w", err))
+		internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

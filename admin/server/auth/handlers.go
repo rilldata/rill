@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
@@ -84,7 +85,7 @@ const (
 // If the current org doesn't have a custom domain, the custom domain can be substituted for the canonical domain (without path suffix).
 //
 // There are more details in the type doc for `admin.URLs` and in the individual handler docstrings below.
-func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter, issuer *auth.Issuer) {
 	// checkLimit needs access to limiter
 	checkLimit := func(route string) middleware.CheckFunc {
 		return func(req *http.Request) error {
@@ -118,8 +119,11 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.
 	observability.MuxHandle(inner, "/auth/oauth/token", middleware.Check(checkLimit("/auth/oauth/token"), http.HandlerFunc(a.getAccessToken)))
 	observability.MuxHandle(inner, "/auth/oauth/register", middleware.Check(checkLimit("/auth/oauth/register"), http.HandlerFunc(a.handleOAuthRegister)))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
-	// Register OAuth discovery endpoints for MCP support
+	// Register well known endpoints
 	wellKnownMux := http.NewServeMux()
+	// Serve public JWKS for runtime JWT verification
+	wellKnownMux.Handle("/.well-known/jwks.json", issuer.WellKnownHandler())
+	// OAuth discovery endpoints for MCP support
 	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-protected-resource", middleware.Check(checkLimit("/.well-known/oauth-protected-resource"), http.HandlerFunc(a.handleOAuthProtectedResourceMetadata)))
 	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-authorization-server", middleware.Check(checkLimit("/.well-known/oauth-authorization-server"), http.HandlerFunc(a.handleOAuthAuthorizationServerMetadata)))
 	mux.Handle("/.well-known/", observability.Middleware("admin", a.logger, wellKnownMux))
@@ -680,17 +684,15 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	grantType := values.Get("grant_type")
-	if !(grantType == deviceCodeGrantType || grantType == authorizationCodeGrantType || grantType == refreshTokenGrantType) {
-		http.Error(w, "invalid grant_type", http.StatusBadRequest)
-		return
-	}
-
 	if grantType == deviceCodeGrantType {
 		a.getAccessTokenForDeviceCode(w, r, values)
 	} else if grantType == authorizationCodeGrantType {
 		a.getAccessTokenForAuthorizationCode(w, r, values)
-	} else {
+	} else if grantType == refreshTokenGrantType {
 		a.getAccessTokenForRefreshToken(w, r, values)
+	} else {
+		http.Error(w, fmt.Sprintf("unexpected grant_type: %q", grantType), http.StatusBadRequest)
+		return
 	}
 }
 

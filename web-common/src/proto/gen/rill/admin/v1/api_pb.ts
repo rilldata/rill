@@ -8529,11 +8529,11 @@ export class ListUserAuthTokensRequest extends Message<ListUserAuthTokensRequest
   superuserForceAccess = false;
 
   /**
-   * Flag to filter only refresh tokens. If false, only returns access tokens (non-refresh).
+   * Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
    *
-   * @generated from field: bool refresh = 5;
+   * @generated from field: optional bool refresh = 5;
    */
-  refresh = false;
+  refresh?: boolean;
 
   constructor(data?: PartialMessage<ListUserAuthTokensRequest>) {
     super();
@@ -8547,7 +8547,7 @@ export class ListUserAuthTokensRequest extends Message<ListUserAuthTokensRequest
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUserAuthTokensRequest {
@@ -16040,6 +16040,11 @@ export class UserAuthToken extends Message<UserAuthToken> {
   prefix = "";
 
   /**
+   * @generated from field: bool refresh = 10;
+   */
+  refresh = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 6;
    */
   createdOn?: Timestamp;
@@ -16053,11 +16058,6 @@ export class UserAuthToken extends Message<UserAuthToken> {
    * @generated from field: google.protobuf.Timestamp used_on = 8;
    */
   usedOn?: Timestamp;
-
-  /**
-   * @generated from field: bool refresh = 10;
-   */
-  refresh = false;
 
   constructor(data?: PartialMessage<UserAuthToken>) {
     super();
@@ -16073,10 +16073,10 @@ export class UserAuthToken extends Message<UserAuthToken> {
     { no: 4, name: "auth_client_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "representing_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "created_on", kind: "message", T: Timestamp },
     { no: 7, name: "expires_on", kind: "message", T: Timestamp },
     { no: 8, name: "used_on", kind: "message", T: Timestamp },
-    { no: 10, name: "refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserAuthToken {

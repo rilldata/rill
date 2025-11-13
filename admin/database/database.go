@@ -212,7 +212,6 @@ type DB interface {
 	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
 
 	InsertAuthClient(ctx context.Context, displayName string) (*AuthClient, error)
-	FindAuthClientByDisplayName(ctx context.Context, displayName string) (*AuthClient, error)
 
 	FindOrganizationRoles(ctx context.Context) ([]*OrganizationRole, error)
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)

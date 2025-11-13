@@ -1498,10 +1498,10 @@ export interface V1UserAuthToken {
   authClientDisplayName?: string;
   representingUserId?: string;
   prefix?: string;
+  refresh?: boolean;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
-  refresh?: boolean;
 }
 
 export interface V1UserPreferences {
@@ -2069,7 +2069,7 @@ export type AdminServiceListUserAuthTokensParams = {
    */
   superuserForceAccess?: boolean;
   /**
-   * Flag to filter only refresh tokens. If false, only returns access tokens (non-refresh).
+   * Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
    */
   refresh?: boolean;
 };

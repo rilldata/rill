@@ -194,17 +194,7 @@ func (s *Server) ListUserAuthTokens(ctx context.Context, req *adminv1.ListUserAu
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Determine refresh filter: if RefreshTokensOnly is true, show only refresh tokens; otherwise show only access tokens
-	var refreshFilter *bool
-	if req.Refresh {
-		refreshFilter = &req.Refresh
-	} else {
-		// Default: only show access tokens (non-refresh tokens)
-		falseVal := false
-		refreshFilter = &falseVal
-	}
-
-	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize, refreshFilter)
+	authTokens, err := s.admin.DB.FindUserAuthTokens(ctx, userID, pageToken.Val, pageSize, req.Refresh)
 	if err != nil {
 		return nil, err
 	}

@@ -221,11 +221,8 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		mux.Handle("/metrics", promhttp.Handler())
 	}
 
-	// Server public JWKS for runtime JWT verification
-	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
-
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	s.authenticator.RegisterEndpoints(mux, s.limiter)
+	s.authenticator.RegisterEndpoints(mux, s.limiter, s.issuer)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)

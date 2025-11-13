@@ -23,11 +23,17 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			var refresh *bool
+			// check if flgag was explicitly set
+			if cmd.Flags().Changed("refresh") {
+				refresh = &refreshTokensOnly
+			}
+
 			res, err := client.ListUserAuthTokens(cmd.Context(), &adminv1.ListUserAuthTokensRequest{
 				UserId:    "current",
 				PageSize:  pageSize,
 				PageToken: pageToken,
-				Refresh:   refreshTokensOnly,
+				Refresh:   refresh,
 			})
 			if err != nil {
 				return err

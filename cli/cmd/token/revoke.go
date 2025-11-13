@@ -1,6 +1,8 @@
 package token
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -20,8 +22,7 @@ func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(args) > 0 && all {
-				ch.PrintfWarn("Cannot specify a token ID when using --all flag\n")
-				return cmd.Usage()
+				return fmt.Errorf("cannot specify a token ID when using --all flag\n")
 			}
 
 			if all {
@@ -30,7 +31,7 @@ func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 				if !confirm {
-					ch.Printf("Operation cancelled\n")
+					ch.PrintfWarn("Operation cancelled\n")
 					return nil
 				}
 				// Revoke all access and refresh tokens
@@ -51,8 +52,7 @@ func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Single token revocation
 			if len(args) == 0 {
-				ch.PrintfWarn("Please specify a token ID to revoke or use the --all flag to revoke all tokens\n")
-				return cmd.Usage()
+				return fmt.Errorf("Please specify a token ID to revoke or use the --all flag to revoke all tokens\n")
 			}
 
 			_, err = client.RevokeUserAuthToken(cmd.Context(), &adminv1.RevokeUserAuthTokenRequest{

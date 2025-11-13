@@ -2047,8 +2047,8 @@ message ListUserAuthTokensRequest {
   string page_token = 3;
   // Flag for superusers to override normal access checks.
   bool superuser_force_access = 4;
-  // Flag to filter only refresh tokens. If false, only returns access tokens (non-refresh).
-  bool refresh = 5;
+  // Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+  optional bool refresh = 5;
 }
 
 message ListUserAuthTokensResponse {
@@ -3012,10 +3012,10 @@ message UserAuthToken {
   string auth_client_display_name = 4;
   string representing_user_id = 5;
   string prefix = 9;
+  bool refresh = 10;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp expires_on = 7;
   google.protobuf.Timestamp used_on = 8;
-  bool refresh = 10;
 }
 
 message MagicAuthToken {

@@ -67,7 +67,6 @@ To use the Rill MCP server, you'll need:
 
 - An **MCP client** (we recommend [Claude Desktop](https://claude.ai/download), but you can use any compatible client. [Why?](#edit-claude-desktop-configuration))
 - A **running Rill project** (locally or hosted on Rill Cloud)
-- **Node.js**, which can be downloaded from [nodejs.org](https://nodejs.org/en) (not required for OAuth connection method)
 
 ## Connect using OAuth (Recommended)
 
@@ -83,7 +82,7 @@ Custom connectors are only available in the paid plan of Claude Desktop. [Learn 
 2. Click **Add custom connector**
 3. Enter the Rill MCP URL for your project:
    ```
-   https://admin.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp
+   https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp
    ```
    Replace `{org_name}` and `{project_name}` with your organization and project names.
 4. The OAuth flow will automatically start in your browser
@@ -101,7 +100,7 @@ Custom apps with Developer mode are only available in the paid plans of ChatGPT.
 3. Go back to **Apps & Connectors** and click **Create** in the Apps section
 4. Enter the Rill MCP URL for your project:
    ```
-   https://admin.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp
+   https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp
    ```
    Replace `{org_name}` and `{project_name}` with your organization and project names.
 5. The OAuth flow will automatically start in your browser
@@ -111,6 +110,7 @@ Custom apps with Developer mode are only available in the paid plans of ChatGPT.
 ## Manual Configuration (Alternative Method)
 
 If you prefer to manually configure the connection or need to connect to a local Rill instance, you can edit configuration files directly and provide your own access token.
+Note: If you select this option, you must have Node.js installed on your system which can be downloaded from [nodejs.org](https://nodejs.org/en)
 
 ### Create a Rill Personal Access Token (if your project is on Rill Cloud)
 You can navigate to the AI tab in your project to retrieve both the JSON and create a Rill personal access token.

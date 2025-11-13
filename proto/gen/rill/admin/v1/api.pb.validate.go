@@ -24037,7 +24037,9 @@ func (m *ListUserAuthTokensRequest) validate(all bool) error {
 
 	// no validation rules for SuperuserForceAccess
 
-	// no validation rules for Refresh
+	if m.Refresh != nil {
+		// no validation rules for Refresh
+	}
 
 	if len(errors) > 0 {
 		return ListUserAuthTokensRequestMultiError(errors)
@@ -42882,6 +42884,8 @@ func (m *UserAuthToken) validate(all bool) error {
 
 	// no validation rules for Prefix
 
+	// no validation rules for Refresh
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -42968,8 +42972,6 @@ func (m *UserAuthToken) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for Refresh
 
 	if len(errors) > 0 {
 		return UserAuthTokenMultiError(errors)

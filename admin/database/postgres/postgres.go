@@ -1719,17 +1719,6 @@ func (c *connection) InsertAuthClient(ctx context.Context, displayName string) (
 	return client, nil
 }
 
-func (c *connection) FindAuthClientByDisplayName(ctx context.Context, displayName string) (*database.AuthClient, error) {
-	client := &database.AuthClient{}
-	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`SELECT * FROM auth_clients WHERE display_name = $1`,
-		displayName).StructScan(client)
-	if err != nil {
-		return nil, parseErr("auth client", err)
-	}
-	return client, nil
-}
-
 func (c *connection) FindOrganizationRoles(ctx context.Context) ([]*database.OrganizationRole, error) {
 	var res []*database.OrganizationRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_roles")

@@ -3904,7 +3904,7 @@ paths:
           required: false
           type: boolean
         - name: refresh
-          description: Flag to filter only refresh tokens. If false, only returns access tokens (non-refresh).
+          description: Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
           in: query
           required: false
           type: boolean
@@ -6293,6 +6293,8 @@ definitions:
         type: string
       prefix:
         type: string
+      refresh:
+        type: boolean
       createdOn:
         type: string
         format: date-time
@@ -6302,8 +6304,6 @@ definitions:
       usedOn:
         type: string
         format: date-time
-      refresh:
-        type: boolean
   v1UserPreferences:
     type: object
     properties:
