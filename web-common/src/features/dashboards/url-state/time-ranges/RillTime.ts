@@ -399,6 +399,9 @@ export class RillIsoInterval implements RillTimeInterval {
     return ["Custom", true];
   }
 
+  // Checks for non-zero time components to determine smallest grain
+  // Starts with year as this function is not complete and may
+  // run into weekNumber, ordinal and other properties not currently being checked for
   public getGrain() {
     let smallestGrain: V1TimeGrain = V1TimeGrain.TIME_GRAIN_YEAR;
 
@@ -414,7 +417,12 @@ export class RillIsoInterval implements RillTimeInterval {
     if (this.start.dateObject.minute || this.end?.dateObject.minute) {
       smallestGrain = V1TimeGrain.TIME_GRAIN_MINUTE;
     }
-    if (this.start.dateObject.second || this.end?.dateObject.second) {
+    if (
+      this.start.dateObject.second ||
+      this.end?.dateObject.second ||
+      this.start.dateObject.millisecond ||
+      this.end?.dateObject.millisecond
+    ) {
       smallestGrain = V1TimeGrain.TIME_GRAIN_SECOND;
     }
     return smallestGrain;
