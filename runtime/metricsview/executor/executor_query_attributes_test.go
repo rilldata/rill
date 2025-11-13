@@ -74,7 +74,7 @@ dimensions:
 measures:
   - expression: count(*)
 query_attributes:
-  author: sample_author
+  test_author: sample_author
 `,
 		},
 	})
@@ -84,7 +84,7 @@ query_attributes:
 	spec := mv.GetMetricsView().Spec
 
 	require.NotNil(t, spec.QueryAttributes)
-	require.Equal(t, "sample_author", spec.QueryAttributes["author"])
+	require.Equal(t, "sample_author", spec.QueryAttributes["test_author"])
 
 	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
 	require.NoError(t, err)
@@ -150,9 +150,9 @@ dimensions:
 measures:
   - expression: count(*)
 query_attributes:
-  attr1: value1
-  attr2: value2
-  attr3: value3
+  test_attr1: value1
+  test_attr2: value2
+  test_attr3: value3
 `,
 		},
 	})
@@ -163,9 +163,9 @@ query_attributes:
 
 	// Verify all query attributes are stored in the spec
 	require.NotNil(t, spec.QueryAttributes)
-	require.Equal(t, "value1", spec.QueryAttributes["attr1"])
-	require.Equal(t, "value2", spec.QueryAttributes["attr2"])
-	require.Equal(t, "value3", spec.QueryAttributes["attr3"])
+	require.Equal(t, "value1", spec.QueryAttributes["test_attr1"])
+	require.Equal(t, "value2", spec.QueryAttributes["test_attr2"])
+	require.Equal(t, "value3", spec.QueryAttributes["test_attr3"])
 	require.Len(t, spec.QueryAttributes, 3)
 
 	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
@@ -194,7 +194,7 @@ dimensions:
 measures:
   - expression: count(*)
 query_attributes:
-  bad_attr: '{{ .nonexistent.field }}'
+  test_bad_attr: '{{ .nonexistent.field }}'
 `,
 		},
 	})
@@ -205,8 +205,8 @@ query_attributes:
 
 	// Verify the attribute is stored as a template (YAML parser strips outer quotes)
 	require.NotNil(t, spec.QueryAttributes)
-	require.Contains(t, spec.QueryAttributes, "bad_attr")
-	require.Equal(t, "{{ .nonexistent.field }}", spec.QueryAttributes["bad_attr"])
+	require.Contains(t, spec.QueryAttributes, "test_bad_attr")
+	require.Equal(t, "{{ .nonexistent.field }}", spec.QueryAttributes["test_bad_attr"])
 
 	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
 	require.NoError(t, err)
@@ -239,7 +239,7 @@ measures:
 cache:
   enabled: true
 query_attributes:
-  partner_id: partner123
+  test_partner_id: partner123
 `,
 		},
 	})
@@ -273,9 +273,9 @@ dimensions:
 measures:
   - expression: count(*)
 query_attributes:
-  attr_with_quotes: "value with 'quotes'"
-  attr_with_spaces: "value with spaces"
-  attr_with_equals: "key=value"
+  test_attr_with_quotes: "value with 'quotes'"
+  test_attr_with_spaces: "value with spaces"
+  test_attr_with_equals: "key=value"
 `,
 		},
 	})
@@ -286,9 +286,9 @@ query_attributes:
 
 	// Verify query attributes with special characters are stored correctly
 	require.NotNil(t, spec.QueryAttributes)
-	require.Equal(t, "value with 'quotes'", spec.QueryAttributes["attr_with_quotes"])
-	require.Equal(t, "value with spaces", spec.QueryAttributes["attr_with_spaces"])
-	require.Equal(t, "key=value", spec.QueryAttributes["attr_with_equals"])
+	require.Equal(t, "value with 'quotes'", spec.QueryAttributes["test_attr_with_quotes"])
+	require.Equal(t, "value with spaces", spec.QueryAttributes["test_attr_with_spaces"])
+	require.Equal(t, "key=value", spec.QueryAttributes["test_attr_with_equals"])
 
 	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
 	require.NoError(t, err)
@@ -320,8 +320,8 @@ dimensions:
 measures:
   - expression: count(*)
 query_attributes:
-  partner_id: partner123
-  env_name: test
+  test_partner_id: partner123
+  test_env_name: test
 `,
 		},
 	})
@@ -356,9 +356,9 @@ dimensions:
 measures:
   - expression: count(*)
 query_attributes:
-  partner_id: '{{ .user.partner_id }}'
-  user_email: '{{ .user.email }}'
-  user_group: '{{ .user.group }}'
+  test_partner_id: '{{ .user.partner_id }}'
+  test_user_email: '{{ .user.email }}'
+  test_user_group: '{{ .user.group }}'
 `,
 		},
 	})
@@ -444,7 +444,7 @@ dimensions:
 measures:
   - expression: count(*)
 query_attributes:
-  partner_id: '{{ .user.partner_id }}'
+  test_partner_id: '{{ .user.partner_id }}'
 `,
 		},
 	})
@@ -482,8 +482,8 @@ dimensions:
 measures:
   - expression: count(*)
 query_attributes:
-  compound_attr: '{{ .user.org_id }}_{{ .user.tenant_id }}'
-  conditional_attr: '{{ if .user.is_premium }}premium{{ else }}standard{{ end }}'
+  test_compound_attr: '{{ .user.org_id }}_{{ .user.tenant_id }}'
+  test_conditional_attr: '{{ if .user.is_premium }}premium{{ else }}standard{{ end }}'
 `,
 		},
 	})
