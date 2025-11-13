@@ -259,8 +259,14 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	// git add .
-	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+	// git add subpath/**
+	var stagingPath string
+	if config.Subpath != "" {
+		stagingPath = filepath.Join(config.Subpath, "**")
+	} else {
+		stagingPath = "."
+	}
+	if err := wt.AddWithOptions(&git.AddOptions{Glob: stagingPath}); err != nil {
 		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 
@@ -268,7 +274,7 @@ func CommitAndPush(ctx context.Context, projectPath string, config *Config, comm
 	if commitMsg == "" {
 		commitMsg = "Auto committed by Rill"
 	}
-	_, err = wt.Commit(commitMsg, &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: true})
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{Author: author, AllowEmptyCommits: true})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)

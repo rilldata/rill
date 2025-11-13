@@ -469,11 +469,21 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			return err
 		}
 	} else if proj.GitRemote != "" {
+		// Infer repo root and subpath for git operations
+		repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(opts.LocalProjectPath())
+		if err != nil {
+			return err
+		}
+		// Verify subpath matches the one stored in the project
+		if subpath != proj.Subpath {
+			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Run rill cli from github repo root and pass explicit subpath using `rill deploy --subpath %s`", subpath, proj.Subpath, proj.Subpath)
+		}
 		config := &gitutil.Config{
 			Remote:        opts.pushToProject.GitRemote,
 			DefaultBranch: opts.pushToProject.ProdBranch,
+			Subpath:       subpath,
 		}
-		err = gitutil.CommitAndPush(ctx, opts.GitPath, config, "", nil)
+		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", nil)
 		if err != nil {
 			return err
 		}

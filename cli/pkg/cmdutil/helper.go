@@ -561,11 +561,20 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 	return nil
 }
 
+// DefaultPushChoice is the default choice for handling remote changes during safe push. It can be overridden in tests.
+var DefaultPushChoice = "1"
+
 func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature) error {
 	// 1. Fetch latest from remote
-	remote, err := config.FullyQualifiedRemote()
-	if err != nil {
-		return err
+	var remote string
+	var err error
+	if config.Username != "" {
+		remote, err = config.FullyQualifiedRemote()
+		if err != nil {
+			return err
+		}
+	} else {
+		remote = config.RemoteName()
 	}
 	err = gitutil.RunGitFetch(ctx, root, remote)
 	if err != nil {
@@ -573,7 +582,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	}
 
 	// 2. Check status of the subpath
-	status, err := gitutil.RunGitStatus(root, config.Subpath, remote)
+	status, err := gitutil.RunGitStatus(root, config.Subpath, config.RemoteName())
 	if err != nil {
 		return fmt.Errorf("failed to get git status: %w", err)
 	}
@@ -582,14 +591,14 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	}
 
 	// 3. Warn if there are remote commits
-	choice := "1"
+	choice := DefaultPushChoice
 	if status.RemoteCommits != 0 {
 		if h.Interactive {
 			h.PrintfWarn("Warning: There are changes on the remote branch that are not in your local branch.")
 			h.PrintfWarn("It's recommended to pull the latest changes before pushing to avoid overwriting remote changes.\n")
 			h.PrintfWarn("Please choose one of the following options to proceed:\n")
-			h.PrintfWarn("1: Merge remote changes to your local branch and fail on conflicts\n")
-			h.PrintfWarn("2: Overwrite remote changes with your local changes\n")
+			h.PrintfWarn("1: Pull remote changes to your local branch and fail on conflicts\n")
+			h.PrintfWarn("2: Overwrite remote changes with your local changes(Not supported for monorepos)\n")
 			h.PrintfWarn("3: Abort deploy and merge manually\n")
 			choice, err = SelectPrompt("Choose how to resolve remote changes", []string{"1", "2", "3"}, "1")
 			if err != nil {
@@ -608,7 +617,14 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 		}
 		return gitutil.CommitAndPush(ctx, root, config, commitMsg, author)
 	case "2":
-		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history and do not push local changes outside of the subpath.
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history.
+		// This is not euivalent to a force push but is safer for users.
+		if config.Subpath != "" {
+			// force pushing in a monorepo can overwrite other subpaths
+			// we can check for changes in other subpaths but it is tricky and error prone
+			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
+			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
+		}
 		err := gitutil.RunUpstreamMerge(ctx, root, status.Branch, true)
 		if err != nil {
 			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
