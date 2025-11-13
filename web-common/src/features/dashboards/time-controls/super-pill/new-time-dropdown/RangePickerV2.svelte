@@ -24,7 +24,9 @@
   } from "../../../url-state/time-ranges/RillTime";
   import {
     getGrainOrder,
-    getTruncationGrain,
+    getLowerOrderGrain,
+    getSmallestGrainFromISODuration,
+    GrainAliasToV1TimeGrain,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
   import * as Popover from "@rilldata/web-common/components/popover";
@@ -69,6 +71,7 @@
   let filter = "";
   let parsedTime: RillTime | undefined = undefined;
   let showCalendarPicker = false;
+  let truncationGrain: V1TimeGrain | undefined = undefined;
   let timeZonePickerOpen = false;
   let searchValue: string | undefined = timeString;
 
@@ -93,7 +96,13 @@
     ? RillTimeLabel.Latest
     : parsedTime?.asOfLabel?.label;
 
-  $: truncationGrain = getTruncationGrain(parsedTime);
+  $: truncationGrain = usingLegacyTime
+    ? timeString?.startsWith("rill") && !timeString.endsWith("C")
+      ? V1TimeGrain.TIME_GRAIN_DAY
+      : getSmallestGrainFromISODuration(timeString ?? "PT1M")
+    : parsedTime?.asOfLabel?.snap
+      ? GrainAliasToV1TimeGrain[parsedTime.asOfLabel?.snap]
+      : undefined;
 
   $: dateTimeAnchor = returnAnchor(ref, zone);
 
@@ -121,7 +130,9 @@
         !parsed.asOfLabel && !(parsed.interval instanceof RillIsoInterval);
 
       if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-        truncationGrain = parsed.rangeGrain;
+        truncationGrain = isPeriodToDate
+          ? getLowerOrderGrain(parsed.rangeGrain)
+          : parsed.rangeGrain;
       }
 
       if (shouldAppendAsOfString) {
@@ -163,7 +174,7 @@
   }
 
   function onSelectAsOfOption(
-    ref: RillTimeLabel | string | undefined,
+    ref: RillTimeLabel | undefined,
     inclusive: boolean,
   ) {
     if (!timeString) return;
@@ -186,7 +197,7 @@
       return maxDate.setZone(zone);
     } else if (asOf === "watermark" && watermark) {
       return watermark.setZone(zone);
-    } else if (asOf === "now" || !asOf) {
+    } else if (asOf === "now") {
       return DateTime.now().setZone(zone);
     }
   }
@@ -271,7 +282,6 @@
       bind:searchValue
       onSelectRange={(range) => {
         open = false;
-
         handleRangeSelect(range);
       }}
     />
