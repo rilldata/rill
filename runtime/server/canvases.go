@@ -8,7 +8,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -122,7 +121,6 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 	}
 
 	// Extract metrics view names from components
-	var msqlParser *metricssql.Compiler
 	metricsViews := make(map[string]bool)
 	for _, cmp := range components {
 		validSpec := cmp.GetComponent().State.ValidSpec
@@ -131,52 +129,12 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		}
 
 		for k, v := range validSpec.RendererProperties.Fields {
-			switch k {
-			case "metrics_view":
+			if k == "metrics_view" {
 				if name := v.GetStringValue(); name != "" {
 					metricsViews[name] = true
 				}
-			case "metrics_sql":
-				// Instantiate a metrics SQL parser
-				if msqlParser == nil {
-					msqlParser = metricssql.New(&metricssql.CompilerOptions{
-						GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
-							mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
-							if err != nil {
-								return nil, err
-							}
-							sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
-							if err != nil {
-								return nil, err
-							}
-							if !sec.CanAccess() {
-								return nil, runtime.ErrForbidden
-							}
-							return mv, nil
-						},
-					})
-				}
-
-				// Create list of queries to analyze
-				var queries []string
-				if s := v.GetStringValue(); s != "" {
-					queries = append(queries, s)
-				} else if vals := v.GetListValue(); vals != nil {
-					for _, val := range vals.Values {
-						if s := val.GetStringValue(); s != "" {
-							queries = append(queries, s)
-						}
-					}
-				}
-
-				// Analyze each query
-				for _, sql := range queries {
-					q, err := msqlParser.Parse(ctx, sql)
-					if err == nil && q.MetricsView != "" {
-						metricsViews[q.MetricsView] = true
-					}
-				}
 			}
+			// Note: metrics_sql parsing removed - components now call ResolveTemplatedString RPC directly
 		}
 	}
 

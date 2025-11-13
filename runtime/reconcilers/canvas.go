@@ -368,6 +368,7 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 //		"area_chart" - "color"."field", "x"."field" and "y"."field"
 //		"stacked_bar" - "color"."field", "x"."field" and "y"."field"
 //		"stacked_bar_normalized" - "color"."field", "x"."field" and "y"."field"
+//		"markdown" - content may contain metrics_sql template functions; metrics views are resolved at query time via ResolveTemplatedString RPC
 func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[string]any) error {
 	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
 	if !ok {
