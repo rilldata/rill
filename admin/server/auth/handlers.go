@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
@@ -84,7 +85,7 @@ const (
 // If the current org doesn't have a custom domain, the custom domain can be substituted for the canonical domain (without path suffix).
 //
 // There are more details in the type doc for `admin.URLs` and in the individual handler docstrings below.
-func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter, issuer *auth.Issuer) {
 	// checkLimit needs access to limiter
 	checkLimit := func(route string) middleware.CheckFunc {
 		return func(req *http.Request) error {
@@ -116,7 +117,16 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.
 	observability.MuxHandle(inner, "/auth/oauth/device", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/device"), http.HandlerFunc(a.handleUserCodeConfirmation))))   // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/authorize", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/authorize"), http.HandlerFunc(a.handleAuthorizeRequest)))) // NOTE: Uses auth middleware
 	observability.MuxHandle(inner, "/auth/oauth/token", middleware.Check(checkLimit("/auth/oauth/token"), http.HandlerFunc(a.getAccessToken)))
+	observability.MuxHandle(inner, "/auth/oauth/register", middleware.Check(checkLimit("/auth/oauth/register"), http.HandlerFunc(a.handleOAuthRegister)))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
+	// Register well known endpoints
+	wellKnownMux := http.NewServeMux()
+	// Serve public JWKS for runtime JWT verification
+	wellKnownMux.Handle("/.well-known/jwks.json", issuer.WellKnownHandler())
+	// OAuth discovery endpoints for MCP support
+	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-protected-resource", middleware.Check(checkLimit("/.well-known/oauth-protected-resource"), http.HandlerFunc(a.handleOAuthProtectedResourceMetadata)))
+	observability.MuxHandle(wellKnownMux, "/.well-known/oauth-authorization-server", middleware.Check(checkLimit("/.well-known/oauth-authorization-server"), http.HandlerFunc(a.handleOAuthAuthorizationServerMetadata)))
+	mux.Handle("/.well-known/", observability.Middleware("admin", a.logger, wellKnownMux))
 }
 
 // authSignup redirects the users to the auth provider's signup page.
@@ -321,7 +331,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 		// Issue a short-lived nonce token (2-minute TTL) for browser auth callback
 		ttl := 2 * time.Minute
-		authNonceToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Nonce Token", nil, &ttl)
+		authNonceToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Nonce Token", nil, &ttl, false)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 			return
@@ -332,7 +342,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -395,7 +405,7 @@ func (a *Authenticator) authLoginCustomDomainCallback(w http.ResponseWriter, r *
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil)
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), validated.OwnerID(), database.AuthClientIDRillWeb, "Browser session", nil, nil, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -490,7 +500,7 @@ func (a *Authenticator) authAssumeOpen(w http.ResponseWriter, r *http.Request) {
 
 	// Issue a new token for the representing user.
 	// We use mdl.UserID here instead of claims.OwnerID() because OwnerID() could return the representing user's ID if the token is already an assumed token.
-	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), mdl.UserID, database.AuthClientIDRillSupport, fmt.Sprintf("Support for %s", representEmail), representingUserID, ttl)
+	newAuthToken, err := a.admin.IssueUserAuthToken(r.Context(), mdl.UserID, database.AuthClientIDRillSupport, fmt.Sprintf("Support for %s", representEmail), representingUserID, ttl, false)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -674,15 +684,15 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	grantType := values.Get("grant_type")
-	if !(grantType == deviceCodeGrantType || grantType == authorizationCodeGrantType) {
-		http.Error(w, "invalid grant_type", http.StatusBadRequest)
-		return
-	}
-
 	if grantType == deviceCodeGrantType {
 		a.getAccessTokenForDeviceCode(w, r, values)
-	} else {
+	} else if grantType == authorizationCodeGrantType {
 		a.getAccessTokenForAuthorizationCode(w, r, values)
+	} else if grantType == refreshTokenGrantType {
+		a.getAccessTokenForRefreshToken(w, r, values)
+	} else {
+		http.Error(w, fmt.Sprintf("unexpected grant_type: %q", grantType), http.StatusBadRequest)
+		return
 	}
 }
 
