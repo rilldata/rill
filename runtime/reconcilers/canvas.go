@@ -340,7 +340,156 @@ func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[
 	if err != nil {
 		return err
 	}
-
+	if filter, ok := pathutil.GetPath(rendererProps, "dimension_filters"); ok {
+		err = res.metricsViewRowFilter(mv, filter)
+		if err != nil {
+			return err
+		}
+	}
+	switch renderer {
+	case "leaderboard":
+		if dims, ok := pathutil.GetPath(rendererProps, "dimensions"); ok {
+			err = res.metricsViewFields(mv, dims)
+			if err != nil {
+				return err
+			}
+		}
+		if meas, ok := pathutil.GetPath(rendererProps, "measures"); ok {
+			err = res.metricsViewFields(mv, meas)
+			if err != nil {
+				return err
+			}
+		}
+	case "kpi_grid":
+		if dims, ok := pathutil.GetPath(rendererProps, "dimensions"); ok {
+			err = res.metricsViewFields(mv, dims)
+			if err != nil {
+				return err
+			}
+		}
+		if meas, ok := pathutil.GetPath(rendererProps, "measures"); ok {
+			err = res.metricsViewFields(mv, meas)
+			if err != nil {
+				return err
+			}
+		}
+	case "table":
+		if cols, ok := pathutil.GetPath(rendererProps, "columns"); ok {
+			err = res.metricsViewFields(mv, cols)
+			if err != nil {
+				return err
+			}
+		}
+	case "pivot":
+		if rowDims, ok := pathutil.GetPath(rendererProps, "row_dimensions"); ok {
+			err = res.metricsViewFields(mv, rowDims)
+			if err != nil {
+				return err
+			}
+		}
+		if colDims, ok := pathutil.GetPath(rendererProps, "col_dimensions"); ok {
+			err = res.metricsViewFields(mv, colDims)
+			if err != nil {
+				return err
+			}
+		}
+		if meas, ok := pathutil.GetPath(rendererProps, "measures"); ok {
+			err = res.metricsViewFields(mv, meas)
+			if err != nil {
+				return err
+			}
+		}
+	case "heatmap":
+		if colorField, ok := pathutil.GetPath(rendererProps, "color.field"); ok {
+			err = res.metricsViewField(mv, colorField)
+			if err != nil {
+				return err
+			}
+		}
+		if xField, ok := pathutil.GetPath(rendererProps, "x.field"); ok {
+			err = res.metricsViewField(mv, xField)
+			if err != nil {
+				return err
+			}
+		}
+		if yField, ok := pathutil.GetPath(rendererProps, "y.field"); ok {
+			err = res.metricsViewField(mv, yField)
+			if err != nil {
+				return err
+			}
+		}
+	case "multi_metric_chart":
+		if meas, ok := pathutil.GetPath(rendererProps, "measures"); ok {
+			err = res.metricsViewFields(mv, meas)
+			if err != nil {
+				return err
+			}
+		}
+		if xField, ok := pathutil.GetPath(rendererProps, "x.field"); ok {
+			err = res.metricsViewField(mv, xField)
+			if err != nil {
+				return err
+			}
+		}
+	case "funnel_chart":
+		if stageField, ok := pathutil.GetPath(rendererProps, "stage.field"); ok {
+			err = res.metricsViewField(mv, stageField)
+			if err != nil {
+				return err
+			}
+		}
+		if measureField, ok := pathutil.GetPath(rendererProps, "measure.field"); ok {
+			err = res.metricsViewField(mv, measureField)
+			if err != nil {
+				return err
+			}
+		}
+	case "donut_chart":
+		if colorField, ok := pathutil.GetPath(rendererProps, "color.field"); ok {
+			err = res.metricsViewField(mv, colorField)
+			if err != nil {
+				return err
+			}
+		}
+		if measureField, ok := pathutil.GetPath(rendererProps, "measure.field"); ok {
+			err = res.metricsViewField(mv, measureField)
+			if err != nil {
+				return err
+			}
+		}
+	case "bar_chart", "line_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
+		if colorField, ok := pathutil.GetPath(rendererProps, "color.field"); ok {
+			err = res.metricsViewField(mv, colorField)
+			if err != nil {
+				return err
+			}
+		}
+		if xField, ok := pathutil.GetPath(rendererProps, "x.field"); ok {
+			err = res.metricsViewField(mv, xField)
+			if err != nil {
+				return err
+			}
+		}
+		if yField, ok := pathutil.GetPath(rendererProps, "y.field"); ok {
+			err = res.metricsViewField(mv, yField)
+			if err != nil {
+				return err
+			}
+		}
+	case "markdown":
+		// For markdown, we need to extract metrics views from metrics_sql template functions
+		if content, ok := pathutil.GetPath(rendererProps, "content"); ok {
+			if contentStr, ok := content.(string); ok {
+				// Parse the markdown content to find {{ metrics_sql "..." }} calls
+				mvNames := extractMetricsViewsFromTemplate(contentStr)
+				for _, mvName := range mvNames {
+					res.metricsViews[mvName] = true
+				}
+			}
+		}
+	default:
+		return fmt.Errorf("unknown renderer type %q", renderer)
+	}
 	return nil
 }
 
@@ -351,4 +500,146 @@ func (r *rendererRefs) metricsView(mv any) error {
 		return nil
 	}
 	return fmt.Errorf("metrics view field is not a string")
+}
+
+func (r *rendererRefs) metricsViewFields(mv, fields any) error {
+	metricsView, ok1 := mv.(string)
+	fs, ok2 := fields.([]interface{})
+	if !ok1 || !ok2 {
+		return fmt.Errorf("metrics view field is not a string or fields is not a list")
+	}
+	if r.mvFields[metricsView] == nil {
+		r.mvFields[metricsView] = make(map[string]bool)
+	}
+	for _, f := range fs {
+		fstr, ok := f.(string)
+		if !ok {
+			return fmt.Errorf("field is not a string")
+		}
+		r.mvFields[metricsView][extractDimension(fstr)] = true
+	}
+	return nil
+}
+
+func (r *rendererRefs) metricsViewField(mv, field any) error {
+	metricsView, ok1 := mv.(string)
+	f, ok2 := field.(string)
+	if !ok1 || !ok2 {
+		return fmt.Errorf("metrics view field is not a string or field is not a string")
+	}
+	if f == "" {
+		return nil
+	}
+	if r.mvFields[metricsView] == nil {
+		r.mvFields[metricsView] = make(map[string]bool)
+	}
+	r.mvFields[metricsView][extractDimension(f)] = true
+
+	return nil
+}
+
+func (r *rendererRefs) metricsViewRowFilter(mv, filter any) error {
+	metricsView, ok1 := mv.(string)
+	f, ok2 := filter.(string)
+	if !ok1 || !ok2 {
+		return fmt.Errorf("metrics view field is not a string or filter is not a string")
+	}
+	if f == "" {
+		return nil
+	}
+	r.mvFilters[metricsView] = append(r.mvFilters[metricsView], fmt.Sprintf("(%s)", f)) // wrap in () to ensure correct precedence when combining multiple filters with OR
+	// Extract fields from dimension_filters SQL expression
+	ex, err := metricssql.ParseFilter(f)
+	if err != nil {
+		return fmt.Errorf("failed to parse dimension_filters SQL expression %q: %w", f, err)
+	}
+	dimFilterFields := metricsview.AnalyzeExpressionFields(ex)
+	if r.mvFields[metricsView] == nil {
+		r.mvFields[metricsView] = make(map[string]bool)
+	}
+	for _, f := range dimFilterFields {
+		r.mvFields[metricsView][extractDimension(f)] = true
+	}
+	return nil
+}
+
+// extractMetricsViewsFromTemplate parses a template string and extracts metrics view names
+// from metrics_sql function calls like {{ metrics_sql "SELECT measure FROM metrics_view" }}
+func extractMetricsViewsFromTemplate(content string) []string {
+	metricsViews := []string{}
+	seen := make(map[string]bool)
+
+	// Find all {{ metrics_sql "..." }} occurrences
+	start := 0
+	for {
+		// Find opening {{
+		idx := strings.Index(content[start:], "{{")
+		if idx == -1 {
+			break
+		}
+		idx += start
+
+		// Find the closing }} for this template
+		remaining := content[idx:]
+		closeIdx := strings.Index(remaining, "}}")
+		if closeIdx == -1 {
+			break
+		}
+
+		// Extract the content between {{ and }}
+		templateContent := remaining[2:closeIdx]
+
+		// Check if this template contains metrics_sql
+		if !strings.Contains(templateContent, "metrics_sql") {
+			start = idx + closeIdx + 2
+			continue
+		}
+
+		// Parse the SQL query string - look for quoted strings after metrics_sql
+		sqlStart := strings.Index(templateContent, "\"")
+		if sqlStart != -1 {
+			sqlEnd := strings.Index(templateContent[sqlStart+1:], "\"")
+			if sqlEnd != -1 {
+				sql := templateContent[sqlStart+1 : sqlStart+1+sqlEnd]
+
+				// Parse the SQL to extract the metrics view name
+				// Look for "FROM <metrics_view_name>" pattern
+				sqlUpper := strings.ToUpper(sql)
+				fromIdx := strings.Index(sqlUpper, " FROM ")
+				if fromIdx != -1 {
+					// Extract the metrics view name after FROM
+					afterFrom := strings.TrimSpace(sql[fromIdx+6:])
+
+					// Take the first word (metrics view name)
+					// The metrics view name ends at the first space or SQL keyword
+					mvName := afterFrom
+
+					// Find where the metrics view name ends (at first SQL keyword)
+					for _, clause := range []string{" WHERE ", " GROUP ", " ORDER ", " LIMIT ", " HAVING "} {
+						if clauseIdx := strings.Index(" "+strings.ToUpper(afterFrom), clause); clauseIdx != -1 && clauseIdx > 0 {
+							mvName = afterFrom[:clauseIdx]
+							break
+						}
+					}
+
+					// Also handle case where there's just a space (no SQL keyword)
+					if spaceIdx := strings.Index(mvName, " "); spaceIdx != -1 {
+						mvName = mvName[:spaceIdx]
+					}
+
+					mvName = strings.TrimSpace(mvName)
+
+					if mvName != "" && !seen[mvName] {
+						metricsViews = append(metricsViews, mvName)
+						seen[mvName] = true
+					}
+				}
+			}
+		}
+
+		// Move past this template call
+		start = idx + closeIdx + 2
+	}
+
+	return metricsViews
 }
