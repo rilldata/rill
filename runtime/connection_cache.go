@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
@@ -151,8 +152,17 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 	}
 
+	// Create storage client with a path prefix scoped to the instance and connector.
+	// For shared connections, we use "shared" as the instance ID.
+	var storage *storage.Client
+	if cfg.instanceID != "" {
+		storage = r.storage.WithPrefix(cfg.instanceID, cfg.name)
+	} else {
+		storage = r.storage.WithPrefix("shared", cfg.name)
+	}
+
 	r.Logger.Debug("opening connection", zap.String("instance_id", cfg.instanceID), zap.String("driver", cfg.driver), zap.String("name", cfg.name), zap.Bool("provision", cfg.provision))
-	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
+	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, storage, activityClient, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}

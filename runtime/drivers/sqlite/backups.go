@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	// Directory in the storage bucket to store backups in.
-	backupsDir = "runtime-metastores/sqlite"
-
 	// Maximum size of the SQLite snapshot for backup.
 	backupMaxSizeBytes int64 = 1024 * 1024 * 1024 // 1 GB
+
+	// Max time a backup may run for.
+	backupMaxDuration = 10 * time.Minute
 
 	// Queries to backup as Parquet.
 	// Each will be exported to {output_dir}/{key}.parquet.
@@ -44,7 +44,7 @@ var (
 // It is a best-effort backup used for analytics. There are currently no guarantees on backups and no restore functionality.
 // Backups are performed at midnight UTC every day if the runtime is running at that time.
 //
-// Backups are stored in the external bucket under the path "runtime-metastores/sqlite/{backupID}/".
+// Backups are stored in the external bucket under the path "shared/metastore/{backupID}/" (the "shared/metastore" prefix is applied by the code that opens the connection).
 // The directory will contain a snapshot.db SQLite file and Parquet files for each of the tables defined in parquetBackupQueries.
 func (c *connection) startBackups() {
 	// No-op if no backup ID is provided.
@@ -53,7 +53,7 @@ func (c *connection) startBackups() {
 	}
 
 	// No-op if no external bucket is configured.
-	bucket, ok, err := c.storage.OpenBucket(c.ctx, backupsDir, c.backupID)
+	bucket, ok, err := c.storage.OpenBucket(c.ctx, c.backupID)
 	if err != nil {
 		c.logger.Error("sqlite: could not open backup bucket", zap.Error(err))
 		return
@@ -92,8 +92,9 @@ func (c *connection) startBackups() {
 		}
 
 		// Perform backup.
+		c.logger.Info("sqlite: backup started", zap.String("backup_id", c.backupID))
 		if err := c.backup(c.ctx, bucket); err != nil {
-			c.logger.Error("sqlite: backup failed", zap.Error(err))
+			c.logger.Error("sqlite: backup failed", zap.String("backup_id", c.backupID), zap.Error(err))
 		} else {
 			c.logger.Info("sqlite: backup completed successfully", zap.String("backup_id", c.backupID))
 		}
@@ -104,6 +105,10 @@ func (c *connection) startBackups() {
 // It assumes the bucket is already scoped to the correct backup directory for the current backup ID.
 // See startBackups() for details.
 func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
+	// Set a timeout for the entire backup operation.
+	ctx, cancel := context.WithTimeout(ctx, backupMaxDuration)
+	defer cancel()
+
 	// Setup a temporary directory for intermediate files
 	tmpDir, err := os.MkdirTemp("", "sqlite-backup-*")
 	if err != nil {
@@ -194,7 +199,7 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 func (c *connection) isInMemory(ctx context.Context) (bool, error) {
 	var seq int
 	var name, file string
-	row := c.db.QueryRow(`PRAGMA database_list;`)
+	row := c.db.QueryRowContext(ctx, "PRAGMA database_list;")
 	err := row.Scan(&seq, &name, &file)
 	if err != nil {
 		return false, err
