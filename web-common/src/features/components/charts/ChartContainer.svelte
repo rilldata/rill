@@ -160,4 +160,13 @@
     @apply flex-shrink-0;
     @apply font-medium text-gray-800 truncate;
   }
+
+  .chip-scroll-container {
+    mask-image: linear-gradient(to right, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, black 95%, transparent);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+  }
 </style>

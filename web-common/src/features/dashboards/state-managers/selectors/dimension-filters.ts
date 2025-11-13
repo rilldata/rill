@@ -51,9 +51,7 @@ export const selectedDimensionValues = (
 
   if (
     dimExpr.cond.op === V1Operation.OPERATION_IN ||
-    dimExpr.cond.op === V1Operation.OPERATION_NIN ||
-    dimExpr.cond.op === V1Operation.OPERATION_EQ ||
-    dimExpr.cond.op === V1Operation.OPERATION_NEQ
+    dimExpr.cond.op === V1Operation.OPERATION_NIN
   ) {
     return readable({
       isFetching: false,
@@ -169,12 +167,7 @@ export function getDimensionFiltersMap(
     addedDimension.add(ident);
 
     const op = e.cond?.op;
-    if (
-      op === V1Operation.OPERATION_IN ||
-      op === V1Operation.OPERATION_NIN ||
-      op === V1Operation.OPERATION_EQ ||
-      op === V1Operation.OPERATION_NEQ
-    ) {
+    if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
       const isInListMode = dimensionsWithInlistFilter.includes(ident);
       filteredDimensions.set(ident, {
         name: ident,
@@ -183,9 +176,7 @@ export function getDimensionFiltersMap(
           ? DimensionFilterMode.InList
           : DimensionFilterMode.Select,
         selectedValues: getValuesInExpression(e),
-        isInclude:
-          e.cond?.op === V1Operation.OPERATION_IN ||
-          e.cond?.op === V1Operation.OPERATION_EQ,
+        isInclude: e.cond?.op === V1Operation.OPERATION_IN,
       });
     } else if (
       op === V1Operation.OPERATION_LIKE ||
@@ -269,11 +260,7 @@ export const includedDimensionValues = (
 ) => {
   return (dimensionName: string): unknown[] => {
     const expr = getWhereFilterExpression(dashData)(dimensionName);
-    if (
-      expr === undefined ||
-      (expr.cond?.op !== V1Operation.OPERATION_IN &&
-        expr.cond?.op !== V1Operation.OPERATION_EQ)
-    ) {
+    if (expr === undefined || expr.cond?.op !== V1Operation.OPERATION_IN) {
       return [];
     }
 
