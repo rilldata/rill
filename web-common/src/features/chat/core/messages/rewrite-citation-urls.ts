@@ -104,6 +104,7 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
         const partialExploreState = mapMetricsResolverQueryToDashboard(
           metricsViewSpec,
           exploreSpec,
+          timeRangeSummary,
           query,
         );
         const timeControlState = getTimeControlState(

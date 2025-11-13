@@ -11,6 +11,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestRBAC(t *testing.T) {
@@ -1331,6 +1332,79 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, usergroups.Usergroups, 3)
 		require.Equal(t, group1.Usergroup.GroupName, usergroups.Usergroups[2].GroupName)
+	})
+
+	t.Run("User attributes", func(t *testing.T) {
+		// Create users
+		u1, c1 := fix.NewUserWithEmail(t, "attr_user@example.com")
+		u2, c2 := fix.NewUser(t)
+
+		// Create org
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+
+		// Add user2 as member
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u2.Email,
+			Role:  database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Set custom attributes for user1
+		attrs := map[string]interface{}{
+			"restaurant_id": "123",
+			"department":    "engineering",
+		}
+		attrStruct, err := structpb.NewStruct(attrs)
+		require.NoError(t, err)
+
+		// Test setting attributes
+		_, err = c1.UpdateOrganizationMemberUserAttributes(ctx, &adminv1.UpdateOrganizationMemberUserAttributesRequest{
+			Org:        r1.Organization.Name,
+			Email:      u1.Email,
+			Attributes: attrStruct,
+		})
+		require.NoError(t, err)
+
+		// Test permission check: user2 cannot set attributes for user1
+		_, err = c2.UpdateOrganizationMemberUserAttributes(ctx, &adminv1.UpdateOrganizationMemberUserAttributesRequest{
+			Org:        r1.Organization.Name,
+			Email:      u1.Email,
+			Attributes: attrStruct,
+		})
+		require.Error(t, err) // Should fail due to insufficient permissions
+
+		// Verify attributes were set
+		resp, err := c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u1.Email,
+		})
+		require.NoError(t, err)
+		require.Equal(t, attrs, resp.Member.Attributes.AsMap())
+
+		// Test updating attributes
+		newAttrs := map[string]interface{}{
+			"restaurant_id": "456",
+			"team":          "platform",
+		}
+		newAttrStruct, err := structpb.NewStruct(newAttrs)
+		require.NoError(t, err)
+
+		_, err = c1.UpdateOrganizationMemberUserAttributes(ctx, &adminv1.UpdateOrganizationMemberUserAttributesRequest{
+			Org:        r1.Organization.Name,
+			Email:      u1.Email,
+			Attributes: newAttrStruct,
+		})
+		require.NoError(t, err)
+
+		// Verify updated attributes
+		updatedResp, err := c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u1.Email,
+		})
+		require.NoError(t, err)
+		require.Equal(t, newAttrs, updatedResp.Member.Attributes.AsMap())
 	})
 
 }

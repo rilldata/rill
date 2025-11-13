@@ -11,9 +11,9 @@ import (
 type ConnectorYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
 	// Driver name
-	Driver   string            `yaml:"driver"`
-	Managed  yaml.Node         `yaml:"managed"` // Boolean or map of properties
-	Defaults map[string]string `yaml:",inline" mapstructure:",remain"`
+	Driver     string         `yaml:"driver"`
+	Managed    yaml.Node      `yaml:"managed"` // Boolean or map of properties
+	Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 }
 
 // parseConnector parses a connector definition and adds the resulting resource to p.Resources.
@@ -52,9 +52,16 @@ func (p *Parser) parseConnector(node *Node) error {
 	}
 
 	// Find out if any properties are templated
-	templatedProps, err := analyzeTemplatedProperties(tmp.Defaults)
+	templatedProps, err := analyzeTemplatedProperties(tmp.Properties)
 	if err != nil {
 		return fmt.Errorf("failed to analyze templated properties: %w", err)
+	}
+	var propertiesPB *structpb.Struct
+	if tmp.Properties != nil {
+		propertiesPB, err = structpb.NewStruct(tmp.Properties)
+		if err != nil {
+			return fmt.Errorf("failed to convert connector properties to proto: %w", err)
+		}
 	}
 
 	// Insert the connector
@@ -65,25 +72,58 @@ func (p *Parser) parseConnector(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ConnectorSpec.Driver = tmp.Driver
-	r.ConnectorSpec.Properties = tmp.Defaults
+	r.ConnectorSpec.Properties = propertiesPB
 	r.ConnectorSpec.TemplatedProperties = templatedProps
 	r.ConnectorSpec.Provision = provision
 	r.ConnectorSpec.ProvisionArgs = provisionArgsPB
+
 	return nil
 }
 
 // analyzeTemplatedProperties returns a slice of map keys that have a value which contains templating tags.
-func analyzeTemplatedProperties(m map[string]string) ([]string, error) {
+func analyzeTemplatedProperties(m map[string]any) ([]string, error) {
 	var res []string
 	for k, v := range m {
-		meta, err := AnalyzeTemplate(v)
+		hasTemplate, err := containsTemplating(v)
 		if err != nil {
 			return nil, err
 		}
-		if !meta.UsesTemplating {
-			continue
+		if hasTemplate {
+			res = append(res, k)
 		}
-		res = append(res, k)
 	}
 	return res, nil
+}
+
+// containsTemplating recursively checks whether a value (string/map/array) uses templating.
+func containsTemplating(v any) (bool, error) {
+	switch val := v.(type) {
+	case string:
+		meta, err := AnalyzeTemplate(val)
+		if err != nil {
+			return false, err
+		}
+		return meta.UsesTemplating, nil
+	case map[string]any:
+		for _, sub := range val {
+			ok, err := containsTemplating(sub)
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+		}
+	case []any:
+		for _, item := range val {
+			ok, err := containsTemplating(item)
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import Search from "../icons/Search.svelte";
 
   /* Autofocus search bar on mount */
@@ -19,17 +19,16 @@
   export let forcedInputStyle = "";
   export let theme = false;
   export let rounded: "sm" | "md" | "lg" = "sm";
+  export let onSubmit: () => void = () => {};
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement | HTMLTextAreaElement;
-
-  const dispatch = createEventDispatcher();
 
   function handleKeyDown(event) {
     if (event.code == "Enter") {
       event.preventDefault();
       event.stopPropagation();
-      dispatch("submit");
+      onSubmit();
       return false;
     }
   }

@@ -48,7 +48,7 @@ security:
 ```
 
 When a user loads a dashboard, the policies are resolved in two phases:
-  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/connect/templating))
+  1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](/build/connectors/templating))
   2. The resulting expression is then evaluated contextually:
      - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
      - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
@@ -58,7 +58,7 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 Metrics views limit data access for all requests, including MCP integrations and custom APIs. When creating a token or copying from the AI tab, the user's attributes (such as email, domain, groups, and custom attributes) are automatically included in the request context. This ensures that the same security policies that apply to dashboard users also apply to programmatic access, maintaining consistent data governance across all access methods.
 
-You can also pass attributes into the `rill service create <token_name> --attributes` as a JSON object to create custom attributes.
+For more details, see [Service Tokens](/manage/service-tokens).
 :::
 Typical use cases include:
 
@@ -287,7 +287,7 @@ security:
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column, and external users should only be able to see data for the tenant they belong to.
 
-To support this, ingest a separate data [source](/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
+To support this, ingest a separate data [source](/build/connectors) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created CSV file or any hosted data source.
 
 For example, a locally created `mappings.csv` file in the `data` directory of your Rill project with the following contents:
 ```csv

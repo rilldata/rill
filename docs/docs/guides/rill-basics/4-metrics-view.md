@@ -38,18 +38,20 @@ As you can see, the default dashboard YAML is as follows:
 version: 1
 type: metrics_view
 
-table: example_table # Choose a table to underpin your metrics
+model: example_model # Choose a model to underpin your metrics
 timeseries: timestamp_column # Choose a timestamp column (if any) from your table
 
 dimensions:
-  - column: category
-    label: "Category"
-    description: "Description of the dimension"
+  - name: category
+    display_name: Category
+    column: category
+    description: Description of the dimension
 
 measures:
-  - expression: "SUM(revenue)"
-    label: "Total Revenue"
-    description: "Total revenue generated"
+  - name: total_revenue
+    display_name: Total Revenue
+    expression: SUM(revenue)
+    description: Total revenue generated
 ```
 
 For now, you'll see a red box around the UI and the preview button grayed out. This indicates something is wrong with the YAML. 
@@ -109,8 +111,9 @@ The time-series column is a date-type column within your table. Let's set this t
 ```yaml
 
 dimensions:
-  - column: author_name #the column name in the table
-    label: "The Author's Name" #A label
+  - name: author_name # name for this dimension
+    display_name: "The Author's Name" # A display label
+    column: author_name # column in model that this dimension is derived from  
     description: "The name of the author of the commit" #A description, displayed when hovered over dimension
 
 ```
@@ -123,9 +126,10 @@ Our first dimension will be the author's name. Let's go ahead and make the chang
 
 ```yaml
 measures:
-  - expression: "SUM(added_lines)"
-    label: "Sum of Added lines"
-    description: "The aggregate sum of added_lines column"
+  - name:  added_lines
+    expression: SUM(added_lines)
+    display_name: Sum of Added lines
+    description: The aggregate sum of added_lines column
 ```
 
 Measures are the numeric aggregates of columns from your data model. These functions will use DuckDB SQL aggregation functions and expressions. Similar to dimensions, you will need to create an expression based on the column of your underlying model or table.
@@ -173,27 +177,28 @@ timeseries: author_date # Select an actual timestamp column (if any) from your t
 dimensions:
   - column: author_name
     name: author_name
-    label: The Author's Name
+    display_name: The Author's Name
     description: The name of the author of the commit
 
   - column: author_timezone
-    label: "The Author's TZ"
+    display_name: "The Author's TZ"
     description: "The Author's Timezone"
 
   - column: filename
-    label: "The filename"
+    display_name: "The filename"
     description: "The name of the modified filename"
 
 measures:
   - expression: SUM(added_lines)
     name: added_lines
-    label: Sum of Added lines
+    display_name: Sum of Added lines
     format_preset: humanize
     description: The aggregate sum of added_lines column.
     valid_percent_of_total: true
 
   - expression: "SUM(deleted_lines)"
-    label: "Sum of deleted lines"
+    name: deleted_lines
+    display_name: "Sum of deleted lines"
     description: "The aggregate sum of deleted_lines column."
 
 ```

@@ -3,6 +3,7 @@ package druid
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -16,6 +17,129 @@ import (
 // While querying druid does not support db name just use schema.table
 //
 // Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
+func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	if pageToken != "" {
+		return []*drivers.DatabaseSchemaInfo{}, "", nil
+	}
+	return []*drivers.DatabaseSchemaInfo{{Database: "", DatabaseSchema: "druid"}}, "", nil
+}
+
+func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
+	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
+
+	var filter string
+	args := []any{databaseSchema}
+	if pageToken != "" {
+		var startAfter string
+		if err := pagination.UnmarshalPageToken(pageToken, &startAfter); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+		filter += " AND TABLE_NAME > ?"
+		args = append(args, startAfter)
+	}
+
+	q := fmt.Sprintf(`
+	SELECT
+		TABLE_NAME,
+		TABLE_TYPE = 'VIEW' AS view
+	FROM INFORMATION_SCHEMA.TABLES
+	WHERE TABLE_SCHEMA = ? %s
+	ORDER BY TABLE_NAME 
+	LIMIT %d
+	`, filter, limit+1)
+
+	rows, err := c.db.QueryxContext(ctx, q, args...)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	var res []*drivers.TableInfo
+	var name string
+	var typ bool
+	for rows.Next() {
+		if err := rows.Scan(&name, &typ); err != nil {
+			return nil, "", err
+		}
+		res = append(res, &drivers.TableInfo{
+			Name: name,
+			View: typ,
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, "", err
+	}
+
+	next := ""
+	if len(res) > limit {
+		res = res[:limit]
+		next = pagination.MarshalPageToken(res[len(res)-1].Name)
+	}
+	return res, next, nil
+}
+
+func (c *connection) GetTable(ctx context.Context, database, databaseSchema, table string) (*drivers.TableMetadata, error) {
+	// Ensure Coordinator is ready.
+	// The issues is that the request
+	//	SELECT ...
+	//	FROM INFORMATION_SCHEMA.TABLES T
+	//	JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
+	//	WHERE T.TABLE_SCHEMA = 'druid' AND T.TABLE_NAME = ?
+	//	ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+	// returns false-negative if the Coordinator is being restarted. Retrier is a more abstract component and it doesn't check
+	// if SQL tries to retrieve the dynamic schema and the will be no error from Druid Router
+	// (because if the dynamic schema is empty - it's considered OK by the Druid cluster).
+	q := "SELECT * FROM sys.segments LIMIT 1"
+	rows, err := c.db.QueryxContext(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	rows.Close()
+
+	q = `
+    SELECT
+    	T.TABLE_TYPE = 'VIEW' AS view,
+    	C.COLUMN_NAME,
+    	C.DATA_TYPE,
+    	C.IS_NULLABLE = 'YES' AS is_nullable
+	FROM INFORMATION_SCHEMA.TABLES T
+	LEFT JOIN INFORMATION_SCHEMA.COLUMNS C 
+		ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
+	WHERE T.TABLE_SCHEMA = ? AND T.TABLE_NAME = ?
+	ORDER BY C.ORDINAL_POSITION
+    `
+	rows, err = c.db.QueryxContext(ctx, q, databaseSchema, table)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	schemaMap := make(map[string]string)
+	var view, nullable bool
+	var colName, dataType string
+	for rows.Next() {
+		if err := rows.Scan(&view, &colName, &dataType, &nullable); err != nil {
+			return nil, err
+		}
+		pbType := databaseTypeToPB(dataType, nullable)
+		if pbType.Code == runtimev1.Type_CODE_UNSPECIFIED {
+			schemaMap[colName] = fmt.Sprintf("UNKNOWN(%s)", dataType)
+		} else {
+			schemaMap[colName] = strings.TrimPrefix(pbType.Code.String(), "CODE_")
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &drivers.TableMetadata{
+		Schema: schemaMap,
+		View:   view,
+	}, nil
+}
+
 func (c *connection) All(ctx context.Context, like string, pageSize uint32, pageToken string) ([]*drivers.OlapTable, string, error) {
 	var filter string
 	var args []any

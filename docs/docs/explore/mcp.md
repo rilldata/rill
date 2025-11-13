@@ -70,11 +70,15 @@ To use the Rill MCP server, you'll need:
 - **Node.js**, which can be downloaded from [nodejs.org](https://nodejs.org/en)
 
 ### Create a Rill Personal Access Token (if your project is on Rill Cloud)
-You can navigate to the AI tab in your project to retrieve both the JSON and create a Rill personal access token.
+
+**Via UI (recommended):**
+
+Navigate to the AI tab in your project to retrieve both the JSON config and create a personal access token automatically:
+
 <img src='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
 <br />
 
-Alternatively, if you want to create the token via the CLI:
+**Via CLI:**
 
 ```bash
 # Install the Rill CLI if you haven't already
@@ -83,6 +87,10 @@ curl https://rill.sh | sh
 # Create a token
 rill token issue
 ```
+
+:::tip Learn more about user tokens
+For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/manage/user-tokens).
+:::
 
 ### Configure Claude Desktop
 
@@ -260,7 +268,7 @@ Using all the above concepts, you can ask the Rill MCP server questions like:
 
 
 ## Conclusion
-While [Explore dashboards](./dashboard-101/dashboard-101.md) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. The Rill MCP server enables this through external AI assistants like Claude Desktop. Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.
+While [Explore dashboards](./dashboard-101) are a great way to slice and dice to find insights, sometimes you just need a quick, overall summary of your data via a text conversation. The Rill MCP server enables this through external AI assistants like Claude Desktop. Since Rill MCP is built on top of your existing metrics, you can be confident that the returned data will be correct.
 
 **Want AI chat directly in Rill Cloud?** Check out [AI Chat](/explore/ai-chat) for a browser-based experience that uses the same MCP technology with zero setup required.
 

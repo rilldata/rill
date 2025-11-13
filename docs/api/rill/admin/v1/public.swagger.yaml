@@ -789,6 +789,27 @@ paths:
               superuserForceAccess:
                 type: boolean
   /v1/orgs/{org}/members/{email}:
+    get:
+      summary: GetOrganizationMemberUser gets the member details
+      operationId: AdminService_GetOrganizationMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
     delete:
       summary: RemoveOrganizationMemberUser removes member from the organization
       operationId: AdminService_RemoveOrganizationMemberUser
@@ -841,6 +862,36 @@ paths:
                 type: string
               superuserForceAccess:
                 type: boolean
+  /v1/orgs/{org}/members/{email}/attributes:
+    put:
+      summary: UpdateOrganizationMemberUserAttributes updates the attributes for a member
+      operationId: AdminService_UpdateOrganizationMemberUserAttributes
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateOrganizationMemberUserAttributesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              attributes:
+                type: object
   /v1/orgs/{org}/members/current:
     delete:
       summary: LeaveOrganization removes the current user from the organization
@@ -4420,6 +4471,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1CompletionMessage'
+        description: Input message(s) for the AI to complete.
       tools:
         type: array
         items:
@@ -4434,6 +4486,15 @@ definitions:
     properties:
       message:
         $ref: '#/definitions/v1CompletionMessage'
+        description: The AI-generated output message.
+      inputTokens:
+        type: integer
+        format: int64
+        description: Number of tokens in the input.
+      outputTokens:
+        type: integer
+        format: int64
+        description: Number of tokens in the output.
   v1CompletionMessage:
     type: object
     properties:
@@ -4820,6 +4881,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationMemberUserResponse:
+    type: object
+    properties:
+      member:
+        $ref: '#/definitions/v1OrganizationMemberUser'
   v1GetOrganizationNameForDomainResponse:
     type: object
     properties:
@@ -5410,6 +5476,8 @@ definitions:
       usergroupsCount:
         type: integer
         format: int64
+      attributes:
+        type: object
       createdOn:
         type: string
         format: date-time
@@ -6184,6 +6252,8 @@ definitions:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object
+  v1UpdateOrganizationMemberUserAttributesResponse:
+    type: object
   v1UpdateOrganizationResponse:
     type: object
     properties:
@@ -6252,6 +6322,8 @@ definitions:
         type: string
       prefix:
         type: string
+      attributes:
+        type: object
       createdOn:
         type: string
         format: date-time

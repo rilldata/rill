@@ -30,6 +30,7 @@ rill query [<project>] [flags]
       --connector string            Connector to execute against. Defaults to the OLAP connector.
       --limit int                   The maximum number of rows to print (default 100)
       --local                       Target local runtime instead of Rill Cloud
+      --org string                  Organization Name
       --path string                 Project directory (default ".")
       --project string              Project name
       --properties stringToString   Explicit resolver properties (only with --resolver) (default [])

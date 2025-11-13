@@ -45,7 +45,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 	if c.configProperties.LogQueries {
 		c.logger.Info("Snowflake query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_UUID
 	case "VARIANT", "OBJECT", "ARRAY", "STRUCT":
 		t.Code = runtimev1.Type_CODE_JSON
-	case "GEOMETRY":
+	case "GEOMETRY", "GEOGRAPHY":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "NULL":
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED

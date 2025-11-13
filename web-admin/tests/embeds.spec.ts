@@ -4,13 +4,20 @@ import { test } from "./setup/base";
 async function waitForReadyMessage(embedPage: Page, logMessages: string[]) {
   return new Promise<void>((resolve) => {
     embedPage.on("console", async (msg) => {
-      if (msg.type() !== "log" || embedPage.isClosed()) return;
+      if (msg.type() !== "log") return;
 
-      const args = await Promise.all(msg.args().map((arg) => arg.jsonValue()));
-      const logMessage = JSON.stringify(args);
-      logMessages.push(logMessage);
-      if (logMessage.includes(`{"method":"ready"}`)) {
-        resolve();
+      try {
+        const args = await Promise.all(
+          msg.args().map((arg) => arg.jsonValue()),
+        );
+        const logMessage = JSON.stringify(args);
+        logMessages.push(logMessage);
+        if (logMessage.includes(`{"method":"ready"}`)) {
+          resolve();
+        }
+      } catch {
+        // Ignore errors in parsing. Any rogue log shouldn't break the test.
+        // There is also a race condition when browser/page is closed while we are extracting the values in the await.
       }
     });
   });
@@ -38,7 +45,7 @@ test.describe("Embeds", () => {
 
       expect(
         logMessages.some((msg) =>
-          msg.includes("tr=P7D&grain=day&f=advertiser_name+IN+('Instacart')"),
+          msg.includes("f=advertiser_name+IN+('Instacart')"),
         ),
       ).toBeTruthy();
     });
@@ -177,7 +184,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            "tr=PT24H&compare_tr=rill-PD&grain=hour&f=advertiser_name+IN+('Instacart')",
+            "tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')",
           ),
         ),
       ).toBeTruthy();
@@ -207,7 +214,7 @@ test.describe("Embeds", () => {
       expect(
         logMessages.some((msg) =>
           msg.includes(
-            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&grain=hour&f=advertiser_name+IN+('Instacart')"}}`,
+            `{"id":1337,"result":{"state":"tr=PT24H&compare_tr=rill-PD&f=advertiser_name+IN+('Instacart')"}}`,
           ),
         ),
       ).toBeTruthy();
@@ -217,6 +224,8 @@ test.describe("Embeds", () => {
       const logMessages: string[] = [];
       await waitForReadyMessage(embedPage, logMessages);
       const frame = embedPage.frameLocator("iframe");
+
+      await embedPage.waitForTimeout(500);
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
