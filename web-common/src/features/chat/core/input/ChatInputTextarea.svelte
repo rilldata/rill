@@ -1,0 +1,150 @@
+<script lang="ts">
+  import AddDropdown from "@rilldata/web-common/features/chat/core/context/AddDropdown.svelte";
+  import ChatContext from "@rilldata/web-common/features/chat/core/context/ChatContext.svelte";
+  import type { ChatContextEntry } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+  import { tick } from "svelte";
+
+  export let value: string = "";
+  export let onChange: (newValue: string) => void;
+
+  const SPACE_TEXT = "\u00A0";
+
+  let editorElement: HTMLDivElement;
+  let isContextMode = false;
+  let addContextComponent;
+  let addContextNode;
+
+  function isChildOfEditor(node: Node | null | undefined) {
+    if (!node) return false;
+    if (editorElement.contains(node)) return true;
+    return isChildOfEditor(node.parentNode);
+  }
+
+  function insertChatContext(
+    componentCreator: (
+      target: Element | Document | ShadowRoot,
+      anchor: Element | undefined,
+    ) => Node | undefined,
+  ) {
+    const selection = window.getSelection();
+
+    if (
+      selection &&
+      selection.rangeCount > 0 &&
+      isChildOfEditor(selection.anchorNode?.parentNode)
+    ) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+
+      // Use the space node to insert the component
+      let node = componentCreator(
+        selection.anchorNode?.parentNode as any,
+        selection.anchorNode as any,
+      );
+      node ??= document.createTextNode(SPACE_TEXT);
+      range.insertNode(node);
+
+      // Move cursor after the node
+      range.setStartAfter(node);
+      range.setEndAfter(node);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      let node = componentCreator(editorElement, undefined);
+      node ??= document.createTextNode(SPACE_TEXT);
+      editorElement.appendChild(node);
+    }
+
+    updateValue();
+  }
+
+  function getValue(node: Node, level: number = 0) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const val = (node as any).getAttribute("data-value");
+      if (val) return val;
+      const prefix = node.nodeName === "DIV" && level !== 0 ? "\n" : "";
+      return (
+        prefix +
+        Array.from(node.childNodes)
+          .map((c) => getValue(c, level + 1))
+          .join("")
+      );
+    }
+    return "";
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (isContextMode) {
+      setTimeout(() => {
+        if (addContextNode && addContextComponent) {
+          const searchText = getValue(addContextNode).trim().replace(/^@/, "");
+          addContextComponent.setText(searchText);
+        }
+      });
+      return;
+    }
+
+    // Detect @ for pill mode (or any other trigger character)
+    if (event.key === "@") {
+      handleContextStarted();
+    }
+  }
+
+  function handleContextStarted() {
+    isContextMode = true;
+    insertChatContext(() => {
+      const rect = editorElement.getBoundingClientRect();
+      addContextComponent = new AddDropdown({
+        target: document.body,
+        props: {
+          left: rect.left,
+          bottom: window.innerHeight - rect.top,
+          onAdd: handleContextEnded,
+        },
+      });
+      addContextNode = document.createTextNode(SPACE_TEXT);
+      return addContextNode;
+    });
+  }
+
+  function handleContextEnded(chatCtx: ChatContextEntry) {
+    addContextComponent.$destroy();
+    isContextMode = false;
+    if (!addContextNode?.parentNode) return;
+    new ChatContext({
+      target: addContextNode.parentNode,
+      anchor: addContextNode,
+      props: {
+        chatCtx,
+        onUpdate: updateValue,
+      },
+    });
+    addContextNode.parentNode.removeChild(addContextNode);
+  }
+
+  function updateValue() {
+    value = getValue(editorElement);
+    console.log(value);
+    onChange(value);
+  }
+</script>
+
+<div
+  bind:this={editorElement}
+  contenteditable="true"
+  role="textbox"
+  tabindex="0"
+  class="chat-input"
+  class:empty={!editorElement?.textContent?.trim()}
+  on:input={updateValue}
+  on:keydown={handleKeydown}
+></div>
+
+<style lang="postcss">
+  .chat-input {
+    @apply p-2 min-h-[2.5rem] outline-none;
+    @apply text-sm leading-relaxed;
+  }
+</style>

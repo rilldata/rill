@@ -1,8 +1,10 @@
+import { MessageContext } from "@rilldata/web-common/features/chat/core/context/context.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetConversationQueryKey,
   getRuntimeServiceGetConversationQueryOptions,
   type RpcStatus,
+  type RuntimeServiceCompleteBody,
   type V1CompleteStreamingResponse,
   type V1GetConversationResponse,
   type V1Message,
@@ -16,8 +18,12 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import {
+  getOptimisticMessageId,
+  isOptimisticMessageId,
+  NEW_CONVERSATION_ID,
+} from "./utils";
 import { MessageContentType, MessageType, ToolName } from "./types";
-import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
 
 /**
  * Individual conversation state management.
@@ -30,6 +36,7 @@ export class Conversation {
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
+  public readonly context = new MessageContext();
 
   // Private state
   private sseClient: SSEFetchClient | null = null;
@@ -99,6 +106,8 @@ export class Conversation {
     const prompt = get(this.draftMessage).trim();
     if (!prompt) throw new Error("Cannot send empty message");
 
+    const context = this.context.getRequestContext();
+
     // Optimistic updates
     this.draftMessage.set("");
     this.streamError.set(null);
@@ -109,7 +118,7 @@ export class Conversation {
 
     try {
       // Start streaming - this establishes the connection
-      const streamPromise = this.startStreaming(prompt);
+      const streamPromise = this.startStreaming(prompt, context);
 
       // Wait for streaming to complete
       await streamPromise;
@@ -169,7 +178,10 @@ export class Conversation {
    * Start streaming completion responses for a given prompt
    * Returns a Promise that resolves when streaming completes
    */
-  private async startStreaming(prompt: string): Promise<void> {
+  private async startStreaming(
+    prompt: string,
+    context: RuntimeServiceCompleteBody | undefined,
+  ): Promise<void> {
     // Initialize SSE client if not already done
     if (!this.sseClient) {
       this.sseClient = new SSEFetchClient();
@@ -230,6 +242,7 @@ export class Conversation {
           ? undefined
           : this.conversationId,
       prompt,
+      ...context,
     };
 
     // Notify that streaming is about to start (for concurrent stream management)
@@ -261,14 +274,6 @@ export class Conversation {
     }
 
     if (response.message) {
-      // Skip ALL user messages from the stream
-      // Server echoes back the user message
-      // We've already added it optimistically, so we don't want duplicates
-      // Note: Server generates new IDs for streamed messages, can't match by ID
-      if (response.message.role === "user") {
-        return;
-      }
-
       this.addMessageToCache(response.message);
     }
   }
@@ -358,12 +363,36 @@ export class Conversation {
 
       const existingMessages = old.conversation.messages || [];
 
-      // Add new message to the end of the list
+      if (message.role !== "user") {
+        // Add new message to the end of the list
+        return {
+          ...old,
+          conversation: {
+            ...old.conversation,
+            messages: [...existingMessages, message],
+            updatedOn: new Date().toISOString(),
+          },
+        };
+      }
+
+      // We add a user message optimistically. So we need to replace it with the message from server.
+      // The message from server has a lot more info that will be helpful for us.
+      const existingIndex = existingMessages.findLastIndex((m) => {
+        const isOptimisticallyAddedUserMessage =
+          m.role === "user" && isOptimisticMessageId(m.id!);
+        const messageTextMatches =
+          m.content?.[0]?.text === message.content?.[0]?.text;
+        return isOptimisticallyAddedUserMessage && messageTextMatches;
+      });
       return {
         ...old,
         conversation: {
           ...old.conversation,
-          messages: [...existingMessages, message],
+          messages: [
+            ...existingMessages.slice(0, existingIndex),
+            message,
+            ...existingMessages.slice(existingIndex + 1),
+          ],
           updatedOn: new Date().toISOString(),
         },
       };

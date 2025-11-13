@@ -55,17 +55,17 @@
   }
 
   // FIXME: Hoist the keyboard event listener to the top level; centralize the hotkeys
-  onMount(() => {
-    // Handle click outside events
-    document.addEventListener("click", handleClickOutside, true);
-    // Add keyboard event listener for spacebar toggle
-    window.addEventListener("keydown", handleKeyDown, true);
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside, true);
-      window.removeEventListener("keydown", handleKeyDown, true);
-    };
-  });
+  // onMount(() => {
+  //   // Handle click outside events
+  //   document.addEventListener("click", handleClickOutside, true);
+  //   // Add keyboard event listener for spacebar toggle
+  //   window.addEventListener("keydown", handleKeyDown, true);
+  //
+  //   return () => {
+  //     document.removeEventListener("click", handleClickOutside, true);
+  //     window.removeEventListener("keydown", handleKeyDown, true);
+  //   };
+  // });
 
   // Clean up the subscription
   onDestroy(() => {

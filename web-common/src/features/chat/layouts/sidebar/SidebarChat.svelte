@@ -1,5 +1,7 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { onMount } from "svelte";
   import Resizer from "../../../../layout/Resizer.svelte";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import {
@@ -42,9 +44,19 @@
       cleanupConversationManager(instanceId);
     }
   });
+
+  onMount(() => {
+    chatInputComponent?.focusInput();
+    return eventBus.on("start-chat", onNewConversation);
+  });
 </script>
 
-<div class="chat-sidebar" style="--sidebar-width: {$sidebarWidth}px;">
+<div
+  class="chat-sidebar"
+  style="--sidebar-width: {$sidebarWidth}px;"
+  on:click|stopPropagation
+  role="presentation"
+>
   <Resizer
     min={SIDEBAR_DEFAULTS.MIN_SIDEBAR_WIDTH}
     max={SIDEBAR_DEFAULTS.MAX_SIDEBAR_WIDTH}
