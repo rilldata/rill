@@ -7,9 +7,9 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import type { Cell, HeaderGroup, Row } from "@tanstack/svelte-table";
   import { flexRender } from "@tanstack/svelte-table";
+  import { cellInspectorStore } from "../stores/cell-inspector-store";
   import {
     getRowNestedLabel,
     type DimensionColumnProps,
@@ -66,21 +66,39 @@
       ? calculateRowDimensionWidth(rowDimensionName, timeDimension, dataRows)
       : 0;
 
-  $: measures.forEach(({ name, label, formatter }) => {
-    if (!$measureLengths.has(name)) {
-      const estimatedWidth = calculateMeasureWidth(
-        name,
-        label,
-        formatter,
-        totalsRow,
-        dataRows,
-      );
-
-      measureLengths.update((measureLengths) => {
-        return measureLengths.set(name, estimatedWidth);
-      });
+  $: {
+    // Get the longest column dimension header to ensure proper width calculation
+    let maxColumnDimensionHeader = "";
+    if (hasColumnDimension && headerGroups.length > 0) {
+      // Get the second-to-last header group which contains column dimension values
+      const colDimensionHeaderGroup = headerGroups[headerGroups.length - 2];
+      if (colDimensionHeaderGroup?.headers) {
+        colDimensionHeaderGroup.headers.forEach((header) => {
+          const headerText = String(header.column?.columnDef?.header ?? "");
+          if (headerText.length > maxColumnDimensionHeader.length) {
+            maxColumnDimensionHeader = headerText;
+          }
+        });
+      }
     }
-  });
+
+    measures.forEach(({ name, label, formatter }) => {
+      if (!$measureLengths.has(name)) {
+        const estimatedWidth = calculateMeasureWidth(
+          name,
+          label,
+          formatter,
+          totalsRow,
+          dataRows,
+          hasColumnDimension ? maxColumnDimensionHeader : undefined,
+        );
+
+        measureLengths.update((measureLengths) => {
+          return measureLengths.set(name, estimatedWidth);
+        });
+      }
+    });
+  }
 
   $: if (resizingMeasure && containerRefElement && measureLengths) {
     containerRefElement.scrollTo({

@@ -10,7 +10,7 @@ export const COLUMN_WIDTH_CONSTANTS = {
   MIN_COL_WIDTH: 100,
   MAX_COL_WIDTH: 600,
   MAX_INIT_COL_WIDTH: 400,
-  MIN_MEASURE_WIDTH: 40,
+  MIN_MEASURE_WIDTH: 60,
   MAX_MEASURE_WIDTH: 300,
   INIT_MEASURE_WIDTH: 100,
   MEASURE_PADDING: 24,
@@ -59,6 +59,7 @@ export function calculateMeasureWidth(
   ) => string | (null | undefined),
   totalsRow: PivotDataRow | undefined,
   dataRows: PivotDataRow[],
+  columnDimensionHeader?: string,
 ) {
   let maxValueLength: number;
   if (totalsRow) {
@@ -87,7 +88,17 @@ export function calculateMeasureWidth(
     }, 0) as number;
   }
 
-  const finalBasis = Math.max(label.length, maxValueLength);
+  // When there's a column dimension, also consider its header length
+  const columnDimensionLength = Math.min(
+    columnDimensionHeader?.length ?? 0,
+    18,
+  );
+
+  const finalBasis = Math.max(
+    label.length,
+    maxValueLength,
+    columnDimensionLength,
+  );
   const pixelLength = finalBasis * 7;
   return clamp(
     COLUMN_WIDTH_CONSTANTS.MIN_MEASURE_WIDTH,
