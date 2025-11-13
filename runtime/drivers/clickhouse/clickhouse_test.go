@@ -157,7 +157,7 @@ func TestQueryAttributesSETTINGSInjection(t *testing.T) {
 		res, err := olap.Query(ctx, &drivers.Statement{
 			Query: "SELECT id, value FROM test_attrs",
 			QueryAttributes: map[string]string{
-				"partner_id": "acme_corp",
+				"test_partner_id": "acme_corp",
 			},
 		})
 		require.NoError(t, err)
@@ -170,9 +170,9 @@ func TestQueryAttributesSETTINGSInjection(t *testing.T) {
 		res, err := olap.Query(ctx, &drivers.Statement{
 			Query: "SELECT id, value FROM test_attrs",
 			QueryAttributes: map[string]string{
-				"partner_id":  "acme_corp",
-				"environment": "production",
-				"region":      "us-west-2",
+				"test_partner_id":  "acme_corp",
+				"test_environment": "production",
+				"test_region":      "us-west-2",
 			},
 		})
 		require.NoError(t, err)
@@ -207,8 +207,8 @@ func TestQueryAttributesSETTINGSInjection(t *testing.T) {
 		res, err := olap.Query(ctx, &drivers.Statement{
 			Query: "SELECT id, value FROM test_attrs",
 			QueryAttributes: map[string]string{
-				"SQL_partner_id": "acme_corp",
-				"environment":    "production",
+				"test_partner_id":  "acme_corp",
+				"test_environment": "production",
 			},
 		})
 		require.NoError(t, err)
@@ -221,9 +221,9 @@ func TestQueryAttributesSETTINGSInjection(t *testing.T) {
 		res, err := olap.Query(ctx, &drivers.Statement{
 			Query: "SELECT id, value FROM test_attrs",
 			QueryAttributes: map[string]string{
-				"partner_name": "ACME Corp's Division",
-				"description":  "Test with \"quotes\" and backslash\\",
-				"path":         "/usr/local/bin",
+				"test_partner_name": "ACME Corp's Division",
+				"test_description":  "Test with \"quotes\" and backslash\\",
+				"test_path":         "/usr/local/bin",
 			},
 		})
 		require.NoError(t, err)
