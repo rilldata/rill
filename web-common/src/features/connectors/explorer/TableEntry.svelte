@@ -47,15 +47,15 @@
   );
   $: tableId = `${connector}-${fullyQualifiedTableName}`;
 
-  // Only generate preview href for OLAP connectors (preview currently supported for OLAP)
-  $: href = isOlapConnector
-    ? makeTablePreviewHref(driver, connector, database, databaseSchema, table)
-    : undefined;
+  // Generate preview href for any connector that supports preview routes
+  $: href =
+    makeTablePreviewHref(driver, connector, database, databaseSchema, table) ||
+    undefined;
 
   $: open = href ? $page.url.pathname === href : false;
 
-  // Allow navigation only for OLAP preview support
-  $: element = allowNavigateToTable && isOlapConnector ? "a" : "button";
+  // Allow navigation when a preview href is available
+  $: element = allowNavigateToTable && href ? "a" : "button";
 </script>
 
 <li aria-label={tableId} class="table-entry group" class:open>
@@ -80,7 +80,7 @@
     <svelte:element
       this={element}
       class="clickable-text"
-      {...allowNavigateToTable && isOlapConnector && href ? { href } : {}}
+      {...allowNavigateToTable && href ? { href } : {}}
       role="menuitem"
       tabindex="0"
       on:click={() => {

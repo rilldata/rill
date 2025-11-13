@@ -5,4 +5,5 @@
   </access_control_improvements>
   <!-- Enable custom settings with SQL_ prefix for testing -->
   <custom_settings_prefixes>test_</custom_settings_prefixes>
+  <allow_no_password>1</allow_no_password>
 </clickhouse>

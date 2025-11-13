@@ -2027,6 +2027,7 @@ message ListProjectMemberUsergroupsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string role = 5; // Optionally filter by role
+  bool include_counts = 6; // Optionally include counts
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }

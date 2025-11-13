@@ -1721,6 +1721,10 @@ export type AdminServiceListProjectMemberUsergroupsParams = {
    * Optionally filter by role
    */
   role?: string;
+  /**
+   * Optionally include counts
+   */
+  includeCounts?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
