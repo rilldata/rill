@@ -107,8 +107,9 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
   ): CircularCanvasChartSpec {
     // Randomly select a measure and dimension if available
     const measures = metricsViewSpec?.measures || [];
-    const dimensions = metricsViewSpec?.dimensions || [];
-
+    const dimensions = [...(metricsViewSpec?.dimensions || [])].filter(
+      (d) => d.type === "DIMENSION_TYPE_CATEGORICAL",
+    );
     const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
       ?.name as string;
 

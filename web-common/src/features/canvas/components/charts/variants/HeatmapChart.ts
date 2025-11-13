@@ -121,8 +121,9 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
   ): HeatmapCanvasChartSpec {
     // Select two dimensions and one measure if available
     const measures = metricsViewSpec?.measures || [];
-    const dimensions = metricsViewSpec?.dimensions || [];
-
+    const dimensions = [...(metricsViewSpec?.dimensions || [])].filter(
+      (d) => d.type === "DIMENSION_TYPE_CATEGORICAL",
+    );
     const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
       ?.name as string;
 
