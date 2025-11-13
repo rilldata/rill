@@ -1,11 +1,8 @@
 package virtualfiles
 
 import (
-	"context"
 	"fmt"
-	"time"
 
-	"github.com/rilldata/rill/cli/pkg/adminenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -13,21 +10,12 @@ import (
 )
 
 func GetCmd(ch *cmdutil.Helper) *cobra.Command {
-	var timeout time.Duration
-
 	getCmd := &cobra.Command{
 		Use:   "get <project> <path>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Get the content of a specific virtual file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
-			// Apply timeout if specified
-			if timeout > 0 {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, timeout)
-				defer cancel()
-			}
 
 			client, err := ch.Client()
 			if err != nil {
@@ -37,14 +25,24 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			project := args[0]
 			path := args[1]
 
-			environment, err := adminenv.Infer(ch.AdminURL())
-			if err != nil {
-				return err
+			org := ch.Org
+			if org == "" {
+				return fmt.Errorf("org cannot be empty")
 			}
 
+			projResp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+				Org:                  org,
+				Project:              project,
+				SuperuserForceAccess: true,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to get project: %w", err)
+			}
+			projectID := projResp.Project.Id
+
 			resp, err := client.GetVirtualFile(ctx, &adminv1.GetVirtualFileRequest{
-				ProjectId:   project,
-				Environment: environment,
+				ProjectId:   projectID,
+				Environment: "prod",
 				Path:        path,
 			})
 			if err != nil {
@@ -54,12 +52,6 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			if resp.File.Deleted {
 				ch.PrintfWarn("File at path %q is marked as deleted\n", path)
 				return nil
-			}
-
-			fileType := GetFileType(path)
-			ch.PrintfSuccess("Content of virtual file %q in project %q:\n", path, project)
-			if fileType != FileTypeUnknown {
-				ch.PrintfSuccess("Type: %s\n", fileType)
 			}
 
 			data := string(resp.File.Data)
@@ -81,7 +73,6 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	getCmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 	getCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 
 	return getCmd

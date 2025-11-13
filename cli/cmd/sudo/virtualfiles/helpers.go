@@ -21,6 +21,9 @@ func GetFileTypeAndName(path string) (string, string) {
 	folder := parts[0]
 	name := parts[1]
 
+	// Strip .yaml extension if present
+	name = strings.TrimSuffix(name, ".yaml")
+
 	switch folder {
 	case "reports":
 		return FileTypeReport, name

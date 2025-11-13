@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"text/tabwriter"
+	"time"
 
-	"github.com/rilldata/rill/cli/pkg/adminenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -29,10 +29,19 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			project := args[0]
 
 			org := ch.Org
-			environment, err := adminenv.Infer(ch.AdminURL())
-			if err != nil {
-				return err
+			if org == "" {
+				return fmt.Errorf("org cannot be empty")
 			}
+
+			projResp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+				Org:                  org,
+				Project:              project,
+				SuperuserForceAccess: true,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to get project: %w", err)
+			}
+			projectID := projResp.Project.Id
 
 			if pageSize <= 0 {
 				return fmt.Errorf("page-size must be greater than 0")
@@ -47,8 +56,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			for {
 				res, err := client.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
-					ProjectId:   project,
-					Environment: environment,
+					ProjectId:   projectID,
+					Environment: "prod",
 					PageSize:    ps,
 					PageToken:   pageToken,
 				})
@@ -88,7 +97,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					deleted = "Yes"
 				}
 				fileType := GetFileType(file.Path)
-				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n", file.UpdatedOn, file.Path, fileType, size, deleted)
+				updatedOn := file.UpdatedOn.AsTime().Local().Format(time.DateTime)
+				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n", updatedOn, file.Path, fileType, size, deleted)
 			}
 			w.Flush()
 
