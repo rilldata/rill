@@ -8,15 +8,15 @@
     createWhereFiltersFormatter,
   } from "@rilldata/web-common/features/chat/core/context/formatters.ts";
   import { getAttrs, builderActions } from "bits-ui";
-  import { ConversationContextType } from "web-common/src/features/chat/core/context/context-type-data.ts";
+  import { ChatContextEntryType } from "web-common/src/features/chat/core/context/context-type-data.ts";
 
   export let context: MessageContext;
 
   $: contextRecord = context.record;
 
-  $: dashboardContextEntry = $contextRecord[ConversationContextType.Explore];
+  $: dashboardContextEntry = $contextRecord[ChatContextEntryType.Explore];
   $: filtersContextCount = Object.keys($contextRecord).filter((t) =>
-    FILTER_CONTEXT_TYPES.includes(t as ConversationContextType),
+    FILTER_CONTEXT_TYPES.includes(t as ChatContextEntryType),
   ).length;
 
   $: formattedTimeRange = createTimeRangeFormatter(context);

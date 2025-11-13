@@ -1,7 +1,7 @@
 import {
   type ContextRecord,
   ContextTypeData,
-  ConversationContextType,
+  ChatContextEntryType,
 } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
 import type {
   RuntimeServiceCompleteBody,
@@ -43,7 +43,7 @@ export class MessageContext {
     });
   }
 
-  public delete(type: ConversationContextType) {
+  public delete(type: ChatContextEntryType) {
     this.record.update((r) => {
       delete r[type];
       return r;

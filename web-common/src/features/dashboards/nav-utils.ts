@@ -1,5 +1,7 @@
+import { page } from "$app/stores";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import type { Page } from "@sveltejs/kit";
+import { derived } from "svelte/store";
 
 const exploreRouteRegex = /\/explore\/(?:\[name]|\[dashboard])/;
 const canvasRouteRegex = /\/explore\/(?:\[name]|\[dashboard])/;
@@ -30,4 +32,12 @@ export function getDashboardResourceFromPage(pageLike: {
   } else {
     return null;
   }
+}
+
+export function getExploreNameStore() {
+  return derived(page, (pageState) => {
+    const dashboardResource = getDashboardResourceFromPage(pageState);
+    if (dashboardResource?.kind !== ResourceKind.Explore) return "";
+    return dashboardResource.name;
+  });
 }

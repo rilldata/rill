@@ -3,7 +3,7 @@
   import { page } from "$app/stores";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2/index.ts";
-  import { ConversationContextType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+  import { ChatContextEntryType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
   import {
     formatV1Expression,
     formatV1TimeRange,
@@ -41,7 +41,7 @@
     start: $timeControlsStore?.timeStart,
     end: $timeControlsStore?.timeEnd,
   };
-  $: timeRangeContext = $contextRecord[ConversationContextType.TimeRange];
+  $: timeRangeContext = $contextRecord[ChatContextEntryType.TimeRange];
   $: formattedTimeRange = formatV1TimeRange(timeRange);
 
   $: whereFilter = $exploreState?.whereFilter;
@@ -55,35 +55,35 @@
 
   $: if (exploreName) {
     // Always set explore name
-    context.set(ConversationContextType.Explore, exploreName);
+    context.set(ChatContextEntryType.Explore, exploreName);
   }
   $: if (filtersActive) {
     // Keep the values in sync
-    context.set(ConversationContextType.TimeRange, timeRange);
+    context.set(ChatContextEntryType.TimeRange, timeRange);
     if (filterIsAvailable) {
       context.set(
-        ConversationContextType.Where,
+        ChatContextEntryType.Where,
         copyFilterExpression(whereFilter),
       );
     } else {
-      context.delete(ConversationContextType.Where);
+      context.delete(ChatContextEntryType.Where);
     }
   }
 
   let open = false;
 
   function setFilters() {
-    context.set(ConversationContextType.TimeRange, timeRange);
+    context.set(ChatContextEntryType.TimeRange, timeRange);
     if (filterIsAvailable) {
-      context.set(ConversationContextType.Where, whereFilter);
+      context.set(ChatContextEntryType.Where, whereFilter);
     }
     open = true;
   }
 
   function clearFilters(e) {
     e.stopPropagation();
-    context.delete(ConversationContextType.TimeRange);
-    context.delete(ConversationContextType.Where);
+    context.delete(ChatContextEntryType.TimeRange);
+    context.delete(ChatContextEntryType.Where);
   }
 
   beforeNavigate(({ to }) => {

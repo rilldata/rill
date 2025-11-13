@@ -9,7 +9,7 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 
-export enum ConversationContextType {
+export enum ChatContextEntryType {
   Explore = "explore",
   TimeRange = "timeRange",
   Where = "where",
@@ -17,9 +17,16 @@ export enum ConversationContextType {
   Dimensions = "dimensions",
 }
 export const FILTER_CONTEXT_TYPES = [
-  ConversationContextType.TimeRange,
-  ConversationContextType.Where,
+  ChatContextEntryType.TimeRange,
+  ChatContextEntryType.Where,
 ];
+
+export type ChatContextEntry = {
+  type: ChatContextEntryType;
+  label: string;
+  value: string;
+  childEntries?: ChatContextEntry[];
+};
 
 export type ContextRecord = {
   explore?: string;
@@ -36,54 +43,52 @@ type ContextDataPerType<K extends keyof ContextRecord = keyof ContextRecord> = {
   deserializer: (rawContext: Record<string, unknown>) => ContextRecord[K];
 };
 
-export const ContextTypeData: Record<
-  ConversationContextType,
-  ContextDataPerType
-> = {
-  [ConversationContextType.Explore]: <ContextDataPerType<"explore">>{
-    key: "explore",
-    icon: ExploreIcon,
-    serializer: (explore) => ({ explore }),
-    deserializer: (rawContext) => rawContext.explore,
-  },
-  [ConversationContextType.TimeRange]: <ContextDataPerType<"timeRange">>{
-    key: "timeRange",
-    icon: Calendar,
-    serializer: (timeRange) => ({
-      timeStart: timeRange?.start,
-      timeEnd: timeRange?.end,
-    }),
-    deserializer: (rawContext) =>
-      rawContext.time_start && rawContext.time_end
-        ? {
-            start: rawContext.time_start,
-            end: rawContext.time_end,
-          }
-        : undefined,
-  },
-  [ConversationContextType.Where]: <ContextDataPerType<"where">>{
-    key: "where",
-    icon: Filter,
-    serializer: (where) => ({ where }),
-    deserializer: (rawContext) =>
-      mapResolverExpressionToV1Expression(rawContext.where as any),
-  },
-  [ConversationContextType.Measures]: <ContextDataPerType<"measures">>{
-    key: "measures",
-    icon: Compare,
-    serializer: (measures) => ({ measures }),
-    deserializer: (rawContext) =>
-      (rawContext.measures as Array<unknown>)?.length
-        ? rawContext.measures
-        : undefined,
-  },
-  [ConversationContextType.Dimensions]: <ContextDataPerType<"dimensions">>{
-    key: "dimensions",
-    icon: Compare,
-    serializer: (dimensions) => ({ dimensions }),
-    deserializer: (rawContext) =>
-      (rawContext.dimensions as Array<unknown>)?.length
-        ? rawContext.dimensions
-        : undefined,
-  },
-};
+export const ContextTypeData: Record<ChatContextEntryType, ContextDataPerType> =
+  {
+    [ChatContextEntryType.Explore]: <ContextDataPerType<"explore">>{
+      key: "explore",
+      icon: ExploreIcon,
+      serializer: (explore) => ({ explore }),
+      deserializer: (rawContext) => rawContext.explore,
+    },
+    [ChatContextEntryType.TimeRange]: <ContextDataPerType<"timeRange">>{
+      key: "timeRange",
+      icon: Calendar,
+      serializer: (timeRange) => ({
+        timeStart: timeRange?.start,
+        timeEnd: timeRange?.end,
+      }),
+      deserializer: (rawContext) =>
+        rawContext.time_start && rawContext.time_end
+          ? {
+              start: rawContext.time_start,
+              end: rawContext.time_end,
+            }
+          : undefined,
+    },
+    [ChatContextEntryType.Where]: <ContextDataPerType<"where">>{
+      key: "where",
+      icon: Filter,
+      serializer: (where) => ({ where }),
+      deserializer: (rawContext) =>
+        mapResolverExpressionToV1Expression(rawContext.where as any),
+    },
+    [ChatContextEntryType.Measures]: <ContextDataPerType<"measures">>{
+      key: "measures",
+      icon: Compare,
+      serializer: (measures) => ({ measures }),
+      deserializer: (rawContext) =>
+        (rawContext.measures as Array<unknown>)?.length
+          ? rawContext.measures
+          : undefined,
+    },
+    [ChatContextEntryType.Dimensions]: <ContextDataPerType<"dimensions">>{
+      key: "dimensions",
+      icon: Compare,
+      serializer: (dimensions) => ({ dimensions }),
+      deserializer: (rawContext) =>
+        (rawContext.dimensions as Array<unknown>)?.length
+          ? rawContext.dimensions
+          : undefined,
+    },
+  };
