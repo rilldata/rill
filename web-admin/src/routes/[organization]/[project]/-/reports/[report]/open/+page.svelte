@@ -5,7 +5,6 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";

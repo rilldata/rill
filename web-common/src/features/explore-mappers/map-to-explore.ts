@@ -47,7 +47,7 @@ export function mapQueryToDashboard(
   { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
   {
     exploreProtoState,
-    ignoreFilters,
+    ignoreFilters = false,
     forceOpenPivot = false,
   }: MapQueryStateOptions,
 ): Readable<MapQueryResponse> {
