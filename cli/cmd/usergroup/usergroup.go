@@ -24,6 +24,8 @@ func UsergroupCmd(ch *cmdutil.Helper) *cobra.Command {
 	userCmd.AddCommand(AddCmd(ch))
 	userCmd.AddCommand(SetRoleCmd(ch))
 	userCmd.AddCommand(RemoveCmd(ch))
+	userCmd.AddCommand(GrantResourceCmd(ch))
+	userCmd.AddCommand(RevokeResourceCmd(ch))
 
 	return userCmd
 }
