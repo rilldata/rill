@@ -4,6 +4,7 @@
    ========================= */
 .navbar {
   height: 60px;
+  padding: 0 16px;
 }   
 // all of the navbar items
 .navbar__link {
@@ -17,6 +18,17 @@
 .navbar__link:hover {
   background: var(--palette_slate_50);
   border-radius: 8px;
+}
+
+.navbar button[class*="toggleButton"] {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.navbar button[class*="toggleButton"]:hover {
+  background: transparent;
+  box-shadow: none;
 }
 
 /* Active state styling for navbar links */
@@ -66,13 +78,23 @@
   width: 16px;
   height: 16px;
 }
-// NavBar Icon Link (GitHub and Blog)
-// .navbar-icon-link {
-//   width: 24px;
-//   height: 24px;
-//   margin-right: 6px;
-//   margin-left: 6px;
-// }
+// NavBar Icon Link (GitHub and Blog) Change to Icons later
+.navbar-icon-link {
+  width: 24px;
+  height: 24px;
+  margin-right: 6px;
+  margin-left: 6px;
+  text-decoration: none;
+  color: var(--ifm-menu-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
 
 // NavBar Search Bar
 .navbar .navbar__items--right .DocSearch-Button {
@@ -184,8 +206,8 @@
     height: 36px;
     box-sizing: border-box;
   }
-  .navbar .navbar__items--right .navbar__item .navbar__item-img .DocSearch-Button::after {
-    display: none;
+  .navbar .navbar__items--right .DocSearch-Button::after {
+    display: none !important;
   }
 }
 
@@ -198,15 +220,29 @@
   }
 } 
 
+//Mobile Hamburger Menu Header
+
+.navbar-sidebar__brand {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
 
 .navbar-sidebar__brand .mobile-nav-icon-links {
-  display: none;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .navbar-sidebar__brand .mobile-nav-icon-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+}
+
+.navbar-sidebar__brand .mobile-nav-icon-link img {
+  width: 100%;
+  height: 100%;
 }

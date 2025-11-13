@@ -9,6 +9,11 @@ const MOBILE_ICON_LINKS = [
     src: '/icons/Github.svg',
   },
   {
+    href: '/notes',
+    label: 'Release Notes',
+    src: '/icons/ReleaseNotes.svg',
+  },
+  {
     href: 'https://www.rilldata.com/blog',
     label: 'Blog',
     src: '/icons/MessageSquareQuote.svg',
@@ -26,8 +31,8 @@ function createIconLink({ href, label, src }) {
   const img = document.createElement('img');
   img.src = src;
   img.alt = label;
-  img.width = 20;
-  img.height = 20;
+  img.width = 24;
+  img.height = 24;
 
   anchor.appendChild(img);
   return anchor;
@@ -58,43 +63,56 @@ export default function NavbarWrapper(props) {
   const { colorMode, setColorMode } = useColorMode();
 
   useEffect(() => {
-    const toggleButton = document.getElementById('dark-mode-toggle');
-    if (!toggleButton) {
+    const toggleButtons = Array.from(
+      document.querySelectorAll('button[class*="toggleButton"]')
+    );
+
+    if (!toggleButtons.length) {
       return undefined;
     }
 
-    let iconContainer = toggleButton.querySelector('.icon-container');
-    if (!iconContainer) {
-      iconContainer = document.createElement('span');
-      iconContainer.className = 'icon-container';
-      toggleButton.innerHTML = '';
-      toggleButton.appendChild(iconContainer);
-    }
+    const cleanupHandlers = toggleButtons.map((toggleButton, index) => {
+      if (index === 0) {
+        toggleButton.id = 'dark-mode-toggle';
+      }
 
-    const updateIcon = () => {
-      if (colorMode === 'dark') {
-        iconContainer.innerHTML = `
+      let iconContainer = toggleButton.querySelector('.icon-container');
+      if (!iconContainer) {
+        iconContainer = document.createElement('span');
+        iconContainer.className = 'icon-container';
+        toggleButton.innerHTML = '';
+        toggleButton.appendChild(iconContainer);
+      }
+
+      const updateIcon = () => {
+        if (colorMode === 'dark') {
+          iconContainer.innerHTML = `
           <img src="/icons/Sun.svg" alt="Light mode" width="24" height="24" />
         `;
-        toggleButton.setAttribute('aria-label', 'Switch to light mode');
-      } else {
-        iconContainer.innerHTML = `
+          toggleButton.setAttribute('aria-label', 'Switch to light mode');
+        } else {
+          iconContainer.innerHTML = `
           <img src="/icons/Moon.svg" alt="Dark mode" width="24" height="24" />
         `;
-        toggleButton.setAttribute('aria-label', 'Switch to dark mode');
-      }
-    };
+          toggleButton.setAttribute('aria-label', 'Switch to dark mode');
+        }
+      };
 
-    updateIcon();
+      updateIcon();
 
-    const handleClick = () => {
-      setColorMode(colorMode === 'dark' ? 'light' : 'dark');
-    };
+      const handleClick = () => {
+        setColorMode(colorMode === 'dark' ? 'light' : 'dark');
+      };
 
-    toggleButton.addEventListener('click', handleClick);
+      toggleButton.addEventListener('click', handleClick);
+
+      return () => {
+        toggleButton.removeEventListener('click', handleClick);
+      };
+    });
 
     return () => {
-      toggleButton.removeEventListener('click', handleClick);
+      cleanupHandlers.forEach((cleanup) => cleanup());
     };
   }, [colorMode, setColorMode]);
 
