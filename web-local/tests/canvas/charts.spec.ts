@@ -12,6 +12,8 @@ test.describe("canvas charts", () => {
 
     await page.locator(".chart-icons").getByLabel("Heatmap").click();
 
+    await page.waitForTimeout(1000);
+
     await page
       .getByLabel("A heatmap chart with embedded data")
       .locator("canvas")
