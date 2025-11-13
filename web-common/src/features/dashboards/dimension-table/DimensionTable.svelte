@@ -102,6 +102,9 @@ TableCells – the cell contents.
     getScrollElement: () => container,
     count: rows.length,
     estimateSize: () => config.rowHeight,
+    // Provides a stable identity for each virtualized row so the virtualizer can reuse DOM nodes
+    // instead of remounting them during fast scrolls or data updates. This reduces blank frames,
+    // preserves focus/hover state, and avoids unnecessary re-renders.
     getItemKey: (index) => String(rows?.[index]?.[dimensionName] ?? index),
     overscan: rowOverscanAmount,
     paddingStart: config.columnHeaderHeight,
