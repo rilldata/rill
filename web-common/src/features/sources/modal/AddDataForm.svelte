@@ -86,6 +86,11 @@
     paramsForm.update(() => combinedValues, { taint: false });
   }
 
+  // Update form when (re)entering step 1: restore defaults for connector properties
+  $: if (isMultiStepConnector && stepState.step === "connector") {
+    paramsForm.update(() => initialFormValues, { taint: false });
+  }
+
   // Determine effective form type
   $: effectiveFormType =
     isMultiStepConnector && stepState.step === "source" ? "source" : formType;
@@ -410,7 +415,7 @@
       } else if (isMultiStepConnector && stepState.step === "connector") {
         // Step 1: Create connector and transition to step 2
         await submitAddConnectorForm(queryClient, connector, processedValues);
-        setConnectorConfig(processedValues);
+        setConnectorConfig({});
         setStep("source");
         return; // Don't close the modal, just transition to step 2
       } else if (effectiveFormType === "source") {
@@ -495,9 +500,7 @@
   // Handle skip button for multi-step connectors
   function handleSkip() {
     if (!isMultiStepConnector || stepState.step !== "connector") return;
-
-    // Store current form values and transition to step 2
-    setConnectorConfig($paramsForm);
+    setConnectorConfig({});
     setStep("source");
   }
 
