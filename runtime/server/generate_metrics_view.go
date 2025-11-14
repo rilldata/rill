@@ -322,7 +322,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		})
 	}
 
-	e, err := executor.New(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0, nil)
 	if err != nil {
 		return nil, err
 	}

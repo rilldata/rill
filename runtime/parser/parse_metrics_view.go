@@ -78,8 +78,9 @@ type MetricsViewYAML struct {
 		Connector      string             `yaml:"connector"`
 		Measures       *FieldSelectorYAML `yaml:"measures"`
 	} `yaml:"annotations"`
-	Security *SecurityPolicyYAML
-	Cache    struct {
+	Security        *SecurityPolicyYAML
+	QueryAttributes map[string]string `yaml:"query_attributes"`
+	Cache           struct {
 		Enabled *bool  `yaml:"enabled"`
 		KeySQL  string `yaml:"key_sql"`
 		KeyTTL  string `yaml:"key_ttl"`
@@ -298,6 +299,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if err := validateQueryAttributes(tmp.QueryAttributes); err != nil {
+		return fmt.Errorf("invalid query_attributes: %w", err)
 	}
 
 	if tmp.Parent != "" {
@@ -796,6 +801,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.CacheEnabled = tmp.Cache.Enabled
 	spec.CacheKeySql = tmp.Cache.KeySQL
 	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
+	spec.QueryAttributes = tmp.QueryAttributes
 
 	// When version is greater than 0 or inline explore is defined or skip explore set to true, we skip creating a default explore resource. Application should set version to 0 now to enable automatic explore emission.
 	if node.Version > 0 || skipExplore {
@@ -1106,4 +1112,92 @@ func inferRefsFromSecurityRules(rules []*runtimev1.SecurityRule) ([]ResourceName
 	}
 	// No need to deduplicate because that's done upstream when the resource is inserted.
 	return refs, nil
+}
+
+// validateQueryAttributes validates query attribute keys and values for security
+func validateQueryAttributes(attrs map[string]string) error {
+	const (
+		maxKeyLength   = 128
+		maxValueLength = 4096
+		maxAttributes  = 50
+	)
+
+	if len(attrs) > maxAttributes {
+		return fmt.Errorf("too many query attributes: %d (maximum %d)", len(attrs), maxAttributes)
+	}
+
+	for key, value := range attrs {
+		if key == "" {
+			return errors.New("query attribute key cannot be empty")
+		}
+
+		if len(key) > maxKeyLength {
+			return fmt.Errorf("query attribute key %q exceeds maximum length of %d characters", key, maxKeyLength)
+		}
+
+		if !isValidQueryAttributeKey(key) {
+			return fmt.Errorf("query attribute key %q contains invalid characters (must be alphanumeric with underscores, hyphens, or dots only)", key)
+		}
+
+		if len(value) > maxValueLength {
+			return fmt.Errorf("query attribute value for key %q exceeds maximum length of %d characters", key, maxValueLength)
+		}
+
+		if !containsTemplate(value) {
+			if err := validateQueryAttributeValue(value); err != nil {
+				return fmt.Errorf("query attribute %q has invalid value: %w", key, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// isValidQueryAttributeKey checks if a key contains only safe characters
+func isValidQueryAttributeKey(key string) bool {
+	if key == "" {
+		return false
+	}
+
+	for _, ch := range key {
+		if !((ch >= 'a' && ch <= 'z') ||
+			(ch >= 'A' && ch <= 'Z') ||
+			(ch >= '0' && ch <= '9') ||
+			ch == '_' || ch == '-' || ch == '.') {
+			return false
+		}
+	}
+
+	return true
+}
+
+// containsTemplate checks if a string contains Go template syntax
+func containsTemplate(s string) bool {
+	return strings.Contains(s, "{{") && strings.Contains(s, "}}")
+}
+
+// validateQueryAttributeValue checks for dangerous patterns in non-template values
+func validateQueryAttributeValue(value string) error {
+	if strings.Contains(value, "\x00") {
+		return errors.New("value contains null bytes")
+	}
+
+	dangerousPatterns := []string{
+		";",   // SQL statement separator
+		"--",  // SQL comment
+		"/*",  // SQL block comment start
+		"*/",  // SQL block comment end
+		"xp_", // Extended stored procedures
+		"sp_", // System stored procedures
+		"\n",  // Newlines
+		"\r",  // Carriage returns
+	}
+
+	for _, pattern := range dangerousPatterns {
+		if strings.Contains(strings.ToLower(value), pattern) {
+			return fmt.Errorf("value contains potentially dangerous pattern: %q", pattern)
+		}
+	}
+
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -63,7 +64,15 @@ func (c *Connection) WithConnection(ctx context.Context, priority int, fn driver
 func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("clickhouse query", fields...)
 	}
 
 	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
@@ -76,8 +85,13 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		"session_timezone":          "UTC",
 		"join_use_nulls":            1,
 	}
-	ctx = contextWithQueryID(ctx)
-	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+
+	// Add query attributes to settings
+	for k, v := range stmt.QueryAttributes {
+		settings[k] = v
+	}
+
+	ctx = clickhouse.Context(contextWithQueryID(ctx), clickhouse.WithSettings(settings))
 
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
@@ -113,7 +127,15 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 
 	// Log query if enabled (usually disabled)
 	if c.config.LogQueries {
-		c.logger.Info("clickhouse query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args))
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("clickhouse query", fields...)
 	}
 
 	// We use the meta conn for dry run queries
@@ -128,14 +150,23 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
+	settings := map[string]any{
+		"cast_keep_nullable":        1,
+		"join_use_nulls":            1,
+		"session_timezone":          "UTC",
+		"prefer_global_in_and_join": 1,
+		"insert_distributed_sync":   1,
+	}
+
 	if c.config.QuerySettingsOverride != "" {
 		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
 	} else {
-		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 		if c.config.QuerySettings != "" {
-			stmt.Query += ", " + c.config.QuerySettings
+			stmt.Query += "\n SETTINGS " + c.config.QuerySettings
 		}
 	}
+	stmt.Query = appendQueryAttributes(stmt.Query, stmt.QueryAttributes)
 
 	// Gather metrics only for actual queries
 	var acquiredTime time.Time
@@ -718,4 +749,32 @@ func splitStructFieldStr(fieldStr string) (string, string, bool) {
 	typeStr := strings.TrimLeft(fieldStr[idx:], " ")
 
 	return nameStr, typeStr, true
+}
+
+// appendQueryAttributes appends query attributes to a ClickHouse query.
+// It detects if a SETTINGS clause exists and appends appropriately.
+func appendQueryAttributes(query string, attrs map[string]string) string {
+	if len(attrs) == 0 {
+		return query
+	}
+
+	keys := make([]string, 0, len(attrs))
+	for k := range attrs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var attrPairs []string
+	for _, k := range keys {
+		v := attrs[k]
+		escapedValue := drivers.DialectClickHouse.EscapeStringValue(v)
+		attrPairs = append(attrPairs, fmt.Sprintf("%s = %s", k, escapedValue))
+	}
+
+	upperQuery := strings.ToUpper(query)
+	if strings.Contains(upperQuery, "SETTINGS") {
+		return query + ", " + strings.Join(attrPairs, ", ")
+	}
+
+	return query + "\n SETTINGS " + strings.Join(attrPairs, ", ")
 }
