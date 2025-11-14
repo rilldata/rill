@@ -1,11 +1,7 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import AddDropdown from "@rilldata/web-common/features/chat/core/context/AddDropdown.svelte";
-  import SynchedFiltersContext from "@rilldata/web-common/features/chat/core/context/SynchedFiltersContext.svelte";
+  import { getExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
   import ChatInputTextarea from "@rilldata/web-common/features/chat/core/input/ChatInputTextarea.svelte";
-  import { getDashboardResourceFromPage } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-  import { onMount, tick } from "svelte";
+  import { tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
@@ -30,15 +26,7 @@
   $: canSend = !disabled && value.trim();
   $: canCancel = $isStreamingStore;
 
-  $: pageDashboardResource = getDashboardResourceFromPage($page);
-  $: onExplorePage = pageDashboardResource?.kind === ResourceKind.Explore;
-  $: showContext = !!currentConversation && onExplorePage;
-
-  function handleInput(e: Event) {
-    const target = e.target as HTMLTextAreaElement;
-    const value = target.value;
-    draftMessageStore.set(value);
-  }
+  const context = getExploreContext();
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -54,7 +42,7 @@
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage();
+      await currentConversation.sendMessage($context);
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -69,13 +57,6 @@
     currentConversation.cancelStream();
   }
 
-  function autoResize() {
-    // if (textarea && !height) {
-    //   textarea.style.height = "auto";
-    //   textarea.style.height = textarea.scrollHeight + "px";
-    // }
-  }
-
   // Public method to focus input (can be called from parent)
   export function focusInput() {
     tick().then(() => {
@@ -84,19 +65,6 @@
       }, 100);
     });
   }
-
-  onMount(() => {
-    autoResize();
-  });
-
-  // Auto-resize when value changes
-  $: if (value !== undefined) {
-    // There is an race condition where scrollHeight has not updated yet.
-    // Adding a timeout makes sure it is avoided.
-    setTimeout(() => {
-      autoResize();
-    }, 5);
-  }
 </script>
 
 <form
@@ -104,9 +72,6 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  {#if showContext}
-    <SynchedFiltersContext conversation={currentConversation} />
-  {/if}
   <div class="w-full">
     <ChatInputTextarea
       onChange={(newValue) => draftMessageStore.set(newValue)}

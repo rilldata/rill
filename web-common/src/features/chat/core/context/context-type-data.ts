@@ -16,6 +16,10 @@ export enum ChatContextEntryType {
   Measures = "measures",
   Dimensions = "dimensions",
 }
+export const ChatContextRegex = new RegExp(
+  "(" + Object.values(ChatContextEntryType).join("|") + "):([^\\s]+)",
+  "g",
+);
 export const FILTER_CONTEXT_TYPES = [
   ChatContextEntryType.TimeRange,
   ChatContextEntryType.Where,

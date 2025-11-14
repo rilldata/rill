@@ -2,7 +2,6 @@
   import AddDropdown from "@rilldata/web-common/features/chat/core/context/AddDropdown.svelte";
   import ChatContext from "@rilldata/web-common/features/chat/core/context/ChatContext.svelte";
   import type { ChatContextEntry } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
-  import { tick } from "svelte";
 
   export let value: string = "";
   export let onChange: (newValue: string) => void;
@@ -126,7 +125,6 @@
 
   function updateValue() {
     value = getValue(editorElement);
-    console.log(value);
     onChange(value);
   }
 </script>

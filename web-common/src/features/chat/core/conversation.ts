@@ -89,14 +89,18 @@ export class Conversation {
   /**
    * Send a message and handle streaming response
    *
+   * @param context - Chat context to be sent with the message
    * @param options - Callback functions for different stages of message sending
    */
-  public async sendMessage(options?: {
-    onStreamStart?: () => void;
-    onMessage?: (message: V1Message) => void;
-    onStreamComplete?: (conversationId: string) => void;
-    onError?: (error: string) => void;
-  }): Promise<void> {
+  public async sendMessage(
+    context: RuntimeServiceCompleteBody,
+    options?: {
+      onStreamStart?: () => void;
+      onMessage?: (message: V1Message) => void;
+      onStreamComplete?: (conversationId: string) => void;
+      onError?: (error: string) => void;
+    },
+  ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
       this.streamError.set("Please wait for the current response to complete");
@@ -105,8 +109,6 @@ export class Conversation {
 
     const prompt = get(this.draftMessage).trim();
     if (!prompt) throw new Error("Cannot send empty message");
-
-    const context = this.context.getRequestContext();
 
     // Optimistic updates
     this.draftMessage.set("");
