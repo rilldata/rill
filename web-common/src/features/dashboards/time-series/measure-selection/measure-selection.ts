@@ -1,8 +1,6 @@
+import { ChatContextEntryType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+import { convertContextToInlinePrompt } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
-import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors.ts";
-import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
-import { Interval } from "luxon";
 import { get, writable } from "svelte/store";
 
 export class MeasureSelection {
@@ -32,41 +30,40 @@ export class MeasureSelection {
     return Boolean(get(this.measure));
   }
 
-  public async startAnomalyExplanationChat(
-    instanceId: string,
-    exploreName: string,
-  ) {
+  public startAnomalyExplanationChat() {
     if (!this.hasSelection()) return;
     const measure = get(this.measure)!;
 
-    const { metricsView } = await fetchExploreSpec(instanceId, exploreName);
-    const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
+    const measureMention = convertContextToInlinePrompt({
+      type: ChatContextEntryType.Measures,
+      value: measure,
+      subValue: null,
+      label: "",
+    });
 
-    const measureSpec = metricsViewSpec.measures?.find(
-      (m) => m.name === measure,
-    );
-    if (!measureSpec) return;
-    const measureDisplayName = getMeasureDisplayName(measureSpec);
-
-    const start = get(this.start);
-    const end = get(this.end);
+    const start = get(this.start)?.toISOString();
+    const end = get(this.end)?.toISOString();
     if (!start) return;
-    let dataPointsPart = "";
-    const formattedStart = prettyFormatTimeRange(
-      Interval.fromDateTimes(start, start),
-    );
+
+    const timeRangeCtx = {
+      type: ChatContextEntryType.TimeRange,
+      value: "",
+      subValue: null,
+      label: "",
+    };
     if (end) {
-      const formattedEnd = prettyFormatTimeRange(
-        Interval.fromDateTimes(end, end),
-      );
-      dataPointsPart = `data points in "${formattedStart} to ${formattedEnd}"`;
+      timeRangeCtx.value = `${start} to ${end}`;
     } else {
-      dataPointsPart = `data point on "${formattedStart}"`;
+      timeRangeCtx.value = start;
     }
+    const timeRangeMention = convertContextToInlinePrompt(timeRangeCtx);
 
-    const prompt = `Please explain what drives the ${dataPointsPart} for "${measureDisplayName}". What dimensions have noticeably changed, as compared to other time windows?`;
+    const prompt =
+      `Explain what drives ${measureMention}, ${timeRangeMention}. ` +
+      `What dimensions have noticeably changed, as compared to other time windows?`;
+    console.log(prompt);
 
-    sidebarActions.startChat(instanceId, prompt);
+    sidebarActions.startChat(prompt);
   }
 }
 

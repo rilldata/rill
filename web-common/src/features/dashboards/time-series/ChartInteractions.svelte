@@ -11,7 +11,6 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { DateTime, Interval } from "luxon";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
 
@@ -21,8 +20,6 @@
 
   let priorRange: DashboardTimeControls | null = null;
   let button: HTMLButtonElement;
-
-  $: ({ instanceId } = $runtime);
 
   const StateManagers = getStateManagers();
   const {
@@ -81,7 +78,7 @@
       ) {
         metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
       } else if (isExplainKey) {
-        measureSelection.startAnomalyExplanationChat(instanceId, exploreName);
+        measureSelection.startAnomalyExplanationChat();
       }
     } else if (
       priorRange &&
@@ -91,7 +88,7 @@
       e.preventDefault();
       undoZoom();
     } else if (isExplainKey) {
-      measureSelection.startAnomalyExplanationChat(instanceId, exploreName);
+      measureSelection.startAnomalyExplanationChat();
     }
   }
 

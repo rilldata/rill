@@ -1,7 +1,8 @@
 <script lang="ts">
   import { getExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
   import ChatInputTextarea from "@rilldata/web-common/features/chat/core/input/ChatInputTextarea.svelte";
-  import { tick } from "svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
@@ -12,7 +13,7 @@
   export let noMargin = false;
   export let height: string | undefined = undefined;
 
-  // let textarea: HTMLTextAreaElement;
+  let textarea: ChatInputTextarea;
   let placeholder = "Ask about your data...";
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
@@ -42,6 +43,7 @@
 
     // Message handling with input focus
     try {
+      textarea.setPrompt("");
       await currentConversation.sendMessage($context);
       onSend?.();
     } catch (error) {
@@ -50,7 +52,7 @@
 
     // Let the parent component manage the input value
     await tick();
-    // textarea?.focus();
+    textarea.focusEditor();
   }
 
   function cancelStream() {
@@ -61,10 +63,14 @@
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        // textarea?.focus();
+        textarea.focusEditor();
       }, 100);
     });
   }
+
+  onMount(() =>
+    eventBus.on("start-chat", (prompt) => textarea.setPrompt(prompt)),
+  );
 </script>
 
 <form
@@ -74,6 +80,7 @@
 >
   <div class="w-full">
     <ChatInputTextarea
+      bind:this={textarea}
       onChange={(newValue) => draftMessageStore.set(newValue)}
     />
   </div>

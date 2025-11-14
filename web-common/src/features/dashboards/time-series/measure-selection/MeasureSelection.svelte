@@ -4,11 +4,9 @@
     ScaleStore,
     SimpleDataGraphicConfiguration,
   } from "@rilldata/web-common/components/data-graphic/state/types";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers.ts";
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import MeasureValueMouseover from "@rilldata/web-common/features/dashboards/time-series/MeasureValueMouseover.svelte";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types.ts";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.ts";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import WithBisector from "web-common/src/components/data-graphic/functional-components/WithBisector.svelte";
@@ -23,9 +21,6 @@
   export let mouseoverFormat;
   export let numberKind: NumberKind;
   export let inBounds: (min, max, value) => boolean;
-
-  $: ({ instanceId } = $runtime);
-  const { exploreName } = getStateManagers();
 
   const plotConfig: Writable<SimpleDataGraphicConfiguration> = getContext(
     contexts.config,
@@ -45,7 +40,7 @@
   function onExplain(e) {
     e.stopPropagation();
     e.preventDefault();
-    measureSelection.startAnomalyExplanationChat(instanceId, $exploreName);
+    measureSelection.startAnomalyExplanationChat();
   }
 </script>
 

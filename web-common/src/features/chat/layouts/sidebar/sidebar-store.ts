@@ -42,16 +42,9 @@ export const sidebarActions = {
     chatOpen.set(true);
   },
 
-  startChat(instanceId: string, prompt: string): void {
+  startChat(prompt: string): void {
     chatOpen.set(true);
-    const conversationManager = getConversationManager(instanceId, {
-      conversationState: "browserStorage",
-    });
-    const currentConversation = get(
-      conversationManager.getCurrentConversation(),
-    );
-    currentConversation.draftMessage.set(prompt);
-    eventBus.emit("start-chat", null);
+    eventBus.emit("start-chat", prompt);
   },
 
   closeChat(): void {

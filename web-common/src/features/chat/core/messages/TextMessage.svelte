@@ -4,7 +4,8 @@
 -->
 <script lang="ts">
   import { page } from "$app/stores";
-  import { getHtmlForInlineContextCreator } from "@rilldata/web-common/features/chat/core/context/get-html-for-inline-context-creator.ts";
+  import { convertContextToHtml } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
+  import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
   import {
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
@@ -37,7 +38,7 @@
       ? getCitationUrlRewriter($mapperStore.data!)
       : undefined;
 
-  const htmlCreator = getHtmlForInlineContextCreator();
+  const contextMetadataStore = getContextMetadataStore();
 </script>
 
 <div class="chat-message chat-message--{role}">
@@ -45,7 +46,9 @@
     {#if role === "assistant"}
       <Markdown {content} converter={convertCitationUrls} />
     {:else}
-      {@html DOMPurify.sanitize($htmlCreator(content))}
+      {@html DOMPurify.sanitize(
+        convertContextToHtml(content, $contextMetadataStore),
+      )}
     {/if}
   </div>
 </div>

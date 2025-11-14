@@ -2,8 +2,14 @@
   import AddDropdown from "@rilldata/web-common/features/chat/core/context/AddDropdown.svelte";
   import ChatContext from "@rilldata/web-common/features/chat/core/context/ChatContext.svelte";
   import type { ChatContextEntry } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+  import {
+    convertContextToHtml,
+    convertContextToInlinePrompt,
+    convertHTMLElementToContext,
+  } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
+  import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
 
-  export let value: string = "";
+  let value: string = "";
   export let onChange: (newValue: string) => void;
 
   const SPACE_TEXT = "\u00A0";
@@ -12,6 +18,38 @@
   let isContextMode = false;
   let addContextComponent;
   let addContextNode;
+
+  const contextMetadataStore = getContextMetadataStore();
+  $: metadata = $contextMetadataStore;
+
+  export function setPrompt(prompt: string) {
+    editorElement.innerHTML = convertContextToHtml(prompt, {
+      validExplores: {},
+      measures: {},
+      dimensions: {},
+    });
+    setTimeout(() => {
+      editorElement.focus();
+      findInlineContextNodes(editorElement).forEach(
+        ([parent, node, chatCtx]) => {
+          new ChatContext({
+            target: parent as any,
+            anchor: node as any,
+            props: {
+              chatCtx,
+              metadata,
+              onUpdate: updateValue,
+            },
+          });
+          parent.removeChild(node);
+        },
+      );
+    });
+  }
+
+  export function focusEditor() {
+    editorElement.focus();
+  }
 
   function isChildOfEditor(node: Node | null | undefined) {
     if (!node) return false;
@@ -61,8 +99,8 @@
     if (node.nodeType === Node.TEXT_NODE) {
       return node.textContent;
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const val = (node as any).getAttribute("data-value");
-      if (val) return val;
+      const ctx = convertHTMLElementToContext(node as any, metadata);
+      if (ctx) return convertContextToInlinePrompt(ctx);
       const prefix = node.nodeName === "DIV" && level !== 0 ? "\n" : "";
       return (
         prefix +
@@ -72,6 +110,29 @@
       );
     }
     return "";
+  }
+
+  function findInlineContextNodes(
+    node: Node,
+  ): [Node, Node, ChatContextEntry][] {
+    const inlineContextNodes: [Node, Node, ChatContextEntry][] = [];
+
+    for (const childNode of node.childNodes) {
+      if (childNode.nodeName === "DIV") {
+        inlineContextNodes.push(...findInlineContextNodes(childNode));
+        continue;
+      }
+
+      const chatCtx = convertHTMLElementToContext(
+        childNode as HTMLElement,
+        metadata,
+      );
+      if (!chatCtx) continue;
+
+      inlineContextNodes.push([node, childNode, chatCtx]);
+    }
+
+    return inlineContextNodes;
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -117,6 +178,7 @@
       anchor: addContextNode,
       props: {
         chatCtx,
+        metadata,
         onUpdate: updateValue,
       },
     });
