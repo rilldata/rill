@@ -2,23 +2,23 @@
   Renders tool invocations with their results in a collapsible interface.
   
   Architecture: Tool calls and results are rendered together in one component,
-  with results correlated via parent_id. Charts are rendered separately below.
+  with results correlated via parent_id.
 -->
 <script lang="ts">
   import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
   import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
+  import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import type { V1Message } from "../../../../runtime-client";
-  import { isHiddenAgentTool, MessageContentType, ToolName } from "../types";
-  import { parseChartData } from "../utils";
-  import ChartBlock from "./ChartBlock.svelte";
+  import { isHiddenAgentTool, MessageContentType } from "../types";
+  import { getToolDisplayName } from "../tool-display-names";
 
   export let message: V1Message;
   export let resultMessage: V1Message | undefined = undefined;
 
   let isExpanded = false;
+  let activeTab: "request" | "response" = "request";
 
   // Call message properties
-  $: toolName = message.tool || "Unknown Tool";
   $: toolInput = formatContentData(message);
   $: isHidden = isHiddenAgentTool(message.tool);
 
@@ -27,11 +27,11 @@
   $: isError = resultMessage?.contentType === MessageContentType.ERROR;
   $: resultContent = resultMessage ? formatContentData(resultMessage) : "";
 
-  // Chart detection and parsing
-  $: isChart = isChartCall(message);
-  $: chartData = isChart
-    ? parseChartData({ input: message.contentData })
-    : null;
+  // Display name based on completion state
+  $: toolDisplayName = getToolDisplayName(
+    message.tool || "Unknown Tool",
+    hasResult,
+  );
 
   function toggleExpanded() {
     isExpanded = !isExpanded;
@@ -60,10 +60,6 @@
         return rawContent;
     }
   }
-
-  function isChartCall(message: V1Message): boolean {
-    return message.tool === ToolName.CREATE_CHART;
-  }
 </script>
 
 {#if !isHidden}
@@ -71,102 +67,110 @@
     <button class="tool-header" on:click={toggleExpanded}>
       <div class="tool-icon">
         {#if isExpanded}
-          <CaretDownIcon size="16" />
+          <CaretDownIcon size="14" />
         {:else}
-          <ChevronRight size="16" />
+          <ChevronRight size="14" />
         {/if}
       </div>
       <div class="tool-name">
-        {toolName}
+        {toolDisplayName}
       </div>
     </button>
 
     {#if isExpanded}
       <div class="tool-content">
-        <div class="tool-section">
-          <div class="tool-section-title">Request</div>
-          <div class="tool-section-content">
-            <pre class="tool-json">{toolInput}</pre>
-          </div>
+        <!-- Tabs -->
+        <div class="tool-tabs">
+          <button
+            class="tool-tab"
+            class:active={activeTab === "request"}
+            on:click={() => (activeTab = "request")}
+          >
+            Request
+          </button>
+          <button
+            class="tool-tab"
+            class:active={activeTab === "response"}
+            on:click={() => (activeTab = "response")}
+          >
+            {isError ? "Error" : "Response"}
+          </button>
         </div>
 
-        {#if hasResult}
-          <div class="tool-section">
-            <div class="tool-section-title">
-              {isError ? "Error" : "Response"}
+        <!-- Tab Content -->
+        <div class="tool-tab-content">
+          {#if activeTab === "request"}
+            <pre class="tool-json">{toolInput}</pre>
+          {:else if hasResult}
+            <pre class="tool-json">{resultContent}</pre>
+          {:else}
+            <div class="tool-loading">
+              <LoadingSpinner size="0.875rem" />
+              <span>Waiting for response...</span>
             </div>
-            <div class="tool-section-content">
-              <pre class="tool-json">{resultContent}</pre>
-            </div>
-          </div>
-        {/if}
+          {/if}
+        </div>
       </div>
     {/if}
   </div>
-
-  {#if isChart && chartData && hasResult && !isError}
-    <!-- Chart visualization (shown below the collapsible tool details) -->
-    <div class="chart-container">
-      <ChartBlock
-        chartType={chartData.chartType}
-        chartSpec={chartData.chartSpec}
-      />
-    </div>
-  {/if}
 {/if}
 
 <style lang="postcss">
   .tool-container {
     @apply w-full max-w-[90%] self-start;
-    @apply border border-gray-200 rounded-lg bg-gray-50;
-  }
-
-  .chart-container {
-    @apply w-full max-w-full mt-2 self-start;
   }
 
   .tool-header {
-    @apply w-full flex items-center gap-2 p-2;
+    @apply w-full flex items-center gap-1.5 px-1 py-1;
     @apply bg-transparent border-none cursor-pointer;
-    @apply text-sm transition-colors;
+    @apply text-xs text-gray-400 transition-colors;
   }
 
   .tool-header:hover {
-    @apply bg-gray-100;
+    @apply text-gray-500;
   }
 
   .tool-icon {
-    @apply text-gray-500 flex items-center;
+    @apply flex items-center text-gray-400;
   }
 
   .tool-name {
-    @apply font-medium text-gray-700 flex-1 text-left;
+    @apply font-normal flex-1 text-left;
   }
 
   .tool-content {
-    @apply border-t border-gray-200 bg-white rounded-b-lg;
+    @apply mt-1 ml-5;
   }
 
-  .tool-section {
-    @apply p-2;
+  .tool-tabs {
+    @apply flex gap-1 mb-2;
   }
 
-  .tool-section:not(:last-child) {
-    @apply border-b border-gray-50;
+  .tool-tab {
+    @apply px-2 py-1 text-[0.625rem] font-normal text-gray-400;
+    @apply bg-transparent border-none cursor-pointer;
+    @apply transition-colors rounded;
   }
 
-  .tool-section-title {
-    @apply text-[0.625rem] font-semibold text-gray-500 mb-1.5;
-    @apply uppercase tracking-wide;
+  .tool-tab:hover {
+    @apply text-gray-500 bg-gray-50;
   }
 
-  .tool-section-content {
-    @apply bg-gray-50 border border-gray-200;
+  .tool-tab.active {
+    @apply text-gray-600 bg-gray-100;
+  }
+
+  .tool-tab-content {
+    @apply bg-gray-50/50 border border-gray-100;
     @apply rounded-md overflow-hidden;
   }
 
   .tool-json {
-    @apply font-mono text-xs leading-snug text-gray-700;
+    @apply font-mono text-[0.625rem] leading-snug text-gray-400;
     @apply p-2 m-0 overflow-x-auto whitespace-pre-wrap break-all;
+  }
+
+  .tool-loading {
+    @apply p-2 flex items-center gap-2 text-[0.625rem] text-gray-400;
   }
 </style>
