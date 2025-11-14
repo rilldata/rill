@@ -127,31 +127,6 @@ func (c *config) writeSettings() map[string]string {
 	return writeSettings
 }
 
-// func (c *config) secretConnectors() []string {
-// 	if len(c.CreateSecretsFromConnectors) == 0 {
-// 		return nil
-// 	}
-
-// 	// single string like "s3,gcs"
-// 	if len(c.CreateSecretsFromConnectors) == 1 {
-// 		val := strings.TrimSpace(c.CreateSecretsFromConnectors[0])
-// 		if strings.Contains(val, ",") {
-// 			parts := strings.Split(val, ",")
-// 			for i, s := range parts {
-// 				parts[i] = strings.TrimSpace(s)
-// 			}
-// 			return parts
-// 		}
-// 	}
-
-// 	// Normal array case
-// 	res := make([]string, len(c.CreateSecretsFromConnectors))
-// 	for i, s := range c.CreateSecretsFromConnectors {
-// 		res[i] = strings.TrimSpace(s)
-// 	}
-// 	return res
-// }
-
 // isMotherduck returns true if the Path or Attach config options reference a Motherduck database.
 func (c *config) isMotherduck() bool {
 	return strings.HasPrefix(c.Path, "md:") || strings.HasPrefix(c.Attach, "'md:")

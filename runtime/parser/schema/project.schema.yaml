@@ -143,8 +143,7 @@ definitions:
               workgroup: "primary"                             # Athena workgroup (defaults to 'primary')  
               output_location: "s3://my-bucket/athena-output/" # S3 URI for query results  
               aws_region: "us-east-1"                          # AWS region (defaults to 'us-east-1')  
-              allow_host_access: true                          # Allow host environment access _(default: true)_
-            
+              allow_host_access: true                          # Allow host environment access _(default: true)_            
           required:
             - driver
         - type: object
@@ -358,7 +357,7 @@ definitions:
               const: duckdb
             mode:
               type: string
-              description: Connection mode
+              description: Set the mode for the DuckDB connection. 
               enum: ["read", "readwrite"]
               default: "read"
             path:
@@ -403,19 +402,17 @@ definitions:
             log_queries:
               type: boolean
               description: Whether to log raw SQL queries executed through OLAP
-            secrets:
-              type: string
-              description: Comma-separated list of connector names to create temporary secrets for
+            create_secrets_from_connectors:
+              type:
+                - string
+                - array
+              description: List of connector names for which temporary secrets should be created before executing the SQL.
             database_name:
               type: string
               description: Name of the attached DuckDB database (auto-detected if not set)
             schema_name:
               type: string
               description: Default schema used by the DuckDB database
-            mode:
-              description: Set the mode for the DuckDB connection. 
-              enum: ["read", "readwrite"]
-              default: "read"
           examples:
             - # Example: DuckDB connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -532,6 +529,11 @@ definitions:
               description: Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations.
               enum: ["read", "readwrite"]
               default: "read"
+            create_secrets_from_connectors:
+              type:
+                - string
+                - array
+              description: List of connector names for which temporary secrets should be created before executing the SQL.
           examples:
             - # Example: MotherDuck connector configuration
               type: connector                                  # Must be `connector` (required)
@@ -1560,6 +1562,11 @@ definitions:
             - pre_exec: ATTACH IF NOT EXISTS 'dbname=postgres host=localhost port=5432 user=postgres password=postgres' AS postgres_db (TYPE POSTGRES);
               sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
               post_exec: DETACH DATABASE IF EXISTS postgres_db 
+          create_secrets_from_connectors:
+            type:
+              - string
+              - array
+            description: List of connector names for which temporary secrets should be created before executing the SQL.
       gcs:
         type: object
         properties:
