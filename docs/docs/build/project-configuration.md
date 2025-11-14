@@ -359,7 +359,6 @@ features:
 - `darkMode`: Enables dark mode interface (default: `true`)
 - `chat`: Enables chat functionality (default: `true`)
 - `dashboardChat`: Enables chat features within dashboards (default: `false`)
-- `chatCharts`: Enables interactive chart visualizations in AI chat responses (default: `true`)
 
 **How to enable**: Add the `features` section to your `rill.yaml`
 
