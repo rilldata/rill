@@ -98,7 +98,6 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 					metricsViews[name] = true
 				}
 			}
-			// Note: metrics_sql parsing removed - components now call ResolveTemplatedString RPC directly
 		}
 	}
 

@@ -2988,7 +2988,7 @@ export type QueryServiceResolveTemplatedStringBody = {
   /** If true, output format tokens instead of raw values. */
   useFormatTokens?: boolean;
   additionalWhereByMetricsView?: QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView;
-  additionalTimeRange?: V1Expression;
+  additionalTimeRange?: V1TimeRange;
 };
 
 export type QueryServiceColumnRollupIntervalBody = {

@@ -98,12 +98,9 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		}
 
 		// Apply additional time range if provided
-		// Note: AdditionalTimeRange is an Expression that needs to be converted to a TimeRange
 		if req.AdditionalTimeRange != nil {
-			// For now, we don't support time range expressions in this context
-			// This would require parsing the expression and extracting time range information
-			// which is more complex than the basic where clause handling
-			return "", errors.New("additional_time_range not yet supported")
+			additionalTimeRange := convertProtoTimeRange(req.AdditionalTimeRange)
+			query.TimeRange = applyAdditionalTimeRange(query.TimeRange, additionalTimeRange)
 		}
 
 		// Get the metrics view resource
@@ -286,4 +283,73 @@ func convertOperator(op runtimev1.Operation) metricsview.Operator {
 	default:
 		return metricsview.OperatorUnspecified
 	}
+}
+
+// convertProtoTimeRange converts a proto TimeRange to a metricsview TimeRange
+func convertProtoTimeRange(tr *runtimev1.TimeRange) *metricsview.TimeRange {
+	if tr == nil {
+		return nil
+	}
+
+	res := &metricsview.TimeRange{}
+	if tr.Start != nil {
+		res.Start = tr.Start.AsTime()
+	}
+	if tr.End != nil {
+		res.End = tr.End.AsTime()
+	}
+	res.Expression = tr.Expression
+	res.IsoDuration = tr.IsoDuration
+	res.IsoOffset = tr.IsoOffset
+	res.RoundToGrain = metricsview.TimeGrainFromProto(tr.RoundToGrain)
+	res.TimeDimension = tr.TimeDimension
+	return res
+}
+
+// applyAdditionalTimeRange merges the current time range with an additional time range
+func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metricsview.TimeRange {
+	if current == nil {
+		return additional
+	}
+	if additional == nil {
+		return current
+	}
+
+	timeRange := &metricsview.TimeRange{
+		Start:         current.Start,
+		End:           current.End,
+		Expression:    current.Expression,
+		IsoDuration:   current.IsoDuration,
+		IsoOffset:     current.IsoOffset,
+		RoundToGrain:  current.RoundToGrain,
+		TimeDimension: current.TimeDimension,
+	}
+
+	// Additional time range constrains the current time range
+	// If additional has a start that's after current start, use additional's start
+	if !additional.Start.IsZero() && (timeRange.Start.IsZero() || additional.Start.After(timeRange.Start)) {
+		timeRange.Start = additional.Start
+	}
+	// If additional has an end that's before current end, use additional's end
+	if !additional.End.IsZero() && (timeRange.End.IsZero() || additional.End.Before(timeRange.End)) {
+		timeRange.End = additional.End
+	}
+	// If current doesn't have an expression but additional does, use additional's
+	if additional.Expression != "" && timeRange.Expression == "" {
+		timeRange.Expression = additional.Expression
+	}
+	if additional.IsoDuration != "" && timeRange.IsoDuration == "" {
+		timeRange.IsoDuration = additional.IsoDuration
+	}
+	if additional.IsoOffset != "" && timeRange.IsoOffset == "" {
+		timeRange.IsoOffset = additional.IsoOffset
+	}
+	if additional.RoundToGrain != metricsview.TimeGrainUnspecified && timeRange.RoundToGrain == metricsview.TimeGrainUnspecified {
+		timeRange.RoundToGrain = additional.RoundToGrain
+	}
+	if additional.TimeDimension != "" && timeRange.TimeDimension == "" {
+		timeRange.TimeDimension = additional.TimeDimension
+	}
+
+	return timeRange
 }
