@@ -56,6 +56,27 @@ func testCatalogPartitions(t *testing.T, catalog drivers.CatalogStore) {
 	require.Len(t, partitions, 1)
 	requirePartitionEqual(t, partition, partitions[0])
 
+	partition2 := drivers.ModelPartition{
+		Key:       "hello2",
+		DataJSON:  []byte(`{"hello": "world"}`),
+		Watermark: &now,
+		Index:     3,
+	}
+	err = catalog.InsertModelPartition(ctx, modelID, partition2)
+	require.NoError(t, err)
+
+	partition2.ExecutedOn = &now
+	partition2.Error = ""
+	partition2.Elapsed = 2 * time.Second
+	err = catalog.UpdateModelPartition(ctx, modelID, partition2)
+	require.NoError(t, err)
+
+	partitions, err = catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{ModelID: modelID, Limit: 10})
+	require.NoError(t, err)
+	require.Len(t, partitions, 2)
+	requirePartitionEqual(t, partition, partitions[0])
+	requirePartitionEqual(t, partition2, partitions[1])
+
 	err = catalog.DeleteModelPartitions(ctx, modelID)
 	require.NoError(t, err)
 }

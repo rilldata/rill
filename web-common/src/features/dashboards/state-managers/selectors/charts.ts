@@ -15,8 +15,9 @@ export const chartSelectors = {
     const timeControls = timeControlsState(dashData);
     const startRange = timeControls.allTimeRange?.start;
     const selectedStart = timeControls.selectedTimeRange?.start;
+
     return (
-      (selectedStart?.getTime() || Infinity) >=
+      (selectedStart?.getTime() || Infinity) >
       (startRange?.getTime() || -Infinity)
     );
   },
@@ -25,7 +26,7 @@ export const chartSelectors = {
     const endRange = timeControls?.allTimeRange?.end;
     const selectedEnd = timeControls.selectedTimeRange?.end;
     return (
-      (selectedEnd?.getTime() || -Infinity) <= (endRange?.getTime() || Infinity)
+      (selectedEnd?.getTime() || -Infinity) < (endRange?.getTime() || Infinity)
     );
   },
   getNewPanRange: (dashData: DashboardDataSources) => {

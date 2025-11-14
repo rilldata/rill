@@ -28,6 +28,7 @@ export type MapQueryRequest = {
 
 export type MapQueryStateOptions = {
   exploreProtoState?: string;
+  ignoreFilters?: boolean;
   forceOpenPivot?: boolean;
 };
 
@@ -44,7 +45,11 @@ export type MapQueryResponse = {
  */
 export function mapQueryToDashboard(
   { exploreName, queryName, queryArgsJson, executionTime }: MapQueryRequest,
-  { exploreProtoState, forceOpenPivot = false }: MapQueryStateOptions,
+  {
+    exploreProtoState,
+    ignoreFilters = false,
+    forceOpenPivot = false,
+  }: MapQueryStateOptions,
 ): Readable<MapQueryResponse> {
   if (!queryName || !queryArgsJson)
     return readable({
@@ -183,6 +188,7 @@ export function mapQueryToDashboard(
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
         exploreProtoState,
+        ignoreFilters,
         forceOpenPivot,
       })
         .then((newExploreState) => {

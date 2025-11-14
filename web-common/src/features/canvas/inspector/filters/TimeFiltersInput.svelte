@@ -102,8 +102,7 @@
         {timeEnd}
         {activeTimeGrain}
         {activeTimeZone}
-        canPanLeft={false}
-        canPanRight={false}
+        hidePan
         showFullRange={false}
         showDefaultItem={false}
         applyRange={(timeRange) => {

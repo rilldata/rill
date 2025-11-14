@@ -3,7 +3,6 @@ package duckdb
 import (
 	"context"
 	"fmt"
-	"maps"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -39,22 +38,36 @@ func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelEx
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *httpsToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, props map[string]any) (map[string]any, error) {
-	// somewhat unlikely but we also allow to define a http connector which models can refer
-	cfg := inputHandle.Config()
-	// config properties can also be set as input properties
-	maps.Copy(cfg, props)
-	inputProps := &https.ConfigProperties{}
-	if err := mapstructure.WeakDecode(cfg, inputProps); err != nil {
+func (e *httpsToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, inputProperties map[string]any) (map[string]any, error) {
+	connectorProps := &https.ConfigProperties{}
+	if err := mapstructure.WeakDecode(inputHandle.Config(), connectorProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+
+	srcProp := &https.SourceProperties{}
+	if err := mapstructure.WeakDecode(inputProperties, srcProp); err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	// Merge headers
+	headers := make(map[string]string)
+	for k, v := range connectorProps.Headers {
+		headers[k] = v
+	}
+	for k, v := range srcProp.Headers {
+		headers[k] = v // srcProp overrides connectorProps
+	}
+
+	path := srcProp.ResolvePath()
+	if path == "" {
+		return nil, fmt.Errorf("missing required property: `path`")
 	}
 
 	m := &ModelInputProperties{}
 	safeSecret := safeSQLName(fmt.Sprintf("%s__%s__secret__", modelName, inputConnector))
-	if len(inputProps.Headers) != 0 {
-		m.PreExec = createSecretSQL(safeSecret, inputProps.Headers)
+	if len(headers) != 0 {
+		m.PreExec = createSecretSQL(safeSecret, headers)
 	}
-	m.SQL = "SELECT * FROM " + safeSQLString(inputProps.ResolvePath())
+	m.SQL = "SELECT * FROM " + safeSQLString(path)
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
 		return nil, err
