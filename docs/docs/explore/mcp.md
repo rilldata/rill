@@ -244,13 +244,7 @@ ai_instructions: |
 ```
 
 
-
-## Using Rill MCP Server in Claude
-
-<img src='/img/explore/mcp/mcp-main.gif' class='rounded-gif'/>
-<br />
-
-### Supported Actions
+## Supported Actions
 
 - __*List metrics views*__ – Use `list_metrics_views` to discover available metrics views in the project.
 - __*Get metrics view spec*__ – Use `get_metrics_view` to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
