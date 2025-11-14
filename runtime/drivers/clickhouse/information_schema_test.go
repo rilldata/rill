@@ -19,6 +19,10 @@ func TestInformationSchema(t *testing.T) {
 	dsn := testclickhouse.Start(t)
 	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
+
+	infoSchema, ok := conn.AsInformationSchema()
+	require.True(t, ok)
+
 	prepareConn(t, conn)
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, conn) })
 	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, conn) })
@@ -28,8 +32,13 @@ func TestInformationSchema(t *testing.T) {
 		testInformationSchemaSystemAllLike(t, conn)
 	})
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, conn) })
-	t.Run("testInformationSchemaPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, conn) })
-	t.Run("testInformationSchemaPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, conn) })
+	t.Run("testInformationSchemaAllPagination", func(t *testing.T) { testInformationSchemaAllPagination(t, conn) })
+	t.Run("testInformationSchemaAllPaginationWithLike", func(t *testing.T) { testInformationSchemaAllPaginationWithLike(t, conn) })
+	t.Run("testInformationSchemaListDatabaseSchemas", func(t *testing.T) { testInformationSchemaListDatabaseSchemas(t, infoSchema) })
+	t.Run("testInformationSchemaListTables", func(t *testing.T) { testInformationSchemaListTables(t, infoSchema) })
+	t.Run("testInformationSchemaGetTable", func(t *testing.T) { testInformationSchemaGetTable(t, infoSchema) })
+	t.Run("testInformationSchemaListDatabaseSchemasPagination", func(t *testing.T) { testInformationSchemaListDatabaseSchemasPagination(t, infoSchema) })
+	t.Run("testInformationSchemaListTablesPagination", func(t *testing.T) { testInformationSchemaListTablesPagination(t, infoSchema) })
 }
 
 func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
@@ -183,6 +192,119 @@ func testInformationSchemaAllPaginationWithLike(t *testing.T, conn drivers.Handl
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tables))
 	require.Empty(t, nextToken)
+}
+
+func testInformationSchemaListDatabaseSchemas(t *testing.T, infoSchema drivers.InformationSchema) {
+	databaseSchemaInfo, _, err := infoSchema.ListDatabaseSchemas(context.Background(), 0, "")
+	require.NoError(t, err)
+	require.Equal(t, 3, len(databaseSchemaInfo))
+
+	require.Equal(t, "", databaseSchemaInfo[0].Database)
+	require.Equal(t, "clickhouse", databaseSchemaInfo[0].DatabaseSchema)
+	require.Equal(t, "", databaseSchemaInfo[1].Database)
+	require.Equal(t, "default", databaseSchemaInfo[1].DatabaseSchema)
+	require.Equal(t, "", databaseSchemaInfo[2].Database)
+	require.Equal(t, "other", databaseSchemaInfo[2].DatabaseSchema)
+}
+
+func testInformationSchemaListTables(t *testing.T, infoSchema drivers.InformationSchema) {
+	tables, _, err := infoSchema.ListTables(context.Background(), "", "default", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, len(tables), 3)
+
+	require.Equal(t, "bar", tables[0].Name)
+	require.Equal(t, false, tables[0].View)
+	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, false, tables[1].View)
+	require.Equal(t, "model", tables[2].Name)
+	require.Equal(t, true, tables[2].View)
+
+	tables, _, err = infoSchema.ListTables(context.Background(), "", "other", 0, "")
+	require.NoError(t, err)
+	require.Equal(t, len(tables), 2)
+
+	require.Equal(t, "bar", tables[0].Name)
+	require.Equal(t, false, tables[0].View)
+	require.Equal(t, "foo", tables[1].Name)
+	require.Equal(t, false, tables[1].View)
+}
+
+func testInformationSchemaGetTable(t *testing.T, infoSchema drivers.InformationSchema) {
+	ctx := context.Background()
+
+	// Existing table
+	foo, err := infoSchema.GetTable(ctx, "", "default", "foo")
+	require.NoError(t, err)
+	require.Len(t, foo.Schema, 2)
+	require.Equal(t, "STRING", foo.Schema["bar"])
+	require.Equal(t, "INT32", foo.Schema["baz"])
+	require.False(t, foo.View)
+
+	// Non-existent table
+	noTable, err := infoSchema.GetTable(ctx, "", "default", "nonexistent_table")
+	require.NoError(t, err)
+	require.Empty(t, noTable.Schema)
+
+	// View
+	model, err := infoSchema.GetTable(ctx, "", "default", "model")
+	require.NoError(t, err)
+	require.Equal(t, "UINT8", model.Schema["1"])
+	require.Equal(t, "UINT8", model.Schema["2"])
+	require.Equal(t, "UINT8", model.Schema["3"])
+	require.True(t, model.View)
+
+	ofoo, err := infoSchema.GetTable(ctx, "", "other", "foo")
+	require.NoError(t, err)
+	require.Equal(t, "STRING", ofoo.Schema["bar"])
+	require.Equal(t, "INT32", ofoo.Schema["baz"])
+	require.Equal(t, false, ofoo.View)
+
+}
+
+func testInformationSchemaListDatabaseSchemasPagination(t *testing.T, infoSchema drivers.InformationSchema) {
+	ctx := context.Background()
+	pageSize := 2
+
+	// First page
+	page1, token1, err := infoSchema.ListDatabaseSchemas(ctx, uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Len(t, page1, pageSize)
+	require.NotEmpty(t, token1)
+
+	// second page
+	page2, token2, err := infoSchema.ListDatabaseSchemas(ctx, uint32(pageSize), token1)
+	require.NoError(t, err)
+	require.NotEmpty(t, page2)
+	require.Empty(t, token2)
+
+	// Page size 0
+	all, token, err := infoSchema.ListDatabaseSchemas(ctx, 0, "")
+	require.NoError(t, err)
+	require.Equal(t, len(all), 3)
+	require.Empty(t, token)
+}
+
+func testInformationSchemaListTablesPagination(t *testing.T, infoSchema drivers.InformationSchema) {
+	ctx := context.Background()
+	pageSize := 2
+
+	// First page
+	page1, token1, err := infoSchema.ListTables(ctx, "", "default", uint32(pageSize), "")
+	require.NoError(t, err)
+	require.Len(t, page1, pageSize)
+	require.NotEmpty(t, token1)
+
+	// Second page
+	page2, token2, err := infoSchema.ListTables(ctx, "", "default", uint32(pageSize), token1)
+	require.NoError(t, err)
+	require.NotEmpty(t, page2)
+	require.Empty(t, token2)
+
+	// Page size 0
+	all, token, err := infoSchema.ListTables(ctx, "", "default", 0, "")
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(all), 3)
+	require.Empty(t, token)
 }
 
 func prepareConn(t *testing.T, conn drivers.Handle) {

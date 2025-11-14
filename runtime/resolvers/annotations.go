@@ -15,10 +15,10 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("annotations", newAnnotationsResolver)
+	runtime.RegisterResolverInitializer("metrics_annotations", newAnnotationsResolver)
 }
 
-type annotationsResolver struct {
+type metricsAnnotationsResolver struct {
 	instanceID string
 	query      *metricsview.AnnotationsQuery
 	mv         *runtimev1.MetricsViewSpec
@@ -58,7 +58,7 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		return nil, err
 	}
 
-	return &annotationsResolver{
+	return &metricsAnnotationsResolver{
 		instanceID: opts.InstanceID,
 		query:      qry,
 		mv:         mv,
@@ -68,12 +68,12 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 	}, nil
 }
 
-func (r *annotationsResolver) Close() error {
+func (r *metricsAnnotationsResolver) Close() error {
 	r.executor.Close()
 	return nil
 }
 
-func (r *annotationsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+func (r *metricsAnnotationsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 	// get the underlying executor's cache key
 	key, ok, err := cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.query.Priority)
 	if err != nil {
@@ -94,17 +94,17 @@ func (r *annotationsResolver) CacheKey(ctx context.Context) ([]byte, bool, error
 	return b, true, err
 }
 
-func (r *annotationsResolver) Refs() []*runtimev1.ResourceName {
+func (r *metricsAnnotationsResolver) Refs() []*runtimev1.ResourceName {
 	return []*runtimev1.ResourceName{
 		{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView},
 	}
 }
 
-func (r *annotationsResolver) Validate(ctx context.Context) error {
+func (r *metricsAnnotationsResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+func (r *metricsAnnotationsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Only resolve time stamps if an absolute time range is not specified.
 	if r.query.TimeRange == nil || r.query.TimeRange.Start.IsZero() || r.query.TimeRange.End.IsZero() {
 		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.mv.TimeDimension, r.claims, r.query.Priority)
@@ -133,10 +133,10 @@ func (r *annotationsResolver) ResolveInteractive(ctx context.Context) (runtime.R
 	return runtime.NewMapsResolverResult(res, nil), nil
 }
 
-func (r *annotationsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
+func (r *metricsAnnotationsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }
 
-func (r *annotationsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+func (r *metricsAnnotationsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
 	return nil, errors.New("security rule inference not implemented")
 }
