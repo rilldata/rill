@@ -5,6 +5,7 @@
   import {
     partitionResourcesByMetrics,
     partitionResourcesBySeeds,
+    coerceResourceKind,
     type ResourceGraphGrouping,
   } from "./build-resource-graph";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
@@ -42,20 +43,6 @@
     const mapped = KIND_ALIASES[kindPart.trim().toLowerCase()];
     if (mapped) return { kind: mapped, name: namePart };
     return s;
-  }
-
-  // Coerce models that are defined-as-source into Source for selection (matches graph display)
-  function coerceKindForSelection(res: V1Resource): ResourceKind | undefined {
-    const raw = res.meta?.name?.kind as ResourceKind | undefined;
-    if (raw === ResourceKind.Model) {
-      try {
-        const name = res.meta?.name?.name;
-        const resultTable = (res as any)?.model?.state?.resultTable;
-        const definedAsSource = Boolean((res as any)?.model?.spec?.definedAsSource);
-        if (name && name === resultTable && definedAsSource) return ResourceKind.Source;
-      } catch {}
-    }
-    return raw;
   }
 
   const ALLOWED_FOR_GRAPH = new Set<ResourceKind>([
@@ -106,7 +93,7 @@
 
     // Visible resources only, to align with graph rendering
     const visible = resList.filter(
-      (r) => ALLOWED_FOR_GRAPH.has(coerceKindForSelection(r) as ResourceKind) && !r.meta?.hidden,
+      (r) => ALLOWED_FOR_GRAPH.has(coerceResourceKind(r) as ResourceKind) && !r.meta?.hidden,
     );
 
     for (const raw of input) {
@@ -124,7 +111,7 @@
       }
       // Expand: one seed per visible resource of this kind
       for (const r of visible) {
-        if (coerceKindForSelection(r) !== kindToken) continue;
+        if (coerceResourceKind(r) !== kindToken) continue;
         const name = r.meta?.name?.name;
         const kind = r.meta?.name?.kind; // use actual runtime kind for matching ids
         if (!name || !kind) continue;
@@ -316,7 +303,9 @@
     @apply flex items-center gap-x-3;
   }
 
-  /* Inline expansion: span across all columns and set a taller height */
+  /* Inline expansion: span across all columns and set a taller height.
+   * 700px on mobile provides adequate viewing space without excessive scrolling.
+   * 860px on md+ screens accommodates larger displays and more complex graphs. */
   .grid-item.expanded {
     @apply col-span-full h-[700px] md:h-[860px];
   }

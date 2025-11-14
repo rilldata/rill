@@ -67,8 +67,19 @@
     | "dark"
     | "light";
 
+  // Layout constants
+  const CARD_HEIGHT_PX = 260; // Sized to fit 3x3 grid comfortably on standard displays
+  const EDGE_BORDER_RADIUS = 6; // Rounded corners for edge paths
+
+  // Edge offset calculation constants
+  const DEFAULT_EDGE_OFFSET = 8; // Default offset when nodes are moderately spaced
+  const MIN_EDGE_OFFSET = 4; // Minimal offset for nearly-vertical edges
+  const MAX_EDGE_OFFSET = 18; // Maximum offset for widely-spaced nodes
+  const VERTICAL_EDGE_THRESHOLD_PX = 12; // Treat edge as vertical if horizontal distance < this
+  const EDGE_OFFSET_SCALING_FACTOR = 10; // Divides vertical distance to compute dynamic offset
+
   // Shrink card height so 3x3 fits comfortably
-  $: containerHeightClass = fillParent ? "h-full" : "h-[260px]";
+  $: containerHeightClass = fillParent ? "h-full" : `h-[${CARD_HEIGHT_PX}px]`;
 
   const nodeTypes = {
     "resource-node": ResourceNode,
@@ -84,6 +95,123 @@
   const HIGHLIGHT_EDGE_STYLE = "stroke:#3b82f6;stroke-width:2px;opacity:1;";
   const DIM_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.25;";
 
+  /**
+   * Traverse upstream (sources) from selected nodes via incoming edges only.
+   * Returns both visited node IDs and the edge IDs that were traversed.
+   */
+  function traverseUpstream(selectedIds: Set<string>, edges: Edge[]) {
+    const visited = new Set<string>();
+    const edgeIds = new Set<string>();
+    const queue: string[] = Array.from(selectedIds);
+
+    while (queue.length) {
+      const curr = queue.shift()!;
+      if (visited.has(curr)) continue;
+      visited.add(curr);
+
+      for (const e of edges) {
+        if (e.target === curr) {
+          edgeIds.add(e.id);
+          if (!visited.has(e.source)) queue.push(e.source);
+        }
+      }
+    }
+
+    return { visited, edgeIds };
+  }
+
+  /**
+   * Traverse downstream (dependents) from selected nodes via outgoing edges only.
+   * Returns both visited node IDs and the edge IDs that were traversed.
+   */
+  function traverseDownstream(selectedIds: Set<string>, edges: Edge[]) {
+    const visited = new Set<string>();
+    const edgeIds = new Set<string>();
+    const queue: string[] = Array.from(selectedIds);
+
+    while (queue.length) {
+      const curr = queue.shift()!;
+      if (visited.has(curr)) continue;
+      visited.add(curr);
+
+      for (const e of edges) {
+        if (e.source === curr) {
+          edgeIds.add(e.id);
+          if (!visited.has(e.target)) queue.push(e.target);
+        }
+      }
+    }
+
+    return { visited, edgeIds };
+  }
+
+  /**
+   * Calculate dynamic edge offset based on node positions to create smoother, straighter routes.
+   * Uses smaller offsets for nearly-vertical edges and larger offsets for edges spanning more distance.
+   */
+  function calculateEdgeOffset(
+    sourceNode: Node<ResourceNodeData> | undefined,
+    targetNode: Node<ResourceNodeData> | undefined
+  ): number {
+    if (!sourceNode || !targetNode) return DEFAULT_EDGE_OFFSET;
+
+    // Calculate center x and handle y positions
+    const sx = (sourceNode.position?.x ?? 0) + (sourceNode.width ?? 0) / 2;
+    const sy = (sourceNode.position?.y ?? 0) + (sourceNode.height ?? 0); // bottom handle
+    const tx = (targetNode.position?.x ?? 0) + (targetNode.width ?? 0) / 2;
+    const ty = (targetNode.position?.y ?? 0); // top handle
+
+    const dx = Math.abs(tx - sx);
+    const dy = Math.abs(ty - sy);
+
+    // For nearly-vertical edges, use minimal offset; otherwise scale with distance
+    if (dx < VERTICAL_EDGE_THRESHOLD_PX) return MIN_EDGE_OFFSET;
+    return Math.max(
+      MIN_EDGE_OFFSET,
+      Math.min(MAX_EDGE_OFFSET, Math.round(dy / EDGE_OFFSET_SCALING_FACTOR))
+    );
+  }
+
+  /**
+   * Apply edge styling and positioning based on highlighted paths.
+   * Highlighted edges use emphasized styling; others are dimmed when selection exists.
+   */
+  function styleEdges(
+    edges: Edge[],
+    nodes: Node<ResourceNodeData>[],
+    highlightedEdgeIds: Set<string>
+  ): Edge[] {
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+
+    return edges.map((e) => {
+      const sourceNode = nodeMap.get(e.source);
+      const targetNode = nodeMap.get(e.target);
+      const offset = calculateEdgeOffset(sourceNode, targetNode);
+      const isHighlighted = highlightedEdgeIds.has(e.id);
+
+      return {
+        ...e,
+        style: isHighlighted ? HIGHLIGHT_EDGE_STYLE : DIM_EDGE_STYLE,
+        pathOptions: { offset, borderRadius: EDGE_BORDER_RADIUS },
+      };
+    });
+  }
+
+  /**
+   * Apply default edge positioning when no nodes are selected.
+   */
+  function styleEdgesDefault(edges: Edge[], nodes: Node<ResourceNodeData>[]): Edge[] {
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+
+    return edges.map((e) => {
+      const sourceNode = nodeMap.get(e.source);
+      const targetNode = nodeMap.get(e.target);
+      const offset = calculateEdgeOffset(sourceNode, targetNode);
+
+      return { ...e, pathOptions: { offset, borderRadius: EDGE_BORDER_RADIUS } };
+    });
+  }
+
   // Reactively compute highlighted edges tracing strictly upstream and downstream
   // from the selected node(s). We explore both directions only at the start node(s):
   // upstream explores only incoming edges (sources) and continues going up;
@@ -92,26 +220,10 @@
     const nodes = $nodesStore as Node<ResourceNodeData>[];
     const edges = $edgesStore as Edge[];
     const selectedIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+
+    // No selection: apply default styling and clear highlights
     if (!selectedIds.size) {
-      const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-      edgesViewStore.set(
-        edges.map((e) => {
-          const s = nodeMap.get(e.source);
-          const t = nodeMap.get(e.target);
-          let offset = 8;
-          if (s && t) {
-            const sx = (s.position?.x ?? 0) + (s.width ?? 0) / 2;
-            const sy = (s.position?.y ?? 0) + (s.height ?? 0);
-            const tx = (t.position?.x ?? 0) + (t.width ?? 0) / 2;
-            const ty = (t.position?.y ?? 0);
-            const dx = Math.abs(tx - sx);
-            const dy = Math.abs(ty - sy);
-            if (dx < 12) offset = 4; else offset = Math.max(6, Math.min(18, Math.round(dy / 10)));
-          }
-          return { ...e, pathOptions: { offset, borderRadius: 6 } };
-        }),
-      );
-      // clear route highlight flags if nothing is selected
+      edgesViewStore.set(styleEdgesDefault(edges, nodes));
       nodesStore.update((nds) => nds.map((n) => ({
         ...n,
         data: { ...n.data, routeHighlighted: false },
@@ -119,74 +231,20 @@
       return;
     }
 
-    // Upstream traversal (incoming edges only)
-    const upstreamVisited = new Set<string>();
-    const upstreamEdgeIds = new Set<string>();
-    const upQueue: string[] = Array.from(selectedIds);
-    while (upQueue.length) {
-      const curr = upQueue.shift()!;
-      if (upstreamVisited.has(curr)) continue;
-      upstreamVisited.add(curr);
-      for (const e of edges) {
-        if (e.target === curr) {
-          upstreamEdgeIds.add(e.id);
-          if (!upstreamVisited.has(e.source)) upQueue.push(e.source);
-        }
-      }
-    }
+    // Traverse paths from selected nodes
+    const upstream = traverseUpstream(selectedIds, edges);
+    const downstream = traverseDownstream(selectedIds, edges);
 
-    // Downstream traversal (outgoing edges only)
-    const downstreamVisited = new Set<string>();
-    const downstreamEdgeIds = new Set<string>();
-    const downQueue: string[] = Array.from(selectedIds);
-    while (downQueue.length) {
-      const curr = downQueue.shift()!;
-      if (downstreamVisited.has(curr)) continue;
-      downstreamVisited.add(curr);
-      for (const e of edges) {
-        if (e.source === curr) {
-          downstreamEdgeIds.add(e.id);
-          if (!downstreamVisited.has(e.target)) downQueue.push(e.target);
-        }
-      }
-    }
+    const highlightedEdgeIds = new Set<string>([...upstream.edgeIds, ...downstream.edgeIds]);
+    const highlightedNodeIds = new Set<string>([...upstream.visited, ...downstream.visited]);
 
-    const highlighted = new Set<string>([...upstreamEdgeIds, ...downstreamEdgeIds]);
-    const highlightNodeIds = new Set<string>([
-      ...upstreamVisited,
-      ...downstreamVisited,
-    ]);
-
-    // Compute a dynamic offset for smoother, straighter routes.
-    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-    edgesViewStore.set(
-      edges.map((e) => {
-        const s = nodeMap.get(e.source);
-        const t = nodeMap.get(e.target);
-        let offset = 8; // default
-        if (s && t) {
-          const sx = (s.position?.x ?? 0) + (s.width ?? 0) / 2;
-          const sy = (s.position?.y ?? 0) + (s.height ?? 0); // bottom handle
-          const tx = (t.position?.x ?? 0) + (t.width ?? 0) / 2;
-          const ty = (t.position?.y ?? 0); // top handle
-          const dx = Math.abs(tx - sx);
-          const dy = Math.abs(ty - sy);
-          // If almost vertical, keep offset tiny; if further apart, allow a bit more to avoid kinks
-          if (dx < 12) offset = 4;
-          else offset = Math.max(6, Math.min(18, Math.round(dy / 10)));
-        }
-        return {
-          ...e,
-          style: highlighted.has(e.id) ? HIGHLIGHT_EDGE_STYLE : DIM_EDGE_STYLE,
-          pathOptions: { offset, borderRadius: 6 },
-        };
-      }),
-    );
+    // Apply highlighted styling to edges
+    edgesViewStore.set(styleEdges(edges, nodes, highlightedEdgeIds));
 
     // Mark nodes along the traced paths as highlighted
     nodesStore.update((nds) => nds.map((n) => ({
       ...n,
-      data: { ...n.data, routeHighlighted: highlightNodeIds.has(n.id) },
+      data: { ...n.data, routeHighlighted: highlightedNodeIds.has(n.id) },
     })));
   })();
 
@@ -210,11 +268,14 @@
     } catch {
       flowKey = `${flowId ?? 'flow'}|${fillParent ? 'E' : 'N'}|${Date.now()}`;
     }
-    console.log("ResourceGraph graph", {
-      title,
-      nodes: graph.nodes.map((n) => n.id),
-      edges: filteredEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
-    });
+    // Debug logging (only in development)
+    if (import.meta.env.DEV) {
+      console.log("ResourceGraph graph", {
+        title,
+        nodes: graph.nodes.map((n) => n.id),
+        edges: filteredEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+      });
+    }
   }
 
   // Apply preselection for seeded anchors (runs when preselectNodeIds or nodes change)

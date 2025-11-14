@@ -9,25 +9,31 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { ResourceNodeData } from "./types";
 
-const MIN_NODE_WIDTH = 160;
-const MAX_NODE_WIDTH = 320;
-const DEFAULT_NODE_HEIGHT = 56;
+// Node sizing constants
+const MIN_NODE_WIDTH = 160; // Minimum width ensures readability of short resource names
+const MAX_NODE_WIDTH = 320; // Maximum width prevents overly wide nodes for long names
+const DEFAULT_NODE_HEIGHT = 56; // Standard height for resource node cards
 
-// Centralize Dagre spacing so we can version the cache against it
-// Increase both horizontal and vertical spacing by 1.5x
-const DAGRE_NODESEP = 27; // was 18
-const DAGRE_RANKSEP = 72; // was 48
-const DAGRE_EDGESEP = 4;
-// Softer, less intrusive edges
+// Dagre layout spacing configuration (centralized for cache versioning)
+// These values were increased by 1.5x from original (18, 48, 4) to reduce visual density
+const DAGRE_NODESEP = 27; // Horizontal spacing between nodes at the same rank
+const DAGRE_RANKSEP = 72; // Vertical spacing between ranks (layers)
+const DAGRE_EDGESEP = 4; // Minimum spacing between edge paths
+
+// Default edge styling for non-highlighted edges
 const DEFAULT_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;";
+
+// Resource kinds that should be displayed in the graph
 const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.Source,
   ResourceKind.Model,
   ResourceKind.MetricsView,
   ResourceKind.Explore,
 ]);
-const AVERAGE_CHAR_WIDTH = 8.5;
-const CONTENT_PADDING = 72;
+
+// Node width estimation constants (used to dynamically size nodes based on label length)
+const AVERAGE_CHAR_WIDTH = 8.5; // Average pixel width per character in the node label font
+const CONTENT_PADDING = 72; // Total horizontal padding (icons, margins, etc.) within a node
 
 // Cache last known group assignments so that if a group's anchor
 // (e.g., a metrics view) disappears due to an error, we can keep
@@ -114,9 +120,13 @@ function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   return name.kind as ResourceKind;
 }
 
-// Sidebar logic: some runtime Model resources are defined-as-source and represent Sources in the UI.
-// We mirror that here so the graph shows Sources consistently with the sidebar.
-function coerceKindForGraph(res: V1Resource, raw: ResourceKind | undefined): ResourceKind | undefined {
+/**
+ * Coerce resource kind to match UI representation.
+ * Models that are defined-as-source are displayed as Sources in the sidebar and graph.
+ * This ensures consistent representation across the application.
+ */
+export function coerceResourceKind(res: V1Resource): ResourceKind | undefined {
+  const raw = res.meta?.name?.kind as ResourceKind | undefined;
   if (raw === ResourceKind.Model) {
     try {
       // A resource is a Source if it's a model defined-as-source and its result table matches the resource name
@@ -205,8 +215,7 @@ export function buildResourceGraph(resources: V1Resource[], opts?: BuildGraphOpt
     const id = toNodeId(resource.meta);
     if (!id) continue;
 
-    const rawKind = toResourceKind(resource.meta?.name);
-    const kind = coerceKindForGraph(resource, rawKind);
+    const kind = coerceResourceKind(resource);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
     if (resource.meta?.hidden) continue;
 
@@ -378,10 +387,11 @@ function traverseDownstream(seedId: string, outgoing: Map<string, Set<string>>) 
   return visited;
 }
 
-export function partitionResourcesBySeeds(
-  resources: V1Resource[],
-  seeds: (string | V1ResourceName)[],
-): ResourceGraphGrouping[] {
+/**
+ * Build a map of visible resources that are allowed in the graph.
+ * Filters out hidden resources and disallowed kinds.
+ */
+function buildVisibleResourceMap(resources: V1Resource[]): Map<string, V1Resource> {
   const resourceMap = new Map<string, V1Resource>();
   for (const resource of resources) {
     const id = toNodeId(resource.meta);
@@ -391,20 +401,40 @@ export function partitionResourcesBySeeds(
     if (resource.meta?.hidden) continue;
     resourceMap.set(id, resource);
   }
+  return resourceMap;
+}
 
+/**
+ * Normalize and deduplicate seed identifiers.
+ * Converts V1ResourceName objects to string IDs and removes duplicates.
+ */
+function normalizeSeeds(seeds: (string | V1ResourceName)[]): string[] {
   const toSeedId = (seed: string | V1ResourceName) =>
     typeof seed === "string" ? seed : toNodeId({ name: seed });
 
-  const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
-
-  const groups: ResourceGraphGrouping[] = [];
-  const groupById = new Map<string, ResourceGraphGrouping>();
-  const assigned = new Set<string>();
-
-  const normalizedSeeds = seeds
+  return seeds
     .map((s) => toSeedId(s))
     .filter((id): id is string => !!id)
     .filter((id, idx, arr) => arr.indexOf(id) === idx);
+}
+
+/**
+ * Create initial groups by traversing upstream and downstream from each seed.
+ * Returns groups, a lookup map, and the set of assigned resource IDs.
+ */
+function createSeedBasedGroups(
+  normalizedSeeds: string[],
+  resourceMap: Map<string, V1Resource>,
+  incoming: Map<string, Set<string>>,
+  outgoing: Map<string, Set<string>>
+): {
+  groups: ResourceGraphGrouping[];
+  groupById: Map<string, ResourceGraphGrouping>;
+  assigned: Set<string>;
+} {
+  const groups: ResourceGraphGrouping[] = [];
+  const groupById = new Map<string, ResourceGraphGrouping>();
+  const assigned = new Set<string>();
 
   for (const seedId of normalizedSeeds) {
     // Directed closure: only upstream via incoming and only downstream via outgoing
@@ -429,7 +459,18 @@ export function partitionResourcesBySeeds(
     for (const resId of componentIds) assigned.add(resId);
   }
 
-  // Try to assign ungrouped resources to their last known existing group.
+  return { groups, groupById, assigned };
+}
+
+/**
+ * Attempt to assign unassigned resources to their previously cached group.
+ * This maintains grouping stability when resources move between groups.
+ */
+function assignUnassignedResourcesToCachedGroups(
+  resourceMap: Map<string, V1Resource>,
+  groupById: Map<string, ResourceGraphGrouping>,
+  assigned: Set<string>
+): void {
   const unassignedIds = Array.from(resourceMap.keys()).filter((id) => !assigned.has(id));
   for (const id of unassignedIds) {
     const cachedGroupId = lastGroupAssignments.get(id);
@@ -441,10 +482,22 @@ export function partitionResourcesBySeeds(
     existingGroup.resources.push(res);
     assigned.add(id);
   }
+}
 
-  // Build synthetic groups for cached groups whose anchors disappeared.
+/**
+ * Create synthetic groups for resources whose anchor (seed) disappeared due to errors.
+ * Uses cached group labels to maintain continuity.
+ */
+function createSyntheticGroupsForMissingAnchors(
+  resourceMap: Map<string, V1Resource>,
+  groupById: Map<string, ResourceGraphGrouping>,
+  groups: ResourceGraphGrouping[],
+  assigned: Set<string>
+): void {
   const stillUnassignedIds = Array.from(resourceMap.keys()).filter((id) => !assigned.has(id));
   const syntheticGroups = new Map<string, V1Resource[]>();
+
+  // Collect resources that belong to missing groups
   for (const id of stillUnassignedIds) {
     const cachedGroupId = lastGroupAssignments.get(id);
     if (!cachedGroupId) continue;
@@ -453,6 +506,8 @@ export function partitionResourcesBySeeds(
     const res = resourceMap.get(id);
     if (res) syntheticGroups.get(cachedGroupId)!.push(res);
   }
+
+  // Create groups for collected resources
   for (const [syntheticId, syntheticResources] of syntheticGroups) {
     if (!syntheticResources.length) continue;
     const label = lastGroupLabels.get(syntheticId) ?? "Recovered group";
@@ -464,8 +519,17 @@ export function partitionResourcesBySeeds(
       if (rid) assigned.add(rid);
     }
   }
+}
 
-  // Ensure missing-but-cached resources remain in their last group as placeholders.
+/**
+ * Add placeholder resources for cached resources that are temporarily missing.
+ * This preserves graph structure when resources have errors.
+ */
+function addPlaceholdersForMissingResources(
+  resourceMap: Map<string, V1Resource>,
+  groupById: Map<string, ResourceGraphGrouping>,
+  assigned: Set<string>
+): void {
   const presentIds = new Set(resourceMap.keys());
   for (const [rid, gid] of lastGroupAssignments) {
     const grp = groupById.get(gid);
@@ -475,8 +539,13 @@ export function partitionResourcesBySeeds(
     grp.resources.push(makePlaceholderResource(rid));
     assigned.add(rid);
   }
+}
 
-  // Update caches with current grouping assignments.
+/**
+ * Update persistent caches with current grouping state.
+ * Stores group labels and resource-to-group assignments.
+ */
+function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
   for (const group of groups) {
     if (group.label) lastGroupLabels.set(group.id, group.label);
     for (const res of group.resources) {
@@ -484,9 +553,34 @@ export function partitionResourcesBySeeds(
       if (rid) lastGroupAssignments.set(rid, group.id);
     }
   }
-
-  // Persist grouping cache so we can recover layout/membership on errors
   persistAllCaches();
+}
+
+/**
+ * Partition resources into groups based on seed resources.
+ * Each seed generates a group containing the seed and all resources
+ * connected to it (both upstream sources and downstream dependents).
+ * Maintains grouping stability using cached assignments.
+ */
+export function partitionResourcesBySeeds(
+  resources: V1Resource[],
+  seeds: (string | V1ResourceName)[],
+): ResourceGraphGrouping[] {
+  const resourceMap = buildVisibleResourceMap(resources);
+  const { incoming, outgoing } = buildDirectedAdjacency(resourceMap);
+  const normalizedSeeds = normalizeSeeds(seeds);
+
+  const { groups, groupById, assigned } = createSeedBasedGroups(
+    normalizedSeeds,
+    resourceMap,
+    incoming,
+    outgoing
+  );
+
+  assignUnassignedResourcesToCachedGroups(resourceMap, groupById, assigned);
+  createSyntheticGroupsForMissingAnchors(resourceMap, groupById, groups, assigned);
+  addPlaceholdersForMissingResources(resourceMap, groupById, assigned);
+  updateGroupingCaches(groups);
 
   return groups;
 }
