@@ -81,7 +81,7 @@ It's never a good idea to commit sensitive information to Git and it goes agains
 
 If you have configured your credentials via the `.env` file this will be deployed with your project. 
 
-If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud).
+If not, follow the steps to deploy then configure your credentials via the CLI running [`rill env configure`](/deploy/deploy-credentials).
 
 ## Cloning an Existing Project from Rill Cloud
 
