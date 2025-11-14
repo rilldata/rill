@@ -25,7 +25,7 @@
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./helpers";
-  import FormSection from "./FormSection.svelte";
+  import AddDataFormSection from "./AddDataFormSection.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -318,7 +318,7 @@
           disableMarginTop
         >
           <TabsContent value="parameters">
-            <FormSection
+            <AddDataFormSection
               id={paramsFormId}
               enhance={paramsEnhance}
               onSubmit={paramsSubmit}
@@ -330,10 +330,10 @@
                 {onStringInputChange}
                 uploadFile={handleFileUpload}
               />
-            </FormSection>
+            </AddDataFormSection>
           </TabsContent>
           <TabsContent value="dsn">
-            <FormSection
+            <AddDataFormSection
               id={dsnFormId}
               enhance={dsnEnhance}
               onSubmit={dsnSubmit}
@@ -345,12 +345,16 @@
                 {onStringInputChange}
                 uploadFile={handleFileUpload}
               />
-            </FormSection>
+            </AddDataFormSection>
           </TabsContent>
         </Tabs>
       {:else if isConnectorForm && connector.configProperties?.some((property) => property.key === "dsn")}
         <!-- Connector with only DSN - show DSN form directly -->
-        <FormSection id={dsnFormId} enhance={dsnEnhance} onSubmit={dsnSubmit}>
+        <AddDataFormSection
+          id={dsnFormId}
+          enhance={dsnEnhance}
+          onSubmit={dsnSubmit}
+        >
           <FormRenderer
             properties={filteredDsnProperties}
             form={dsnForm}
@@ -358,11 +362,11 @@
             {onStringInputChange}
             uploadFile={handleFileUpload}
           />
-        </FormSection>
+        </AddDataFormSection>
       {:else if isMultiStepConnector}
         {#if stepState.step === "connector"}
           <!-- GCS Step 1: Connector configuration -->
-          <FormSection
+          <AddDataFormSection
             id={paramsFormId}
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
@@ -374,10 +378,10 @@
               {onStringInputChange}
               {handleFileUpload}
             />
-          </FormSection>
+          </AddDataFormSection>
         {:else}
           <!-- GCS Step 2: Source configuration -->
-          <FormSection
+          <AddDataFormSection
             id={paramsFormId}
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
@@ -389,10 +393,10 @@
               {onStringInputChange}
               uploadFile={handleFileUpload}
             />
-          </FormSection>
+          </AddDataFormSection>
         {/if}
       {:else}
-        <FormSection
+        <AddDataFormSection
           id={paramsFormId}
           enhance={paramsEnhance}
           onSubmit={paramsSubmit}
@@ -404,7 +408,7 @@
             {onStringInputChange}
             uploadFile={handleFileUpload}
           />
-        </FormSection>
+        </AddDataFormSection>
       {/if}
     </div>
 
