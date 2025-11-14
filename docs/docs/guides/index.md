@@ -1,6 +1,6 @@
 ---
 title: ""
-collapsed: false
+collapsed: true
 tags:
   - Tutorial
   - Getting Started
