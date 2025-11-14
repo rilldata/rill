@@ -40,6 +40,7 @@ import type {
   AdminServiceCreateServiceBody,
   AdminServiceCreateUsergroupBodyBody,
   AdminServiceDeleteUserParams,
+  AdminServiceDeleteVirtualFileParams,
   AdminServiceEditUsergroupBody,
   AdminServiceGetAlertMetaBody,
   AdminServiceGetBillingSubscriptionParams,
@@ -129,6 +130,7 @@ import type {
   V1DeleteServiceResponse,
   V1DeleteUserResponse,
   V1DeleteUsergroupResponse,
+  V1DeleteVirtualFileResponse,
   V1DenyProjectAccessResponse,
   V1EditAlertResponse,
   V1EditReportResponse,
@@ -12422,6 +12424,90 @@ export function createAdminServiceGetVirtualFile<
   return query;
 }
 
+/**
+ * @summary DeleteVirtualFile deletes a virtual file from a project's virtual repo
+ */
+export const adminServiceDeleteVirtualFile = (
+  projectId: string,
+  params?: AdminServiceDeleteVirtualFileParams,
+) => {
+  return httpClient<V1DeleteVirtualFileResponse>({
+    url: `/v1/projects/${projectId}/repo/virtual/file`,
+    method: "DELETE",
+    params,
+  });
+};
+
+export const getAdminServiceDeleteVirtualFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+    TError,
+    { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+  TError,
+  { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteVirtualFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+    { projectId: string; params?: AdminServiceDeleteVirtualFileParams }
+  > = (props) => {
+    const { projectId, params } = props ?? {};
+
+    return adminServiceDeleteVirtualFile(projectId, params);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteVirtualFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>
+>;
+
+export type AdminServiceDeleteVirtualFileMutationError = RpcStatus;
+
+/**
+ * @summary DeleteVirtualFile deletes a virtual file from a project's virtual repo
+ */
+export const createAdminServiceDeleteVirtualFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+      TError,
+      { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+  TError,
+  { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
  */

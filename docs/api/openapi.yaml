@@ -491,6 +491,8 @@ components:
             type: object
         v1DeleteUsergroupResponse:
             type: object
+        v1DeleteVirtualFileResponse:
+            type: object
         v1DenyProjectAccessResponse:
             type: object
         v1Deployment:

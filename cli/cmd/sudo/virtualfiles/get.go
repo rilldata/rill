@@ -41,9 +41,10 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			projectID := projResp.Project.Id
 
 			resp, err := client.GetVirtualFile(ctx, &adminv1.GetVirtualFileRequest{
-				ProjectId:   projectID,
-				Environment: "prod",
-				Path:        path,
+				ProjectId:            projectID,
+				Environment:          "prod",
+				Path:                 path,
+				SuperuserForceAccess: true,
 			})
 			if err != nil {
 				return err

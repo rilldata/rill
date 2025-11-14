@@ -18,8 +18,10 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 		Long: `Delete a specific virtual file by marking it as deleted.
 
 Virtual files are stored in the virtual repository and represent runtime resources
-like alerts, reports, and services. Deleting a virtual file will mark it as deleted
-in the database, which will cause the runtime to remove the corresponding resource.`,
+like alerts and reports. Deleting a virtual file will mark it as deleted
+in the database, which will cause the runtime to remove the corresponding resource.
+
+This command can delete virtual files even if they have parse errors.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -36,13 +38,8 @@ in the database, which will cause the runtime to remove the corresponding resour
 				return fmt.Errorf("org, project, and path cannot be empty")
 			}
 
-			fileType, name := GetFileTypeAndName(path)
-			if fileType == FileTypeUnknown || name == "" {
-				return fmt.Errorf("unsupported file type for deletion at path %q", path)
-			}
-
 			if !force {
-				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Delete %s %q in project %q (org %q)?", fileType, name, project, org), "", false)
+				ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Delete virtual file %q in project %q (org %q)?", path, project, org), "", false)
 				if err != nil {
 					return err
 				}
@@ -51,43 +48,29 @@ in the database, which will cause the runtime to remove the corresponding resour
 				}
 			}
 
-			switch fileType {
-			case FileTypeAlert:
-				_, err = client.DeleteAlert(ctx, &adminv1.DeleteAlertRequest{
-					Org:     org,
-					Project: project,
-					Name:    name,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to delete alert: %w", err)
-				}
-				ch.PrintfSuccess("Successfully deleted alert %q\n", name)
+			// Get the project ID
+			projResp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+				Org:                  org,
+				Project:              project,
+				SuperuserForceAccess: true,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to get project: %w", err)
+			}
+			projectID := projResp.Project.Id
 
-			case FileTypeReport:
-				_, err = client.DeleteReport(ctx, &adminv1.DeleteReportRequest{
-					Org:     org,
-					Project: project,
-					Name:    name,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to delete report: %w", err)
-				}
-				ch.PrintfSuccess("Successfully deleted report %q\n", name)
-
-			case FileTypeService:
-				_, err = client.DeleteService(ctx, &adminv1.DeleteServiceRequest{
-					Name: name,
-					Org:  org,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to delete service: %w", err)
-				}
-				ch.PrintfSuccess("Successfully deleted service %q\n", name)
-
-			default:
-				return fmt.Errorf("unsupported file type: %s", fileType)
+			// Delete the virtual file directly
+			_, err = client.DeleteVirtualFile(ctx, &adminv1.DeleteVirtualFileRequest{
+				ProjectId:            projectID,
+				Environment:          "prod",
+				Path:                 path,
+				SuperuserForceAccess: true,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to delete virtual file: %w", err)
 			}
 
+			ch.PrintfSuccess("Successfully deleted virtual file %q\n", path)
 			return nil
 		},
 	}

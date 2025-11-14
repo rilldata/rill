@@ -56,10 +56,11 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			for {
 				res, err := client.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
-					ProjectId:   projectID,
-					Environment: "prod",
-					PageSize:    ps,
-					PageToken:   pageToken,
+					ProjectId:            projectID,
+					Environment:          "prod",
+					PageSize:             ps,
+					PageToken:            pageToken,
+					SuperuserForceAccess: true,
 				})
 				if err != nil {
 					return fmt.Errorf("failed to pull virtual repo: %w", err)
@@ -96,9 +97,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				if file.Deleted {
 					deleted = "Yes"
 				}
-				fileType := GetFileType(file.Path)
 				updatedOn := file.UpdatedOn.AsTime().Local().Format(time.DateTime)
-				fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n", updatedOn, file.Path, fileType, size, deleted)
+				fmt.Fprintf(w, "%s\t%s\t%d\t%s\n", updatedOn, file.Path, size, deleted)
 			}
 			w.Flush()
 
