@@ -193,8 +193,8 @@
       <DialogTitle>Add guest users</DialogTitle>
     </DialogHeader>
     <DialogDescription>
-      Guests are users outside your organization with limited access to selected
-      projects and assigned roles.
+      Guests can only access provisioned projects with assigned roles. They do
+      not have organization-wide access.
     </DialogDescription>
     <form
       id={formId}
