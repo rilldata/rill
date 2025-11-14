@@ -282,7 +282,10 @@
   }
 
   function onStringInputChange(event: Event) {
-    formManager.onStringInputChange(event, $paramsTainted);
+    formManager.onStringInputChange(
+      event,
+      $paramsTainted as Record<string, boolean> | null | undefined,
+    );
   }
 </script>
 
