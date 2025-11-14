@@ -14,6 +14,45 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// CreateMetricsSQLCompiler creates a metrics SQL compiler with standard security-aware callbacks
+func CreateMetricsSQLCompiler(ctx context.Context, rt *runtime.Runtime, instanceID string, claims *runtime.SecurityClaims, priority int) (*metricssql.Compiler, error) {
+	ctrl, err := rt.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	compiler := metricssql.New(&metricssql.CompilerOptions{
+		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+			mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+			if err != nil {
+				return nil, err
+			}
+			sec, err := rt.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
+			if err != nil {
+				return nil, err
+			}
+			if !sec.CanAccess() {
+				return nil, runtime.ErrForbidden
+			}
+			return mv, nil
+		},
+		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
+			sec, err := rt.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+			e, err := executor.New(ctx, rt, instanceID, mv.GetMetricsView().State.ValidSpec, false, sec, priority)
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+			defer e.Close()
+			return e.Timestamps(ctx, timeDim)
+		},
+	})
+
+	return compiler, nil
+}
+
 func init() {
 	runtime.RegisterResolverInitializer("metrics_sql", newMetricsSQL)
 }
@@ -110,10 +149,10 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Inject the additional where clause if provided
-	query.Where = applyAdditionalWhere(query.Where, props.AdditionalWhere)
+	query.Where = ApplyAdditionalWhere(query.Where, props.AdditionalWhere)
 
 	// Inject the additional time range if provided
-	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
+	query.TimeRange = ApplyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
 
 	// Set the additional timezone if provided
 	if props.TimeZone != "" {
@@ -136,8 +175,8 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	return newMetrics(ctx, resolverOpts)
 }
 
-// applyAdditionalWhere combines the existing where clause with the additional where clause
-func applyAdditionalWhere(current, additional *metricsview.Expression) *metricsview.Expression {
+// ApplyAdditionalWhere combines the existing where clause with the additional where clause
+func ApplyAdditionalWhere(current, additional *metricsview.Expression) *metricsview.Expression {
 	if current == nil {
 		return additional
 	}
@@ -157,8 +196,8 @@ func applyAdditionalWhere(current, additional *metricsview.Expression) *metricsv
 	}
 }
 
-// applyAdditionalTimeRange merges the existing time range with the additional time range
-func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metricsview.TimeRange {
+// ApplyAdditionalTimeRange merges the existing time range with the additional time range
+func ApplyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metricsview.TimeRange {
 	if current == nil {
 		return additional
 	}

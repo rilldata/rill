@@ -12,9 +12,9 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
-	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/resolvers"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -38,138 +38,26 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	templateData := parser.TemplateData{
 		User:      claims.UserAttributes,
 		Variables: inst.ResolveVariables(false),
 		State:     make(map[string]any),
 	}
 
-	// Create base func map with Sprig functions (excluding env functions)
 	funcMap := sprig.TxtFuncMap()
 	delete(funcMap, "env")
 	delete(funcMap, "expandenv")
 
 	// Register the metrics_sql custom function
 	funcMap["metrics_sql"] = func(sql string) (string, error) {
-		// Create a metrics SQL compiler
-		compiler := metricssql.New(&metricssql.CompilerOptions{
-			GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
-				mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
-				if err != nil {
-					return nil, err
-				}
-				sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
-				if err != nil {
-					return nil, err
-				}
-				if !sec.CanAccess() {
-					return nil, runtime.ErrForbidden
-				}
-				return mv, nil
-			},
-			GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
-				sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
-				if err != nil {
-					return metricsview.TimestampsResult{}, err
-				}
-				e, err := executor.New(ctx, s.runtime, req.InstanceId, mv.GetMetricsView().State.ValidSpec, false, sec, 0)
-				if err != nil {
-					return metricsview.TimestampsResult{}, err
-				}
-				defer e.Close()
-				return e.Timestamps(ctx, timeDim)
-			},
-		})
-
-		// Parse the metrics SQL query
-		query, err := compiler.Parse(ctx, sql)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse metrics SQL: %w", err)
-		}
-
-		// Apply additional filters if provided for this metrics view
-		if additionalWhere, ok := req.AdditionalWhereByMetricsView[query.MetricsView]; ok {
-			query.Where = applyAdditionalWhere(query.Where, additionalWhere)
-		}
-
-		// Apply additional time range if provided
-		if req.AdditionalTimeRange != nil {
-			additionalTimeRange := convertProtoTimeRange(req.AdditionalTimeRange)
-			query.TimeRange = applyAdditionalTimeRange(query.TimeRange, additionalTimeRange)
-		}
-
-		// Get the metrics view resource
-		mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: query.MetricsView}, false)
-		if err != nil {
-			return "", fmt.Errorf("failed to get metrics view %q: %w", query.MetricsView, err)
-		}
-
-		// Check security
-		sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
+		value, metricsViewName, fieldName, err := s.executeMetricsSQL(ctx, req.InstanceId, claims, sql, req.AdditionalWhereByMetricsView, req.AdditionalTimeRange)
 		if err != nil {
 			return "", err
-		}
-		if !sec.CanAccess() {
-			return "", runtime.ErrForbidden
-		}
-
-		// Create executor
-		exec, err := executor.New(ctx, s.runtime, req.InstanceId, mv.GetMetricsView().State.ValidSpec, false, sec, 0)
-		if err != nil {
-			return "", fmt.Errorf("failed to create executor: %w", err)
-		}
-		defer exec.Close()
-
-		// Execute the query
-		res, err := exec.Query(ctx, query, nil)
-		if err != nil {
-			return "", fmt.Errorf("failed to execute query: %w", err)
-		}
-		defer res.Close()
-
-		// Read the result - must be exactly one row and one column
-		if !res.Next() {
-			return "", errors.New("metrics_sql query must return exactly one row with one value")
-		}
-
-		// Scan the row
-		row := make(map[string]any)
-		if err := res.MapScan(row); err != nil {
-			return "", fmt.Errorf("failed to scan query result: %w", err)
-		}
-
-		// Check for exactly one value in the row
-		if len(row) != 1 {
-			return "", fmt.Errorf("metrics_sql query must return exactly one value, got %d values", len(row))
-		}
-
-		// Check for second row (should not exist)
-		if res.Next() {
-			return "", errors.New("metrics_sql query must return exactly one row, got multiple rows")
-		}
-
-		// Check for errors
-		if err := res.Err(); err != nil {
-			return "", fmt.Errorf("query execution error: %w", err)
-		}
-
-		// Extract the single value
-		var value any
-		var fieldName string
-		for k, v := range row {
-			fieldName = k
-			value = v
-			break
 		}
 
 		// Return format token or raw value based on request
 		if req.UseFormatTokens {
-			return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, query.MetricsView, fieldName, value), nil
+			return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, metricsViewName, fieldName, value), nil
 		}
 
 		return fmt.Sprintf("%v", value), nil
@@ -192,69 +80,142 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	}, nil
 }
 
-// applyAdditionalWhere combines the existing where clause with the additional where clause
-func applyAdditionalWhere(current *metricsview.Expression, additional *runtimev1.Expression) *metricsview.Expression {
-	if additional == nil {
-		return current
+// executeMetricsSQL executes a metrics SQL query and returns a single scalar value
+func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claims *runtime.SecurityClaims, sql string, additionalWhereByMetricsView map[string]*runtimev1.Expression, additionalTimeRange *runtimev1.TimeRange) (value any, metricsViewName, fieldName string, err error) {
+	compiler, err := resolvers.CreateMetricsSQLCompiler(ctx, s.runtime, instanceID, claims, 0)
+	if err != nil {
+		return nil, "", "", err
 	}
 
-	// Convert runtimev1.Expression to metricsview.Expression
-	additionalMV := convertExpression(additional)
-	if additionalMV == nil {
-		return current
+	// Parse the metrics SQL query
+	query, err := compiler.Parse(ctx, sql)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to parse metrics SQL: %w", err)
 	}
 
-	if current == nil {
-		return additionalMV
+	// Apply additional filters if provided for this metrics view
+	if additionalWhere, ok := additionalWhereByMetricsView[query.MetricsView]; ok {
+		additionalWhereMV := convertProtoExpression(additionalWhere)
+		if additionalWhereMV != nil {
+			query.Where = resolvers.ApplyAdditionalWhere(query.Where, additionalWhereMV)
+		}
 	}
 
-	// Combine with AND
-	return &metricsview.Expression{
-		Condition: &metricsview.Condition{
-			Operator: metricsview.OperatorAnd,
-			Expressions: []*metricsview.Expression{
-				current,
-				additionalMV,
-			},
-		},
+	// Apply additional time range if provided
+	if additionalTimeRange != nil {
+		additionalTimeRangeMV := convertProtoTimeRange(additionalTimeRange)
+		query.TimeRange = resolvers.ApplyAdditionalTimeRange(query.TimeRange, additionalTimeRangeMV)
 	}
+
+	// Get the metrics view resource and resolve security
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: query.MetricsView}, false)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get metrics view %q: %w", query.MetricsView, err)
+	}
+
+	sec, err := s.runtime.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	// Create executor and execute the query
+	exec, err := executor.New(ctx, s.runtime, instanceID, mv.GetMetricsView().State.ValidSpec, false, sec, 0)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to create executor: %w", err)
+	}
+	defer exec.Close()
+
+	// Check for cancellation before executing query
+	if ctx.Err() != nil {
+		return nil, "", "", status.Error(codes.Canceled, "query was cancelled")
+	}
+
+	res, err := exec.Query(ctx, query, nil)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, "", "", status.Error(codes.Canceled, "query was cancelled")
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, "", "", status.Error(codes.DeadlineExceeded, "query timed out")
+		}
+		return nil, "", "", fmt.Errorf("failed to execute query: %w", err)
+	}
+	defer res.Close()
+
+	// Read and validate result - must be exactly one row with one column
+	if !res.Next() {
+		if errors.Is(res.Err(), context.Canceled) {
+			return nil, "", "", status.Error(codes.Canceled, "query was cancelled")
+		}
+		return nil, "", "", errors.New("metrics_sql query must return exactly one row with one value")
+	}
+
+	row := make(map[string]any)
+	if err := res.MapScan(row); err != nil {
+		return nil, "", "", fmt.Errorf("failed to scan query result: %w", err)
+	}
+
+	if len(row) != 1 {
+		return nil, "", "", fmt.Errorf("metrics_sql query must return exactly one value, got %d values", len(row))
+	}
+
+	if res.Next() {
+		return nil, "", "", errors.New("metrics_sql query must return exactly one row, got multiple rows")
+	}
+
+	if err := res.Err(); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, "", "", status.Error(codes.Canceled, "query was cancelled")
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, "", "", status.Error(codes.DeadlineExceeded, "query timed out")
+		}
+		return nil, "", "", fmt.Errorf("query execution error: %w", err)
+	}
+
+	// Extract the single value
+	var val any
+	var field string
+	for k, v := range row {
+		field = k
+		val = v
+		break
+	}
+
+	return val, query.MetricsView, field, nil
 }
 
-// convertExpression converts runtimev1.Expression to metricsview.Expression
-func convertExpression(expr *runtimev1.Expression) *metricsview.Expression {
+// convertProtoExpression converts runtimev1.Expression to metricsview.Expression
+func convertProtoExpression(expr *runtimev1.Expression) *metricsview.Expression {
 	if expr == nil {
 		return nil
 	}
 
 	switch e := expr.Expression.(type) {
 	case *runtimev1.Expression_Ident:
-		return &metricsview.Expression{
-			Name: e.Ident,
-		}
+		return &metricsview.Expression{Name: e.Ident}
 	case *runtimev1.Expression_Val:
-		return &metricsview.Expression{
-			Value: e.Val.AsInterface(),
-		}
+		return &metricsview.Expression{Value: e.Val.AsInterface()}
 	case *runtimev1.Expression_Cond:
-		cond := &metricsview.Condition{
-			Operator: convertOperator(e.Cond.Op),
-		}
+		cond := &metricsview.Condition{Operator: convertProtoOperator(e.Cond.Op)}
 		for _, exp := range e.Cond.Exprs {
-			cond.Expressions = append(cond.Expressions, convertExpression(exp))
+			cond.Expressions = append(cond.Expressions, convertProtoExpression(exp))
 		}
-		return &metricsview.Expression{
-			Condition: cond,
-		}
+		return &metricsview.Expression{Condition: cond}
 	case *runtimev1.Expression_Subquery:
-		// Subqueries not yet supported
-		return nil
+		return nil // Subqueries not yet supported
 	default:
 		return nil
 	}
 }
 
-// convertOperator converts runtimev1.Operation to metricsview.Operator
-func convertOperator(op runtimev1.Operation) metricsview.Operator {
+// convertProtoOperator converts runtimev1.Operation to metricsview.Operator
+func convertProtoOperator(op runtimev1.Operation) metricsview.Operator {
 	switch op {
 	case runtimev1.Operation_OPERATION_EQ:
 		return metricsview.OperatorEq
@@ -291,65 +252,18 @@ func convertProtoTimeRange(tr *runtimev1.TimeRange) *metricsview.TimeRange {
 		return nil
 	}
 
-	res := &metricsview.TimeRange{}
+	res := &metricsview.TimeRange{
+		Expression:    tr.Expression,
+		IsoDuration:   tr.IsoDuration,
+		IsoOffset:     tr.IsoOffset,
+		RoundToGrain:  metricsview.TimeGrainFromProto(tr.RoundToGrain),
+		TimeDimension: tr.TimeDimension,
+	}
 	if tr.Start != nil {
 		res.Start = tr.Start.AsTime()
 	}
 	if tr.End != nil {
 		res.End = tr.End.AsTime()
 	}
-	res.Expression = tr.Expression
-	res.IsoDuration = tr.IsoDuration
-	res.IsoOffset = tr.IsoOffset
-	res.RoundToGrain = metricsview.TimeGrainFromProto(tr.RoundToGrain)
-	res.TimeDimension = tr.TimeDimension
 	return res
-}
-
-// applyAdditionalTimeRange merges the current time range with an additional time range
-func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metricsview.TimeRange {
-	if current == nil {
-		return additional
-	}
-	if additional == nil {
-		return current
-	}
-
-	timeRange := &metricsview.TimeRange{
-		Start:         current.Start,
-		End:           current.End,
-		Expression:    current.Expression,
-		IsoDuration:   current.IsoDuration,
-		IsoOffset:     current.IsoOffset,
-		RoundToGrain:  current.RoundToGrain,
-		TimeDimension: current.TimeDimension,
-	}
-
-	// Additional time range constrains the current time range
-	// If additional has a start that's after current start, use additional's start
-	if !additional.Start.IsZero() && (timeRange.Start.IsZero() || additional.Start.After(timeRange.Start)) {
-		timeRange.Start = additional.Start
-	}
-	// If additional has an end that's before current end, use additional's end
-	if !additional.End.IsZero() && (timeRange.End.IsZero() || additional.End.Before(timeRange.End)) {
-		timeRange.End = additional.End
-	}
-	// If current doesn't have an expression but additional does, use additional's
-	if additional.Expression != "" && timeRange.Expression == "" {
-		timeRange.Expression = additional.Expression
-	}
-	if additional.IsoDuration != "" && timeRange.IsoDuration == "" {
-		timeRange.IsoDuration = additional.IsoDuration
-	}
-	if additional.IsoOffset != "" && timeRange.IsoOffset == "" {
-		timeRange.IsoOffset = additional.IsoOffset
-	}
-	if additional.RoundToGrain != metricsview.TimeGrainUnspecified && timeRange.RoundToGrain == metricsview.TimeGrainUnspecified {
-		timeRange.RoundToGrain = additional.RoundToGrain
-	}
-	if additional.TimeDimension != "" && timeRange.TimeDimension == "" {
-		timeRange.TimeDimension = additional.TimeDimension
-	}
-
-	return timeRange
 }
