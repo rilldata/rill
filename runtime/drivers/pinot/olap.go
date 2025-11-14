@@ -37,11 +37,11 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 			zap.String("sql", stmt.Query),
 			zap.Any("args", stmt.Args),
 			zap.Int64("timeoutMS", c.timeoutMS),
+			observability.ZapCtx(ctx),
 		}
 		if len(stmt.QueryAttributes) > 0 {
 			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
 		}
-		fields = append(fields, observability.ZapCtx(ctx))
 		c.logger.Info("pinot query", fields...)
 	}
 	if stmt.DryRun {

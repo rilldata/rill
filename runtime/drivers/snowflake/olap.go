@@ -46,11 +46,11 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		fields := []zap.Field{
 			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
 			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
 		}
 		if len(stmt.QueryAttributes) > 0 {
 			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
 		}
-		fields = append(fields, observability.ZapCtx(ctx))
 		c.logger.Info("Snowflake query", fields...)
 	}
 	db, err := c.getDB(ctx)

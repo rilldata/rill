@@ -67,11 +67,11 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		fields := []zap.Field{
 			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
 			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
 		}
 		if len(stmt.QueryAttributes) > 0 {
 			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
 		}
-		fields = append(fields, observability.ZapCtx(ctx))
 		c.logger.Info("clickhouse query", fields...)
 	}
 
@@ -91,8 +91,7 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 		settings[k] = v
 	}
 
-	ctx = contextWithQueryID(ctx)
-	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+	ctx = clickhouse.Context(contextWithQueryID(ctx), clickhouse.WithSettings(settings))
 
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
@@ -131,6 +130,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		fields := []zap.Field{
 			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
 			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
 		}
 		if len(stmt.QueryAttributes) > 0 {
 			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
@@ -152,15 +152,27 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 
 	if c.config.QuerySettingsOverride != "" {
 		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
+		stmt.Query = appendQueryAttributes(stmt.Query, stmt.QueryAttributes)
 	} else {
-		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+		settings := map[string]any{
+			"cast_keep_nullable":        1,
+			"join_use_nulls":            1,
+			"session_timezone":          "UTC",
+			"prefer_global_in_and_join": 1,
+			"insert_distributed_sync":   1,
+		}
+
+		// Add query attributes to settings
+		for k, v := range stmt.QueryAttributes {
+			settings[k] = v
+		}
+
+		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+
 		if c.config.QuerySettings != "" {
-			stmt.Query += ", " + c.config.QuerySettings
+			stmt.Query += "\n SETTINGS " + c.config.QuerySettings
 		}
 	}
-
-	// Append query attributes to SETTINGS clause
-	stmt.Query = appendQueryAttributes(stmt.Query, stmt.QueryAttributes)
 
 	// Gather metrics only for actual queries
 	var acquiredTime time.Time
@@ -761,7 +773,7 @@ func appendQueryAttributes(query string, attrs map[string]string) string {
 	var attrPairs []string
 	for _, k := range keys {
 		v := attrs[k]
-		escapedValue := strings.ReplaceAll(strings.ReplaceAll(v, `\`, `\\`), `'`, `''`)
+		escapedValue := drivers.DialectClickHouse.EscapeStringValue(v)
 		attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", k, escapedValue))
 	}
 
@@ -770,8 +782,5 @@ func appendQueryAttributes(query string, attrs map[string]string) string {
 		return query + ", " + strings.Join(attrPairs, ", ")
 	}
 
-	result := query + "\n SETTINGS " + strings.Join(attrPairs, ", ")
-	fmt.Println("Appended query attributes, result:", result)
-
-	return result
+	return query + "\n SETTINGS " + strings.Join(attrPairs, ", ")
 }

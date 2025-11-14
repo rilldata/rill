@@ -23,23 +23,6 @@ import (
 // ErrForbidden is returned when an action is not allowed.
 var ErrForbidden = errors.New("action not allowed")
 
-// claimsContextKey is used to store SecurityClaims in context
-type claimsContextKey struct{}
-
-// ContextWithClaims returns a new context with the provided SecurityClaims.
-func ContextWithClaims(ctx context.Context, claims *SecurityClaims) context.Context {
-	return context.WithValue(ctx, claimsContextKey{}, claims)
-}
-
-// ClaimsFromContext extracts SecurityClaims from the context.
-// Returns nil if no claims are found in the context.
-func ClaimsFromContext(ctx context.Context) *SecurityClaims {
-	if claims, ok := ctx.Value(claimsContextKey{}).(*SecurityClaims); ok {
-		return claims
-	}
-	return nil
-}
-
 // Permission represents runtime access permissions.
 type Permission int
 

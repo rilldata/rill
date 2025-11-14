@@ -42,8 +42,16 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // Query implements drivers.OLAPStore.
 func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	if c.logger != nil {
-		c.logger.Info("Postgres query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
+	if c.config.LogQueries {
+		fields := []zap.Field{
+			zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)),
+			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
+		}
+		if len(stmt.QueryAttributes) > 0 {
+			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
+		}
+		c.logger.Info("postgres query", fields...)
 	}
 	db, err := c.getDB(ctx)
 	if err != nil {

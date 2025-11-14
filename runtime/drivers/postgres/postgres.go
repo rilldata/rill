@@ -100,6 +100,7 @@ type ConfigProperties struct {
 	User        string `mapstructure:"user"`
 	Password    string `mapstructure:"password"`
 	SSLMode     string `mapstructure:"sslmode"`
+	LogQueries  bool   `mapstructure:"log_queries"`
 }
 
 func (c *ConfigProperties) Validate() error {

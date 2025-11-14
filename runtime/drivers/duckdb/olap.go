@@ -71,11 +71,11 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		fields := []zap.Field{
 			zap.String("sql", stmt.Query),
 			zap.Any("args", stmt.Args),
+			observability.ZapCtx(ctx),
 		}
 		if len(stmt.QueryAttributes) > 0 {
 			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
 		}
-		fields = append(fields, observability.ZapCtx(ctx))
 		c.logger.Info("duckdb query", fields...)
 	}
 
