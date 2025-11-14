@@ -126,7 +126,7 @@ external_id: "MyExternalID" # External ID for cross-account access
 workgroup: "primary" # Athena workgroup (defaults to 'primary')  
 output_location: "s3://my-bucket/athena-output/" # S3 URI for query results  
 aws_region: "us-east-1" # AWS region (defaults to 'us-east-1')  
-allow_host_access: true # Allow host environment access _(default: true)_
+allow_host_access: true # Allow host environment access _(default: true)_            
 ```
 
 ## Azure
@@ -365,7 +365,7 @@ _[string]_ - Must be "duckdb" _(required)_
 
 ### `mode`
 
-_[string]_ - Connection mode 
+_[string]_ - Set the mode for the DuckDB connection. 
 
 ### `path`
 
@@ -411,9 +411,9 @@ _[string]_ - Deprecated - Use init_sql instead
 
 _[boolean]_ - Whether to log raw SQL queries executed through OLAP 
 
-### `secrets`
+### `create_secrets_from_connectors`
 
-_[string]_ - Comma-separated list of connector names to create temporary secrets for 
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
 
 ### `database_name`
 
@@ -422,10 +422,6 @@ _[string]_ - Name of the attached DuckDB database (auto-detected if not set)
 ### `schema_name`
 
 _[string]_ - Default schema used by the DuckDB database 
-
-### `mode`
-
-_[no type]_ - Set the mode for the DuckDB connection. 
 
 ```yaml
 # Example: DuckDB connector configuration
@@ -540,6 +536,10 @@ _[string]_ - SQL executed during database initialization.
 ### `mode`
 
 _[string]_ - Set the mode for the MotherDuck connection. By default, it is set to 'read' which allows only read operations. Set to 'readwrite' to enable model creation and table mutations. 
+
+### `create_secrets_from_connectors`
+
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
 
 ```yaml
 # Example: MotherDuck connector configuration

@@ -444,6 +444,10 @@ sql: SELECT * FROM postgres_query('postgres_db', 'SELECT * FROM USERS')
 post_exec: DETACH DATABASE IF EXISTS postgres_db
 ```
 
+### `create_secrets_from_connectors`
+
+_[string, array]_ - List of connector names for which temporary secrets should be created before executing the SQL. 
+
 ## Additional properties when `connector` is `gcs` or [named connector](./connectors#gcs) of gcs
 
 ### `path`
