@@ -31,6 +31,8 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import ConnectorIcon from "../../../components/icons/ConnectorIcon.svelte";
+  import { navigateToResourceGraph } from "@rilldata/web-common/features/resource-graph/navigation-utils";
 
   export let filePath: string;
 
@@ -55,6 +57,12 @@
   const database = ""; // Sources are ingested into the default database
   const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = source?.state?.table as string;
+
+  function viewGraph() {
+    const name = $sourceQuery.data?.meta?.name?.name;
+    if (!name) return;
+    navigateToResourceGraph("source", name);
+  }
 
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
 
@@ -178,6 +186,11 @@
       Source is being ingested
     {/if}
   </svelte:fragment>
+</NavigationMenuItem>
+
+<NavigationMenuItem on:click={viewGraph}>
+  <ConnectorIcon slot="icon" />
+  View dependency graph
 </NavigationMenuItem>
 
 <NavigationMenuItem on:click={onRefreshSource}>
