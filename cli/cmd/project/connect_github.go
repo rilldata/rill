@@ -116,7 +116,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	}
 
 	// Error if the repository is not in sync with the remote
-	ok, err := repoInSyncFlow(ch, localGitPath, opts.ProdBranch, opts.RemoteName)
+	ok, err := repoInSyncFlow(ch, localGitPath, opts.SubPath, opts.RemoteName)
 	if err != nil {
 		return err
 	}
@@ -335,7 +335,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		Password:      pollRes.AccessToken,
 		DefaultBranch: branch,
 	}
-	err = gitutil.CommitAndForcePush(ctx, localGitPath, config, "", author)
+	err = gitutil.CommitAndPush(ctx, localGitPath, config, "", author)
 	if err != nil {
 		return fmt.Errorf("failed to push local project to Github: %w", err)
 	}
@@ -507,21 +507,20 @@ func createProjectFlow(ctx context.Context, ch *cmdutil.Helper, req *adminv1.Cre
 	return res, err
 }
 
-func repoInSyncFlow(ch *cmdutil.Helper, gitPath, branch, remoteName string) (bool, error) {
-	syncStatus, err := gitutil.GetSyncStatus(gitPath, branch, remoteName)
+func repoInSyncFlow(ch *cmdutil.Helper, gitPath, subpath, remoteName string) (bool, error) {
+	st, err := gitutil.RunGitStatus(gitPath, subpath, remoteName)
 	if err != nil {
-		// ignore errors since check is best effort and can fail in multiple cases
+		return false, err
+	}
+
+	if !st.LocalChanges && st.LocalCommits == 0 {
 		return true, nil
 	}
 
-	switch syncStatus {
-	case gitutil.SyncStatusUnspecified:
-		return true, nil
-	case gitutil.SyncStatusSynced:
-		return true, nil
-	case gitutil.SyncStatusModified:
+	if st.LocalChanges {
 		ch.PrintfWarn("Some files have been locally modified. These changes will not be present in the deployed project.\n")
-	case gitutil.SyncStatusAhead:
+	}
+	if st.LocalCommits > 0 {
 		ch.PrintfWarn("Local commits are not pushed to remote yet. These changes will not be present in the deployed project.\n")
 	}
 

@@ -1138,7 +1138,7 @@ func (s *Server) pushAssetToGit(ctx context.Context, assetID, remote, branch, to
 		Password:      token,
 		DefaultBranch: branch,
 	}
-	return cligitutil.CommitAndForcePush(ctx, projPath, config, "", author)
+	return cligitutil.CommitAndPush(ctx, projPath, config, "", author)
 }
 
 func (s *Server) githubAppInstallationURL(state githubConnectState) (string, error) {

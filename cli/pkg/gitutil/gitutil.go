@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -151,77 +150,7 @@ func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 	return res, nil
 }
 
-type SyncStatus int
-
-const (
-	SyncStatusUnspecified SyncStatus = iota
-	SyncStatusModified               // Local branch has untracked/modified changes
-	SyncStatusAhead                  // Local branch is ahead of remote branch
-	SyncStatusSynced                 // Local branch is in sync with remote branch
-)
-
-// GetSyncStatus returns the status of current branch as compared to remote/branch
-// TODO: Need to implement cases like local branch is behind/diverged from remote branch
-func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
-	repo, err := git.PlainOpen(repoPath)
-	if err != nil {
-		return SyncStatusUnspecified, err
-	}
-
-	ref, err := repo.Head()
-	if err != nil {
-		return SyncStatusUnspecified, err
-	}
-
-	if branch == "" {
-		// try to infer default branch from local repo
-		remoteRef, err := repo.Reference(plumbing.NewRemoteHEADReferenceName(remote), true)
-		if err != nil {
-			return SyncStatusUnspecified, err
-		}
-
-		_, branch, _ = strings.Cut(remoteRef.Name().Short(), fmt.Sprintf("%s/", remote))
-	}
-
-	// if user is not on required branch
-	if !ref.Name().IsBranch() || ref.Name().Short() != branch {
-		return SyncStatusUnspecified, fmt.Errorf("not on required branch")
-	}
-
-	w, err := repo.Worktree()
-	if err != nil {
-		if errors.Is(err, git.ErrIsBareRepository) {
-			// no commits can be made in bare repository
-			return SyncStatusSynced, nil
-		}
-		return SyncStatusUnspecified, err
-	}
-
-	repoStatus, err := w.Status()
-	if err != nil {
-		return SyncStatusUnspecified, err
-	}
-
-	// check all files are in unmodified state
-	if !repoStatus.IsClean() {
-		return SyncStatusModified, nil
-	}
-
-	// check if there are local commits not pushed to remote yet
-	// no easy way to get it from go-git library so running git command directly and checking response
-	cmd := exec.Command("git", "-C", repoPath, "log", "@{u}..")
-	data, err := cmd.Output()
-	if err != nil {
-		return SyncStatusUnspecified, err
-	}
-
-	if len(data) != 0 {
-		return SyncStatusAhead, nil
-	}
-	return SyncStatusSynced, nil
-}
-
-func CommitAndForcePush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
+func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {
 	// init git repo
 	repo, err := git.PlainInitWithOptions(projectPath, &git.PlainInitOptions{
 		InitOptions: git.InitOptions{
@@ -259,8 +188,14 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	// git add .
-	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+	// git add subpath/**
+	var stagingPath string
+	if config.Subpath != "" {
+		stagingPath = filepath.Join(config.Subpath, "**")
+	} else {
+		stagingPath = "."
+	}
+	if err := wt.AddWithOptions(&git.AddOptions{Glob: stagingPath}); err != nil {
 		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 
@@ -268,7 +203,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	if commitMsg == "" {
 		commitMsg = "Auto committed by Rill"
 	}
-	_, err = wt.Commit(commitMsg, &git.CommitOptions{All: true, Author: author, AllowEmptyCommits: true})
+	_, err = wt.Commit(commitMsg, &git.CommitOptions{Author: author, AllowEmptyCommits: true})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
@@ -286,7 +221,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 	if config.Username == "" {
 		// If no credentials are provided we assume that is user's self managed repo and auth is already set in git
 		// go-git does not support pushing to a private repo without auth so we will trigger the git command directly
-		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch, true)
+		return RunGitPush(ctx, projectPath, config.RemoteName(), config.DefaultBranch)
 	}
 
 	u, err := url.Parse(config.Remote)
@@ -294,7 +229,7 @@ func CommitAndForcePush(ctx context.Context, projectPath string, config *Config,
 		return fmt.Errorf("failed to parse remote URL: %w", err)
 	}
 	u.User = url.UserPassword(config.Username, config.Password)
-	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch, true)
+	return RunGitPush(ctx, projectPath, u.String(), config.DefaultBranch)
 }
 
 func Clone(ctx context.Context, path string, c *Config) (*git.Repository, error) {
@@ -332,7 +267,7 @@ func GitFetch(ctx context.Context, path string, config *Config) error {
 	if err != nil {
 		return fmt.Errorf("failed to open git repository: %w", err)
 	}
-	if config == nil {
+	if config == nil || config.Username == "" {
 		// uses default git configuration
 		// go-git does not support fetching from a private repo without auth
 		// so we will trigger the git command directly
