@@ -6,7 +6,7 @@ sidebar_position: 42
 ---
 
 
-[OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features. 
+[OpenAI](https://openai.com/) provides powerful AI services including language models, embeddings, and other machine learning capabilities. Rill supports connecting to OpenAI services using your own API key and configuration parameters to enable AI-powered conversations and data analysis features.
 
 ## API Key
 
@@ -47,7 +47,7 @@ You have now configured OpenAI access for your Rill project. Rill will use these
 
 :::tip Cloud Credentials Management
 
-If your project has already been deployed to Rill Cloud with configured credentials, you can use `rill env pull` to [retrieve and sync these cloud credentials](/build/connectors/credentials/#rill-env-pull) to your local `.env` file. Note that this operation will overwrite any existing local credentials for this source.
+If your project has already been deployed to Rill Cloud with configured credentials, you can use `rill env pull` to [retrieve and sync these cloud credentials](/build/connectors/credentials#rill-env-pull) to your local `.env` file. Note that this operation will overwrite any existing local credentials for this source.
 
 :::
 
