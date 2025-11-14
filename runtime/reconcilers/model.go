@@ -250,14 +250,14 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Check if and how we should trigger
-	trigger, triggerReset, err := r.shouldTrigger(ctx, self, specHash, refsHash, exists, refreshOn)
+	trigger, err := r.resolveTrigger(ctx, self, specHash, refsHash, exists, refreshOn)
 	if err != nil {
 		// This error indicates a manual intervention is required.
 		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Reschedule if we're not triggering a refresh
-	if !trigger {
+	if !trigger.any() {
 		// Re-run tests if the test config has changed
 		if model.State.TestHash != testHash {
 			testErrs, err := r.runModelTests(ctx, self)
@@ -300,7 +300,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Build the model
-	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, triggerReset, prevResult)
+	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, trigger, prevResult)
 
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
@@ -934,13 +934,12 @@ func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.Mo
 }
 
 // executeAll executes all partitions (if any) of a model with the given execution options.
-// Note that triggerReset only denotes if a reset is required. Even if it is false, the model will still be reset if it's not an incremental model.
-func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model, env *drivers.ModelEnv, trigger *resolvedTrigger, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, bool, error) {
 	// Prepare the incremental state to pass to the executor
 	usePartitions := model.Spec.PartitionsResolver != ""
 	incrementalRun := false
 	incrementalState := map[string]any{}
-	if !triggerReset && model.Spec.Incremental && prevResult != nil {
+	if !trigger.reset && model.Spec.Incremental && prevResult != nil {
 		// This is an incremental run!
 		incrementalRun = true
 		if model.State.IncrementalState != nil {
@@ -1034,7 +1033,8 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	defer release()
 
 	// First step is to resolve and sync the partitions.
-	if !model.Spec.TriggerPartitions || model.Spec.TriggerFull {
+	// We do this for normal and full triggers, but not when only TriggerPartitions is set (since in that case, we only want to run existing partitions marked pending).
+	if trigger.reset || trigger.normal {
 		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
 		if err != nil {
 			return "", nil, false, fmt.Errorf("failed to sync partitions: %w", err)
@@ -1045,37 +1045,22 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	var totalExecDuration atomic.Int64
 	firstRunIsIncremental := incrementalRun
 
-	var explicitlyTriggeredPartitions []drivers.ModelPartition
-	explicitlyTargetedRefresh := model.Spec.TriggerPartitions
-	partitionFilter := &drivers.FindModelPartitionsOptions{
-		ModelID: model.State.PartitionsModelId,
-	}
-
-	// Always process pending partitions
-	partitionFilter.WherePending = true
-
 	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
 	// This enables the first partition to create the initial result (such as a table) that the other partitions incrementally build upon.
 	if !incrementalRun {
-		firstPartitionFilter := *partitionFilter
-		firstPartitionFilter.Limit = 1
-		partitions, err := catalog.FindModelPartitions(ctx, &firstPartitionFilter)
+		// Find the first partition
+		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+			ModelID:      model.State.PartitionsModelId,
+			WherePending: true,
+			Limit:        1,
+		})
 		if err != nil {
 			return "", nil, false, fmt.Errorf("failed to load first partition: %w", err)
 		}
 		if len(partitions) == 0 {
-			if model.Spec.TriggerPartitions {
-				r.C.Logger.Info("No triggered partitions found, skipping execution", observability.ZapCtx(ctx))
-				return executor.finalConnector, prevResult, firstRunIsIncremental, nil
-			}
 			return "", nil, false, fmt.Errorf("no partitions found")
 		}
 		partition := partitions[0]
-
-		// If this is an explicitly targeted refresh, collect this partition for cleanup
-		if explicitlyTargetedRefresh {
-			explicitlyTriggeredPartitions = append(explicitlyTriggeredPartitions, partition)
-		}
 
 		// Execute the first partition (with returnErr=true because for the first partition, we do not log and skip erroring partitions)
 		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, partition, true)
@@ -1097,19 +1082,16 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		// Get a batch of pending partitions
 		// Note: We do this when no workers are running because partitions are considered pending if they have not completed execution yet.
 		// This reduces concurrency when processing the last handful of partitions in each batch, but with large batch sizes it's worth the simplicity for now.
-		batchFilter := *partitionFilter
-		batchFilter.Limit = _modelPendingPartitionsBatchSize
-		partitions, err := catalog.FindModelPartitions(ctx, &batchFilter)
+		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+			ModelID:      model.State.PartitionsModelId,
+			WherePending: true,
+			Limit:        _modelPendingPartitionsBatchSize,
+		})
 		if err != nil {
 			return "", nil, false, err
 		}
 		if len(partitions) == 0 {
 			break
-		}
-
-		// If this is an explicitly targeted refresh, collect these partitions for cleanup
-		if explicitlyTargetedRefresh {
-			explicitlyTriggeredPartitions = append(explicitlyTriggeredPartitions, partitions...)
 		}
 
 		// Determine how many workers goroutines to start
@@ -1185,11 +1167,6 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		if len(partitions) < _modelPendingPartitionsBatchSize {
 			break
 		}
-	}
-
-	// Log completion if this was an explicitly targeted refresh
-	if explicitlyTargetedRefresh {
-		r.C.Logger.Info("Completed targeted partition refresh", zap.Int("partitions_processed", len(explicitlyTriggeredPartitions)), observability.ZapCtx(ctx))
 	}
 
 	// Should not happen, could also have been a panic
@@ -1672,16 +1649,31 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 	return val.(map[string]any), nil
 }
 
-// shouldTrigger determines if a model should trigger based on its change mode and the current state.
-// If `triggerReset` is returned as true, `trigger` will also be true.
-func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Resource, specHash, refsHash string, exists bool, refreshOn time.Time) (trigger, triggerReset bool, err error) {
+// resolvedTrigger represents the resolved trigger state of a model.
+type resolvedTrigger struct {
+	// Full reload.
+	reset bool
+	// Normal/incremental reload. NOTE: may still trigger a reset on first runs or if it's not incremental.
+	normal bool
+	// Manual load of existing partitions that have been marked pending.
+	partitions bool
+}
+
+// any returns true if any trigger is set.
+func (rt *resolvedTrigger) any() bool {
+	return rt.reset || rt.normal || rt.partitions
+}
+
+// resolveTrigger determines if and how a model should trigger based on its change mode and the current state.
+// Note this should not be confused for the model's Trigger, TriggerFull, or TriggerPartitions flags, which reflect only manual user-indicated triggers.
+func (r *ModelReconciler) resolveTrigger(ctx context.Context, self *runtimev1.Resource, specHash, refsHash string, exists bool, refreshOn time.Time) (*resolvedTrigger, error) {
 	model := self.GetModel()
 
 	// Determine if this is the first run of the model
 	firstRun := model.State.ResultConnector == "" || model.State.RefreshedOn == nil || !exists
 
 	// Determine if the spec changed
-	specChanged := model.State.SpecHash != specHash
+	specChanged := firstRun || model.State.SpecHash != specHash
 
 	// Determine if our refresh clause or DAG refs or a manual action indicate we should trigger
 	scheduledTrigger := model.State.RefsHash != refsHash
@@ -1691,45 +1683,53 @@ func (r *ModelReconciler) shouldTrigger(ctx context.Context, self *runtimev1.Res
 	switch model.Spec.ChangeMode {
 	// Reset mode is the default. It does a full refresh when the model spec changes.
 	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_RESET:
-		full := model.Spec.TriggerFull || firstRun || specChanged
-		trigger := full || scheduledTrigger || model.Spec.Trigger || model.Spec.TriggerPartitions
-		return trigger, full, nil
+		return &resolvedTrigger{
+			reset:      model.Spec.TriggerFull || specChanged,
+			normal:     model.Spec.Trigger || scheduledTrigger,
+			partitions: model.Spec.TriggerPartitions,
+		}, nil
 
 	// Manual mode requires a manual full or incremental trigger to run when the model spec changes.
 	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL:
 		// If it's the first run or the spec changed, we block until we observe a manual trigger.
-		if firstRun || specChanged {
+		if specChanged {
 			if !model.Spec.Trigger && !model.Spec.TriggerFull && !model.Spec.TriggerPartitions {
-				return false, false, fmt.Errorf("execution paused because the model definition has changed and 'change_mode' is 'manual': you must manually trigger a refresh")
+				return nil, fmt.Errorf("execution paused because the model definition has changed and 'change_mode' is 'manual': you must manually trigger a refresh")
 			}
-			return true, model.Spec.TriggerFull || firstRun, nil
+			return &resolvedTrigger{
+				reset:      model.Spec.TriggerFull,
+				normal:     model.Spec.Trigger,
+				partitions: model.Spec.TriggerPartitions,
+			}, nil
 		}
 
-		full := model.Spec.TriggerFull
-		trigger := full || scheduledTrigger || model.Spec.Trigger || model.Spec.TriggerPartitions
-		return full, trigger, nil
+		return &resolvedTrigger{
+			reset:      model.Spec.TriggerFull,
+			normal:     model.Spec.Trigger || scheduledTrigger,
+			partitions: model.Spec.TriggerPartitions,
+		}, nil
 
 	// Patch mode changes to the new model logic without a full refresh.
 	case runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH:
 		if !model.Spec.Incremental {
-			return false, false, fmt.Errorf("change_mode=patch can only be used with incremental models")
+			return nil, fmt.Errorf("change_mode=patch can only be used with incremental models")
 		}
 
-		if model.Spec.TriggerFull || firstRun {
-			return true, true, nil
-		}
-
-		if specChanged {
+		if specChanged && !firstRun && !model.Spec.TriggerFull {
 			model.State.SpecHash = specHash
 			if err := r.C.UpdateState(ctx, self.Meta.Name, self); err != nil {
-				return false, false, err
+				return nil, err
 			}
 			r.C.Logger.Info("Updated model definition without a full refresh because change_mode=patch", zap.String("model", self.Meta.Name.Name), observability.ZapCtx(ctx))
 		}
 
-		return specChanged || scheduledTrigger || model.Spec.Trigger || model.Spec.TriggerPartitions, false, nil
+		return &resolvedTrigger{
+			reset:      model.Spec.TriggerFull,
+			normal:     model.Spec.Trigger || scheduledTrigger || firstRun,
+			partitions: model.Spec.TriggerPartitions,
+		}, nil
 	default:
-		return false, false, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
+		return nil, fmt.Errorf("unknown change mode %q", model.Spec.ChangeMode)
 	}
 }
 

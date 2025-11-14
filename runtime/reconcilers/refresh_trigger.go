@@ -117,7 +117,8 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			continue
 		}
 
-		if len(mt.Partitions) > 0 || mt.AllErroredPartitions {
+		triggerPartitions := len(mt.Partitions) > 0 || mt.AllErroredPartitions
+		if triggerPartitions {
 			mdl := mr.GetModel()
 			modelID := mdl.State.PartitionsModelId
 			if !mdl.Spec.Incremental {
@@ -150,7 +151,8 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			}
 		}
 
-		err = r.UpdateTriggerTrue(ctx, mr, mt.Full)
+		triggerNormal := !triggerPartitions && !mt.Full
+		err = r.UpdateModelTrigger(ctx, mr, triggerNormal, mt.Full, triggerPartitions)
 		if err != nil {
 			// Not handling deletion race conditions because we hold a lock.
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to update trigger for model %q: %w", mt.Model, err)}
@@ -173,7 +175,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			continue
 		}
 
-		err = r.UpdateTriggerTrue(ctx, res, false)
+		err = r.UpdateTriggerTrue(ctx, res)
 		if err != nil {
 			// Not handling deletion race conditions because we hold a lock.
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to update trigger for resource %q: %w", rn.Name, err)}
@@ -197,8 +199,9 @@ func (r *RefreshTriggerReconciler) ResolveTransitiveAccess(ctx context.Context, 
 }
 
 // UpdateTriggerTrue sets the Trigger spec property of the resource to true.
+// If you're refreshing a model, consider using UpdateModelTrigger directly for more granular control.
 // NOTE: If you edit this logic, also update the checks in newResourceIfModified in project_parser.go accordingly (they need to incorporate triggers in their modified checks).
-func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *runtimev1.Resource, full bool) error {
+func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *runtimev1.Resource) error {
 	switch res.Meta.Name.Kind {
 	case runtime.ResourceKindSource:
 		source := res.GetSource()
@@ -207,18 +210,7 @@ func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *r
 		}
 		source.Spec.Trigger = true
 	case runtime.ResourceKindModel:
-		model := res.GetModel()
-		if full {
-			if model.Spec.TriggerFull {
-				return nil
-			}
-			model.Spec.TriggerFull = true
-		} else {
-			if model.Spec.Trigger || model.Spec.TriggerFull {
-				return nil
-			}
-			model.Spec.Trigger = true
-		}
+		return r.UpdateModelTrigger(ctx, res, true, false, false)
 	case runtime.ResourceKindAlert:
 		alert := res.GetAlert()
 		if alert.Spec.Trigger {
@@ -238,4 +230,33 @@ func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *r
 	}
 
 	return r.C.UpdateSpec(ctx, res.Meta.Name, res)
+}
+
+// UpdateModelTrigger sets the Trigger, TriggerFull, or TriggerPartitions spec properties of the model resource based on the provided flags.
+// Note the function only updates to truthy values; only the model reconciler can set these back to false.
+// NOTE: If you edit this logic, also update the checks in newResourceIfModified in project_parser.go accordingly (they need to incorporate triggers in their modified checks).
+func (r *RefreshTriggerReconciler) UpdateModelTrigger(ctx context.Context, res *runtimev1.Resource, normal, full, partitions bool) error {
+	model := res.GetModel()
+	if model == nil {
+		return fmt.Errorf("not a model resource")
+	}
+
+	updated := false
+	if full && !model.Spec.TriggerFull {
+		model.Spec.TriggerFull = true
+		updated = true
+	}
+	if normal && !model.Spec.Trigger && !model.Spec.TriggerFull {
+		model.Spec.Trigger = true
+		updated = true
+	}
+	if partitions && !model.Spec.TriggerPartitions && !model.Spec.TriggerFull {
+		model.Spec.TriggerPartitions = true
+		updated = true
+	}
+
+	if updated {
+		return r.C.UpdateSpec(ctx, res.Meta.Name, res)
+	}
+	return nil
 }

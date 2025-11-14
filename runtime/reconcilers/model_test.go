@@ -280,7 +280,7 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "dynamic_partitions").GetModel()
 	require.NotNil(t, model)
 
-	// Get the catalog and query for partitions
+	// Check there's one partition now
 	catalog, release, err := rt.Catalog(ctx, instanceID)
 	require.NoError(t, err)
 	defer release()
@@ -291,7 +291,6 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 	})
 	require.NoError(t, err)
 	require.Len(t, partitions, 1, "Should have exactly one partition after initial reconcile")
-
 	firstPartitionKey := partitions[0].Key
 
 	// Explicitly refresh just the first partition using RefreshModelTrigger
@@ -320,11 +319,7 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 	require.NoError(t, err)
 
 	// After the explicit refresh, check that no new partitions were created
-	catalog2, release2, err := rt.Catalog(ctx, instanceID)
-	require.NoError(t, err)
-	defer release2()
-
-	partitionsAfterRefresh, err := catalog2.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+	partitionsAfterRefresh, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
 		ModelID: model.State.PartitionsModelId,
 	})
 	require.NoError(t, err)
@@ -332,4 +327,9 @@ sql: SELECT '{{.partition.partition_key}}' AS partition_key, NOW() AS created_at
 
 	// Verify the partition we refreshed is the same one
 	require.Equal(t, firstPartitionKey, partitionsAfterRefresh[0].Key, "The partition key should match the original partition")
+
+	// Verify the timestamp was updated for the refreshed partition
+	require.NotEmpty(t, partitions[0].ExecutedOn)
+	require.NotEmpty(t, partitionsAfterRefresh[0].ExecutedOn)
+	require.Greater(t, partitionsAfterRefresh[0].ExecutedOn.UnixNano(), partitions[0].ExecutedOn.UnixNano(), "The refreshed partition should have an updated timestamp")
 }

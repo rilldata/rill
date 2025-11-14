@@ -998,16 +998,22 @@ export class ModelSpec extends Message<ModelSpec> {
   tests: ModelTest[] = [];
 
   /**
+   * trigger indicates a normal refresh (incremental or full depending on the model type).
+   *
    * @generated from field: bool trigger = 9;
    */
   trigger = false;
 
   /**
+   * trigger_full indicates a full refresh regardless of the model type.
+   *
    * @generated from field: bool trigger_full = 22;
    */
   triggerFull = false;
 
   /**
+   * trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models.
+   *
    * @generated from field: bool trigger_partitions = 30;
    */
   triggerPartitions = false;

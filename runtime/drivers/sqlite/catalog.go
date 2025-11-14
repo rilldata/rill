@@ -310,32 +310,24 @@ func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, model
 	qry.WriteString("UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=?")
 	args = append(args, c.instanceID, modelID)
 
-	// Add conditions based on parameters
-	if whereErrored || len(wherePartitionKeyIn) > 0 {
-		qry.WriteString(" AND (")
-
-		if whereErrored {
-			qry.WriteString("error != ''")
-		}
-
-		if len(wherePartitionKeyIn) > 0 {
-			if whereErrored {
-				qry.WriteString(" OR ")
+	// Add conditions
+	qry.WriteString(" AND (false") // false ensures it's a no-op if no conditions are added; safer that way
+	if whereErrored {
+		qry.WriteString(" OR error != ''")
+	}
+	if len(wherePartitionKeyIn) > 0 {
+		qry.WriteString(" OR key IN (")
+		for i, k := range wherePartitionKeyIn {
+			if i == 0 {
+				qry.WriteString("?")
+			} else {
+				qry.WriteString(",?")
 			}
-			qry.WriteString("key IN (")
-			for i, k := range wherePartitionKeyIn {
-				if i == 0 {
-					qry.WriteString("?")
-				} else {
-					qry.WriteString(",?")
-				}
-				args = append(args, k)
-			}
-			qry.WriteString(")")
+			args = append(args, k)
 		}
-
 		qry.WriteString(")")
 	}
+	qry.WriteString(")")
 
 	_, err := c.db.ExecContext(ctx, qry.String(), args...)
 	if err != nil {

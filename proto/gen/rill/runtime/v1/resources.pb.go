@@ -1400,11 +1400,14 @@ type ModelSpec struct {
 	RetryExponentialBackoff *bool            `protobuf:"varint,28,opt,name=retry_exponential_backoff,json=retryExponentialBackoff,proto3,oneof" json:"retry_exponential_backoff,omitempty"`
 	RetryIfErrorMatches     []string         `protobuf:"bytes,29,rep,name=retry_if_error_matches,json=retryIfErrorMatches,proto3" json:"retry_if_error_matches,omitempty"`
 	// change_mode is the mode of change detection to use for the model.
-	ChangeMode        ModelChangeMode `protobuf:"varint,24,opt,name=change_mode,json=changeMode,proto3,enum=rill.runtime.v1.ModelChangeMode" json:"change_mode,omitempty"`
-	Tests             []*ModelTest    `protobuf:"bytes,25,rep,name=tests,proto3" json:"tests,omitempty"`
-	Trigger           bool            `protobuf:"varint,9,opt,name=trigger,proto3" json:"trigger,omitempty"`
-	TriggerFull       bool            `protobuf:"varint,22,opt,name=trigger_full,json=triggerFull,proto3" json:"trigger_full,omitempty"`
-	TriggerPartitions bool            `protobuf:"varint,30,opt,name=trigger_partitions,json=triggerPartitions,proto3" json:"trigger_partitions,omitempty"`
+	ChangeMode ModelChangeMode `protobuf:"varint,24,opt,name=change_mode,json=changeMode,proto3,enum=rill.runtime.v1.ModelChangeMode" json:"change_mode,omitempty"`
+	Tests      []*ModelTest    `protobuf:"bytes,25,rep,name=tests,proto3" json:"tests,omitempty"`
+	// trigger indicates a normal refresh (incremental or full depending on the model type).
+	Trigger bool `protobuf:"varint,9,opt,name=trigger,proto3" json:"trigger,omitempty"`
+	// trigger_full indicates a full refresh regardless of the model type.
+	TriggerFull bool `protobuf:"varint,22,opt,name=trigger_full,json=triggerFull,proto3" json:"trigger_full,omitempty"`
+	// trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models.
+	TriggerPartitions bool `protobuf:"varint,30,opt,name=trigger_partitions,json=triggerPartitions,proto3" json:"trigger_partitions,omitempty"`
 	// defined_as_source is true if it was defined by user as a source but converted internally to a model.
 	DefinedAsSource bool `protobuf:"varint,23,opt,name=defined_as_source,json=definedAsSource,proto3" json:"defined_as_source,omitempty"`
 }
