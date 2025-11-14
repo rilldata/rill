@@ -107,7 +107,7 @@ rill service create my-api \
 For comprehensive guidance on token types, roles, custom attributes, and management:
 - **[User Tokens](/manage/user-tokens)** - Personal access tokens for development
 - **[Service Tokens](/manage/service-tokens)** - Long-lived tokens for production systems
-- **[Roles and Permissions](/manage/user-management#organization-and-project-roles)** - Understand access levels
+- **[Roles and Permissions](/manage/roles-permissions)** - Understand access levels
 
 :::
 
