@@ -32,6 +32,7 @@
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import ConnectorIcon from "../../../components/icons/ConnectorIcon.svelte";
+  import { navigateToResourceGraph } from "@rilldata/web-common/features/resource-graph/navigation-utils";
 
   export let filePath: string;
 
@@ -60,8 +61,7 @@
   function viewGraph() {
     const name = $sourceQuery.data?.meta?.name?.name;
     if (!name) return;
-    const seed = `source:${name}`;
-    goto(`/graph?seed=${encodeURIComponent(seed)}`);
+    navigateToResourceGraph("source", name);
   }
 
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);

@@ -1,7 +1,14 @@
 import { graphlib, layout as dagreLayout } from "@dagrejs/dagre";
 import type { Edge, Node } from "@xyflow/svelte";
 import { Position } from "@xyflow/svelte";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  ResourceKind,
+  coerceResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  createResourceId,
+  parseResourceId,
+} from "@rilldata/web-common/features/entity-management/resource-utils";
 import type {
   V1Resource,
   V1ResourceMeta,
@@ -110,53 +117,18 @@ function persistAllCaches() {
   savePersistedCache({ positions, assignments, labels, refs });
 }
 
-function toNodeId(meta?: V1ResourceMeta): string | undefined {
-  if (!meta?.name?.name || !meta?.name?.kind) return undefined;
-  return `${meta.name.kind}:${meta.name.name}`;
-}
-
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   if (!name?.kind) return undefined;
   return name.kind as ResourceKind;
 }
 
-/**
- * Coerce resource kind to match UI representation.
- * Models that are defined-as-source are displayed as Sources in the sidebar and graph.
- * This ensures consistent representation across the application.
- */
-export function coerceResourceKind(res: V1Resource): ResourceKind | undefined {
-  const raw = res.meta?.name?.kind as ResourceKind | undefined;
-  if (raw === ResourceKind.Model) {
-    try {
-      // A resource is a Source if it's a model defined-as-source and its result table matches the resource name
-      const name = res.meta?.name?.name;
-      const resultTable = (res as any)?.model?.state?.resultTable;
-      const definedAsSource = Boolean((res as any)?.model?.spec?.definedAsSource);
-      if (name && name === resultTable && definedAsSource) return ResourceKind.Source;
-    } catch {
-      // ignore
-    }
-  }
-  return raw;
-}
-
-function parseNodeId(id: string): { kind: string; name: string } | null {
-  const idx = id.indexOf(":");
-  if (idx <= 0) return null;
-  const kind = id.slice(0, idx);
-  const name = id.slice(idx + 1);
-  if (!kind || !name) return null;
-  return { kind, name };
-}
-
 function makePlaceholderResource(id: string, label?: string): V1Resource {
-  const parsed = parseNodeId(id);
+  const parsed = parseResourceId(id);
   const name = parsed?.name ?? id;
   const kind = parsed?.kind ?? "model";
   const refIds = lastRefs.get(id) ?? [];
   const refs = refIds
-    .map((rid) => parseNodeId(rid))
+    .map((rid) => parseResourceId(rid))
     .filter((r): r is { kind: string; name: string } => !!r)
     .map((r) => ({ kind: r.kind, name: r.name }));
   return {
@@ -212,7 +184,7 @@ export function buildResourceGraph(resources: V1Resource[], opts?: BuildGraphOpt
   const nodeDefinitions = new Map<string, Node<ResourceNodeData>>();
 
   for (const resource of resources) {
-    const id = toNodeId(resource.meta);
+    const id = createResourceId(resource.meta);
     if (!id) continue;
 
     const kind = coerceResourceKind(resource);
@@ -261,11 +233,11 @@ export function buildResourceGraph(resources: V1Resource[], opts?: BuildGraphOpt
   const dependentsMap = new Map<string, Set<string>>();
 
   for (const resource of resourceMap.values()) {
-    const dependentId = toNodeId(resource.meta);
+    const dependentId = createResourceId(resource.meta);
     if (!dependentId) continue;
 
     for (const ref of resource.meta?.refs ?? []) {
-      const sourceId = toNodeId({ name: ref });
+      const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
       if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;
@@ -339,10 +311,10 @@ function buildDirectedAdjacency(resources: Map<string, V1Resource>) {
     if (!outgoing.has(id)) outgoing.set(id, new Set());
   }
   for (const resource of resources.values()) {
-    const dependentId = toNodeId(resource.meta);
+    const dependentId = createResourceId(resource.meta);
     if (!dependentId) continue;
     for (const ref of resource.meta?.refs ?? []) {
-      const sourceId = toNodeId({ name: ref });
+      const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
       // Record refs for persistence even if source is not currently present
       const existing = lastRefs.get(dependentId) ?? [];
@@ -394,7 +366,7 @@ function traverseDownstream(seedId: string, outgoing: Map<string, Set<string>>) 
 function buildVisibleResourceMap(resources: V1Resource[]): Map<string, V1Resource> {
   const resourceMap = new Map<string, V1Resource>();
   for (const resource of resources) {
-    const id = toNodeId(resource.meta);
+    const id = createResourceId(resource.meta);
     if (!id) continue;
     const kind = toResourceKind(resource.meta?.name);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
@@ -410,7 +382,7 @@ function buildVisibleResourceMap(resources: V1Resource[]): Map<string, V1Resourc
  */
 function normalizeSeeds(seeds: (string | V1ResourceName)[]): string[] {
   const toSeedId = (seed: string | V1ResourceName) =>
-    typeof seed === "string" ? seed : toNodeId({ name: seed });
+    typeof seed === "string" ? seed : createResourceId({ name: seed });
 
   return seeds
     .map((s) => toSeedId(s))
@@ -515,7 +487,7 @@ function createSyntheticGroupsForMissingAnchors(
     groups.push(group);
     groupById.set(group.id, group);
     for (const res of syntheticResources) {
-      const rid = toNodeId(res.meta);
+      const rid = createResourceId(res.meta);
       if (rid) assigned.add(rid);
     }
   }
@@ -535,7 +507,7 @@ function addPlaceholdersForMissingResources(
     const grp = groupById.get(gid);
     if (!grp) continue;
     if (presentIds.has(rid)) continue;
-    if (grp.resources.some((r) => toNodeId(r.meta) === rid)) continue;
+    if (grp.resources.some((r) => createResourceId(r.meta) === rid)) continue;
     grp.resources.push(makePlaceholderResource(rid));
     assigned.add(rid);
   }
@@ -549,7 +521,7 @@ function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
   for (const group of groups) {
     if (group.label) lastGroupLabels.set(group.id, group.label);
     for (const res of group.resources) {
-      const rid = toNodeId(res.meta);
+      const rid = createResourceId(res.meta);
       if (rid) lastGroupAssignments.set(rid, group.id);
     }
   }
@@ -594,7 +566,7 @@ export function partitionResourcesByMetrics(
   const adjacency = new Map<string, Set<string>>();
 
   for (const res of resources) {
-    const id = toNodeId(res.meta);
+    const id = createResourceId(res.meta);
     if (!id) continue;
     const kind = toResourceKind(res.meta?.name);
     if (!kind || !ALLOWED_KINDS.has(kind)) continue;
@@ -604,10 +576,10 @@ export function partitionResourcesByMetrics(
   }
 
   for (const res of resourceMap.values()) {
-    const dependentId = toNodeId(res.meta);
+    const dependentId = createResourceId(res.meta);
     if (!dependentId) continue;
     for (const ref of res.meta?.refs ?? []) {
-      const sourceId = toNodeId({ name: ref });
+      const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
       const existing = lastRefs.get(dependentId) ?? [];
       if (!existing.includes(sourceId)) lastRefs.set(dependentId, [...existing, sourceId]);
@@ -673,7 +645,7 @@ export function partitionResourcesByMetrics(
   for (const g of groups) {
     if (g.label) lastGroupLabels.set(g.id, g.label);
     for (const r of g.resources) {
-      const rid = toNodeId(r.meta);
+      const rid = createResourceId(r.meta);
       if (rid) lastGroupAssignments.set(rid, g.id);
     }
   }

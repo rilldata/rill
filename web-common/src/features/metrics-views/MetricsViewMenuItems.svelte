@@ -16,6 +16,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import ConnectorIcon from "@rilldata/web-common/components/icons/ConnectorIcon.svelte";
+  import { navigateToResourceGraph } from "@rilldata/web-common/features/resource-graph/navigation-utils";
 
   export let filePath: string;
 
@@ -55,8 +56,7 @@
   function viewGraph() {
     const name = $resourceQuery.data?.meta?.name?.name;
     if (!name) return;
-    const seed = `metrics:${name}`;
-    goto(`/graph?seed=${encodeURIComponent(seed)}`);
+    navigateToResourceGraph("metrics", name);
   }
 </script>
 

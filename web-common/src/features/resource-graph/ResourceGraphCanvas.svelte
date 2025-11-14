@@ -11,6 +11,7 @@
   import { writable } from "svelte/store";
   import { onMount, onDestroy } from "svelte";
   import { buildResourceGraph } from "./build-resource-graph";
+  import { traverseUpstream, traverseDownstream } from "./graph-traversal";
   import ResourceNode from "./ResourceNode.svelte";
   import type { ResourceNodeData } from "./types";
 
@@ -94,56 +95,6 @@
 
   const HIGHLIGHT_EDGE_STYLE = "stroke:#3b82f6;stroke-width:2px;opacity:1;";
   const DIM_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.25;";
-
-  /**
-   * Traverse upstream (sources) from selected nodes via incoming edges only.
-   * Returns both visited node IDs and the edge IDs that were traversed.
-   */
-  function traverseUpstream(selectedIds: Set<string>, edges: Edge[]) {
-    const visited = new Set<string>();
-    const edgeIds = new Set<string>();
-    const queue: string[] = Array.from(selectedIds);
-
-    while (queue.length) {
-      const curr = queue.shift()!;
-      if (visited.has(curr)) continue;
-      visited.add(curr);
-
-      for (const e of edges) {
-        if (e.target === curr) {
-          edgeIds.add(e.id);
-          if (!visited.has(e.source)) queue.push(e.source);
-        }
-      }
-    }
-
-    return { visited, edgeIds };
-  }
-
-  /**
-   * Traverse downstream (dependents) from selected nodes via outgoing edges only.
-   * Returns both visited node IDs and the edge IDs that were traversed.
-   */
-  function traverseDownstream(selectedIds: Set<string>, edges: Edge[]) {
-    const visited = new Set<string>();
-    const edgeIds = new Set<string>();
-    const queue: string[] = Array.from(selectedIds);
-
-    while (queue.length) {
-      const curr = queue.shift()!;
-      if (visited.has(curr)) continue;
-      visited.add(curr);
-
-      for (const e of edges) {
-        if (e.source === curr) {
-          edgeIds.add(e.id);
-          if (!visited.has(e.target)) queue.push(e.target);
-        }
-      }
-    }
-
-    return { visited, edgeIds };
-  }
 
   /**
    * Calculate dynamic edge offset based on node positions to create smoother, straighter routes.

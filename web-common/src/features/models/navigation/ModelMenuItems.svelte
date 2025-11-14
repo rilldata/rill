@@ -20,6 +20,7 @@
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import ConnectorIcon from "../../../components/icons/ConnectorIcon.svelte";
+  import { navigateToResourceGraph } from "@rilldata/web-common/features/resource-graph/navigation-utils";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -43,8 +44,7 @@
   function viewGraph() {
     const name = $modelQuery.data?.meta?.name?.name;
     if (!name) return;
-    const seed = `model:${name}`;
-    goto(`/graph?seed=${encodeURIComponent(seed)}`);
+    navigateToResourceGraph("model", name);
   }
 
   async function handleCreateModel() {

@@ -5,13 +5,13 @@
   import {
     partitionResourcesByMetrics,
     partitionResourcesBySeeds,
-    coerceResourceKind,
     type ResourceGraphGrouping,
   } from "./build-resource-graph";
-  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { coerceResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { expandSeedsByKind, isKindToken } from "./seed-utils";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
+  import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -19,110 +19,7 @@
   export let seeds: string[] | undefined;
 
   $: normalizedResources = resources ?? [];
-  const KIND_ALIASES: Record<string, ResourceKind> = {
-    metrics: ResourceKind.MetricsView,
-    metric: ResourceKind.MetricsView,
-    metricsview: ResourceKind.MetricsView,
-    dashboard: ResourceKind.Explore,
-    explore: ResourceKind.Explore,
-    model: ResourceKind.Model,
-    source: ResourceKind.Source,
-    canvas: ResourceKind.Canvas,
-  };
-
-  function normalizeSeed(s: string): string | V1ResourceName {
-    const idx = s.indexOf(":");
-    if (idx === -1) {
-      return { kind: ResourceKind.MetricsView, name: s };
-    }
-    const kindPart = s.slice(0, idx);
-    const namePart = s.slice(idx + 1);
-    if (kindPart.includes(".")) {
-      return { kind: kindPart, name: namePart };
-    }
-    const mapped = KIND_ALIASES[kindPart.trim().toLowerCase()];
-    if (mapped) return { kind: mapped, name: namePart };
-    return s;
-  }
-
-  const ALLOWED_FOR_GRAPH = new Set<ResourceKind>([
-    ResourceKind.Source,
-    ResourceKind.Model,
-    ResourceKind.MetricsView,
-    ResourceKind.Explore,
-  ]);
-
-  function isKindToken(s: string): ResourceKind | undefined {
-    const key = s.trim().toLowerCase();
-    switch (key) {
-      case "metrics":
-      case "metric":
-      case "metricsview":
-        return ResourceKind.MetricsView;
-      case "dashboards":
-      case "dashboard":
-      case "explore":
-      case "explores":
-        return ResourceKind.Explore;
-      case "models":
-      case "model":
-        return ResourceKind.Model;
-      case "sources":
-      case "source":
-        return ResourceKind.Source;
-      default:
-        return undefined;
-    }
-  }
-
-  function expandSeedsByKind(
-    seedStrings: string[] | undefined,
-    resList: V1Resource[],
-  ): (string | V1ResourceName)[] {
-    const input = seedStrings ?? [];
-    const expanded: (string | V1ResourceName)[] = [];
-    const seen = new Set<string>(); // de-dupe by id "kind:name"
-
-    // Helper to push a normalized seed and avoid duplicates
-    const pushSeed = (s: string | V1ResourceName) => {
-      const id = typeof s === "string" ? s : `${s.kind}:${s.name}`;
-      if (seen.has(id)) return;
-      seen.add(id);
-      expanded.push(s);
-    };
-
-    // Visible resources only, to align with graph rendering
-    const visible = resList.filter(
-      (r) => ALLOWED_FOR_GRAPH.has(coerceResourceKind(r) as ResourceKind) && !r.meta?.hidden,
-    );
-
-    for (const raw of input) {
-      if (!raw) continue;
-      if (raw.includes(":")) {
-        // Explicit seed, keep as-is after normalization
-        pushSeed(normalizeSeed(raw));
-        continue;
-      }
-      const kindToken = isKindToken(raw);
-      if (!kindToken) {
-        // Name-only, defaults to metrics view name
-        pushSeed(normalizeSeed(raw));
-        continue;
-      }
-      // Expand: one seed per visible resource of this kind
-      for (const r of visible) {
-        if (coerceResourceKind(r) !== kindToken) continue;
-        const name = r.meta?.name?.name;
-        const kind = r.meta?.name?.kind; // use actual runtime kind for matching ids
-        if (!name || !kind) continue;
-        pushSeed({ kind, name });
-      }
-    }
-
-    return expanded;
-  }
-
-  $: normalizedSeeds = expandSeedsByKind(seeds, normalizedResources);
+  $: normalizedSeeds = expandSeedsByKind(seeds, normalizedResources, coerceResourceKind);
 
   $: resourceGroups = (normalizedSeeds && normalizedSeeds.length)
     ? partitionResourcesBySeeds(normalizedResources, normalizedSeeds)
@@ -203,22 +100,26 @@
   function setExpandedInUrl(id: string | null) {
     try {
       if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        if (!id) url.searchParams.delete("expanded");
-        else url.searchParams.set("expanded", id);
-        const qs = url.searchParams.toString();
-        const newUrl = qs ? `${url.pathname}?${qs}${url.hash ?? ''}` : `${url.pathname}${url.hash ?? ''}`;
-        window.history.replaceState(window.history.state, "", newUrl);
+        const currentUrl = new URL(window.location.href);
+        if (id) {
+          const newUrl = copyWithAdditionalArguments(currentUrl, { expanded: id }, {});
+          window.history.replaceState(window.history.state, "", newUrl.toString());
+        } else {
+          const newUrl = copyWithAdditionalArguments(currentUrl, {}, { expanded: true });
+          window.history.replaceState(window.history.state, "", newUrl.toString());
+        }
         return;
       }
     } catch {}
     // Fallback to SvelteKit navigation if direct history manipulation fails
-    const url = new URL($page.url);
-    if (!id) url.searchParams.delete("expanded");
-    else url.searchParams.set("expanded", id);
-    const qs = url.searchParams.toString();
-    const newPath = qs ? `${url.pathname}?${qs}` : url.pathname;
-    goto(newPath, { replaceState: true, noScroll: true });
+    const currentUrl = new URL($page.url);
+    if (id) {
+      const newUrl = copyWithAdditionalArguments(currentUrl, { expanded: id }, {});
+      goto(newUrl.pathname + newUrl.search, { replaceState: true, noScroll: true });
+    } else {
+      const newUrl = copyWithAdditionalArguments(currentUrl, {}, { expanded: true });
+      goto(newUrl.pathname + newUrl.search, { replaceState: true, noScroll: true });
+    }
   }
 
   // No overlay: expanded graph renders inline within the grid
