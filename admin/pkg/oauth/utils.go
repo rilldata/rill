@@ -64,6 +64,8 @@ type AuthorizationServerMetadata struct {
 type ClientRegistrationRequest struct {
 	// RedirectURIs is an array of redirection URIs for use in redirect-based flows
 	RedirectURIs []string `json:"redirect_uris,omitempty"`
+	// Scope indicates the scope values that the client is requesting
+	Scope string `json:"scope,omitempty"`
 	// TokenEndpointAuthMethod indicates the requested authentication method for the token endpoint
 	TokenEndpointAuthMethod string `json:"token_endpoint_auth_method,omitempty"`
 	// GrantTypes is an array of OAuth 2.0 grant types that the client will use
@@ -83,6 +85,8 @@ type ClientRegistrationResponse struct {
 	ClientID string `json:"client_id"`
 	// ClientName is a human-readable name for the client
 	ClientName string `json:"client_name,omitempty"`
+	// Scope indicates the scope values that the client is registered for
+	Scope string `json:"scope,omitempty"`
 	// ClientIDIssuedAt is the time at which the client identifier was issued (Unix timestamp)
 	ClientIDIssuedAt int64 `json:"client_id_issued_at,omitempty"`
 	// RedirectURIs is an array of redirection URIs for use in redirect-based flows

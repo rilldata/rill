@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -20,9 +21,9 @@ import (
 const (
 	authorizationCodeGrantType = "authorization_code"
 	refreshTokenGrantType      = "refresh_token"
+	longLivedAccessTokenScope  = "long_lived_access_token" // nolint:gosec // custom scope to indicate long-lived access token
+	offlineAccessScope         = "offline_access"
 )
-
-var firstPartyAuthClients = []string{database.AuthClientIDRillWeb, database.AuthClientIDRillCLI, database.AuthClientIDRillSupport, database.AuthClientIDRillWebLocal, database.AuthClientIDRillManual}
 
 func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI string) {
 	// Generate a unique authorization code
@@ -116,6 +117,12 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
+	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
+		return
+	}
+
 	// Check if the authorization code has expired
 	if time.Now().After(authCode.Expiration) {
 		http.Error(w, "authorization code has expired", http.StatusBadRequest)
@@ -128,18 +135,12 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
-	// check if the client is a first-party auth client
-	isFirstParty := false
-	for _, fpClientID := range firstPartyAuthClients {
-		if clientID == fpClientID {
-			isFirstParty = true
-			break
-		}
-	}
-
+	scope := authClient.Scope
+	offlineAccess := scopeAllowsOfflineAccess(scope)
+	longLivedAccess := scopeAllowsLongLivedAccess(scope)
 	var resp oauth.TokenResponse
-	// if the client is a first-party auth client then return long-lived auth token without a refresh token otherwise return short-lived access token with a refresh token
-	if isFirstParty {
+	// Issue long-lived access token for clients explicitly whitelisted
+	if longLivedAccess {
 		authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, nil, false)
 		if err != nil {
 			if errors.Is(err, r.Context().Err()) {
@@ -168,26 +169,30 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 			return
 		}
 
-		// Issue refresh token (45 days TTL)
-		refreshTTL := 45 * 24 * time.Hour
-		refreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Refresh Token", nil, &refreshTTL, true)
-		if err != nil {
-			if errors.Is(err, r.Context().Err()) {
-				http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+		resp = oauth.TokenResponse{
+			AccessToken: accessToken.Token().String(),
+			ExpiresIn:   int64(accessTTL.Seconds()),
+			TokenType:   "Bearer",
+			UserID:      userID,
+		}
+		if offlineAccess {
+			// Issue refresh token (90 days TTL)
+			refreshTTL := 90 * 24 * time.Hour
+			refreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Refresh Token", nil, &refreshTTL, true)
+			if err != nil {
+				if errors.Is(err, r.Context().Err()) {
+					http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+					return
+				}
+				internalServerError(w, fmt.Errorf("failed to issue refresh token, %w", err))
 				return
 			}
-			internalServerError(w, fmt.Errorf("failed to issue refresh token, %w", err))
-			return
-		}
 
-		resp = oauth.TokenResponse{
-			AccessToken:  accessToken.Token().String(),
-			ExpiresIn:    int64(accessTTL.Seconds()),
-			RefreshToken: refreshToken.Token().String(),
-			TokenType:    "Bearer",
-			Scope:        "offline_access",
-			UserID:       userID,
+			resp.RefreshToken = refreshToken.Token().String()
 		}
+	}
+	if scope != "" {
+		resp.Scope = scope
 	}
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
@@ -200,7 +205,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
 		return
 	}
-	a.logger.Debug("Exchanged authorization code for access and refresh tokens", zap.String("userID", userID), zap.String("clientID", clientID))
+	a.logger.Debug("Exchanged authorization code for tokens", zap.String("userID", userID), zap.String("clientID", clientID), zap.Bool("long_lived_access_token", longLivedAccess), zap.Bool("offline_access", offlineAccess))
 }
 
 // getAccessTokenForRefreshToken exchanges a refresh token for a new access token and refresh token
@@ -248,6 +253,22 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		return
 	}
 
+	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.Error(w, "invalid client_id", http.StatusBadRequest)
+		} else {
+			internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
+		}
+		return
+	}
+
+	clientScope := authClient.Scope
+	if !scopeAllowsOfflineAccess(clientScope) {
+		http.Error(w, "client is not permitted to use refresh tokens", http.StatusBadRequest)
+		return
+	}
+
 	// Delete the old refresh token
 	err = a.admin.RevokeAuthToken(r.Context(), refreshTokenStr)
 	if err != nil {
@@ -267,8 +288,8 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		return
 	}
 
-	// Issue new refresh token (45 days TTL)
-	newRefreshTTL := 45 * 24 * time.Hour
+	// Issue new refresh token (90 days TTL)
+	newRefreshTTL := 90 * 24 * time.Hour
 	newRefreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Refresh Token", nil, &newRefreshTTL, true)
 	if err != nil {
 		if errors.Is(err, r.Context().Err()) {
@@ -284,8 +305,10 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		ExpiresIn:    int64(accessTTL.Seconds()),
 		RefreshToken: newRefreshToken.Token().String(),
 		TokenType:    "Bearer",
-		Scope:        "offline_access",
 		UserID:       userID,
+	}
+	if clientScope != "" {
+		resp.Scope = clientScope
 	}
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
@@ -311,6 +334,24 @@ func verifyCodeChallenge(verifier, challenge, method string) bool {
 	default:
 		return false
 	}
+}
+
+func scopeAllowsOfflineAccess(scope string) bool {
+	for _, token := range strings.Fields(scope) {
+		if token == offlineAccessScope {
+			return true
+		}
+	}
+	return false
+}
+
+func scopeAllowsLongLivedAccess(scope string) bool {
+	for _, token := range strings.Fields(scope) {
+		if token == longLivedAccessTokenScope {
+			return true
+		}
+	}
+	return false
 }
 
 // Generates a random string for use as the authorization code

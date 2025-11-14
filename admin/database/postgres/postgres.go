@@ -1726,11 +1726,20 @@ func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retent
 	return parseErr("authorization code", err)
 }
 
-func (c *connection) InsertAuthClient(ctx context.Context, displayName string) (*database.AuthClient, error) {
+func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string) (*database.AuthClient, error) {
 	client := &database.AuthClient{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`INSERT INTO auth_clients (display_name) VALUES ($1) RETURNING *`,
-		displayName).StructScan(client)
+		`INSERT INTO auth_clients (display_name, scope) VALUES ($1, $2) RETURNING *`,
+		displayName, scope).StructScan(client)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return client, nil
+}
+
+func (c *connection) FindAuthClient(ctx context.Context, id string) (*database.AuthClient, error) {
+	client := &database.AuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM auth_clients WHERE id = $1", id).StructScan(client)
 	if err != nil {
 		return nil, parseErr("auth client", err)
 	}

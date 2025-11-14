@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/rilldata/rill/admin/pkg/oauth"
 	"go.uber.org/zap"
@@ -104,8 +105,9 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	scope := sanitizeScope(req.Scope)
 	// Create a new auth client in the database
-	client, err := a.admin.DB.InsertAuthClient(r.Context(), displayName)
+	client, err := a.admin.DB.InsertAuthClient(r.Context(), displayName, scope)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to create auth client: %w", err))
 		return
@@ -115,6 +117,7 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 	resp := oauth.ClientRegistrationResponse{
 		ClientID:                client.ID,
 		ClientName:              client.DisplayName,
+		Scope:                   client.Scope,
 		ClientIDIssuedAt:        client.CreatedOn.Unix(),
 		RedirectURIs:            req.RedirectURIs,
 		TokenEndpointAuthMethod: req.TokenEndpointAuthMethod,
@@ -131,4 +134,9 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 	}
 
 	a.logger.Info("Registered new OAuth client", zap.String("client_id", client.ID), zap.String("client_name", displayName))
+}
+
+// remove extra spaces from space separated scope string
+func sanitizeScope(scope string) string {
+	return strings.Join(strings.Fields(scope), " ")
 }
