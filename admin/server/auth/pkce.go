@@ -269,13 +269,6 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		return
 	}
 
-	// Delete the old refresh token
-	err = a.admin.RevokeAuthToken(r.Context(), refreshTokenStr)
-	if err != nil {
-		a.logger.Warn("failed to revoke old refresh token", zap.Error(err))
-		// Continue anyway - we still want to issue new tokens
-	}
-
 	// Issue new access token (60 minutes TTL)
 	accessTTL := 60 * time.Minute
 	accessToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Access Token", nil, &accessTTL, false)
@@ -321,6 +314,14 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
 		return
 	}
+
+	// Delete the old refresh token
+	err = a.admin.DB.DeleteUserAuthToken(r.Context(), refreshTokenStr)
+	if err != nil {
+		a.logger.Warn("failed to revoke old refresh token", zap.Error(err))
+		// Continue anyway
+	}
+
 	a.logger.Debug("Refreshed access and refresh tokens", zap.String("userID", userID), zap.String("clientID", clientID))
 }
 
