@@ -2,6 +2,10 @@ import { humanReadableErrorMessage } from "../errors/errors";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
 
+/**
+ * Returns true for undefined, null, empty string, or whitespace-only string.
+ * Useful for validating optional text inputs.
+ */
 export function isEmpty(val: any) {
   return (
     val === undefined ||
@@ -11,6 +15,13 @@ export function isEmpty(val: any) {
   );
 }
 
+/**
+ * Normalizes a variety of error shapes into a string, string[], or undefined.
+ * - If input is an array, returns it as-is.
+ * - If input is a string, returns it.
+ * - If input resembles a Zod `_errors` array, returns that.
+ * - Otherwise returns undefined.
+ */
 export function normalizeErrors(
   err: any,
 ): string | string[] | null | undefined {
@@ -21,6 +32,12 @@ export function normalizeErrors(
   return undefined;
 }
 
+/**
+ * Converts unknown error inputs into a unified connector error shape.
+ * - Prefers native Error.message when present
+ * - Maps server error responses to human-readable messages via `humanReadableErrorMessage`
+ * - Returns `details` with original message when it differs from the human-readable message
+ */
 export function normalizeConnectorError(
   connectorName: string,
   err: any,
@@ -51,6 +68,10 @@ export function normalizeConnectorError(
   return { message, details };
 }
 
+/**
+ * Indicates whether a connector in "connector" mode exposes only a DSN field
+ * (i.e., DSN exists and no other config properties are present).
+ */
 export function hasOnlyDsn(
   connector: V1ConnectorDriver | undefined,
   isConnectorForm: boolean,
@@ -62,6 +83,11 @@ export function hasOnlyDsn(
   return hasDsn && !hasOthers;
 }
 
+/**
+ * Applies ClickHouse Cloud-specific default requirements for connector values.
+ * - For ClickHouse Cloud: enforces `ssl: true` and `port: "8443"`
+ * - Otherwise returns values unchanged
+ */
 export function applyClickHouseCloudRequirements(
   connectorName: string | undefined,
   connectorType: ClickHouseConnectorType,
