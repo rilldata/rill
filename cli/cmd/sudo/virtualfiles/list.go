@@ -90,7 +90,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("Virtual files for project %q in org %q (%d total):\n", project, org, len(files))
 
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "Updated On\tPath\tType\tSize (bytes)\tDeleted")
+			fmt.Fprintln(w, "Updated On\tPath\tSize (bytes)\tDeleted")
 			for _, file := range files {
 				size := len(file.Data)
 				deleted := "No"
