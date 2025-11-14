@@ -1,5 +1,10 @@
 import { superForm, defaults } from "sveltekit-superforms";
-import { yup } from "sveltekit-superforms/adapters";
+import type { SuperValidated } from "sveltekit-superforms";
+import {
+  yup,
+  type Infer as YupInfer,
+  type InferIn as YupInferIn,
+} from "sveltekit-superforms/adapters";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 import type { AddDataFormType } from "./types";
 import { getValidationSchemaForConnector, dsnSchema } from "./FormValidation";
@@ -30,6 +35,17 @@ import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-clien
 import type { ClickHouseConnectorType } from "./constants";
 import { applyClickHouseCloudRequirements } from "./helpers";
 
+// Minimal onUpdate event type carrying Superforms's validated form
+type SuperFormUpdateEvent = {
+  form: SuperValidated<Record<string, unknown>, any, Record<string, unknown>>;
+};
+
+// Shape of the step store for multi-step connectors
+type ConnectorStepState = {
+  step: "connector" | "source";
+  connectorConfig: Record<string, unknown> | null;
+};
+
 export class AddDataFormManager {
   formHeight: string;
   paramsFormId: string;
@@ -55,8 +71,8 @@ export class AddDataFormManager {
   constructor(args: {
     connector: V1ConnectorDriver;
     formType: AddDataFormType;
-    onParamsUpdate: any;
-    onDsnUpdate: any;
+    onParamsUpdate: (event: SuperFormUpdateEvent) => void;
+    onDsnUpdate: (event: SuperFormUpdateEvent) => void;
   }) {
     const { connector, formType, onParamsUpdate, onDsnUpdate } = args;
     this.connector = connector;
@@ -108,27 +124,36 @@ export class AddDataFormManager {
     );
 
     // Superforms: params
-    const schema = yup(
-      getValidationSchemaForConnector(connector.name as string),
+    const paramsSchemaDef = getValidationSchemaForConnector(
+      connector.name as string,
     );
+    const paramsAdapter = yup(paramsSchemaDef);
+    type ParamsOut = YupInfer<typeof paramsSchemaDef, "yup">;
+    type ParamsIn = YupInferIn<typeof paramsSchemaDef, "yup">;
     const initialFormValues = getInitialFormValuesFromProperties(
       this.properties,
     );
-    this.params = superForm(initialFormValues, {
+    const paramsDefaults = defaults<ParamsOut, any, ParamsIn>(
+      initialFormValues as Partial<ParamsOut>,
+      paramsAdapter,
+    );
+    this.params = superForm<ParamsOut, any, ParamsIn>(paramsDefaults, {
       SPA: true,
-      validators: schema,
+      validators: paramsAdapter,
       onUpdate: onParamsUpdate,
       resetForm: false,
-    } as any);
+    });
 
     // Superforms: dsn
-    const dsnYupSchema = yup(dsnSchema);
-    this.dsn = superForm(defaults(dsnYupSchema), {
+    const dsnAdapter = yup(dsnSchema);
+    type DsnOut = YupInfer<typeof dsnSchema, "yup">;
+    type DsnIn = YupInferIn<typeof dsnSchema, "yup">;
+    this.dsn = superForm<DsnOut, any, DsnIn>(defaults(dsnAdapter), {
       SPA: true,
-      validators: dsnYupSchema,
+      validators: dsnAdapter,
       onUpdate: onDsnUpdate,
       resetForm: false,
-    } as any);
+    });
   }
 
   get isSourceForm(): boolean {
@@ -154,14 +179,14 @@ export class AddDataFormManager {
   }
 
   handleSkip(): void {
-    const stepState = get(connectorStepStore) as any;
+    const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
-    setConnectorConfig(get(this.params.form) as any);
+    setConnectorConfig(get(this.params.form) as Record<string, unknown>);
     setStep("source");
   }
 
   handleBack(onBack: () => void): void {
-    const stepState = get(connectorStepStore) as any;
+    const stepState = get(connectorStepStore) as ConnectorStepState;
     if (this.isMultiStepConnector && stepState.step === "source") {
       setStep("connector");
     } else {
@@ -227,13 +252,19 @@ export class AddDataFormManager {
     );
     const isConnectorForm = this.formType === "connector";
 
-    return async (event: any) => {
+    return async (event: {
+      form: SuperValidated<
+        Record<string, unknown>,
+        any,
+        Record<string, unknown>
+      >;
+    }) => {
       if (!event.form.valid) return;
 
-      const values = event.form.data as Record<string, unknown>;
+      const values = event.form.data;
 
       try {
-        const stepState = get(connectorStepStore) as any;
+        const stepState = get(connectorStepStore) as ConnectorStepState;
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
@@ -265,14 +296,14 @@ export class AddDataFormManager {
 
   onStringInputChange = (
     event: Event,
-    taintedFields?: Record<string, unknown> | null,
+    taintedFields?: Record<string, boolean> | null,
   ) => {
     const target = event.target as HTMLInputElement;
     const { name, value } = target;
     if (name === "path") {
       const nameTainted =
         taintedFields && typeof taintedFields === "object"
-          ? Boolean((taintedFields as any)?.name)
+          ? Boolean(taintedFields?.name)
           : false;
       if (nameTainted) return;
       const inferred = inferSourceName(this.connector, value);
@@ -302,11 +333,15 @@ export class AddDataFormManager {
         );
       }
       return sanitized;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof SyntaxError) {
         throw new Error(`Invalid JSON file: ${error.message}`);
       }
-      throw new Error(`Failed to read file: ${error.message}`);
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "Unknown error";
+      throw new Error(`Failed to read file: ${message}`);
     }
   }
 
@@ -318,7 +353,7 @@ export class AddDataFormManager {
     onlyDsn: boolean;
     filteredParamsProperties: ConnectorDriverProperty[];
     filteredDsnProperties: ConnectorDriverProperty[];
-    stepState: any;
+    stepState: ConnectorStepState | undefined;
     isMultiStepConnector: boolean;
     isConnectorForm: boolean;
     paramsFormValues: Record<string, unknown>;
