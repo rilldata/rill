@@ -1,5 +1,5 @@
 ---
-title: "What is Rill Cloud?"
+title: "Rill Cloud"
 description: Deploy, share, and collaborate on your Rill dashboards
 sidebar_label: "Rill Cloud"
 sidebar_position: 00
@@ -34,7 +34,7 @@ Each project in Rill Cloud comes with a comprehensive set of features for explor
 ### AI-Powered Chat
 Ask questions about your data in natural language using AI. Rill offers two ways to interact with your data conversationally:
 
-- **[AI Chat (Project Chat)](/explore/project-chat)** - Built directly into Rill Cloud, ask questions about your metrics and get instant insights without writing queries.
+- **[AI Chat](/explore/ai-chat)** - Built directly into Rill Cloud, ask questions about your metrics and get instant insights without writing queries.
 - **[Rill MCP Server](/explore/mcp)** - Connect your Rill projects to AI assistants like Claude Desktop using the Model Context Protocol for governed, accurate analytics.
 
 ### Dashboards
@@ -56,7 +56,7 @@ Reports are managed from your project home page under the **Reports** tab. You c
 Stay on top of important changes in your data with automated alerting:
 
 - **[Alerts](/explore/alerts.md)** - Create alerts on any measure with custom criteria and thresholds. Get notified via email or Slack when conditions are met.
-- **[Slack Integration](/connect/data-source/slack)** - Connect your Slack workspace to receive alert notifications in channels or direct messages.
+- **[Slack Integration](/build/connectors/data-source/slack)** - Connect your Slack workspace to receive alert notifications in channels or direct messages.
 
 Alerts are accessible from any dashboard via the bell icon in the upper-right corner, and can be managed from the **Alerts** tab on your project home page.
 
@@ -75,4 +75,4 @@ Configure your project with credentials, variables, and access controls:
 
 - **[Variables & Credentials](/manage/project-management/variables-and-credentials)** - Store sensitive credentials and configure environment-specific variables securely.
 - **[User Management](/manage/user-management)** - Invite team members and configure their access at the project level.
-- **Project Details** - Edit project name, description, and other metadata.
+- [**Project Details**](/manage/project-management#managing-project-settings) - Edit project name, description, and other metadata.

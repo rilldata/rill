@@ -66,6 +66,6 @@ If you want to further drill into a component's data, select the top right butto
 
 :::tip no button?
 
-If no explore dashboard exists, and/or you don't have [permissions to view it](/build/dashboards/#define-dashboard-access), no button will appear and is as designed.
+If no explore dashboard exists, and/or you don't have [permissions to view it](/build/dashboards/customization#define-dashboard-access), no button will appear and is as designed.
 
 :::
