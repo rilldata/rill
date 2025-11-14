@@ -214,6 +214,7 @@ type DB interface {
 
 	InsertAuthClient(ctx context.Context, displayName, scope string) (*AuthClient, error)
 	FindAuthClient(ctx context.Context, id string) (*AuthClient, error)
+	UpdateAuthClientUsedOn(ctx context.Context, ids []string) error
 
 	FindOrganizationRoles(ctx context.Context) ([]*OrganizationRole, error)
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
@@ -852,6 +853,7 @@ type AuthClient struct {
 	ID          string
 	DisplayName string    `db:"display_name"`
 	Scope       string    `db:"scope"`
+	UsedOn      time.Time `db:"used_on"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
 }

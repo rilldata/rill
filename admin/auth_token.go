@@ -308,6 +308,9 @@ func (s *Service) validateAuthTokenUncached(ctx context.Context, token string) (
 
 		s.Used.UserToken(uat.ID)
 		s.Used.User(uat.UserID)
+		if uat.AuthClientID != nil {
+			s.Used.Client(*uat.AuthClientID)
+		}
 
 		return &userAuthToken{model: uat, token: parsed}, nil
 	case authtoken.TypeService:

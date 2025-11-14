@@ -420,5 +420,5 @@ func (u *URLs) OAuthToken() string {
 }
 
 func (u *URLs) OAuthJWKS() string {
-	return urlutil.MustJoinURL(u.External(), ".well-known/jwks.json")
+	return urlutil.MustJoinURL(u.External(), "/.well-known/jwks.json")
 }

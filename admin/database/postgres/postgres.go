@@ -1746,6 +1746,14 @@ func (c *connection) FindAuthClient(ctx context.Context, id string) (*database.A
 	return client, nil
 }
 
+func (c *connection) UpdateAuthClientUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE auth_clients SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("auth client", err)
+	}
+	return nil
+}
+
 func (c *connection) FindOrganizationRoles(ctx context.Context) ([]*database.OrganizationRole, error) {
 	var res []*database.OrganizationRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_roles")

@@ -119,9 +119,14 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 
 	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
 	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.Error(w, fmt.Sprintf("invalid client_id %q", clientID), http.StatusBadRequest)
+			return
+		}
 		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
 		return
 	}
+	a.admin.Used.Client(clientID)
 
 	// Check if the authorization code has expired
 	if time.Now().After(authCode.Expiration) {
@@ -136,8 +141,8 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	}
 
 	scope := authClient.Scope
-	offlineAccess := scopeAllowsOfflineAccess(scope)
-	longLivedAccess := scopeAllowsLongLivedAccess(scope)
+	offlineAccess := hasScope(scope, offlineAccessScope)
+	longLivedAccess := hasScope(scope, longLivedAccessTokenScope)
 	var resp oauth.TokenResponse
 	// Issue long-lived access token for clients explicitly whitelisted
 	if longLivedAccess {
@@ -154,6 +159,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 			AccessToken: authToken.Token().String(),
 			TokenType:   "Bearer",
 			ExpiresIn:   0, // never expires
+			Scope:       scope,
 			UserID:      userID,
 		}
 	} else {
@@ -173,11 +179,12 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 			AccessToken: accessToken.Token().String(),
 			ExpiresIn:   int64(accessTTL.Seconds()),
 			TokenType:   "Bearer",
+			Scope:       scope,
 			UserID:      userID,
 		}
 		if offlineAccess {
-			// Issue refresh token (90 days TTL)
-			refreshTTL := 90 * 24 * time.Hour
+			// Issue refresh token (365 days TTL)
+			refreshTTL := 365 * 24 * time.Hour
 			refreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Refresh Token", nil, &refreshTTL, true)
 			if err != nil {
 				if errors.Is(err, r.Context().Err()) {
@@ -190,9 +197,6 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 
 			resp.RefreshToken = refreshToken.Token().String()
 		}
-	}
-	if scope != "" {
-		resp.Scope = scope
 	}
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
@@ -256,15 +260,16 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			http.Error(w, "invalid client_id", http.StatusBadRequest)
-		} else {
-			internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
+			http.Error(w, fmt.Sprintf("invalid client_id %q", clientID), http.StatusBadRequest)
+			return
 		}
+		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
 		return
 	}
+	a.admin.Used.Client(clientID)
 
 	clientScope := authClient.Scope
-	if !scopeAllowsOfflineAccess(clientScope) {
+	if !hasScope(clientScope, offlineAccessScope) {
 		http.Error(w, "client is not permitted to use refresh tokens", http.StatusBadRequest)
 		return
 	}
@@ -281,8 +286,8 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		return
 	}
 
-	// Issue new refresh token (90 days TTL)
-	newRefreshTTL := 90 * 24 * time.Hour
+	// Issue new refresh token (365 days TTL)
+	newRefreshTTL := 365 * 24 * time.Hour
 	newRefreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Refresh Token", nil, &newRefreshTTL, true)
 	if err != nil {
 		if errors.Is(err, r.Context().Err()) {
@@ -298,10 +303,8 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		ExpiresIn:    int64(accessTTL.Seconds()),
 		RefreshToken: newRefreshToken.Token().String(),
 		TokenType:    "Bearer",
+		Scope:        clientScope,
 		UserID:       userID,
-	}
-	if clientScope != "" {
-		resp.Scope = clientScope
 	}
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
@@ -337,18 +340,9 @@ func verifyCodeChallenge(verifier, challenge, method string) bool {
 	}
 }
 
-func scopeAllowsOfflineAccess(scope string) bool {
-	for _, token := range strings.Fields(scope) {
-		if token == offlineAccessScope {
-			return true
-		}
-	}
-	return false
-}
-
-func scopeAllowsLongLivedAccess(scope string) bool {
-	for _, token := range strings.Fields(scope) {
-		if token == longLivedAccessTokenScope {
+func hasScope(scopes, scope string) bool {
+	for _, token := range strings.Fields(scopes) {
+		if token == scope {
 			return true
 		}
 	}
