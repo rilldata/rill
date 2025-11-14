@@ -3,6 +3,7 @@ package server_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestResolveTemplatedString_BasicTemplate(t *testing.T) {
@@ -658,4 +660,57 @@ The total revenue is {{ metrics_sql "SELECT total_revenue FROM mv" }}, which is 
 	require.Contains(t, res.ResolvedData, "**Total Orders**: 15")
 	require.Contains(t, res.ResolvedData, "**Average Order Value**: 20")
 	require.Contains(t, res.ResolvedData, "above target")
+}
+
+func TestResolveTemplatedString_MetricsSQL_WithAdditionalTimeRange(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"model.sql": `
+SELECT DATE '2024-01-01' AS order_date, 100 AS revenue
+UNION ALL
+SELECT DATE '2024-01-15' AS order_date, 200 AS revenue
+UNION ALL
+SELECT DATE '2024-02-01' AS order_date, 150 AS revenue
+UNION ALL
+SELECT DATE '2024-02-15' AS order_date, 250 AS revenue
+`,
+			"mv.yaml": `
+type: metrics_view
+version: 1
+model: model
+timeseries: order_date
+dimensions:
+- column: order_date
+  name: order_date
+measures:
+- name: total_revenue
+  expression: SUM(revenue)
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	// Test with time range filtering to January 2024
+	startTime, err := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
+	require.NoError(t, err)
+	endTime, err := time.Parse(time.RFC3339, "2024-02-01T00:00:00Z")
+	require.NoError(t, err)
+
+	additionalTimeRange := &runtimev1.TimeRange{
+		Start: timestamppb.New(startTime),
+		End:   timestamppb.New(endTime),
+	}
+
+	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId:          instanceID,
+		Data:                `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
+		AdditionalTimeRange: additionalTimeRange,
+	})
+	require.NoError(t, err)
+	// Should only include January
+	require.Equal(t, "Revenue: 300", res.ResolvedData)
 }
