@@ -110,10 +110,12 @@
         <Button
           type="secondary"
           onClick={refreshConnector}
-          disabled={isReconciling}
+          disabled={$triggerMutation.isPending || isReconciling}
+          loading={$triggerMutation.isPending}
+          loadingCopy="Refreshing"
         >
           <RefreshIcon size="14px" />
-          Refresh
+          {isReconciling ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
     {/if}
