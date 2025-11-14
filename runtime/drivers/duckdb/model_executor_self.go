@@ -103,7 +103,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				// If the error indicates a missing region and the parsed connector is S3,
 				// retry secret generation using the parsed path for region detection.
 				if errors.Is(err, errMissingRegion) && parsedConnectorType == "s3" {
-					if retryCreateSecretSQL, retryDropSecretSQL, _, retryErr := generateSecretSQL(ctx, opts, connector, parsedPath, nil); retryErr == nil {
+					if retryCreateSecretSQL, retryDropSecretSQL, retryConnectorType, retryErr := generateSecretSQL(ctx, opts, connector, parsedPath, nil); retryErr == nil {
+						connectorSecretsAvailable[retryConnectorType] = true
 						createSecretSQLs = append(createSecretSQLs, retryCreateSecretSQL)
 						dropSecretSQLs = append(dropSecretSQLs, retryDropSecretSQL)
 						continue
