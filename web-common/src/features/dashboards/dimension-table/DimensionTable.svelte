@@ -235,22 +235,24 @@ TableCells – the cell contents.
             {toggleComparisonDimension}
             on:select-item={(event) => onSelectItem(event)}
           />
-          <DimensionValueHeader
-            on:resize-column={handleResizeDimensionColumn}
-            virtualRowItems={virtualRows}
-            totalHeight={virtualHeight}
-            width={estimateColumnSize[0]}
-            column={dimensionColumn}
-            {rows}
-            {activeIndex}
-            {selectedIndex}
-            {excludeMode}
-            {scrolling}
-            {horizontalScrolling}
-            on:dimension-sort
-            on:select-item={(event) => onSelectItem(event)}
-            on:inspect={setActiveIndex}
-          />
+          {#if dimensionColumn}
+            <DimensionValueHeader
+              on:resize-column={handleResizeDimensionColumn}
+              virtualRowItems={virtualRows}
+              totalHeight={virtualHeight}
+              width={estimateColumnSize[0]}
+              column={dimensionColumn}
+              {rows}
+              {activeIndex}
+              {selectedIndex}
+              {excludeMode}
+              {scrolling}
+              {horizontalScrolling}
+              on:dimension-sort
+              on:select-item={(event) => onSelectItem(event)}
+              on:inspect={setActiveIndex}
+            />
+          {/if}
         </div>
         {#if rows.length}
           <!-- VirtualTableBody -->
