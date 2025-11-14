@@ -23,6 +23,16 @@ export function cleanUrlParams(
 
   const cleanedParams = new URLSearchParams();
   searchParams.forEach((value, key: ExploreStateURLParams) => {
+    // Skip "cleaning" time grain param if time range is not also equivalent
+    if (key === ExploreStateURLParams.TimeGrain) {
+      if (
+        searchParams.get(ExploreStateURLParams.TimeRange) !==
+        defaultUrlParams.get(ExploreStateURLParams.TimeRange)
+      ) {
+        cleanedParams.set(key, value);
+      }
+    }
+
     const defaultValue = defaultUrlParams.get(key);
 
     const hasNoDefaultAndValueIsEmpty = defaultValue === null && value === "";
