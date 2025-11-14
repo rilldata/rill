@@ -1,7 +1,7 @@
 ---
 title: Canvas Dashboard
 sidebar_label: "Canvas Dashboard"
-sidebar_position: 05
+sidebar_position: 20
 ---
 
 
@@ -48,7 +48,7 @@ Similar to our [Explore dashboards](/explore/dashboard-101), Canvas Dashboards a
 
 - _**Time Selector and Time Selector Comparison:**_ You can change the period of analysis to different ranges of time (see `red` box), either by selecting from a pre-defined period (such as last week) or choosing a custom date range. Along with this, you can enable a comparison filter to compare range of dates with 1 click.
 
-- _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/explore/filters/filters.md) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
+- _**Filtering:**_ Underneath the time selector, you'll also be able to find your filter bar (see `orange` box) where you can [add filters](/explore/filters) for metrics (e.g. `campaigns>1000`) or for dimensions (e.g. `campaign_name = Instacart`).
 
 :::tip identical names in metrics views
 
