@@ -84,7 +84,7 @@
     </div>
 
     {#if isConnector}
-      <ConnectorRefreshButton {resource} />
+      <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
     {/if}
 
     <div class="flex items-center gap-x-2 w-fit flex-none">

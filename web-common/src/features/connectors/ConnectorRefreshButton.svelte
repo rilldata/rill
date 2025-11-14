@@ -1,6 +1,8 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     V1ReconcileStatus,
@@ -10,6 +12,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let resource: V1Resource | undefined;
+  export let hasUnsavedChanges = false;
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
@@ -21,7 +24,7 @@
 
   function refreshConnector() {
     if (!connectorName) return;
-    $triggerMutation.mutate({
+    void $triggerMutation.mutateAsync({
       instanceId,
       data: {
         resources: [{ kind: ResourceKind.Connector, name: connectorName }],
@@ -31,14 +34,26 @@
 </script>
 
 <div class="flex items-center gap-x-2">
-  <Button
-    type="secondary"
-    onClick={refreshConnector}
-    disabled={$triggerMutation.isPending || isReconciling}
-    loading={$triggerMutation.isPending}
-    loadingCopy="Refreshing"
-  >
-    <RefreshIcon size="14px" />
-    {isReconciling ? "Refreshing…" : "Refresh"}
-  </Button>
+  <Tooltip distance={8}>
+    <Button
+      square
+      type="secondary"
+      onClick={refreshConnector}
+      disabled={$triggerMutation.isPending ||
+        isReconciling ||
+        hasUnsavedChanges}
+      loading={$triggerMutation.isPending}
+      loadingCopy="Refreshing"
+      label="Refresh Connector"
+    >
+      <RefreshIcon size="14px" />
+    </Button>
+    <TooltipContent slot="tooltip-content">
+      {#if hasUnsavedChanges}
+        Save your changes to refresh
+      {:else}
+        Refresh connector
+      {/if}
+    </TooltipContent>
+  </Tooltip>
 </div>
