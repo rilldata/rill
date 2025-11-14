@@ -56,7 +56,6 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (*drive
 		if len(stmt.QueryAttributes) > 0 {
 			fields = append(fields, zap.Any("query_attributes", stmt.QueryAttributes))
 		}
-		fields = append(fields, observability.ZapCtx(ctx))
 		c.logger.Info("druid query", fields...)
 	}
 
