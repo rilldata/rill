@@ -60,6 +60,12 @@
   export let fillParent = false;
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher<{ expand: void }>();
+  // Tie Svelte Flow theme to the app theme
+  import { themeControl } from "../themes/theme-control";
+  // Derive Svelte Flow color mode from global theme
+  $: flowColorMode = ($themeControl === "dark" ? "dark" : "light") as
+    | "dark"
+    | "light";
 
   // Shrink card height so 3x3 fits comfortably
   $: containerHeightClass = fillParent ? "h-full" : "h-[260px]";
@@ -218,32 +224,6 @@
     nodesStore.update((nds) => nds.map((n) => ({ ...n, selected: ids.has(n.id) })));
   })();
 
-  // $: {
-  //   const graph = buildResourceGraph(resources ?? []);
-  //   const nodeIds = new Set(graph.nodes.map((node) => node.id));
-  //   const filteredEdges = graph.edges.filter((edge) => {
-  //     const hasSource = nodeIds.has(edge.source);
-  //     const hasTarget = nodeIds.has(edge.target);
-  //     if (!hasSource || !hasTarget) {
-  //       console.warn("Filtered dangling edge", edge, { hasSource, hasTarget });
-  //     }
-  //     return hasSource && hasTarget;
-  //   });
-  //   nodesStore.set(graph.nodes);
-  //   edgesStore.set(filteredEdges);
-  //   hasNodes = graph.nodes.length > 0;
-  //   console.log("ResourceGraph graph", {
-  //     title,
-  //     nodes: graph.nodes.map((node) => node.id),
-  //     edges: filteredEdges.map((edge) => ({
-  //       id: edge.id,
-  //       source: edge.source,
-  //       target: edge.target,
-  //     })),
-  //   });
-  // }
-
-  // No manual fit to view; use Svelte Flow's fitView prop instead.
 </script>
 
 <section class="graph-instance">
@@ -280,6 +260,7 @@
           nodes={nodesStore}
           edges={edgesViewStore}
           nodeTypes={nodeTypes}
+          colorMode={flowColorMode}
           proOptions={{ hideAttribution: true }}
           fitView
           fitViewOptions={{ padding: 0.22, minZoom: 0.05, maxZoom: 1.25, duration: 200 }}
@@ -325,7 +306,7 @@
   }
 
   .expand-btn {
-    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border border-gray-300 bg-white text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-800;
+    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface text-sm text-muted-foreground hover:bg-muted hover:text-foreground;
     line-height: 1.25rem;
   }
 </style>

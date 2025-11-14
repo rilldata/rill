@@ -149,11 +149,13 @@
     if (!kind || !name) return null;
     return `${kind}:${name}`;
   }
+
   function anchorForGroup(group: ResourceGraphGrouping): V1Resource | null {
     const rid = group.id;
     const found = group.resources.find((r) => resourceId(r) === rid);
     return found ?? null;
   }
+  
   function groupTitleParts(group: ResourceGraphGrouping, index: number) {
     const baseLabel = group.label ?? `Graph ${index + 1}`;
     const count = group.resources.length;

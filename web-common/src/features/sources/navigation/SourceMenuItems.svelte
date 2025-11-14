@@ -31,7 +31,7 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import Chart from "../../../components/icons/Chart.svelte";
+  import ConnectorIcon from "../../../components/icons/ConnectorIcon.svelte";
 
   export let filePath: string;
 
@@ -189,7 +189,7 @@
 </NavigationMenuItem>
 
 <NavigationMenuItem on:click={viewGraph}>
-  <Chart slot="icon" />
+  <ConnectorIcon slot="icon" />
   View dependency graph
 </NavigationMenuItem>
 
