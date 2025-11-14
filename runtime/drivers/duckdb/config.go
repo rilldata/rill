@@ -63,8 +63,7 @@ type config struct {
 
 func newConfig(cfgMap map[string]any) (*config, error) {
 	cfg := &config{
-		ReadWriteRatio:              0.5,
-		CreateSecretsFromConnectors: []string{"*"},
+		ReadWriteRatio: 0.5,
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {

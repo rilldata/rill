@@ -12,12 +12,15 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/azure"
 	"github.com/rilldata/rill/runtime/drivers/gcs"
+	"github.com/rilldata/rill/runtime/drivers/https"
 	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 )
 
 var errGCSUsesNativeCreds = errors.New("GCS uses native credentials")
+
+var errMissingRegion = errors.New("Missing s3 region")
 
 type objectStoreToSelfExecutor struct {
 	c *connection
@@ -67,7 +70,7 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, op
 
 	// Generate secret SQL to access the to access object store using duckdb
 	var err error
-	m.InternalCreateSecretSQL, m.InternalDropSecretSQL, err = objectStoreSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
+	m.InternalCreateSecretSQL, m.InternalDropSecretSQL, _, err = generateSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
 	if err != nil {
 		return nil, err
 	}
@@ -86,43 +89,39 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(ctx context.Context, op
 	return propsMap, nil
 }
 
-func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, connector, optionalBucketURL string, optionalAdditionalConfig map[string]any) (string, string, error) {
+func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, connector, optionalBucketURL string, optionalAdditionalConfig map[string]any) (string, string, string, error) {
 	handle, release, err := opts.Env.AcquireConnector(ctx, connector)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	defer release()
 
-	_, ok := handle.AsObjectStore()
-	if !ok {
-		return "", "", fmt.Errorf("can only create secrets for object store connectors %q", connector)
-	}
-
 	safeSecretName := safeName(fmt.Sprintf("%s__%s__secret", opts.ModelName, connector))
-
 	dropSecretSQL := fmt.Sprintf("DROP SECRET IF EXISTS %s", safeSecretName)
+	connectorType := handle.Driver()
 
-	switch handle.Driver() {
+	switch connectorType {
 	case "s3":
 		conn, ok := handle.(*s3.Connection)
 		if !ok {
-			return "", "", fmt.Errorf("internal error: expected s3 connector handle")
+			return "", "", "", fmt.Errorf("internal error: expected s3 connector handle")
 		}
 		s3Config := conn.ParsedConfig()
 		err := mapstructure.WeakDecode(optionalAdditionalConfig, s3Config)
 		if err != nil {
-			return "", "", fmt.Errorf("failed to parse s3 config properties: %w", err)
+			return "", "", "", fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE S3")
-		if s3Config.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
-		}
+
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
+		} else if s3Config.AllowHostAccess {
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
+
 		if s3Config.SessionToken != "" {
 			fmt.Fprintf(&sb, ", SESSION_TOKEN %s", safeSQLString(s3Config.SessionToken))
 		}
@@ -146,53 +145,54 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 			// DuckDB does not automatically resolve the region as of 1.2.0 so we try to detect and set the region.
 			uri, err := globutil.ParseBucketURL(optionalBucketURL)
 			if err != nil {
-				return "", "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
+				return "", "", "", fmt.Errorf("failed to parse path %q: %w", optionalBucketURL, err)
 			}
 			reg, err := s3.BucketRegion(ctx, s3Config, uri.Host)
 			if err != nil {
-				return "", "", err
+				return "", "", "", err
 			}
 			sb.WriteString(", REGION ")
 			sb.WriteString(safeSQLString(reg))
+		} else {
+			return "", "", "", errMissingRegion
 		}
 		sb.WriteRune(')')
-		return sb.String(), dropSecretSQL, nil
+		return sb.String(), dropSecretSQL, connectorType, nil
 	case "gcs":
 		// GCS works via S3 compatibility mode.
 		// This means we that gcsConfig.KeyID and gcsConfig.Secret should be set instead of gcsConfig.SecretJSON.
 		gcsConnectorProp := handle.Config()
 		gcsConfig, err := gcs.NewConfigProperties(gcsConnectorProp)
 		if err != nil {
-			return "", "", fmt.Errorf("failed to load gcs base config: %w", err)
+			return "", "", "", fmt.Errorf("failed to load gcs base config: %w", err)
 		}
 		if err := mapstructure.WeakDecode(optionalAdditionalConfig, gcsConfig); err != nil {
-			return "", "", fmt.Errorf("failed to parse gcs config properties: %w", err)
+			return "", "", "", fmt.Errorf("failed to parse gcs config properties: %w", err)
 		}
 		// If no credentials are provided we assume that the user wants to use the native credentials
 		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "") {
-			return "", "", errGCSUsesNativeCreds
+			return "", "", "", errGCSUsesNativeCreds
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE GCS")
-		if gcsConfig.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
-		}
 		if gcsConfig.KeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(gcsConfig.KeyID), safeSQLString(gcsConfig.Secret))
+		} else if gcsConfig.AllowHostAccess {
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
 		sb.WriteRune(')')
-		return sb.String(), dropSecretSQL, nil
+		return sb.String(), dropSecretSQL, connectorType, nil
 	case "azure":
 		conn, ok := handle.(*azure.Connection)
 		if !ok {
-			return "", "", fmt.Errorf("internal error: expected azure connector handle")
+			return "", "", "", fmt.Errorf("internal error: expected azure connector handle")
 		}
 		azureConfig := conn.ParsedConfig()
 		err := mapstructure.WeakDecode(optionalAdditionalConfig, azureConfig)
 		if err != nil {
-			return "", "", fmt.Errorf("failed to parse azure config properties: %w", err)
+			return "", "", "", fmt.Errorf("failed to parse azure config properties: %w", err)
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
@@ -210,9 +210,30 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.GetAccount()))
 		}
 		sb.WriteRune(')')
-		return sb.String(), dropSecretSQL, nil
+		return sb.String(), dropSecretSQL, connectorType, nil
+	case "https":
+		httpConfig, err := https.NewConfigProperties(handle.Config())
+		if err != nil {
+			return "", "", "", fmt.Errorf("failed to load http connector properties: %w", err)
+		}
+		if err := mapstructure.WeakDecode(optionalAdditionalConfig, httpConfig); err != nil {
+			return "", "", "", fmt.Errorf("failed to parse http model properties: %w", err)
+		}
+		var sb strings.Builder
+		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
+		sb.WriteString(safeSecretName)
+		sb.WriteString(" (TYPE HTTP")
+		if len(httpConfig.Headers) > 0 {
+			var headerStrings []string
+			for key, value := range httpConfig.Headers {
+				headerStrings = append(headerStrings, fmt.Sprintf("%s : %s", safeSQLString(key), safeSQLString(value)))
+			}
+			fmt.Fprintf(&sb, ", EXTRA_HTTP_HEADERS MAP { %s } ", strings.Join(headerStrings, ", "))
+		}
+		sb.WriteRune(')')
+		return sb.String(), dropSecretSQL, connectorType, nil
 	default:
-		return "", "", fmt.Errorf("internal error: unsupported object store connector %q", handle.Driver())
+		return "", "", "", fmt.Errorf("internal error: secret generation is not supported for connector %q", handle.Driver())
 	}
 }
 
