@@ -33,6 +33,8 @@
   $: email = isProjectMemberUser(user) ? user.userEmail : user.email;
   $: photoUrl = isProjectMemberUser(user) ? user.userPhotoUrl : null;
   $: isCurrentUser = email === $currentUser.data?.user.email;
+  $: hasRole =
+    "roleName" in user && !!(isProjectMemberUser(user) ? user.roleName : false);
 </script>
 
 <div class="flex flex-row items-center gap-x-2 justify-between cursor-auto">
@@ -44,12 +46,14 @@
     {showGuestChip}
     pendingAcceptance={isPendingInvite(user)}
   />
-  <UserSetRole
-    {organization}
-    {project}
-    {user}
-    {isCurrentUser}
-    {manageProjectMembers}
-    {manageProjectAdmins}
-  />
+  {#if hasRole}
+    <UserSetRole
+      {organization}
+      {project}
+      {user}
+      {isCurrentUser}
+      {manageProjectMembers}
+      {manageProjectAdmins}
+    />
+  {/if}
 </div>

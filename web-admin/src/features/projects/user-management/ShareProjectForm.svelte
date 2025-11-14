@@ -232,7 +232,6 @@
     });
   })();
 
-  // Memoized Sets for efficient O(1) lookups instead of expensive O(n) .some() operations
   $: projectMemberEmailSet = new Set(
     projectMemberUsersList.map((pm) => pm.userEmail),
   );
@@ -245,6 +244,19 @@
   $: projectUserGroupNameSet = new Set(
     projectUserGroups.map((pg) => pg.groupName),
   );
+
+  // FIXME: https://linear.app/rilldata/issue/APP-570/add-a-new-endpoint-to-get-current-users-project-membership-by-email
+  // Synthetic current-user row to ensure visibility before their real membership loads from the infinite query
+  $: syntheticCurrentUser = (() => {
+    const u = $currentUser.data?.user;
+    if (!u?.email) return null;
+    return {
+      userEmail: u.email,
+      userName: u.displayName ?? u.email,
+      userPhotoUrl: u.photoUrl ?? null,
+      // roleName intentionally omitted
+    } as V1ProjectMemberUser;
+  })();
 
   $: searchList = buildSearchList(
     allOrgMemberUsersRows,
@@ -311,6 +323,16 @@
     bind:this={membersScrollEl}
   >
     <div class="mt-2">
+      {#if syntheticCurrentUser && !projectMemberEmailSet.has(syntheticCurrentUser.userEmail)}
+        <UserItem
+          {organization}
+          {project}
+          user={syntheticCurrentUser}
+          orgRole={undefined}
+          manageProjectAdmins={false}
+          manageProjectMembers={false}
+        />
+      {/if}
       {#each projectMemberUsersList as user}
         <UserItem
           {organization}
