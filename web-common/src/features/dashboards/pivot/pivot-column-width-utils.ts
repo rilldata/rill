@@ -15,6 +15,7 @@ export const COLUMN_WIDTH_CONSTANTS = {
   INIT_MEASURE_WIDTH: 100,
   MEASURE_PADDING: 24,
   ROW_DIMENSION_MIN_WIDTH: 160,
+  MAX_COL_DIMENSION_HEADER_LENGTH: 18,
 };
 
 export function calculateColumnWidth(
@@ -91,7 +92,7 @@ export function calculateMeasureWidth(
   // When there's a column dimension, also consider its header length
   const columnDimensionLength = Math.min(
     columnDimensionHeader?.length ?? 0,
-    18,
+    COLUMN_WIDTH_CONSTANTS.MAX_COL_DIMENSION_HEADER_LENGTH,
   );
 
   const finalBasis = Math.max(

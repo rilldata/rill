@@ -68,19 +68,10 @@
 
   $: {
     // Get the longest column dimension header to ensure proper width calculation
-    let maxColumnDimensionHeader = "";
-    if (hasColumnDimension && headerGroups.length > 0) {
-      // Get the second-to-last header group which contains column dimension values
-      const colDimensionHeaderGroup = headerGroups[headerGroups.length - 2];
-      if (colDimensionHeaderGroup?.headers) {
-        colDimensionHeaderGroup.headers.forEach((header) => {
-          const headerText = String(header.column?.columnDef?.header ?? "");
-          if (headerText.length > maxColumnDimensionHeader.length) {
-            maxColumnDimensionHeader = headerText;
-          }
-        });
-      }
-    }
+    const maxColumnDimensionHeader = getMaxColumnDimensionHeader(
+      hasColumnDimension,
+      headerGroups,
+    );
 
     measures.forEach(({ name, label, formatter }) => {
       if (!$measureLengths.has(name)) {
@@ -175,6 +166,25 @@
     let offset = 0;
     if (!hasRowDimension) offset = 1;
     return (index + offset) % measureCount === 0 && index > 0;
+  }
+
+  function getMaxColumnDimensionHeader(
+    hasColumnDimension: boolean,
+    headerGroups: HeaderGroup<PivotDataRow>[],
+  ): string {
+    if (!hasColumnDimension || headerGroups.length === 0) return "";
+
+    // Get the second-to-last header group which contains column dimension values
+    const colDimensionHeaderGroup =
+      headerGroups.length >= 2
+        ? headerGroups[headerGroups.length - 2]
+        : undefined;
+    if (!colDimensionHeaderGroup?.headers) return "";
+
+    return colDimensionHeaderGroup.headers.reduce((longest, header) => {
+      const headerText = String(header.column?.columnDef?.header ?? "");
+      return headerText.length > longest.length ? headerText : longest;
+    }, "");
   }
 
   function shouldShowRightBorder(index: number): boolean {
