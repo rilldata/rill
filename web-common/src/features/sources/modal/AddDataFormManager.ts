@@ -33,7 +33,7 @@ import { compileConnectorYAML } from "../../connectors/code-utils";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
-import { applyClickHouseCloudRequirements } from "./helpers";
+import { applyClickHouseCloudRequirements } from "./utils";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {

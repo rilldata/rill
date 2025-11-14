@@ -24,7 +24,7 @@
   import YamlPreview from "./YamlPreview.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
-  import { hasOnlyDsn } from "./helpers";
+  import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
 
   export let connector: V1ConnectorDriver;
