@@ -36,19 +36,39 @@ const (
 	rillGitRemote  = "https://github.com/rilldata/rill.git"
 )
 
-const (
-	// minimalProvisionerSet is used with the --minimal flag.
-	// It differs from the usual dev provisioner set in not having a Clickhouse provisioner.
-	minimalProvisionerSet = `{"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}`
-)
-
 var (
+	// Console log colors
 	logErr  = color.New(color.FgHiRed)
 	logWarn = color.New(color.FgHiYellow)
 	logInfo = color.New(color.FgHiGreen)
-)
 
-var presets = []string{"cloud", "minimal", "local", "e2e", "other"}
+	// Preset options
+	presets = []string{
+		// Full cloud setup
+		"cloud",
+		// Minimal cloud setup (no Clickhouse, no telemetry)
+		"minimal",
+		// Rill Developer setup (equivalent to `rill start`)
+		"local",
+		// Cloud setup for e2e tests
+		"e2e",
+		// TODO: What is this?
+		"other",
+	}
+
+	// minimalEnvOverrides contains overrides of variables in the .env for the "minimal" preset.
+	// This is needed since we don't want to maintain a separate .env file for the minimal preset, which is mostly similar to the full cloud preset.
+	minimalEnvOverrides = []string{
+		// This from the usual dev provisioner set in not having a Clickhouse provisioner.
+		`RILL_ADMIN_PROVISIONER_SET_JSON='{"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}'`,
+		// Disable traces
+		"RILL_ADMIN_TRACES_EXPORTER=" + string(observability.NoopExporter),
+		"RILL_RUNTIME_TRACES_EXPORTER=" + string(observability.NoopExporter),
+		// Change metrics to Prometheus, which unlike Otel doesn't require an external collector.
+		"RILL_ADMIN_METRICS_EXPORTER=" + string(observability.PrometheusExporter),
+		"RILL_RUNTIME_METRICS_EXPORTER=" + string(observability.PrometheusExporter),
+	}
+)
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var verbose, reset, refreshDotenv bool
@@ -100,14 +120,8 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 	}
 
 	switch preset {
-	case "cloud":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "full", services)
-	case "minimal":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "minimal", services)
-	case "e2e":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", services)
-	case "other":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "other", services)
+	case "cloud", "minimal", "e2e", "other":
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, preset, services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
@@ -278,7 +292,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
-		g.Go(func() error { return s.runDeps(ctx, verbose, []string{preset}) })
+		g.Go(func() error { return s.runDeps(ctx, verbose, preset) })
 	}
 
 	depsReadyCh := make(chan struct{})
@@ -409,22 +423,23 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "down", "--volumes").Run()
 }
 
-func (s cloud) runDeps(ctx context.Context, verbose bool, profiles []string) error {
+func (s cloud) runDeps(ctx context.Context, verbose bool, preset string) error {
 	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s --profile %v up\n", composeFile, profiles)
+	profile := "full"
+	if preset == "minimal" {
+		profile = "minimal"
+	} else if preset == "e2e" {
+		profile = "e2e"
+	}
+
+	args := []string{"docker", "compose", "--env-file", ".env", "-f", composeFile, "--profile", profile, "up"}
+
+	logInfo.Printf("Starting dependencies: %s\n", strings.Join(args, " "))
 	defer logInfo.Printf("Stopped dependencies\n")
 
-	args := []string{"docker", "compose", "--env-file", ".env", "-f", composeFile}
-	for _, p := range profiles {
-		args = append(args, "--profile", p)
-	}
-	args = append(args, "up")
-
-	if len(profiles) != 1 || profiles[0] != "minimal" {
-		err := prepareStripeConfig()
-		if err != nil {
-			return fmt.Errorf("failed to prepare stripe config: %w", err)
-		}
+	err := prepareStripeConfig()
+	if err != nil {
+		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
 	cmd := newCmd(ctx, args[0], args[1:]...)
@@ -491,11 +506,7 @@ func (s cloud) runAdmin(ctx context.Context, verbose bool, preset string) (err e
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "admin", "start")
 	env := os.Environ()
 	if preset == "minimal" {
-		env = append(env,
-			"RILL_ADMIN_METRICS_EXPORTER="+string(observability.NoopExporter),
-			"RILL_ADMIN_TRACES_EXPORTER="+string(observability.NoopExporter),
-			"RILL_ADMIN_PROVISIONER_SET_JSON="+minimalProvisionerSet,
-		)
+		env = append(env, minimalEnvOverrides...)
 	}
 	if verbose {
 		env = append(env, "RILL_ADMIN_LOG_LEVEL=debug")
@@ -538,10 +549,7 @@ func (s cloud) runRuntime(ctx context.Context, verbose bool, preset string) (err
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "runtime", "start")
 	env := os.Environ()
 	if preset == "minimal" {
-		env = append(env,
-			"RILL_RUNTIME_METRICS_EXPORTER="+string(observability.NoopExporter),
-			"RILL_RUNTIME_TRACES_EXPORTER="+string(observability.NoopExporter),
-		)
+		env = append(env, minimalEnvOverrides...)
 	}
 	if verbose {
 		env = append(env, "RILL_RUNTIME_LOG_LEVEL=debug")

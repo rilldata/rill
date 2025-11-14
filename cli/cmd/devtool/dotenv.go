@@ -94,9 +94,10 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 var dotenvURLs = map[string]string{
-	"full":  "gs://rill-devtool/dotenv/cloud-dev.env",
-	"e2e":   "gs://rill-devtool/dotenv/cloud-e2e.env",
-	"other": "gs://rill-devtool/dotenv/other.env",
+	"cloud":         "gs://rill-devtool/dotenv/cloud-dev.env",
+	"cloud-minimal": "gs://rill-devtool/dotenv/cloud-dev.env",
+	"e2e":           "gs://rill-devtool/dotenv/cloud-e2e.env",
+	"other":         "gs://rill-devtool/dotenv/other.env",
 }
 
 func checkDotenv() error {
@@ -108,10 +109,6 @@ func checkDotenv() error {
 }
 
 func downloadDotenv(ctx context.Context, preset string) error {
-	if preset == "minimal" {
-		preset = "full"
-	}
-
 	logInfo.Printf("Downloading .env file from %s\n", dotenvURLs[preset])
 
 	err := exec.CommandContext(ctx, "gcloud", "storage", "cp", dotenvURLs[preset], ".env").Run()
