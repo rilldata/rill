@@ -2413,9 +2413,11 @@ paths:
               useFormatTokens:
                 type: boolean
                 description: If true, output format tokens instead of raw values.
-              additionalWhere:
-                $ref: '#/definitions/v1Expression'
-                title: Additional filters to inject into metrics SQL queries
+              additionalWhereByMetricsView:
+                type: object
+                additionalProperties:
+                  $ref: '#/definitions/v1Expression'
+                title: Additional filters to inject into metrics SQL queries by metrics view name
               additionalTimeRange:
                 $ref: '#/definitions/v1Expression'
                 title: Additional time range to add to metrics SQL queries

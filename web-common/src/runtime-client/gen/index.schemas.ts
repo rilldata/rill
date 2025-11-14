@@ -2975,11 +2975,14 @@ export const QueryServiceColumnNumericHistogramHistogramMethod = {
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
 
+export type QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView =
+  { [key: string]: V1Expression };
+
 export type QueryServiceResolveTemplatedStringBody = {
   data?: string;
   /** If true, output format tokens instead of raw values. */
   useFormatTokens?: boolean;
-  additionalWhere?: V1Expression;
+  additionalWhereByMetricsView?: QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView;
   additionalTimeRange?: V1Expression;
 };
 

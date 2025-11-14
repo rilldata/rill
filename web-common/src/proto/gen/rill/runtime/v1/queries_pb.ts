@@ -6520,11 +6520,11 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
   useFormatTokens = false;
 
   /**
-   * Additional filters to inject into metrics SQL queries
+   * Additional filters to inject into metrics SQL queries by metrics view name
    *
-   * @generated from field: rill.runtime.v1.Expression additional_where = 4;
+   * @generated from field: map<string, rill.runtime.v1.Expression> additional_where_by_metrics_view = 4;
    */
-  additionalWhere?: Expression;
+  additionalWhereByMetricsView: { [key: string]: Expression } = {};
 
   /**
    * Additional time range to add to metrics SQL queries
@@ -6544,7 +6544,7 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "use_format_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "additional_where", kind: "message", T: Expression },
+    { no: 4, name: "additional_where_by_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 5, name: "additional_time_range", kind: "message", T: Expression },
   ]);
 

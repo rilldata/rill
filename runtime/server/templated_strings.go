@@ -92,9 +92,9 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 			return "", fmt.Errorf("failed to parse metrics SQL: %w", err)
 		}
 
-		// Apply additional filters if provided
-		if req.AdditionalWhere != nil {
-			query.Where = applyAdditionalWhere(query.Where, req.AdditionalWhere)
+		// Apply additional filters if provided for this metrics view
+		if additionalWhere, ok := req.AdditionalWhereByMetricsView[query.MetricsView]; ok {
+			query.Where = applyAdditionalWhere(query.Where, additionalWhere)
 		}
 
 		// Apply additional time range if provided

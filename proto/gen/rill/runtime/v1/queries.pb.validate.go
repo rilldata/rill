@@ -16502,32 +16502,49 @@ func (m *ResolveTemplatedStringRequest) validate(all bool) error {
 
 	// no validation rules for UseFormatTokens
 
-	if all {
-		switch v := interface{}(m.GetAdditionalWhere()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ResolveTemplatedStringRequestValidationError{
-					field:  "AdditionalWhere",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ResolveTemplatedStringRequestValidationError{
-					field:  "AdditionalWhere",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
+	{
+		sorted_keys := make([]string, len(m.GetAdditionalWhereByMetricsView()))
+		i := 0
+		for key := range m.GetAdditionalWhereByMetricsView() {
+			sorted_keys[i] = key
+			i++
 		}
-	} else if v, ok := interface{}(m.GetAdditionalWhere()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ResolveTemplatedStringRequestValidationError{
-				field:  "AdditionalWhere",
-				reason: "embedded message failed validation",
-				cause:  err,
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetAdditionalWhereByMetricsView()[key]
+			_ = val
+
+			// no validation rules for AdditionalWhereByMetricsView[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, ResolveTemplatedStringRequestValidationError{
+							field:  fmt.Sprintf("AdditionalWhereByMetricsView[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, ResolveTemplatedStringRequestValidationError{
+							field:  fmt.Sprintf("AdditionalWhereByMetricsView[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return ResolveTemplatedStringRequestValidationError{
+						field:  fmt.Sprintf("AdditionalWhereByMetricsView[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
 			}
+
 		}
 	}
 
