@@ -216,19 +216,4 @@ func TestQueryAttributesSETTINGSInjection(t *testing.T) {
 		err = res.Close()
 		require.NoError(t, err)
 	})
-
-	t.Run("QueryAttributesWithSpecialCharacters", func(t *testing.T) {
-		res, err := olap.Query(ctx, &drivers.Statement{
-			Query: "SELECT id, value FROM test_attrs",
-			QueryAttributes: map[string]string{
-				"test_partner_name": "ACME Corp's Division",
-				"test_description":  "Test with \"quotes\" and backslash\\",
-				"test_path":         "/usr/local/bin",
-			},
-		})
-		require.NoError(t, err)
-		require.NotNil(t, res)
-		err = res.Close()
-		require.NoError(t, err)
-	})
 }

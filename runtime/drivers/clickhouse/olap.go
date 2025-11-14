@@ -150,29 +150,23 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		return nil, err
 	}
 
+	settings := map[string]any{
+		"cast_keep_nullable":        1,
+		"join_use_nulls":            1,
+		"session_timezone":          "UTC",
+		"prefer_global_in_and_join": 1,
+		"insert_distributed_sync":   1,
+	}
+
 	if c.config.QuerySettingsOverride != "" {
 		stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
-		stmt.Query = appendQueryAttributes(stmt.Query, stmt.QueryAttributes)
 	} else {
-		settings := map[string]any{
-			"cast_keep_nullable":        1,
-			"join_use_nulls":            1,
-			"session_timezone":          "UTC",
-			"prefer_global_in_and_join": 1,
-			"insert_distributed_sync":   1,
-		}
-
-		// Add query attributes to settings
-		for k, v := range stmt.QueryAttributes {
-			settings[k] = v
-		}
-
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
-
 		if c.config.QuerySettings != "" {
 			stmt.Query += "\n SETTINGS " + c.config.QuerySettings
 		}
 	}
+	stmt.Query = appendQueryAttributes(stmt.Query, stmt.QueryAttributes)
 
 	// Gather metrics only for actual queries
 	var acquiredTime time.Time
@@ -774,7 +768,7 @@ func appendQueryAttributes(query string, attrs map[string]string) string {
 	for _, k := range keys {
 		v := attrs[k]
 		escapedValue := drivers.DialectClickHouse.EscapeStringValue(v)
-		attrPairs = append(attrPairs, fmt.Sprintf("%s = '%s'", k, escapedValue))
+		attrPairs = append(attrPairs, fmt.Sprintf("%s = %s", k, escapedValue))
 	}
 
 	upperQuery := strings.ToUpper(query)
