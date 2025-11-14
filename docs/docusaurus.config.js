@@ -132,6 +132,12 @@ const config = {
             position: "left",
             label: "Docs",
           },
+          {
+            type: "docSidebar",
+            sidebarId: "examplesSidebar",
+            position: "left",
+            label: "Examples",
+          },
 
           {
             type: "docSidebar",
