@@ -496,7 +496,7 @@ func (s cloud) runAdmin(ctx context.Context, verbose bool, preset string) (err e
 		cmd.Env = append(
 			cmd.Env,
 			// This differs from the usual dev provisioner set in not having a Clickhouse provisioner.
-			`RILL_ADMIN_PROVISIONER_SET_JSON='{"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}'`,
+			`RILL_ADMIN_PROVISIONER_SET_JSON={"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}`,
 			// Disable traces
 			"RILL_ADMIN_TRACES_EXPORTER="+string(observability.NoopExporter),
 			// Change metrics to Prometheus, which unlike Otel doesn't require an external collector.
