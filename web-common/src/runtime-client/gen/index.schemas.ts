@@ -463,20 +463,6 @@ export interface V1CharLocation {
   line?: number;
 }
 
-/**
- * - CLIENT_TYPE_UNSPECIFIED: Returns all conversations when used as a filter
- - CLIENT_TYPE_RILL: Rill Developer and Rill Cloud applications
- - CLIENT_TYPE_MCP: MCP-based clients (Claude Desktop, VS Code, Cursor, etc.)
- */
-export type V1ClientType = (typeof V1ClientType)[keyof typeof V1ClientType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1ClientType = {
-  CLIENT_TYPE_UNSPECIFIED: "CLIENT_TYPE_UNSPECIFIED",
-  CLIENT_TYPE_RILL: "CLIENT_TYPE_RILL",
-  CLIENT_TYPE_MCP: "CLIENT_TYPE_MCP",
-} as const;
-
 export interface V1Color {
   red?: number;
   green?: number;
@@ -2609,25 +2595,10 @@ export type RuntimeServiceCompleteStreaming200 = {
 
 export type RuntimeServiceListConversationsParams = {
   /**
- * Optional filter to return conversations from a specific client type.
-If unspecified (CLIENT_TYPE_UNSPECIFIED), returns conversations from all clients.
-
- - CLIENT_TYPE_UNSPECIFIED: Returns all conversations when used as a filter
- - CLIENT_TYPE_RILL: Rill Developer and Rill Cloud applications
- - CLIENT_TYPE_MCP: MCP-based clients (Claude Desktop, VS Code, Cursor, etc.)
- */
-  clientType?: RuntimeServiceListConversationsClientType;
+   * Optional search pattern for filtering by user agent.
+   */
+  userAgentPattern?: string;
 };
-
-export type RuntimeServiceListConversationsClientType =
-  (typeof RuntimeServiceListConversationsClientType)[keyof typeof RuntimeServiceListConversationsClientType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RuntimeServiceListConversationsClientType = {
-  CLIENT_TYPE_UNSPECIFIED: "CLIENT_TYPE_UNSPECIFIED",
-  CLIENT_TYPE_RILL: "CLIENT_TYPE_RILL",
-  CLIENT_TYPE_MCP: "CLIENT_TYPE_MCP",
-} as const;
 
 export type RuntimeServiceListFilesParams = {
   glob?: string;

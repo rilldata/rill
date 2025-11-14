@@ -51,7 +51,7 @@ type CatalogStore interface {
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
 	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 
-	FindAISessions(ctx context.Context, ownerID string, clientType int32) ([]*AISession, error)
+	FindAISessions(ctx context.Context, ownerID string, userAgentPattern string) ([]*AISession, error)
 	FindAISession(ctx context.Context, sessionID string) (*AISession, error)
 	InsertAISession(ctx context.Context, s *AISession) error
 	UpdateAISession(ctx context.Context, s *AISession) error

@@ -10377,7 +10377,7 @@ func (m *ListConversationsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for ClientType
+	// no validation rules for UserAgentPattern
 
 	if len(errors) > 0 {
 		return ListConversationsRequestMultiError(errors)
