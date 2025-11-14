@@ -51,23 +51,23 @@ project_files:
     output:
       incremental_strategy: merge
       unique_key: id
-  duckdb_public_bucket.yaml:
-    type: model
-    connector: duckdb
-    materialize: true
-    sql: "select * from read_parquet('s3://rilldata-public/integration-test/all_datatypes.parquet')"
-  duckdb_pre_exec_without_secret.yaml:
-    type: model
-    connector: duckdb
-    materialize: true
-    pre_exec: "SET default_null_order = 'nulls_last'"
-    sql: "select *,current_setting('default_null_order') as setting_order from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
   duckdb_pre_exec_with_secret.yaml:
     type: model
     connector: duckdb
     materialize: true
     pre_exec: "SET default_null_order = 'nulls_last';CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
     sql: "select *,current_setting('default_null_order') as setting_order from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
+  duckdb_pre_exec_without_secret.yaml:
+    type: model
+    connector: duckdb
+    materialize: true
+    pre_exec: "SET default_null_order = 'nulls_last'"
+    sql: "select *,current_setting('default_null_order') as setting_order from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
+  duckdb_public_bucket.yaml:
+    type: model
+    connector: duckdb
+    materialize: true
+    sql: "select * from read_parquet('s3://rilldata-public/integration-test/all_datatypes.parquet')"
 tests:
   - name: test_data_for_clickhouse_all_datatypes_csv
     resolver: sql
@@ -77,8 +77,8 @@ tests:
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |
       id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,00:02:03.456000,00:02:03.456789,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,00:00:00,00:00:00,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
       3,,,,,,,,,,,,,,,,,,,
   - name: test_schema_for_clickhouse_all_datatypes_csv
     resolver: sql
@@ -99,8 +99,8 @@ tests:
       string_col,Nullable(String)
       decimal_col,Nullable(Float64)
       date_col,Nullable(Date)
-      time_millis_col,Nullable(DateTime64(9))
-      time_micros_col,Nullable(DateTime64(9))
+      time_millis_col,Nullable(String)
+      time_micros_col,Nullable(String)
       timestamp_millis_col,Nullable(DateTime64(9))
       timestamp_micros_col,Nullable(DateTime64(9))
       uuid_col,Nullable(String)
@@ -116,11 +116,11 @@ tests:
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |
       id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,00:02:03.456000,00:02:03.456789,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,00:00:00,00:00:00,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
       3,,,,,,,,,,,,,,,,,,,
-      4,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      5,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      4,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,00:02:03.456000,00:02:03.456789,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      5,False,0,0,0,0,,0000000000000000,,0,1970-01-01,00:00:00,00:00:00,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
       6,,,,,,,,,,,,,,,,,,,
   - name: test_data_for_clickhouse_all_datatypes_parquet
     resolver: sql
@@ -242,7 +242,7 @@ tests:
       list_string_col,VARCHAR[],YES,,,
       map_col,"MAP(VARCHAR, INTEGER)",YES,,,
       struct_col,"STRUCT(field_int_col INTEGER, field_float_col FLOAT, field_string_col VARCHAR)",YES,,,
-  - name: test__duckdb_explicit_s3_connector
+  - name: test_duckdb_explicit_s3_connector
     resolver: sql
     properties:
       sql: "select * from duckdb_explicit_s3_connector order by id"
@@ -258,20 +258,6 @@ tests:
     result_csv: |
       count
       6
-  - name: test_duckdb_public_bucket
-    resolver: sql
-    properties:
-      sql: "select count(*) as count from duckdb_public_bucket"
-    result_csv: |
-      count
-      3
-  - name: test_duckdb_pre_exec_without_secret
-    resolver: sql
-    properties:
-      sql: "select setting_order,count(*) as count from duckdb_pre_exec_without_secret group by setting_order"
-    result_csv: |
-      setting_order,count
-      nulls_last,3
   - name: test_duckdb_pre_exec_with_secret
     resolver: sql
     properties:
@@ -279,3 +265,17 @@ tests:
     result_csv: |
       setting_order,count
       nulls_last,3
+  - name: test_duckdb_pre_exec_without_secret
+    resolver: sql
+    properties:
+      sql: "select setting_order,count(*) as count from duckdb_pre_exec_without_secret group by setting_order"
+    result_csv: |
+      setting_order,count
+      nulls_last,3
+  - name: test_duckdb_public_bucket
+    resolver: sql
+    properties:
+      sql: "select count(*) as count from duckdb_public_bucket"
+    result_csv: |
+      count
+      3

@@ -92,9 +92,16 @@ export function makeTablePreviewHref(
       return `/connector/druid/${connectorName}/${databaseSchema}/${table}`;
     case "duckdb":
       return `/connector/duckdb/${connectorName}/${database}/${databaseSchema}/${table}`;
+    case "snowflake":
+      return `/connector/snowflake/${connectorName}/${database}/${databaseSchema}/${table}`;
+    case "bigquery":
+      return `/connector/bigquery/${connectorName}/${database}/${databaseSchema}/${table}`;
+    case "redshift":
+      return `/connector/redshift/${connectorName}/${database}/${databaseSchema}/${table}`;
+    case "athena":
+      return `/connector/athena/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
-    // Non-OLAP connectors: table preview not implemented yet
     default:
       return null;
   }
