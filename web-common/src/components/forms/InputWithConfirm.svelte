@@ -16,6 +16,8 @@
   export let size: "sm" | "md" | "lg" = "lg";
   export let showIndicator = false;
   export let editing = false;
+  export let selectionStart: number | undefined = undefined;
+  export let selectionEnd: number | undefined = undefined;
 
   $: editedValue = value;
 
@@ -43,6 +45,9 @@
       {id}
       bind:value={editedValue}
       claimFocusOnMount
+      selectTextOnMount
+      {selectionStart}
+      {selectionEnd}
       onEnter={triggerConfirm}
       onEscape={reset}
       {textClass}

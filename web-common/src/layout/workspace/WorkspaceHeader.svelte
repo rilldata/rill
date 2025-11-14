@@ -12,6 +12,7 @@
     resourceIconMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { getFilenameSelectionRange } from "@rilldata/web-common/features/entity-management/filename-selection-utils";
   import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -39,6 +40,11 @@
   $: tableVisible = workspaceLayout.table.visible;
 
   $: view = workspaceLayout.view;
+
+  // Calculate selection range for file titles (exclude extension)
+  $: selectionRange = getFilenameSelectionRange(value);
+  $: selectionStart = selectionRange?.selectionStart;
+  $: selectionEnd = selectionRange?.selectionEnd;
 </script>
 
 <header bind:clientWidth={width}>
@@ -76,6 +82,8 @@
         id="model-title-input"
         textClass="text-xl font-semibold"
         {value}
+        {selectionStart}
+        {selectionEnd}
         onConfirm={onTitleChange}
         showIndicator={hasUnsavedChanges}
       />
