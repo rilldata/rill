@@ -28,7 +28,7 @@ func TestResolveQueryAttributesEmpty(t *testing.T) {
 		QueryAttributes: map[string]string{},
 	}
 
-	e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -51,7 +51,7 @@ func TestResolveQueryAttributesNoAttributes(t *testing.T) {
 		},
 	}
 
-	e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -86,7 +86,7 @@ query_attributes:
 	require.NotNil(t, spec.QueryAttributes)
 	require.Equal(t, "sample_author", spec.QueryAttributes["test_author"])
 
-	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -124,7 +124,7 @@ query_attributes:
 	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
 	spec := mv.GetMetricsView().Spec
 
-	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -168,7 +168,7 @@ query_attributes:
 	require.Equal(t, "value3", spec.QueryAttributes["test_attr3"])
 	require.Len(t, spec.QueryAttributes, 3)
 
-	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -208,7 +208,7 @@ query_attributes:
 	require.Contains(t, spec.QueryAttributes, "test_bad_attr")
 	require.Equal(t, "{{ .nonexistent.field }}", spec.QueryAttributes["test_bad_attr"])
 
-	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -248,7 +248,7 @@ query_attributes:
 	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
 	spec := mv.GetMetricsView().Spec
 
-	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -290,7 +290,7 @@ query_attributes:
 	require.Equal(t, "value with spaces", spec.QueryAttributes["test_attr_with_spaces"])
 	require.Equal(t, "key=value", spec.QueryAttributes["test_attr_with_equals"])
 
-	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -330,7 +330,7 @@ query_attributes:
 	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
 	spec := mv.GetMetricsView().Spec
 
-	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
@@ -367,22 +367,19 @@ query_attributes:
 	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
 	spec := mv.GetMetricsView().Spec
 
-	// Create context with user attributes
-	ctx := context.Background()
-	ctx = runtime.ContextWithClaims(ctx, &runtime.SecurityClaims{
-		UserAttributes: map[string]any{
-			"partner_id": "acme_corp",
-			"email":      "test@example.com",
-			"group":      "premium",
-		},
-	})
+	// Create user attributes
+	userAttrs := map[string]any{
+		"partner_id": "acme_corp",
+		"email":      "test@example.com",
+		"group":      "premium",
+	}
 
-	e, err := executor.New(ctx, rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, userAttrs)
 	require.NoError(t, err)
 	defer e.Close()
 
 	// Verify cache key is computed successfully with user context
-	cacheKey, _, err := e.CacheKey(ctx)
+	cacheKey, _, err := e.CacheKey(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, cacheKey)
 }
@@ -412,18 +409,15 @@ query_attributes:
 	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
 	spec := mv.GetMetricsView().Spec
 
-	// Create context without user attributes
-	ctx := context.Background()
-	ctx = runtime.ContextWithClaims(ctx, &runtime.SecurityClaims{
-		UserAttributes: map[string]any{}, // Empty user attributes
-	})
+	// Create empty user attributes
+	userAttrs := map[string]any{}
 
-	e, err := executor.New(ctx, rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, userAttrs)
 	require.NoError(t, err)
 	defer e.Close()
 
 	// Verify cache key computation handles missing attributes (should resolve to empty string)
-	cacheKey, _, err := e.CacheKey(ctx)
+	cacheKey, _, err := e.CacheKey(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, cacheKey)
 }
@@ -453,15 +447,13 @@ query_attributes:
 	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
 	spec := mv.GetMetricsView().Spec
 
-	// Create context without any claims
-	ctx := context.Background()
-
-	e, err := executor.New(ctx, rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	// No user attributes
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, nil)
 	require.NoError(t, err)
 	defer e.Close()
 
 	// Verify cache key computation handles missing user claims
-	cacheKey, _, err := e.CacheKey(ctx)
+	cacheKey, _, err := e.CacheKey(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, cacheKey)
 }
@@ -492,22 +484,19 @@ query_attributes:
 	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics")
 	spec := mv.GetMetricsView().Spec
 
-	// Create context with user attributes
-	ctx := context.Background()
-	ctx = runtime.ContextWithClaims(ctx, &runtime.SecurityClaims{
-		UserAttributes: map[string]any{
-			"org_id":     "org123",
-			"tenant_id":  "tenant456",
-			"is_premium": true,
-		},
-	})
+	// Create user attributes
+	userAttrs := map[string]any{
+		"org_id":     "org123",
+		"tenant_id":  "tenant456",
+		"is_premium": true,
+	}
 
-	e, err := executor.New(ctx, rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0)
+	e, err := executor.New(context.Background(), rt, instanceID, spec, false, runtime.ResolvedSecurityOpen, 0, userAttrs)
 	require.NoError(t, err)
 	defer e.Close()
 
 	// Verify cache key is computed successfully with complex templates
-	cacheKey, _, err := e.CacheKey(ctx)
+	cacheKey, _, err := e.CacheKey(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, cacheKey)
 }

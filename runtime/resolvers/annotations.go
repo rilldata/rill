@@ -53,7 +53,12 @@ func newAnnotationsResolver(ctx context.Context, opts *runtime.ResolverOptions) 
 		return nil, err
 	}
 
-	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, qry.Priority)
+	var userAttrs map[string]any
+	if opts.Claims != nil {
+		userAttrs = opts.Claims.UserAttributes
+	}
+
+	ex, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv, false, security, qry.Priority, userAttrs)
 	if err != nil {
 		return nil, err
 	}
