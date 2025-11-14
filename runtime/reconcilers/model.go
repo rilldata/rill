@@ -1033,7 +1033,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	defer release()
 
 	// First step is to resolve and sync the partitions.
-	// We do this for normal and full triggers, but not when only TriggerPartitions is set (since in that case, we only want to run existing partitions marked pending).
+	// We don't do this when only trigger.partitions is set, since in that case we only want to run existing partitions marked pending, not sync new partitions.
 	if trigger.reset || trigger.normal {
 		err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
 		if err != nil {
