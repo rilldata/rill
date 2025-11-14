@@ -12,9 +12,24 @@ import (
 )
 
 func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitStatusRequest]) (*connect.Response[localv1.GitStatusResponse], error) {
+	gitPath, subPath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
+	if err != nil {
+		// Not a git repo
+		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+	}
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("must authenticate before performing this action"))
+		// if not authenticated do not return local/remote changes info
+		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&localv1.GitStatusResponse{
+			Branch:     st.Branch,
+			GithubUrl:  st.RemoteURL,
+			Subpath:    subPath,
+			ManagedGit: false,
+		}), nil
 	}
 
 	// TODO: cache project inference
@@ -23,15 +38,20 @@ func (s *Server) GitStatus(ctx context.Context, r *connect.Request[localv1.GitSt
 		if !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return nil, err
 		}
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("not connected to any rill project"))
+		// if not connected to a project do not return local/remote changes info
+		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
+		if err != nil {
+			return nil, err
+		}
+		return connect.NewResponse(&localv1.GitStatusResponse{
+			Branch:     st.Branch,
+			GithubUrl:  st.RemoteURL,
+			Subpath:    subPath,
+			ManagedGit: false,
+		}), nil
 	}
 	project := projects[0]
 
-	gitPath, subPath, err := gitutil.InferRepoRootAndSubpath(s.app.ProjectPath)
-	if err != nil {
-		// Not a git repo
-		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
-	}
 	if subPath != project.Subpath {
 		// unlikely but just in case
 		return nil, connect.NewError(connect.CodeUnknown, errors.New("detected subpath within git repo does not match project subpath"))
@@ -186,7 +206,13 @@ func (s *Server) GitPush(ctx context.Context, r *connect.Request[localv1.GitPush
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("cannot push with remote commits present, please pull first"))
 	}
 
-	err = s.app.ch.CommitAndSafePush(ctx, gitPath, config, r.Msg.CommitMessage, author)
+	var choice string
+	if r.Msg.Force {
+		choice = "2"
+	} else {
+		choice = "1"
+	}
+	err = s.app.ch.CommitAndSafePush(ctx, gitPath, config, r.Msg.CommitMessage, author, choice)
 	if err != nil {
 		return nil, err
 	}

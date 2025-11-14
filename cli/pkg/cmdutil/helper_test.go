@@ -36,7 +36,7 @@ func TestCommitAndSafePush_NoRemoteCommits(t *testing.T) {
 		Subpath:       "",
 	}
 
-	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author)
+	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author, "1")
 	require.NoError(t, err, "CommitAndSafePush should succeed with no remote commits")
 	// verify file exists locally and was pushed
 	assertFileExists(t, tempDir, "new-file.txt")
@@ -58,7 +58,7 @@ func TestCommitAndSafePush_WithRemoteCommits_DefaultChoice1(t *testing.T) {
 		Subpath:       "",
 	}
 
-	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author)
+	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author, "1")
 	require.NoError(t, err, "CommitAndSafePush should succeed with choice 1 (merge)")
 
 	// Verify both files exist
@@ -69,11 +69,6 @@ func TestCommitAndSafePush_WithRemoteCommits_DefaultChoice1(t *testing.T) {
 func TestCommitAndSafePush_WithRemoteCommits_DefaultChoice2(t *testing.T) {
 	tempDir, remoteDir := setupTestRepository(t)
 	h := minimalHelper()
-
-	// Set default choice to overwrite
-	originalChoice := DefaultPushChoice
-	DefaultPushChoice = "2"
-	defer func() { DefaultPushChoice = originalChoice }()
 
 	// Create local changes (uncommitted)
 	createFile(t, tempDir, "local.txt", "local content")
@@ -87,7 +82,7 @@ func TestCommitAndSafePush_WithRemoteCommits_DefaultChoice2(t *testing.T) {
 		Subpath:       "",
 	}
 
-	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author)
+	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author, "2")
 	require.NoError(t, err, "CommitAndSafePush should succeed with choice 2 (overwrite)")
 
 	// Verify both files exist after merge with favourLocal
@@ -98,11 +93,6 @@ func TestCommitAndSafePush_WithRemoteCommits_DefaultChoice2(t *testing.T) {
 func TestCommitAndSafePush_WithRemoteCommits_DefaultChoice3(t *testing.T) {
 	tempDir, remoteDir := setupTestRepository(t)
 	h := minimalHelper()
-
-	// Set default choice to abort
-	originalChoice := DefaultPushChoice
-	DefaultPushChoice = "3"
-	defer func() { DefaultPushChoice = originalChoice }()
 
 	// Create local changes (uncommitted)
 	createFile(t, tempDir, "local.txt", "local content")
@@ -116,7 +106,7 @@ func TestCommitAndSafePush_WithRemoteCommits_DefaultChoice3(t *testing.T) {
 		Subpath:       "",
 	}
 
-	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author)
+	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author, "3")
 	require.Error(t, err, "CommitAndSafePush should fail with choice 3 (abort)")
 	require.Contains(t, err.Error(), "aborting deploy")
 }
@@ -135,7 +125,7 @@ func TestCommitAndSafePush_ConflictingChanges_Choice1(t *testing.T) {
 		Subpath:       "",
 	}
 
-	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author)
+	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author, "1")
 	require.Error(t, err, "CommitAndSafePush should fail with merge conflicts and choice 1")
 	require.Contains(t, err.Error(), "failed to sync with remote")
 }
@@ -143,11 +133,6 @@ func TestCommitAndSafePush_ConflictingChanges_Choice1(t *testing.T) {
 func TestCommitAndSafePush_ConflictingChanges_Choice2(t *testing.T) {
 	tempDir, remoteDir := setupTestRepository(t)
 	h := minimalHelper()
-
-	// Set default choice to overwrite (favourLocal=true)
-	originalChoice := DefaultPushChoice
-	DefaultPushChoice = "2"
-	defer func() { DefaultPushChoice = originalChoice }()
 
 	// Create conflicting changes - same file, different content
 	// Create and commit local version first
@@ -162,7 +147,7 @@ func TestCommitAndSafePush_ConflictingChanges_Choice2(t *testing.T) {
 		Subpath:       "",
 	}
 
-	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author)
+	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author, "2")
 	require.NoError(t, err, "CommitAndSafePush should succeed with choice 2 (favourLocal)")
 
 	// Verify local version wins
@@ -186,7 +171,7 @@ func TestCommitAndSafePush_WithSubpath(t *testing.T) {
 		Subpath:       "subproject1",
 	}
 
-	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author)
+	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author, "1")
 	require.NoError(t, err, "CommitAndSafePush should succeed with subpath")
 
 	// Verify both files exist in subproject1
@@ -211,7 +196,7 @@ func TestCommitAndSafePush_SubpathIsolation(t *testing.T) {
 	}
 
 	// Should succeed because remote commits in subproject2 don't affect subproject1
-	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author)
+	err := h.CommitAndSafePush(context.Background(), tempDir, config, "test commit", author, "1")
 	require.NoError(t, err, "CommitAndSafePush should succeed when remote commits are in different subpath")
 
 	// Verify local file exists in subproject1 and subproject2

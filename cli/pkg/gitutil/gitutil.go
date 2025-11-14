@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -149,76 +148,6 @@ func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
 	}
 
 	return res, nil
-}
-
-type SyncStatus int
-
-const (
-	SyncStatusUnspecified SyncStatus = iota
-	SyncStatusModified               // Local branch has untracked/modified changes
-	SyncStatusAhead                  // Local branch is ahead of remote branch
-	SyncStatusSynced                 // Local branch is in sync with remote branch
-)
-
-// GetSyncStatus returns the status of current branch as compared to remote/branch
-// TODO: Need to implement cases like local branch is behind/diverged from remote branch
-func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
-	repo, err := git.PlainOpen(repoPath)
-	if err != nil {
-		return SyncStatusUnspecified, err
-	}
-
-	ref, err := repo.Head()
-	if err != nil {
-		return SyncStatusUnspecified, err
-	}
-
-	if branch == "" {
-		// try to infer default branch from local repo
-		remoteRef, err := repo.Reference(plumbing.NewRemoteHEADReferenceName(remote), true)
-		if err != nil {
-			return SyncStatusUnspecified, err
-		}
-
-		_, branch, _ = strings.Cut(remoteRef.Name().Short(), fmt.Sprintf("%s/", remote))
-	}
-
-	// if user is not on required branch
-	if !ref.Name().IsBranch() || ref.Name().Short() != branch {
-		return SyncStatusUnspecified, fmt.Errorf("not on required branch")
-	}
-
-	w, err := repo.Worktree()
-	if err != nil {
-		if errors.Is(err, git.ErrIsBareRepository) {
-			// no commits can be made in bare repository
-			return SyncStatusSynced, nil
-		}
-		return SyncStatusUnspecified, err
-	}
-
-	repoStatus, err := w.Status()
-	if err != nil {
-		return SyncStatusUnspecified, err
-	}
-
-	// check all files are in unmodified state
-	if !repoStatus.IsClean() {
-		return SyncStatusModified, nil
-	}
-
-	// check if there are local commits not pushed to remote yet
-	// no easy way to get it from go-git library so running git command directly and checking response
-	cmd := exec.Command("git", "-C", repoPath, "log", "@{u}..")
-	data, err := cmd.Output()
-	if err != nil {
-		return SyncStatusUnspecified, err
-	}
-
-	if len(data) != 0 {
-		return SyncStatusAhead, nil
-	}
-	return SyncStatusSynced, nil
 }
 
 func CommitAndPush(ctx context.Context, projectPath string, config *Config, commitMsg string, author *object.Signature) error {

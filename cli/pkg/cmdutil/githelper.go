@@ -124,7 +124,7 @@ func (g *GitHelper) PushToManagedRepo(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = g.h.CommitAndSafePush(ctx, g.localPath, gitConfig, "", author)
+	err = g.h.CommitAndSafePush(ctx, g.localPath, gitConfig, "", author, "1")
 	if err != nil {
 		return err
 	}

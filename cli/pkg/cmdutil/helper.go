@@ -561,10 +561,14 @@ func (h *Helper) HandleRepoTransfer(path, remote string) error {
 	return nil
 }
 
-// DefaultPushChoice is the default choice for handling remote changes during safe push. It can be overridden in tests.
-var DefaultPushChoice = "1"
-
-func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature) error {
+// CommitAndSafePush commits changes and safely pushes them to the remote repository.
+// It fetches the latest remote changes, checks for conflicts, and handles them based on defaultPushChoice:
+//   - "1": Pull remote changes and merge (fails on conflicts)
+//   - "2": Overwrite remote changes with local changes using merge with favourLocal=true (not supported for monorepos)
+//   - "3": Abort the push operation
+//
+// If h.Interactive is true and there are remote commits, the user will be prompted to choose how to proceed.
+func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *gitutil.Config, commitMsg string, author *object.Signature, defaultPushChoice string) error {
 	// 1. Fetch latest from remote
 	err := gitutil.GitFetch(ctx, root, config)
 	if err != nil {
@@ -581,7 +585,7 @@ func (h *Helper) CommitAndSafePush(ctx context.Context, root string, config *git
 	}
 
 	// 3. Warn if there are remote commits
-	choice := DefaultPushChoice
+	choice := defaultPushChoice
 	if status.RemoteCommits != 0 {
 		if h.Interactive {
 			h.PrintfWarn("Warning: There are changes on the remote branch that are not in your local branch.")
