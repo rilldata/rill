@@ -256,13 +256,109 @@ measures:
 	}
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
-		InstanceId:      instanceID,
-		Data:            `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
-		AdditionalWhere: additionalWhere,
+		InstanceId: instanceID,
+		Data:       `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
+		AdditionalWhereByMetricsView: map[string]*runtimev1.Expression{
+			"mv": additionalWhere,
+		},
 	})
 	require.NoError(t, err)
 	// Should exclude CA, so 100 + 200 = 300
 	require.Equal(t, "Revenue: 300", res.ResolvedData)
+}
+
+func TestResolveTemplatedString_MetricsSQL_MultipleMetricsViewsWithDifferentFilters(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"model1.sql": `
+SELECT 'US' AS country, 100 AS revenue
+UNION ALL
+SELECT 'UK' AS country, 200 AS revenue
+UNION ALL
+SELECT 'CA' AS country, 300 AS revenue
+`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: model1
+dimensions:
+- column: country
+measures:
+- name: total_revenue
+  expression: SUM(revenue)
+`,
+			"model2.sql": `
+SELECT 'Electronics' AS category, 500 AS sales
+UNION ALL
+SELECT 'Clothing' AS category, 250 AS sales
+UNION ALL
+SELECT 'Food' AS category, 150 AS sales
+`,
+			"mv2.yaml": `
+type: metrics_view
+version: 1
+model: model2
+dimensions:
+- column: category
+measures:
+- name: total_sales
+  expression: SUM(sales)
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	// Filter for mv1: only US and UK
+	filterMv1 := &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op: runtimev1.Operation_OPERATION_IN,
+				Exprs: []*runtimev1.Expression{
+					{Expression: &runtimev1.Expression_Ident{Ident: "country"}},
+					{
+						Expression: &runtimev1.Expression_Val{
+							Val: structpb.NewListValue(&structpb.ListValue{
+								Values: []*structpb.Value{
+									structpb.NewStringValue("US"),
+									structpb.NewStringValue("UK"),
+								},
+							}),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Filter for mv2: only Electronics
+	filterMv2 := &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op: runtimev1.Operation_OPERATION_EQ,
+				Exprs: []*runtimev1.Expression{
+					{Expression: &runtimev1.Expression_Ident{Ident: "category"}},
+					{Expression: &runtimev1.Expression_Val{Val: structpb.NewStringValue("Electronics")}},
+				},
+			},
+		},
+	}
+
+	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId: instanceID,
+		Data:       `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}, Sales: {{ metrics_sql "SELECT total_sales FROM mv2" }}`,
+		AdditionalWhereByMetricsView: map[string]*runtimev1.Expression{
+			"mv1": filterMv1,
+			"mv2": filterMv2,
+		},
+	})
+	require.NoError(t, err)
+	// mv1: 100 + 200 = 300 (excludes CA)
+	// mv2: 500 (only Electronics)
+	require.Equal(t, "Revenue: 300, Sales: 500", res.ResolvedData)
 }
 
 func TestResolveTemplatedString_MetricsSQL_ErrorNotSingleValue(t *testing.T) {
