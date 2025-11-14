@@ -55,19 +55,6 @@ var (
 		// TODO: What is this?
 		"other",
 	}
-
-	// minimalEnvOverrides contains overrides of variables in the .env for the "minimal" preset.
-	// This is needed since we don't want to maintain a separate .env file for the minimal preset, which is mostly similar to the full cloud preset.
-	minimalEnvOverrides = []string{
-		// This from the usual dev provisioner set in not having a Clickhouse provisioner.
-		`RILL_ADMIN_PROVISIONER_SET_JSON='{"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}'`,
-		// Disable traces
-		"RILL_ADMIN_TRACES_EXPORTER=" + string(observability.NoopExporter),
-		"RILL_RUNTIME_TRACES_EXPORTER=" + string(observability.NoopExporter),
-		// Change metrics to Prometheus, which unlike Otel doesn't require an external collector.
-		"RILL_ADMIN_METRICS_EXPORTER=" + string(observability.PrometheusExporter),
-		"RILL_RUNTIME_METRICS_EXPORTER=" + string(observability.PrometheusExporter),
-	}
 )
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -504,14 +491,21 @@ func (s cloud) runAdmin(ctx context.Context, verbose bool, preset string) (err e
 	defer logInfo.Printf("Stopped admin\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "admin", "start")
-	env := os.Environ()
+	cmd.Env = os.Environ()
 	if preset == "minimal" {
-		env = append(env, minimalEnvOverrides...)
+		cmd.Env = append(
+			cmd.Env,
+			// This differs from the usual dev provisioner set in not having a Clickhouse provisioner.
+			`RILL_ADMIN_PROVISIONER_SET_JSON='{"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}'`,
+			// Disable traces
+			"RILL_ADMIN_TRACES_EXPORTER="+string(observability.NoopExporter),
+			// Change metrics to Prometheus, which unlike Otel doesn't require an external collector.
+			"RILL_ADMIN_METRICS_EXPORTER="+string(observability.PrometheusExporter),
+		)
 	}
 	if verbose {
-		env = append(env, "RILL_ADMIN_LOG_LEVEL=debug")
+		cmd.Env = append(cmd.Env, "RILL_ADMIN_LOG_LEVEL=debug")
 	}
-	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
@@ -547,14 +541,19 @@ func (s cloud) runRuntime(ctx context.Context, verbose bool, preset string) (err
 	defer logInfo.Printf("Stopped runtime\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "runtime", "start")
-	env := os.Environ()
+	cmd.Env = os.Environ()
 	if preset == "minimal" {
-		env = append(env, minimalEnvOverrides...)
+		cmd.Env = append(
+			cmd.Env,
+			// Disable traces
+			"RILL_RUNTIME_TRACES_EXPORTER="+string(observability.NoopExporter),
+			// Change metrics to Prometheus, which unlike Otel doesn't require an external collector.
+			"RILL_RUNTIME_METRICS_EXPORTER="+string(observability.PrometheusExporter),
+		)
 	}
 	if verbose {
-		env = append(env, "RILL_RUNTIME_LOG_LEVEL=debug")
+		cmd.Env = append(cmd.Env, "RILL_RUNTIME_LOG_LEVEL=debug")
 	}
-	cmd.Env = env
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
