@@ -13,7 +13,7 @@ Rill provides users the option to build various types of models based on differe
   
 ### Data Ingestion
 - [**Source Models**](/build/models/source-models) - Ingest data from various sources
-- [**Model Validation**](/build/models/model-validation) - Add data quality tests to validate your models
+- [**Data Quality Tests**](/build/models/data-quality-tests) - Add data quality tests to validate your models
 - [**Scheduled Refreshes**](/build/models/data-refresh) - Schedule your data refresh  
 
 ### Advanced YAML Features
