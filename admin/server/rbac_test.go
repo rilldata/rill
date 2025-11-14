@@ -332,6 +332,22 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		// Create a project and add the usergroup to it
+		r3, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			Org:        r1.Organization.Name,
+			Project:    "proj1",
+			ProdSlots:  1,
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
+			Org:       r1.Organization.Name,
+			Project:   r3.Project.Name,
+			Usergroup: r2.Usergroup.GroupName,
+			Role:      database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+
 		// Add a user to the usergroup
 		u2, _ := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
@@ -348,35 +364,61 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check the counts for the usergroup
-		r3, err := c1.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
+		r4, err := c1.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
 			Org:           r1.Organization.Name,
 			IncludeCounts: true,
 		})
 		require.NoError(t, err)
-		require.Len(t, r3.Members, 4) // There are three system-managed autogroups and the one we added
-		for _, m := range r3.Members {
+		require.Len(t, r4.Members, 4) // There are three system-managed autogroups and the one we added
+		for _, m := range r4.Members {
 			m.GroupId = ""
 			m.CreatedOn = nil
 			m.UpdatedOn = nil
 		}
-		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+		require.Contains(t, r4.Members, &adminv1.MemberUsergroup{
 			GroupName:    database.UsergroupNameAutogroupUsers,
 			GroupManaged: true,
 			UsersCount:   2,
 		})
-		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+		require.Contains(t, r4.Members, &adminv1.MemberUsergroup{
 			GroupName:    database.UsergroupNameAutogroupMembers,
 			GroupManaged: true,
 			UsersCount:   1,
 		})
-		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+		require.Contains(t, r4.Members, &adminv1.MemberUsergroup{
 			GroupName:    database.UsergroupNameAutogroupGuests,
 			GroupManaged: true,
 			UsersCount:   1,
 		})
-		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+		require.Contains(t, r4.Members, &adminv1.MemberUsergroup{
 			GroupName:    r2.Usergroup.GroupName,
 			GroupManaged: false,
+			UsersCount:   1,
+		})
+
+		// Check the counts for the project usergroup listing
+		r5, err := c1.ListProjectMemberUsergroups(ctx, &adminv1.ListProjectMemberUsergroupsRequest{
+			Org:           r1.Organization.Name,
+			Project:       r3.Project.Name,
+			IncludeCounts: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, r5.Members, 2)
+		for _, m := range r5.Members {
+			m.GroupId = ""
+			m.CreatedOn = nil
+			m.UpdatedOn = nil
+		}
+		require.Contains(t, r5.Members, &adminv1.MemberUsergroup{
+			GroupName:    database.UsergroupNameAutogroupMembers,
+			GroupManaged: true,
+			RoleName:     database.ProjectRoleNameViewer,
+			UsersCount:   1,
+		})
+		require.Contains(t, r5.Members, &adminv1.MemberUsergroup{
+			GroupName:    r2.Usergroup.GroupName,
+			GroupManaged: false,
+			RoleName:     database.ProjectRoleNameViewer,
 			UsersCount:   1,
 		})
 	})

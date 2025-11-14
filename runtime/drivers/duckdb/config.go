@@ -59,6 +59,10 @@ type config struct {
 	// SchemaName can be set to switch the default schema used by the DuckDB database.
 	// Only applicable for the generic rduckdb implementation.
 	SchemaName string `mapstructure:"schema_name"`
+	// EnableBackups enables periodic backups of the DuckDB database to object storage.
+	// It only takes effect if the runtime's storage config includes an object storage bucket.
+	// This is an internal property that should not be documented or set by users.
+	EnableBackups bool `mapstructure:"enable_backups"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {

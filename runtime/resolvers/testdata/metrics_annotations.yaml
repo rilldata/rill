@@ -72,7 +72,7 @@ project_files:
         measures: ['mes_for_grain_annotation']
 tests:
   - name: query_simple_duckdb_annotations
-    resolver: annotations
+    resolver: metrics_annotations
     properties:
       metrics_view: duckdb_metrics
       measures: ['count']
@@ -87,7 +87,7 @@ tests:
         description: "3rd event"
         for_measures: ['count']
   - name: query_time_end_clickhouse_annotation
-    resolver: annotations
+    resolver: metrics_annotations
     properties:
       metrics_view: duckdb_metrics
       measures: ['sum']
@@ -104,7 +104,7 @@ tests:
         description: "2nd event"
         for_measures: ['sum']
   - name: query_grain_duckdb_annotation
-    resolver: annotations
+    resolver: metrics_annotations
     properties:
       metrics_view: duckdb_metrics
       measures: ['mes_for_grain_annotation']
@@ -124,7 +124,7 @@ tests:
         __rill_time_grain: 4
         for_measures: ['mes_for_grain_annotation']
   - name: query_all_annotations
-    resolver: annotations
+    resolver: metrics_annotations
     properties:
       metrics_view: duckdb_metrics
     result:
