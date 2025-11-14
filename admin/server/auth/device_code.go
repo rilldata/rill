@@ -174,6 +174,7 @@ func (a *Authenticator) getAccessTokenForDeviceCode(w http.ResponseWriter, r *ht
 		http.Error(w, "invalid grant_type", http.StatusBadRequest)
 		return
 	}
+	responseVersion := values.Get("response_version")
 
 	authCode, err := a.admin.DB.FindDeviceAuthCodeByDeviceCode(r.Context(), deviceCode)
 	if err != nil {
@@ -225,13 +226,25 @@ func (a *Authenticator) getAccessTokenForDeviceCode(w http.ResponseWriter, r *ht
 		return
 	}
 
-	resp := oauth.TokenResponse{
-		AccessToken: authToken.Token().String(),
-		TokenType:   "Bearer",
-		ExpiresIn:   0, // never expires
-		UserID:      *authCode.UserID,
+	var respBytes []byte
+	if responseVersion == "standard" {
+		resp := oauth.TokenResponse{
+			AccessToken: authToken.Token().String(),
+			TokenType:   "Bearer",
+			ExpiresIn:   0, // never expires
+			UserID:      *authCode.UserID,
+		}
+		respBytes, err = json.Marshal(resp)
+	} else {
+		resp := oauth.LegacyTokenResponse{
+			AccessToken: authToken.Token().String(),
+			TokenType:   "Bearer",
+			ExpiresIn:   0, // never expires
+			UserID:      *authCode.UserID,
+		}
+		respBytes, err = json.Marshal(resp)
 	}
-	respBytes, err := json.Marshal(resp)
+
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
 		return

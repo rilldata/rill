@@ -15,6 +15,14 @@ type TokenResponse struct {
 	UserID       string `json:"user_id"`
 }
 
+// LegacyTokenResponse for backwards compatibility with older Rill CLI client that expect expires_in as a string. // TODO remove this after 2-3 releases
+type LegacyTokenResponse struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int64  `json:"expires_in,string"`
+	TokenType   string `json:"token_type"`
+	UserID      string `json:"user_id"`
+}
+
 // ProtectedResourceMetadata contains the OAuth 2.0 Protected Resource Metadata as per RFC 8414
 // See: https://www.rfc-editor.org/rfc/rfc8414.html
 type ProtectedResourceMetadata struct {
