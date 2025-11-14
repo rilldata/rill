@@ -4,6 +4,7 @@
   import File from "@rilldata/web-common/components/icons/File.svelte";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import HideSidebar from "@rilldata/web-common/components/icons/HideSidebar.svelte";
+  import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -11,10 +12,15 @@
     resourceColorMapping,
     resourceIconMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
-  import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ReconcileStatus,
+    type V1Resource,
+    createRuntimeServiceCreateTrigger,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { Settings } from "lucide-svelte";
   import { navigationOpen } from "../navigation/Navigation.svelte";
   import { workspaces } from "./workspace-stores";
@@ -37,8 +43,26 @@
   $: workspaceLayout = workspaces.get(filePath);
   $: inspectorVisible = workspaceLayout.inspector.visible;
   $: tableVisible = workspaceLayout.table.visible;
-
   $: view = workspaceLayout.view;
+
+  $: ({ instanceId } = $runtime);
+  $: isConnector = resourceKind === ResourceKind.Connector;
+  $: connectorName = resource?.meta?.name?.name;
+  $: isReconciling =
+    resource?.meta?.reconcileStatus ===
+    V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
+
+  const triggerMutation = createRuntimeServiceCreateTrigger();
+
+  function refreshConnector() {
+    if (!isConnector || !connectorName) return;
+    $triggerMutation.mutate({
+      instanceId,
+      data: {
+        resources: [{ kind: ResourceKind.Connector, name: connectorName }],
+      },
+    });
+  }
 </script>
 
 <header bind:clientWidth={width}>
@@ -80,6 +104,19 @@
         showIndicator={hasUnsavedChanges}
       />
     </div>
+
+    {#if isConnector}
+      <div class="flex items-center gap-x-2">
+        <Button
+          type="secondary"
+          onClick={refreshConnector}
+          disabled={isReconciling}
+        >
+          <RefreshIcon size="14px" />
+          Refresh
+        </Button>
+      </div>
+    {/if}
 
     <div class="flex items-center gap-x-2 w-fit flex-none">
       <slot name="workspace-controls" {width} />
