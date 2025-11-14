@@ -341,12 +341,12 @@
         />
       {/each}
     </div>
-    <div class="flex items-center justify-center py-2">
-      {#if ($projectMembersInfiniteQuery?.isFetchingNextPage ?? false) || ($projectInvitesInfiniteQuery?.isFetchingNextPage ?? false)}
+    {#if ($projectMembersInfiniteQuery?.isFetchingNextPage ?? false) || ($projectInvitesInfiniteQuery?.isFetchingNextPage ?? false)}
+      <div class="flex items-center justify-center py-2">
         <span class="text-xs text-gray-500">Loading more…</span>
-      {/if}
-    </div>
-    <div class="h-2" bind:this={loadMoreTrigger} />
+      </div>
+    {/if}
+    <div class="h-px" bind:this={loadMoreTrigger} />
   </div>
   <div class="mt-2 general-access-container bg-white pt-2">
     <div class="text-xs text-gray-500 font-semibold uppercase">
