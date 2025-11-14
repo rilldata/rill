@@ -319,7 +319,7 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 	}
 
 	// Delete the old refresh token
-	err = a.admin.DB.DeleteUserAuthToken(r.Context(), refreshTokenStr)
+	err = a.admin.RevokeAuthToken(r.Context(), refreshTokenStr)
 	if err != nil {
 		a.logger.Warn("failed to revoke old refresh token", zap.Error(err))
 		// Continue anyway
