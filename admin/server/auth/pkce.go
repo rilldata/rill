@@ -18,13 +18,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	authorizationCodeGrantType = "authorization_code"
-	refreshTokenGrantType      = "refresh_token"
-	longLivedAccessTokenScope  = "long_lived_access_token" // nolint:gosec // custom scope to indicate long-lived access token
-	offlineAccessScope         = "offline_access"
-)
-
 func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI string) {
 	// Generate a unique authorization code
 	code, err := generateRandomString(16) // 16 bytes, resulting in a 32-character hex string
@@ -143,8 +136,8 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	}
 
 	scope := authClient.Scope
-	offlineAccess := hasScope(scope, offlineAccessScope)
 	longLivedAccess := hasScope(scope, longLivedAccessTokenScope)
+	refreshAllowed := hasGrantType(authClient.GrantTypes, refreshTokenGrantType)
 	var respBytes []byte
 	// Issue long-lived access token for clients explicitly whitelisted
 	if longLivedAccess {
@@ -204,7 +197,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 			Scope:       scope,
 			UserID:      userID,
 		}
-		if offlineAccess {
+		if refreshAllowed {
 			// Issue refresh token (365 days TTL)
 			refreshTTL := 365 * 24 * time.Hour
 			refreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Refresh Token", nil, &refreshTTL, true)
@@ -231,7 +224,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
 		return
 	}
-	a.logger.Debug("Exchanged authorization code for tokens", zap.String("userID", userID), zap.String("clientID", clientID), zap.Bool("long_lived_access_token", longLivedAccess), zap.Bool("offline_access", offlineAccess))
+	a.logger.Debug("Exchanged authorization code for tokens", zap.String("userID", userID), zap.String("clientID", clientID), zap.Bool("long_lived_access_token", longLivedAccess), zap.Bool("refresh_token_grant", refreshAllowed))
 }
 
 // getAccessTokenForRefreshToken exchanges a refresh token for a new access token and refresh token
@@ -290,8 +283,7 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 	}
 	a.admin.Used.Client(clientID)
 
-	clientScope := authClient.Scope
-	if !hasScope(clientScope, offlineAccessScope) {
+	if !hasGrantType(authClient.GrantTypes, refreshTokenGrantType) {
 		http.Error(w, "client is not permitted to use refresh tokens", http.StatusBadRequest)
 		return
 	}
@@ -325,7 +317,7 @@ func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *
 		ExpiresIn:    int64(accessTTL.Seconds()),
 		RefreshToken: newRefreshToken.Token().String(),
 		TokenType:    "Bearer",
-		Scope:        clientScope,
+		Scope:        authClient.Scope,
 		UserID:       userID,
 	}
 	respBytes, err := json.Marshal(resp)
@@ -365,6 +357,15 @@ func verifyCodeChallenge(verifier, challenge, method string) bool {
 func hasScope(scopes, scope string) bool {
 	for _, token := range strings.Fields(scopes) {
 		if token == scope {
+			return true
+		}
+	}
+	return false
+}
+
+func hasGrantType(grants []string, grant string) bool {
+	for _, g := range grants {
+		if g == grant {
 			return true
 		}
 	}

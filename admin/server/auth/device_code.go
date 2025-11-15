@@ -15,8 +15,6 @@ import (
 	"github.com/rilldata/rill/admin/pkg/oauth"
 )
 
-const deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
-
 // DeviceCodeResponse encapsulates the response for obtaining a device code.
 type DeviceCodeResponse struct {
 	DeviceCode              string `json:"device_code"`

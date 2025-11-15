@@ -80,7 +80,9 @@ func TestOAuthAuthorizationServerMetadata(t *testing.T) {
 	require.Equal(t, "http://localhost:8080/auth/oauth/token", metadata.TokenEndpoint)
 	require.Equal(t, "http://localhost:8080/auth/oauth/register", metadata.RegistrationEndpoint)
 	require.Contains(t, metadata.ResponseTypesSupported, "code")
-	require.Contains(t, metadata.GrantTypesSupported, "authorization_code")
+	require.Contains(t, metadata.GrantTypesSupported, authorizationCodeGrantType)
+	require.Contains(t, metadata.GrantTypesSupported, refreshTokenGrantType)
+	require.Contains(t, metadata.GrantTypesSupported, deviceCodeGrantType)
 	require.Contains(t, metadata.CodeChallengeMethodsSupported, "S256")
 	require.Contains(t, metadata.TokenEndpointAuthMethodsSupported, "none")
 }
@@ -116,5 +118,4 @@ func TestOAuthRegister(t *testing.T) {
 
 		require.Equal(t, http.StatusBadRequest, w.Code)
 	})
-
 }

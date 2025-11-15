@@ -1726,24 +1726,27 @@ func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retent
 	return parseErr("authorization code", err)
 }
 
-func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string) (*database.AuthClient, error) {
-	client := &database.AuthClient{}
+func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes []string) (*database.AuthClient, error) {
+	if grantTypes == nil {
+		grantTypes = []string{}
+	}
+	dto := &authClientDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`INSERT INTO auth_clients (display_name, scope) VALUES ($1, $2) RETURNING *`,
-		displayName, scope).StructScan(client)
+		`INSERT INTO auth_clients (display_name, scope, grant_types) VALUES ($1, $2, $3) RETURNING *`,
+		displayName, scope, grantTypes).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("auth client", err)
 	}
-	return client, nil
+	return dto.AsModel()
 }
 
 func (c *connection) FindAuthClient(ctx context.Context, id string) (*database.AuthClient, error) {
-	client := &database.AuthClient{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM auth_clients WHERE id = $1", id).StructScan(client)
+	dto := &authClientDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM auth_clients WHERE id = $1", id).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("auth client", err)
 	}
-	return client, nil
+	return dto.AsModel()
 }
 
 func (c *connection) UpdateAuthClientUsedOn(ctx context.Context, ids []string) error {
@@ -3344,6 +3347,21 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 	}
 
 	return o.OrganizationInvite, nil
+}
+
+type authClientDTO struct {
+	*database.AuthClient
+	GrantTypes pgtype.TextArray `db:"grant_types"`
+}
+
+func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
+	if dto.AuthClient == nil {
+		dto.AuthClient = &database.AuthClient{}
+	}
+	if err := dto.GrantTypes.AssignTo(&dto.AuthClient.GrantTypes); err != nil {
+		return nil, err
+	}
+	return dto.AuthClient, nil
 }
 
 type billingIssueDTO struct {

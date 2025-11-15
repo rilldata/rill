@@ -51,9 +51,9 @@ func (a *Authenticator) handleOAuthAuthorizationServerMetadata(w http.ResponseWr
 			"query", // Response parameters in query string
 		},
 		GrantTypesSupported: []string{
-			"authorization_code",                           // Authorization code grant
-			"urn:ietf:params:oauth:grant-type:device_code", // Device code grant
-			"refresh_token",                                // Refresh token grant
+			authorizationCodeGrantType, // Authorization code grant
+			deviceCodeGrantType,        // Device code grant
+			refreshTokenGrantType,      // Refresh token grant
 		},
 		TokenEndpointAuthMethodsSupported: []string{
 			"none", // Public clients (PKCE)
@@ -106,8 +106,14 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 	}
 
 	scope := sanitizeScope(req.Scope)
+	grantTypes := sanitizeGrantTypes(req.GrantTypes)
+	if len(grantTypes) == 0 {
+		// Default to authorization_code if none provided
+		grantTypes = []string{authorizationCodeGrantType}
+	}
+
 	// Create a new auth client in the database
-	client, err := a.admin.DB.InsertAuthClient(r.Context(), displayName, scope)
+	client, err := a.admin.DB.InsertAuthClient(r.Context(), displayName, scope, grantTypes)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to create auth client: %w", err))
 		return
@@ -118,10 +124,10 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 		ClientID:                client.ID,
 		ClientName:              client.DisplayName,
 		Scope:                   client.Scope,
+		GrantTypes:              client.GrantTypes,
 		ClientIDIssuedAt:        client.CreatedOn.Unix(),
 		RedirectURIs:            req.RedirectURIs,
 		TokenEndpointAuthMethod: req.TokenEndpointAuthMethod,
-		GrantTypes:              req.GrantTypes,
 		ResponseTypes:           req.ResponseTypes,
 		ClientURI:               req.ClientURI,
 	}
@@ -139,4 +145,16 @@ func (a *Authenticator) handleOAuthRegister(w http.ResponseWriter, r *http.Reque
 // remove extra spaces from space separated scope string
 func sanitizeScope(scope string) string {
 	return strings.Join(strings.Fields(scope), " ")
+}
+
+// trims white spaces
+func sanitizeGrantTypes(grants []string) []string {
+	var sanitized []string
+	for _, grant := range grants {
+		trimmed := strings.TrimSpace(grant)
+		if trimmed != "" {
+			sanitized = append(sanitized, trimmed)
+		}
+	}
+	return sanitized
 }
