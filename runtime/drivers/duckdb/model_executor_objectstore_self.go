@@ -156,6 +156,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		} else {
 			return "", "", "", errMissingRegion
 		}
+		writeScope(&sb, s3Config.PathPrefixes)
 		sb.WriteRune(')')
 		return sb.String(), dropSecretSQL, connectorType, nil
 	case "gcs":
@@ -182,6 +183,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		} else if gcsConfig.AllowHostAccess {
 			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
+		writeScope(&sb, gcsConfig.PathPrefixes)
 		sb.WriteRune(')')
 		return sb.String(), dropSecretSQL, connectorType, nil
 	case "azure":
@@ -209,6 +211,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		if azureConfig.GetAccount() != "" {
 			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.GetAccount()))
 		}
+		writeScope(&sb, azureConfig.PathPrefixes)
 		sb.WriteRune(')')
 		return sb.String(), dropSecretSQL, connectorType, nil
 	case "https":
@@ -230,11 +233,26 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			}
 			fmt.Fprintf(&sb, ", EXTRA_HTTP_HEADERS MAP { %s } ", strings.Join(headerStrings, ", "))
 		}
+		writeScope(&sb, httpConfig.PathPrefixes)
 		sb.WriteRune(')')
 		return sb.String(), dropSecretSQL, connectorType, nil
 	default:
 		return "", "", "", fmt.Errorf("internal error: secret generation is not supported for connector %q", handle.Driver())
 	}
+}
+
+func writeScope(sb *strings.Builder, prefixes []string) {
+	if len(prefixes) == 0 {
+		return
+	}
+	sb.WriteString(", SCOPE [")
+	for i, p := range prefixes {
+		sb.WriteString(safeSQLString(p))
+		if i < len(prefixes)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteString("]")
 }
 
 // objectStoreToSelfExecutorNonNative is a non-native implementation of objectStoreToSelfExecutor.
