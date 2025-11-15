@@ -81,6 +81,8 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
+	responseVersion := values.Get("token_response_version")
+
 	// get the authorization code from the database
 	authCode, err := a.admin.DB.FindAuthorizationCode(r.Context(), code)
 	if err != nil {
@@ -143,7 +145,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 	scope := authClient.Scope
 	offlineAccess := hasScope(scope, offlineAccessScope)
 	longLivedAccess := hasScope(scope, longLivedAccessTokenScope)
-	var resp oauth.TokenResponse
+	var respBytes []byte
 	// Issue long-lived access token for clients explicitly whitelisted
 	if longLivedAccess {
 		authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, nil, false)
@@ -155,12 +157,32 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 			internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
 			return
 		}
-		resp = oauth.TokenResponse{
-			AccessToken: authToken.Token().String(),
-			TokenType:   "Bearer",
-			ExpiresIn:   0, // never expires
-			Scope:       scope,
-			UserID:      userID,
+
+		if responseVersion == "standard" {
+			resp := oauth.TokenResponse{
+				AccessToken: authToken.Token().String(),
+				TokenType:   "Bearer",
+				ExpiresIn:   0, // never expires
+				Scope:       scope,
+				UserID:      userID,
+			}
+			respBytes, err = json.Marshal(resp)
+			if err != nil {
+				internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
+				return
+			}
+		} else {
+			resp := oauth.LegacyTokenResponse{
+				AccessToken: authToken.Token().String(),
+				TokenType:   "Bearer",
+				ExpiresIn:   0, // never expires
+				UserID:      userID,
+			}
+			respBytes, err = json.Marshal(resp)
+			if err != nil {
+				internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
+				return
+			}
 		}
 	} else {
 		// Issue access token (60 minutes TTL)
@@ -175,7 +197,7 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 			return
 		}
 
-		resp = oauth.TokenResponse{
+		resp := oauth.TokenResponse{
 			AccessToken: accessToken.Token().String(),
 			ExpiresIn:   int64(accessTTL.Seconds()),
 			TokenType:   "Bearer",
@@ -197,11 +219,11 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 
 			resp.RefreshToken = refreshToken.Token().String()
 		}
-	}
-	respBytes, err := json.Marshal(resp)
-	if err != nil {
-		internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
-		return
+		respBytes, err = json.Marshal(resp)
+		if err != nil {
+			internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(respBytes)

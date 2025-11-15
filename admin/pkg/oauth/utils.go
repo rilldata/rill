@@ -15,7 +15,8 @@ type TokenResponse struct {
 	UserID       string `json:"user_id"`
 }
 
-// LegacyTokenResponse for backwards compatibility with older Rill CLI client that expect expires_in as a string. // TODO remove this after 2-3 releases
+// LegacyTokenResponse for backwards compatibility with older Rill CLI client that expect expires_in as a string.
+// TODO remove this after 2-3 releases and only keep TokenResponse, also remove sending of token_response_version in exchange token requests.
 type LegacyTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int64  `json:"expires_in,string"`

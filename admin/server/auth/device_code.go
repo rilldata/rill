@@ -174,7 +174,7 @@ func (a *Authenticator) getAccessTokenForDeviceCode(w http.ResponseWriter, r *ht
 		http.Error(w, "invalid grant_type", http.StatusBadRequest)
 		return
 	}
-	responseVersion := values.Get("response_version")
+	responseVersion := values.Get("token_response_version")
 
 	authCode, err := a.admin.DB.FindDeviceAuthCodeByDeviceCode(r.Context(), deviceCode)
 	if err != nil {
