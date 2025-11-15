@@ -48,7 +48,7 @@
 
 <style lang="postcss">
   .chat-message {
-    @apply max-w-[90%];
+    @apply max-w-full;
   }
 
   .chat-message--user {

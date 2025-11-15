@@ -5,12 +5,13 @@
   with results correlated via parent_id.
 -->
 <script lang="ts">
+  import CodeBlock from "../../../../components/code-block/CodeBlock.svelte";
   import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
-  import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import type { V1Message } from "../../../../runtime-client";
-  import { isHiddenAgentTool, MessageContentType } from "../types";
   import { getToolDisplayName } from "../tool-display-names";
+  import { getToolIcon } from "../tool-icons";
+  import { isHiddenAgentTool, MessageContentType } from "../types";
 
   export let message: V1Message;
   export let resultMessage: V1Message | undefined = undefined;
@@ -32,6 +33,9 @@
     message.tool || "Unknown Tool",
     hasResult,
   );
+
+  // Icon based on tool type
+  $: ToolIcon = getToolIcon(message.tool);
 
   function toggleExpanded() {
     isExpanded = !isExpanded;
@@ -69,7 +73,7 @@
         {#if isExpanded}
           <CaretDownIcon size="14" />
         {:else}
-          <ChevronRight size="14" />
+          <svelte:component this={ToolIcon} size="14" />
         {/if}
       </div>
       <div class="tool-name">
@@ -100,9 +104,13 @@
         <!-- Tab Content -->
         <div class="tool-tab-content">
           {#if activeTab === "request"}
-            <pre class="tool-json">{toolInput}</pre>
+            <div class="tool-code">
+              <CodeBlock code={toolInput} language="json" showCopyButton />
+            </div>
           {:else if hasResult}
-            <pre class="tool-json">{resultContent}</pre>
+            <div class="tool-code">
+              <CodeBlock code={resultContent} language="json" showCopyButton />
+            </div>
           {:else}
             <div class="tool-loading">
               <LoadingSpinner size="0.875rem" />
@@ -117,21 +125,24 @@
 
 <style lang="postcss">
   .tool-container {
-    @apply w-full max-w-[90%] self-start;
+    @apply w-full max-w-full self-start;
   }
 
   .tool-header {
     @apply w-full flex items-center gap-1.5 px-1 py-1;
     @apply bg-transparent border-none cursor-pointer;
-    @apply text-xs text-gray-400 transition-colors;
+    @apply text-xs text-gray-500 transition-colors;
+    @apply sticky top-0;
+    background: var(--surface);
+    z-index: 2;
   }
 
   .tool-header:hover {
-    @apply text-gray-500;
+    @apply text-gray-600;
   }
 
   .tool-icon {
-    @apply flex items-center text-gray-400;
+    @apply flex items-center;
   }
 
   .tool-name {
@@ -139,25 +150,28 @@
   }
 
   .tool-content {
-    @apply mt-1 ml-5;
+    @apply pt-1 ml-5;
   }
 
   .tool-tabs {
-    @apply flex gap-1 mb-2;
+    @apply flex gap-1 pb-2;
+    @apply sticky top-6;
+    background: var(--surface);
+    z-index: 1;
   }
 
   .tool-tab {
-    @apply px-2 py-1 text-[0.625rem] font-normal text-gray-400;
+    @apply px-2 py-1 text-[0.625rem] font-normal text-gray-500;
     @apply bg-transparent border-none cursor-pointer;
     @apply transition-colors rounded;
   }
 
   .tool-tab:hover {
-    @apply text-gray-500 bg-gray-50;
+    @apply text-gray-600 bg-gray-50;
   }
 
   .tool-tab.active {
-    @apply text-gray-600 bg-gray-100;
+    @apply text-gray-700 bg-gray-100;
   }
 
   .tool-tab-content {
@@ -165,12 +179,16 @@
     @apply rounded-md overflow-hidden;
   }
 
-  .tool-json {
-    @apply font-mono text-[0.625rem] leading-snug text-gray-400;
-    @apply p-2 m-0 overflow-x-auto whitespace-pre-wrap break-all;
+  .tool-code {
+    @apply text-[0.625rem];
+  }
+
+  .tool-code :global(pre) {
+    @apply font-mono text-[0.625rem] leading-snug text-gray-500;
+    @apply m-0 overflow-x-auto whitespace-pre-wrap break-all;
   }
 
   .tool-loading {
-    @apply p-2 flex items-center gap-2 text-[0.625rem] text-gray-400;
+    @apply p-2 flex items-center gap-2 text-[0.625rem] text-gray-500;
   }
 </style>

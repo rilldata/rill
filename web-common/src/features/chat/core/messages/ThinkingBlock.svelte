@@ -3,8 +3,8 @@
   Messages are displayed in the exact order they were received.
 -->
 <script lang="ts">
+  import Brain from "../../../../components/icons/Brain.svelte";
   import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
-  import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
   import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
@@ -53,9 +53,9 @@
   <button class="thinking-header" on:click={toggleExpanded}>
     <div class="thinking-icon">
       {#if isExpanded}
-        <CaretDownIcon size="14" />
+        <CaretDownIcon size="14" color="currentColor" />
       {:else}
-        <ChevronRight size="14" />
+        <Brain />
       {/if}
     </div>
     {#if !isComplete}
@@ -88,25 +88,25 @@
 
 <style lang="postcss">
   .thinking-block {
-    @apply w-full max-w-[90%] self-start;
+    @apply w-full max-w-full self-start;
   }
 
   .thinking-header {
     @apply w-full flex items-center gap-1.5 px-1 py-1;
     @apply bg-transparent border-none cursor-pointer;
-    @apply text-xs text-gray-400 transition-colors;
+    @apply text-xs text-gray-500 transition-colors;
   }
 
   .thinking-header:hover {
-    @apply text-gray-500;
+    @apply text-gray-600;
   }
 
   .thinking-icon {
-    @apply flex items-center text-gray-400;
+    @apply flex items-center;
   }
 
   .thinking-spinner {
-    @apply flex items-center text-gray-400;
+    @apply flex items-center;
   }
 
   .thinking-title {
@@ -119,6 +119,19 @@
   }
 
   .thinking-content {
-    @apply px-1 py-1 text-xs text-gray-400 leading-relaxed break-words;
+    @apply px-1 py-1 text-xs leading-relaxed break-words;
+  }
+
+  .thinking-content :global(*) {
+    @apply text-gray-500;
+  }
+
+  .thinking-content :global(strong),
+  .thinking-content :global(b) {
+    @apply text-gray-600 font-semibold;
+  }
+
+  .thinking-content :global(a) {
+    @apply text-gray-600 underline;
   }
 </style>
