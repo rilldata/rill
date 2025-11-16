@@ -24,7 +24,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			var refresh *bool
-			// check if flgag was explicitly set
+			// check if flag was explicitly set
 			if cmd.Flags().Changed("refresh") {
 				refresh = &refreshTokensOnly
 			}
@@ -68,7 +68,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	listCmd.Flags().Uint32Var(&pageSize, "page-size", 1000, "Number of tokens to return per page")
 	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
-	listCmd.Flags().BoolVar(&refreshTokensOnly, "refresh", false, "List refresh tokens instead of access tokens")
+	listCmd.Flags().BoolVar(&refreshTokensOnly, "refresh", false, "List refresh tokens only")
 
 	return listCmd
 }
