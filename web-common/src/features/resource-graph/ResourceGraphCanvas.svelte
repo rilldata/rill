@@ -23,6 +23,8 @@
   export let anchorError: boolean = false;
   // Preselect specific nodes by id on initial render (e.g., the seeded anchor)
   export let preselectNodeIds: string[] | undefined = undefined;
+  // Emphasize particular nodes (e.g., the root/seed node for this graph)
+  export let rootNodeIds: string[] | undefined = undefined;
   // Unique flow id to isolate multiple SvelteFlow instances
   export let flowId: string | undefined = undefined;
 
@@ -79,8 +81,8 @@
   const VERTICAL_EDGE_THRESHOLD_PX = 12; // Treat edge as vertical if horizontal distance < this
   const EDGE_OFFSET_SCALING_FACTOR = 10; // Divides vertical distance to compute dynamic offset
 
-  // Shrink card height so 3x3 fits comfortably
-  $: containerHeightClass = fillParent ? "h-full" : `h-[${CARD_HEIGHT_PX}px]`;
+  // Use inline height to avoid Tailwind class generation issues with dynamic arbitrary values
+  $: containerInlineHeight = fillParent ? "100%" : `${CARD_HEIGHT_PX}px`;
 
   const nodeTypes = {
     "resource-node": ResourceNode,
@@ -200,17 +202,22 @@
   })();
 
   $: {
+    const rootSet = new Set(rootNodeIds ?? []);
     const graph = buildResourceGraph(resources ?? [], { positionNs: flowId, ignoreCache: true });
     const nodeIds = new Set(graph.nodes.map((n) => n.id));
     const filteredEdges = graph.edges.filter(
       (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
     );
-    nodesStore.set(graph.nodes as Node<ResourceNodeData>[]);
+    const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map((node) => ({
+      ...node,
+      data: { ...node.data, isRoot: rootSet.has(node.id) },
+    }));
+    nodesStore.set(nodesWithRoots);
     edgesStore.set(filteredEdges);
-    hasNodes = graph.nodes.length > 0;
+    hasNodes = nodesWithRoots.length > 0;
     // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes
     try {
-      const nodeSig = graph.nodes.map((n) => n.id).sort().join(",");
+      const nodeSig = nodesWithRoots.map((n) => n.id).sort().join(",");
       const edgeSig = filteredEdges
         .map((e) => e.id || `${e.source}->${e.target}`)
         .sort()
@@ -223,7 +230,7 @@
     if (import.meta.env.DEV) {
       console.log("ResourceGraph graph", {
         title,
-        nodes: graph.nodes.map((n) => n.id),
+        nodes: nodesWithRoots.map((n) => n.id),
         edges: filteredEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
       });
     }
@@ -254,7 +261,11 @@
   {/if}
 
   {#if hasNodes}
-    <div class={"graph-container " + containerHeightClass} bind:this={containerEl}>
+    <div
+      class={"graph-container " + (fillParent ? 'h-full' : '')}
+      bind:this={containerEl}
+      style={`height:${containerInlineHeight}`}
+    >
       {#if enableExpand}
         <button
           class="expand-btn"

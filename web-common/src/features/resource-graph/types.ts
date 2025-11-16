@@ -7,4 +7,6 @@ export interface ResourceNodeData extends Record<string, unknown> {
   label: string;
   // transient UI flag to emphasize nodes along the traced path
   routeHighlighted?: boolean;
+  // true when the node represents the seeded/root resource for the graph card
+  isRoot?: boolean;
 }

@@ -7,24 +7,100 @@
     partitionResourcesBySeeds,
     type ResourceGraphGrouping,
   } from "./build-resource-graph";
-  import { coerceResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { coerceResourceKind, ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { expandSeedsByKind, isKindToken } from "./seed-utils";
+  import { ALLOWED_FOR_GRAPH } from "./seed-utils";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
+  import SummaryCountsGraph from "./SummaryCountsGraph.svelte";
+  import { KIND_ALIASES } from "./seed-utils";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
   export let error: string | null = null;
   export let seeds: string[] | undefined;
+  export let syncExpandedParam = true;
+  export let showSummary = true;
+  export let showCardTitles = true;
+  export let maxGroups: number | null = null;
+  export let showControls = true;
+  export let enableExpansion = true;
 
   $: normalizedResources = resources ?? [];
   $: normalizedSeeds = expandSeedsByKind(seeds, normalizedResources, coerceResourceKind);
 
+  function tokenForKind(kind?: ResourceKind | string | null) {
+    if (!kind) return null;
+    const key = `${kind}`.toLowerCase();
+    if (key.includes("source")) return "sources";
+    if (key.includes("model")) return "models";
+    if (key.includes("metricsview") || key.includes("metric")) return "metrics";
+    if (key.includes("explore") || key.includes("dashboard")) return "dashboards";
+    return null;
+  }
+
+  function tokenForSeedString(seed?: string | null) {
+    if (!seed) return null;
+    const normalized = seed.trim().toLowerCase();
+    if (!normalized) return null;
+    const tokenKind = isKindToken(normalized);
+    if (tokenKind) return tokenForKind(tokenKind);
+    const idx = normalized.indexOf(":");
+    if (idx !== -1) {
+      const kindPart = normalized.slice(0, idx);
+      const mapped = KIND_ALIASES[kindPart];
+      if (mapped) return tokenForKind(mapped);
+      return tokenForKind(kindPart);
+    }
+    return null;
+  }
+
+  // Determine which overview node should be highlighted based on current seeds
+  $: overviewActiveToken = (function () {
+    const normalized = normalizedSeeds ?? [];
+    if (normalized.length) {
+      const first = normalized[0];
+      if (typeof first === "string") {
+        const token = tokenForSeedString(first);
+        if (token) return token;
+      } else {
+        const token = tokenForKind(first.kind as ResourceKind | string | undefined);
+        if (token) return token;
+      }
+    }
+    return tokenForSeedString(seeds?.[0]) ?? null;
+  })();
+
   $: resourceGroups = (normalizedSeeds && normalizedSeeds.length)
     ? partitionResourcesBySeeds(normalizedResources, normalizedSeeds)
     : partitionResourcesByMetrics(normalizedResources);
-  $: hasGraphs = resourceGroups.length > 0;
+  $: visibleResourceGroups =
+    typeof maxGroups === "number" && maxGroups >= 0
+      ? resourceGroups.slice(0, maxGroups)
+      : resourceGroups;
+  $: hasGraphs = visibleResourceGroups.length > 0;
+  $: singleGraphMode =
+    !syncExpandedParam && maxGroups === 1 && visibleResourceGroups.length === 1;
+
+  // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
+  let seedTransitionLoading = false;
+  let seedTransitionTimer: any = null;
+
+  // Counts for the summary counts graph. Compute directly to avoid any cross-module Set equality pitfalls.
+  $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } = (function computeCounts() {
+    let sources = 0, models = 0, metrics = 0, dashboards = 0;
+    for (const r of normalizedResources) {
+      if (r?.meta?.hidden) continue;
+      const k = coerceResourceKind(r);
+      if (!k) continue;
+      if (k === ResourceKind.Source) sources++;
+      else if (k === ResourceKind.Model) models++;
+      else if (k === ResourceKind.MetricsView) metrics++;
+      else if (k === ResourceKind.Explore) dashboards++;
+    }
+    return { sourcesCount: sources, modelsCount: models, metricsCount: metrics, dashboardsCount: dashboards };
+  })());
 
   // Helpers to build title fragments with anchor error awareness
   function resourceId(res?: V1Resource | null): string | null {
@@ -50,6 +126,12 @@
     return { labelWithCount, errorCount, anchorError };
   }
 
+  function groupRootNodeIds(group: ResourceGraphGrouping): string[] | undefined {
+    const anchor = anchorForGroup(group);
+    const anchorId = anchor ? resourceId(anchor) : group.id;
+    return anchorId ? [anchorId] : undefined;
+  }
+
   // Expanded state (fills the graph-wrapper area, not fullscreen)
   let expandedGroup: ResourceGraphGrouping | null = null;
   let rootEl: HTMLDivElement | null = null;
@@ -71,17 +153,29 @@
     ? seeds.every((s) => Boolean(isKindToken((s || "").toLowerCase())))
     : false;
   // Read expanded param from URL
-  $: expandedParam = $page.url.searchParams.get("expanded") || null;
+  $: expandedParam = syncExpandedParam
+    ? $page.url.searchParams.get("expanded") || null
+    : null;
   $: {
     const signature = (seeds ?? []).join("|");
     if (signature !== lastSeedsSignature) {
+      // Show a short loading state to indicate graphs are updating
+      seedTransitionLoading = true;
+      if (seedTransitionTimer) clearTimeout(seedTransitionTimer);
+      seedTransitionTimer = setTimeout(() => (seedTransitionLoading = false), 500);
+
       lastSeedsSignature = signature;
       // If seeds are kind-tokens only (e.g., metrics/sources/models/dashboards),
       // do not auto-expand. Only auto-expand when a specific resource seed is present.
       // But if URL has an explicit expanded param, that takes precedence and is handled below.
       if (!expandedParam) {
-        if (seeds && seeds.length && resourceGroups.length && !areKindOnlySeeds) {
-          expandedGroup = resourceGroups[0];
+        if (
+          seeds &&
+          seeds.length &&
+          visibleResourceGroups.length &&
+          !areKindOnlySeeds
+        ) {
+          expandedGroup = visibleResourceGroups[0];
         } else {
           expandedGroup = null;
         }
@@ -90,14 +184,21 @@
   }
 
   // Apply expanded param from URL to select the group inline (only when it differs)
-  $: {
-    if (expandedParam && expandedParam !== expandedGroup?.id) {
-      const match = resourceGroups.find((g) => g.id === expandedParam);
-      if (match) expandedGroup = match;
-    }
+  $: if (syncExpandedParam && expandedParam && expandedParam !== expandedGroup?.id) {
+    const match = visibleResourceGroups.find((g) => g.id === expandedParam);
+    if (match) expandedGroup = match;
+  }
+
+  $: if (
+    !expandedParam &&
+    expandedGroup &&
+    !visibleResourceGroups.find((g) => g.id === expandedGroup?.id)
+  ) {
+    expandedGroup = visibleResourceGroups[0] ?? null;
   }
 
   function setExpandedInUrl(id: string | null) {
+    if (!syncExpandedParam) return;
     try {
       if (typeof window !== "undefined") {
         const currentUrl = new URL(window.location.href);
@@ -125,56 +226,74 @@
   // No overlay: expanded graph renders inline within the grid
 </script>
 
-{#if isLoading}
-  <div class="state">
-    <div class="loading-state">
-      <DelayedSpinner isLoading={isLoading} size="1.5rem" />
-      <p>Loading project graph...</p>
+<div class="graph-root" bind:this={rootEl}>
+  {#if showSummary}
+    <div class="top-summary">
+      <SummaryCountsGraph
+        sources={sourcesCount}
+        metrics={metricsCount}
+        models={modelsCount}
+        dashboards={dashboardsCount}
+        resources={normalizedResources}
+        activeToken={overviewActiveToken}
+      />
     </div>
-  </div>
-{:else if error}
-  <div class="state error">
-    <p>{error}</p>
-  </div>
-{:else if !hasGraphs}
-  <div class="state">
-    <p>No resources found.</p>
-  </div>
-{:else}
-  <div class="graph-root" bind:this={rootEl}>
-    <div class="graph-grid">
-      {#each resourceGroups as group, index (group.id)}
+    {#if hasGraphs}
+      <div class="graph-section-title">All Graphs</div>
+    {/if}
+  {/if}
+
+  {#if error}
+    <div class="state error">
+      <p>{error}</p>
+    </div>
+  {:else if isLoading || seedTransitionLoading}
+    <div class="state">
+      <div class="loading-state">
+        <DelayedSpinner isLoading={true} size="1.5rem" />
+        <p>{isLoading ? 'Loading project graph...' : 'Updating graphs...'}</p>
+      </div>
+    </div>
+  {:else if !hasGraphs}
+    <div class="state">
+      <p>No resources found.</p>
+    </div>
+  {:else}
+    <div class={singleGraphMode ? 'graph-grid single' : 'graph-grid'}>
+      {#each visibleResourceGroups as group, index (group.id)}
         <div class={expandedGroup?.id === group.id ? 'grid-item expanded' : 'grid-item'} use:registerGroupEl={group.id}>
           <ResourceGraphCanvas
             flowId={group.id}
             resources={group.resources}
             title={null}
-            titleLabel={groupTitleParts(group, index).labelWithCount}
-            titleErrorCount={groupTitleParts(group, index).errorCount}
-          anchorError={groupTitleParts(group, index).anchorError}
-            showControls={expandedGroup?.id === group.id}
+            titleLabel={showCardTitles ? groupTitleParts(group, index).labelWithCount : null}
+            titleErrorCount={showCardTitles ? groupTitleParts(group, index).errorCount : null}
+            anchorError={showCardTitles ? groupTitleParts(group, index).anchorError : false}
+            rootNodeIds={groupRootNodeIds(group)}
+            showControls={showControls && expandedGroup?.id === group.id}
             showLock={expandedGroup?.id === group.id ? false : true}
             fillParent={expandedGroup?.id === group.id}
-            on:expand={async () => {
-              // Toggle inline expansion and sync to URL
-              const willExpand = expandedGroup?.id !== group.id;
-              expandedGroup = willExpand ? group : null;
-              setExpandedInUrl(willExpand ? group.id : null);
-              // After DOM updates, scroll expanded item to top of the scroll container
-              if (willExpand) {
-                await Promise.resolve();
-                const el = groupElMap.get(group.id);
-                try {
-                  el?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-                } catch {}
-              }
-            }}
+            enableExpand={enableExpansion}
+            on:expand={enableExpansion
+              ? async () => {
+                  const willExpand = expandedGroup?.id !== group.id;
+                  expandedGroup = willExpand ? group : null;
+                  setExpandedInUrl(willExpand ? group.id : null);
+                  if (willExpand) {
+                    await Promise.resolve();
+                    const el = groupElMap.get(group.id);
+                    try {
+                      el?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+                    } catch {}
+                  }
+                }
+              : undefined}
           />
         </div>
       {/each}
     </div>
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style lang="postcss">
   .graph-root {
@@ -192,6 +311,15 @@
     }
   }
 
+  .graph-grid.single {
+    @apply flex flex-col h-full;
+  }
+
+  .graph-grid.single .grid-item,
+  .graph-grid.single .grid-item.expanded {
+    @apply flex-1 h-full;
+  }
+
   .state {
     @apply flex h-full w-full items-center justify-center text-sm text-gray-500;
   }
@@ -203,6 +331,9 @@
   .loading-state {
     @apply flex items-center gap-x-3;
   }
+
+  .top-summary { @apply mb-2; }
+  .graph-section-title { @apply text-sm font-semibold text-foreground mt-4 mb-2; }
 
   /* Inline expansion: span across all columns and set a taller height.
    * 700px on mobile provides adequate viewing space without excessive scrolling.

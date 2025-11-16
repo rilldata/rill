@@ -20,7 +20,6 @@
   import { parseDocument } from "yaml";
   import InputWithConfirm from "../components/forms/InputWithConfirm.svelte";
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
-  import Button from "../components/button/Button.svelte";
 
   const { darkMode, deploy } = featureFlags;
 
@@ -123,15 +122,6 @@
         <CanvasPreviewCTAs canvasName={dashboardName} />
       {/if}
     {/if}
-    <Button
-      type="secondary"
-      label="View Graph"
-      href="/graph"
-      dataAttributes={{ 'data-sveltekit-reload': 'true' }}
-      class="graph-button"
-    >
-      View Graph
-    </Button>
     {#if showDeployCTA}
       <DeployProjectCTA {hasValidDashboard} />
     {/if}
@@ -144,9 +134,5 @@
     @apply w-full bg-surface box-border;
     @apply flex gap-x-2 items-center px-4 flex-none;
     @apply h-11;
-  }
-  :global(.graph-button) {
-    background-color: transparent !important;
-    @apply border border-primary-300 text-primary-700 rounded-full px-3 transition-colors duration-150;
   }
 </style>

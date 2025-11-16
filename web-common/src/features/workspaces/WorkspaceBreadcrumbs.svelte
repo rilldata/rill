@@ -3,9 +3,12 @@
     createRuntimeServiceListResources,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
-  import { ResourceKind } from "../entity-management/resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import WorkspaceCrumb from "./WorkspaceCrumb.svelte";
+import { ResourceKind } from "../entity-management/resource-selectors";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import WorkspaceCrumb from "./WorkspaceCrumb.svelte";
+import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
+import { GitBranch } from "lucide-svelte";
+import { ALLOWED_FOR_GRAPH } from "@rilldata/web-common/features/resource-graph/seed-utils";
 
   export let resource: V1Resource | undefined;
   export let filePath: string;
@@ -18,7 +21,17 @@
   $: resourcesQuery = createRuntimeServiceListResources(instanceId, undefined, {
     query: { retry: 2, refetchOnMount: true },
   });
-  $: allResources = $resourcesQuery.data?.resources ?? [];
+$: allResources = $resourcesQuery.data?.resources ?? [];
+$: resourcesLoading = $resourcesQuery.isLoading;
+$: resourcesError = $resourcesQuery.error
+  ? "Failed to load project resources."
+  : null;
+
+let graphOverlayOpen = false;
+$: graphSupported =
+  resourceKind && ALLOWED_FOR_GRAPH.has(resourceKind)
+    ? true
+    : false;
 
   $: lateralResources = allResources.filter(({ meta }) => {
     if (meta?.name?.name === resourceName && meta?.name?.kind === resourceKind)
@@ -33,14 +46,59 @@
   });
 </script>
 
-<nav
-  class="flex gap-x-1.5 items-center h-7 flex-none w-full pr-3 truncate line-clamp-1"
->
-  <WorkspaceCrumb
-    selectedResource={resource}
-    resources={lateralResources}
-    {allResources}
-    {filePath}
-    current
-  />
+<nav class="resource-breadcrumbs">
+  <div class="resource-breadcrumbs__track">
+    <div class="resource-breadcrumbs__crumbs">
+      <WorkspaceCrumb
+        selectedResource={resource}
+        resources={lateralResources}
+        {allResources}
+        {filePath}
+        current
+      />
+    </div>
+    {#if resource && graphSupported}
+      <button
+        type="button"
+        class="graph-trigger"
+        on:click={() => (graphOverlayOpen = true)}
+        aria-label="Open resource graph"
+      >
+        <GitBranch size="13px" aria-hidden="true" />
+        <span class="sr-only">Open resource graph</span>
+      </button>
+    {/if}
+  </div>
 </nav>
+
+<ResourceGraphOverlay
+  bind:open={graphOverlayOpen}
+  anchorResource={resource}
+  resources={allResources}
+  isLoading={resourcesLoading}
+  error={resourcesError}
+/>
+
+<style lang="postcss">
+  .resource-breadcrumbs {
+    @apply flex items-center h-7 flex-none w-full pr-3 gap-x-1.5 truncate line-clamp-1;
+  }
+
+  .resource-breadcrumbs__track {
+    @apply inline-flex items-center min-w-0 max-w-full;
+  }
+
+  .resource-breadcrumbs__crumbs {
+    @apply flex items-center gap-x-1.5 flex-1 min-w-0 overflow-hidden truncate line-clamp-1;
+  }
+
+  .graph-trigger {
+    @apply flex-none inline-flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-colors bg-white shadow-sm ml-1 px-2 py-[3px];
+    min-width: 30px;
+    height: 26px;
+  }
+
+  .graph-trigger:focus-visible {
+    @apply outline-none ring ring-offset-1 ring-primary-300;
+  }
+</style>

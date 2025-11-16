@@ -112,6 +112,7 @@
   class:selected
   class:route-highlighted={routeHighlighted}
   class:error={hasError}
+  class:root={data?.isRoot}
   style={`--node-accent:${color}`}
   style:width={width ? `${width}px` : undefined}
   data-kind={kind}
@@ -189,6 +190,14 @@
     border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
     transition: box-shadow 120ms ease, border-color 120ms ease,
       transform 120ms ease, background 120ms ease;
+  }
+
+  .node.root {
+    border-color: color-mix(in srgb, var(--node-accent) 65%, transparent);
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--node-accent) 35%, transparent),
+      0 8px 18px rgba(15, 23, 42, 0.12);
+    background-color: color-mix(in srgb, var(--node-accent) 8%, #ffffff);
   }
 
   .node.selected {
