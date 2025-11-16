@@ -2270,11 +2270,19 @@ func (c *connection) DeleteOrganizationMemberUsergroup(ctx context.Context, grou
 	return checkDeleteRow("org group member", res, err)
 }
 
-func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{projectID, afterName, limit}
 	var qry strings.Builder
+	qry.WriteString(`SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name"`)
+	if withCounts {
+		qry.WriteString(`,
+			(
+				SELECT COUNT(*) FROM usergroups_users uug WHERE uug.usergroup_id = ug.id
+			) as users_count
+		`)
+	}
 	qry.WriteString(`
-		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name" FROM usergroups ug
+		FROM usergroups ug
 		JOIN usergroups_projects_roles upr ON ug.id = upr.usergroup_id
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.project_id=$1
