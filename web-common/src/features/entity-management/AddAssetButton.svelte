@@ -184,26 +184,48 @@
       <svelte:component this={Database} color="#C026D3" size="16px" />
       Data
     </DropdownMenu.Item>
-    <DropdownMenu.Item
-      aria-label="Add Model"
-      class="flex gap-x-2"
-      disabled={!isModelingSupported}
-      on:click={() => handleAddResource(ResourceKind.Model)}
-    >
-      <svelte:component
-        this={resourceIconMapping[ResourceKind.Model]}
-        color={resourceColorMapping[ResourceKind.Model]}
-        size="16px"
-      />
-      <div class="flex flex-col items-start">
-        Model
-        {#if !isModelingSupported}
-          <span class="text-gray-500 text-xs">
-            Requires a supported OLAP driver
-          </span>
-        {/if}
-      </div>
-    </DropdownMenu.Item>
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger
+        class="flex gap-x-2"
+        disabled={!isModelingSupported}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Model]}
+          color={resourceColorMapping[ResourceKind.Model]}
+          size="16px"
+        />
+        <div class="flex flex-col items-start">
+          Model
+          {#if !isModelingSupported}
+            <span class="text-gray-500 text-xs">
+              Requires a supported OLAP driver
+            </span>
+          {/if}
+        </div>
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent class="w-[240px]">
+        <DropdownMenu.Item
+          aria-label="Blank file"
+          class="flex gap-x-2"
+          disabled={!isModelingSupported}
+          on:click={() => handleAddResource(ResourceKind.Model)}
+        >
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Model]}
+            color={resourceColorMapping[ResourceKind.Model]}
+            size="16px"
+          />
+          <div class="flex flex-col items-start">
+            Blank file
+            {#if !isModelingSupported}
+              <span class="text-gray-500 text-xs">
+                Requires a supported OLAP driver
+              </span>
+            {/if}
+          </div>
+        </DropdownMenu.Item>
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
     <DropdownMenu.Item
       aria-label="Add Metrics View"
       class="flex gap-x-2"
