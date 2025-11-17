@@ -253,6 +253,10 @@ export class AddDataFormManager {
       connector.name ?? "",
     );
     const isConnectorForm = this.formType === "connector";
+    const supportsTableExplorer =
+      Boolean((connector as any)?.implementsOlap) ||
+      Boolean((connector as any)?.implementsSqlStore) ||
+      Boolean((connector as any)?.implementsWarehouse);
 
     return async (event: {
       form: SuperValidated<
@@ -279,9 +283,17 @@ export class AddDataFormManager {
           return;
         } else if (this.formType === "source") {
           await submitAddSourceForm(queryClient, connector, values);
+          if (supportsTableExplorer) {
+            setStep("explorer");
+            return;
+          }
           onClose();
         } else {
           await submitAddConnectorForm(queryClient, connector, values, true);
+          if (supportsTableExplorer) {
+            setStep("explorer");
+            return;
+          }
           onClose();
         }
       } catch (e) {

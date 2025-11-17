@@ -328,7 +328,17 @@
     <div
       class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
     >
-      {#if connector.name === "clickhouse"}
+      {#if stepState.step === "explorer"}
+        <!-- Step 3: Table Explorer (for supported connectors) -->
+        <TableExplorerForm
+          on:select={(e) => {
+            selectedConnectorForModel = e.detail.connector;
+            selectedDatabaseForModel = e.detail.database;
+            selectedSchemaForModel = e.detail.schema;
+            selectedTableForModel = e.detail.table;
+          }}
+        />
+      {:else if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
           {onClose}
@@ -413,7 +423,7 @@
               {handleFileUpload}
             />
           </AddDataFormSection>
-        {:else if stepState.step === "source"}
+        {:else}
           <!-- GCS Step 2: Source configuration -->
           <AddDataFormSection
             id={paramsFormId}
@@ -428,16 +438,6 @@
               uploadFile={handleFileUpload}
             />
           </AddDataFormSection>
-        {:else}
-          <!-- GCS Step 3: Data Explorer -->
-          <TableExplorerForm
-            on:select={(e) => {
-              selectedConnectorForModel = e.detail.connector;
-              selectedDatabaseForModel = e.detail.database;
-              selectedSchemaForModel = e.detail.schema;
-              selectedTableForModel = e.detail.table;
-            }}
-          />
         {/if}
       {:else}
         <AddDataFormSection
@@ -483,7 +483,7 @@
           >
         {/if}
 
-        {#if !(isMultiStepConnector && stepState.step === "explorer")}
+        {#if stepState.step !== "explorer"}
           <Button
             disabled={connector.name === "clickhouse"
               ? clickhouseSubmitting || clickhouseIsSubmitDisabled
@@ -522,7 +522,7 @@
   </div>
 
   <!-- RIGHT SIDE PANEL -->
-  {#if !(isMultiStepConnector && stepState.step === "explorer")}
+  {#if stepState.step !== "explorer"}
     <div
       class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
     >
