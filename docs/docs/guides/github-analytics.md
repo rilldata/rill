@@ -11,20 +11,11 @@ tags:
 
 # Analyze Your GitHub Repository
 
-This guide shows you how to build a powerful analytics dashboard for **your own GitHub repository** using Rill. In just a few commands, you'll have a fully interactive dashboard analyzing commits, contributors, file changes, and development patterns.
+This guide shows you how to build a powerful analytics dashboard for your own GitHub repository using Rill. In just a few commands, you'll have a fully interactive dashboard to discover hot zones in your codebase, track contributor activity, analyze code churn, and measure development velocity.
 
 :::tip See it live
 **[Explore the live demo →](https://ui.rilldata.com/demo/rill-github-analytics)** to see interactive dashboards analyzing real repositories (DuckDB, Rill). This is exactly what you'll create for your own repository.
 :::
-
-<img src='/img/tutorials/quickstart/github-analytics-1.png' class='rounded-gif'/>
-
-## What you'll discover
-
-- **Hot zones** – Which files and directories change most
-- **Contributor activity** – Who's building what and how much
-- **Code churn** – Addition vs. deletion ratios over time
-- **Development velocity** – Commit frequency and trends
 
 ## Step 1: Clone the Project
 
