@@ -24,7 +24,6 @@ export class BillingCTAHandler {
     let instance: BillingCTAHandler;
     if (this.instances.has(organization)) {
       instance = this.instances.get(organization)!;
-      instance.wakingProjects.set(false);
     } else {
       instance = new BillingCTAHandler(organization);
       this.instances.set(organization, instance);
