@@ -1,7 +1,7 @@
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { slide } from "svelte/transition";
   import FieldSwitcher from "./FieldSwitcher.svelte";
   import InputLabel from "./InputLabel.svelte";
@@ -19,6 +19,9 @@
   export let placeholder = "";
   export let hint = "";
   export let claimFocusOnMount = false;
+  export let selectTextOnMount = false;
+  export let selectionStart: number | undefined = undefined;
+  export let selectionEnd: number | undefined = undefined;
   export let secret = false;
   export let autocomplete = false;
   export let alwaysShowError = false;
@@ -76,14 +79,57 @@
 
   $: hasValue = inputType === "number" ? !!value || value === 0 : !!value;
 
-  onMount(() => {
-    if (claimFocusOnMount) {
-      if (inputElement) {
-        inputElement.focus();
-      } else if (selectElement) {
-        selectElement.focus();
+  /**
+   * Type guard to check if an element is a text input
+   */
+  function isTextInput(
+    element: HTMLElement | undefined,
+  ): element is HTMLInputElement {
+    return element instanceof HTMLInputElement;
+  }
+
+  /**
+   * Applies focus and text selection to an input element.
+   * Uses a small delay to ensure browser completes focus before setting selection.
+   */
+  async function applyTextSelection(
+    element: HTMLInputElement,
+    start: number | undefined,
+    end: number | undefined,
+  ) {
+    await tick();
+    element.focus();
+
+    // Small timeout to wait for the browser to settle down after focus
+    setTimeout(() => {
+      if (start !== undefined && end !== undefined) {
+        element.setSelectionRange(start, end);
+      } else {
+        element.select();
       }
+    }, 10);
+  }
+
+  onMount(async () => {
+    if (!claimFocusOnMount) return;
+
+    // Priority 1: Select element (dropdowns)
+    if (selectElement) {
+      selectElement.focus();
+      return;
     }
+
+    // Priority 2: Input element (text inputs)
+    if (!inputElement) return;
+
+    // Simple focus for non-text inputs or when selection not requested
+    if (!selectTextOnMount || !isTextInput(inputElement)) {
+      inputElement.focus();
+      return;
+    }
+
+    // Apply text selection for text inputs
+    await applyTextSelection(inputElement, selectionStart, selectionEnd);
   });
 
   function onElementBlur(
