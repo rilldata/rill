@@ -93,14 +93,12 @@ export function prettyResourceKind(kind: string) {
 export function coerceResourceKind(res: V1Resource): ResourceKind | undefined {
   const raw = res.meta?.name?.kind as ResourceKind | undefined;
   if (raw === ResourceKind.Model) {
-    try {
-      // A resource is a Source if it's a model defined-as-source and its result table matches the resource name
-      const name = res.meta?.name?.name;
-      const resultTable = (res as any)?.model?.state?.resultTable;
-      const definedAsSource = Boolean((res as any)?.model?.spec?.definedAsSource);
-      if (name && name === resultTable && definedAsSource) return ResourceKind.Source;
-    } catch {
-      // ignore
+    // A resource is a Source if it's a model defined-as-source and its result table matches the resource name
+    const name = res.meta?.name?.name;
+    const resultTable = res.model?.state?.resultTable;
+    const definedAsSource = res.model?.spec?.definedAsSource;
+    if (name && resultTable === name && definedAsSource === true) {
+      return ResourceKind.Source;
     }
   }
   return raw;

@@ -32,9 +32,16 @@ export function createResourceId(meta?: V1ResourceMeta): string | undefined {
 export function parseResourceId(id: string): V1ResourceName | null {
   const idx = id.indexOf(":");
   if (idx <= 0) return null;
+
+  const kind = id.slice(0, idx);
+  const name = id.slice(idx + 1);
+
+  // Validate both parts are non-empty
+  if (!kind || !name) return null;
+
   return {
-    kind: id.slice(0, idx),
-    name: id.slice(idx + 1),
+    kind,
+    name,
   };
 }
 

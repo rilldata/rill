@@ -26,11 +26,18 @@
     }
   }
 
-  // Focus trap for accessibility in fullscreen/modal modes
+  // Focus management for accessibility in fullscreen/modal modes
   let overlayEl: HTMLDivElement | null = null;
+  let previouslyFocused: HTMLElement | null = null;
 
   $: if (open && overlayEl && (mode === 'fullscreen' || mode === 'modal')) {
+    // Store the previously focused element before opening
+    previouslyFocused = document.activeElement as HTMLElement;
     overlayEl.focus();
+  } else if (!open && previouslyFocused) {
+    // Restore focus when closing
+    previouslyFocused.focus();
+    previouslyFocused = null;
   }
 </script>
 
