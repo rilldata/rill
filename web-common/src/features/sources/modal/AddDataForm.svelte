@@ -26,7 +26,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import DataExplorer from "./DataExplorer.svelte";
+  import TableExplorerForm from "./TableExplorerForm.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -400,9 +400,7 @@
           </AddDataFormSection>
         {:else}
           <!-- GCS Step 3: Data Explorer -->
-          <div class="p-6">
-            <DataExplorer />
-          </div>
+          <TableExplorerForm />
         {/if}
       {:else}
         <AddDataFormSection
@@ -493,17 +491,21 @@
       />
     {/if}
 
-    <YamlPreview
-      title={isMultiStepConnector
-        ? stepState.step === "connector"
-          ? "Connector preview"
-          : "Model preview"
-        : isSourceForm
-          ? "Model preview"
-          : "Connector preview"}
-      yaml={yamlPreview}
-    />
+    {#if !(isMultiStepConnector && stepState.step === "explorer")}
+      <YamlPreview
+        title={isMultiStepConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
+      />
+    {/if}
 
-    <NeedHelpText {connector} />
+    {#if !(isMultiStepConnector && stepState.step === "explorer")}
+      <NeedHelpText {connector} />
+    {/if}
   </div>
 </div>
