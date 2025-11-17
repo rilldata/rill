@@ -161,7 +161,6 @@
             <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.MetricsView}
             <MetricsViewMenuItems {filePath} />
-            <NavigationMenuSeparator />
           {/if}
         {/if}
         {#if $hasUnsavedChanges}
