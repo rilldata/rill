@@ -64,7 +64,8 @@
   {/if}
   {#if resource}
     <NavigationMenuItem
-      on:click={() => createAndPreviewExplore(queryClient, instanceId, resource)}
+      on:click={() =>
+        createAndPreviewExplore(queryClient, instanceId, resource)}
     >
       <ExploreIcon slot="icon" />
       Generate dashboard
