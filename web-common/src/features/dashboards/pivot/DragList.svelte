@@ -48,6 +48,7 @@
   import { timePillSelectors } from "./time-pill-store";
 
   const isDropLocation = zone === "columns" || zone === "rows";
+  const DRAG_START_THRESHOLD_PX = 4;
 
   const _ghostIndex = writable<number | null>(null);
 
@@ -55,6 +56,8 @@
   let container: HTMLDivElement;
   let offset = { x: 0, y: 0 };
   let dragStart = { left: 0, top: 0 };
+  let pendingDrag: PendingDragState | null = null;
+  let dragActive = false;
 
   const { exploreName } = getStateManagers();
 
@@ -79,70 +82,59 @@
   const availableGrainsStore = timePillSelectors.getAvailableGrains("time");
   $: availableTimeGrains = $availableGrainsStore;
 
+  type PendingDragState = {
+    item: PivotChipData;
+    index: number;
+    width: number;
+    left: number;
+    top: number;
+    offsetX: number;
+    offsetY: number;
+    startX: number;
+    startY: number;
+  };
+
   function handleMouseDown(e: MouseEvent, item: PivotChipData) {
     const target = e.target as HTMLElement;
     if (target.closest(".grain-dropdown") || target.closest(".grain-label"))
       return;
 
-    e.preventDefault();
-
     if (e.button !== 0) return;
+
+    e.preventDefault();
 
     const dragItem = document.getElementById(item.id);
     if (!dragItem) return;
 
     const { width, left, top } = dragItem.getBoundingClientRect();
 
-    dragStart = { left, top };
+    const index = Number(dragItem.dataset.index);
 
-    offset = {
-      x: e.clientX - left,
-      y: e.clientY - top,
+    pendingDrag = {
+      item,
+      index,
+      width,
+      left,
+      top,
+      offsetX: e.clientX - left,
+      offsetY: e.clientY - top,
+      startX: e.clientX,
+      startY: e.clientY,
     };
 
-    const index = Number(dragItem.dataset.index);
-    initialIndex = index;
-    _ghostIndex.set(index);
-
-    if (isDropLocation) {
-      swap = true;
-      const temp = [...items];
-      temp.splice(index, 1);
-      items = temp;
-
-      // Allow us to abort this update if the pill is dropped to the same location
-      // This shouldn't be necessary after state management is updated
-      const controller = new AbortController();
-
-      controllerStore.set(controller);
-
-      window.addEventListener(
-        "mouseup",
-        () => {
-          onUpdate(temp);
-        },
-        {
-          once: true,
-          signal: controller.signal,
-        },
-      );
-    }
-
-    window.addEventListener("mouseup", reset, {
+    window.addEventListener("mousemove", detectDragStart);
+    window.addEventListener("mouseup", handleGlobalMouseUp, {
       once: true,
-    });
-
-    dragDataStore.set({
-      chip: item,
-      source: zone,
-      width,
-      initialIndex,
     });
   }
 
   function reset() {
+    dragActive = false;
+    swap = false;
     dragDataStore.set(null);
     _ghostIndex.set(null);
+    pendingDrag = null;
+    window.removeEventListener("mousemove", detectDragStart);
   }
 
   function handleDrop() {
@@ -174,6 +166,83 @@
       }
       swap = false;
     }
+    reset();
+  }
+
+  function detectDragStart(e: MouseEvent) {
+    if (!pendingDrag || dragActive) return;
+
+    const movedBeyondThreshold =
+      Math.abs(e.clientX - pendingDrag.startX) >= DRAG_START_THRESHOLD_PX ||
+      Math.abs(e.clientY - pendingDrag.startY) >= DRAG_START_THRESHOLD_PX;
+
+    if (!movedBeyondThreshold) return;
+
+    beginDrag();
+  }
+
+  function beginDrag() {
+    if (!pendingDrag) return;
+
+    dragActive = true;
+    window.removeEventListener("mousemove", detectDragStart);
+
+    const {
+      item,
+      index,
+      width,
+      left,
+      top,
+      offsetX,
+      offsetY,
+    } = pendingDrag;
+
+    pendingDrag = null;
+
+    dragStart = { left, top };
+    offset = { x: offsetX, y: offsetY };
+    _ghostIndex.set(index);
+
+    if (isDropLocation) {
+      swap = true;
+      const temp = [...items];
+      temp.splice(index, 1);
+      items = temp;
+
+      // Allow us to abort this update if the pill is dropped to the same location
+      // This shouldn't be necessary after state management is updated
+      const controller = new AbortController();
+
+      controllerStore.set(controller);
+
+      window.addEventListener(
+        "mouseup",
+        () => {
+          onUpdate(temp);
+        },
+        {
+          once: true,
+          signal: controller.signal,
+        },
+      );
+    }
+
+    dragDataStore.set({
+      chip: item,
+      source: zone,
+      width,
+      initialIndex: index,
+    });
+  }
+
+  function handleGlobalMouseUp() {
+    window.removeEventListener("mousemove", detectDragStart);
+
+    if (!dragActive) {
+      pendingDrag = null;
+      return;
+    }
+
     reset();
   }
 
