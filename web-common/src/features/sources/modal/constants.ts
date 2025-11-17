@@ -45,7 +45,6 @@ export const SOURCES = [
   "azure",
   "bigquery",
   "gcs",
-  "postgres",
   "mysql",
   "postgres",
   "redshift",
