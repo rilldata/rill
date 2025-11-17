@@ -61,6 +61,10 @@
   export let showLock = true;
   export let enableExpand = true;
   export let fillParent = false;
+  // Fit view configuration - allows customization of how the graph is centered and zoomed
+  export let fitViewPadding: number = 0.15; // 15% padding by default (reduced from 22%)
+  export let fitViewMinZoom: number = 0.1; // Minimum zoom level
+  export let fitViewMaxZoom: number = 1.25; // Maximum zoom level
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher<{ expand: void }>();
   // Tie Svelte Flow theme to the app theme
@@ -286,7 +290,12 @@
           colorMode={flowColorMode}
           proOptions={{ hideAttribution: true }}
           fitView
-          fitViewOptions={{ padding: 0.22, minZoom: 0.05, maxZoom: 1.25, duration: 200 }}
+          fitViewOptions={{
+            padding: fitViewPadding,
+            minZoom: fitViewMinZoom,
+            maxZoom: fitViewMaxZoom,
+            duration: 200
+          }}
           preventScrolling={false}
           zoomOnScroll={false}
           panOnScroll={false}
@@ -321,11 +330,16 @@
   }
 
   .graph-container {
-    @apply relative w-full overflow-hidden rounded-lg border border-gray-200 bg-white;
+    @apply relative w-full overflow-hidden rounded-lg border;
+    border-color: var(--border, #e5e7eb);
+    background-color: var(--surface, #ffffff);
   }
 
   .state {
-    @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed border-gray-200 bg-white text-sm text-gray-500;
+    @apply flex h-[160px] w-full items-center justify-center rounded-lg border border-dashed text-sm;
+    border-color: var(--border, #e5e7eb);
+    background-color: var(--surface, #ffffff);
+    color: var(--muted-foreground, #6b7280);
   }
 
   .expand-btn {

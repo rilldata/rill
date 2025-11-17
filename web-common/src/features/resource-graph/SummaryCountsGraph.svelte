@@ -90,11 +90,57 @@
     const step = Math.floor(eff / 3);
     const y = 60; // center larger nodes vertically in taller canvas
     const { sources, metrics, models, dashboards } = counts;
+    const isActive = (key: 'sources' | 'metrics' | 'models' | 'dashboards') =>
+      token === key;
     return [
-      { id: 'sources', position: { x: pad + step * 0, y }, type: 'summary-count', selected: token === 'sources', data: { label: 'Sources', count: sources, kind: ResourceKind.Source } },
-      { id: 'metrics', position: { x: pad + step * 1, y }, type: 'summary-count', selected: token === 'metrics', data: { label: 'Metrics', count: metrics, kind: ResourceKind.MetricsView } },
-      { id: 'models', position: { x: pad + step * 2, y }, type: 'summary-count', selected: token === 'models', data: { label: 'Models', count: models, kind: ResourceKind.Model } },
-      { id: 'dashboards', position: { x: pad + step * 3, y }, type: 'summary-count', selected: token === 'dashboards', data: { label: 'Dashboards', count: dashboards, kind: ResourceKind.Explore } },
+      {
+        id: 'sources',
+        position: { x: pad + step * 0, y },
+        type: 'summary-count',
+        selected: isActive('sources'),
+        data: {
+          label: 'Sources',
+          count: sources,
+          kind: ResourceKind.Source,
+          active: isActive('sources'),
+        },
+      },
+      {
+        id: 'metrics',
+        position: { x: pad + step * 1, y },
+        type: 'summary-count',
+        selected: isActive('metrics'),
+        data: {
+          label: 'Metrics',
+          count: metrics,
+          kind: ResourceKind.MetricsView,
+          active: isActive('metrics'),
+        },
+      },
+      {
+        id: 'models',
+        position: { x: pad + step * 2, y },
+        type: 'summary-count',
+        selected: isActive('models'),
+        data: {
+          label: 'Models',
+          count: models,
+          kind: ResourceKind.Model,
+          active: isActive('models'),
+        },
+      },
+      {
+        id: 'dashboards',
+        position: { x: pad + step * 3, y },
+        type: 'summary-count',
+        selected: isActive('dashboards'),
+        data: {
+          label: 'Dashboards',
+          count: dashboards,
+          kind: ResourceKind.Explore,
+          active: isActive('dashboards'),
+        },
+      },
     ] satisfies Node[];
   }
 
@@ -162,5 +208,10 @@
 <style lang="postcss">
   .summary-graph { @apply mb-4 w-full; }
   .title { @apply text-sm font-semibold text-foreground mb-2; }
-  .canvas { @apply relative w-full overflow-hidden rounded-lg border border-gray-200 bg-white; height: 260px; }
+  .canvas {
+    @apply relative w-full overflow-hidden rounded-lg border;
+    border-color: var(--border, #e5e7eb);
+    background-color: var(--surface, #ffffff);
+    height: 260px;
+  }
 </style>

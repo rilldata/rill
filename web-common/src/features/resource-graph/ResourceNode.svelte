@@ -197,7 +197,11 @@
     box-shadow:
       0 0 0 2px color-mix(in srgb, var(--node-accent) 35%, transparent),
       0 8px 18px rgba(15, 23, 42, 0.12);
-    background-color: color-mix(in srgb, var(--node-accent) 8%, #ffffff);
+    background-color: color-mix(
+      in srgb,
+      var(--node-accent) 8%,
+      var(--surface, #ffffff)
+    );
   }
 
   .node.selected {

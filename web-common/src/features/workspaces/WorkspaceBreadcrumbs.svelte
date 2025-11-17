@@ -93,12 +93,26 @@ $: graphSupported =
   }
 
   .graph-trigger {
-    @apply flex-none inline-flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-colors bg-white shadow-sm ml-1 px-2 py-[3px];
+    @apply flex-none inline-flex items-center justify-center rounded-md border transition-colors shadow-sm ml-1 px-2 py-[3px];
+    border-color: var(--border, #e5e7eb);
+    background-color: var(--surface, #ffffff);
+    color: var(--muted-foreground, #6b7280);
     min-width: 30px;
     height: 26px;
   }
 
+  .graph-trigger:hover {
+    color: var(--foreground, #1f2937);
+    border-color: color-mix(
+      in srgb,
+      var(--border, #e5e7eb) 70%,
+      var(--foreground, #1f2937)
+    );
+  }
+
   .graph-trigger:focus-visible {
-    @apply outline-none ring ring-offset-1 ring-primary-300;
+    @apply outline-none ring ring-offset-1;
+    ring-color: var(--ring, #93c5fd);
+    ring-offset-color: var(--surface, #ffffff);
   }
 </style>

@@ -123,6 +123,11 @@
               maxGroups={1}
               showControls={false}
               enableExpansion={false}
+              fitViewPadding={0.08}
+              fitViewMinZoom={0.01}
+              fitViewMaxZoom={1.35}
+              expandedHeightMobile="100%"
+              expandedHeightDesktop="100%"
             />
           </div>
         {/if}

@@ -98,6 +98,61 @@ export function isKindToken(s: string): ResourceKind | undefined {
 }
 
 /**
+ * Convert a ResourceKind to its display token (plural form).
+ * Used for highlighting overview nodes in the summary graph.
+ *
+ * @param kind - ResourceKind or string kind
+ * @returns Token string ("sources", "models", "metrics", "dashboards") or null
+ *
+ * @example
+ * tokenForKind(ResourceKind.Model) // "models"
+ * tokenForKind("rill.runtime.v1.Source") // "sources"
+ */
+export function tokenForKind(kind?: ResourceKind | string | null): "metrics" | "sources" | "models" | "dashboards" | null {
+  if (!kind) return null;
+  const key = `${kind}`.toLowerCase();
+  if (key.includes("source")) return "sources";
+  if (key.includes("model")) return "models";
+  if (key.includes("metricsview") || key.includes("metric")) return "metrics";
+  if (key.includes("explore") || key.includes("dashboard")) return "dashboards";
+  return null;
+}
+
+/**
+ * Convert a seed string to its display token.
+ * Parses the kind from the seed and converts it to a token.
+ *
+ * @param seed - Seed string (e.g., "model:orders", "metrics", "orders")
+ * @returns Token string or null
+ *
+ * @example
+ * tokenForSeedString("model:orders") // "models"
+ * tokenForSeedString("metrics") // "metrics"
+ * tokenForSeedString("orders") // "metrics" (defaults to metrics)
+ */
+export function tokenForSeedString(seed?: string | null): "metrics" | "sources" | "models" | "dashboards" | null {
+  if (!seed) return null;
+  const normalized = seed.trim().toLowerCase();
+  if (!normalized) return null;
+
+  // Check if it's a kind token first
+  const kindToken = isKindToken(normalized);
+  if (kindToken) return tokenForKind(kindToken);
+
+  // Parse "kind:name" format
+  const idx = normalized.indexOf(":");
+  if (idx !== -1) {
+    const kindPart = normalized.slice(0, idx);
+    const mapped = KIND_ALIASES[kindPart];
+    if (mapped) return tokenForKind(mapped);
+    return tokenForKind(kindPart);
+  }
+
+  // Name-only defaults to metrics
+  return "metrics";
+}
+
+/**
  * Expand seed strings by kind tokens into individual resource seeds.
  * Handles three input formats:
  * 1. Explicit seeds ("kind:name") - kept as-is

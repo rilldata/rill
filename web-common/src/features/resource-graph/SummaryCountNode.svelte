@@ -3,7 +3,12 @@
   import { resourceColorMapping, resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
-  export let data: { label: string; count: number; kind: ResourceKind };
+  export let data: {
+    label: string;
+    count: number;
+    kind: ResourceKind;
+    active?: boolean;
+  };
   // SvelteFlow injects `selected` when the node is marked selected
   export let selected: boolean = false;
   import { goto } from "$app/navigation";
@@ -30,6 +35,7 @@
   $: Icon = resourceIconMapping[data?.kind] || null;
   $: label = data?.label ?? "";
   $: count = data?.count ?? 0;
+  $: isActive = data?.active ?? selected;
 
   function navigateByKind() {
     const kind = data?.kind;
@@ -42,9 +48,12 @@
   }
 </script>
 
-<div class="summary-node" class:selected style={`--accent:${color}`}
+<div
+  class="summary-node"
+  class:active={isActive}
+  style={`--summary-accent:${color}`}
   on:click={navigateByKind}
-> 
+>
   <!-- connection points for flow edges (left/right) -->
   <Handle id="in" type="target" position={Position.Left} isConnectable={false} />
   <Handle id="out" type="source" position={Position.Right} isConnectable={false} />
@@ -61,20 +70,44 @@
 
 <style lang="postcss">
   .summary-node {
-    @apply relative flex items-center gap-4 rounded-lg border bg-white px-5 py-4 shadow-sm min-w-[280px];
-    border-color: color-mix(in srgb, var(--accent) 40%, #E5E7EB);
+    @apply relative flex items-center gap-4 rounded-lg border px-5 py-4 shadow-sm min-w-[280px];
+    background-color: var(--surface, #ffffff);
+    border-color: color-mix(
+      in srgb,
+      var(--summary-accent, #94a3b8) 35%,
+      var(--border, #e5e7eb)
+    );
   }
-  .summary-node.selected {
+  .summary-node.active {
     @apply border-2;
-    border-color: var(--node-accent, color-mix(in srgb, var(--accent) 70%, #94a3b8));
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
-    background-color: color-mix(in srgb, var(--accent) 8%, #ffffff);
+    border-color: color-mix(
+      in srgb,
+      var(--summary-accent, #94a3b8) 70%,
+      var(--border, #94a3b8)
+    );
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--summary-accent, #94a3b8) 30%, transparent);
+    background-color: color-mix(
+      in srgb,
+      var(--summary-accent, #94a3b8) 15%,
+      var(--surface, #ffffff)
+    );
   }
   .icon {
     @apply flex h-12 w-12 items-center justify-center rounded-md;
-    background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+    background-color: color-mix(
+      in srgb,
+      var(--summary-accent, #94a3b8) 16%,
+      transparent
+    );
   }
   .content { @apply flex items-baseline gap-2; }
-  .label { @apply text-base text-gray-700 font-medium; }
-  .count { @apply text-3xl font-semibold leading-tight text-gray-900; }
+  .label {
+    @apply text-base font-medium;
+    color: var(--muted-foreground, #4b5563);
+  }
+  .count {
+    @apply text-3xl font-semibold leading-tight;
+    color: var(--foreground, #111827);
+  }
 </style>

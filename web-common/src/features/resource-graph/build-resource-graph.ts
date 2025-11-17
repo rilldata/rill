@@ -166,6 +166,30 @@ type BuildGraphOptions = {
   ignoreCache?: boolean;
 };
 
+/**
+ * Build a directed acyclic graph (DAG) visualization of resource dependencies.
+ * Uses Dagre for automatic layout and maintains cached node positions for stability.
+ *
+ * This function:
+ * - Filters resources to only allowed kinds (Source, Model, MetricsView, Explore)
+ * - Creates nodes with dynamic widths based on label length
+ * - Generates edges based on resource references
+ * - Applies Dagre layout with configurable spacing
+ * - Caches node positions per namespace for consistent placement
+ * - Enforces rank constraints (Sources at top, Explores/Canvas at bottom)
+ *
+ * @param resources - Array of V1Resource objects to visualize
+ * @param opts - Optional configuration for layout and caching
+ * @param opts.positionNs - Namespace for position cache (default: "global")
+ * @param opts.ignoreCache - If true, recalculates all positions instead of using cache
+ * @returns Object containing nodes and edges for SvelteFlow rendering
+ *
+ * @example
+ * const { nodes, edges } = buildResourceGraph(resources, {
+ *   positionNs: "dashboard-view",
+ *   ignoreCache: false
+ * });
+ */
 export function buildResourceGraph(resources: V1Resource[], opts?: BuildGraphOptions) {
   const positionNs = opts?.positionNs?.trim() || "global";
   const dagreGraph = new graphlib.Graph();
@@ -532,7 +556,35 @@ function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
  * Partition resources into groups based on seed resources.
  * Each seed generates a group containing the seed and all resources
  * connected to it (both upstream sources and downstream dependents).
- * Maintains grouping stability using cached assignments.
+ *
+ * This function implements a directed graph traversal strategy:
+ * - For each seed, traverses upstream (sources/dependencies) and downstream (dependents)
+ * - Creates separate groups for each seed's connected subgraph
+ * - Maintains grouping stability across renders using localStorage cache
+ * - Handles missing resources by creating placeholder nodes
+ * - Preserves groups even when anchor resources temporarily disappear due to errors
+ *
+ * Use cases:
+ * - Viewing dependencies of specific metrics or models
+ * - Drilling down into resource lineage
+ * - Isolating subgraphs for focused analysis
+ *
+ * @param resources - All resources to consider for grouping
+ * @param seeds - Seed identifiers (can be strings like "model:orders" or V1ResourceName objects)
+ * @returns Array of resource groups, one per seed (plus recovered groups from cache)
+ *
+ * @example
+ * // View graphs for specific metrics
+ * const groups = partitionResourcesBySeeds(allResources, [
+ *   "rill.runtime.v1.MetricsView:revenue",
+ *   "rill.runtime.v1.Model:users"
+ * ]);
+ *
+ * @example
+ * // Using V1ResourceName format
+ * const groups = partitionResourcesBySeeds(allResources, [
+ *   { kind: ResourceKind.MetricsView, name: "revenue" }
+ * ]);
  */
 export function partitionResourcesBySeeds(
   resources: V1Resource[],
@@ -557,6 +609,34 @@ export function partitionResourcesBySeeds(
   return groups;
 }
 
+/**
+ * Partition resources into groups based on MetricsView resources.
+ * Creates one group per MetricsView containing all connected resources.
+ *
+ * This function implements an undirected graph traversal strategy:
+ * - Identifies all MetricsView resources as group anchors
+ * - For each MetricsView, traverses the entire connected component (undirected)
+ * - Creates groups sorted alphabetically by MetricsView name
+ * - Collects orphaned resources (not connected to any MetricsView) into "Other resources" groups
+ * - Maintains grouping stability using localStorage cache
+ *
+ * Use cases:
+ * - Default view showing all metrics and their dependencies
+ * - Overview of project structure organized by business metrics
+ * - Discovering isolated resource components
+ *
+ * @param resources - All resources to partition into groups
+ * @returns Array of resource groups, one per MetricsView plus any orphaned components
+ *
+ * @example
+ * // Create default metric-based grouping
+ * const groups = partitionResourcesByMetrics(allResources);
+ * // Result: [
+ * //   { id: "...:revenue", label: "revenue", resources: [...] },
+ * //   { id: "...:user_stats", label: "user_stats", resources: [...] },
+ * //   { id: "...:some_model", label: "Other resources", resources: [...] }
+ * // ]
+ */
 export function partitionResourcesByMetrics(
   resources: V1Resource[],
 ): ResourceGraphGrouping[] {

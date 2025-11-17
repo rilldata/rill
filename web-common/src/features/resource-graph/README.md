@@ -7,14 +7,32 @@ Overview
 
 Key Components
 
-- Viewer and overlay
-  - `web-common/src/features/resource-graph/ResourceGraph.svelte`: Orchestrates groups (by metrics or by seeds), renders the grid of graphs, and shows the expanded overlay. It reacts to URL seed changes and opens the seeded graph expanded by default.
-  - `web-common/src/features/resource-graph/ResourceGraphCanvas.svelte`: Wraps `SvelteFlow` and exposes small options like `enableExpand`, `showControls`, and `fillParent`.
-- Graph building
-  - `web-common/src/features/resource-graph/build-resource-graph.ts`: Contains the layout routine and grouping utilities:
-    - `buildResourceGraph(resources)`: Returns nodes and edges positioned via Dagre.
-    - `partitionResourcesByMetrics(resources)`: Default grouping by metrics views (one graph per metrics view).
-    - `partitionResourcesBySeeds(resources, seeds)`: Generic seed-based grouping that traverses the DAG in both directions from each seed.
+The resource graph feature is built with composable, reusable components:
+
+**Core Components**:
+- `ResourceGraph.svelte`: Full-featured component with URL sync, seeding, and summary graphs
+- `ResourceGraphCanvas.svelte`: The visualization layer - wraps SvelteFlow with node/edge rendering
+- `ResourceGraphContainer.svelte`: Data fetching wrapper for ResourceGraph
+
+**Overlay Components** (two different overlays for different use cases):
+
+- `ResourceGraphOverlay.svelte`: **Branded "Quick View" overlay** for viewing a resource's graph from anywhere in the app
+  - Use when: Adding a "View Dependencies" action to resource menus/buttons
+  - Features: Custom header with resource name, "Project Graphs" link, fixed modal size
+  - Props: `anchorResource` (single resource), `resources` (all resources), `open`, `isLoading`, `error`
+  - Example: Right-click menu item on a model → opens modal showing that model's graph
+
+- `GraphOverlay.svelte`: **Generic expansion overlay** for flexible graph display modes
+  - Use when: Building custom graph UIs with inline/fullscreen/modal expansion options
+  - Features: Three modes (inline/fullscreen/modal), minimal UI, keyboard shortcuts
+  - Props: `group` (ResourceGraphGrouping), `open`, `mode`, `showControls`, `showCloseButton`
+  - Example: Expanding a graph card within ResourceGraph.svelte to fullscreen
+
+**Data & Layout**:
+- `build-resource-graph.ts`: Contains the layout routine and grouping utilities:
+  - `buildResourceGraph(resources)`: Returns nodes and edges positioned via Dagre
+  - `partitionResourcesByMetrics(resources)`: Default grouping by metrics views
+  - `partitionResourcesBySeeds(resources, seeds)`: Seed-based grouping with DAG traversal
 
 URL Seeds (deep links)
 
@@ -84,17 +102,422 @@ Existing “View graph” Menu Integrations
 - Metrics (metrics views): `web-common/src/features/metrics-views/MetricsViewMenuItems.svelte`
 - Each one builds the correct seed string and does `goto('/graph?seed=...')`.
 
+Using Graph Components Modularly
+
+The graph components can be used anywhere in the application. Here are practical examples:
+
+---
+
+### Example 1: Dashboard Widget
+
+Display a model's dependencies in a dashboard panel without affecting the URL:
+
+```svelte
+<!-- DashboardModelCard.svelte -->
+<script lang="ts">
+  import ResourceGraph from '@rilldata/web-common/features/resource-graph/ResourceGraph.svelte';
+  import { createRuntimeServiceListResources } from '@rilldata/web-common/runtime-client';
+  import { runtime } from '@rilldata/web-common/runtime-client/runtime-store';
+
+  export let modelName: string;
+
+  $: instanceId = $runtime.instanceId;
+  $: resourcesQuery = createRuntimeServiceListResources(instanceId);
+  $: resources = $resourcesQuery.data?.resources ?? [];
+
+  let expandedId: string | null = null;
+</script>
+
+<div class="dashboard-card">
+  <h3>Dependencies: {modelName}</h3>
+
+  <ResourceGraph
+    {resources}
+    seeds={[`model:${modelName}`]}
+    syncExpandedParam={false}
+    showSummary={false}
+    showCardTitles={false}
+    maxGroups={1}
+    {expandedId}
+    onExpandedChange={(id) => expandedId = id}
+  />
+</div>
+
+<style>
+  .dashboard-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    height: 400px;
+  }
+</style>
+```
+
+---
+
+### Example 2a: Modal "View Dependencies" (Simple - Recommended)
+
+Add a "View Dependencies" button using the branded ResourceGraphOverlay:
+
+```svelte
+<!-- ResourceActionsMenu.svelte -->
+<script lang="ts">
+  import ResourceGraphOverlay from '@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte';
+  import type { V1Resource } from '@rilldata/web-common/runtime-client';
+
+  export let resource: V1Resource;
+  export let allResources: V1Resource[];
+
+  let showDependencies = false;
+</script>
+
+<button on:click={() => showDependencies = true}>
+  View Dependencies
+</button>
+
+<ResourceGraphOverlay
+  anchorResource={resource}
+  resources={allResources}
+  open={showDependencies}
+  bind:open={showDependencies}
+/>
+```
+
+---
+
+### Example 2b: Modal "View Dependencies" (Custom - Advanced)
+
+For custom modal styling, use GraphOverlay with manual seed partitioning:
+
+```svelte
+<!-- CustomResourceGraphModal.svelte -->
+<script lang="ts">
+  import { partitionResourcesBySeeds } from '@rilldata/web-common/features/resource-graph/build-resource-graph';
+  import GraphOverlay from '@rilldata/web-common/features/resource-graph/GraphOverlay.svelte';
+  import type { V1Resource } from '@rilldata/web-common/runtime-client';
+
+  export let resource: V1Resource;
+  export let allResources: V1Resource[];
+
+  let showDependencies = false;
+
+  $: resourceKind = resource?.meta?.name?.kind?.replace('rill.runtime.v1.', '').toLowerCase();
+  $: resourceName = resource?.meta?.name?.name;
+  $: seed = resourceKind && resourceName ? `${resourceKind}:${resourceName}` : null;
+  $: groups = seed ? partitionResourcesBySeeds(allResources, [seed]) : [];
+  $: graphGroup = groups[0] ?? null;
+</script>
+
+<button on:click={() => showDependencies = true}>
+  View Dependencies
+</button>
+
+{#if graphGroup}
+  <GraphOverlay
+    group={graphGroup}
+    open={showDependencies}
+    mode="modal"
+    showControls={true}
+    on:close={() => showDependencies = false}
+  />
+{/if}
+```
+
+---
+
+### Example 3: Sidebar Mini-Graph
+
+Show a compact dependency graph in a sidebar:
+
+```svelte
+<!-- EditorSidebar.svelte -->
+<script lang="ts">
+  import ResourceGraphCanvas from '@rilldata/web-common/features/resource-graph/ResourceGraphCanvas.svelte';
+  import { partitionResourcesBySeeds } from '@rilldata/web-common/features/resource-graph/build-resource-graph';
+  import GraphOverlay from '@rilldata/web-common/features/resource-graph/GraphOverlay.svelte';
+  import type { V1Resource } from '@rilldata/web-common/runtime-client';
+
+  export let currentResource: V1Resource;
+  export let allResources: V1Resource[];
+
+  let showExpanded = false;
+
+  $: kind = currentResource?.meta?.name?.kind?.replace('rill.runtime.v1.', '').toLowerCase();
+  $: name = currentResource?.meta?.name?.name;
+  $: seed = kind && name ? `${kind}:${name}` : null;
+  $: groups = seed ? partitionResourcesBySeeds(allResources, [seed]) : [];
+  $: group = groups[0];
+</script>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h4>Dependencies</h4>
+    {#if group}
+      <button on:click={() => showExpanded = true}>
+        Expand
+      </button>
+    {/if}
+  </div>
+
+  {#if group}
+    <div class="mini-graph">
+      <ResourceGraphCanvas
+        flowId={group.id}
+        resources={group.resources}
+        showControls={false}
+        enableExpand={false}
+        fillParent={false}
+      />
+    </div>
+
+    <!-- Fullscreen overlay when expanded -->
+    <GraphOverlay
+      {group}
+      open={showExpanded}
+      mode="fullscreen"
+      on:close={() => showExpanded = false}
+    />
+  {:else}
+    <p class="empty">No dependencies</p>
+  {/if}
+</aside>
+
+<style>
+  .sidebar {
+    width: 280px;
+    border-left: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-header {
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mini-graph {
+    flex: 1;
+    min-height: 200px;
+    padding: 8px;
+  }
+</style>
+```
+
+---
+
+### Example 4: Resource Details Page
+
+Show related resources on a detail page:
+
+```svelte
+<!-- ModelDetailsPage.svelte -->
+<script lang="ts">
+  import ResourceGraph from '@rilldata/web-common/features/resource-graph/ResourceGraph.svelte';
+  import { createRuntimeServiceListResources } from '@rilldata/web-common/runtime-client';
+  import { runtime } from '@rilldata/web-common/runtime-client/runtime-store';
+  import { page } from '$app/stores';
+
+  $: modelName = $page.params.model;
+  $: instanceId = $runtime.instanceId;
+  $: resourcesQuery = createRuntimeServiceListResources(instanceId);
+  $: resources = $resourcesQuery.data?.resources ?? [];
+
+  // Track expansion state locally (not in URL since we're already on a detail page)
+  let expandedGraphId: string | null = null;
+</script>
+
+<div class="page-layout">
+  <main class="content">
+    <h1>{modelName}</h1>
+    <!-- Other model details -->
+  </main>
+
+  <section class="dependencies-section">
+    <h2>Dependency Graph</h2>
+
+    <ResourceGraph
+      {resources}
+      seeds={[`model:${modelName}`]}
+      syncExpandedParam={false}
+      showSummary={false}
+      maxGroups={1}
+      expandedId={expandedGraphId}
+      onExpandedChange={(id) => expandedGraphId = id}
+      overlayMode="inline"
+    />
+  </section>
+</div>
+
+<style>
+  .page-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .dependencies-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+  }
+</style>
+```
+
+---
+
+### Example 5: Custom Expansion Logic
+
+Handle expansion with custom analytics or state management:
+
+```svelte
+<script lang="ts">
+  import ResourceGraph from '@rilldata/web-common/features/resource-graph/ResourceGraph.svelte';
+  import { writable } from 'svelte/store';
+
+  export let resources;
+
+  // Custom state management
+  const expandedGraph = writable<string | null>(null);
+  const graphInteractions = writable<Array<{ graphId: string; timestamp: number }>>([]);
+
+  function handleGraphExpansion(id: string | null) {
+    // Track analytics
+    if (id) {
+      console.log('Graph expanded:', id);
+      graphInteractions.update(arr => [...arr, { graphId: id, timestamp: Date.now() }]);
+    }
+
+    // Update state
+    expandedGraph.set(id);
+
+    // Could also save to localStorage, send to backend, etc.
+  }
+</script>
+
+<ResourceGraph
+  {resources}
+  expandedId={$expandedGraph}
+  onExpandedChange={handleGraphExpansion}
+  syncExpandedParam={false}
+/>
+```
+
+---
+
+### Example 6: Programmatic Graph Building
+
+Build and display custom graphs programmatically:
+
+```svelte
+<script lang="ts">
+  import { partitionResourcesBySeeds, buildResourceGraph } from '@rilldata/web-common/features/resource-graph/build-resource-graph';
+  import ResourceGraphCanvas from '@rilldata/web-common/features/resource-graph/ResourceGraphCanvas.svelte';
+  import type { V1Resource } from '@rilldata/web-common/runtime-client';
+
+  export let resources: V1Resource[];
+  export let focusResources: string[]; // e.g., ['model:orders', 'metrics:revenue']
+
+  // Build custom graph groups
+  $: graphGroups = partitionResourcesBySeeds(resources, focusResources);
+</script>
+
+<div class="graph-grid">
+  {#each graphGroups as group}
+    <div class="graph-card">
+      <h3>{group.label}</h3>
+      <p>{group.resources.length} resources</p>
+
+      <ResourceGraphCanvas
+        flowId={group.id}
+        resources={group.resources}
+        showControls={true}
+      />
+    </div>
+  {/each}
+</div>
+
+<style>
+  .graph-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 16px;
+  }
+
+  .graph-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+  }
+</style>
+```
+
+---
+
+### Key Props for Modular Usage
+
+**Disable URL sync:** Set `syncExpandedParam={false}` to manage state locally
+
+**Control expansion:** Use `expandedId` + `onExpandedChange` for custom state management
+
+**Limit graphs:** Use `maxGroups={1}` to show only the first graph
+
+**Hide UI elements:**
+- `showSummary={false}` - Hide summary counts
+- `showCardTitles={false}` - Hide graph titles
+- `showControls={false}` - Hide SvelteFlow controls
+
+**Change overlay behavior:** Set `overlayMode="modal"` or `"fullscreen"` for different expansion styles
+
 Rendering Details and Options
 
-- `ResourceGraphCanvas.svelte` props:
-  - `enableExpand` (default true): shows the expand button on the card.
-  - `showControls`: adds SvelteFlow’s Controls inside the graph.
-  - `showLock` (default true): shows the lock/interactive toggle in Controls; set to `false` for expanded graphs.
-  - `fillParent`: makes the canvas fill its container’s height (used in expanded overlay).
-- `ResourceGraph.svelte` handles:
-  - Seeding logic and auto-expand on seeds.
-  - Expanded overlay that fills the `.graph-wrapper` area on the graph page.
-  - Reactions to seed changes to update the expanded view.
+**ResourceGraph.svelte props:**
+- `resources`: V1Resource[] - The resources to visualize
+- `seeds`: string[] - Optional seeds for filtering/grouping
+- `syncExpandedParam`: boolean (default: true) - Sync expansion state with URL
+- `onExpandedChange`: ((id: string | null) => void) | null - Callback for expansion changes
+- `expandedId`: string | null - Controlled mode: external expansion state
+- `renderMode`: 'grid' | 'single' | 'list' (default: 'grid') - Layout mode
+- `overlayMode`: 'inline' | 'fullscreen' | 'modal' (default: 'inline') - Expansion behavior
+- `showSummary`: boolean (default: true) - Show summary counts header
+- `showCardTitles`: boolean (default: true) - Show titles on graph cards
+- `showControls`: boolean (default: true) - Show SvelteFlow controls in expanded view
+- `enableExpansion`: boolean (default: true) - Allow graphs to be expanded
+- `gridColumns`: number (default: 3) - Number of columns in grid layout
+- `maxGroups`: number | null - Limit number of graphs displayed
+
+**Slots:**
+- `summary` - Replace the default summary header
+- `graph-item` - Custom rendering for each graph card
+- `empty-state` - Custom empty state when no graphs found
+
+**ResourceGraphCanvas.svelte props:**
+- `resources`: V1Resource[] - Resources to display in this graph
+- `enableExpand` (default: true) - Show expand button on card
+- `showControls`: boolean - Add SvelteFlow Controls inside the graph
+- `showLock` (default: true) - Show lock/interactive toggle
+- `fillParent`: boolean - Fill container's height (for expanded views)
+- `titleLabel`: string | null - Optional title text
+- `rootNodeIds`: string[] - Nodes to emphasize as roots
+
+**ResourceGraphOverlay.svelte props:**
+- `anchorResource`: V1Resource | undefined - The resource to show graph for
+- `resources`: V1Resource[] - All resources (used to build the graph)
+- `open`: boolean (default: false) - Whether overlay is visible
+- `isLoading`: boolean (default: false) - Show loading state
+- `error`: string | null (default: null) - Show error message
+
+**GraphOverlay.svelte props:**
+- `group`: ResourceGraphGrouping - The graph group to display
+- `open`: boolean - Whether overlay is visible
+- `mode`: 'inline' | 'fullscreen' | 'modal' (default: 'inline') - Display mode
+- `showControls`: boolean (default: true) - Show graph controls
+- `showCloseButton`: boolean (default: true) - Show close button (not for inline mode)
+
+**Events:**
+- `on:close` - Emitted when overlay should close (GraphOverlay only)
 
 Graph Layout and Traversal
 

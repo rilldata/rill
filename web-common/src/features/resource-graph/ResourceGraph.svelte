@@ -2,19 +2,18 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import ResourceGraphCanvas from "./ResourceGraphCanvas.svelte";
+  import GraphOverlay from "./GraphOverlay.svelte";
   import {
     partitionResourcesByMetrics,
     partitionResourcesBySeeds,
     type ResourceGraphGrouping,
   } from "./build-resource-graph";
   import { coerceResourceKind, ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { expandSeedsByKind, isKindToken } from "./seed-utils";
-  import { ALLOWED_FOR_GRAPH } from "./seed-utils";
+  import { expandSeedsByKind, isKindToken, tokenForKind, tokenForSeedString } from "./seed-utils";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import SummaryCountsGraph from "./SummaryCountsGraph.svelte";
-  import { KIND_ALIASES } from "./seed-utils";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -27,49 +26,59 @@
   export let showControls = true;
   export let enableExpansion = true;
 
+  // New props for modularity
+  export let onExpandedChange: ((id: string | null) => void) | null = null;
+  export let expandedId: string | null = null; // Controlled mode
+  export let overlayMode: 'inline' | 'fullscreen' | 'modal' = 'inline';
+  export let gridColumns: number = 3;
+  export let expandedHeightMobile = "700px";
+  export let expandedHeightDesktop = "860px";
+
+  type SummaryMemo = {
+    sources: number;
+    metrics: number;
+    models: number;
+    dashboards: number;
+    resources: V1Resource[];
+    activeToken: "metrics" | "sources" | "models" | "dashboards" | null;
+  };
+  function summaryEquals(a: SummaryMemo, b: SummaryMemo) {
+    return (
+      a.sources === b.sources &&
+      a.metrics === b.metrics &&
+      a.models === b.models &&
+      a.dashboards === b.dashboards &&
+      a.resources === b.resources &&
+      a.activeToken === b.activeToken
+    );
+  }
+
+  // Fit view configuration for better centering
+  export let fitViewPadding: number = 0.15;
+  export let fitViewMinZoom: number = 0.1;
+  export let fitViewMaxZoom: number = 1.25;
+
   $: normalizedResources = resources ?? [];
   $: normalizedSeeds = expandSeedsByKind(seeds, normalizedResources, coerceResourceKind);
 
-  function tokenForKind(kind?: ResourceKind | string | null) {
-    if (!kind) return null;
-    const key = `${kind}`.toLowerCase();
-    if (key.includes("source")) return "sources";
-    if (key.includes("model")) return "models";
-    if (key.includes("metricsview") || key.includes("metric")) return "metrics";
-    if (key.includes("explore") || key.includes("dashboard")) return "dashboards";
-    return null;
-  }
-
-  function tokenForSeedString(seed?: string | null) {
-    if (!seed) return null;
-    const normalized = seed.trim().toLowerCase();
-    if (!normalized) return null;
-    const tokenKind = isKindToken(normalized);
-    if (tokenKind) return tokenForKind(tokenKind);
-    const idx = normalized.indexOf(":");
-    if (idx !== -1) {
-      const kindPart = normalized.slice(0, idx);
-      const mapped = KIND_ALIASES[kindPart];
-      if (mapped) return tokenForKind(mapped);
-      return tokenForKind(kindPart);
-    }
-    return null;
-  }
-
   // Determine which overview node should be highlighted based on current seeds
-  $: overviewActiveToken = (function () {
+  $: overviewActiveToken = (function (): "metrics" | "sources" | "models" | "dashboards" | null {
+    const rawSeeds = seeds ?? [];
+    for (const raw of rawSeeds) {
+      const token = tokenForSeedString(raw);
+      if (token) return token;
+    }
+
     const normalized = normalizedSeeds ?? [];
     if (normalized.length) {
       const first = normalized[0];
       if (typeof first === "string") {
-        const token = tokenForSeedString(first);
-        if (token) return token;
+        return tokenForSeedString(first);
       } else {
-        const token = tokenForKind(first.kind as ResourceKind | string | undefined);
-        if (token) return token;
+        return tokenForKind(first.kind as ResourceKind | string | undefined);
       }
     }
-    return tokenForSeedString(seeds?.[0]) ?? null;
+    return null;
   })();
 
   $: resourceGroups = (normalizedSeeds && normalizedSeeds.length)
@@ -80,8 +89,6 @@
       ? resourceGroups.slice(0, maxGroups)
       : resourceGroups;
   $: hasGraphs = visibleResourceGroups.length > 0;
-  $: singleGraphMode =
-    !syncExpandedParam && maxGroups === 1 && visibleResourceGroups.length === 1;
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
   let seedTransitionLoading = false;
@@ -101,6 +108,27 @@
     }
     return { sourcesCount: sources, modelsCount: models, metricsCount: metrics, dashboardsCount: dashboards };
   })());
+  let summaryMemo: SummaryMemo = {
+    sources: 0,
+    models: 0,
+    metrics: 0,
+    dashboards: 0,
+    resources: normalizedResources,
+    activeToken: null,
+  };
+  $: {
+    const nextSummary: SummaryMemo = {
+      sources: sourcesCount,
+      metrics: metricsCount,
+      models: modelsCount,
+      dashboards: dashboardsCount,
+      resources: normalizedResources,
+      activeToken: overviewActiveToken,
+    };
+    if (!summaryEquals(summaryMemo, nextSummary)) {
+      summaryMemo = nextSummary;
+    }
+  }
 
   // Helpers to build title fragments with anchor error awareness
   function resourceId(res?: V1Resource | null): string | null {
@@ -132,30 +160,27 @@
     return anchorId ? [anchorId] : undefined;
   }
 
-  // Expanded state (fills the graph-wrapper area, not fullscreen)
-  let expandedGroup: ResourceGraphGrouping | null = null;
-  let rootEl: HTMLDivElement | null = null;
-  // Keep refs to each grid item so we can scroll it into view on expand
-  const groupElMap = new Map<string, HTMLElement>();
-  function registerGroupEl(node: HTMLElement, id: string) {
-    groupElMap.set(id, node);
-    return {
-      destroy() {
-        // Only delete if the same node (avoid race during diffing)
-        if (groupElMap.get(id) === node) groupElMap.delete(id);
-      },
-    };
-  }
+  // Expansion state management with controlled/uncontrolled mode support
+  let internalExpandedId: string | null = null;
+
+  // Determine if we're in controlled mode (external expandedId prop provided)
+  $: isControlledMode = expandedId !== null || onExpandedChange !== null;
+
+  // Derive current expanded ID for template usage (computed from props/state)
+  $: currentExpandedId = isControlledMode ? expandedId : internalExpandedId;
 
   // When the URL seeds change, re-open the first seeded graph in expanded view
   let lastSeedsSignature = "";
   $: areKindOnlySeeds = (seeds && seeds.length)
     ? seeds.every((s) => Boolean(isKindToken((s || "").toLowerCase())))
     : false;
-  // Read expanded param from URL
+
+  // Read expanded param from URL (only if syncing)
   $: expandedParam = syncExpandedParam
     ? $page.url.searchParams.get("expanded") || null
     : null;
+
+  // Auto-expand logic when seeds change
   $: {
     const signature = (seeds ?? []).join("|");
     if (signature !== lastSeedsSignature) {
@@ -165,40 +190,49 @@
       seedTransitionTimer = setTimeout(() => (seedTransitionLoading = false), 500);
 
       lastSeedsSignature = signature;
-      // If seeds are kind-tokens only (e.g., metrics/sources/models/dashboards),
-      // do not auto-expand. Only auto-expand when a specific resource seed is present.
-      // But if URL has an explicit expanded param, that takes precedence and is handled below.
-      if (!expandedParam) {
+
+      // Only auto-expand in uncontrolled mode
+      const isUncontrolled = !isControlledMode;
+      if (isUncontrolled && !expandedParam) {
         if (
           seeds &&
           seeds.length &&
           visibleResourceGroups.length &&
           !areKindOnlySeeds
         ) {
-          expandedGroup = visibleResourceGroups[0];
+          internalExpandedId = visibleResourceGroups[0]?.id ?? null;
         } else {
-          expandedGroup = null;
+          internalExpandedId = null;
         }
       }
     }
   }
 
-  // Apply expanded param from URL to select the group inline (only when it differs)
-  $: if (syncExpandedParam && expandedParam && expandedParam !== expandedGroup?.id) {
-    const match = visibleResourceGroups.find((g) => g.id === expandedParam);
-    if (match) expandedGroup = match;
+  // Sync with URL expanded param (in uncontrolled mode with URL sync enabled)
+  $: if (!isControlledMode && syncExpandedParam && expandedParam !== internalExpandedId) {
+    internalExpandedId = expandedParam;
   }
 
-  $: if (
-    !expandedParam &&
-    expandedGroup &&
-    !visibleResourceGroups.find((g) => g.id === expandedGroup?.id)
-  ) {
-    expandedGroup = visibleResourceGroups[0] ?? null;
+  /**
+   * Handle expansion change - calls callback or updates URL
+   */
+  function handleExpandChange(id: string | null) {
+    // Update internal state if uncontrolled
+    if (!isControlledMode) {
+      internalExpandedId = id;
+    }
+
+    // Call user callback if provided
+    if (onExpandedChange) {
+      onExpandedChange(id);
+    }
+    // Otherwise sync with URL if enabled
+    else if (syncExpandedParam) {
+      setExpandedInUrl(id);
+    }
   }
 
   function setExpandedInUrl(id: string | null) {
-    if (!syncExpandedParam) return;
     try {
       if (typeof window !== "undefined") {
         const currentUrl = new URL(window.location.href);
@@ -222,25 +256,28 @@
       goto(newUrl.pathname + newUrl.search, { replaceState: true, noScroll: true });
     }
   }
-
-  // No overlay: expanded graph renders inline within the grid
 </script>
 
-<div class="graph-root" bind:this={rootEl}>
+<div
+  class="graph-root"
+  style={`--graph-expanded-height-mobile:${expandedHeightMobile};--graph-expanded-height-desktop:${expandedHeightDesktop};`}
+>
   {#if showSummary}
-    <div class="top-summary">
-      <SummaryCountsGraph
-        sources={sourcesCount}
-        metrics={metricsCount}
-        models={modelsCount}
-        dashboards={dashboardsCount}
-        resources={normalizedResources}
-        activeToken={overviewActiveToken}
-      />
-    </div>
-    {#if hasGraphs}
-      <div class="graph-section-title">All Graphs</div>
-    {/if}
+    <slot name="summary" sources={sourcesCount} {metricsCount} {modelsCount} dashboards={dashboardsCount}>
+      <div class="top-summary">
+        <SummaryCountsGraph
+          sources={summaryMemo.sources}
+          metrics={summaryMemo.metrics}
+          models={summaryMemo.models}
+          dashboards={summaryMemo.dashboards}
+          resources={summaryMemo.resources}
+          activeToken={summaryMemo.activeToken}
+        />
+      </div>
+      {#if hasGraphs}
+        <div class="graph-section-title">All Graphs</div>
+      {/if}
+    </slot>
   {/if}
 
   {#if error}
@@ -255,40 +292,72 @@
       </div>
     </div>
   {:else if !hasGraphs}
-    <div class="state">
-      <p>No resources found.</p>
-    </div>
+    <slot name="empty-state">
+      <div class="state">
+        <p>No resources found.</p>
+      </div>
+    </slot>
   {:else}
-    <div class={singleGraphMode ? 'graph-grid single' : 'graph-grid'}>
+    <div
+      class="resource-graph-grid"
+      style:--grid-columns={gridColumns}
+    >
       {#each visibleResourceGroups as group, index (group.id)}
-        <div class={expandedGroup?.id === group.id ? 'grid-item expanded' : 'grid-item'} use:registerGroupEl={group.id}>
-          <ResourceGraphCanvas
-            flowId={group.id}
-            resources={group.resources}
-            title={null}
-            titleLabel={showCardTitles ? groupTitleParts(group, index).labelWithCount : null}
-            titleErrorCount={showCardTitles ? groupTitleParts(group, index).errorCount : null}
-            anchorError={showCardTitles ? groupTitleParts(group, index).anchorError : false}
-            rootNodeIds={groupRootNodeIds(group)}
-            showControls={showControls && expandedGroup?.id === group.id}
-            showLock={expandedGroup?.id === group.id ? false : true}
-            fillParent={expandedGroup?.id === group.id}
-            enableExpand={enableExpansion}
-            on:expand={enableExpansion
-              ? async () => {
-                  const willExpand = expandedGroup?.id !== group.id;
-                  expandedGroup = willExpand ? group : null;
-                  setExpandedInUrl(willExpand ? group.id : null);
-                  if (willExpand) {
-                    await Promise.resolve();
-                    const el = groupElMap.get(group.id);
-                    try {
-                      el?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-                    } catch {}
-                  }
-                }
-              : undefined}
-          />
+        {@const isExpanded = currentExpandedId === group.id}
+        <div
+          class="grid-item"
+          class:expanded={isExpanded}
+        >
+          {#if isExpanded && overlayMode !== 'inline'}
+            <!-- Fullscreen or modal overlay -->
+            <GraphOverlay
+              {group}
+              open={isExpanded}
+              mode={overlayMode}
+              showControls={showControls}
+              on:close={() => handleExpandChange(null)}
+            />
+          {:else if isExpanded}
+            <!-- Inline expansion within grid -->
+            <ResourceGraphCanvas
+              flowId={group.id}
+              resources={group.resources}
+              title={null}
+              titleLabel={showCardTitles ? groupTitleParts(group, index).labelWithCount : null}
+              titleErrorCount={showCardTitles ? groupTitleParts(group, index).errorCount : null}
+              anchorError={showCardTitles ? groupTitleParts(group, index).anchorError : false}
+              rootNodeIds={groupRootNodeIds(group)}
+              showControls={showControls}
+              showLock={false}
+              fillParent={true}
+              enableExpand={enableExpansion}
+              {fitViewPadding}
+              {fitViewMinZoom}
+              {fitViewMaxZoom}
+              on:expand={() => handleExpandChange(null)}
+            />
+          {:else}
+            <!-- Collapsed card view -->
+            <slot name="graph-item" {group} {index}>
+              <ResourceGraphCanvas
+                flowId={group.id}
+                resources={group.resources}
+                title={null}
+                titleLabel={showCardTitles ? groupTitleParts(group, index).labelWithCount : null}
+                titleErrorCount={showCardTitles ? groupTitleParts(group, index).errorCount : null}
+                anchorError={showCardTitles ? groupTitleParts(group, index).anchorError : false}
+                rootNodeIds={groupRootNodeIds(group)}
+                showControls={false}
+                showLock={true}
+                fillParent={false}
+                enableExpand={enableExpansion}
+                {fitViewPadding}
+                {fitViewMinZoom}
+                {fitViewMaxZoom}
+                on:expand={() => handleExpandChange(group.id)}
+              />
+            </slot>
+          {/if}
         </div>
       {/each}
     </div>
@@ -297,27 +366,34 @@
 
 <style lang="postcss">
   .graph-root {
-    @apply relative h-full w-full overflow-auto;
+    @apply relative h-full w-full overflow-auto flex flex-col min-h-0;
+    --graph-card-height: 260px;
   }
 
-  .graph-grid {
-    @apply grid gap-4;
+  .resource-graph-grid {
+    @apply grid gap-4 flex-1 min-h-0;
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
   @media (min-width: 1024px) {
-    .graph-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .resource-graph-grid {
+      grid-template-columns: repeat(var(--grid-columns, 3), minmax(0, 1fr));
     }
   }
 
-  .graph-grid.single {
-    @apply flex flex-col h-full;
+  .grid-item {
+    @apply relative;
   }
 
-  .graph-grid.single .grid-item,
-  .graph-grid.single .grid-item.expanded {
-    @apply flex-1 h-full;
+  .grid-item.expanded {
+    @apply col-span-full;
+    height: var(--graph-expanded-height-mobile, 700px);
+  }
+
+  @media (min-width: 768px) {
+    .grid-item.expanded {
+      height: var(--graph-expanded-height-desktop, 860px);
+    }
   }
 
   .state {
@@ -334,11 +410,4 @@
 
   .top-summary { @apply mb-2; }
   .graph-section-title { @apply text-sm font-semibold text-foreground mt-4 mb-2; }
-
-  /* Inline expansion: span across all columns and set a taller height.
-   * 700px on mobile provides adequate viewing space without excessive scrolling.
-   * 860px on md+ screens accommodates larger displays and more complex graphs. */
-  .grid-item.expanded {
-    @apply col-span-full h-[700px] md:h-[860px];
-  }
 </style>
