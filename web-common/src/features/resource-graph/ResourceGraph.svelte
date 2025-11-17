@@ -14,6 +14,7 @@
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import SummaryCountsGraph from "./SummaryCountsGraph.svelte";
+  import { onDestroy } from "svelte";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -92,7 +93,15 @@
 
   // Brief loading indicator when URL seeds change (e.g., via Overview node clicks)
   let seedTransitionLoading = false;
-  let seedTransitionTimer: any = null;
+  let seedTransitionTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Cleanup timer on component destroy
+  onDestroy(() => {
+    if (seedTransitionTimer) {
+      clearTimeout(seedTransitionTimer);
+      seedTransitionTimer = null;
+    }
+  });
 
   // Counts for the summary counts graph. Compute directly to avoid any cross-module Set equality pitfalls.
   $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } = (function computeCounts() {

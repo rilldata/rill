@@ -3,6 +3,7 @@ import type {
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
+import { resourceNameToId } from "../entity-management/resource-utils";
 
 const downstreamKindMapping = new Map<ResourceKind, Set<ResourceKind>>([
   [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
@@ -13,16 +14,11 @@ const downstreamKindMapping = new Map<ResourceKind, Set<ResourceKind>>([
   ],
 ]);
 
-function toResourceKey(name?: V1ResourceName | null) {
-  if (!name?.kind || !name?.name) return undefined;
-  return `${name.kind}:${name.name}`;
-}
-
 function refsKey(refs?: V1ResourceName[] | null) {
   if (!refs?.length) return undefined;
 
   return refs
-    .map((ref) => toResourceKey(ref))
+    .map((ref) => resourceNameToId(ref))
     .filter((key): key is string => !!key)
     .sort()
     .join("|");
@@ -34,11 +30,11 @@ export function findLateralResources(
 ) {
   if (!resource) return [];
 
-  const resourceNameKey = toResourceKey(resource.meta?.name);
+  const resourceNameKey = resourceNameToId(resource.meta?.name);
   const resourceRefsKey = refsKey(resource.meta?.refs);
 
   return allResources.filter((candidate) => {
-    const candidateNameKey = toResourceKey(candidate.meta?.name);
+    const candidateNameKey = resourceNameToId(candidate.meta?.name);
     if (resourceNameKey && candidateNameKey === resourceNameKey) return true;
 
     const candidateRefsKey = refsKey(candidate.meta?.refs);
@@ -58,7 +54,7 @@ export function findUpstreamResources(
 
   resources.forEach((resource) => {
     resource?.meta?.refs?.forEach((ref) => {
-      const key = toResourceKey(ref);
+      const key = resourceNameToId(ref);
       if (key) referenceKeys.add(key);
     });
   });
@@ -66,7 +62,7 @@ export function findUpstreamResources(
   if (!referenceKeys.size) return [];
 
   return allResources.filter((candidate) => {
-    const candidateKey = toResourceKey(candidate.meta?.name);
+    const candidateKey = resourceNameToId(candidate.meta?.name);
     return candidateKey ? referenceKeys.has(candidateKey) : false;
   });
 }
@@ -86,9 +82,9 @@ export function findDownstreamResources(
   const downstreamKinds = downstreamKindMapping.get(resourceKind);
   if (!downstreamKinds?.size) return [];
 
-  const selectedKey = toResourceKey(selectedResource?.meta?.name);
+  const selectedKey = resourceNameToId(selectedResource?.meta?.name);
   const resourceKeys = resources
-    .map((resource) => toResourceKey(resource?.meta?.name))
+    .map((resource) => resourceNameToId(resource?.meta?.name))
     .filter((key): key is string => !!key);
   const resourceKeySet = new Set(resourceKeys);
 
@@ -98,7 +94,7 @@ export function findDownstreamResources(
     if (!candidateKind || !downstreamKinds.has(candidateKind)) return false;
 
     return (candidate.meta?.refs ?? []).some((ref) => {
-      const refKey = toResourceKey(ref);
+      const refKey = resourceNameToId(ref);
       if (!refKey) return false;
       if (selectedKey) return refKey === selectedKey;
       return resourceKeySet.has(refKey);

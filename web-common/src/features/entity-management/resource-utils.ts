@@ -5,7 +5,7 @@ import type {
 
 /**
  * Create a string ID from resource metadata in the format "kind:name".
- * This is the standard format for identifying resources across the application.
+ * This is a convenience wrapper around resourceNameToId for V1ResourceMeta objects.
  *
  * @param meta - Resource metadata containing name information
  * @returns String ID in format "kind:name", or undefined if metadata is incomplete
@@ -15,8 +15,7 @@ import type {
  * // Returns: "rill.runtime.v1.Model:orders"
  */
 export function createResourceId(meta?: V1ResourceMeta): string | undefined {
-  if (!meta?.name?.name || !meta?.name?.kind) return undefined;
-  return `${meta.name.kind}:${meta.name.name}`;
+  return resourceNameToId(meta?.name);
 }
 
 /**
@@ -47,14 +46,21 @@ export function parseResourceId(id: string): V1ResourceName | null {
 
 /**
  * Create a resource ID string from a V1ResourceName object.
+ * This is the core utility for generating resource identifiers.
  *
- * @param resourceName - Resource name object
- * @returns String ID in format "kind:name"
+ * @param resourceName - Resource name object (can be null/undefined)
+ * @returns String ID in format "kind:name", or undefined if input is invalid
  *
  * @example
  * resourceNameToId({ kind: 'rill.runtime.v1.Model', name: 'orders' })
  * // Returns: "rill.runtime.v1.Model:orders"
+ *
+ * resourceNameToId(null)
+ * // Returns: undefined
  */
-export function resourceNameToId(resourceName: V1ResourceName): string {
+export function resourceNameToId(
+  resourceName?: V1ResourceName | null,
+): string | undefined {
+  if (!resourceName?.kind || !resourceName?.name) return undefined;
   return `${resourceName.kind}:${resourceName.name}`;
 }

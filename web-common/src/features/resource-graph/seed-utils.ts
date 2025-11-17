@@ -1,20 +1,43 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { resourceNameToId } from "@rilldata/web-common/features/entity-management/resource-utils";
+import { ResourceShortNameToResourceKind } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import type { V1Resource, V1ResourceName } from "@rilldata/web-common/runtime-client";
 
 /**
- * Mapping of common kind aliases to their full ResourceKind values.
- * Used for parsing seed strings with short-form kind names.
+ * Normalize plural forms to singular forms for graph seed parsing.
+ * The graph feature accepts both singular and plural forms for user convenience,
+ * but internally normalizes to the singular forms used by the rest of the app.
  */
-export const KIND_ALIASES: Record<string, ResourceKind> = {
-  metrics: ResourceKind.MetricsView,
-  metric: ResourceKind.MetricsView,
-  metricsview: ResourceKind.MetricsView,
-  dashboard: ResourceKind.Explore,
-  explore: ResourceKind.Explore,
-  model: ResourceKind.Model,
-  source: ResourceKind.Source,
-  canvas: ResourceKind.Canvas,
-};
+function normalizePluralToSingular(kind: string): string {
+  const normalized = kind.toLowerCase().trim();
+
+  // Map plural forms to singular forms
+  const pluralToSingular: Record<string, string> = {
+    'metrics': 'metricsview',
+    'models': 'model',
+    'sources': 'source',
+    'dashboards': 'explore',
+    // Also handle "dashboard" -> "explore" for consistency
+    'dashboard': 'explore',
+    // Handle "metric" -> "metricsview"
+    'metric': 'metricsview',
+  };
+
+  return pluralToSingular[normalized] ?? normalized;
+}
+
+/**
+ * Resolve a kind alias string to its ResourceKind.
+ * Handles both singular and plural forms by normalizing them first,
+ * then looking up in the canonical ResourceShortNameToResourceKind mapping.
+ *
+ * @param kindAlias - Short name or alias for a resource kind (e.g., "models", "sources")
+ * @returns The ResourceKind if found, undefined otherwise
+ */
+function resolveKindAlias(kindAlias: string): ResourceKind | undefined {
+  const normalized = normalizePluralToSingular(kindAlias);
+  return ResourceShortNameToResourceKind[normalized];
+}
 
 /**
  * Resource kinds that are allowed in the graph visualization.
@@ -30,8 +53,11 @@ export const ALLOWED_FOR_GRAPH = new Set<ResourceKind>([
  * Normalize a seed string into a standard format.
  * Handles various input formats:
  * - "name" -> defaults to MetricsView kind
- * - "kind:name" -> parses kind and name
+ * - "kind:name" -> parses kind and name (accepts plural forms)
  * - "rill.runtime.v1.Kind:name" -> fully qualified kind
+ *
+ * The graph feature accepts plural forms (e.g., "models", "sources") for user convenience,
+ * but normalizes them to the singular forms used by the rest of the app.
  *
  * @param s - Seed string to normalize
  * @returns Normalized seed as either a string or V1ResourceName object
@@ -39,6 +65,7 @@ export const ALLOWED_FOR_GRAPH = new Set<ResourceKind>([
  * @example
  * normalizeSeed("orders") // { kind: "rill.runtime.v1.MetricsView", name: "orders" }
  * normalizeSeed("model:clean_orders") // { kind: "rill.runtime.v1.Model", name: "clean_orders" }
+ * normalizeSeed("models:clean_orders") // { kind: "rill.runtime.v1.Model", name: "clean_orders" }
  */
 export function normalizeSeed(s: string): string | V1ResourceName {
   const idx = s.indexOf(":");
@@ -54,8 +81,8 @@ export function normalizeSeed(s: string): string | V1ResourceName {
     return { kind: kindPart, name: namePart };
   }
 
-  // Map alias to full kind
-  const mapped = KIND_ALIASES[kindPart.trim().toLowerCase()];
+  // Resolve alias (handles both singular and plural forms)
+  const mapped = resolveKindAlias(kindPart);
   if (mapped) return { kind: mapped, name: namePart };
 
   // Return as-is if no mapping found
@@ -66,6 +93,9 @@ export function normalizeSeed(s: string): string | V1ResourceName {
  * Check if a string is a kind token (plural or singular kind name).
  * Kind tokens are used to expand to all resources of that kind.
  *
+ * Uses the normalization function to handle plural forms, then looks up
+ * in the canonical ResourceShortNameToResourceKind mapping.
+ *
  * @param s - String to check
  * @returns The ResourceKind if it's a kind token, undefined otherwise
  *
@@ -75,26 +105,8 @@ export function normalizeSeed(s: string): string | V1ResourceName {
  * isKindToken("orders") // undefined (not a kind token)
  */
 export function isKindToken(s: string): ResourceKind | undefined {
-  const key = s.trim().toLowerCase();
-  switch (key) {
-    case "metrics":
-    case "metric":
-    case "metricsview":
-      return ResourceKind.MetricsView;
-    case "dashboards":
-    case "dashboard":
-    case "explore":
-    case "explores":
-      return ResourceKind.Explore;
-    case "models":
-    case "model":
-      return ResourceKind.Model;
-    case "sources":
-    case "source":
-      return ResourceKind.Source;
-    default:
-      return undefined;
-  }
+  // Use the same normalization and resolution logic
+  return resolveKindAlias(s);
 }
 
 /**
@@ -143,7 +155,7 @@ export function tokenForSeedString(seed?: string | null): "metrics" | "sources" 
   const idx = normalized.indexOf(":");
   if (idx !== -1) {
     const kindPart = normalized.slice(0, idx);
-    const mapped = KIND_ALIASES[kindPart];
+    const mapped = resolveKindAlias(kindPart);
     if (mapped) return tokenForKind(mapped);
     return tokenForKind(kindPart);
   }
@@ -182,7 +194,8 @@ export function expandSeedsByKind(
 
   // Helper to push a normalized seed and avoid duplicates
   const pushSeed = (s: string | V1ResourceName) => {
-    const id = typeof s === "string" ? s : `${s.kind}:${s.name}`;
+    const id = typeof s === "string" ? s : resourceNameToId(s);
+    if (!id) return; // Skip if resourceNameToId returns undefined
     if (seen.has(id)) return;
     seen.add(id);
     expanded.push(s);

@@ -8,6 +8,7 @@ import {
 import {
   createResourceId,
   parseResourceId,
+  resourceNameToId,
 } from "@rilldata/web-common/features/entity-management/resource-utils";
 import type {
   V1Resource,
@@ -15,6 +16,7 @@ import type {
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import type { ResourceNodeData } from "./types";
+import { localStorageStore } from "@rilldata/web-common/lib/store-utils/local-storage";
 
 // Node sizing constants
 const MIN_NODE_WIDTH = 160; // Minimum width ensures readability of short resource names
@@ -47,74 +49,105 @@ const CONTENT_PADDING = 72; // Total horizontal padding (icons, margins, etc.) w
 // its resources together in the expected graph grouping.
 const lastGroupAssignments = new Map<string, string>(); // resourceId -> groupId
 const lastGroupLabels = new Map<string, string>(); // groupId -> label
+const lastPositions = new Map<string, { x: number; y: number }>(); // nodeId -> position
+const lastRefs = new Map<string, string[]>(); // dependentId -> [sourceIds]
 
 // Persistent client-side cache (localStorage) to keep positions, grouping, and refs
 // Include a layout signature so changes to Dagre spacing or node height invalidate old positions
 const CACHE_NS = `rill.resourceGraph.v1:ns${DAGRE_NODESEP}-rs${DAGRE_RANKSEP}-es${DAGRE_EDGESEP}-h${DEFAULT_NODE_HEIGHT}-mw${MAX_NODE_WIDTH}`;
-type PositionsCache = Record<string, { x: number; y: number }>;
-type AssignmentsCache = Record<string, string>;
-type LabelsCache = Record<string, string>;
-type RefsCache = Record<string, string[]>; // dependentId -> [sourceIds]
+
 type PersistedCache = {
-  positions?: PositionsCache;
-  assignments?: AssignmentsCache;
-  labels?: LabelsCache;
-  refs?: RefsCache;
+  positions: Record<string, { x: number; y: number }>;
+  assignments: Record<string, string>;
+  labels: Record<string, string>;
+  refs: Record<string, string[]>;
 };
 
-function hasLocalStorage() {
+const DEFAULT_CACHE: PersistedCache = {
+  positions: {},
+  assignments: {},
+  labels: {},
+  refs: {},
+};
+
+/**
+ * Clean up orphaned cache entries from old layout versions.
+ * This prevents localStorage from accumulating stale cache data when
+ * layout constants change (which creates a new cache namespace).
+ */
+function cleanupOrphanedCaches() {
   try {
-    return typeof window !== "undefined" && !!window.localStorage;
-  } catch {
-    return false;
+    if (typeof window === "undefined" || !window.localStorage) return;
+
+    const pattern = /^rill\.resourceGraph\.v1:/;
+    const keys = Object.keys(window.localStorage);
+    let cleanedCount = 0;
+
+    for (const key of keys) {
+      // Match pattern but not current namespace
+      if (pattern.test(key) && key !== CACHE_NS) {
+        window.localStorage.removeItem(key);
+        cleanedCount++;
+      }
+    }
+
+    // Log cleanup in development mode
+    if (cleanedCount > 0 && typeof console !== "undefined") {
+      console.debug(`[ResourceGraph] Cleaned up ${cleanedCount} orphaned cache ${cleanedCount === 1 ? 'entry' : 'entries'}`);
+    }
+  } catch (error) {
+    // Ignore errors to prevent breaking the app, but log in development
+    if (typeof console !== "undefined") {
+      console.warn("[ResourceGraph] Failed to cleanup orphaned caches:", error);
+    }
   }
 }
 
-function loadPersistedCache(): PersistedCache {
-  if (!hasLocalStorage()) return {};
-  try {
-    const raw = window.localStorage.getItem(CACHE_NS);
-    if (!raw) return {};
-    const data = JSON.parse(raw);
-    return typeof data === "object" && data ? data : {};
-  } catch {
-    return {};
+// Clean up orphaned cache entries on module initialization
+cleanupOrphanedCaches();
+
+// Use the project's standard localStorage store pattern
+// This handles browser checks, JSON parsing, debouncing, and error handling automatically
+const graphCacheStore = localStorageStore<PersistedCache>(CACHE_NS, DEFAULT_CACHE);
+
+// Subscribe to cache changes and sync to in-memory Maps for fast access
+graphCacheStore.subscribe((cache) => {
+  // Update positions map
+  lastPositions.clear();
+  for (const [k, v] of Object.entries(cache.positions)) {
+    lastPositions.set(k, v);
   }
-}
 
-function savePersistedCache(cache: PersistedCache) {
-  if (!hasLocalStorage()) return;
-  try {
-    window.localStorage.setItem(CACHE_NS, JSON.stringify(cache));
-  } catch {
-    // ignore
+  // Update assignments map
+  lastGroupAssignments.clear();
+  for (const [k, v] of Object.entries(cache.assignments)) {
+    lastGroupAssignments.set(k, v);
   }
-}
 
-const persisted = loadPersistedCache();
-const lastPositions: Map<string, { x: number; y: number }> = new Map(
-  Object.entries(persisted.positions ?? {}),
-);
-for (const [rid, gid] of Object.entries(persisted.assignments ?? {})) {
-  lastGroupAssignments.set(rid, gid);
-}
-for (const [gid, label] of Object.entries(persisted.labels ?? {})) {
-  lastGroupLabels.set(gid, label);
-}
-const lastRefs: Map<string, string[]> = new Map(
-  Object.entries(persisted.refs ?? {}),
-);
+  // Update labels map
+  lastGroupLabels.clear();
+  for (const [k, v] of Object.entries(cache.labels)) {
+    lastGroupLabels.set(k, v);
+  }
 
+  // Update refs map
+  lastRefs.clear();
+  for (const [k, v] of Object.entries(cache.refs)) {
+    lastRefs.set(k, v);
+  }
+});
+
+/**
+ * Persist all in-memory caches to localStorage.
+ * The store automatically debounces writes (300ms) and handles errors.
+ */
 function persistAllCaches() {
-  const positions: PositionsCache = {};
-  for (const [k, v] of lastPositions) positions[k] = v;
-  const assignments: AssignmentsCache = {};
-  for (const [k, v] of lastGroupAssignments) assignments[k] = v;
-  const labels: LabelsCache = {};
-  for (const [k, v] of lastGroupLabels) labels[k] = v;
-  const refs: RefsCache = {};
-  for (const [k, v] of lastRefs) refs[k] = v;
-  savePersistedCache({ positions, assignments, labels, refs });
+  graphCacheStore.set({
+    positions: Object.fromEntries(lastPositions),
+    assignments: Object.fromEntries(lastGroupAssignments),
+    labels: Object.fromEntries(lastGroupLabels),
+    refs: Object.fromEntries(lastRefs),
+  });
 }
 
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
@@ -122,7 +155,15 @@ function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   return name.kind as ResourceKind;
 }
 
-function makePlaceholderResource(id: string, label?: string): V1Resource {
+/**
+ * Create a placeholder resource for a missing or errored dependency.
+ * Placeholder resources represent cached nodes that are no longer available
+ * but are retained to maintain graph stability and show errors.
+ *
+ * @param id - Resource ID in format "kind:name"
+ * @returns Partial V1Resource with minimal required fields for graph rendering
+ */
+function makePlaceholderResource(id: string): V1Resource {
   const parsed = parseResourceId(id);
   const name = parsed?.name ?? id;
   const kind = parsed?.kind ?? "model";
@@ -131,6 +172,9 @@ function makePlaceholderResource(id: string, label?: string): V1Resource {
     .map((rid) => parseResourceId(rid))
     .filter((r): r is { kind: string; name: string } => !!r)
     .map((r) => ({ kind: r.kind, name: r.name }));
+
+  // Create a partial resource object with only the fields needed for graph visualization
+  // This is a safe type assertion because we're providing all required fields for the graph
   return {
     meta: {
       name: { kind, name },
@@ -261,7 +305,7 @@ export function buildResourceGraph(resources: V1Resource[], opts?: BuildGraphOpt
     if (!dependentId) continue;
 
     for (const ref of resource.meta?.refs ?? []) {
-      const sourceId = createResourceId({ name: ref });
+      const sourceId = resourceNameToId(ref);
       if (!sourceId) continue;
       if (!resourceMap.has(sourceId)) continue;
       if (sourceId === dependentId) continue;

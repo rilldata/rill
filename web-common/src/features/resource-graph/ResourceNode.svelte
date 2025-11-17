@@ -67,6 +67,9 @@
     }
   }
 
+  // XSS Safety: Resource names come from the runtime API (V1Resource objects) which are
+  // populated from YAML configuration files. These names are automatically escaped by Svelte's
+  // default text interpolation (`{value}`). No `{@html}` usage exists in this component.
   $: resourceName = data?.resource?.meta?.name?.name ?? "";
   $: resourceKind = kind; // already normalized ResourceKind
   $: artifact = resourceName && resourceKind

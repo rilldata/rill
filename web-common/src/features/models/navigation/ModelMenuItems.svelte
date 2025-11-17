@@ -42,9 +42,17 @@
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
   function viewGraph() {
-    const name = $modelQuery.data?.meta?.name?.name;
-    if (!name) return;
-    navigateToResourceGraph("model", name);
+    try {
+      const name = $modelQuery.data?.meta?.name?.name;
+      if (!name) {
+        console.warn("[ModelMenuItems] Cannot navigate to graph: model name is missing");
+        return;
+      }
+      navigateToResourceGraph("model", name);
+    } catch (error) {
+      console.error("[ModelMenuItems] Failed to navigate to graph:", error);
+      // TODO: Show toast notification to user when toast system is available
+    }
   }
 
   async function handleCreateModel() {

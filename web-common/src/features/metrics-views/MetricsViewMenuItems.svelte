@@ -54,9 +54,17 @@
   };
 
   function viewGraph() {
-    const name = $resourceQuery.data?.meta?.name?.name;
-    if (!name) return;
-    navigateToResourceGraph("metrics", name);
+    try {
+      const name = $resourceQuery.data?.meta?.name?.name;
+      if (!name) {
+        console.warn("[MetricsViewMenuItems] Cannot navigate to graph: metrics view name is missing");
+        return;
+      }
+      navigateToResourceGraph("metrics", name);
+    } catch (error) {
+      console.error("[MetricsViewMenuItems] Failed to navigate to graph:", error);
+      // TODO: Show toast notification to user when toast system is available
+    }
   }
 </script>
 

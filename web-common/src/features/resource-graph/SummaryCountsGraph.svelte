@@ -145,10 +145,15 @@
   }
 
   function buildEdges() {
+    const shared = {
+      type: 'straight',
+      sourceHandle: 'out',
+      targetHandle: 'in',
+    } as const;
     return [
-      { id: 'e1', source: 'sources', target: 'metrics', type: 'smoothstep' },
-      { id: 'e2', source: 'metrics', target: 'models', type: 'smoothstep' },
-      { id: 'e3', source: 'models', target: 'dashboards', type: 'smoothstep' },
+      { id: 'e1', source: 'sources', target: 'metrics', ...shared },
+      { id: 'e2', source: 'metrics', target: 'models', ...shared },
+      { id: 'e3', source: 'models', target: 'dashboards', ...shared },
     ] satisfies Edge[];
   }
 
@@ -170,9 +175,8 @@
   $: flowKey = `overview|${sources}|${metrics}|${models}|${dashboards}|${containerKey}|${flowColorMode}`;
 
   const edgeOptions = {
-    type: 'smoothstep',
+    type: 'straight',
     style: 'stroke:#b1b1b7;stroke-width:1.5px;opacity:0.95;',
-    pathOptions: { offset: 6, borderRadius: 6 },
   } as const;
 </script>
 

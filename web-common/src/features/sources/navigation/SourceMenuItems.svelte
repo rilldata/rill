@@ -59,9 +59,17 @@
   $: tableName = source?.state?.table as string;
 
   function viewGraph() {
-    const name = $sourceQuery.data?.meta?.name?.name;
-    if (!name) return;
-    navigateToResourceGraph("source", name);
+    try {
+      const name = $sourceQuery.data?.meta?.name?.name;
+      if (!name) {
+        console.warn("[SourceMenuItems] Cannot navigate to graph: source name is missing");
+        return;
+      }
+      navigateToResourceGraph("source", name);
+    } catch (error) {
+      console.error("[SourceMenuItems] Failed to navigate to graph:", error);
+      // TODO: Show toast notification to user when toast system is available
+    }
   }
 
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
