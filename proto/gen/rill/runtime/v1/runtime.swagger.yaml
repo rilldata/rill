@@ -3953,6 +3953,11 @@ definitions:
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+      filterExpr:
+        type: object
+        additionalProperties:
+          type: string
+        description: Filter expressions as key-value pairs for the canvas.
   v1CanvasRow:
     type: object
     properties:

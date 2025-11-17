@@ -38,6 +38,7 @@ import { TimeControls } from "./time-control";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { redirect } from "@sveltejs/kit";
+import { getFiltersFromText } from "../../dashboards/filters/dimension-filters/dimension-search-text-utils";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -151,6 +152,14 @@ export class CanvasEntity {
 
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
+
+      console.log({ spec: spec.data });
+
+      Object.entries(
+        spec.data?.canvas?.defaultPreset?.filterExpr ?? {},
+      ).forEach(([metricsViewName, expr]) => {
+        console.log(getFiltersFromText(expr));
+      });
 
       if (!filePath) {
         return;

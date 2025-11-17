@@ -10831,6 +10831,8 @@ func (m *CanvasPreset) validate(all bool) error {
 
 	// no validation rules for ComparisonMode
 
+	// no validation rules for FilterExpr
+
 	if m.TimeRange != nil {
 		// no validation rules for TimeRange
 	}
