@@ -1,24 +1,27 @@
 <script lang="ts">
   import { Search } from "@rilldata/web-common/components/search";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
+  import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
+  import type { PivotState } from "web-common/src/features/dashboards/pivot/types.ts";
   import PivotDrag from "./PivotDrag.svelte";
   import { timePillActions, timePillSelectors } from "./time-pill-store";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
 
+  export let pivotState: PivotState;
+  export let measures: PivotChipData[];
+  export let dimensions: PivotChipData[];
+  export let timeControlsForPillActions: Pick<
+    TimeControlState,
+    "timeStart" | "timeEnd" | "minTimeGrain"
+  >;
+
+  $: ({ rows, columns, tableMode } = pivotState);
+  $: splitColumns = splitPivotChips(columns);
+
   const CHIP_HEIGHT = 34;
-
-  const stateManagers = getStateManagers();
-  const {
-    selectors: {
-      pivot: { measures, dimensions, columns, rows, isFlat },
-    },
-  } = stateManagers;
-
-  const timeControlsStore = useTimeControlStore(stateManagers);
 
   let sidebarHeight = 0;
   let searchText = "";
@@ -27,16 +30,19 @@
     timePillActions.initTimeDimension("time", "Time");
   });
 
-  $: if ($timeControlsStore.timeStart && $timeControlsStore.timeEnd) {
+  $: if (
+    timeControlsForPillActions.timeStart &&
+    timeControlsForPillActions.timeEnd
+  ) {
     timePillActions.setTimeControls(
-      $timeControlsStore.timeStart,
-      $timeControlsStore.timeEnd,
-      $timeControlsStore.minTimeGrain,
+      timeControlsForPillActions.timeStart,
+      timeControlsForPillActions.timeEnd,
+      timeControlsForPillActions.minTimeGrain,
     );
   }
 
-  $: if ($rows && $columns) {
-    timePillActions.updateUsedGrains("time", $rows, $columns.dimension);
+  $: if (rows && columns) {
+    timePillActions.updateUsedGrains("time", rows, splitColumns.dimension);
   }
 
   // Get reactive values from the store
@@ -52,8 +58,8 @@
       ]
     : [];
 
-  $: filteredMeasures = filterBasedOnSearch($measures, searchText);
-  $: filteredDimensions = filterBasedOnSearch($dimensions, searchText);
+  $: filteredMeasures = filterBasedOnSearch(measures, searchText);
+  $: filteredDimensions = filterBasedOnSearch(dimensions, searchText);
 
   // All of the following reactive statements can be avoided
   // If and when Chrome/Firefox supports max-height with flex-basis
@@ -89,7 +95,7 @@
     {extraSpace}
     {chipsPerSection}
     items={timeGrainOptions}
-    tableMode={$isFlat ? "flat" : "nest"}
+    {tableMode}
     otherChipCounts={[filteredDimensions.length, filteredMeasures.length]}
   />
 
@@ -106,7 +112,7 @@
     {extraSpace}
     {chipsPerSection}
     items={filteredDimensions}
-    tableMode={$isFlat ? "flat" : "nest"}
+    {tableMode}
     otherChipCounts={[timeGrainOptions.length, filteredDimensions.length]}
   />
 </div>

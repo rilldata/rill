@@ -5,7 +5,7 @@ sidebar_label: Environment Templating
 sidebar_position: 40
 ---
 
-Along with [connector templating](/connect/templating), you can also optimize your development environment for performance and cost-effectiveness at the model layer. This approach is particularly useful when you don't have a separate development database or file system, as it allows you to limit the amount of data processed in source models.
+Along with [connector templating](/build/connectors/templating), you can also optimize your development environment for performance and cost-effectiveness at the model layer. This approach is particularly useful when you don't have a separate development database or file system, as it allows you to limit the amount of data processed in source models.
 
 ## Why Use Templating?
 
@@ -42,7 +42,7 @@ sql: "select * from read_parquet('gs://rilldata-public/github-analytics/Clickhou
 
 :::info Why is the connector type duckdb and not s3 or gcs?
 
-In this case, we are using the [embedded DuckDB engine](/connect/olap/duckdb) to execute a [SELECT](https://duckdb.org/docs/sql/statements/select.html) statement while leveraging DuckDB's native [read_parquet](https://duckdb.org/docs/data/parquet/overview.html) function. Therefore, the `connector` type ends up being `duckdb` instead of `s3`. For more details, see our [Source YAML](/reference/project-files/sources.md) reference documentation.
+In this case, we are using the [embedded DuckDB engine](/build/connectors/olap/duckdb) to execute a [SELECT](https://duckdb.org/docs/sql/statements/select.html) statement while leveraging DuckDB's native [read_parquet](https://duckdb.org/docs/data/parquet/overview.html) function. Therefore, the `connector` type ends up being `duckdb` instead of `s3`. For more details, see our [Source YAML](/reference/project-files/sources) reference documentation.
 
 :::
 
@@ -100,7 +100,7 @@ In this example:
 
 ### Applying a One-Week Sample to the Source Bucket for Local Development
 
-In another example, let's say we had an [S3](/connect/data-source/s3.md) source defined that happens to be reading a very large amount of parquet data. Following best practices, we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment-specific logic](/build/models/templating.md)). So what can we do?
+In another example, let's say we had an [S3](/build/connectors/data-source/s3) source defined that happens to be reading a very large amount of parquet data. Following best practices, we'll want to read in a subset of this source data for local modeling in Rill Developer rather than using the full dataset for development purposes. Furthermore, we'll make the assumption that the upstream data is not partitioned and thus the S3 bucket is not partitioned (where we could then simply filter the `path` by using a glob pattern potentially in conjunction with [environment-specific logic](/build/models/templating)). So what can we do?
 
 Fortunately, we can leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ using templating logic in the SQL. In this case, because there is an existing `updated_at` timestamp column, we can use it to filter and retrieve only one week's worth of data. For example, our `source.yaml` file may end up looking something like this:
 
@@ -122,7 +122,7 @@ Depending on the OLAP engine of your project, you can set the dates dynamically 
 
 ### Example: Leveraging Variables to Apply a Filter and Row Limit Dynamically to a Model
 
-Our last example will highlight how the same templating concepts can be applied with [variables](/connect/credentials#setting-credentials-for-rill-developer). In this case, we have a source dataset about horror movies that came out in the past 50 years, which includes various characteristics, attributes, and metrics about each horror movie as separate columns.
+Our last example will highlight how the same templating concepts can be applied with [variables](/build/connectors/credentials#setting-credentials-for-rill-developer). In this case, we have a source dataset about horror movies that came out in the past 50 years, which includes various characteristics, attributes, and metrics about each horror movie as separate columns.
 
 For example, we know the release date, how many people saw a movie, what the budget was, its popularity, the original language of the movie, the genres, and much more.
 

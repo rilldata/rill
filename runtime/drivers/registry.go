@@ -27,6 +27,8 @@ type Instance struct {
 	ID string
 	// Environment is the environment that the instance represents
 	Environment string
+	// ProjectDisplayName is the display name from rill.yaml
+	ProjectDisplayName string `db:"project_display_name"`
 	// Driver name to connect to for OLAP
 	OLAPConnector string
 	// ProjectOLAPConnector is an override of OLAPConnector that may be set in rill.yaml.
@@ -99,9 +101,14 @@ type InstanceConfig struct {
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
 	MetricsExactifyDruidTopN bool `mapstructure:"rill.metrics.exactify_druid_topn"`
-	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
+	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
+	// Can be "", "none", "new", "pushdown".
+	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
+	// AlertsDefaultStreamingRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
+	// AlertsFastStreamingRefreshCron is similar to AlertsDefaultStreamingRefreshCron but is used for alerts that are based on always-on OLAP connectors (i.e. that have MayScaleToZero == false).
+	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -161,7 +168,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
-		AlertsDefaultStreamingRefreshCron:    "*/10 * * * *", // Every 10 minutes
+		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
+		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 	}
 
 	// Resolve variables

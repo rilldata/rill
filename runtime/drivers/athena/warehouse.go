@@ -127,7 +127,7 @@ func (c *Connection) unload(ctx context.Context, client *athena.Client, sourcePr
 		return err
 	}
 
-	_, err = c.executeQuery(ctx, client, finalSQL, sourceProperties.ResolveWorkgroup(c.config), outputLocation)
+	_, err = c.executeQuery(ctx, client, finalSQL, sourceProperties.ResolveWorkgroup(c.config), outputLocation, nil)
 	return err
 }
 

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -28,14 +29,14 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Snowflake",
 	Description: "Connect to Snowflake.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Snowflake Connection String",
 			Required:    false,
-			DocsURL:     "https://docs.rilldata.com/connect/data-source/snowflake",
+			DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/snowflake",
 			Placeholder: "<username>@<account_identifier>/<database>/<schema>?warehouse=<warehouse>&role=<role>&authenticator=SNOWFLAKE_JWT&privateKey=<privateKey_base64_url_encoded>",
 			Hint:        "Can be configured here or by setting the 'connector.snowflake.dsn' environment variable (using '.env' or '--env').",
 			Secret:      true,
@@ -241,14 +242,14 @@ type connection struct {
 	storage          *storage.Client
 	logger           *zap.Logger
 
-	db    *sqlx.DB // lazily populated using acquireDB
+	db    *sqlx.DB // lazily populated using getDB
 	dbErr error
 	dbMu  *semaphore.Weighted
 }
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open snowflake connection: %w", err)
 	}
@@ -358,7 +359,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *connection) acquireDB(ctx context.Context) (*sqlx.DB, error) {
+func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 	err := c.dbMu.Acquire(ctx, 1)
 	if err != nil {
 		return nil, err
@@ -373,6 +374,10 @@ func (c *connection) acquireDB(ctx context.Context) (*sqlx.DB, error) {
 	}
 
 	c.db, c.dbErr = sqlx.Open("snowflake", dsn)
+	if c.dbErr != nil {
+		return nil, c.dbErr
+	}
+	c.db.SetConnMaxIdleTime(time.Minute)
 	return c.db, c.dbErr
 }
 

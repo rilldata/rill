@@ -113,7 +113,11 @@
   }
 </script>
 
-<SidebarWrapper type="secondary" disableHorizontalPadding title="Canvas">
+<SidebarWrapper
+  type="secondary"
+  disableHorizontalPadding
+  title="Canvas configurations"
+>
   <div class="page-param">
     <Input
       hint="Shown in global header and when deployed to Rill Cloud"
@@ -225,10 +229,13 @@
           await updateProperties({ theme: value });
         }
       }}
-      onColorChange={async (primary, secondary) => {
+      onColorChange={async (primary, secondary, isDarkMode) => {
+        // TODO: Update to support dark mode - currently always sets light mode
+        // Use new theme structure: theme.light or theme.dark
+        const modeKey = isDarkMode ? "dark" : "light";
         await updateProperties({
           theme: {
-            colors: {
+            [modeKey]: {
               primary,
               secondary,
             },

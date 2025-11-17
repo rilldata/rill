@@ -13,6 +13,7 @@
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config.ts";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
@@ -22,6 +23,7 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types.ts";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
   import { DateTime, Interval } from "luxon";
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
@@ -168,12 +170,14 @@
       if (timeZone) setTimeZone(timeZone);
     }
 
+    await queryClient.cancelQueries({
+      predicate: (query) =>
+        isMetricsViewQuery(query.queryHash, metricsViewName),
+    });
+
     const { interval, grain } = await deriveInterval(
       name,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate($allTimeRange.start),
-        DateTime.fromJSDate($allTimeRange.end),
-      ),
+
       metricsViewName,
       $selectedTimezone,
     );
@@ -252,8 +256,7 @@
         {onSelectRange}
         {onTimeGrainSelect}
         {onSelectTimeZone}
-        canPanLeft={false}
-        canPanRight={false}
+        hidePan
         onPan={() => {}}
         {minTimeGrain}
         {side}

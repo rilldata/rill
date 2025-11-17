@@ -327,6 +327,7 @@ message InstanceHealth {
 message Instance {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string environment = 20;
+  string project_display_name = 25;
   string olap_connector = 2;
   string repo_connector = 4;
   string admin_connector = 19;
@@ -349,7 +350,7 @@ message Connector {
   // Name of the connector
   string name = 2;
   // Config for the connector
-  map<string, string> config = 3;
+  google.protobuf.Struct config = 3;
   // Properties in config that use templating
   repeated string templated_properties = 5;
   // Provision settings if its a managed connector
@@ -850,11 +851,11 @@ message AnalyzedConnector {
   // Connector driver metadata
   ConnectorDriver driver = 2;
   // Combined config properties for the connector
-  map<string, string> config = 3;
+  google.protobuf.Struct config = 3;
   // Config properties preset by the runtime or when the instance was created
-  map<string, string> preset_config = 4;
+  google.protobuf.Struct preset_config = 4;
   // Config properties set in project YAML files
-  map<string, string> project_config = 5;
+  google.protobuf.Struct project_config = 5;
   // Config properties set as dynamic variables
   map<string, string> env_config = 6;
   // Provision indicates if its a managed connector

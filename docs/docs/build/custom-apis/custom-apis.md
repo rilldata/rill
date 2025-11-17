@@ -15,18 +15,104 @@ You can write a SQL query and expose it as an API endpoint. This is useful when 
 
 ```yaml
 type: api
-sql: SELECT abc FROM my_model
+sql: SELECT publisher, domain, timestamp FROM ad_bids
 ```
+
+### Querying External Databases
+
+By default, SQL APIs execute queries against your default OLAP engine (typically DuckDB). However, you can specify a different OLAP engine using the `connector` parameter. This allows you to query data directly from **Athena**, **BigQuery**, **MySQL**, **Postgres**, **Redshift**, or **Snowflake** without ingesting them into Rill.
+
+**Data Warehouses**
+
+Athena:
+
+```yaml
+type: api
+connector: athena
+sql: SELECT * FROM s3_data_table LIMIT 100
+```
+
+BigQuery:
+
+```yaml
+type: api
+connector: bigquery
+sql: SELECT * FROM `rilldata.pricing.cloud_pricing_export` LIMIT 100
+```
+
+Redshift:
+
+```yaml
+type: api
+connector: redshift
+sql: SELECT * FROM transactions WHERE transaction_date >= '2024-01-01' LIMIT 100
+```
+
+Snowflake:
+
+```yaml
+type: api
+connector: snowflake
+sql: SELECT * FROM database.schema.table LIMIT 100
+```
+
+**OLTP Databases**
+
+MySQL:
+
+```yaml
+type: api
+connector: mysql
+sql: SELECT * FROM orders WHERE order_date >= '2025-01-01' LIMIT 100
+```
+
+Postgres:
+
+```yaml
+type: api
+connector: postgres
+sql: SELECT * FROM events WHERE created_at >= '2025-01-01' LIMIT 100
+```
+
+:::warning Data Warehouse and Database Costs
+
+When using alternative connectors (Athena, BigQuery, MySQL, Postgres, Redshift, Snowflake), queries execute directly on your data source and will **incur costs based on your provider's billing model**:
+- **Athena**: Charges based on data scanned (per TB)
+- **BigQuery**: Charges based on data scanned (per TB)
+- **MySQL/Postgres**: May incur costs based on instance compute time and IOPS
+- **Redshift**: Charges based on cluster compute time
+- **Snowflake**: Charges based on warehouse compute time
+
+To minimize costs:
+- Use `LIMIT` clauses to restrict result set sizes
+- Apply filters to reduce data scanned
+- Consider materializing frequently accessed queries as models in DuckDB
+- Monitor your warehouse's query costs and usage patterns
+
+:::
+
+**When to use alternative connectors for APIs:**
+- Your data is already in the source database/warehouse
+- You want real-time access to the latest data from the source
+- You're building internal tools where query costs are acceptable
+- [Querying partitions](/build/models/partitioned-models) from underlying data source to ingest data in partitions in Rill
+
+**When to use DuckDB (default):**
+- You need fast, low-cost queries for end-user facing APIs
+- Your data is already in Rill models
+- You want predictable performance and costs
+- You're serving external customers or high-volume requests
+- You need the fastest possible query response times
 
 
 ## Metrics SQL API
 
-You can write a SQL query referring to metrics definitions and dimensions defined in a [metrics view](/build/metrics-view/metrics-view.md). 
+You can write a SQL query referring to metrics definitions and dimensions defined in a [metrics view](/build/metrics-view). 
 It should have the following structure:
     
 ```yaml
 type: api
-metrics_sql: SELECT dimension, measure FROM my_metrics
+metrics_sql: SELECT publisher, domain, total_records FROM ad_bids_metrics
 ```
 
 
@@ -38,6 +124,7 @@ Metrics SQL transforms queries that reference `dimensions` and `measures` within
 
 Consider a metrics view configured as follows:
 ```yaml
+#metrics/ad_bids_metrics.yaml
 type: metrics_view
 title: Ad Bids
 model: ad_bids
@@ -49,18 +136,18 @@ dimensions:
     column: domain
 measures:
   - name: total_records
-    label: Total records
+    display_name: Total records
     expression: COUNT(*)
 ```
 
 To query this view, a user might write a Metrics SQL query like:
 ```sql
-SELECT publisher, domain, total_records FROM metrics_view
+SELECT publisher, domain, total_records FROM ad_bids_metrics
 ```
 
 This Metrics SQL is internally translated to a standard SQL query as follows:
 ```sql
-SELECT toUpper(publisher) AS publisher, domain AS domain, COUNT(*) AS total_records FROM ad_bids GROUP BY publisher, domain
+SELECT toUpper(publisher) AS publisher, domain AS domain, COUNT(*) AS total_records FROM ad_bids_metrics GROUP BY publisher, domain
 ```
 
 ### Security and Compliance
@@ -92,11 +179,11 @@ Metrics SQL is specifically designed for querying metrics views and may not supp
 
 You can use templating to make your SQL query dynamic. We support:
  - Dynamic arguments that can be passed in as query parameters during the API call using `{{ .args.<param-name> }}`
- - User attributes like email, domain, and admin if available using `{{ .user.<attr> }}` (see integration docs [here](/integrate/custom-api.md) for when user attributes are available)
+ - User attributes like email, domain, and admin if available using `{{ .user.<attr> }}` (see integration docs [here](/integrate/custom-api) for when user attributes are available)
  - Conditional statements
  - Optional parameters paired with conditional statements.
 
-See integration docs [here](/integrate/custom-api.md) to learn how these are passed in when calling the API.
+See integration docs [here](/integrate/custom-api) to learn how these are passed in when calling the API.
 
 ### Conditional statements
 
@@ -104,14 +191,14 @@ Assume an API endpoint defined as `my-api.yaml`:
 ```yaml
 type: api
 sql: |
-  SELECT count("measure")
-    {{ if ( .user.admin ) }} ,dim  {{ end }} 
-    FROM my_table WHERE date = '{{ .args.date }}' 
-    {{ if ( .user.admin ) }} group by 2 {{ end }}
+  SELECT count(*)
+    {{ if ( .user.admin ) }} ,publisher  {{ end }} 
+    FROM ad_bids WHERE timestamp::DATE = '{{ .args.date }}' 
+    {{ if ( .user.admin ) }} GROUP BY 2 {{ end }}
 ```
 
 will expose an API endpoint like `https://api.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/runtime/api/my-api?date=2021-01-01`.
-If the user is an admin, the API will return the count of `measure` by `dim` for the given date. If the user is not an admin, the API will return the count of `measure` for the given date.
+If the user is an admin, the API will return the count of records by `publisher` for the given date. If the user is not an admin, the API will return the total count of records for the given date.
 
 
 ### Optional parameters
@@ -121,16 +208,18 @@ One of those functions is `hasKey`, which in the example below enables optional 
 
 Assume an API endpoint defined as `my-api.yaml`:
 ```yaml
-SELECT
-  device_type,
-  AGGREGATE(overall_spend)
-FROM bids
-{{ if hasKey .args "type" }} WHERE device_type = '{{ .args.type }}' {{ end }} 
-GROUP BY device_type
+type: api
+sql: |
+  SELECT
+    publisher,
+    COUNT(*) as total_records
+  FROM ad_bids
+  {{ if hasKey .args "publisher" }} WHERE publisher = '{{ .args.publisher }}' {{ end }} 
+  GROUP BY publisher
 ```
 
-HTTP GET `.../runtime/api/my-api` would return `overall_spend` for all `device_type`s.  
-HTTP GET `.../runtime/api/my-api?type=Samsung` would return `overall_spend` for `Samsung`.
+HTTP GET `.../runtime/api/my-api` would return `total_records` for all `publisher`s.  
+HTTP GET `.../runtime/api/my-api?publisher=Google` would return `total_records` for `Google`.
 
 
 
@@ -138,7 +227,7 @@ HTTP GET `.../runtime/api/my-api?type=Samsung` would return `overall_spend` for 
 
 ## Add an OpenAPI spec
 
-You can optionally provide OpenAPI annotations for the request and response schema in your custom API definition. These will automatically be incorporated in the OpenAPI spec for your project (see [Custom API Integration](/integrate/custom-api.md) for details).
+You can optionally provide OpenAPI annotations for the request and response schema in your custom API definition. These will automatically be incorporated in the OpenAPI spec for your project (see [Custom API Integration](/integrate/custom-api) for details).
 
 Example custom API with request and response schema:
 
@@ -146,9 +235,9 @@ Example custom API with request and response schema:
 type: api
 
 metrics_sql: >
-  SELECT product, total_sales
-  FROM sales_metrics
-  WHERE country = '{{ .args.country }}'
+  SELECT publisher, total_records
+  FROM ad_bids_metrics
+  WHERE domain = '{{ .args.domain }}'
   {{ if hasKey .args "limit" }} LIMIT {{ .args.limit }} {{ end }}
   {{ if hasKey .args "offset" }} OFFSET {{ .args.offset }} {{ end }}
 
@@ -156,11 +245,11 @@ openapi:
   request_schema:
     type: object
     required:
-      - country
+      - domain
     properties:
-      country:
+      domain:
         type: string
-        description: Country to filter sales by
+        description: Domain to filter sales by
       limit:
         type: integer
         description: Optional limit for pagination
@@ -171,14 +260,14 @@ openapi:
   response_schema:
     type: object
     properties:
-      product:
+      publisher:
         type: string
-        description: Product name
-      total_sales:
+        description: Publisher name
+      total_records:
         type: number
-        description: Total sales for the product
+        description: Total records for the publisher
 ```
 
 ## How to use custom APIs
 
-Refer to the integration docs [here](/integrate/custom-api.md) to learn how to use custom APIs in your application.
+Refer to the integration docs [here](/integrate/custom-api) to learn how to use custom APIs in your application.

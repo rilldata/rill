@@ -50,6 +50,7 @@ export interface MetricsViewSearchResponseSearchResult {
 
 export interface MetricsViewSpecDimension {
   name?: string;
+  type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
   column?: string;
@@ -60,6 +61,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
 }
 
@@ -68,6 +70,16 @@ export interface MetricsViewSpecDimensionSelector {
   timeGrain?: V1TimeGrain;
   desc?: boolean;
 }
+
+export type MetricsViewSpecDimensionType =
+  (typeof MetricsViewSpecDimensionType)[keyof typeof MetricsViewSpecDimensionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecDimensionType = {
+  DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
+  DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
+  DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+} as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
 
@@ -292,11 +304,11 @@ export interface V1AnalyzeVariablesResponse {
   variables?: V1AnalyzedVariable[];
 }
 
-export type V1AnalyzedConnectorConfig = { [key: string]: string };
+export type V1AnalyzedConnectorConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorPresetConfig = { [key: string]: string };
+export type V1AnalyzedConnectorPresetConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
+export type V1AnalyzedConnectorProjectConfig = { [key: string]: unknown };
 
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
@@ -653,7 +665,7 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
-export type V1ConnectorConfig = { [key: string]: string };
+export type V1ConnectorConfig = { [key: string]: unknown };
 
 export type V1ConnectorProvisionArgs = { [key: string]: unknown };
 
@@ -690,7 +702,7 @@ export interface V1ConnectorDriver {
   implementsWarehouse?: boolean;
 }
 
-export type V1ConnectorSpecProperties = { [key: string]: string };
+export type V1ConnectorSpecProperties = { [key: string]: unknown };
 
 export type V1ConnectorSpecProvisionArgs = { [key: string]: unknown };
 
@@ -1103,6 +1115,7 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   environment?: string;
+  projectDisplayName?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
@@ -1563,6 +1576,11 @@ export interface V1MetricsViewTimeRangeResponse {
 }
 
 export interface V1MetricsViewTimeRangesResponse {
+  fullTimeRange?: V1TimeRangeSummary;
+  /** The resolved time ranges for the requested rilltime expressions. */
+  resolvedTimeRanges?: V1ResolvedTimeRange[];
+  /** The same values as resolved_time_ranges for backwards compatibility.
+Deprecated: use resolved_time_ranges instead. */
   timeRanges?: V1TimeRange[];
 }
 
@@ -1715,8 +1733,12 @@ export interface V1ModelSpec {
   retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
+  /** trigger indicates a normal refresh (incremental or full depending on the model type). */
   trigger?: boolean;
+  /** trigger_full indicates a full refresh regardless of the model type. */
   triggerFull?: boolean;
+  /** trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models. */
+  triggerPartitions?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
   definedAsSource?: boolean;
 }
@@ -2073,6 +2095,20 @@ export type V1ResolveComponentResponseRendererProperties = {
 
 export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+}
+
+export interface V1ResolvedTimeRange {
+  /** The start of the resolved time range. */
+  start?: string;
+  /** The end of the resolved time range. */
+  end?: string;
+  grain?: V1TimeGrain;
+  /** The time dimension that was used to resolve the time range. */
+  timeDimension?: string;
+  /** The time zone that was used to resolve the time range. */
+  timeZone?: string;
+  /** The original expression used to resolve the time range. */
+  expression?: string;
 }
 
 export interface V1Resource {
@@ -2852,10 +2888,16 @@ export type QueryServiceMetricsViewTimeRangeBody = {
 };
 
 export type QueryServiceMetricsViewTimeRangesBody = {
+  /** Optional time range expressions to resolve (uses the rilltime expression syntax). */
   expressions?: string[];
+  /** Optional query priority. */
   priority?: number;
+  /** Optional time zone that overrides the time zones used when resolving the time range expressions. */
   timeZone?: string;
+  /** Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension. */
   timeDimension?: string;
+  /** Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
