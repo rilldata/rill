@@ -1239,6 +1239,10 @@ func (s *Server) AddProjectMemberUserResources(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	if proj.ProdDeploymentID == nil {
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
+	}
+
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
@@ -1285,8 +1289,10 @@ func (s *Server) AddProjectMemberUserResources(ctx context.Context, req *adminv1
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		invitedByUserID = user.ID
-		invitedByName = user.DisplayName
+		if user != nil {
+			invitedByUserID = user.ID
+			invitedByName = user.DisplayName
+		}
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -1331,8 +1337,8 @@ func (s *Server) AddProjectMemberUserResources(ctx context.Context, req *adminv1
 			return nil, fmt.Errorf("expected but failed to find organization invite: %w", err)
 		}
 
-		// TODO look for existing invite and merge resources? or if its a role invite then throw an error?
 		// Invite user to join the project
+		// Note if there is existing invite then resources in this call will be ignored
 		err = s.admin.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
 			Email:       req.Email,
 			OrgInviteID: orgInvite.ID,
@@ -1530,7 +1536,6 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 	}
 
 	// set resources to nil when assigning a role as any role will have more access than just viewer role with access to specific resources
-	// TODO how to handle usergroups - should we remove user from usergroups when changing role if the usergroup is just viewer with resources?
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID, nil)
 	if err != nil {
 		return nil, err
