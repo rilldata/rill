@@ -38,7 +38,7 @@ cd rill-examples/rill-github-analytics
 
 ### Install Dependencies
 
-The project includes Python scripts for downloading GitHub data. The project uses [Poetry](https://python-poetry.org/) for dependency management ([installation guide](https://python-poetry.org/docs/#installation)).
+The project includes Python scripts for downloading GitHub data and generating Rill project files. The project uses [Poetry](https://python-poetry.org/) for dependency management ([installation guide](https://python-poetry.org/docs/#installation)).
 
 ```bash
 # Using Poetry (recommended)
@@ -50,34 +50,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install pandas pydriller
 ```
 
-## Step 2: Generate Rill Project Files
-
-Create Rill project files for your GitHub repository:
-
-```bash
-# Generate Rill files configured for GCS
-python setup_repo.py owner/repo --gcs --bucket gs://your-bucket/github-analytics
-
-# Examples:
-python setup_repo.py duckdb/duckdb --gcs --bucket gs://your-bucket/github-analytics
-python setup_repo.py your-org/your-repo --gcs --bucket gs://your-bucket/github-analytics
-```
-
-This creates:
-- Source definitions pointing to your GCS bucket
-- Data transformation models
-- Metrics definitions
-- An explore dashboard
-
-**Note:** Rill supports both Google Cloud Storage (GCS) and Amazon S3. The download script currently supports GCS. For S3, you'll need to modify the script.
-
-:::note Just want to explore locally?
-Use the `--local` flag instead: `python setup_repo.py owner/repo --local`
-
-This is great for testing, but you won't be able to deploy to Rill Cloud without migrating to cloud storage later.
-:::
-
-## Step 3: Scrape Git History and Save to Object Storage
+## Step 2: Scrape Git History and Save to Object Storage
 
 **Prerequisites:**
 - [Create a Google Cloud Storage bucket](https://cloud.google.com/storage/docs/creating-buckets)
@@ -85,7 +58,7 @@ This is great for testing, but you won't be able to deploy to Rill Cloud without
   - [Create a service account key](https://cloud.google.com/iam/docs/keys-create-delete) with Storage Object Admin role
   - Set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json` environment variable
 
-Extract commit history and save to GCS:
+The project includes a `download_commits.py` script that clones your target repository, extracts commit metadata and file changes, then uploads the data as parquet files to your GCS bucket.
 
 ```bash
 # Download and upload to GCS
@@ -97,11 +70,6 @@ python download_commits.py owner/repo --gcs --bucket gs://your-bucket/github-ana
 
 **Note:** Files will be saved to `gs://your-bucket/github-analytics/owner/repo/` to keep data organized by repository.
 
-The script will:
-- Clone the repository
-- Extract commit metadata and file changes
-- Upload data as parquet files to your GCS bucket
-
 :::note Private repositories
 For private repos, use a fine-grained access token:
 
@@ -111,6 +79,33 @@ For private repos, use a fine-grained access token:
 :::
 
 **Note:** For large repositories with 10,000+ commits, the download may take 10-30 minutes. Use `--limit` to test with a smaller dataset first.
+
+## Step 3: Generate Rill Project Files
+
+The project includes a `setup_repo.py` script that will generate:
+- Source definitions pointing to your GCS bucket
+- Data transformation models
+- Metrics definitions
+- An explore dashboard
+
+Run the script with your repository and bucket:
+
+```bash
+# Generate Rill files configured for your GCS bucket
+python setup_repo.py owner/repo --gcs --bucket gs://your-bucket/github-analytics
+
+# Examples:
+python setup_repo.py duckdb/duckdb --gcs --bucket gs://your-bucket/github-analytics
+python setup_repo.py your-org/your-repo --gcs --bucket gs://your-bucket/github-analytics
+```
+
+**Note:** Rill supports both Google Cloud Storage (GCS) and Amazon S3. The download script currently supports GCS. For S3, you'll need to modify the script.
+
+:::note Just want to explore locally?
+Use the `--local` flag instead: `python setup_repo.py owner/repo --local`
+
+This is great for testing, but you won't be able to deploy to Rill Cloud without migrating to cloud storage later.
+:::
 
 ## Step 4: Deploy to Rill Cloud
 
