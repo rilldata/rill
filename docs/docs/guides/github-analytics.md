@@ -55,16 +55,16 @@ pip install pandas pydriller
 Create Rill project files for your GitHub repository:
 
 ```bash
-# Generate Rill files for any GitHub repository
-python setup_repo.py owner/repo
+# Generate Rill files configured for GCS
+python setup_repo.py owner/repo --gcs --bucket gs://your-bucket/github-analytics
 
 # Examples:
-python setup_repo.py duckdb/duckdb
-python setup_repo.py your-org/your-repo
+python setup_repo.py duckdb/duckdb --gcs --bucket gs://your-bucket/github-analytics
+python setup_repo.py your-org/your-repo --gcs --bucket gs://your-bucket/github-analytics
 ```
 
 This creates:
-- Source definitions pointing to cloud storage
+- Source definitions pointing to your GCS bucket
 - Data transformation models
 - Metrics definitions
 - An explore dashboard
@@ -72,7 +72,7 @@ This creates:
 **Note:** Rill supports both Google Cloud Storage (GCS) and Amazon S3. The download script currently supports GCS. For S3, you'll need to modify the script.
 
 :::note Just want to explore locally?
-Add the `--local` flag to use local files: `python setup_repo.py owner/repo --local`
+Use the `--local` flag instead: `python setup_repo.py owner/repo --local`
 
 This is great for testing, but you won't be able to deploy to Rill Cloud without migrating to cloud storage later.
 :::
@@ -94,6 +94,8 @@ python download_commits.py owner/repo --gcs --bucket gs://your-bucket/github-ana
 # Or limit to recent commits for faster testing
 python download_commits.py owner/repo --gcs --bucket gs://your-bucket/github-analytics --limit 1000
 ```
+
+**Note:** Files will be saved to `gs://your-bucket/github-analytics/owner/repo/` to keep data organized by repository.
 
 The script will:
 - Clone the repository
