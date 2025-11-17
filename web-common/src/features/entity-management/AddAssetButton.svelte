@@ -203,7 +203,7 @@
           {/if}
         </div>
       </DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent class="w-[240px]">
+      <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
         <DropdownMenu.Item
           aria-label="Blank file"
           class="flex gap-x-2"
@@ -295,7 +295,7 @@
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
-      <DropdownMenu.SubContent class="w-[240px]">
+      <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
         <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
           <Folder size="16px" /> Folder
         </DropdownMenu.Item>
