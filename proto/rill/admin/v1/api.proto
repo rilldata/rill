@@ -3089,6 +3089,7 @@ message ProjectPermissions {
   bool manage_alerts = 14;
   bool create_bookmarks = 17;
   bool manage_bookmarks = 18;
+  bool has_full_role = 23; // indicates whether there was any role which did not had resource level shares, thus had access too all resources as per that role permissions.
 }
 
 message OrganizationRole {

@@ -307,11 +307,14 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, err
 		}
 
-		userRules, err := s.securityRulesForUserResources(ctx, proj.ID, claims.OwnerID())
-		if err != nil {
-			return nil, err
+		// ignore resource level security rules if the user has a full role
+		if !permissions.HasFullRole {
+			userRules, err := s.securityRulesForUserResources(ctx, proj.ID, claims.OwnerID())
+			if err != nil {
+				return nil, err
+			}
+			rules = append(rules, userRules...)
 		}
-		rules = append(rules, userRules...)
 	} else if claims.OwnerType() == auth.OwnerTypeService {
 		attr, err = s.jwtAttributesForService(ctx, claims.OwnerID(), permissions)
 		if err != nil {

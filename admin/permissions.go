@@ -306,5 +306,6 @@ func UnionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ManageAlerts:               a.ManageAlerts || b.ManageAlerts,
 		CreateBookmarks:            a.CreateBookmarks || b.CreateBookmarks,
 		ManageBookmarks:            a.ManageBookmarks || b.ManageBookmarks,
+		HasFullRole:                a.HasFullRole || len(b.Resources) == 0,
 	}
 }

@@ -820,10 +820,6 @@ func mergeResourceNames(base, additions []database.ResourceName) []database.Reso
 	return merged
 }
 
-func normalizeResourceKey(typ, name string) string {
-	return strings.ToLower(typ) + "|" + strings.ToLower(name)
-}
-
 func subtractResourceNames(base, removals []database.ResourceName) []database.ResourceName {
 	if len(base) == 0 {
 		return nil
@@ -852,4 +848,8 @@ func subtractResourceNames(base, removals []database.ResourceName) []database.Re
 		return nil
 	}
 	return out
+}
+
+func normalizeResourceKey(typ, name string) string {
+	return strings.ToLower(typ) + "|" + strings.ToLower(name)
 }

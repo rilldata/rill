@@ -1501,6 +1501,8 @@ components:
                     type: boolean
                 createReports:
                     type: boolean
+                hasFullRole:
+                    type: boolean
                 manageAlerts:
                     type: boolean
                 manageBookmarks:

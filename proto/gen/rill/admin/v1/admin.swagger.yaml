@@ -5888,6 +5888,8 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
+      hasFullRole:
+        type: boolean
   v1ProjectRole:
     type: object
     properties:

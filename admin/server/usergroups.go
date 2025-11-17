@@ -8,6 +8,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -481,6 +482,13 @@ func (s *Server) AddProjectMemberUsergroupResources(ctx context.Context, req *ad
 	}
 
 	resources := resourceNamesFromProto(req.Resources)
+
+	// only allow explore and canvas resources for now
+	for _, r := range resources {
+		if !(r.Type == runtime.ResourceKindExplore || r.Type == runtime.ResourceKindCanvas) {
+			return nil, status.Error(codes.InvalidArgument, "only explore and canvas resources are supported")
+		}
+	}
 
 	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Org, req.Usergroup)
 	if err != nil {

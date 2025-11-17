@@ -15731,6 +15731,11 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
    */
   manageBookmarks = false;
 
+  /**
+   * @generated from field: bool has_full_role = 23;
+   */
+  hasFullRole = false;
+
   constructor(data?: PartialMessage<ProjectPermissions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -15761,6 +15766,7 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
     { no: 14, name: "manage_alerts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "create_bookmarks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "manage_bookmarks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "has_full_role", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectPermissions {

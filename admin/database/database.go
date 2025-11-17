@@ -929,28 +929,29 @@ type OrganizationRole struct {
 type ProjectRole struct {
 	ID                         string
 	Name                       string
-	Admin                      bool `db:"admin"`
-	ReadProject                bool `db:"read_project"`
-	ManageProject              bool `db:"manage_project"`
-	ReadProd                   bool `db:"read_prod"`
-	ReadProdStatus             bool `db:"read_prod_status"`
-	ManageProd                 bool `db:"manage_prod"`
-	ReadDev                    bool `db:"read_dev"`
-	ReadDevStatus              bool `db:"read_dev_status"`
-	ManageDev                  bool `db:"manage_dev"`
-	ReadProvisionerResources   bool `db:"read_provisioner_resources"`
-	ManageProvisionerResources bool `db:"manage_provisioner_resources"`
-	ReadProjectMembers         bool `db:"read_project_members"`
-	ManageProjectMembers       bool `db:"manage_project_members"`
-	ManageProjectAdmins        bool `db:"manage_project_admins"`
-	CreateMagicAuthTokens      bool `db:"create_magic_auth_tokens"`
-	ManageMagicAuthTokens      bool `db:"manage_magic_auth_tokens"`
-	CreateReports              bool `db:"create_reports"`
-	ManageReports              bool `db:"manage_reports"`
-	CreateAlerts               bool `db:"create_alerts"`
-	ManageAlerts               bool `db:"manage_alerts"`
-	CreateBookmarks            bool `db:"create_bookmarks"`
-	ManageBookmarks            bool `db:"manage_bookmarks"`
+	Admin                      bool           `db:"admin"`
+	ReadProject                bool           `db:"read_project"`
+	ManageProject              bool           `db:"manage_project"`
+	ReadProd                   bool           `db:"read_prod"`
+	ReadProdStatus             bool           `db:"read_prod_status"`
+	ManageProd                 bool           `db:"manage_prod"`
+	ReadDev                    bool           `db:"read_dev"`
+	ReadDevStatus              bool           `db:"read_dev_status"`
+	ManageDev                  bool           `db:"manage_dev"`
+	ReadProvisionerResources   bool           `db:"read_provisioner_resources"`
+	ManageProvisionerResources bool           `db:"manage_provisioner_resources"`
+	ReadProjectMembers         bool           `db:"read_project_members"`
+	ManageProjectMembers       bool           `db:"manage_project_members"`
+	ManageProjectAdmins        bool           `db:"manage_project_admins"`
+	CreateMagicAuthTokens      bool           `db:"create_magic_auth_tokens"`
+	ManageMagicAuthTokens      bool           `db:"manage_magic_auth_tokens"`
+	CreateReports              bool           `db:"create_reports"`
+	ManageReports              bool           `db:"manage_reports"`
+	CreateAlerts               bool           `db:"create_alerts"`
+	ManageAlerts               bool           `db:"manage_alerts"`
+	CreateBookmarks            bool           `db:"create_bookmarks"`
+	ManageBookmarks            bool           `db:"manage_bookmarks"`
+	Resources                  []ResourceName `db:"resources"` // only resources to which this role has access
 }
 
 // OrganizationMemberUser is a convenience type used for display-friendly representation of an org member

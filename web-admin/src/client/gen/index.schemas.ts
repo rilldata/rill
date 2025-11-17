@@ -1044,6 +1044,7 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
+  hasFullRole?: boolean;
 }
 
 export interface V1ProjectRole {

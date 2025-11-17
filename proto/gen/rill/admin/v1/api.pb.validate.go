@@ -42958,6 +42958,8 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	// no validation rules for ManageBookmarks
 
+	// no validation rules for HasFullRole
+
 	if len(errors) > 0 {
 		return ProjectPermissionsMultiError(errors)
 	}
