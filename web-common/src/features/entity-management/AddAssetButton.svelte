@@ -16,7 +16,7 @@
   import {
     createRuntimeServiceCreateDirectory,
     createRuntimeServicePutFile,
-    createRuntimeServiceListConnectorDrivers,
+    createRuntimeServiceAnalyzeConnectors,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriverOLAP as useIsModelingSupportedForDefaultOlapDriver } from "../connectors/selectors";
@@ -35,12 +35,6 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
-  import { ICONS as CONNECTOR_ICONS } from "../sources/modal/icons";
-  import {
-    ALL_CONNECTORS,
-    OLAP_ENGINES,
-    SOURCES,
-  } from "../sources/modal/constants";
   import { connectorIconMapping } from "../connectors/connector-icon-mapping";
   import { getConnectorIconKey } from "../connectors/connectors-utils";
 
@@ -77,32 +71,24 @@
 
   $: metricsViews = $metricsViewQuery?.data ?? [];
 
-  // List a curated set of connectors to surface in the Model submenu
-  const connectorsQuery = createRuntimeServiceListConnectorDrivers({
+  $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {
-      // arrange connectors in the way we would like to display them
       select: (data) => {
-        data.connectors =
-          data.connectors &&
-          data.connectors
-            .filter(
-              // Only show connectors in SOURCES or OLAP_ENGINES
-              (a) =>
-                a.name &&
-                (SOURCES.includes(a.name) || OLAP_ENGINES.includes(a.name)),
-            )
-            .sort(
-              // CAST SAFETY: we have filtered out any connectors that
-              // don't have a `name` in the previous filter
-              (a, b) =>
-                ALL_CONNECTORS.indexOf(a.name as string) -
-                ALL_CONNECTORS.indexOf(b.name as string),
-            );
-        return data;
+        if (!data?.connectors) return;
+        const filtered = data.connectors
+          .filter(
+            (c) =>
+              c?.driver?.implementsOlap ||
+              c?.driver?.implementsSqlStore ||
+              c?.driver?.implementsWarehouse,
+          )
+          .sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+        return { connectors: filtered };
       },
     },
   });
-  $: modelConnectors = $connectorsQuery.data?.connectors ?? [];
+  $: ({ data, error } = $connectors);
+  $: console.log("connectors", data?.connectors);
 
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
@@ -240,8 +226,8 @@
         </div>
       </DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
-        {#each modelConnectors as connector (connector.name)}
-          {#if connector.name}
+        {#each data?.connectors ?? [] as connector (connector?.name)}
+          {#if connector?.name}
             <DropdownMenu.Item
               class="flex gap-x-2"
               on:click={() => {
@@ -252,7 +238,7 @@
                 this={connectorIconMapping[getConnectorIconKey(connector)]}
                 size="16px"
               />
-              {connector.displayName}
+              {connector.driver?.displayName ?? connector.name}
             </DropdownMenu.Item>
           {/if}
         {/each}
