@@ -37,17 +37,17 @@
 .navbar__link--active.navbar-docs-link,
 .navbar__link--active.navbar-reference-link,
 .navbar__link--active.navbar-contact-link,
+.navbar__link--active.navbar-api-link,
 .navbar__link--active.navbar-icon-link {
   font-weight: 600;
   color: var(--ifm-color-primary);
-  // border-radius: 8px 8px 0 0;
-  // border-bottom: 2px solid var(--ifm-color-primary);
 }
 
 // NavBar Icons
 .navbar-docs-link::before,
 .navbar-reference-link::before,
-.navbar-contact-link::before {
+.navbar-contact-link::before,
+.navbar-api-link::before {
   content: "";
   padding-top: 0px;
   padding-bottom: 0px;
@@ -74,12 +74,19 @@
   height: 16px;
 }
 
-// NavBar Contact Link Icon
-.navbar-contact-link::before {
-  background-image: url("/icons/MessageSquare.svg");
-  width: 16px;
-  height: 16px;
-}
+  // NavBar Contact Link Icon
+  .navbar-contact-link::before {
+    background-image: url("/icons/MessageSquare.svg");
+    width: 16px;
+    height: 16px;
+  }
+
+  // NavBar API Link Icon
+  .navbar-api-link::before {
+    background-image: url("/icons/CodeXml.svg");
+    width: 16px;
+    height: 16px;
+  }
 // NavBar Icon Link (GitHub and Blog) Change to Icons later
 .navbar-icon-link {
   width: 24px;

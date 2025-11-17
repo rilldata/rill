@@ -131,7 +131,7 @@ const config = {
             label: "Docs",
             position: "left",
             className: "navbar-docs-link",
-            activeBaseRegex: "^(?!/(reference|contact|notes)).*", // Keep Docs active for all doc pages
+            activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
           },
           {
             to: "/reference/project-files",
@@ -141,6 +141,13 @@ const config = {
             activeBasePath: "/reference",
           },
           {
+            to: "/api/admin/",
+            label: "API",
+            position: "left",
+            className: "navbar-api-link",
+            activeBasePath: "/api/admin",
+          },
+          {
             to: "/contact",
             label: "Contact Us",
             position: "left",
@@ -148,11 +155,7 @@ const config = {
             activeBasePath: "/contact",
           },
 
-          {
-            to: "/api/admin/",
-            position: "left",
-            label: "API",
-          },
+
 
           // Right side items
           {
