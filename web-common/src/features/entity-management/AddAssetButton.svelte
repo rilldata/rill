@@ -87,8 +87,7 @@
       },
     },
   });
-  $: ({ data, error } = $connectors);
-  $: console.log("connectors", data?.connectors);
+  $: connectorsData = $connectors.data?.connectors ?? [];
 
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
@@ -226,7 +225,7 @@
         </div>
       </DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent align="start" sideOffset={10} class="w-[240px]">
-        {#each data?.connectors ?? [] as connector (connector?.name)}
+        {#each connectorsData as connector (connector.name)}
           {#if connector?.name}
             <DropdownMenu.Item
               class="flex gap-x-2"
