@@ -25,7 +25,6 @@
     source: Zone;
     width: number;
     chip: PivotChipData;
-    initialIndex: number;
   };
 
   export const dragDataStore = writable<null | DragData>(null);
@@ -66,7 +65,6 @@
   $: source = dragData?.source;
   $: dragChip = dragData?.chip;
   $: ghostWidth = dragData?.width;
-  $: initialIndex = dragData?.initialIndex ?? -1;
   $: canMixTypes = zone === "columns" && tableMode === "flat";
   $: zoneStartedDrag = source === zone;
   $: lastDimensionIndex = items.findLastIndex(
@@ -187,15 +185,7 @@
     dragActive = true;
     window.removeEventListener("mousemove", detectDragStart);
 
-    const {
-      item,
-      index,
-      width,
-      left,
-      top,
-      offsetX,
-      offsetY,
-    } = pendingDrag;
+    const { item, index, width, left, top, offsetX, offsetY } = pendingDrag;
 
     pendingDrag = null;
 
@@ -231,7 +221,6 @@
       chip: item,
       source: zone,
       width,
-      initialIndex: index,
     });
   }
 
