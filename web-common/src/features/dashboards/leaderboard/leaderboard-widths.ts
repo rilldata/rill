@@ -3,10 +3,10 @@ import { get, writable, type Writable } from "svelte/store";
 
 export const DEFAULT_COLUMN_WIDTH = 110;
 export const COMPARISON_COLUMN_WIDTH = 64;
+export const MEASURES_PADDING = 16;
 
 const MIN_COL_WIDTH = 56;
 const MAX_COL_WIDTH = 164;
-const PADDING = 16;
 
 class ColumnStore {
   private value: Writable<number>;
@@ -23,7 +23,7 @@ class ColumnStore {
   update = (newValue: number) => {
     newValue = clamp(
       MIN_COL_WIDTH,
-      Math.ceil(newValue) + PADDING,
+      Math.ceil(newValue) + MEASURES_PADDING,
       MAX_COL_WIDTH,
     );
     const value = get(this.value);

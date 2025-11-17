@@ -51,7 +51,7 @@ func (c *connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		c.logger.Info("MySQL query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
 
-	db, err := c.acquireDB(ctx)
+	db, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}

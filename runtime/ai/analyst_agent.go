@@ -244,8 +244,6 @@ In each iteration, you should:
 Create a chart: After running "query_metrics_view" create a chart using "create_chart" unless:
 - The user explicitly requests a table-only response
 - The query returns only a single scalar value
-- The data structure doesn't lend itself to visualization (e.g., text-heavy data)
-- There is no appropriate chart type which can be created for the underlying data
 
 Choose the appropriate chart type based on your data:
 - Time series data: line_chart or area_chart (better for cummalative trends)

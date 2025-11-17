@@ -7,7 +7,6 @@
   import TableIcon from "../../../components/icons/TableIcon.svelte";
   import TableMenuItems from "./TableMenuItems.svelte";
   import TableSchema from "./TableSchema.svelte";
-  import UnsupportedTypesIndicator from "./UnsupportedTypesIndicator.svelte";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../selectors";
   import { runtime } from "../../../runtime-client/runtime-store";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
@@ -16,15 +15,12 @@
     makeTablePreviewHref,
   } from "../connectors-utils";
 
-  export let instanceId: string;
   export let driver: string;
   export let connector: string;
   export let database: string; // The backend interprets an empty string as the default database
   export let databaseSchema: string; // The backend interprets an empty string as the default schema
   export let table: string;
-  export let hasUnsupportedDataTypes: boolean = false;
   export let store: ConnectorExplorerStore;
-  export let useNewAPI: boolean = false;
   export let showGenerateMetricsAndDashboard: boolean = false;
   export let showGenerateModel: boolean = false;
   export let isOlapConnector: boolean = false;
@@ -51,15 +47,15 @@
   );
   $: tableId = `${connector}-${fullyQualifiedTableName}`;
 
-  // Only generate preview href for OLAP connectors (legacy API)
-  $: href = !useNewAPI
-    ? makeTablePreviewHref(driver, connector, database, databaseSchema, table)
-    : undefined;
+  // Generate preview href for any connector that supports preview routes
+  $: href =
+    makeTablePreviewHref(driver, connector, database, databaseSchema, table) ||
+    undefined;
 
   $: open = href ? $page.url.pathname === href : false;
 
-  // For new API, don't allow navigation until we implement table preview for non-OLAP
-  $: element = allowNavigateToTable && !useNewAPI ? "a" : "button";
+  // Allow navigation when a preview href is available
+  $: element = allowNavigateToTable && href ? "a" : "button";
 </script>
 
 <li aria-label={tableId} class="table-entry group" class:open>
@@ -84,7 +80,7 @@
     <svelte:element
       this={element}
       class="clickable-text"
-      {...allowNavigateToTable && !useNewAPI && href ? { href } : {}}
+      {...allowNavigateToTable && href ? { href } : {}}
       role="menuitem"
       tabindex="0"
       on:click={() => {
@@ -96,16 +92,6 @@
         {table}
       </span>
     </svelte:element>
-
-    {#if hasUnsupportedDataTypes && !useNewAPI}
-      <UnsupportedTypesIndicator
-        {instanceId}
-        {connector}
-        {database}
-        {databaseSchema}
-        {table}
-      />
-    {/if}
 
     {#if allowContextMenu && (showGenerateMetricsAndDashboard || isModelingSupported || showGenerateModel)}
       <DropdownMenu.Root bind:open={contextMenuOpen}>
@@ -143,7 +129,7 @@
   </div>
 
   {#if allowShowSchema && showSchema}
-    <TableSchema {connector} {database} {databaseSchema} {table} {useNewAPI} />
+    <TableSchema {connector} {database} {databaseSchema} {table} />
   {/if}
 </li>
 

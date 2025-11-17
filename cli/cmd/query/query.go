@@ -89,6 +89,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	// Project flags
+	queryCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 	queryCmd.Flags().StringVar(&project, "project", "", "Project name")
 	queryCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	queryCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")

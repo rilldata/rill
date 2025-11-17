@@ -28,6 +28,11 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { createAndExpression } from "./filter-utils";
 import { TDDChart } from "../time-dimension-details/types";
+import {
+  isGrainAllowed,
+  V1TimeGrainToAlias,
+  V1TimeGrainToOrder,
+} from "@rilldata/web-common/lib/time/new-grains";
 
 export function getRillDefaultExploreState(
   metricsViewSpec: V1MetricsViewSpec,
@@ -73,25 +78,33 @@ function getRillDefaultExploreTimeState(
     };
   }
 
+  const { smallestTimeGrain } = metricsViewSpec;
+
   const timeRangeName = getDefaultTimeRange(
-    metricsViewSpec.smallestTimeGrain,
+    smallestTimeGrain,
     timeRangeSummary,
   );
 
   const timeZone = getDefaultTimeZone(exploreSpec);
 
+  const grainForRange = getGrainForRange(
+    timeRangeName,
+    timeZone,
+    timeRangeSummary,
+  );
+
+  const interval = isGrainAllowed(grainForRange, smallestTimeGrain)
+    ? grainForRange
+    : smallestTimeGrain;
+
   return {
     selectedTimeRange: {
       name: timeRangeName,
-      interval: timeRangeName
-        ? getGrainForRange(timeRangeName, timeZone, timeRangeSummary)
-        : undefined,
+      interval,
     } as DashboardTimeControls,
     selectedTimezone: timeZone,
-
     showTimeComparison: false,
     selectedComparisonTimeRange: undefined,
-
     selectedScrubRange: undefined,
     lastDefinedScrubRange: undefined,
   };
@@ -130,56 +143,84 @@ export function getDefaultTimeRange(
     return undefined;
   }
 
+  const dayCount = Interval.fromDateTimes(
+    DateTime.fromISO(timeRangeSummary?.min),
+    DateTime.fromISO(timeRangeSummary?.max),
+  )
+    .toDuration()
+    .as("days");
+
+  let preset: TimeRangePreset = TimeRangePreset.LAST_12_MONTHS;
+
+  const timeGrainOrder =
+    V1TimeGrainToOrder[smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED];
+
   if (
-    smallestTimeGrain &&
-    smallestTimeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+    dayCount <= 2 &&
+    timeGrainOrder <= V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_HOUR]
   ) {
-    switch (smallestTimeGrain) {
-      case V1TimeGrain.TIME_GRAIN_SECOND:
-      case V1TimeGrain.TIME_GRAIN_MINUTE:
-        return TimeRangePreset.LAST_SIX_HOURS;
-      case V1TimeGrain.TIME_GRAIN_HOUR:
-        return TimeRangePreset.LAST_24_HOURS;
-      case V1TimeGrain.TIME_GRAIN_DAY:
-        return TimeRangePreset.LAST_7_DAYS;
-      case V1TimeGrain.TIME_GRAIN_WEEK:
-        return TimeRangePreset.LAST_4_WEEKS;
-      case V1TimeGrain.TIME_GRAIN_MONTH:
-        return TimeRangePreset.LAST_3_MONTHS;
-      case V1TimeGrain.TIME_GRAIN_YEAR:
-        return "P2Y";
-      default:
-        return TimeRangePreset.LAST_7_DAYS;
-    }
-  } else {
-    const dayCount = Interval.fromDateTimes(
-      DateTime.fromISO(timeRangeSummary?.min),
-      DateTime.fromISO(timeRangeSummary?.max),
-    )
-      .toDuration()
-      .as("days");
-
-    let preset: TimeRangePreset = TimeRangePreset.LAST_12_MONTHS;
-
-    if (dayCount <= 2) {
-      preset = TimeRangePreset.LAST_SIX_HOURS;
-    } else if (dayCount <= 14) {
-      preset = TimeRangePreset.LAST_7_DAYS;
-    } else if (dayCount <= 60) {
-      preset = TimeRangePreset.LAST_4_WEEKS;
-    } else if (dayCount <= 180) {
+    preset = TimeRangePreset.LAST_SIX_HOURS;
+  } else if (
+    dayCount <= 7 &&
+    timeGrainOrder <= V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY]
+  ) {
+    preset = TimeRangePreset.LAST_24_HOURS;
+  } else if (
+    dayCount <= 14 &&
+    timeGrainOrder <= V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY]
+  ) {
+    preset = TimeRangePreset.LAST_7_DAYS;
+  } else if (
+    dayCount <= 60 &&
+    timeGrainOrder <= V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_WEEK]
+  ) {
+    preset = TimeRangePreset.LAST_4_WEEKS;
+  } else if (
+    dayCount <= 180 &&
+    timeGrainOrder <= V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_QUARTER]
+  ) {
+    if (timeGrainOrder > V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_DAY]) {
+      const grainAlias = V1TimeGrainToAlias[smallestTimeGrain!];
+      preset =
+        `QTD as of latest/${grainAlias}+1${grainAlias}` as TimeRangePreset;
+    } else {
       preset = TimeRangePreset.QUARTER_TO_DATE;
     }
+  } else {
+    preset = getDefaultBasedOnSmallestTimeGrain(
+      smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+    );
+  }
 
-    return preset;
+  return preset;
+}
+
+function getDefaultBasedOnSmallestTimeGrain(smallestTimeGrain: V1TimeGrain) {
+  switch (smallestTimeGrain) {
+    case V1TimeGrain.TIME_GRAIN_SECOND:
+    case V1TimeGrain.TIME_GRAIN_MINUTE:
+      return TimeRangePreset.LAST_SIX_HOURS;
+    case V1TimeGrain.TIME_GRAIN_HOUR:
+      return TimeRangePreset.LAST_24_HOURS;
+    case V1TimeGrain.TIME_GRAIN_DAY:
+      return TimeRangePreset.LAST_7_DAYS;
+    case V1TimeGrain.TIME_GRAIN_WEEK:
+      return TimeRangePreset.LAST_4_WEEKS;
+    case V1TimeGrain.TIME_GRAIN_MONTH:
+      return TimeRangePreset.LAST_3_MONTHS;
+    case V1TimeGrain.TIME_GRAIN_YEAR:
+      return TimeRangePreset.ALL_TIME;
+    default:
+      return TimeRangePreset.LAST_7_DAYS;
   }
 }
 
 export function getGrainForRange(
-  timeRangeName: string,
+  timeRangeName: string | undefined,
   timezone: string | undefined,
   timeRangeSummary: V1TimeRangeSummary,
 ) {
+  if (!timeRangeName) return undefined;
   const fullTimeStart = new Date(timeRangeSummary.min!);
   const fullTimeEnd = new Date(timeRangeSummary.max!);
   const timeRange = isoDurationToFullTimeRange(

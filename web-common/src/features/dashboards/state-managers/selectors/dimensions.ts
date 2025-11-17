@@ -12,7 +12,11 @@ export const allDimensions = ({
 
   return (
     validMetricsView.dimensions
-      .filter((d) => validExplore.dimensions!.includes(d.name!))
+      .filter(
+        (d) =>
+          validExplore.dimensions!.includes(d.name!) &&
+          d.type !== "DIMENSION_TYPE_TIME",
+      ) //
       // Sort the filtered dimensions based on their order in validExplore.dimensions
       .sort(
         (a, b) =>
@@ -40,7 +44,9 @@ export const visibleDimensions = ({
 
   return dashboard.visibleDimensions
     .map((dim) => dimensions.find((d) => d.name === dim))
-    .filter(Boolean) as MetricsViewSpecDimension[];
+    .filter(
+      (d) => d && d?.type !== "DIMENSION_TYPE_TIME",
+    ) as MetricsViewSpecDimension[];
 };
 
 export const dimensionTableColumnName = (

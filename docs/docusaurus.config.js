@@ -62,24 +62,22 @@ const config = {
         },
       }),
     ],
-    // [
-    //   'redocusaurus',
-    //   {
-    //     config: path.join(__dirname, 'redocly.yaml'),
-    //     specs: [
-    //       {
-    //         id: 'admin-api',
-    //         spec: 'api/rill/admin/v1/public.swagger.yaml',
-    //         route: '/api/admin/',
-    //         layout: {
-    //           title: "Rill Public API",
-    //           description: "Public Rill API documentation",
-    //         },
-    //       },
-    //     ],
-    //     theme: {},
-    //   },
-    // ]
+    [
+      'redocusaurus',
+      {
+        config: path.join(__dirname, 'redocly.yaml'),
+        specs: [
+          {
+            id: 'public',
+            spec: 'api/openapi.yaml',
+            route: '/api/admin/',
+          },
+        ],
+        theme: {
+          primaryColor: '#3524c7',
+        },
+      },
+    ]
   ],
 
   themeConfig:
@@ -150,11 +148,11 @@ const config = {
             activeBasePath: "/contact",
           },
 
-          // {
-          //   to: "/api/admin/",
-          //   position: "left",
-          //   label: "API",
-          // },
+          {
+            to: "/api/admin/",
+            position: "left",
+            label: "API",
+          },
 
           // Right side items
           {
