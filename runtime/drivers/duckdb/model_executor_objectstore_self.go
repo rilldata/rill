@@ -118,7 +118,7 @@ func objectStoreSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE S3")
 		if s3Config.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
 		}
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
