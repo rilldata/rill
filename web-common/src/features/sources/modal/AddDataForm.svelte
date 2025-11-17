@@ -475,23 +475,23 @@
   </div>
 
   <!-- RIGHT SIDE PANEL -->
-  <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
-  >
-    {#if dsnError || paramsError || clickhouseError}
-      <SubmissionError
-        message={clickhouseError ??
-          (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
-          ""}
-        details={clickhouseErrorDetails ??
-          (onlyDsn || connectionTab === "dsn"
-            ? dsnErrorDetails
-            : paramsErrorDetails) ??
-          ""}
-      />
-    {/if}
+  {#if !(isMultiStepConnector && stepState.step === "explorer")}
+    <div
+      class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
+    >
+      {#if dsnError || paramsError || clickhouseError}
+        <SubmissionError
+          message={clickhouseError ??
+            (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
+            ""}
+          details={clickhouseErrorDetails ??
+            (onlyDsn || connectionTab === "dsn"
+              ? dsnErrorDetails
+              : paramsErrorDetails) ??
+            ""}
+        />
+      {/if}
 
-    {#if !(isMultiStepConnector && stepState.step === "explorer")}
       <YamlPreview
         title={isMultiStepConnector
           ? stepState.step === "connector"
@@ -502,10 +502,8 @@
             : "Connector preview"}
         yaml={yamlPreview}
       />
-    {/if}
 
-    {#if !(isMultiStepConnector && stepState.step === "explorer")}
       <NeedHelpText {connector} />
-    {/if}
-  </div>
+    </div>
+  {/if}
 </div>
