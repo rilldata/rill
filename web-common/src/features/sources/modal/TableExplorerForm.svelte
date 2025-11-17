@@ -1,5 +1,6 @@
 <script lang="ts">
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
+  import { createEventDispatcher } from "svelte";
   import ConnectorExplorer from "../../connectors/explorer/ConnectorExplorer.svelte";
   import {
     connectorExplorerStore,
@@ -7,7 +8,28 @@
   } from "../../connectors/explorer/connector-explorer-store";
 
   // Create a local, selection-focused store for the modal (no nav/context menu)
-  const store: ConnectorExplorerStore = connectorExplorerStore.duplicateStore();
+  const dispatch = createEventDispatcher<{
+    select: {
+      connector: string;
+      database: string;
+      schema: string;
+      table: string;
+    };
+  }>();
+
+  const store: ConnectorExplorerStore = connectorExplorerStore.duplicateStore(
+    (connector, database = "", schema = "", table = "") => {
+      // Only emit selection when a table is toggled
+      if (table) {
+        dispatch("select", {
+          connector,
+          database,
+          schema,
+          table,
+        });
+      }
+    },
+  );
 
   let search = "";
 </script>
@@ -33,6 +55,5 @@
 
   <div class="border-t border-gray-200" />
 
-  <!-- List of connectors/databases/schemas/tables -->
   <ConnectorExplorer {store} />
 </section>

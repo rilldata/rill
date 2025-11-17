@@ -27,6 +27,8 @@
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import TableExplorerForm from "./TableExplorerForm.svelte";
+  import { goto } from "$app/navigation";
+  import { createSqlModelFromTable } from "../../connectors/code-utils";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -122,6 +124,12 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
+  // Step 3 selection
+  let selectedConnectorForModel = "";
+  let selectedDatabaseForModel = "";
+  let selectedSchemaForModel = "";
+  let selectedTableForModel = "";
+  let generatingModel = false;
 
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -288,6 +296,28 @@
       $paramsTainted as Record<string, boolean> | null | undefined,
     );
   }
+
+  async function handleGenerateModelWithAI() {
+    if (!selectedConnectorForModel || !selectedTableForModel) return;
+    try {
+      generatingModel = true;
+      const addDevLimit = false;
+      const [newModelPath] = await createSqlModelFromTable(
+        queryClient,
+        selectedConnectorForModel,
+        selectedDatabaseForModel,
+        selectedSchemaForModel,
+        selectedTableForModel,
+        addDevLimit,
+      );
+      await goto(`/files${newModelPath}`);
+      onClose();
+    } catch (_e) {
+      // Swallow for now; future: surface error toast
+    } finally {
+      generatingModel = false;
+    }
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -400,7 +430,14 @@
           </AddDataFormSection>
         {:else}
           <!-- GCS Step 3: Data Explorer -->
-          <TableExplorerForm />
+          <TableExplorerForm
+            on:select={(e) => {
+              selectedConnectorForModel = e.detail.connector;
+              selectedDatabaseForModel = e.detail.database;
+              selectedSchemaForModel = e.detail.schema;
+              selectedTableForModel = e.detail.table;
+            }}
+          />
         {/if}
       {:else}
         <AddDataFormSection
@@ -468,6 +505,16 @@
               clickhouseConnectorType,
               clickhouseSubmitting,
             })}
+          </Button>
+        {:else}
+          <Button
+            disabled={!selectedTableForModel || generatingModel}
+            loading={generatingModel}
+            loadingCopy="Generating..."
+            onClick={handleGenerateModelWithAI}
+            type="primary"
+          >
+            Generate model with AI
           </Button>
         {/if}
       </div>
