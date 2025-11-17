@@ -73,7 +73,7 @@ For private repos, use a fine-grained access token:
 
 ## Step 3: Generate Rill Project Files
 
-The project includes a `setup_repo.py` script that will generate:
+The project includes a `generate_project.py` script that will generate:
 - Source definitions pointing to your GCS bucket
 - Data transformation models
 - Metrics definitions
@@ -83,17 +83,17 @@ Run the script with your repository and bucket:
 
 ```bash
 # Generate Rill files configured for your GCS bucket
-python setup_repo.py owner/repo --gcs --bucket gs://your-bucket/github-analytics
+python generate_project.py owner/repo --gcs --bucket gs://your-bucket/github-analytics
 
 # Examples:
-python setup_repo.py duckdb/duckdb --gcs --bucket gs://your-bucket/github-analytics
-python setup_repo.py your-org/your-repo --gcs --bucket gs://your-bucket/github-analytics
+python generate_project.py duckdb/duckdb --gcs --bucket gs://your-bucket/github-analytics
+python generate_project.py your-org/your-repo --gcs --bucket gs://your-bucket/github-analytics
 ```
 
 **Note:** Rill supports both Google Cloud Storage (GCS) and Amazon S3. The download script currently supports GCS. For S3, you'll need to modify the script.
 
 :::note Just want to explore locally?
-Use the `--local` flag instead: `python setup_repo.py owner/repo --local`
+Use the `--local` flag instead: `python generate_project.py owner/repo --local`
 
 This is great for testing, but you won't be able to deploy to Rill Cloud without migrating to cloud storage later.
 :::
