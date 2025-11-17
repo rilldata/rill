@@ -10,25 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
-	client, err := getS3Client(ctx, c.config, "")
-	if err != nil {
-		return nil, err
-	}
-	output, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
-	if err != nil {
-		return nil, err
-	}
-	buckets := make([]string, 0, len(output.Buckets))
-	for _, bucket := range output.Buckets {
-		if bucket.Name != nil {
-			buckets = append(buckets, *bucket.Name)
-		}
-	}
-	return buckets, nil
-}
-
-func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
+func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.ListObjectsRequest) ([]*runtimev1.Object, string, error) {
 	var pageToken []byte
 	if req.PageToken == "" {
 		pageToken = blob.FirstPageToken
@@ -63,9 +45,9 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 		return nil, "", err
 	}
 
-	s3Objects := make([]*runtimev1.S3Object, len(objects))
+	s3Objects := make([]*runtimev1.Object, len(objects))
 	for i, object := range objects {
-		s3Objects[i] = &runtimev1.S3Object{
+		s3Objects[i] = &runtimev1.Object{
 			Name:       object.Key,
 			ModifiedOn: timestamppb.New(object.ModTime),
 			Size:       object.Size,
@@ -75,41 +57,17 @@ func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListOb
 	return s3Objects, string(nextToken), nil
 }
 
-func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
-	prov, err := newCredentialsProvider(ctx, c.config)
-	if err != nil {
-		return "", false, err
-	}
-
-	if prov == nil {
-		return "", false, nil
-	}
-
-	// Try to retrieve credentials to check if they exist
-	creds, err := prov.Retrieve(ctx)
-	if err != nil {
-		return "", false, err
-	}
-
-	// Check if it's anonymous credentials
-	if creds.AccessKeyID == "" && creds.SecretAccessKey == "" {
-		return "", false, nil
-	}
-
-	return creds.Source, true, nil
-}
-
-func fetchObjects(ctx context.Context, bucket *blob.Bucket, pageToken []byte, pageSize int, req *runtimev1.S3ListObjectsRequest) ([]*blob.ListObject, []byte, error) {
+func fetchObjects(ctx context.Context, bucket *blob.Bucket, pageToken []byte, pageSize int, req *runtimev1.ListObjectsRequest) ([]*blob.ListObject, []byte, error) {
 	objects, nextToken, err := bucket.ListPage(ctx, pageToken, pageSize, &blob.ListOptions{
 		Prefix:    req.Prefix,
 		Delimiter: req.Delimiter,
 		BeforeList: func(as func(interface{}) bool) error {
-			if req.StartAfter == "" {
+			if req.StartOffset == "" {
 				return nil
 			}
 			var q *s3.ListObjectsV2Input
 			if as(&q) {
-				q.StartAfter = &req.StartAfter
+				q.StartAfter = &req.StartOffset
 			}
 			return nil
 		},

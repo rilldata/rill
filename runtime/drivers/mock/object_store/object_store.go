@@ -170,6 +170,10 @@ func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error)
 	return nil, drivers.ErrNotNotifier
 }
 
+func (h *handle) ListBuckets(ctx context.Context, pageSize int, pageToken string) ([]string, string, error) {
+	return nil, "", errors.New("not implemented")
+}
+
 // ListObjects implements drivers.ObjectStore.
 func (h *handle) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
 	url, err := globutil.ParseBucketURL(path)

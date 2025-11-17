@@ -11,6 +11,7 @@ import (
 
 // ObjectStore is an interface for object storage systems.
 type ObjectStore interface {
+	ListBuckets(ctx context.Context, pageSize int, pageToken string) ([]string, string, error)
 	// ListObjects returns the paths that match the given properties.
 	// It resolves globs with support for all patterns supported by the doublestar package (notably "**").
 	ListObjects(ctx context.Context, path string) ([]ObjectStoreEntry, error)

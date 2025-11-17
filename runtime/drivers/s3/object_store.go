@@ -6,11 +6,49 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"gocloud.dev/blob/s3blob"
 )
+
+func (c *Connection) ListBuckets(ctx context.Context, pageSize int, pageToken string) ([]string, string, error) {
+	validPageSize := pagination.ValidPageSize(uint32(pageSize), drivers.DefaultPageSize)
+	unmarshalPageToken := ""
+	if pageToken != "" {
+		if err := pagination.UnmarshalPageToken(pageToken, &unmarshalPageToken); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+	client, err := getS3Client(ctx, c.config, "")
+	if err != nil {
+		return nil, "", err
+	}
+
+	input := &s3.ListBucketsInput{
+		MaxBuckets: aws.Int32(int32(validPageSize)),
+	}
+	if unmarshalPageToken != "" {
+		input.ContinuationToken = aws.String(unmarshalPageToken)
+	}
+	output, err := client.ListBuckets(ctx, input)
+	if err != nil {
+		return nil, "", err
+	}
+	buckets := make([]string, 0, len(output.Buckets))
+	for _, bucket := range output.Buckets {
+		if bucket.Name != nil {
+			buckets = append(buckets, *bucket.Name)
+		}
+	}
+	next := ""
+	if output.ContinuationToken != nil {
+		next = pagination.MarshalPageToken(*output.ContinuationToken)
+	}
+	return buckets, next, nil
+}
 
 // ListObjects implements drivers.ObjectStore.
 func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {

@@ -7,13 +7,57 @@ import (
 	"net/url"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 	"gocloud.dev/blob/azureblob"
 )
+
+func (c *Connection) ListBuckets(ctx context.Context, pageSize int, pageToken string) ([]string, string, error) {
+	validPageSize := pagination.ValidPageSize(uint32(pageSize), drivers.DefaultPageSize)
+	unmarshalPageToken := ""
+	if pageToken != "" {
+		if err := pagination.UnmarshalPageToken(pageToken, &unmarshalPageToken); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
+	client, err := c.newStorageClient()
+	if err != nil {
+		return nil, "", err
+	}
+	opts := &azblob.ListContainersOptions{}
+	if validPageSize > 0 {
+		v := int32(validPageSize)
+		opts.MaxResults = &v
+	}
+	if unmarshalPageToken != "" {
+		opts.Marker = &unmarshalPageToken
+	}
+	pager := client.NewListContainersPager(opts)
+
+	var buckets []string
+	var next string
+
+	if pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, "", fmt.Errorf("azure list containers failed: %w", err)
+		}
+
+		for _, c := range page.ContainerItems {
+			buckets = append(buckets, *c.Name)
+		}
+		if page.NextMarker != nil {
+			next = *page.NextMarker
+		}
+	}
+	return buckets, pagination.MarshalPageToken(next), nil
+}
 
 // ListObjects implements drivers.ObjectStore.
 func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
