@@ -28,7 +28,12 @@
   import AddDataFormSection from "./AddDataFormSection.svelte";
   import TableExplorerForm from "./TableExplorerForm.svelte";
   import { goto } from "$app/navigation";
-  import { createSqlModelFromTable } from "../../connectors/code-utils";
+  import {
+    createSqlModelFromTable,
+    createYamlModelFromTable,
+  } from "../../connectors/code-utils";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../../connectors/selectors";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -130,6 +135,12 @@
   let selectedSchemaForModel = "";
   let selectedTableForModel = "";
   let generatingModel = false;
+  $: ({ instanceId } = $runtime);
+  $: modelingSupportQuery = useIsModelingSupportedForConnector(
+    instanceId,
+    selectedConnectorForModel || "",
+  );
+  $: isModelingSupportedForSelected = $modelingSupportQuery.data || false;
 
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -301,15 +312,21 @@
     if (!selectedConnectorForModel || !selectedTableForModel) return;
     try {
       generatingModel = true;
-      const addDevLimit = false;
-      const [newModelPath] = await createSqlModelFromTable(
-        queryClient,
-        selectedConnectorForModel,
-        selectedDatabaseForModel,
-        selectedSchemaForModel,
-        selectedTableForModel,
-        addDevLimit,
-      );
+      const [newModelPath] = isModelingSupportedForSelected
+        ? await createSqlModelFromTable(
+            queryClient,
+            selectedConnectorForModel,
+            selectedDatabaseForModel,
+            selectedSchemaForModel,
+            selectedTableForModel,
+          )
+        : await createYamlModelFromTable(
+            queryClient,
+            selectedConnectorForModel,
+            selectedDatabaseForModel,
+            selectedSchemaForModel,
+            selectedTableForModel,
+          );
       await goto(`/files${newModelPath}`);
       onClose();
     } catch (_e) {
