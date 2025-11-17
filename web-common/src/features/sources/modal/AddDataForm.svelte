@@ -26,6 +26,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import DataExplorer from "./DataExplorer.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -382,7 +383,7 @@
               {handleFileUpload}
             />
           </AddDataFormSection>
-        {:else}
+        {:else if stepState.step === "source"}
           <!-- GCS Step 2: Source configuration -->
           <AddDataFormSection
             id={paramsFormId}
@@ -397,6 +398,11 @@
               uploadFile={handleFileUpload}
             />
           </AddDataFormSection>
+        {:else}
+          <!-- GCS Step 3: Data Explorer -->
+          <div class="p-6">
+            <DataExplorer />
+          </div>
         {/if}
       {:else}
         <AddDataFormSection
@@ -442,28 +448,30 @@
           >
         {/if}
 
-        <Button
-          disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-            : submitting || isSubmitDisabled}
-          loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting
-            : submitting}
-          loadingCopy={connector.name === "clickhouse"
-            ? "Connecting..."
-            : "Testing connection..."}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-          submitForm
-          type="primary"
-        >
-          {formManager.getPrimaryButtonLabel({
-            isConnectorForm,
-            step: stepState.step,
-            submitting,
-            clickhouseConnectorType,
-            clickhouseSubmitting,
-          })}
-        </Button>
+        {#if !(isMultiStepConnector && stepState.step === "explorer")}
+          <Button
+            disabled={connector.name === "clickhouse"
+              ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+              : submitting || isSubmitDisabled}
+            loading={connector.name === "clickhouse"
+              ? clickhouseSubmitting
+              : submitting}
+            loadingCopy={connector.name === "clickhouse"
+              ? "Connecting..."
+              : "Testing connection..."}
+            form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+            submitForm
+            type="primary"
+          >
+            {formManager.getPrimaryButtonLabel({
+              isConnectorForm,
+              step: stepState.step,
+              submitting,
+              clickhouseConnectorType,
+              clickhouseSubmitting,
+            })}
+          </Button>
+        {/if}
       </div>
     </div>
   </div>
