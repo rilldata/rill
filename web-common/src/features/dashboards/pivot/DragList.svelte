@@ -404,7 +404,7 @@
   }
 
   .item-wrapper.aligned {
-    @apply justify-between w-full;
+    @apply justify-start w-full gap-x-2;
   }
 
   .icons {
