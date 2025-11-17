@@ -48,6 +48,8 @@
   import { timePillSelectors } from "./time-pill-store";
 
   const isDropLocation = zone === "columns" || zone === "rows";
+  $: shouldFillWidth =
+    zone === "Time" || zone === "Measures" || zone === "Dimensions";
 
   const _ghostIndex = writable<number | null>(null);
 
@@ -271,6 +273,7 @@
             grab
             removable
             availableGrains={availableTimeGrains}
+            fullWidth={shouldFillWidth}
             onTimeGrainSelect={(timeGrain) =>
               handleTimeGrainSelect(item, timeGrain)}
             on:mousedown={(e) => handleMouseDown(e, item)}
@@ -283,6 +286,7 @@
           <PivotChip
             {item}
             grab
+            fullWidth={shouldFillWidth}
             removable={isDropLocation}
             on:mousedown={(e) => handleMouseDown(e, item)}
             onRemove={() => {
