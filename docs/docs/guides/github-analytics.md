@@ -81,7 +81,9 @@ This is great for testing, but you won't be able to deploy to Rill Cloud without
 
 **Prerequisites:**
 - [Create a Google Cloud Storage bucket](https://cloud.google.com/storage/docs/creating-buckets)
-- Configure GCS credentials: run `gcloud auth login` or set up a [service account key](https://cloud.google.com/iam/docs/keys-create-delete)
+- Set up GCS authentication:
+  - [Create a service account key](https://cloud.google.com/iam/docs/keys-create-delete) with Storage Object Admin role
+  - Set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json` environment variable
 
 Extract commit history and save to GCS:
 
@@ -97,6 +99,14 @@ The script will:
 - Clone the repository
 - Extract commit metadata and file changes
 - Upload data as parquet files to your GCS bucket
+
+:::note Private repositories
+For private repos, use a fine-grained access token:
+
+1. [Create a fine-grained personal access token](https://github.com/settings/tokens?type=beta) with **read-only** access to the repository
+2. Store it as an environment variable: `export GITHUB_TOKEN=your_token_here`
+3. Git will automatically use it when cloning (works in local dev and CI)
+:::
 
 **Note:** For large repositories with 10,000+ commits, the download may take 10-30 minutes. Use `--limit` to test with a smaller dataset first.
 
