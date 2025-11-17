@@ -10,6 +10,7 @@
   import { createAdminServiceGetCurrentUser } from "../../client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
+  import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -83,6 +84,10 @@
         Reports
       </DropdownMenu.Item>
     {/if}
+
+    <ThemeToggle />
+    <DropdownMenu.Separator />
+
     <DropdownMenu.Item
       href="https://docs.rilldata.com"
       target="_blank"
