@@ -4,6 +4,7 @@ import { derived, get, writable, type Writable } from "svelte/store";
 type ConnectorExplorerState = {
   showConnectors: boolean;
   expandedItems: Record<string, boolean>;
+  selectedKey: string | null;
 };
 
 export class ConnectorExplorerStore {
@@ -30,6 +31,7 @@ export class ConnectorExplorerStore {
 
       showConnectors = true,
       expandedItems = {},
+      selectedKey = null,
       localStorage = true,
     } = {},
     onToggleItem?: (
@@ -50,6 +52,7 @@ export class ConnectorExplorerStore {
       ? localStorageStore<ConnectorExplorerState>("connector-explorer-state", {
           showConnectors,
           expandedItems,
+          selectedKey,
         })
       : writable({ showConnectors, expandedItems });
   }
@@ -119,6 +122,30 @@ export class ConnectorExplorerStore {
     });
   };
 
+  // Selection helpers
+  setSelected = (
+    connector: string,
+    database?: string,
+    schema?: string,
+    table?: string,
+  ) => {
+    const key = getItemKey(connector, database, schema, table);
+    this.store.update((state) => ({
+      ...state,
+      selectedKey: key,
+    }));
+  };
+
+  isSelected = (
+    connector: string,
+    database?: string,
+    schema?: string,
+    table?: string,
+  ) => {
+    const key = getItemKey(connector, database, schema, table);
+    return derived(this.store, ($state) => $state.selectedKey === key);
+  };
+
   toggleItem = (
     connector: string,
     database?: string,
@@ -127,6 +154,11 @@ export class ConnectorExplorerStore {
   ) => {
     if (this.onToggleItem)
       this.onToggleItem(connector, database, schema, table);
+
+    // When selection is enabled for this store, selecting a table should mark it
+    if (table && this.allowSelectTable) {
+      this.setSelected(connector, database, schema, table);
+    }
 
     if (table && !this.allowShowSchema) return;
 
