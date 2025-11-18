@@ -627,7 +627,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}
 
 	// ignore resource level security rules if the user has a full role
-	if attrUserID != "" && !permissions.FullyResourceRestricted {
+	if attrUserID != "" && permissions.FullyResourceRestricted {
 		rules = securityRulesFromResources(permissions.Resources)
 		if err != nil {
 			return nil, err
