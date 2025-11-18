@@ -23,12 +23,7 @@
   export let spec: Readable<ChartSpec>;
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let themeMode: "light" | "dark" = "light";
-  /**
-   * Full theme object with all CSS variables for current mode
-   * If not provided, chart will fall back to defaults
-   */
-  export let theme: Record<string, string> | undefined = undefined;
-  export let themeStore: Readable<Theme> = readable(new Theme(undefined));
+  export let theme: Theme = new Theme(undefined);
   export let showExploreLink: boolean = false;
   export let organization: string | undefined = undefined;
   export let project: string | undefined = undefined;
@@ -38,6 +33,13 @@
     const chartConfig = CHART_CONFIG[chartType];
     chartProvider = new chartConfig.provider(spec, {});
   }
+
+  /**
+   * Full theme object with all CSS variables for current mode
+   * If not provided, chart will fall back to defaults
+   */
+  $: currentTheme =
+    theme?.resolvedThemeObject?.[themeMode === "dark" ? "dark" : "light"];
 
   $: metricsViewSelectors = new MetricsViewSelectors($runtime.instanceId);
 
@@ -61,7 +63,7 @@
     config: $spec,
     chartDataQuery,
     metricsView: metricsViewSelectors,
-    themeStore,
+    themeStore: readable(theme),
     timeAndFilterStore,
     getDomainValues: () => chartProvider.getChartDomainValues($measures),
     isThemeModeDark: themeMode === "dark",
@@ -146,7 +148,7 @@
         {chartData}
         measures={$measures}
         {themeMode}
-        {theme}
+        theme={currentTheme}
         isCanvas={true}
       />
     </div>
