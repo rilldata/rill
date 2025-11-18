@@ -3,13 +3,11 @@ package mock
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	rillblob "github.com/rilldata/rill/runtime/pkg/blob"
-	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
@@ -175,19 +173,14 @@ func (h *handle) ListBuckets(ctx context.Context, pageSize int, pageToken string
 }
 
 // ListObjects implements drivers.ObjectStore.
-func (h *handle) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
-	url, err := globutil.ParseBucketURL(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", path, err)
-	}
-
+func (h *handle) ListObjects(ctx context.Context, bucketName, path, delimiter string, pageSize int, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
 	bucket, err := rillblob.NewBucket(h.bucket, h.logger)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer bucket.Close()
 
-	return bucket.ListObjects(ctx, url.Path)
+	return bucket.ListObjects(ctx, path, delimiter, pageSize, pageToken)
 }
 
 // DownloadFiles implements drivers.ObjectStore.

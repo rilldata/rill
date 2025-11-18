@@ -14,7 +14,7 @@ type ObjectStore interface {
 	ListBuckets(ctx context.Context, pageSize int, pageToken string) ([]string, string, error)
 	// ListObjects returns the paths that match the given properties.
 	// It resolves globs with support for all patterns supported by the doublestar package (notably "**").
-	ListObjects(ctx context.Context, path string) ([]ObjectStoreEntry, error)
+	ListObjects(ctx context.Context, bucketName, path, delimiter string, pageSize int, pageToken string) ([]ObjectStoreEntry, string, error)
 	// DownloadFiles provides an iterator for downloading and consuming files.
 	// It resolves globs similar to ListObjects.
 	DownloadFiles(ctx context.Context, path string) (FileIterator, error)

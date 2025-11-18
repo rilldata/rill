@@ -288,10 +288,6 @@ func (m *ListObjectsRequest) validate(all bool) error {
 
 	// no validation rules for Prefix
 
-	// no validation rules for StartOffset
-
-	// no validation rules for EndOffset
-
 	// no validation rules for Delimiter
 
 	if m.GetPageSize() != 0 {

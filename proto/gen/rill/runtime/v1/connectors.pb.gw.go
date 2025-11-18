@@ -68,29 +68,12 @@ func local_request_ConnectorService_ListBuckets_0(ctx context.Context, marshaler
 }
 
 var (
-	filter_ConnectorService_ListObjects_0 = &utilities.DoubleArray{Encoding: map[string]int{"bucket": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_ConnectorService_ListObjects_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 )
 
 func request_ConnectorService_ListObjects_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListObjectsRequest
 	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["bucket"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "bucket")
-	}
-
-	protoReq.Bucket, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "bucket", err)
-	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -107,23 +90,6 @@ func request_ConnectorService_ListObjects_0(ctx context.Context, marshaler runti
 func local_request_ConnectorService_ListObjects_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListObjectsRequest
 	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["bucket"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "bucket")
-	}
-
-	protoReq.Bucket, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "bucket", err)
-	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -357,7 +323,7 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/ListObjects", runtime.WithHTTPPathPattern("/v1/objectstore/buckets/{bucket}/objects"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/ListObjects", runtime.WithHTTPPathPattern("/v1/objectstore/objects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -568,7 +534,7 @@ func RegisterConnectorServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/ListObjects", runtime.WithHTTPPathPattern("/v1/objectstore/buckets/{bucket}/objects"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/ListObjects", runtime.WithHTTPPathPattern("/v1/objectstore/objects"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -700,7 +666,7 @@ func RegisterConnectorServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 var (
 	pattern_ConnectorService_ListBuckets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "objectstore", "buckets"}, ""))
 
-	pattern_ConnectorService_ListObjects_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"v1", "objectstore", "buckets", "bucket", "objects"}, ""))
+	pattern_ConnectorService_ListObjects_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "objectstore", "objects"}, ""))
 
 	pattern_ConnectorService_OLAPListTables_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "olap", "tables"}, ""))
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -72,7 +73,7 @@ func (b *Bucket) Download(ctx context.Context, opts *DownloadOptions) (res drive
 		return nil, err
 	}
 
-	entries, err := b.ListObjects(ctx, opts.Glob)
+	entries, _, err := b.ListObjects(ctx, opts.Glob, "", math.MaxInt32, "")
 	if err != nil {
 		return nil, err
 	}

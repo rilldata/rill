@@ -2982,7 +2982,7 @@ paths:
           type: string
       tags:
         - ConnectorService
-  /v1/objectstore/buckets/{bucket}/objects:
+  /v1/objectstore/objects:
     get:
       summary: ListObjects lists objects for the given bucket.
       operationId: ConnectorService_ListObjects
@@ -2996,10 +2996,6 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: bucket
-          in: path
-          required: true
-          type: string
         - name: instanceId
           in: query
           required: false
@@ -3008,15 +3004,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: bucket
+          in: query
+          required: false
+          type: string
         - name: prefix
-          in: query
-          required: false
-          type: string
-        - name: startOffset
-          in: query
-          required: false
-          type: string
-        - name: endOffset
           in: query
           required: false
           type: string

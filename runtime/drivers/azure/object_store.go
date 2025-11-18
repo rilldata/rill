@@ -56,23 +56,21 @@ func (c *Connection) ListBuckets(ctx context.Context, pageSize int, pageToken st
 			next = *page.NextMarker
 		}
 	}
-	return buckets, pagination.MarshalPageToken(next), nil
+	if next != "" {
+		next = pagination.MarshalPageToken(next)
+	}
+	return buckets, next, nil
 }
 
 // ListObjects implements drivers.ObjectStore.
-func (c *Connection) ListObjects(ctx context.Context, path string) ([]drivers.ObjectStoreEntry, error) {
-	url, err := c.parseBucketURL(path)
+func (c *Connection) ListObjects(ctx context.Context, bucketName, path, delimiter string, pageSize int, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+	bucket, err := c.openBucket(ctx, bucketName, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q: %w", path, err)
-	}
-
-	bucket, err := c.openBucket(ctx, url.Host, false)
-	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer bucket.Close()
 
-	return bucket.ListObjects(ctx, url.Path)
+	return bucket.ListObjects(ctx, path, delimiter, pageSize, pageToken)
 }
 
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.

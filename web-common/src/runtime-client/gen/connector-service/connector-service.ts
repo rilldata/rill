@@ -518,12 +518,11 @@ export function createConnectorServiceListBuckets<
  * @summary ListObjects lists objects for the given bucket.
  */
 export const connectorServiceListObjects = (
-  bucket: string,
   params?: ConnectorServiceListObjectsParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListObjectsResponse>({
-    url: `/v1/objectstore/buckets/${bucket}/objects`,
+    url: `/v1/objectstore/objects`,
     method: "GET",
     params,
     signal,
@@ -531,20 +530,15 @@ export const connectorServiceListObjects = (
 };
 
 export const getConnectorServiceListObjectsQueryKey = (
-  bucket: string,
   params?: ConnectorServiceListObjectsParams,
 ) => {
-  return [
-    `/v1/objectstore/buckets/${bucket}/objects`,
-    ...(params ? [params] : []),
-  ] as const;
+  return [`/v1/objectstore/objects`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceListObjectsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceListObjects>>,
   TError = ErrorType<RpcStatus>,
 >(
-  bucket: string,
   params?: ConnectorServiceListObjectsParams,
   options?: {
     query?: Partial<
@@ -559,19 +553,13 @@ export const getConnectorServiceListObjectsQueryOptions = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ??
-    getConnectorServiceListObjectsQueryKey(bucket, params);
+    queryOptions?.queryKey ?? getConnectorServiceListObjectsQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof connectorServiceListObjects>>
-  > = ({ signal }) => connectorServiceListObjects(bucket, params, signal);
+  > = ({ signal }) => connectorServiceListObjects(params, signal);
 
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!bucket,
-    ...queryOptions,
-  } as CreateQueryOptions<
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
     Awaited<ReturnType<typeof connectorServiceListObjects>>,
     TError,
     TData
@@ -591,7 +579,6 @@ export function createConnectorServiceListObjects<
   TData = Awaited<ReturnType<typeof connectorServiceListObjects>>,
   TError = ErrorType<RpcStatus>,
 >(
-  bucket: string,
   params?: ConnectorServiceListObjectsParams,
   options?: {
     query?: Partial<
@@ -607,7 +594,6 @@ export function createConnectorServiceListObjects<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getConnectorServiceListObjectsQueryOptions(
-    bucket,
     params,
     options,
   );

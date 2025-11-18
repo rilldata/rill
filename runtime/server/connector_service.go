@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) ListBuckets(ctx context.Context, req *runtimev1.ListBucketsRequest) (*runtimev1.ListBucketsResponse, error) {
@@ -32,25 +33,32 @@ func (s *Server) ListBuckets(ctx context.Context, req *runtimev1.ListBucketsRequ
 }
 
 func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequest) (*runtimev1.ListObjectsResponse, error) {
-	// TODO: later
-	// handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer release()
-	// os, ok := handle.AsObjectStore()
-	// if !ok {
-	// 	return nil, fmt.Errorf("driver: object store not implemented")
-	// }
-	// objects, nextToken, err := os.ListObjects(ctx, req.Prefix)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return &runtimev1.ListObjectsResponse{
-	// 	Objects:       objects,
-	// 	NextPageToken: nextToken,
-	// }, nil
-	return nil, fmt.Errorf("not implemented")
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	os, ok := handle.AsObjectStore()
+	if !ok {
+		return nil, fmt.Errorf("driver: object store not implemented")
+	}
+	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Prefix, req.Delimiter, int(req.PageSize), req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pbObjects := make([]*runtimev1.Object, len(objects))
+	for i, obj := range objects {
+		pbObjects[i] = &runtimev1.Object{
+			Name:       obj.Path,
+			Size:       obj.Size,
+			IsDir:      obj.IsDir,
+			ModifiedOn: timestamppb.New(obj.UpdatedOn),
+		}
+	}
+	return &runtimev1.ListObjectsResponse{
+		Objects:       pbObjects,
+		NextPageToken: nextToken,
+	}, nil
 }
 
 func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTablesRequest) (*runtimev1.OLAPListTablesResponse, error) {

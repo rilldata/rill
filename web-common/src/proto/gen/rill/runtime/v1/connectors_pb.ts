@@ -130,27 +130,17 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
   prefix = "";
 
   /**
-   * @generated from field: string start_offset = 5;
-   */
-  startOffset = "";
-
-  /**
-   * @generated from field: string end_offset = 6;
-   */
-  endOffset = "";
-
-  /**
-   * @generated from field: string delimiter = 7;
+   * @generated from field: string delimiter = 5;
    */
   delimiter = "";
 
   /**
-   * @generated from field: uint32 page_size = 8;
+   * @generated from field: uint32 page_size = 6;
    */
   pageSize = 0;
 
   /**
-   * @generated from field: string page_token = 9;
+   * @generated from field: string page_token = 7;
    */
   pageToken = "";
 
@@ -166,11 +156,9 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "start_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "end_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 9, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListObjectsRequest {

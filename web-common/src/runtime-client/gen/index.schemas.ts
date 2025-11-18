@@ -3074,9 +3074,8 @@ export type ConnectorServiceListBucketsParams = {
 export type ConnectorServiceListObjectsParams = {
   instanceId?: string;
   connector?: string;
+  bucket?: string;
   prefix?: string;
-  startOffset?: string;
-  endOffset?: string;
   delimiter?: string;
   pageSize?: number;
   pageToken?: string;
