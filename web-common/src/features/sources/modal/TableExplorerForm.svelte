@@ -1,9 +1,6 @@
 <script lang="ts">
   import ConnectorExplorer from "../../connectors/explorer/ConnectorExplorer.svelte";
-  import {
-    connectorExplorerStore,
-    type ConnectorExplorerStore,
-  } from "../../connectors/explorer/connector-explorer-store";
+  import { connectorExplorerStore } from "../../connectors/explorer/connector-explorer-store";
 
   export let onSelect:
     | ((detail: {
@@ -14,7 +11,7 @@
       }) => void)
     | undefined = undefined;
 
-  const store: ConnectorExplorerStore = connectorExplorerStore.duplicateStore(
+  const store = connectorExplorerStore.duplicateStore(
     (connector, database = "", schema = "", table = "") => {
       // Only emit selection when a table is toggled
       if (table) {
