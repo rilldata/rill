@@ -13,38 +13,42 @@
   export let isLoading = false;
   export let error: string | null = null;
 
-  const NAME_SEED_ALIAS: Partial<Record<ResourceKind, string>> = {
+  // Type for resource kinds that support graph visualization
+  type GraphableKind =
+    | ResourceKind.Source
+    | ResourceKind.Model
+    | ResourceKind.MetricsView
+    | ResourceKind.Explore;
+
+  const NAME_SEED_ALIAS: Record<GraphableKind, string> = {
     [ResourceKind.Source]: "source",
     [ResourceKind.Model]: "model",
     [ResourceKind.MetricsView]: "metrics",
     [ResourceKind.Explore]: "dashboard",
   };
-  const KIND_TOKEN_BY_KIND: Partial<Record<ResourceKind, string>> = {
+
+  const KIND_TOKEN_BY_KIND: Record<GraphableKind, string> = {
     [ResourceKind.Source]: "sources",
     [ResourceKind.Model]: "models",
     [ResourceKind.MetricsView]: "metrics",
     [ResourceKind.Explore]: "dashboards",
   };
 
-  $: anchorMeta = anchorResource?.meta;
-  $: anchorName = anchorMeta?.name?.name ?? null;
-  $: anchorKind = anchorMeta?.name?.kind as ResourceKind | undefined;
-  $: supportsGraph = anchorKind
-    ? ALLOWED_FOR_GRAPH.has(anchorKind)
-    : false;
-  function buildSeed(kind?: ResourceKind, name?: string | null) {
-    if (!kind || !name) return null;
-    const alias = NAME_SEED_ALIAS[kind] ?? kind;
-    return `${alias}:${name}`;
-  }
+  $: anchorName = anchorResource?.meta?.name?.name ?? null;
+  $: anchorKind = anchorResource?.meta?.name?.kind as ResourceKind | undefined;
+  $: supportsGraph = anchorKind ? ALLOWED_FOR_GRAPH.has(anchorKind) : false;
 
-  $: anchorSeed = supportsGraph
-    ? buildSeed(anchorKind, anchorMeta?.name?.name)
-    : null;
+  // Type-safe access to graphable kind properties
+  $: graphableKind = (supportsGraph && anchorKind) ? anchorKind as GraphableKind : null;
+
+  $: anchorSeed =
+    graphableKind && anchorName
+      ? `${NAME_SEED_ALIAS[graphableKind]}:${anchorName}`
+      : null;
+
   $: overlaySeeds = anchorSeed ? [anchorSeed] : undefined;
-  $: graphHrefSeed = supportsGraph ? KIND_TOKEN_BY_KIND[anchorKind!] : null;
-  $: graphHref = graphHrefSeed
-    ? `/graph?seed=${encodeURIComponent(graphHrefSeed)}`
+  $: graphHref = graphableKind
+    ? `/graph?seed=${encodeURIComponent(KIND_TOKEN_BY_KIND[graphableKind])}`
     : "/graph";
 
   $: emptyReason = !anchorSeed ? "unsupported" : null;
@@ -106,7 +110,11 @@
       </header>
 
         <section class="graph-overlay__body">
-        {#if emptyReason === "unsupported"}
+        {#if error}
+          <p class="graph-overlay__state graph-overlay__error">
+            {error}
+          </p>
+        {:else if emptyReason === "unsupported"}
           <p class="graph-overlay__state">
             This resource type doesn't have a project graph view.
           </p>
@@ -187,5 +195,9 @@
 
   .graph-overlay__state {
     @apply text-sm text-gray-600 m-auto text-center max-w-sm;
+  }
+
+  .graph-overlay__error {
+    @apply text-red-600;
   }
 </style>

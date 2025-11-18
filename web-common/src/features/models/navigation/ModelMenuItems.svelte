@@ -20,7 +20,7 @@
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
   import ConnectorIcon from "../../../components/icons/ConnectorIcon.svelte";
-  import { navigateToResourceGraph } from "@rilldata/web-common/features/resource-graph/navigation-utils";
+  import { createGraphNavigationHandler } from "@rilldata/web-common/features/resource-graph/navigation-utils";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -41,19 +41,11 @@
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
-  function viewGraph() {
-    try {
-      const name = $modelQuery.data?.meta?.name?.name;
-      if (!name) {
-        console.warn("[ModelMenuItems] Cannot navigate to graph: model name is missing");
-        return;
-      }
-      navigateToResourceGraph("model", name);
-    } catch (error) {
-      console.error("[ModelMenuItems] Failed to navigate to graph:", error);
-      // TODO: Show toast notification to user when toast system is available
-    }
-  }
+  const viewGraph = createGraphNavigationHandler(
+    "ModelMenuItems",
+    "model",
+    () => $modelQuery.data
+  );
 
   async function handleCreateModel() {
     try {

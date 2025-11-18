@@ -14,26 +14,8 @@
 
   export let data: ResourceNodeData;
   export let selected = false;
-
-  // Accept Svelte Flow injected props (we don't use them directly, but this avoids warnings).
-  export let id: string;
-  export let type: string;
   export let width: number | undefined = undefined;
-  export let height: number | undefined = undefined;
-  export let draggable = false;
-  export let dragHandle: string | undefined = undefined;
-  export let dragging = false;
-  export let selectable = true;
-  export let deletable = true;
   export let isConnectable = true;
-  export let sourcePosition: Position | undefined = undefined;
-  export let targetPosition: Position | undefined = undefined;
-  export let positionAbsoluteX = 0;
-  export let positionAbsoluteY = 0;
-
-  // Props injected by Svelte Flow (unused but need to exist to silence warnings).
-  export let zIndex = 0;
-  export let parentId: string | undefined = undefined;
 
   const DEFAULT_COLOR = "#6B7280";
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];
@@ -67,9 +49,6 @@
     }
   }
 
-  // XSS Safety: Resource names come from the runtime API (V1Resource objects) which are
-  // populated from YAML configuration files. These names are automatically escaped by Svelte's
-  // default text interpolation (`{value}`). No `{@html}` usage exists in this component.
   $: resourceName = data?.resource?.meta?.name?.name ?? "";
   $: resourceKind = kind; // already normalized ResourceKind
   $: artifact = resourceName && resourceKind
@@ -78,36 +57,19 @@
 
   function openFile(e?: MouseEvent) {
     e?.stopPropagation();
-    if (artifact?.path) {
-      try {
-        const key = artifact.path;
-        const raw = localStorage.getItem(key);
-        const obj = raw ? JSON.parse(raw) || {} : {};
-        obj.view = "code";
-        localStorage.setItem(key, JSON.stringify(obj));
-      } catch {
-        // ignore storage issues; fall back to default behavior
-      }
-      goto(`/files${artifact.path}`);
+    if (!artifact?.path) return;
+
+    // Set code view preference for this file
+    try {
+      const key = artifact.path;
+      const prefs = JSON.parse(localStorage.getItem(key) || '{}');
+      localStorage.setItem(key, JSON.stringify({ ...prefs, view: "code" }));
+    } catch (error) {
+      console.warn(`Failed to save file view preference:`, error);
     }
+
+    goto(`/files${artifact.path}`);
   }
-  $: void [
-    id,
-    type,
-    width,
-    height,
-    draggable,
-    dragHandle,
-    dragging,
-    selectable,
-    deletable,
-    sourcePosition,
-    targetPosition,
-    positionAbsoluteX,
-    positionAbsoluteY,
-    zIndex,
-    parentId,
-  ];
 </script>
 
 <div

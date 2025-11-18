@@ -3,33 +3,15 @@
   import { resourceColorMapping, resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
+  import { goto } from "$app/navigation";
+
   export let data: {
     label: string;
     count: number;
     kind: ResourceKind;
     active?: boolean;
   };
-  // SvelteFlow injects `selected` when the node is marked selected
   export let selected: boolean = false;
-  import { goto } from "$app/navigation";
-
-  // Accept Svelte Flow injected props (unused but avoid warnings)
-  export let id: string;
-  export let type: string;
-  export let width: number | undefined = undefined;
-  export let height: number | undefined = undefined;
-  export let draggable = false;
-  export let dragHandle: string | undefined = undefined;
-  export let dragging = false;
-  export let selectable = false;
-  export let deletable = false;
-  export let isConnectable = false;
-  export let sourcePosition: Position | undefined = undefined;
-  export let targetPosition: Position | undefined = undefined;
-  export let positionAbsoluteX = 0;
-  export let positionAbsoluteY = 0;
-  export let zIndex = 0;
-  export let parentId: string | undefined = undefined;
 
   $: color = resourceColorMapping[data?.kind] || "#6B7280";
   $: Icon = resourceIconMapping[data?.kind] || null;

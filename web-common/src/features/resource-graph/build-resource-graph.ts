@@ -53,8 +53,9 @@ const lastPositions = new Map<string, { x: number; y: number }>(); // nodeId -> 
 const lastRefs = new Map<string, string[]>(); // dependentId -> [sourceIds]
 
 // Persistent client-side cache (localStorage) to keep positions, grouping, and refs
-// Include a layout signature so changes to Dagre spacing or node height invalidate old positions
-const CACHE_NS = `rill.resourceGraph.v1:ns${DAGRE_NODESEP}-rs${DAGRE_RANKSEP}-es${DAGRE_EDGESEP}-h${DEFAULT_NODE_HEIGHT}-mw${MAX_NODE_WIDTH}`;
+// Increment CACHE_VERSION when layout algorithm or visual spacing changes significantly
+const CACHE_VERSION = 1;
+const CACHE_NS = `rill.resourceGraph.v${CACHE_VERSION}`;
 
 type PersistedCache = {
   positions: Record<string, { x: number; y: number }>;
@@ -71,32 +72,29 @@ const DEFAULT_CACHE: PersistedCache = {
 };
 
 /**
- * Clean up orphaned cache entries from old layout versions.
- * This prevents localStorage from accumulating stale cache data when
- * layout constants change (which creates a new cache namespace).
+ * Clean up orphaned cache entries from old versions.
+ * This prevents localStorage from accumulating stale cache data.
  */
 function cleanupOrphanedCaches() {
   try {
     if (typeof window === "undefined" || !window.localStorage) return;
 
-    const pattern = /^rill\.resourceGraph\.v1:/;
+    const pattern = /^rill\.resourceGraph\.v\d+$/;
     const keys = Object.keys(window.localStorage);
     let cleanedCount = 0;
 
     for (const key of keys) {
-      // Match pattern but not current namespace
+      // Match old version keys but not current version
       if (pattern.test(key) && key !== CACHE_NS) {
         window.localStorage.removeItem(key);
         cleanedCount++;
       }
     }
 
-    // Log cleanup in development mode
     if (cleanedCount > 0 && typeof console !== "undefined") {
       console.debug(`[ResourceGraph] Cleaned up ${cleanedCount} orphaned cache ${cleanedCount === 1 ? 'entry' : 'entries'}`);
     }
   } catch (error) {
-    // Ignore errors to prevent breaking the app, but log in development
     if (typeof console !== "undefined") {
       console.warn("[ResourceGraph] Failed to cleanup orphaned caches:", error);
     }
