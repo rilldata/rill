@@ -69,6 +69,8 @@ type Instance struct {
 	AIInstructions string `db:"ai_instructions"`
 	// FrontendURL is the URL of the web interface.
 	FrontendURL string `db:"frontend_url"`
+	// AITheme is the name of the theme resource to use for AI-generated charts.
+	AITheme string `db:"ai_theme"`
 }
 
 // InstanceConfig contains dynamic configuration for an instance.

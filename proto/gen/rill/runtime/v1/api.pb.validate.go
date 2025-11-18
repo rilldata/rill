@@ -1059,6 +1059,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for FrontendUrl
 
+	// no validation rules for AiTheme
+
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
 	}
@@ -1880,6 +1882,8 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for FrontendUrl
 
+	// no validation rules for AiTheme
+
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
 	}
@@ -2403,6 +2407,10 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.FrontendUrl != nil {
 		// no validation rules for FrontendUrl
+	}
+
+	if m.AiTheme != nil {
+		// no validation rules for AiTheme
 	}
 
 	if len(errors) > 0 {

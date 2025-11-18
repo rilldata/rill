@@ -1,0 +1,2 @@
+ALTER TABLE instances ADD COLUMN ai_theme TEXT NOT NULL DEFAULT '';
+
