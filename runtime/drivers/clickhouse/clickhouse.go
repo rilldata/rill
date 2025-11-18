@@ -336,8 +336,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
 	}
 
-	// Attempting to set a non-side-effecting query property `show_table_uuid_in_table_create_query_if_not_nil` to 1
-	// to check if the cluster supports modifying this setting.
+	// Using the harmless, non–side-effecting setting
+	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
+	// whether the cluster mode supports modifying query settings. This setting
+	// has no practical use for our purposes.
 	supportSettings := true
 	if _, err := db.Exec("SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
 		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
