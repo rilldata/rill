@@ -358,13 +358,23 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 	return err
 }
 
-func (c *catalogStore) FindAISessions(ctx context.Context, ownerID string) ([]*drivers.AISession, error) {
-	rows, err := c.db.QueryxContext(ctx, `
+func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPattern string) ([]*drivers.AISession, error) {
+	query := `
 		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
 		FROM ai_sessions
 		WHERE instance_id = ? AND owner_id = ?
-		ORDER BY updated_on DESC
-	`, c.instanceID, ownerID)
+	`
+	args := []interface{}{c.instanceID, ownerID}
+
+	// Add optional user agent pattern filter
+	if userAgentPattern != "" {
+		query += " AND user_agent LIKE ?"
+		args = append(args, userAgentPattern)
+	}
+
+	query += " ORDER BY updated_on DESC"
+
+	rows, err := c.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
