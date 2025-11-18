@@ -1,4 +1,8 @@
-import { ChatContextEntryType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+import {
+  type ChatContextEntry,
+  ChatContextEntryType,
+} from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+import { getContextDimensionValuesQueryOptions } from "@rilldata/web-common/features/chat/core/context/get-context-dimension-values.ts";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
@@ -10,7 +14,10 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
-export function getContextOptions(searchTextStore: Readable<string>) {
+export function getContextOptions(
+  ctxStore: Readable<ChatContextEntry>,
+  searchTextStore: Readable<string>,
+) {
   const exploreNameStore = getExploreNameStore();
 
   const exploresSpecQuery = createQuery(
@@ -19,6 +26,11 @@ export function getContextOptions(searchTextStore: Readable<string>) {
   );
   const validSpecQuery = createQuery(
     getExploreValidSpecQueryOptions(exploreNameStore),
+    queryClient,
+  );
+
+  const dimensionValuesQuery = createQuery(
+    getContextDimensionValuesQueryOptions(ctxStore, searchTextStore),
     queryClient,
   );
 
@@ -31,8 +43,8 @@ export function getContextOptions(searchTextStore: Readable<string>) {
     value.toLowerCase().includes(st.toLowerCase());
 
   return derived(
-    [exploresSpecQuery, validSpecQuery, searchTextStore],
-    ([exploresSpecResp, validSpecResp, searchText]) => {
+    [exploresSpecQuery, validSpecQuery, dimensionValuesQuery, searchTextStore],
+    ([exploresSpecResp, validSpecResp, dimensionValuesResp, searchText]) => {
       const exploreOptions =
         exploresSpecResp.data
           ?.map((r) => {
@@ -71,9 +83,12 @@ export function getContextOptions(searchTextStore: Readable<string>) {
               filterFunction(o, searchText),
           ) ?? [];
 
+      const dimensionValuesOptions = dimensionValuesResp.data ?? [];
+
       return {
         [ChatContextEntryType.Measures]: measuresOptions,
         [ChatContextEntryType.Dimensions]: dimensionsOptions,
+        [ChatContextEntryType.DimensionValue]: dimensionValuesOptions,
         [ChatContextEntryType.Explore]: exploreOptions,
       };
     },

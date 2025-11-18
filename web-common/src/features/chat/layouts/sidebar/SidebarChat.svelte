@@ -7,7 +7,6 @@
     cleanupConversationManager,
     getConversationManager,
   } from "../../core/conversation-manager";
-  import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import SidebarHeader from "./SidebarHeader.svelte";
@@ -78,20 +77,13 @@
       bind:this={chatInputComponent}
       onSend={onMessageSend}
     />
-    <ChatFooter />
   </div>
 </div>
 
 <style lang="postcss">
   .chat-sidebar {
-    position: relative;
+    @apply flex flex-col relative h-full pb-4 bg-surface border;
     width: var(--sidebar-width);
-    height: 100%;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
   }
 
   .chat-sidebar-content {

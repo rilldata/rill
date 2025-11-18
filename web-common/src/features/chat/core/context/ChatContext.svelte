@@ -3,19 +3,23 @@
   import { getContextOptions } from "@rilldata/web-common/features/chat/core/context/context-options.ts";
   import {
     type ChatContextEntry,
+    ChatContextEntryType,
     type ContextMetadata,
     ContextTypeData,
   } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
   import { convertContextToAttrs } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
-  import { getAttrs, builderActions } from "bits-ui";
+  import { builderActions, getAttrs } from "bits-ui";
   import { ChevronDownIcon } from "lucide-svelte";
-  import { readable } from "svelte/store";
+  import { readable, writable } from "svelte/store";
 
   export let chatCtx: ChatContextEntry;
   export let metadata: ContextMetadata;
   export let onUpdate: () => void;
 
-  const contextOptions = getContextOptions(readable(""));
+  const chatCtxStore = writable(chatCtx);
+  $: chatCtxStore.set(chatCtx);
+
+  const contextOptions = getContextOptions(chatCtxStore, readable(""));
   $: optionsForType = $contextOptions[chatCtx.type] ?? [];
   $: hasOptions = chatCtx.type in $contextOptions;
 
@@ -24,7 +28,11 @@
   $: if (attrs) setTimeout(() => onUpdate(), 50);
 
   function updateValue(newValue: string) {
-    chatCtx.value = newValue;
+    if (chatCtx.type === ChatContextEntryType.DimensionValue) {
+      chatCtx.subValue = newValue;
+    } else {
+      chatCtx.value = newValue;
+    }
     chatCtx.label =
       ContextTypeData[chatCtx.type]?.getLabel(chatCtx, metadata) ?? newValue;
   }
@@ -43,11 +51,12 @@
           <button
             {...getAttrs([builder])}
             use:builderActions={{ builders: [builder] }}
+            type="button"
           >
             <ChevronDownIcon size={12} />
           </button>
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
+        <DropdownMenu.Content side="top" sideOffset={8}>
           {#each optionsForType as option (option.value)}
             <DropdownMenu.Item on:click={() => updateValue(option.value)}>
               {option.label}

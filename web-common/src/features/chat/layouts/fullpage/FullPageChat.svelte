@@ -71,7 +71,6 @@
           onSend={onMessageSend}
           bind:this={chatInputComponent}
         />
-        <ChatFooter />
       </div>
     </div>
   </div>

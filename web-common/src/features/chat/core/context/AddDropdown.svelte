@@ -4,7 +4,7 @@
     type ChatContextEntry,
     ChatContextEntryType,
   } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
-  import { writable } from "svelte/store";
+  import { readable, writable } from "svelte/store";
 
   export let left: number;
   export let bottom: number;
@@ -28,7 +28,10 @@
     },
   ];
 
-  const contextOptions = getContextOptions(searchTextStore);
+  const contextOptions = getContextOptions(
+    readable({} as any), // unused
+    searchTextStore,
+  );
 
   let firstLevelSelection: ChatContextEntryType | null = null;
   $: firstLevelSelectedOption = contextTopLevelOptions.find(
@@ -54,6 +57,7 @@
     onAdd({
       type: firstLevelSelectedOption.value,
       value: option.value,
+      subValue: null,
       label: option.label,
     });
   }
@@ -62,20 +66,28 @@
 <div class="context-dropdown" style="left: {left}px; bottom: {bottom}px">
   {#if firstLevelSelection === null}
     {#each contextTopLevelOptions as option (option.value)}
-      <button on:click={(e) => selectMode(e, option.value)}>
+      <button
+        class="content-item"
+        on:click={(e) => selectMode(e, option.value)}
+        type="button"
+      >
         <span>{option.label}</span>
         <span>{">"}</span>
       </button>
     {/each}
   {:else if firstLevelSelectedOption && secondLevelOptions}
-    <div class="flex flex-row items-center">
-      <button on:click={() => (firstLevelSelection = null)}>
+    <div class="content-item">
+      <button on:click={() => (firstLevelSelection = null)} type="button">
         {"<"}
       </button>
       <span>{firstLevelSelectedOption.label}</span>
     </div>
     {#each secondLevelOptions as option (option.value)}
-      <button on:click={() => onOptionSelect(option)}>
+      <button
+        class="content-item"
+        on:click={() => onOptionSelect(option)}
+        type="button"
+      >
         {option.label}
       </button>
     {/each}
@@ -86,5 +98,10 @@
   .context-dropdown {
     @apply flex flex-col absolute p-1.5 z-50 w-[200px];
     @apply rounded-md bg-popover text-popover-foreground shadow-md;
+  }
+
+  .content-item {
+    @apply flex flex-row items-center gap-x-2;
+    @apply cursor-default select-none rounded-sm px-2 py-1.5 text-xs outline-none;
   }
 </style>
