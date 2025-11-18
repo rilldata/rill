@@ -3089,7 +3089,8 @@ message ProjectPermissions {
   bool manage_alerts = 14;
   bool create_bookmarks = 17;
   bool manage_bookmarks = 18;
-  bool has_full_role = 23; // indicates whether there was any role which did not had resource level shares, thus had access too all resources as per that role permissions.
+  bool fully_resource_restricted = 23; // indicates whether all the roles have resource-restricted access
+  repeated ResourceName resources = 24; // list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
 }
 
 message OrganizationRole {

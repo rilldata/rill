@@ -87,11 +87,8 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			}
 
 			// ignore resource level security rules if the user has a full role
-			if !permissions.HasFullRole {
-				rules, err = s.securityRulesForUserResources(r.Context(), proj.ID, claims.OwnerID())
-				if err != nil {
-					return httputil.Error(http.StatusInternalServerError, err)
-				}
+			if permissions.FullyResourceRestricted {
+				rules = securityRulesFromResources(permissions.Resources)
 			}
 		case auth.OwnerTypeService:
 			attr, err = s.jwtAttributesForService(r.Context(), claims.OwnerID(), permissions)

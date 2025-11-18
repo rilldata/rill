@@ -1501,7 +1501,8 @@ components:
                     type: boolean
                 createReports:
                     type: boolean
-                hasFullRole:
+                fullyResourceRestricted:
+                    title: indicates whether all the roles have resource-restricted access
                     type: boolean
                 manageAlerts:
                     type: boolean
@@ -1537,6 +1538,11 @@ components:
                     type: boolean
                 readProvisionerResources:
                     type: boolean
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    title: list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
+                    type: array
             type: object
         v1ProjectRole:
             properties:

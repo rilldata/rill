@@ -307,12 +307,9 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			return nil, err
 		}
 
-		// ignore resource level security rules if the user has a full role
-		if !permissions.HasFullRole {
-			userRules, err := s.securityRulesForUserResources(ctx, proj.ID, claims.OwnerID())
-			if err != nil {
-				return nil, err
-			}
+		// ignore resource level security rules if the user has a full project role
+		if permissions.FullyResourceRestricted {
+			userRules := securityRulesFromResources(permissions.Resources)
 			rules = append(rules, userRules...)
 		}
 	} else if claims.OwnerType() == auth.OwnerTypeService {
@@ -444,20 +441,7 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 	}, nil
 }
 
-func (s *Server) securityRulesForUserResources(ctx context.Context, projectID, userID string) ([]*runtimev1.SecurityRule, error) {
-	if userID == "" {
-		return nil, nil
-	}
-
-	resources, err := s.admin.DB.FindProjectMemberResourcesForUser(ctx, projectID, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return securityRulesFromResources(resources), nil
-}
-
-func securityRulesFromResources(resources []database.ResourceName) []*runtimev1.SecurityRule {
+func securityRulesFromResources(resources []*adminv1.ResourceName) []*runtimev1.SecurityRule {
 	if len(resources) == 0 {
 		return nil
 	}

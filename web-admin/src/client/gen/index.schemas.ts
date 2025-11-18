@@ -1044,7 +1044,8 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
-  hasFullRole?: boolean;
+  fullyResourceRestricted?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectRole {

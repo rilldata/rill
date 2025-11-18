@@ -15732,9 +15732,18 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
   manageBookmarks = false;
 
   /**
-   * @generated from field: bool has_full_role = 23;
+   * indicates whether all the roles have resource-restricted access
+   *
+   * @generated from field: bool fully_resource_restricted = 23;
    */
-  hasFullRole = false;
+  fullyResourceRestricted = false;
+
+  /**
+   * list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
+   *
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 24;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<ProjectPermissions>) {
     super();
@@ -15766,7 +15775,8 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
     { no: 14, name: "manage_alerts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "create_bookmarks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "manage_bookmarks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 23, name: "has_full_role", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 23, name: "fully_resource_restricted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 24, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectPermissions {

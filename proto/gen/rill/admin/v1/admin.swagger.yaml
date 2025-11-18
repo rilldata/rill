@@ -5888,8 +5888,15 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
-      hasFullRole:
+      fullyResourceRestricted:
         type: boolean
+        title: indicates whether all the roles have resource-restricted access
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        title: list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
   v1ProjectRole:
     type: object
     properties:

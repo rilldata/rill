@@ -1801,21 +1801,23 @@ func (c *connection) ResolveOrganizationRolesForUser(ctx context.Context, userID
 	return res, nil
 }
 
-func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*database.ProjectRole, error) {
-	var res []*database.ProjectRole
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT r.* FROM users_projects_roles upr
+func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*database.UserProjectRole, error) {
+	var dtos []*userProjectRoleDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT r.*, upr.resources FROM users_projects_roles upr
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.user_id = $1 AND upr.project_id = $2
 		UNION
-		SELECT * FROM project_roles WHERE id IN (
-			SELECT project_role_id FROM usergroups_projects_roles upr JOIN usergroups_users uug
-			ON upr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND upr.project_id = $2
-		)`, userID, projectID)
+		SELECT r.*, upr.resources FROM usergroups_projects_roles upr
+		JOIN project_roles r ON upr.project_role_id = r.id
+		JOIN usergroups_users uug ON upr.usergroup_id = uug.usergroup_id
+		WHERE uug.user_id = $1 AND upr.project_id = $2
+	`, userID, projectID)
 	if err != nil {
 		return nil, parseErr("project roles", err)
 	}
-	return res, nil
+
+	return c.userProjectRolesFromDTOs(dtos)
 }
 
 // ResolveOrganizationRoleForService returns the organization role for the service
@@ -2153,16 +2155,16 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectI
 }
 
 func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*database.ProjectRole, error) {
-	dto := &projectRoleWithResourcesDTO{}
+	role := &database.ProjectRole{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT r.*, upr.resources FROM users_projects_roles upr
+		SELECT r.* FROM users_projects_roles upr
 		JOIN project_roles r ON r.id = upr.project_role_id
 		WHERE upr.project_id=$1 AND upr.user_id=$2
-	`, projectID, userID).StructScan(dto)
+	`, projectID, userID).StructScan(role)
 	if err != nil {
 		return nil, parseErr("project member role", err)
 	}
-	return c.projectRoleFromDTOWithResources(dto)
+	return role, nil
 }
 
 func (c *connection) FindProjectMemberUserResources(ctx context.Context, projectID, userID string) ([]database.ResourceName, error) {
@@ -2331,16 +2333,16 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 }
 
 func (c *connection) FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*database.ProjectRole, error) {
-	dto := &projectRoleWithResourcesDTO{}
+	role := &database.ProjectRole{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT r.*, upr.resources FROM usergroups_projects_roles upr
+		SELECT r.* FROM usergroups_projects_roles upr
 		JOIN project_roles r ON r.id = upr.project_role_id
 		WHERE upr.usergroup_id=$1 AND upr.project_id=$2
-	`, groupID, projectID).StructScan(dto)
+	`, groupID, projectID).StructScan(role)
 	if err != nil {
 		return nil, parseErr("project group member role", err)
 	}
-	return c.projectRoleFromDTOWithResources(dto)
+	return role, nil
 }
 
 func (c *connection) FindProjectMemberUsergroupResources(ctx context.Context, groupID, projectID string) ([]database.ResourceName, error) {
@@ -3390,6 +3392,32 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	return dto.MagicAuthTokenWithUser, nil
 }
 
+type userProjectRoleDTO struct {
+	*database.UserProjectRole
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (c *connection) userProjectRoleFromDTO(dto *userProjectRoleDTO) (*database.UserProjectRole, error) {
+	resources, err := assignResourceNames(dto.Resources)
+	if err != nil {
+		return nil, err
+	}
+	dto.UserProjectRole.Resources = resources
+	return dto.UserProjectRole, nil
+}
+
+func (c *connection) userProjectRolesFromDTOs(dtos []*userProjectRoleDTO) ([]*database.UserProjectRole, error) {
+	res := make([]*database.UserProjectRole, len(dtos))
+	for i, dto := range dtos {
+		role, err := c.userProjectRoleFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = role
+	}
+	return res, nil
+}
+
 type projectMemberUserDTO struct {
 	*database.ProjectMemberUser
 	Resources pgtype.JSONB `db:"resources"`
@@ -3492,20 +3520,6 @@ func (c *connection) projectInviteWithRolesFromDTOs(dtos []*projectInviteWithRol
 		res[i] = model
 	}
 	return res, nil
-}
-
-type projectRoleWithResourcesDTO struct {
-	*database.ProjectRole
-	Resources pgtype.JSONB `db:"resources"`
-}
-
-func (c *connection) projectRoleFromDTOWithResources(dto *projectRoleWithResourcesDTO) (*database.ProjectRole, error) {
-	resources, err := assignResourceNames(dto.Resources)
-	if err != nil {
-		return nil, err
-	}
-	dto.ProjectRole.Resources = resources
-	return dto.ProjectRole, nil
 }
 
 type notificationTokenWithSecretDTO struct {

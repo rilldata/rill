@@ -134,8 +134,13 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 	}
 
 	composite := &adminv1.ProjectPermissions{}
+	if len(roles) == 0 {
+		return composite, nil
+	}
+
+	composite.FullyResourceRestricted = true
 	for _, role := range roles {
-		composite = UnionProjectRoles(composite, role)
+		composite = UnionUserProjectRoles(composite, role)
 	}
 
 	return composite, nil
@@ -306,6 +311,53 @@ func UnionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ManageAlerts:               a.ManageAlerts || b.ManageAlerts,
 		CreateBookmarks:            a.CreateBookmarks || b.CreateBookmarks,
 		ManageBookmarks:            a.ManageBookmarks || b.ManageBookmarks,
-		HasFullRole:                a.HasFullRole || len(b.Resources) == 0,
+	}
+}
+
+// UnionUserProjectRoles merges a user's project role's permissions into the given permissions object.
+func UnionUserProjectRoles(a *adminv1.ProjectPermissions, b *database.UserProjectRole) *adminv1.ProjectPermissions {
+	var mergedResources []*adminv1.ResourceName
+	seen := make(map[string]struct{})
+	for _, res := range a.Resources {
+		key := res.Type + "|" + res.Name
+		seen[key] = struct{}{}
+		mergedResources = append(mergedResources, res)
+	}
+	for _, res := range b.Resources {
+		key := res.Type + "|" + res.Name
+		if _, ok := seen[key]; !ok {
+			seen[key] = struct{}{}
+			mergedResources = append(mergedResources, &adminv1.ResourceName{
+				Type: res.Type,
+				Name: res.Name,
+			})
+		}
+	}
+
+	return &adminv1.ProjectPermissions{
+		Admin:                      a.Admin || b.Admin,
+		ReadProject:                a.ReadProject || b.ReadProject,
+		ManageProject:              a.ManageProject || b.ManageProject,
+		ReadProd:                   a.ReadProd || b.ReadProd,
+		ReadProdStatus:             a.ReadProdStatus || b.ReadProdStatus,
+		ManageProd:                 a.ManageProd || b.ManageProd,
+		ReadDev:                    a.ReadDev || b.ReadDev,
+		ReadDevStatus:              a.ReadDevStatus || b.ReadDevStatus,
+		ManageDev:                  a.ManageDev || b.ManageDev,
+		ReadProvisionerResources:   a.ReadProvisionerResources || b.ReadProvisionerResources,
+		ManageProvisionerResources: a.ManageProvisionerResources || b.ManageProvisionerResources,
+		ReadProjectMembers:         a.ReadProjectMembers || b.ReadProjectMembers,
+		ManageProjectMembers:       a.ManageProjectMembers || b.ManageProjectMembers,
+		ManageProjectAdmins:        a.ManageProjectAdmins || b.ManageProjectAdmins,
+		CreateMagicAuthTokens:      a.CreateMagicAuthTokens || b.CreateMagicAuthTokens,
+		ManageMagicAuthTokens:      a.ManageMagicAuthTokens || b.ManageMagicAuthTokens,
+		CreateReports:              a.CreateReports || b.CreateReports,
+		ManageReports:              a.ManageReports || b.ManageReports,
+		CreateAlerts:               a.CreateAlerts || b.CreateAlerts,
+		ManageAlerts:               a.ManageAlerts || b.ManageAlerts,
+		CreateBookmarks:            a.CreateBookmarks || b.CreateBookmarks,
+		ManageBookmarks:            a.ManageBookmarks || b.ManageBookmarks,
+		FullyResourceRestricted:    a.FullyResourceRestricted && len(b.Resources) > 0,
+		Resources:                  mergedResources,
 	}
 }
