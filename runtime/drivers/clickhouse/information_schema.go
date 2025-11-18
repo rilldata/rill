@@ -44,7 +44,7 @@ func (c *Connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 
 	q := fmt.Sprintf(`
 	SELECT
-		 name as schema_name 
+		 name as schema_name
 	FROM system.databases
 	WHERE %s 
 	ORDER BY schema_name 
@@ -93,8 +93,8 @@ func (c *Connection) ListTables(ctx context.Context, database, databaseSchema st
 
 	q := `
 	SELECT
-    	name AS table_name,
-    	CASE WHEN match(engine, 'View') THEN true ELSE false END AS view
+		name AS table_name,
+		CASE WHEN match(engine, 'View') THEN true ELSE false END AS view
 	FROM system.tables
 	WHERE is_temporary = 0 AND database = ?
 	`
@@ -163,7 +163,7 @@ func (c *Connection) GetTable(ctx context.Context, database, databaseSchema, tab
         c.name AS column_name,
         c.type AS data_type
     FROM system.tables t
-    LEFT JOIN system.columns c 
+    LEFT JOIN system.columns c
 		ON t.database = c.database AND t.name = c.table
     WHERE t.database = ? AND t.name = ?
     ORDER BY c.position

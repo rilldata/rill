@@ -239,10 +239,7 @@
 
     const { interval, grain } = await deriveInterval(
       alias,
-      Interval.fromDateTimes(
-        DateTime.fromJSDate(allTimeRange.start),
-        DateTime.fromJSDate(allTimeRange.end),
-      ),
+
       metricsViewName,
       activeTimeZone,
     );
@@ -384,7 +381,6 @@
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}
-          showPan
           {showDefaultItem}
           watermark={watermark ? DateTime.fromISO(watermark) : undefined}
           applyRange={selectRange}

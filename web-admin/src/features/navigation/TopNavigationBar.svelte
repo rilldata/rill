@@ -258,6 +258,7 @@
         {/key}
       {/if}
     {/if}
+
     {#if onCanvasDashboardPage}
       <CanvasBookmarks {organization} {project} canvasName={dashboard} />
       <ShareDashboardPopover createMagicAuthTokens={false} />

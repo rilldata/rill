@@ -162,7 +162,7 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 		args = append(args, opts.BeforeExecutedOn, opts.BeforeExecutedOn, opts.AfterKey)
 	}
 
-	qry.WriteString(" ORDER BY executed_on DESC, key")
+	qry.WriteString(" ORDER BY executed_on DESC, idx")
 
 	if opts.Limit != 0 {
 		qry.WriteString(" LIMIT ?")
@@ -303,28 +303,33 @@ func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string,
 	return nil
 }
 
-func (c *catalogStore) UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
-		c.instanceID,
-		modelID,
-		partitionKey,
-	)
-	if err != nil {
-		return err
+func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error {
+	var qry strings.Builder
+	var args []any
+
+	qry.WriteString("UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=?")
+	args = append(args, c.instanceID, modelID)
+
+	// Add conditions
+	qry.WriteString(" AND (false") // false ensures it's a no-op if no conditions are added; safer that way
+	if whereErrored {
+		qry.WriteString(" OR error != ''")
 	}
+	if len(wherePartitionKeyIn) > 0 {
+		qry.WriteString(" OR key IN (")
+		for i, k := range wherePartitionKeyIn {
+			if i == 0 {
+				qry.WriteString("?")
+			} else {
+				qry.WriteString(",?")
+			}
+			args = append(args, k)
+		}
+		qry.WriteString(")")
+	}
+	qry.WriteString(")")
 
-	return nil
-}
-
-func (c *catalogStore) UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
-		c.instanceID,
-		modelID,
-	)
+	_, err := c.db.ExecContext(ctx, qry.String(), args...)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -800,9 +801,6 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		}
 		opts.DialTimeout = d
 	}
-	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
-		opts.DialTimeout = time.Second * 60
-	}
 
 	if conf.ReadTimeout != "" {
 		d, err := time.ParseDuration(conf.ReadTimeout)
@@ -815,15 +813,38 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		opts.ReadTimeout = time.Second * 300
 	}
 
+	// NOTE: After https://github.com/ClickHouse/clickhouse-go/pull/1709, we can remove the manual TCP dial and
+	// the default 60s DialTimeout.
+	// The manual dial currently ensures that the host and port are reachable.
+	// This check only verifies that the TCP socket is open — it will succeed even if the ClickHouse instance is scaled to zero.
+	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
+	if conf.Host != "" && conf.Port != 0 {
+		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
+		conn, err := net.DialTimeout("tcp", target, 25*time.Second)
+		if err != nil {
+			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
+		}
+		conn.Close()
+	}
+	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
+		opts.DialTimeout = time.Second * 60
+	}
+
 	// Open the connection
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 	err := db.Ping()
 	if err != nil {
-		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
-			return nil, err
+		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
+		if strings.Contains(err.Error(), "EOF") ||
+			strings.Contains(err.Error(), "[handshake] unexpected packet [21]") ||
+			(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+			return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
 		}
-
-		if conf.DSN != "" {
+		// Return immediately without retrying in the following cases:
+		//   1. The current protocol is already HTTP (no need to retry with HTTP again).
+		//   2. A DSN was explicitly provided (respect the user’s configuration).
+		//   3. The error is not "unexpected packet [72]" → The native protocol hit an HTTP endpoint.
+		if opts.Protocol == clickhouse.HTTP || conf.DSN != "" || !strings.Contains(err.Error(), "[handshake] unexpected packet [72]") {
 			return nil, err
 		}
 		// may be the port is http, also try with http protocol if DSN is not provided
@@ -831,6 +852,11 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 		err := db.Ping()
 		if err != nil {
+			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
+			if strings.Contains(err.Error(), "EOF") ||
+				(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+				return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
+			}
 			return nil, err
 		}
 		// connection with http protocol is successful
