@@ -410,6 +410,10 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
+// When supportSettings is false, the cluster is in readonly mode and does not allow
+// modifying any settings. The clickhouse-go driver automatically sets 'max_execution_time'
+// if a context has a deadline, which would cause errors. To avoid this, we override the
+// connection methods to remove the deadline from the context before executing any query.
 type SQLConn struct {
 	*sqlx.Conn
 	supportSettings bool
