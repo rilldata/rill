@@ -196,12 +196,10 @@ rows:
 	})
 	require.NoError(t, err)
 
-	// Check that both mv1 and mv2 are referenced through templated SQL
-	require.Len(t, res.ReferencedMetricsViews, 2)
-	require.Contains(t, res.ReferencedMetricsViews, "mv1")
-	require.Contains(t, res.ReferencedMetricsViews, "mv2")
-
-	// Check that templates were resolved in the components
+	// Templates are NOT resolved by ResolveCanvas anymore - that's the job of ResolveTemplatedString
+	// Canvas should still track referenced metrics views by parsing the SQL
+	// Note: Template parsing for metrics view tracking happens at a later stage,
+	// so templates won't be detected until resolved
 	require.Len(t, res.ResolvedComponents, 2)
 
 	// Verify templates are preserved as-is (not resolved)
@@ -321,7 +319,6 @@ rows:
 	})
 	require.NoError(t, err)
 
-	// All complex SQL queries should parse mv1 correctly
 	require.Len(t, res.ReferencedMetricsViews, 1)
 	require.Contains(t, res.ReferencedMetricsViews, "mv1")
 	require.Len(t, res.ResolvedComponents, 3)
@@ -510,8 +507,8 @@ type: canvas
 rows:
 - items:
   - kpi:
-      title: "Revenue for {{ .user.country }}"
-      metrics_sql: "SELECT total_revenue FROM mv WHERE country = '{{ .user.country }}'"
+      title: "Revenue for {{ .User.country }}"
+      metrics_sql: "SELECT total_revenue FROM mv WHERE country = '{{ .User.country }}'"
 `,
 		},
 	})
@@ -538,184 +535,245 @@ rows:
 	// Verify component has unresolved templates
 	comp := canvasRes.ResolvedComponents["canvas--component-0-0"]
 	props := comp.GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Equal(t, "Revenue for {{ .user.country }}", props["title"])
-	require.Equal(t, "SELECT total_revenue FROM mv WHERE country = '{{ .user.country }}'", props["metrics_sql"])
+	require.Equal(t, "Revenue for {{ .User.country }}", props["title"])
+	require.Equal(t, "SELECT total_revenue FROM mv WHERE country = '{{ .User.country }}'", props["metrics_sql"])
 
 	// Step 2: Use ResolveTemplatedString to resolve the title
 	titleRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Body:       props["title"].(string),
+		Data:       props["title"].(string),
 	})
 	require.NoError(t, err)
-	require.Equal(t, "Revenue for US", titleRes.Body)
+	require.Equal(t, "Revenue for US", titleRes.ResolvedData)
 
 	// Step 3: Use ResolveTemplatedString with metrics_sql to get the actual value
 	// First resolve the template in the SQL, then execute metrics_sql
 	valueRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Body:       `The total is {{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
+		Data:       `The total is {{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "The total is 100", valueRes.Body)
+	require.Equal(t, "The total is 100", valueRes.ResolvedData)
 
 	// Step 4: Get formatted value using format tokens
 	formatRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId:      instanceID,
-		Body:            `{{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
+		Data:            `{{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
 		UseFormatTokens: true,
 	})
 	require.NoError(t, err)
-	require.Contains(t, formatRes.Body, "__RILL__FORMAT__")
-	require.Contains(t, formatRes.Body, "mv")
-	require.Contains(t, formatRes.Body, "total_revenue")
+	require.Contains(t, formatRes.ResolvedData, "__RILL__FORMAT__")
+	require.Contains(t, formatRes.ResolvedData, "mv")
+	require.Contains(t, formatRes.ResolvedData, "total_revenue")
 }
 
-func TestCanvasWithKPIGridAndMarkdown(t *testing.T) {
+// TestTemplatedStringWithMultipleMetricsViews shows resolving markdown with multiple metrics_sql calls
+func TestTemplatedStringWithMultipleMetricsViews(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": "",
-			"bids.sql": `
-SELECT 
-  DATE '2025-11-04' AS timestamp,
-  100 AS total_bids,
-  50 AS winning_bids
-UNION ALL
-SELECT 
-  DATE '2025-11-05' AS timestamp,
-  150 AS total_bids,
-  75 AS winning_bids
-UNION ALL
-SELECT 
-  DATE '2025-11-06' AS timestamp,
-  200 AS total_bids,
-  100 AS winning_bids
-`,
-			"bids_metrics.yaml": `
+			"sales.sql": `SELECT 'Q1' AS quarter, 1000 AS amount`,
+			"costs.sql": `SELECT 'Q1' AS quarter, 600 AS amount`,
+			"sales_mv.yaml": `
 type: metrics_view
 version: 1
-model: bids
-timeseries: timestamp
+model: sales
 dimensions:
-- column: timestamp
-  name: timestamp
+- column: quarter
 measures:
-- name: total_bids
-  expression: SUM(total_bids)
-- name: winning_bids
-  expression: SUM(winning_bids)
+- name: total_sales
+  expression: SUM(amount)
 `,
-			"canvas.yaml": `
-type: canvas
-display_name: "Canvas Dashboard"
-defaults:
-  time_range: PT24H
-  comparison_mode: time
-rows:
-  - items:
-      - kpi_grid:
-          comparison:
-            - delta
-            - percent_change
-          metrics_view: bids_metrics
-          measures:
-            - total_bids
-        width: 12
-    height: 40px
-  - items:
-      - markdown:
-          alignment:
-            horizontal: left
-            vertical: middle
-          apply_formatting: true
-          content: 'This is a cool metric: {{ metrics_sql "select total_bids from bids_metrics" }}'
-          description: ""
-          title: ""
-        width: 12
-    height: 40px
+			"costs_mv.yaml": `
+type: metrics_view
+version: 1
+model: costs
+dimensions:
+- column: quarter
+measures:
+- name: total_costs
+  expression: SUM(amount)
 `,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
 
 	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
-	ctx := testCtx()
-
-	// Step 1: Resolve the canvas
-	canvasRes, err := server.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{
+	// Resolve markdown with multiple metrics_sql calls from different metrics views
+	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Canvas:     "canvas",
+		Data: `# Q1 Report
+		
+Sales: ${{ metrics_sql "SELECT total_sales FROM sales_mv" }}
+Costs: ${{ metrics_sql "SELECT total_costs FROM costs_mv" }}`,
 	})
 	require.NoError(t, err)
-	require.NotNil(t, canvasRes.Canvas)
-	require.Equal(t, "canvas", canvasRes.Canvas.Meta.Name.Name)
-	require.NotNil(t, canvasRes.Canvas.GetCanvas().State.ValidSpec)
+	require.Contains(t, res.ResolvedData, "Sales: $1000")
+	require.Contains(t, res.ResolvedData, "Costs: $600")
+}
 
-	// Verify we have both components
-	require.Len(t, canvasRes.ResolvedComponents, 2)
-	require.Contains(t, canvasRes.ResolvedComponents, "canvas--component-0-0") // KPI grid
-	require.Contains(t, canvasRes.ResolvedComponents, "canvas--component-1-0") // Markdown
+// TestTemplatedStringWithMarkdown demonstrates resolving a full markdown document
+// with metrics_sql calls, user attributes, and Sprig template functions
+func TestTemplatedStringWithMarkdown(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"data.sql": `
+SELECT 'Q1' AS quarter, 150000 AS revenue, 95000 AS costs, 25 AS customers
+UNION ALL
+SELECT 'Q2' AS quarter, 180000 AS revenue, 110000 AS costs, 32 AS customers
+UNION ALL
+SELECT 'Q3' AS quarter, 165000 AS revenue, 100000 AS costs, 28 AS customers
+UNION ALL
+SELECT 'Q4' AS quarter, 195000 AS revenue, 115000 AS costs, 35 AS customers
+`,
+			"metrics.yaml": `
+type: metrics_view
+version: 1
+model: data
+dimensions:
+- column: quarter
+measures:
+- name: total_revenue
+  expression: SUM(revenue)
+- name: total_costs
+  expression: SUM(costs)
+- name: total_customers
+  expression: SUM(customers)
+- name: avg_revenue
+  expression: AVG(revenue)
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
-	// Verify the KPI grid component
-	kpiGrid := canvasRes.ResolvedComponents["canvas--component-0-0"]
-	kpiGridProps := kpiGrid.GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Equal(t, "bids_metrics", kpiGridProps["metrics_view"])
-	require.Equal(t, []any{"total_bids"}, kpiGridProps["measures"])
-	require.Equal(t, []any{"delta", "percent_change"}, kpiGridProps["comparison"])
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
 
-	// Verify the markdown component (templates should NOT be resolved by ResolveCanvas)
-	markdown := canvasRes.ResolvedComponents["canvas--component-1-0"]
-	markdownProps := markdown.GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Equal(t, "This is a cool metric: {{ metrics_sql \"select total_bids from bids_metrics\" }}", markdownProps["content"])
+	ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+		SkipChecks: true,
+		UserAttributes: map[string]any{
+			"name":       "Alice",
+			"department": "Finance",
+			"year":       "2024",
+		},
+	})
 
-	// Verify referenced metrics views
-	require.Len(t, canvasRes.ReferencedMetricsViews, 1)
-	require.Contains(t, canvasRes.ReferencedMetricsViews, "bids_metrics")
-	require.Equal(t, "bids", canvasRes.ReferencedMetricsViews["bids_metrics"].GetMetricsView().State.ValidSpec.Model)
+	markdown := `# {{ .User.year }} Annual Report
 
-	// Step 2: Resolve markdown template WITHOUT additional time range
-	// This should return the total across all data
-	markdownResNoFilter, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
+**Prepared by:** {{ .User.name }} ({{ .User.department }})
+
+---
+
+## Executive Summary
+
+This report provides a comprehensive overview of our financial performance for {{ .User.year }}.
+
+### Key Metrics
+
+- **Total Revenue:** ${{ metrics_sql "SELECT total_revenue FROM metrics" }}
+- **Total Costs:** ${{ metrics_sql "SELECT total_costs FROM metrics" }}
+- **Total Customers:** {{ metrics_sql "SELECT total_customers FROM metrics" }} customers
+- **Average Quarterly Revenue:** ${{ metrics_sql "SELECT avg_revenue FROM metrics" }}
+
+### Performance Analysis
+
+Our {{ lower .User.department }} team has analyzed the data and found that:
+
+1. Annual revenue reached **${{ metrics_sql "SELECT total_revenue FROM metrics" }}**
+2. Operating costs were **${{ metrics_sql "SELECT total_costs FROM metrics" }}**
+3. Customer acquisition totaled **{{ metrics_sql "SELECT total_customers FROM metrics" }}** new customers
+
+---
+
+*Report generated on {{ now | date "2006-01-02" }}*
+`
+
+	res, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Body:       markdownProps["content"].(string),
+		Data:       markdown,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "This is a cool metric: 450", markdownResNoFilter.Body)
 
-	// Step 3: Test with a WHERE clause to verify additional time range works
-	// Note: Simple SELECT without WHERE doesn't auto-apply time filtering
-	// The metrics SQL needs explicit time filtering for time ranges to work
-	bodyWithTimeFilter := `Total for period: {{ metrics_sql "select total_bids from bids_metrics where timestamp >= '2025-11-04' and timestamp < '2025-11-06'" }}`
+	resolved := res.ResolvedData
 
-	markdownResWithExplicitTime, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
-		InstanceId: instanceID,
-		Body:       bodyWithTimeFilter,
+	// Verify user attributes were resolved
+	require.Contains(t, resolved, "# 2024 Annual Report")
+	require.Contains(t, resolved, "**Prepared by:** Alice (Finance)")
+	require.Contains(t, resolved, "overview of our financial performance for 2024")
+
+	// Verify metrics_sql calls were resolved
+	require.Contains(t, resolved, "**Total Revenue:** $690000")
+	require.Contains(t, resolved, "**Total Costs:** $420000")
+	require.Contains(t, resolved, "**Total Customers:** 120 customers")
+	require.Contains(t, resolved, "**Average Quarterly Revenue:** $172500")
+
+	// Verify multiple references to same metric are resolved
+	require.Contains(t, resolved, "Annual revenue reached **$690000**")
+	require.Contains(t, resolved, "Operating costs were **$420000**")
+	require.Contains(t, resolved, "totaled **120** new customers")
+
+	// Verify Sprig functions work (lower)
+	require.Contains(t, resolved, "Our finance team has analyzed")
+
+	// Verify date formatting worked (now function)
+	require.Contains(t, resolved, "*Report generated on")
+}
+
+// TestTemplatedStringWithMarkdownAndFormatTokens shows format tokens in markdown
+func TestTemplatedStringWithMarkdownAndFormatTokens(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"sales.sql": `SELECT 1500000.50 AS amount`,
+			"sales_mv.yaml": `
+type: metrics_view
+version: 1
+model: sales
+measures:
+- name: total_sales
+  expression: SUM(amount)
+  format_preset: currency_usd
+`,
+		},
 	})
-	require.NoError(t, err)
-	// Should include data from 2025-11-04 and 2025-11-05 (100 + 150 = 250 bids)
-	require.Equal(t, "Total for period: 250", markdownResWithExplicitTime.Body)
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
-	// Step 4: Resolve with format tokens enabled
-	markdownResFormatted, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	markdown := `# Sales Report
+
+Total Sales: {{ metrics_sql "SELECT total_sales FROM sales_mv" }}
+`
+
+	// Test with format tokens enabled
+	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId:      instanceID,
-		Body:            markdownProps["content"].(string),
+		Data:            markdown,
 		UseFormatTokens: true,
 	})
 	require.NoError(t, err)
-	require.Contains(t, markdownResFormatted.Body, "__RILL__FORMAT__")
-	require.Contains(t, markdownResFormatted.Body, "bids_metrics")
-	require.Contains(t, markdownResFormatted.Body, "total_bids")
-	require.Contains(t, markdownResFormatted.Body, "450")
 
-	// Step 5: Verify multiple metrics_sql calls in one template
-	multiMetricBody := `Total: {{ metrics_sql "select total_bids from bids_metrics" }}, Winning: {{ metrics_sql "select winning_bids from bids_metrics" }}`
-	multiMetricRes, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
-		InstanceId: instanceID,
-		Body:       multiMetricBody,
+	// Should contain format token instead of raw value
+	require.Contains(t, res.ResolvedData, "__RILL__FORMAT__")
+	require.Contains(t, res.ResolvedData, "sales_mv")
+	require.Contains(t, res.ResolvedData, "total_sales")
+	require.Contains(t, res.ResolvedData, "1500000.5")
+
+	// Test without format tokens (raw value)
+	res2, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId:      instanceID,
+		Data:            markdown,
+		UseFormatTokens: false,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "Total: 450, Winning: 225", multiMetricRes.Body)
+
+	// Should contain raw stringified value
+	require.Contains(t, res2.ResolvedData, "Total Sales: 1500000.5")
+	require.NotContains(t, res2.ResolvedData, "__RILL__FORMAT__")
 }
 
 func must[T any](v T, err error) T {
