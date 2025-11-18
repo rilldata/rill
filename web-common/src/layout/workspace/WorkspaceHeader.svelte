@@ -41,6 +41,11 @@
   $: view = workspaceLayout.view;
 
   $: isConnector = resourceKind === ResourceKind.Connector;
+  $: connectorName = resource?.meta?.name?.name;
+
+  function handleCreateModel() {
+    console.log("Create model clicked for connector:", connectorName);
+  }
 </script>
 
 <header bind:clientWidth={width}>
@@ -83,8 +88,12 @@
       />
     </div>
 
+    <!-- TODO: ConnectorWorkspaceCTAs -->
     {#if isConnector}
-      <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
+      <div class="flex items-center gap-x-2">
+        <ConnectorRefreshButton {resource} {hasUnsavedChanges} />
+        <Button type="primary" onClick={handleCreateModel}>Create model</Button>
+      </div>
     {/if}
 
     <div class="flex items-center gap-x-2 w-fit flex-none">
