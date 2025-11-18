@@ -1,8 +1,8 @@
 Resource Graph (DAG) — Developer Guide
 
-Overview
+## Overview
 
-- The Resource Graph renders the project dependency DAG (sources → models → metrics/dashboards) using SvelteFlow (@xyflow/svelte) with positions computed via Dagre.
+- The Resource Graph renders the project dependency DAG (sources → models → metrics → dashboards) using SvelteFlow (@xyflow/svelte) with positions computed via Dagre.
 - Graphs can be viewed as cards or expanded to fill the graphs area. You can deep-link to any graph by passing one or more seed parameters in the URL.
 
 Key Components
@@ -34,7 +34,62 @@ The resource graph feature is built with composable, reusable components:
   - `partitionResourcesByMetrics(resources)`: Default grouping by metrics views
   - `partitionResourcesBySeeds(resources, seeds)`: Seed-based grouping with DAG traversal
 
-URL Seeds (deep links)
+---
+
+## Component Hierarchy
+
+```
+ResourceGraphContainer (data fetching)
+└── ResourceGraph (routing, state management)
+    ├── SummaryCountsGraph (overview visualization)
+    ├── ResourceGraphCanvas (graph visualization with SvelteFlow)
+    └── GraphOverlay (expansion: inline/fullscreen/modal)
+        └── ResourceGraphCanvas (reused for expanded view)
+
+Standalone Components (use anywhere):
+├── ResourceGraphOverlay (branded "Quick View" modal)
+│   └── ResourceGraphCanvas
+└── GraphOverlay (generic expansion overlay)
+    └── ResourceGraphCanvas
+```
+
+---
+
+## Quick Start
+
+**Most common use case**: Add a "View Dependencies" button to any resource menu or action list.
+
+```svelte
+<script lang="ts">
+  import ResourceGraphOverlay from '@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte';
+  import type { V1Resource } from '@rilldata/web-common/runtime-client';
+
+  export let resource: V1Resource;      // The resource to show graph for
+  export let allResources: V1Resource[]; // All project resources
+
+  let showGraph = false;
+</script>
+
+<button on:click={() => showGraph = true}>
+  View Dependencies
+</button>
+
+<ResourceGraphOverlay
+  anchorResource={resource}
+  resources={allResources}
+  bind:open={showGraph}
+/>
+```
+
+**That's it!** The overlay automatically:
+- ✅ Builds the dependency graph around your resource
+- ✅ Handles loading and error states
+- ✅ Provides zoom, pan, and fullscreen controls
+- ✅ Includes a link to the full project graphs page
+
+---
+
+## URL Seeds (deep links)
 
 - Route: `/graph`
 - Query parameter: `seed`
@@ -104,11 +159,11 @@ Existing “View graph” Menu Integrations
 
 Using Graph Components Modularly
 
-The graph components can be used anywhere in the application. Here are practical examples:
+The graph components can be used anywhere in the application. See **Quick Start** above for the most common use case (modal overlay). Below are additional patterns ordered from simple to advanced:
 
 ---
 
-### Example 1: Dashboard Widget
+### Example 1: Dashboard Widget (Embedded, No URL Sync)
 
 Display a model's dependencies in a dashboard panel without affecting the URL:
 
@@ -116,6 +171,7 @@ Display a model's dependencies in a dashboard panel without affecting the URL:
 <!-- DashboardModelCard.svelte -->
 <script lang="ts">
   import ResourceGraph from '@rilldata/web-common/features/resource-graph/ResourceGraph.svelte';
+  import DelayedSpinner from '@rilldata/web-common/features/entity-management/DelayedSpinner.svelte';
   import { createRuntimeServiceListResources } from '@rilldata/web-common/runtime-client';
   import { runtime } from '@rilldata/web-common/runtime-client/runtime-store';
 
@@ -124,6 +180,8 @@ Display a model's dependencies in a dashboard panel without affecting the URL:
   $: instanceId = $runtime.instanceId;
   $: resourcesQuery = createRuntimeServiceListResources(instanceId);
   $: resources = $resourcesQuery.data?.resources ?? [];
+  $: isLoading = $resourcesQuery.isLoading;
+  $: error = $resourcesQuery.error;
 
   let expandedId: string | null = null;
 </script>
@@ -131,16 +189,24 @@ Display a model's dependencies in a dashboard panel without affecting the URL:
 <div class="dashboard-card">
   <h3>Dependencies: {modelName}</h3>
 
-  <ResourceGraph
-    {resources}
-    seeds={[`model:${modelName}`]}
-    syncExpandedParam={false}
-    showSummary={false}
-    showCardTitles={false}
-    maxGroups={1}
-    {expandedId}
-    onExpandedChange={(id) => expandedId = id}
-  />
+  {#if error}
+    <div class="error">
+      Failed to load dependencies: {error.message}
+    </div>
+  {:else if isLoading}
+    <DelayedSpinner />
+  {:else}
+    <ResourceGraph
+      {resources}
+      seeds={[`model:${modelName}`]}
+      syncExpandedParam={false}
+      showSummary={false}
+      showCardTitles={false}
+      maxGroups={1}
+      {expandedId}
+      onExpandedChange={(id) => expandedId = id}
+    />
+  {/if}
 </div>
 
 <style>
@@ -155,77 +221,67 @@ Display a model's dependencies in a dashboard panel without affecting the URL:
 
 ---
 
-### Example 2a: Modal "View Dependencies" (Simple - Recommended)
+### Example 2: Resource Details Page (Page Integration)
 
-Add a "View Dependencies" button using the branded ResourceGraphOverlay:
+Show related resources on a detail page:
 
 ```svelte
-<!-- ResourceActionsMenu.svelte -->
+<!-- ModelDetailsPage.svelte -->
 <script lang="ts">
-  import ResourceGraphOverlay from '@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte';
-  import type { V1Resource } from '@rilldata/web-common/runtime-client';
+  import ResourceGraph from '@rilldata/web-common/features/resource-graph/ResourceGraph.svelte';
+  import { createRuntimeServiceListResources } from '@rilldata/web-common/runtime-client';
+  import { runtime } from '@rilldata/web-common/runtime-client/runtime-store';
+  import { page } from '$app/stores';
 
-  export let resource: V1Resource;
-  export let allResources: V1Resource[];
+  $: modelName = $page.params.model;
+  $: instanceId = $runtime.instanceId;
+  $: resourcesQuery = createRuntimeServiceListResources(instanceId);
+  $: resources = $resourcesQuery.data?.resources ?? [];
 
-  let showDependencies = false;
+  // Track expansion state locally (not in URL since we're already on a detail page)
+  let expandedGraphId: string | null = null;
 </script>
 
-<button on:click={() => showDependencies = true}>
-  View Dependencies
-</button>
+<div class="page-layout">
+  <main class="content">
+    <h1>{modelName}</h1>
+    <!-- Other model details -->
+  </main>
 
-<ResourceGraphOverlay
-  anchorResource={resource}
-  resources={allResources}
-  open={showDependencies}
-  bind:open={showDependencies}
-/>
+  <section class="dependencies-section">
+    <h2>Dependency Graph</h2>
+
+    <ResourceGraph
+      {resources}
+      seeds={[`model:${modelName}`]}
+      syncExpandedParam={false}
+      showSummary={false}
+      maxGroups={1}
+      expandedId={expandedGraphId}
+      onExpandedChange={(id) => expandedGraphId = id}
+      overlayMode="inline"
+    />
+  </section>
+</div>
+
+<style>
+  .page-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .dependencies-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+  }
+</style>
 ```
 
 ---
 
-### Example 2b: Modal "View Dependencies" (Custom - Advanced)
-
-For custom modal styling, use GraphOverlay with manual seed partitioning:
-
-```svelte
-<!-- CustomResourceGraphModal.svelte -->
-<script lang="ts">
-  import { partitionResourcesBySeeds } from '@rilldata/web-common/features/resource-graph/build-resource-graph';
-  import GraphOverlay from '@rilldata/web-common/features/resource-graph/GraphOverlay.svelte';
-  import type { V1Resource } from '@rilldata/web-common/runtime-client';
-
-  export let resource: V1Resource;
-  export let allResources: V1Resource[];
-
-  let showDependencies = false;
-
-  $: resourceKind = resource?.meta?.name?.kind?.replace('rill.runtime.v1.', '').toLowerCase();
-  $: resourceName = resource?.meta?.name?.name;
-  $: seed = resourceKind && resourceName ? `${resourceKind}:${resourceName}` : null;
-  $: groups = seed ? partitionResourcesBySeeds(allResources, [seed]) : [];
-  $: graphGroup = groups[0] ?? null;
-</script>
-
-<button on:click={() => showDependencies = true}>
-  View Dependencies
-</button>
-
-{#if graphGroup}
-  <GraphOverlay
-    group={graphGroup}
-    open={showDependencies}
-    mode="modal"
-    showControls={true}
-    on:close={() => showDependencies = false}
-  />
-{/if}
-```
-
----
-
-### Example 3: Sidebar Mini-Graph
+### Example 3: Sidebar Mini-Graph (Compact View with Expansion)
 
 Show a compact dependency graph in a sidebar:
 
@@ -308,67 +364,7 @@ Show a compact dependency graph in a sidebar:
 
 ---
 
-### Example 4: Resource Details Page
-
-Show related resources on a detail page:
-
-```svelte
-<!-- ModelDetailsPage.svelte -->
-<script lang="ts">
-  import ResourceGraph from '@rilldata/web-common/features/resource-graph/ResourceGraph.svelte';
-  import { createRuntimeServiceListResources } from '@rilldata/web-common/runtime-client';
-  import { runtime } from '@rilldata/web-common/runtime-client/runtime-store';
-  import { page } from '$app/stores';
-
-  $: modelName = $page.params.model;
-  $: instanceId = $runtime.instanceId;
-  $: resourcesQuery = createRuntimeServiceListResources(instanceId);
-  $: resources = $resourcesQuery.data?.resources ?? [];
-
-  // Track expansion state locally (not in URL since we're already on a detail page)
-  let expandedGraphId: string | null = null;
-</script>
-
-<div class="page-layout">
-  <main class="content">
-    <h1>{modelName}</h1>
-    <!-- Other model details -->
-  </main>
-
-  <section class="dependencies-section">
-    <h2>Dependency Graph</h2>
-
-    <ResourceGraph
-      {resources}
-      seeds={[`model:${modelName}`]}
-      syncExpandedParam={false}
-      showSummary={false}
-      maxGroups={1}
-      expandedId={expandedGraphId}
-      onExpandedChange={(id) => expandedGraphId = id}
-      overlayMode="inline"
-    />
-  </section>
-</div>
-
-<style>
-  .page-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .dependencies-section {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-  }
-</style>
-```
-
----
-
-### Example 5: Custom Expansion Logic
+### Example 4: Custom Expansion Logic (Analytics & State Management)
 
 Handle expansion with custom analytics or state management:
 
@@ -407,7 +403,7 @@ Handle expansion with custom analytics or state management:
 
 ---
 
-### Example 6: Programmatic Graph Building
+### Example 5: Programmatic Graph Building (Low-Level API)
 
 Build and display custom graphs programmatically:
 
@@ -450,6 +446,57 @@ Build and display custom graphs programmatically:
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     padding: 16px;
+  }
+</style>
+```
+
+---
+
+### Example 6: Custom Modal with Advanced Styling (Advanced)
+
+For custom modal styling and behavior, use GraphOverlay with manual seed partitioning:
+
+```svelte
+<!-- CustomResourceGraphModal.svelte -->
+<script lang="ts">
+  import { partitionResourcesBySeeds } from '@rilldata/web-common/features/resource-graph/build-resource-graph';
+  import GraphOverlay from '@rilldata/web-common/features/resource-graph/GraphOverlay.svelte';
+  import type { V1Resource } from '@rilldata/web-common/runtime-client';
+
+  export let resource: V1Resource;
+  export let allResources: V1Resource[];
+
+  let showDependencies = false;
+
+  // Build seed from resource metadata
+  $: resourceKind = resource?.meta?.name?.kind?.replace('rill.runtime.v1.', '').toLowerCase();
+  $: resourceName = resource?.meta?.name?.name;
+  $: seed = resourceKind && resourceName ? `${resourceKind}:${resourceName}` : null;
+
+  // Partition resources based on seed
+  $: groups = seed ? partitionResourcesBySeeds(allResources, [seed]) : [];
+  $: graphGroup = groups[0] ?? null;
+</script>
+
+<button on:click={() => showDependencies = true}>
+  View Custom Graph
+</button>
+
+{#if graphGroup}
+  <GraphOverlay
+    group={graphGroup}
+    open={showDependencies}
+    mode="modal"
+    showControls={true}
+    on:close={() => showDependencies = false}
+  />
+{/if}
+
+<!-- Add custom styling -->
+<style>
+  /* Your custom modal styles can go here */
+  :global(.graph-overlay) {
+    /* Custom overlay styling */
   }
 </style>
 ```
@@ -536,11 +583,71 @@ Programmatic Usage (seeding API)
   ]);
   ```
 
-Troubleshooting
+## Troubleshooting
 
-- Seeds not working? Verify the resource exists and the kind alias matches. You can use fully qualified kinds to be explicit.
-- Expanded view doesn’t fill vertically? Ensure the containing wrapper has a concrete height. The graph page uses `.graph-wrapper` with `h-full` and the overlay body uses flex to fill available space.
-- Graph doesn’t update when clicking another “View graph” link on the graph page? The component reacts to seed signature changes and resets the expanded view (see `ResourceGraph.svelte`).
+### Seeds not working?
+**Problem**: Graph doesn't show when using seed parameters
+**Solution**:
+- Verify the resource exists in your project
+- Check that the kind alias matches (use `metrics`, `model`, `source`, `dashboard`, or `canvas`)
+- For debugging, use fully qualified kinds: `?seed=rill.runtime.v1.MetricsView:OrdersMetrics`
+- Check browser console for warnings about invalid seeds
+
+### Graph is empty but resources exist?
+**Problem**: Graph renders but shows no nodes
+**Solution**:
+- Only certain resource kinds are visualizable: Sources, Models, MetricsView, Explore, Canvas
+- Check that resources aren't hidden (`meta.hidden: true`)
+- Verify the seed resource has dependencies (isolated resources will show as single nodes)
+- Check `ALLOWED_FOR_GRAPH` in `seed-utils.ts` for allowed kinds
+
+### Expanded view doesn't fill vertically?
+**Problem**: Graph overlay/modal doesn't use full height
+**Solution**:
+- Ensure the containing wrapper has a concrete height (not `height: auto`)
+- The graph page uses `.graph-wrapper` with `h-full` (Tailwind)
+- The overlay body uses `display: flex` with `flex: 1` to fill available space
+- For custom containers, set `min-height: 400px` or use viewport units
+
+### Graph doesn't update when clicking another "View graph" link?
+**Problem**: Already on `/graph` page, clicking another menu link doesn't update
+**Solution**: This should work automatically. The component reacts to seed signature changes. If it doesn't:
+- Check that `syncExpandedParam={true}` (default)
+- Verify the seed is actually different in the URL
+- Look at `ResourceGraph.svelte` - seed changes trigger `seedTransitionLoading`
+
+### Nodes overlap or layout looks bad?
+**Problem**: Graph layout is messy with overlapping nodes
+**Solution**:
+- Dagre auto-layout is deterministic but not perfect for all graph shapes
+- Try clearing localStorage cache: `localStorage.removeItem('ResourceGraph.Cache')`
+- The cache stores positions - clearing it will recompute layout
+- For very large graphs (50+ nodes), consider filtering to show fewer nodes
+
+### Performance issues with large graphs?
+**Problem**: Slow rendering or laggy interactions
+**Solution**:
+- The graph is optimized for 5-50 nodes
+- For larger projects, use `maxGroups` prop to limit displayed graphs
+- Use seeds to show specific subgraphs instead of all resources
+- SvelteFlow handles ~100 nodes well, but beyond that consider pagination
+- Check browser DevTools Performance tab for bottlenecks
+
+### "Cannot navigate to graph: resource name is missing"
+**Problem**: Warning in console when clicking "View Dependencies"
+**Solution**:
+- The resource data is incomplete or not loaded yet
+- Check that `resource?.meta?.name?.name` exists before passing to navigation
+- Add loading/error states before showing the "View Dependencies" button
+- Example: `{#if resource?.meta?.name?.name}<button>...</button>{/if}`
+
+### Cache-related issues?
+**Problem**: Graph shows outdated positions or wrong layout
+**Solution**:
+- Clear browser localStorage: `localStorage.removeItem('ResourceGraph.Cache')`
+- The cache version auto-invalidates on changes (see `CACHE_VERSION` in code)
+- To disable cache for testing: pass `ignoreCache: true` to `buildResourceGraph`
+- Cache keys are namespaced by page/component to avoid collisions
 
 Useful References
 

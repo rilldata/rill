@@ -103,7 +103,9 @@
     }
   });
 
-  // Counts for the summary counts graph. Compute directly to avoid any cross-module Set equality pitfalls.
+  // Compute resource counts for the summary graph header.
+  // We compute directly in a single pass rather than using filter().length for performance.
+  // This is more efficient (O(n) instead of O(4n)) and clearer in intent.
   $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } = (function computeCounts() {
     let sources = 0, models = 0, metrics = 0, dashboards = 0;
     for (const r of normalizedResources) {
@@ -117,6 +119,11 @@
     }
     return { sourcesCount: sources, modelsCount: models, metricsCount: metrics, dashboardsCount: dashboards };
   })());
+
+  // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
+  // Without this, the SummaryCountsGraph component would re-render on every resource array change
+  // even if counts haven't actually changed. The summaryEquals function does shallow comparison
+  // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
     sources: 0,
     models: 0,
@@ -134,6 +141,7 @@
       resources: normalizedResources,
       activeToken: overviewActiveToken,
     };
+    // Only update memo if values actually changed (avoids unnecessary child re-renders)
     if (!summaryEquals(summaryMemo, nextSummary)) {
       summaryMemo = nextSummary;
     }

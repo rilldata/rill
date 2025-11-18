@@ -30,9 +30,10 @@ export function traverseUpstream(
   const visited = new Set<string>();
   const edgeIds = new Set<string>();
   const queue: string[] = Array.from(selectedIds);
+  let queueIndex = 0;
 
-  while (queue.length) {
-    const curr = queue.shift()!;
+  while (queueIndex < queue.length) {
+    const curr = queue[queueIndex++];
     if (visited.has(curr)) continue;
     visited.add(curr);
 
@@ -68,9 +69,10 @@ export function traverseDownstream(
   const visited = new Set<string>();
   const edgeIds = new Set<string>();
   const queue: string[] = Array.from(selectedIds);
+  let queueIndex = 0;
 
-  while (queue.length) {
-    const curr = queue.shift()!;
+  while (queueIndex < queue.length) {
+    const curr = queue[queueIndex++];
     if (visited.has(curr)) continue;
     visited.add(curr);
 
