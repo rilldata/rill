@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -232,11 +233,15 @@ func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 	if path == "" {
 		return nil, fmt.Errorf("missing required property: `path`")
 	}
-	var format string
+	var extension string
 	if modelProp.Format != "" {
-		format = fmt.Sprintf(".%s", modelProp.Format)
+		extension = fmt.Sprintf(".%s", modelProp.Format)
 	} else {
-		format = fileutil.FullExt(modelProp.Path)
+		var err error
+		extension, err = urlExtension(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse extension from path %s, %w", path, err)
+		}
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, http.NoBody)
@@ -257,10 +262,19 @@ func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 		return nil, fmt.Errorf("failed to fetch url %s: %s", path, resp.Status)
 	}
 
-	file, _, err := fileutil.CopyToTempFile(resp.Body, "", format)
+	file, _, err := fileutil.CopyToTempFile(resp.Body, "", extension)
 	if err != nil {
 		return nil, err
 	}
 
 	return []string{file}, nil
+}
+
+func urlExtension(path string) (string, error) {
+	u, err := url.Parse(path)
+	if err != nil {
+		return "", err
+	}
+
+	return fileutil.FullExt(u.Path), nil
 }
