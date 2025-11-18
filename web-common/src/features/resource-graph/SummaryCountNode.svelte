@@ -30,11 +30,21 @@
   }
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
   class="summary-node"
   class:active={isActive}
   style={`--summary-accent:${color}`}
   on:click={navigateByKind}
+  role="button"
+  tabindex="0"
+  on:keydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      navigateByKind();
+    }
+  }}
 >
   <!-- connection points for flow edges (left/right) -->
   <Handle id="in" type="target" position={Position.Left} isConnectable={false} />

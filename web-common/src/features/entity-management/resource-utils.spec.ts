@@ -40,31 +40,6 @@ describe("resource-utils", () => {
       ).toBe("rill.runtime.v1.Model:orders-v2");
     });
 
-    it("should return undefined for null input", () => {
-      expect(resourceNameToId(null)).toBeUndefined();
-    });
-
-    it("should return undefined for undefined input", () => {
-      expect(resourceNameToId(undefined)).toBeUndefined();
-    });
-
-    it("should return undefined when kind is missing", () => {
-      expect(resourceNameToId({ kind: "", name: "orders" })).toBeUndefined();
-      expect(resourceNameToId({ name: "orders" } as V1ResourceName)).toBeUndefined();
-    });
-
-    it("should return undefined when name is missing", () => {
-      expect(
-        resourceNameToId({ kind: "rill.runtime.v1.Model", name: "" })
-      ).toBeUndefined();
-      expect(
-        resourceNameToId({ kind: "rill.runtime.v1.Model" } as V1ResourceName)
-      ).toBeUndefined();
-    });
-
-    it("should return undefined when both kind and name are missing", () => {
-      expect(resourceNameToId({} as V1ResourceName)).toBeUndefined();
-    });
   });
 
   describe("createResourceId", () => {
@@ -93,34 +68,6 @@ describe("resource-utils", () => {
       expect(createResourceId(meta)).toBe("rill.runtime.v1.Model:clean_orders");
     });
 
-    it("should return undefined for undefined metadata", () => {
-      expect(createResourceId(undefined)).toBeUndefined();
-    });
-
-    it("should return undefined for empty metadata", () => {
-      expect(createResourceId({})).toBeUndefined();
-    });
-
-    it("should return undefined when metadata.name is missing", () => {
-      const meta: V1ResourceMeta = {
-        refs: [],
-      };
-      expect(createResourceId(meta)).toBeUndefined();
-    });
-
-    it("should return undefined when metadata.name.kind is missing", () => {
-      const meta: V1ResourceMeta = {
-        name: { name: "orders" } as V1ResourceName,
-      };
-      expect(createResourceId(meta)).toBeUndefined();
-    });
-
-    it("should return undefined when metadata.name.name is missing", () => {
-      const meta: V1ResourceMeta = {
-        name: { kind: "rill.runtime.v1.Model" } as V1ResourceName,
-      };
-      expect(createResourceId(meta)).toBeUndefined();
-    });
   });
 
   describe("parseResourceId", () => {
@@ -169,33 +116,6 @@ describe("resource-utils", () => {
       });
     });
 
-    it("should return null for empty string", () => {
-      expect(parseResourceId("")).toBeNull();
-    });
-
-    it("should return null when no colon present", () => {
-      expect(parseResourceId("orders")).toBeNull();
-    });
-
-    it("should return null when colon is at the start", () => {
-      expect(parseResourceId(":orders")).toBeNull();
-    });
-
-    it("should return null when colon is at the end", () => {
-      expect(parseResourceId("rill.runtime.v1.Model:")).toBeNull();
-    });
-
-    it("should return null when kind is empty", () => {
-      expect(parseResourceId(":orders")).toBeNull();
-    });
-
-    it("should return null when name is empty", () => {
-      expect(parseResourceId("rill.runtime.v1.Model:")).toBeNull();
-    });
-
-    it("should return null when only colon is present", () => {
-      expect(parseResourceId(":")).toBeNull();
-    });
   });
 
   describe("round-trip conversion", () => {

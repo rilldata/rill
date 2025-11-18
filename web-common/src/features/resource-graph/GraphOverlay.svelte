@@ -42,6 +42,7 @@
 </script>
 
 {#if open && group}
+  <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
   <div
     bind:this={overlayEl}
     class="graph-overlay graph-overlay-{mode}"
@@ -49,7 +50,7 @@
     role={mode === 'inline' ? 'region' : 'dialog'}
     aria-modal={mode !== 'inline'}
     aria-label="Expanded graph view"
-    tabindex={mode === 'inline' ? -1 : 0}
+    tabindex={mode !== 'inline' ? 0 : undefined}
   >
     <div class="overlay-content">
       {#if showCloseButton && mode !== 'inline'}

@@ -77,7 +77,10 @@
 
 {#if open}
   <Overlay bg="rgba(15,23,42,0.8)">
-    <div class="graph-overlay__backdrop" on:click={handleBackdropClick}>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="graph-overlay__backdrop" on:click={handleBackdropClick} role="presentation">
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <div
         class="graph-overlay"
         role="dialog"

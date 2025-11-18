@@ -72,6 +72,8 @@
   }
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
   class="node"
   class:selected
@@ -82,6 +84,14 @@
   style:width={width ? `${width}px` : undefined}
   data-kind={kind}
   on:click={handleClick}
+  role="button"
+  tabindex="0"
+  on:keydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  }}
 >
   <Handle
     id="target"
