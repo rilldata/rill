@@ -319,7 +319,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, fmt.Errorf("failed to open write connection: %w", err)
 		}
 	}
-
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
 	row := db.QueryRow(`
         WITH
@@ -327,7 +326,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
             toInt32(parts[1]) AS major,
             toInt32(parts[2]) AS minor
         SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
-`)
+	`)
+
 	var isSupported bool
 	if err := row.Scan(&isSupported); err != nil {
 		return nil, err
@@ -336,20 +336,32 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
 	}
 
+	// Using the harmless, non–side-effecting setting
+	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
+	// whether the cluster mode supports modifying query settings. This setting
+	// has no practical use for our purposes.
+	supportSettings := true
+	if _, err := db.Exec("SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
+		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
+			supportSettings = false
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Connection{
-		readDB:     db,
-		writeDB:    writeDB,
-		config:     conf,
-		logger:     logger,
-		activity:   ac,
-		instanceID: instanceID,
-		ctx:        ctx,
-		cancel:     cancel,
-		metaSem:    semaphore.NewWeighted(1),
-		olapSem:    priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
-		opts:       opts,
-		embed:      embed,
+		readDB:          db,
+		writeDB:         writeDB,
+		config:          conf,
+		logger:          logger,
+		activity:        ac,
+		instanceID:      instanceID,
+		supportSettings: supportSettings,
+		ctx:             ctx,
+		cancel:          cancel,
+		metaSem:         semaphore.NewWeighted(1),
+		olapSem:         priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
+		opts:            opts,
+		embed:           embed,
 	}
 
 	c.used()
@@ -371,12 +383,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	readDB     *sqlx.DB
-	writeDB    *sqlx.DB
-	config     *configProperties
-	logger     *zap.Logger
-	activity   *activity.Client
-	instanceID string
+	readDB          *sqlx.DB
+	writeDB         *sqlx.DB
+	config          *configProperties
+	logger          *zap.Logger
+	activity        *activity.Client
+	instanceID      string
+	supportSettings bool
 
 	// context that is cancelled when the connection is closed
 	ctx    context.Context

@@ -699,6 +699,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: userAgentPattern
+          description: Optional search pattern for filtering by user agent.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}:
@@ -6323,8 +6328,13 @@ definitions:
           $ref: '#/definitions/v1ModelTest'
       trigger:
         type: boolean
+        description: trigger indicates a normal refresh (incremental or full depending on the model type).
       triggerFull:
         type: boolean
+        description: trigger_full indicates a full refresh regardless of the model type.
+      triggerPartitions:
+        type: boolean
+        description: trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models.
       definedAsSource:
         type: boolean
         description: defined_as_source is true if it was defined by user as a source but converted internally to a model.

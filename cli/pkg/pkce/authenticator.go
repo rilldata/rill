@@ -111,11 +111,12 @@ func (a *Authenticator) ExchangeCodeForToken(code string) (string, error) {
 func tokenRequest(baseAuthURL, code, clientID, redirectURI, codeVerifier string) (*http.Request, error) {
 	tokenURL := fmt.Sprintf("%s/auth/oauth/token", baseAuthURL)
 	payload := url.Values{
-		"grant_type":    []string{"authorization_code"},
-		"code":          []string{code},
-		"client_id":     []string{clientID},
-		"redirect_uri":  []string{redirectURI},
-		"code_verifier": []string{codeVerifier},
+		"grant_type":             []string{"authorization_code"},
+		"code":                   []string{code},
+		"client_id":              []string{clientID},
+		"redirect_uri":           []string{redirectURI},
+		"code_verifier":          []string{codeVerifier},
+		"token_response_version": []string{"standard"}, // For backward compatibility with older Rill CLI, see utils.go in oauth pkg
 	}
 	req, err := http.NewRequest(
 		http.MethodPost,
