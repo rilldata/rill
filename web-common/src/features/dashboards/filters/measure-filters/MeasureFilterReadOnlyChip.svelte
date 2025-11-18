@@ -10,6 +10,6 @@
   export let filter: MeasureFilterEntry | undefined = undefined;
 </script>
 
-<Chip type="measure" {label} readOnly>
+<Chip type="measure" theme {label} readOnly>
   <MeasureFilterBody slot="body" {dimensionName} {filter} {label} />
 </Chip>
