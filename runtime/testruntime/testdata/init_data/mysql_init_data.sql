@@ -34,7 +34,7 @@ CREATE TABLE all_datatypes (
 
     -- Special Data Types
     boolean_col BOOLEAN,
-    bit_col BIT(8),
+    bit_col BIT(1),
     json_col JSON
 
     -- Commented because does not work as of duckdb 1.4.2
@@ -79,10 +79,11 @@ INSERT INTO all_datatypes (
     'Binary', 'VarBinary', 'Tiny Blob', 'Blob', 'Medium Blob', 'Long Blob',
     'medium', 'a,b',
     '2024-02-14', '2025-02-14 12:34:56', '2025-02-14 12:34:56', '12:34:56', 2024,
-    1, '1', '{"key": "value"}'
+    1, b'1', '{"key": "value"}'
 ), 
 (
     -- Row 3: All Zero Values
+    -- Time'00:00:00' will be scanned as NULL in duckdb. It is likely a bug. TODO: fix this when duckdb fixes it.
     0, 0, 0, 0, 0,
     0.0, 0.0, 0.00,
     '', '', '', '', '', '',
