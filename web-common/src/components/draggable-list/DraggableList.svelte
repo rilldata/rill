@@ -44,10 +44,21 @@
 
   $: normalizedSearchValue = searchValue.trim().toLowerCase();
   $: filteredItems = normalizedSearchValue
-    ? items.filter((item) =>
-        item.id.toLowerCase().includes(normalizedSearchValue),
-      )
+    ? items.filter((item) => itemMatchesSearch(item, normalizedSearchValue))
     : items;
+
+  function itemMatchesSearch(item: DraggableItem, normalized: string) {
+    const candidateFields = [
+      item.id,
+      typeof item.label === "string" ? item.label : undefined,
+      typeof item.value === "string" ? item.value : undefined,
+      typeof item.searchText === "string" ? item.searchText : undefined,
+    ].filter((field): field is string => !!field);
+
+    return candidateFields.some((field) =>
+      field.toLowerCase().includes(normalized),
+    );
+  }
 
   function handleMouseDown(e: MouseEvent) {
     e.preventDefault();

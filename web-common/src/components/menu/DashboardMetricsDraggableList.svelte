@@ -33,12 +33,12 @@
   // Convert selectedItems to DraggableItem format
   $: selectedDraggableItems = selectedItems
     .filter((id) => id)
-    .map((id) => ({ id }));
+    .map((id) => ({ id, label: getItemLabel(id) }));
 
   // Convert hidden items to DraggableItem format
   $: hiddenDraggableItems = Array.from(allItemsMap.entries())
     .filter(([id]) => id && !selectedItems.includes(id))
-    .map(([id]) => ({ id: id! }));
+    .map(([id]) => ({ id: id!, label: getItemLabel(id) }));
 
   function handleSelectedReorder(data: {
     items: Array<{ id: string }>;
@@ -70,6 +70,12 @@
   function hideAllItems() {
     const newSelectedItems = [selectedItems[0]];
     onSelectedChange(newSelectedItems);
+  }
+
+  function getItemLabel(id?: string) {
+    if (!id) return "";
+    const item = allItemsMap.get(id);
+    return item?.displayName || id;
   }
 </script>
 
