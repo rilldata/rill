@@ -95,78 +95,9 @@ rows:
 	require.Equal(t, "bar", comp1Props["bar"])
 
 	// Check referenced metrics views
-	require.Len(t, res.ReferencedMetricsViews, 1)
+	require.Len(t, res.ReferencedMetricsViews, 2)
 	require.Equal(t, "m1", res.ReferencedMetricsViews["mv1"].GetMetricsView().State.ValidSpec.Model)
-	require.NotContains(t, res.ReferencedMetricsViews, "mv2", "mv2 is only in metrics_sql and should not be extracted")
-}
-
-func TestResolveCanvas_MetricsSQLNotExtracted(t *testing.T) {
-	// This test validates that metrics views referenced only in metrics_sql fields
-	// are NOT extracted by ResolveCanvas. Components should call ResolveTemplatedString
-	// RPC directly to resolve metrics_sql queries at render time.
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		Files: map[string]string{
-			"rill.yaml": "",
-			"m1.sql":    `SELECT 'US' AS country, 100 AS revenue`,
-			"m2.sql":    `SELECT 'CA' AS country, 200 AS revenue`,
-			"mv1.yaml": `
-type: metrics_view
-version: 1
-model: m1
-dimensions:
-- column: country
-measures:
-- expression: SUM(revenue)
-  name: total_revenue
-`,
-			"mv2.yaml": `
-type: metrics_view
-version: 1
-model: m2
-dimensions:
-- column: country
-measures:
-- expression: SUM(revenue)
-  name: total_revenue
-`,
-			"c_metrics_sql_only.yaml": `
-type: canvas
-rows:
-- items:
-  - kpi:
-      metrics_view: mv1
-  - kpi:
-      metrics_sql: "SELECT total_revenue FROM mv2"
-  - kpi:
-      metrics_sql: "SELECT total_revenue FROM mv2 WHERE country = 'CA'"
-`,
-		},
-	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 9, 0, 0)
-
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
-	require.NoError(t, err)
-
-	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
-		InstanceId: instanceID,
-		Canvas:     "c_metrics_sql_only",
-	})
-	require.NoError(t, err)
-
-	// Should only include mv1 (referenced via metrics_view field)
-	// mv2 is only referenced via metrics_sql and should NOT be extracted
-	require.Len(t, res.ReferencedMetricsViews, 1)
-	require.Contains(t, res.ReferencedMetricsViews, "mv1")
-	require.NotContains(t, res.ReferencedMetricsViews, "mv2", "mv2 is only referenced via metrics_sql and should not be in ReferencedMetricsViews")
-
-	// All components should still be resolved
-	require.Len(t, res.ResolvedComponents, 3)
-
-	// Verify the metrics_sql fields are preserved in the resolved components
-	comp1Props := res.ResolvedComponents["c_metrics_sql_only--component-0-1"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Equal(t, "SELECT total_revenue FROM mv2", comp1Props["metrics_sql"])
-	comp2Props := res.ResolvedComponents["c_metrics_sql_only--component-0-2"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	require.Equal(t, "SELECT total_revenue FROM mv2 WHERE country = 'CA'", comp2Props["metrics_sql"])
+	require.Equal(t, "m2", res.ReferencedMetricsViews["mv2"].GetMetricsView().State.ValidSpec.Model)
 }
 
 func TestResolveCanvasWithInvalidSQL(t *testing.T) {
@@ -206,11 +137,9 @@ rows:
 		Canvas:     "c_invalid",
 	})
 
-	// Should still resolve all components
-	// Note: Invalid SQL in metrics_sql fields doesn't prevent component resolution
-	// because metrics_sql is not parsed by ResolveCanvas
+	// Should still resolve components and their metrics views
 	require.Len(t, res.ResolvedComponents, 3, "All components should be resolved even with invalid SQL")
-	require.Len(t, res.ReferencedMetricsViews, 1, "Should only include mv1 (from metrics_view field, not from metrics_sql)")
+	require.Len(t, res.ReferencedMetricsViews, 1, "Should only include mv1 from valid component")
 	require.Contains(t, res.ReferencedMetricsViews, "mv1")
 }
 
@@ -266,10 +195,10 @@ rows:
 	})
 	require.NoError(t, err)
 
-	// Note: Metrics views in metrics_sql are NOT extracted by ResolveCanvas.
-	// The templates are resolved, but the metrics view extraction from SQL is not performed.
-	// Components should call ResolveTemplatedString RPC to execute these queries.
-	require.Len(t, res.ReferencedMetricsViews, 0, "No metrics views should be extracted from metrics_sql fields")
+	// Check that both mv1 and mv2 are referenced through templated SQL
+	require.Len(t, res.ReferencedMetricsViews, 2)
+	require.Contains(t, res.ReferencedMetricsViews, "mv1")
+	require.Contains(t, res.ReferencedMetricsViews, "mv2")
 
 	// Check that templates were resolved in the components
 	require.Len(t, res.ResolvedComponents, 2)
@@ -343,9 +272,7 @@ rows:
 	})
 	require.NoError(t, err)
 
-	// Only the first two components use metrics_view: mv1
-	// The third uses metrics_sql which is NOT extracted
-	require.Len(t, res.ReferencedMetricsViews, 1, "Only mv1 from metrics_view fields should be extracted")
+	require.Len(t, res.ReferencedMetricsViews, 1)
 	require.Contains(t, res.ReferencedMetricsViews, "mv1")
 	require.Len(t, res.ResolvedComponents, 3)
 }
@@ -391,9 +318,9 @@ rows:
 	})
 	require.NoError(t, err)
 
-	// Note: metrics_sql fields are NOT parsed to extract metrics views.
-	// Components should call ResolveTemplatedString RPC to execute these queries.
-	require.Len(t, res.ReferencedMetricsViews, 0, "No metrics views from metrics_sql should be extracted")
+	// All complex SQL queries should parse mv1 correctly
+	require.Len(t, res.ReferencedMetricsViews, 1)
+	require.Contains(t, res.ReferencedMetricsViews, "mv1")
 	require.Len(t, res.ResolvedComponents, 3)
 }
 
@@ -435,120 +362,15 @@ rows:
 	})
 	require.NoError(t, err)
 
-	require.Len(t, res.ReferencedMetricsViews, 0, "No metrics views from metrics_sql should be extracted")
+	// Should reference the bids metrics view from both SQL queries
+	require.Len(t, res.ReferencedMetricsViews, 1)
+	require.Contains(t, res.ReferencedMetricsViews, "bids")
 	require.Len(t, res.ResolvedComponents, 1)
 
 	// Check that the custom_chart component has the correct properties
 	comp0Props := res.ResolvedComponents["c_custom_chart--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
 	require.Equal(t, "hsl(246, 66%, 50%)", comp0Props["color"])
 	require.Contains(t, comp0Props, "metrics_sql")
-}
-
-func TestResolveCanvasWithMarkdown(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		Files: map[string]string{
-			"rill.yaml": "",
-			"m1.sql":    `SELECT 'US' AS country, 100 AS revenue`,
-			"mv1.yaml": `
-type: metrics_view
-version: 1
-model: m1
-dimensions:
-- column: country
-measures:
-- expression: SUM(revenue)
-  name: total_revenue
-`,
-			"c_markdown.yaml": `
-type: canvas
-rows:
-- items:
-  - markdown:
-      content: |
-        # Sales Report
-        Welcome {{ .args.user_name }}!
-`,
-		},
-	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 5, 0, 0)
-
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
-	require.NoError(t, err)
-
-	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
-		InstanceId: instanceID,
-		Canvas:     "c_markdown",
-		Args: must(structpb.NewStruct(map[string]any{
-			"user_name": "Alice",
-		})),
-	})
-	require.NoError(t, err)
-
-	// Markdown components don't reference metrics views via metrics_view field
-	require.Len(t, res.ReferencedMetricsViews, 0)
-	require.Len(t, res.ResolvedComponents, 1)
-
-	// Verify the markdown content had templates resolved (args/env variables)
-	comp0Props := res.ResolvedComponents["c_markdown--component-0-0"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	content, ok := comp0Props["content"].(string)
-	require.True(t, ok, "content should be a string")
-	require.Contains(t, content, "Welcome Alice!")
-	require.NotContains(t, content, "{{ .args.user_name }}", "template should be resolved")
-}
-
-func TestResolveCanvasWithMarkdownAndMixedReferences(t *testing.T) {
-	// Note: This test shows that markdown components with metrics_sql templates
-	// are NOT resolved by ResolveCanvas. They would need to be resolved separately
-	// via ResolveTemplatedString RPC by the client at render time.
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		Files: map[string]string{
-			"rill.yaml": "",
-			"m1.sql":    `SELECT 'US' AS country, 100 AS revenue`,
-			"mv1.yaml": `
-type: metrics_view
-version: 1
-model: m1
-dimensions:
-- column: country
-measures:
-- expression: SUM(revenue)
-  name: total_revenue
-`,
-			"c_mixed.yaml": `
-type: canvas
-rows:
-- items:
-  - kpi:
-      metrics_view: mv1
-  - markdown:
-      content: |
-        # Simple markdown without metrics_sql
-        This component references mv1 indirectly through the canvas.
-`,
-		},
-	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
-
-	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
-	require.NoError(t, err)
-
-	res, err := server.ResolveCanvas(testCtx(), &runtimev1.ResolveCanvasRequest{
-		InstanceId: instanceID,
-		Canvas:     "c_mixed",
-	})
-	require.NoError(t, err)
-
-	// Should only extract mv1 from the kpi component's metrics_view field
-	// Markdown component doesn't directly reference any metrics views
-	require.Len(t, res.ReferencedMetricsViews, 1)
-	require.Contains(t, res.ReferencedMetricsViews, "mv1")
-	require.Len(t, res.ResolvedComponents, 2)
-
-	// Verify markdown content is present
-	markdownProps := res.ResolvedComponents["c_mixed--component-0-1"].GetComponent().State.ValidSpec.RendererProperties.AsMap()
-	content, ok := markdownProps["content"].(string)
-	require.True(t, ok)
-	require.Contains(t, content, "Simple markdown")
 }
 
 func TestResolveCanvasWithSecurity(t *testing.T) {
