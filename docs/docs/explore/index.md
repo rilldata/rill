@@ -8,6 +8,9 @@ sidebar_position: 0
 
 Once you've built your data pipeline, Rill provides powerful tools to explore, analyze, and share your insights.
 
+### Rill Cloud
+- **[What is Rill Cloud?](/explore/rill-cloud)** - What is Rill Cloud and how does it differ from Rill Developer?
+
 ### AI-Powered Analysis
 - **[AI Chat in Rill Cloud](/explore/ai-chat)** - Have conversations with your data using AI-powered chat interface
 - **[Natural Language Queries (MCP)](/explore/mcp)** - Ask questions about your data using everyday conversational language with Claude integration

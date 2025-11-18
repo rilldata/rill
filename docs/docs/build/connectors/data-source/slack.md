@@ -1,5 +1,5 @@
 ---
-title: Slack
+title: Slack Integration
 description: Connect to Slack for data extraction and analytics
 sidebar_label: Slack
 sidebar_position: 70

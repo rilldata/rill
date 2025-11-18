@@ -2,7 +2,7 @@
 title: "Filters & Comparisons"
 description: Filters & Comparisons
 sidebar_label: "Filters & Comparisons"
-sidebar_position: 20
+sidebar_position: 25
 ---
 
 <div style={{ 
