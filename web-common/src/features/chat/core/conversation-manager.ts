@@ -7,6 +7,7 @@ import {
   type V1Conversation,
   type V1GetConversationResponse,
   type V1ListConversationsResponse,
+  type V1Message,
 } from "@rilldata/web-common/runtime-client";
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable } from "svelte/store";
@@ -267,19 +268,20 @@ export class ConversationManager {
           this.instanceId,
           conversationId,
         );
-        const cachedConversationData =
+        const cachedGetConversationResponse =
           queryClient.getQueryData<V1GetConversationResponse>(
             conversationCacheKey,
-          );
-        const conversationData = cachedConversationData?.conversation;
+          ) as V1GetConversationResponse | undefined;
+        const conversation = cachedGetConversationResponse?.conversation;
 
         // Create conversation object for the list
         const newConversation: V1Conversation = {
           id: conversationId,
-          title: this.generateConversationTitle(conversationData),
-          createdOn: conversationData?.createdOn || new Date().toISOString(),
-          updatedOn: conversationData?.updatedOn || new Date().toISOString(),
-          messages: [], // Don't include messages in the list view
+          title: this.generateConversationTitle(
+            cachedGetConversationResponse?.messages,
+          ),
+          createdOn: conversation?.createdOn || new Date().toISOString(),
+          updatedOn: conversation?.updatedOn || new Date().toISOString(),
         };
 
         // Add the new conversation to the front of the list
@@ -290,16 +292,16 @@ export class ConversationManager {
   }
 
   /**
-   * Generate a conversation title from the conversation data
+   * Generate a conversation title from messages
    *
    * Note: This replicates the server-side title generation logic client-side
    * to avoid making an additional network request for something we can compute
    * trivially from the conversation data we already have in cache.
    */
-  private generateConversationTitle(conversationData?: V1Conversation): string {
-    // If we have conversation data with messages, generate title from first user message
-    if (conversationData?.messages) {
-      for (const message of conversationData.messages) {
+  private generateConversationTitle(messages?: V1Message[]): string {
+    // If we have messages, generate title from first user message
+    if (messages) {
+      for (const message of messages) {
         if (message.role === "user") {
           let title = extractMessageText(message);
 

@@ -407,8 +407,8 @@ func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
 		Typ:                      "DICTIONARY",
 		PrimaryKey:               "id",
-		DictionarySourceUser:     "clickhouse",
-		DictionarySourcePassword: "clickhouse",
+		DictionarySourceUser:     "default",
+		DictionarySourcePassword: "default",
 	})
 	require.NoError(t, err)
 

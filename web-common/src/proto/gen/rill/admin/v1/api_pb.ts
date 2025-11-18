@@ -7599,6 +7599,13 @@ export class ListProjectMemberUsergroupsRequest extends Message<ListProjectMembe
   role = "";
 
   /**
+   * Optionally include counts
+   *
+   * @generated from field: bool include_counts = 6;
+   */
+  includeCounts = false;
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -7619,6 +7626,7 @@ export class ListProjectMemberUsergroupsRequest extends Message<ListProjectMembe
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "include_counts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
