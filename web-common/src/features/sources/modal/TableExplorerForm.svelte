@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import ConnectorExplorer from "../../connectors/explorer/ConnectorExplorer.svelte";
   import {
     connectorExplorerStore,
