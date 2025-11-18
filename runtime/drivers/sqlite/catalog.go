@@ -303,28 +303,33 @@ func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string,
 	return nil
 }
 
-func (c *catalogStore) UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
-		c.instanceID,
-		modelID,
-		partitionKey,
-	)
-	if err != nil {
-		return err
+func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error {
+	var qry strings.Builder
+	var args []any
+
+	qry.WriteString("UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=?")
+	args = append(args, c.instanceID, modelID)
+
+	// Add conditions
+	qry.WriteString(" AND (false") // false ensures it's a no-op if no conditions are added; safer that way
+	if whereErrored {
+		qry.WriteString(" OR error != ''")
 	}
+	if len(wherePartitionKeyIn) > 0 {
+		qry.WriteString(" OR key IN (")
+		for i, k := range wherePartitionKeyIn {
+			if i == 0 {
+				qry.WriteString("?")
+			} else {
+				qry.WriteString(",?")
+			}
+			args = append(args, k)
+		}
+		qry.WriteString(")")
+	}
+	qry.WriteString(")")
 
-	return nil
-}
-
-func (c *catalogStore) UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
-		c.instanceID,
-		modelID,
-	)
+	_, err := c.db.ExecContext(ctx, qry.String(), args...)
 	if err != nil {
 		return err
 	}
@@ -358,13 +363,23 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 	return err
 }
 
-func (c *catalogStore) FindAISessions(ctx context.Context, ownerID string) ([]*drivers.AISession, error) {
-	rows, err := c.db.QueryxContext(ctx, `
+func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPattern string) ([]*drivers.AISession, error) {
+	query := `
 		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
 		FROM ai_sessions
 		WHERE instance_id = ? AND owner_id = ?
-		ORDER BY updated_on DESC
-	`, c.instanceID, ownerID)
+	`
+	args := []interface{}{c.instanceID, ownerID}
+
+	// Add optional user agent pattern filter
+	if userAgentPattern != "" {
+		query += " AND user_agent LIKE ?"
+		args = append(args, userAgentPattern)
+	}
+
+	query += " ORDER BY updated_on DESC"
+
+	rows, err := c.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

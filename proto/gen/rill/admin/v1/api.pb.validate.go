@@ -24671,6 +24671,10 @@ func (m *ListUserAuthTokensRequest) validate(all bool) error {
 
 	// no validation rules for SuperuserForceAccess
 
+	if m.Refresh != nil {
+		// no validation rules for Refresh
+	}
+
 	if len(errors) > 0 {
 		return ListUserAuthTokensRequestMultiError(errors)
 	}
@@ -25397,6 +25401,227 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RevokeUserAuthTokenResponseValidationError{}
+
+// Validate checks the field values on RevokeAllUserAuthTokensRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevokeAllUserAuthTokensRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeAllUserAuthTokensRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RevokeAllUserAuthTokensRequestMultiError, or nil if none found.
+func (m *RevokeAllUserAuthTokensRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeAllUserAuthTokensRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetUserId()) < 1 {
+		err := RevokeAllUserAuthTokensRequestValidationError{
+			field:  "UserId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for SuperuserForceAccess
+
+	if len(errors) > 0 {
+		return RevokeAllUserAuthTokensRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeAllUserAuthTokensRequestMultiError is an error wrapping multiple
+// validation errors returned by RevokeAllUserAuthTokensRequest.ValidateAll()
+// if the designated constraints aren't met.
+type RevokeAllUserAuthTokensRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeAllUserAuthTokensRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeAllUserAuthTokensRequestMultiError) AllErrors() []error { return m }
+
+// RevokeAllUserAuthTokensRequestValidationError is the validation error
+// returned by RevokeAllUserAuthTokensRequest.Validate if the designated
+// constraints aren't met.
+type RevokeAllUserAuthTokensRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeAllUserAuthTokensRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeAllUserAuthTokensRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeAllUserAuthTokensRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeAllUserAuthTokensRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeAllUserAuthTokensRequestValidationError) ErrorName() string {
+	return "RevokeAllUserAuthTokensRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeAllUserAuthTokensRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeAllUserAuthTokensRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeAllUserAuthTokensRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeAllUserAuthTokensRequestValidationError{}
+
+// Validate checks the field values on RevokeAllUserAuthTokensResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevokeAllUserAuthTokensResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeAllUserAuthTokensResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RevokeAllUserAuthTokensResponseMultiError, or nil if none found.
+func (m *RevokeAllUserAuthTokensResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeAllUserAuthTokensResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for TokensRevoked
+
+	if len(errors) > 0 {
+		return RevokeAllUserAuthTokensResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeAllUserAuthTokensResponseMultiError is an error wrapping multiple
+// validation errors returned by RevokeAllUserAuthTokensResponse.ValidateAll()
+// if the designated constraints aren't met.
+type RevokeAllUserAuthTokensResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeAllUserAuthTokensResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeAllUserAuthTokensResponseMultiError) AllErrors() []error { return m }
+
+// RevokeAllUserAuthTokensResponseValidationError is the validation error
+// returned by RevokeAllUserAuthTokensResponse.Validate if the designated
+// constraints aren't met.
+type RevokeAllUserAuthTokensResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeAllUserAuthTokensResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeAllUserAuthTokensResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeAllUserAuthTokensResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeAllUserAuthTokensResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeAllUserAuthTokensResponseValidationError) ErrorName() string {
+	return "RevokeAllUserAuthTokensResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeAllUserAuthTokensResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeAllUserAuthTokensResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeAllUserAuthTokensResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeAllUserAuthTokensResponseValidationError{}
 
 // Validate checks the field values on RevokeRepresentativeAuthTokensRequest
 // with the rules defined in the proto definition for this message. If any
@@ -43805,6 +44030,8 @@ func (m *UserAuthToken) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Refresh
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

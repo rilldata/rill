@@ -60,6 +60,7 @@ import (
 type Config struct {
 	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	MetastoreID             string                 `split_words:"true"`
 	RedisURL                string                 `default:"" split_words:"true"`
 	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter          observability.Exporter `default:"" split_words:"true"`
@@ -225,6 +226,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init runtime
 			metastoreConfig, err := structpb.NewStruct(map[string]any{
 				"dsn": conf.MetastoreURL,
+				"id":  conf.MetastoreID,
 			})
 			if err != nil {
 				logger.Fatal("error: could not creat metastore metastore config", zap.Error(err))

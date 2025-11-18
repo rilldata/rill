@@ -1,41 +1,57 @@
+version: "3.8"
+
 # Service template
 x-service: &service
   restart: always
+  deploy:
+    # Default resource limits for services
+    resources:
+      limits:
+        memory: 512M
+        cpus: "0.25"
 
 # Postgres template
 x-postgres: &postgres
   <<: *service
   image: postgres:17
   ports:
-    - '5432:5432'
+    - "5432:5432"
   environment:
     - POSTGRES_USER=postgres
     - POSTGRES_PASSWORD=postgres
+  deploy:
+    resources:
+      limits:
+        memory: 1G
+        cpus: "0.5"
 
 services:
   postgres:
     <<: *postgres
-    profiles: ["cloud"]
+    profiles: ["full", "minimal"]
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
     <<: *postgres
     profiles: ["e2e"]
     ports:
-      - '6432:5432'
+      - "6432:5432"
   redis:
     <<: *service
+    profiles: ["full", "e2e", "minimal"]
     image: redis
     ports:
-      - '6379:6379'
+      - "6379:6379"
   zipkin:
     <<: *service
+    profiles: ["full"]
     container_name: zipkin
     image: openzipkin/zipkin:3
     ports:
       - "9411:9411"
   mailpit:
     <<: *service
+    profiles: ["full"]
     container_name: mailpit
     image: axllent/mailpit
     ports:
@@ -47,6 +63,7 @@ services:
       MP_SMTP_AUTH: "user:passwd"
   prometheus:
     <<: *service
+    profiles: ["full"]
     container_name: prometheus
     image: prom/prometheus:v2.55.1
     volumes:
@@ -55,14 +72,18 @@ services:
       - "9412:9090"
   riverui:
     <<: *service
+    profiles: ["full"]
     container_name: riverui
     image: ghcr.io/riverqueue/riverui:latest
     environment:
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
     ports:
       - 7070:8080
+    depends_on:
+      - postgres
   otel-collector:
     <<: *service
+    profiles: ["full"]
     container_name: otel-collector
     image: otel/opentelemetry-collector:0.90.0
     command: ["--config=/etc/otel-collector-config.yaml"]
@@ -78,23 +99,30 @@ services:
       - zipkin
   stripe-cli:
     <<: *service
+    profiles: ["full"]
     image: stripe/stripe-cli:v1.21.11
     command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/stripe-config.toml:/etc/stripe-config.toml
   clickhouse:
     <<: *service
-    image: 'clickhouse/clickhouse-server:24.11.1.2557'
+    profiles: ["full"]
+    image: 'clickhouse/clickhouse-server:25.5.1.2782'
     volumes:
       - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./clickhouse-users.xml:/etc/clickhouse-server/users.d/users.xml
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/clickhouse:/var/lib/clickhouse
     ports:
-      - '9000:9000' # Native port
-      - '8123:8123' # HTTP port
+      - "9000:9000"
+      - "8123:8123"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "0.5"
   pgweb:
     <<: *service
-    profiles: ["cloud"]
+    profiles: ["full"]
     image: sosedoff/pgweb
     ports:
       - "8082:8081"

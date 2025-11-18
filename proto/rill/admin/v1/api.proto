@@ -593,7 +593,13 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
   }
 
-  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+  // RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+  // You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+  rpc RevokeAllUserAuthTokens(RevokeAllUserAuthTokensRequest) returns (RevokeAllUserAuthTokensResponse) {
+    option (google.api.http) = {delete: "/v1/users/{user_id}/tokens"};
+  }
+
+  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
   // This is primarily used for "unassume" flows.
   rpc RevokeRepresentativeAuthTokens(RevokeRepresentativeAuthTokensRequest) returns (RevokeRepresentativeAuthTokensResponse) {
     option (google.api.http) = {
@@ -2174,6 +2180,8 @@ message ListUserAuthTokensRequest {
   string page_token = 3;
   // Flag for superusers to override normal access checks.
   bool superuser_force_access = 4;
+  // Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+  optional bool refresh = 5;
 }
 
 message ListUserAuthTokensResponse {
@@ -2214,6 +2222,19 @@ message RevokeUserAuthTokenRequest {
 }
 
 message RevokeUserAuthTokenResponse {
+}
+
+message RevokeAllUserAuthTokensRequest {
+  // User ID to revoke all tokens for.
+  // Set to "current" to revoke all tokens for the current user.
+  string user_id = 1 [(validate.rules).string.min_len = 1];
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 2;
+}
+
+message RevokeAllUserAuthTokensResponse {
+  // Number of tokens revoked.
+  int32 tokens_revoked = 1;
 }
 
 message RevokeRepresentativeAuthTokensRequest {
@@ -3159,6 +3180,7 @@ message UserAuthToken {
   string representing_user_id = 5;
   string prefix = 9;
   google.protobuf.Struct attributes = 10;
+  bool refresh = 11;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp expires_on = 7;
   google.protobuf.Timestamp used_on = 8;

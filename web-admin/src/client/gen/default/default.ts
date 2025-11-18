@@ -81,6 +81,7 @@ import type {
   AdminServiceProvisionBody,
   AdminServicePullVirtualRepoParams,
   AdminServiceRedeployProjectParams,
+  AdminServiceRevokeAllUserAuthTokensParams,
   AdminServiceRevokeUserAuthTokenParams,
   AdminServiceSearchProjectNamesParams,
   AdminServiceSearchProjectUsersParams,
@@ -218,6 +219,7 @@ import type {
   V1RenameUsergroupResponse,
   V1RenewBillingSubscriptionResponse,
   V1RequestProjectAccessResponse,
+  V1RevokeAllUserAuthTokensResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1RevokeMagicAuthTokenResponse,
   V1RevokeRepresentativeAuthTokensResponse,
@@ -14409,7 +14411,7 @@ export const createAdminServiceRevokeUserAuthToken = <
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+ * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
 This is primarily used for "unassume" flows.
  */
 export const adminServiceRevokeRepresentativeAuthTokens = (email: string) => {
@@ -14464,7 +14466,7 @@ export type AdminServiceRevokeRepresentativeAuthTokensMutationResult =
 export type AdminServiceRevokeRepresentativeAuthTokensMutationError = RpcStatus;
 
 /**
- * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+ * @summary RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
 This is primarily used for "unassume" flows.
  */
 export const createAdminServiceRevokeRepresentativeAuthTokens = <
@@ -14681,6 +14683,92 @@ export function createAdminServiceListUserAuthTokens<
   return query;
 }
 
+/**
+ * @summary RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+ */
+export const adminServiceRevokeAllUserAuthTokens = (
+  userId: string,
+  params?: AdminServiceRevokeAllUserAuthTokensParams,
+) => {
+  return httpClient<V1RevokeAllUserAuthTokensResponse>({
+    url: `/v1/users/${userId}/tokens`,
+    method: "DELETE",
+    params,
+  });
+};
+
+export const getAdminServiceRevokeAllUserAuthTokensMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+    TError,
+    { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+  TError,
+  { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams },
+  TContext
+> => {
+  const mutationKey = ["adminServiceRevokeAllUserAuthTokens"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+    { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams }
+  > = (props) => {
+    const { userId, params } = props ?? {};
+
+    return adminServiceRevokeAllUserAuthTokens(userId, params);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceRevokeAllUserAuthTokensMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>
+>;
+
+export type AdminServiceRevokeAllUserAuthTokensMutationError = RpcStatus;
+
+/**
+ * @summary RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+ */
+export const createAdminServiceRevokeAllUserAuthTokens = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+      TError,
+      { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceRevokeAllUserAuthTokens>>,
+  TError,
+  { userId: string; params?: AdminServiceRevokeAllUserAuthTokensParams },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceRevokeAllUserAuthTokensMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary IssueUserAuthToken issues an access token for the current user.
 You can optionally pass "current" instead of the user ID to issue a token for the current user.

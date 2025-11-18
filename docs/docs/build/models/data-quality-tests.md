@@ -1,18 +1,18 @@
 ---
-title: Model Validation
-sidebar_label: Model Validation
+title: Data Quality Tests
+sidebar_label: Data Quality Tests
 sidebar_position: 14
 ---
 
 ## Overview
 
-Model validation allows you to define data quality tests that run automatically when your models refresh. Tests help ensure your data meets expectations and catch issues early in your data pipeline.
+Data quality tests allow you to define automated checks that run whenever your models refresh. These tests ensure your data meets expectations and catch issues early in your pipeline.
 
 Tests are defined in your model's YAML file using the `tests:` property. Each test runs a SQL query against your model's output. If the query returns any rows, the test fails and the error is recorded in the model's state.
 
-## When to Use Model Validation
+## When to Use Data Quality Tests
 
-Model validation is useful for:
+Data quality tests are useful for:
 
 - **Data Quality Checks** - Verify that your data meets business rules and constraints
 - **Schema Validation** - Ensure expected columns exist and have correct data types

@@ -1196,6 +1196,11 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export interface V1RevokeAllUserAuthTokensResponse {
+  /** Number of tokens revoked. */
+  tokensRevoked?: number;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   [key: string]: unknown;
 }
@@ -1520,6 +1525,7 @@ export interface V1UserAuthToken {
   representingUserId?: string;
   prefix?: string;
   attributes?: V1UserAuthTokenAttributes;
+  refresh?: boolean;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
@@ -2133,6 +2139,17 @@ export type AdminServiceListUserAuthTokensParams = {
    * Page token for pagination. If set, the first page of results will be returned.
    */
   pageToken?: string;
+  /**
+   * Flag for superusers to override normal access checks.
+   */
+  superuserForceAccess?: boolean;
+  /**
+   * Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+   */
+  refresh?: boolean;
+};
+
+export type AdminServiceRevokeAllUserAuthTokensParams = {
   /**
    * Flag for superusers to override normal access checks.
    */
