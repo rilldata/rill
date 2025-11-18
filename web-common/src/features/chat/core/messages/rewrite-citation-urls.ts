@@ -32,10 +32,10 @@ export function getCitationUrlRewriter(
           if (!queryJSON) return false;
 
           const [isValid, urlParams] = mapper(queryJSON);
-          // Mapping failed for some reason, do not change the link.
-          if (!isValid) return false;
+          // Mapping failed for some reason, remove the link since it is probably invalid.
+          if (!isValid) return "";
 
-          return `<a href="?${urlParams.toString()}">${tokens.text}</a>`;
+          return `<a data-sveltekit-preload-data="off" href="?${urlParams.toString()}">${tokens.text}</a>`;
         },
       },
     });
@@ -68,6 +68,9 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
     getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
   );
 
+  const emptyMapper = () =>
+    [false, new URLSearchParams()] as [boolean, URLSearchParams];
+
   return derived(
     [validSpecQuery, timeRangeQuery],
     ([validSpecResp, timeRangeResp]) => {
@@ -78,6 +81,8 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
       if (error || isLoading) {
         return {
           error,
+          // Return a mapper that always fails. This will make it so that citation link are removed
+          data: emptyMapper,
           isLoading,
         };
       }
@@ -87,6 +92,8 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
       if (!metricsViewSpec || !exploreSpec) {
         return {
           error: new Error("Failed to load metrics view or explore spec"),
+          // Return a mapper that always fails. This will make it so that citation link are removed
+          data: emptyMapper,
           isLoading: false,
         };
       }
