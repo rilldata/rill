@@ -12,8 +12,8 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	var force bool
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <project> <path>",
-		Args:  cobra.ExactArgs(2),
+		Use:   "delete <org> <project> <path>",
+		Args:  cobra.ExactArgs(3),
 		Short: "Delete a specific virtual file",
 		Long: `Delete a specific virtual file by marking it as deleted.
 
@@ -30,9 +30,9 @@ This command can delete virtual files even if they have parse errors.`,
 				return err
 			}
 
-			project := args[0]
-			path := args[1]
-			org := ch.Org
+			org := args[0]
+			project := args[1]
+			path := args[2]
 
 			if org == "" || project == "" || path == "" {
 				return fmt.Errorf("org, project, and path cannot be empty")
@@ -76,7 +76,6 @@ This command can delete virtual files even if they have parse errors.`,
 	}
 
 	deleteCmd.Flags().BoolVarP(&force, "force", "f", false, "Skip confirmation prompt")
-	deleteCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 
 	return deleteCmd
 }

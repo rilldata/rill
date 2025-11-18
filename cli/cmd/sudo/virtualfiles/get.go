@@ -6,13 +6,12 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	getCmd := &cobra.Command{
-		Use:   "get <project> <path>",
-		Args:  cobra.ExactArgs(2),
+		Use:   "get <org> <project> <path>",
+		Args:  cobra.ExactArgs(3),
 		Short: "Get the content of a specific virtual file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -22,10 +21,10 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			project := args[0]
-			path := args[1]
+			org := args[0]
+			project := args[1]
+			path := args[2]
 
-			org := ch.Org
 			if org == "" {
 				return fmt.Errorf("org cannot be empty")
 			}
@@ -55,26 +54,11 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			data := string(resp.File.Data)
-			var obj interface{}
-			if err := yaml.Unmarshal(resp.File.Data, &obj); err != nil {
-				// fallback to plain text
-				fmt.Println(data)
-				return nil
-			}
-
-			yamlData, err := yaml.Marshal(obj)
-			if err != nil {
-				fmt.Println(data)
-			} else {
-				fmt.Println(string(yamlData))
-			}
+			fmt.Print(string(resp.File.Data))
 
 			return nil
 		},
 	}
-
-	getCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 
 	return getCmd
 }

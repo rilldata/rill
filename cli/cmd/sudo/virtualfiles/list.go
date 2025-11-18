@@ -2,7 +2,6 @@ package virtualfiles
 
 import (
 	"fmt"
-	"sort"
 	"text/tabwriter"
 	"time"
 
@@ -15,8 +14,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize int
 
 	listCmd := &cobra.Command{
-		Use:   "list <project>",
-		Args:  cobra.ExactArgs(1),
+		Use:   "list <org> <project>",
+		Args:  cobra.ExactArgs(2),
 		Short: "List all virtual files in a project's virtual repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -26,9 +25,9 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			project := args[0]
+			org := args[0]
+			project := args[1]
 
-			org := ch.Org
 			if org == "" {
 				return fmt.Errorf("org cannot be empty")
 			}
@@ -83,10 +82,6 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			sort.Slice(files, func(i, j int) bool {
-				return files[i].Path < files[j].Path
-			})
-
 			ch.PrintfSuccess("Virtual files for project %q in org %q (%d total):\n", project, org, len(files))
 
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
@@ -107,7 +102,6 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	listCmd.Flags().IntVar(&pageSize, "page-size", 100, "Number of files per page")
-	listCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 
 	return listCmd
 }
