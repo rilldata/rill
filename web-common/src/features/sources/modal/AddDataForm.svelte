@@ -133,7 +133,7 @@
   let selectedDatabaseForModel = "";
   let selectedSchemaForModel = "";
   let selectedTableForModel = "";
-  let generatingModel = false;
+  let creatingModel = false;
   $: ({ instanceId } = $runtime);
   $: modelingSupportQuery = useIsModelingSupportedForConnector(
     instanceId,
@@ -307,10 +307,10 @@
     );
   }
 
-  async function handleGenerateModelWithAI() {
+  async function handleCreateModel() {
     if (!selectedConnectorForModel || !selectedTableForModel) return;
     try {
-      generatingModel = true;
+      creatingModel = true;
       const [newModelPath] = isModelingSupportedForSelected
         ? await createSqlModelFromTable(
             queryClient,
@@ -328,10 +328,8 @@
           );
       await goto(`/files${newModelPath}`);
       onClose();
-    } catch (_e) {
-      // Swallow for now; future: surface error toast
     } finally {
-      generatingModel = false;
+      creatingModel = false;
     }
   }
 </script>
@@ -524,13 +522,13 @@
           </Button>
         {:else}
           <Button
-            disabled={!selectedTableForModel || generatingModel}
-            loading={generatingModel}
-            loadingCopy="Generating..."
-            onClick={handleGenerateModelWithAI}
+            disabled={!selectedTableForModel || creatingModel}
+            loading={creatingModel}
+            loadingCopy="Creating model..."
+            onClick={handleCreateModel}
             type="primary"
           >
-            Generate model with AI
+            Create model
           </Button>
         {/if}
       </div>
