@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import Navbar from '@theme-original/Navbar';
 import { useColorMode } from '@docusaurus/theme-common';
+import Navbar from '@theme-original/Navbar';
+import { useEffect, useLayoutEffect } from 'react';
 
 const MOBILE_ICON_LINKS = [
   {
@@ -40,6 +40,7 @@ function createIconLink({ href, label, src }) {
 
 function ensureSidebarIcons() {
   const brand = document.querySelector('.navbar-sidebar__brand');
+  // Check if icons already exist
   if (!brand || brand.querySelector('.mobile-nav-icon-links')) {
     return;
   }
@@ -60,69 +61,58 @@ function ensureSidebarIcons() {
 }
 
 export default function NavbarWrapper(props) {
-  const { colorMode, setColorMode } = useColorMode();
+  // We only need colorMode to determine which icon to show.
+  // The toggle logic is handled by the original button's onClick.
+  const { colorMode } = useColorMode();
 
-  useEffect(() => {
-    const toggleButtons = Array.from(
-      document.querySelectorAll('button[class*="toggleButton"]')
-    );
+  // Handle Dark Mode Toggle Icons
+  // useLayoutEffect fires synchronously before paint, reducing flicker
+  useLayoutEffect(() => {
+    const toggleButtons = document.querySelectorAll('button[class*="toggleButton"]');
+    if (!toggleButtons.length) return;
 
-    if (!toggleButtons.length) {
-      return undefined;
-    }
+    toggleButtons.forEach((btn, index) => {
+      // Add ID to first toggle for potential targeting
+      if (index === 0) btn.id = 'dark-mode-toggle';
 
-    const cleanupHandlers = toggleButtons.map((toggleButton, index) => {
-      if (index === 0) {
-        toggleButton.id = 'dark-mode-toggle';
-      }
-
-      let iconContainer = toggleButton.querySelector('.icon-container');
+      // Find or create the container for our custom icon
+      let iconContainer = btn.querySelector('.icon-container');
       if (!iconContainer) {
         iconContainer = document.createElement('span');
         iconContainer.className = 'icon-container';
-        toggleButton.innerHTML = '';
-        toggleButton.appendChild(iconContainer);
+        
+        // Clear existing Docusaurus toggle content (text/emojis)
+        btn.innerHTML = ''; 
+        btn.appendChild(iconContainer);
       }
 
-      const updateIcon = () => {
-        if (colorMode === 'dark') {
-          iconContainer.innerHTML = `
-          <img src="/icons/Sun.svg" alt="Light mode" width="24" height="24" />
-        `;
-          toggleButton.setAttribute('aria-label', 'Switch to light mode');
-        } else {
-          iconContainer.innerHTML = `
-          <img src="/icons/Moon.svg" alt="Dark mode" width="24" height="24" />
-        `;
-          toggleButton.setAttribute('aria-label', 'Switch to dark mode');
-        }
-      };
-
-      updateIcon();
-
-      const handleClick = () => {
-        setColorMode(colorMode === 'dark' ? 'light' : 'dark');
-      };
-
-      toggleButton.addEventListener('click', handleClick);
-
-      return () => {
-        toggleButton.removeEventListener('click', handleClick);
-      };
+      // Update Icon based on CURRENT mode (show the OPPOSITE icon)
+      // If Dark Mode -> Show Sun (to switch to Light)
+      // If Light Mode -> Show Moon (to switch to Dark)
+      const isDark = colorMode === 'dark';
+      
+      iconContainer.innerHTML = `
+        <img 
+          src="/icons/${isDark ? 'Sun' : 'Moon'}.svg" 
+          alt="${isDark ? 'Switch to light mode' : 'Switch to dark mode'}" 
+          width="24" 
+          height="24" 
+        />
+      `;
+      
+      btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
     });
+  }, [colorMode]);
 
-    return () => {
-      cleanupHandlers.forEach((cleanup) => cleanup());
-    };
-  }, [colorMode, setColorMode]);
-
+  // Handle Mobile Sidebar Icons
   useEffect(() => {
+    // Observer to inject icons when the mobile menu opens/renders
     const observer = new MutationObserver(() => {
       ensureSidebarIcons();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
-    ensureSidebarIcons();
+    ensureSidebarIcons(); // Initial check
 
     return () => {
       observer.disconnect();
