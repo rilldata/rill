@@ -42,9 +42,10 @@
     UPPER_BOUND + (items.length - 1) * ITEM_HEIGHT,
   );
 
-  $: filteredItems = searchValue
+  $: normalizedSearchValue = searchValue.trim().toLowerCase();
+  $: filteredItems = normalizedSearchValue
     ? items.filter((item) =>
-        item.id.toLowerCase().includes(searchValue.toLowerCase()),
+        item.id.toLowerCase().includes(normalizedSearchValue),
       )
     : items;
 
