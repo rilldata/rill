@@ -1,3 +1,5 @@
+import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+
 export type Param = string;
 
 export type PathOption = {
@@ -7,6 +9,10 @@ export type PathOption = {
   preloadData?: boolean;
   section?: string;
   pill?: string;
+  resourceKind?: ResourceKind;
+  groupId?: string;
+  groupLabel?: string;
+  groupOrder?: number;
 };
 
 export type PathOptions = Map<Param, PathOption>;

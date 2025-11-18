@@ -12,6 +12,7 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
@@ -144,12 +145,17 @@
   $: visualizationPaths = visualizations.reduce((map, resource) => {
     const name = resource.meta.name.name;
     const isMetricsExplorer = !!resource?.explore;
+    const groupId = isMetricsExplorer ? "explore" : "canvas";
     return map.set(name.toLowerCase(), {
       label:
         (isMetricsExplorer
           ? resource?.explore?.spec?.displayName
           : resource?.canvas?.spec?.displayName) || name,
-      section: isMetricsExplorer ? "explore" : "canvas",
+      section: groupId,
+      resourceKind: isMetricsExplorer ? ResourceKind.Explore : ResourceKind.Canvas,
+      groupId,
+      groupLabel: isMetricsExplorer ? "Explores" : "Canvases",
+      groupOrder: isMetricsExplorer ? 0 : 1,
     });
   }, new Map<string, PathOption>());
 
