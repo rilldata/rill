@@ -36,10 +36,10 @@
     options: OptionEntry[];
   };
 
-  function partitionOptions(
-    options: PathOptions,
-    selectedGroupId?: string,
-  ): { grouped: GroupedOptions[]; ungrouped: OptionEntry[] } {
+  function partitionOptions(options: PathOptions): {
+    grouped: GroupedOptions[];
+    ungrouped: OptionEntry[];
+  } {
     const groups = new Map<string, GroupedOptions>();
     const ungrouped: OptionEntry[] = [];
 
@@ -64,10 +64,6 @@
     });
 
     const grouped = Array.from(groups.values()).sort((a, b) => {
-      if (selectedGroupId) {
-        if (a.id === selectedGroupId && b.id !== selectedGroupId) return -1;
-        if (b.id === selectedGroupId && a.id !== selectedGroupId) return 1;
-      }
       if (a.order !== b.order) return a.order - b.order;
       return a.label.localeCompare(b.label);
     });
@@ -81,8 +77,7 @@
     return { grouped, ungrouped };
   }
 
-  $: selectedGroupId = selected?.groupId ?? selected?.groupLabel?.toLowerCase();
-  $: partitionedOptions = partitionOptions(options, selectedGroupId);
+  $: partitionedOptions = partitionOptions(options);
   $: hasGroups = partitionedOptions.grouped.length > 0;
 
   function linkMaker(
