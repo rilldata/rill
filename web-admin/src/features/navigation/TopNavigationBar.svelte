@@ -157,7 +157,7 @@
         : ResourceKind.Canvas,
       groupId,
       groupLabel: isMetricsExplorer ? "Explore" : "Canvas",
-      groupOrder: isMetricsExplorer ? 0 : 1,
+      groupOrder: isMetricsExplorer ? 1 : 0,
     });
   }, new Map<string, PathOption>());
 
