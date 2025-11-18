@@ -1157,8 +1157,17 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 			Resources:   nil,
 		})
 		// continue sending an email if an invitation entry already exists
-		if err != nil && !errors.Is(err, database.ErrNotUnique) {
-			return nil, err
+		if err != nil {
+			if !errors.Is(err, database.ErrNotUnique) {
+				return nil, err
+			}
+			invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+			if err != nil {
+				return nil, err
+			}
+			if len(invite.Resources) > 0 {
+				return nil, status.Error(codes.FailedPrecondition, "user has a pending invite with resource restrictions, cannot add a new invite without restrictions, please remove the user and add again")
+			}
 		}
 
 		// Send invitation email
@@ -1331,9 +1340,26 @@ func (s *Server) AddProjectMemberUserResources(ctx context.Context, req *adminv1
 			InviterID:   invitedByUserID,
 			Resources:   resources,
 		})
-		// continue sending an email if an invitation entry already exists
-		if err != nil && !errors.Is(err, database.ErrNotUnique) {
-			return nil, err
+		if err != nil {
+			if errors.Is(err, database.ErrNotUnique) {
+				invite, findErr := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+				if findErr != nil {
+					return nil, findErr
+				}
+
+				if len(invite.Resources) == 0 {
+					return nil, status.Error(codes.FailedPrecondition, "a pending invite already exists with a role on the project; remove the user first and add them again")
+				}
+
+				merged := mergeResourceNames(invite.Resources, resources)
+				if len(merged) != len(invite.Resources) {
+					if err := s.admin.DB.UpdateProjectInviteResources(ctx, invite.ID, merged); err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				return nil, err
+			}
 		}
 
 		// Send invitation email
@@ -1503,6 +1529,9 @@ func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetP
 		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
 		if err != nil {
 			return nil, err
+		}
+		if len(invite.Resources) > 0 {
+			return nil, status.Error(codes.FailedPrecondition, "cannot change role for a pending invite with resource-scoped access; remove the invite first and add them again")
 		}
 		err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID, nil)
 		if err != nil {

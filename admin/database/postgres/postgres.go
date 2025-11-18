@@ -2611,6 +2611,16 @@ func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID str
 	return checkUpdateRow("project invite", res, err)
 }
 
+func (c *connection) UpdateProjectInviteResources(ctx context.Context, id string, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET resources = $1 WHERE id = $2`, resJSON, id)
+	return checkUpdateRow("project invite", res, err)
+}
+
 func (c *connection) FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*database.ProjectAccessRequest, error) {
 	var res []*database.ProjectAccessRequest
 	var err error

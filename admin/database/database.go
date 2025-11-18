@@ -275,6 +275,7 @@ type DB interface {
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id string, roleID string, resources []ResourceName) error
+	UpdateProjectInviteResources(ctx context.Context, id string, resources []ResourceName) error
 
 	FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*ProjectAccessRequest, error)
 	FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*ProjectAccessRequest, error)
