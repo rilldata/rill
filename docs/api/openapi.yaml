@@ -1739,6 +1739,13 @@ components:
                 type:
                     type: string
             type: object
+        v1RevokeAllUserAuthTokensResponse:
+            properties:
+                tokensRevoked:
+                    description: Number of tokens revoked.
+                    format: int32
+                    type: integer
+            type: object
         v1RevokeCurrentAuthTokenResponse:
             type: object
         v1RevokeMagicAuthTokenResponse:
@@ -2160,6 +2167,8 @@ components:
                     type: string
                 prefix:
                     type: string
+                refresh:
+                    type: boolean
                 representingUserId:
                     type: string
                 usedOn:
