@@ -129,7 +129,6 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
-  // Step 3 selection
   let selectedConnectorForModel = "";
   let selectedDatabaseForModel = "";
   let selectedSchemaForModel = "";
@@ -348,11 +347,11 @@
       {#if stepState.step === "explorer"}
         <!-- Step 3: Table Explorer (for supported connectors) -->
         <TableExplorerForm
-          on:select={(e) => {
-            selectedConnectorForModel = e.detail.connector;
-            selectedDatabaseForModel = e.detail.database;
-            selectedSchemaForModel = e.detail.schema;
-            selectedTableForModel = e.detail.table;
+          onSelect={(detail) => {
+            selectedConnectorForModel = detail.connector;
+            selectedDatabaseForModel = detail.database;
+            selectedSchemaForModel = detail.schema;
+            selectedTableForModel = detail.table;
           }}
         />
       {:else if connector.name === "clickhouse"}

@@ -1,27 +1,25 @@
 <script lang="ts">
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
-  import { createEventDispatcher } from "svelte";
   import ConnectorExplorer from "../../connectors/explorer/ConnectorExplorer.svelte";
   import {
     connectorExplorerStore,
     type ConnectorExplorerStore,
   } from "../../connectors/explorer/connector-explorer-store";
 
-  // Create a local, selection-focused store for the modal (no nav/context menu)
-  const dispatch = createEventDispatcher<{
-    select: {
-      connector: string;
-      database: string;
-      schema: string;
-      table: string;
-    };
-  }>();
+  export let onSelect:
+    | ((detail: {
+        connector: string;
+        database: string;
+        schema: string;
+        table: string;
+      }) => void)
+    | undefined = undefined;
 
   const store: ConnectorExplorerStore = connectorExplorerStore.duplicateStore(
     (connector, database = "", schema = "", table = "") => {
       // Only emit selection when a table is toggled
       if (table) {
-        dispatch("select", {
+        onSelect?.({
           connector,
           database,
           schema,
