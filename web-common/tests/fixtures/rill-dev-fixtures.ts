@@ -117,10 +117,8 @@ export const rillDev = base.extend<MyFixtures>({
 
     await use(page);
 
-    rmSync(TEST_PROJECT_DIRECTORY, {
-      force: true,
-      recursive: true,
-    });
+    // Close browser context to release any connections/resources first
+    await context.close();
 
     const processExit = new Promise((resolve) => {
       childProcess.on("exit", resolve);
@@ -129,5 +127,24 @@ export const rillDev = base.extend<MyFixtures>({
     if (childProcess.pid) treeKill(childProcess.pid);
 
     await processExit;
+
+    // Remove the test project directory after the dev process has fully exited.
+    // On some platforms, immediate removal can fail with ENOTEMPTY/EBUSY if files are
+    // still being released by the terminated process. Retry briefly.
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
+        break;
+      } catch (err) {
+        // Only retry on transient FS errors
+        const code = (err as NodeJS.ErrnoException)?.code;
+        const isTransient =
+          code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM";
+        if (!isTransient || attempt === 6) throw err;
+        // Exponential backoff: 200ms, 400ms, 800ms, 1600ms, 3200ms
+        const delayMs = 200 * Math.pow(2, attempt - 1);
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
   },
 });
