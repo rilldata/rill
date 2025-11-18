@@ -571,6 +571,7 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "as a non-admin you are not allowed to remove an admin role")
 	}
 
+	// when setting a full role, remove any resource scoping
 	err = s.admin.DB.UpdateProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID, nil)
 	if err != nil {
 		return nil, err
