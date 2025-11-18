@@ -13,6 +13,8 @@
   align-items: center;
   justify-content: center;
   padding: 0px 12px;
+  position: relative;
+  transition: color 0.2s ease; /* Smooth text color transition */
 }
 
 // on hover of navbar items
@@ -20,6 +22,32 @@
   background: var(--palette_slate_50);
   border-radius: 8px;
   padding: 12px 12px;
+}
+
+// Dark mode hover adjustment
+[data-theme='dark'] .navbar__link:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+// Remove hover background for active items
+.navbar__link--active:hover {
+  background: transparent;
+}
+
+// Keep default color on hover (don't change text color)
+.navbar__link.navbar-docs-link:hover,
+.navbar__link.navbar-reference-link:hover,
+.navbar__link.navbar-contact-link:hover,
+.navbar__link.navbar-api-link:hover {
+  color: var(--ifm-navbar-link-color);
+}
+
+// But if it's active, keep the primary color even when hovering
+.navbar__link--active.navbar-docs-link:hover,
+.navbar__link--active.navbar-reference-link:hover,
+.navbar__link--active.navbar-contact-link:hover,
+.navbar__link--active.navbar-api-link:hover {
+  color: var(--ifm-color-primary);
 }
 
 .navbar button[class*="toggleButton"] {
@@ -39,54 +67,27 @@
 .navbar__link--active.navbar-contact-link,
 .navbar__link--active.navbar-api-link,
 .navbar__link--active.navbar-icon-link {
-  font-weight: 600;
   color: var(--ifm-color-primary);
 }
 
-// NavBar Icons
-.navbar-docs-link::before,
-.navbar-reference-link::before,
-.navbar-contact-link::before,
-.navbar-api-link::before {
-  content: "";
-  padding-top: 0px;
-  padding-bottom: 0px;
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  margin-right: 10px;
-  vertical-align: middle;
-  background-size: contain;
-  background-repeat: no-repeat;
+/* Underline that only spans text width */
+.navbar__link--active.navbar-docs-link::after,
+.navbar__link--active.navbar-reference-link::after,
+.navbar__link--active.navbar-contact-link::after,
+.navbar__link--active.navbar-api-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 2px;
+  background: var(--ifm-color-primary);
+  border-radius: 1px 1px 0 0;
+  width: calc(100% - 24px);
 }
 
-// NavBar Docs Link Icon
-.navbar-docs-link::before {
-  background-image: url("/icons/BookOpen.svg");
-  width: 16px;
-  height: 16px;
-}
 
-// NavBar Reference Link Icon
-.navbar-reference-link::before {
-  background-image: url("/icons/Book.svg");
-  width: 16px;
-  height: 16px;
-}
-
-  // NavBar Contact Link Icon
-  .navbar-contact-link::before {
-    background-image: url("/icons/MessageSquare.svg");
-    width: 16px;
-    height: 16px;
-  }
-
-  // NavBar API Link Icon
-  .navbar-api-link::before {
-    background-image: url("/icons/CodeXml.svg");
-    width: 16px;
-    height: 16px;
-  }
+// NavBar Icon Link (GitHub and Blog) Change to Icons later
 // NavBar Icon Link (GitHub and Blog) Change to Icons later
 .navbar-icon-link {
   width: 24px;
