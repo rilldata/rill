@@ -184,9 +184,35 @@
     ? seeds.every((s) => Boolean(isKindToken((s || "").toLowerCase())))
     : false;
 
-  // Read expanded param from URL (only if syncing)
-  $: expandedParam = syncExpandedParam
+  // Track URL sync state for the expanded query param.
+  // undefined -> follow $page value, string/null -> explicit override from client-side history updates.
+  let manualExpandedParam: string | null | undefined = undefined;
+  let lastExpandedSyncUrl = "";
+
+  // Pull expanded param from the current $page URL (decoded).
+  $: expandedParamFromUrl = syncExpandedParam
     ? $page.url.searchParams.get("expanded") || null
+    : null;
+
+  // When the page URL actually changes (e.g., navigation), clear any manual override.
+  $: if (syncExpandedParam) {
+    const currentUrlString = $page.url.toString();
+    if (currentUrlString !== lastExpandedSyncUrl) {
+      lastExpandedSyncUrl = currentUrlString;
+      manualExpandedParam = undefined;
+    }
+  } else {
+    manualExpandedParam = undefined;
+    lastExpandedSyncUrl = "";
+  }
+
+  // Effective expanded param includes manual overrides made via history.replaceState.
+  $: effectiveExpandedParam = syncExpandedParam
+    ? (
+        manualExpandedParam !== undefined
+          ? manualExpandedParam
+          : expandedParamFromUrl
+      )
     : null;
 
   // Auto-expand logic when seeds change
@@ -202,7 +228,7 @@
 
       // Only auto-expand in uncontrolled mode
       const isUncontrolled = !isControlledMode;
-      if (isUncontrolled && !expandedParam) {
+      if (isUncontrolled && !effectiveExpandedParam) {
         if (
           seeds &&
           seeds.length &&
@@ -218,8 +244,8 @@
   }
 
   // Sync with URL expanded param (in uncontrolled mode with URL sync enabled)
-  $: if (!isControlledMode && syncExpandedParam && expandedParam !== internalExpandedId) {
-    internalExpandedId = expandedParam;
+  $: if (!isControlledMode && syncExpandedParam && effectiveExpandedParam !== internalExpandedId) {
+    internalExpandedId = effectiveExpandedParam;
   }
 
   /**
@@ -242,6 +268,7 @@
   }
 
   function setExpandedInUrl(id: string | null) {
+    manualExpandedParam = id;
     try {
       if (typeof window !== "undefined") {
         const currentUrl = new URL(window.location.href);

@@ -239,7 +239,20 @@
   }
 
   .toolbar-open-btn {
-    @apply h-6 w-6 rounded-sm border border-transparent bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 flex items-center justify-center shadow-sm ring-1 ring-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60;
+    @apply h-6 w-6 rounded-sm border flex items-center justify-center shadow-sm ring-1 ring-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-colors;
+    background-color: var(--surface, #ffffff);
+    color: var(--muted-foreground, #6b7280);
+    border-color: color-mix(in srgb, var(--border, #e5e7eb) 80%, transparent);
+  }
+
+  .toolbar-open-btn:hover {
+    background-color: color-mix(
+      in srgb,
+      var(--surface, #ffffff) 65%,
+      var(--muted, #f3f4f6)
+    );
+    color: var(--foreground, #111827);
+    border-color: color-mix(in srgb, var(--border, #e5e7eb) 40%, transparent);
   }
 
   .toolbar-open-btn :global(svg) {
