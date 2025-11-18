@@ -96,9 +96,7 @@ func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claim
 	// Apply additional filters if provided for this metrics view
 	if additionalWhere, ok := additionalWhereByMetricsView[query.MetricsView]; ok {
 		additionalWhereMV := convertProtoExpression(additionalWhere)
-		if additionalWhereMV != nil {
-			query.Where = resolvers.ApplyAdditionalWhere(query.Where, additionalWhereMV)
-		}
+		query.Where = resolvers.ApplyAdditionalWhere(query.Where, additionalWhereMV)
 	}
 
 	// Apply additional time range if provided
@@ -190,7 +188,9 @@ func (s *Server) executeMetricsSQL(ctx context.Context, instanceID string, claim
 	return val, query.MetricsView, field, nil
 }
 
-// convertProtoExpression converts runtimev1.Expression to metricsview.Expression
+// convertProtoExpression converts runtimev1.Expression to metricsview.Expression.
+// These converter functions are specific to the ResolveTemplatedString RPC and handle
+// the translation from proto definitions to internal metricsview types.
 func convertProtoExpression(expr *runtimev1.Expression) *metricsview.Expression {
 	if expr == nil {
 		return nil
