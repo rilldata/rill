@@ -48,14 +48,12 @@
       if (groupId) {
         const label = option.groupLabel ?? option.groupId ?? groupId;
         const order = option.groupOrder ?? DEFAULT_GROUP_ORDER;
-        const existing =
-          groups.get(groupId) ??
-          {
-            id: groupId,
-            label,
-            order,
-            options: [],
-          };
+        const existing = groups.get(groupId) ?? {
+          id: groupId,
+          label,
+          order,
+          options: [],
+        };
         existing.label = label;
         existing.order = Math.min(existing.order, order);
         existing.options.push([id, option]);
@@ -83,8 +81,7 @@
     return { grouped, ungrouped };
   }
 
-  $: selectedGroupId =
-    selected?.groupId ?? selected?.groupLabel?.toLowerCase();
+  $: selectedGroupId = selected?.groupId ?? selected?.groupLabel?.toLowerCase();
   $: partitionedOptions = partitionOptions(options, selectedGroupId);
   $: hasGroups = partitionedOptions.grouped.length > 0;
 
@@ -144,7 +141,7 @@
         </Chip>
       {/if}
     {/if}
-      {#if options.size > 1}
+    {#if options.size > 1}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
           <button
@@ -156,138 +153,146 @@
             <CaretDownIcon size="14px" />
           </button>
         </DropdownMenu.Trigger>
-          <DropdownMenu.Content
+        <DropdownMenu.Content
           align="start"
           class="min-w-44 max-h-96 overflow-y-auto"
         >
-            {#if hasGroups}
-              {#each partitionedOptions.grouped as group, groupIndex}
-                <DropdownMenu.Label class="px-2 pt-1 pb-0 text-[10px] font-medium uppercase text-gray-400 tracking-wide">
-                  {group.label}
-                </DropdownMenu.Label>
-                {#each group.options as [id, option] (id)}
-                  {@const checked = id === normalizedCurrent}
-                  {@const IconComponent = option.resourceKind
-                    ? resourceIconMapping[option.resourceKind]
-                    : null}
-                  {@const iconColor = option.resourceKind
-                    ? resourceColorMapping[option.resourceKind]
-                    : undefined}
-                  <DropdownMenu.CheckboxItem
-                    class="cursor-pointer"
-                    checked={checked}
-                    checkSize={"h-3 w-3"}
-                    href={linkMaker(
-                      currentPath,
-                      depth,
-                      id,
-                      option,
-                      $page.route.id ?? "",
-                    )}
-                    preloadData={option.preloadData}
-                    on:click={() => {
-                      if (onSelect) {
-                        onSelect(id);
-                      }
-                    }}
+          {#if hasGroups}
+            {#each partitionedOptions.grouped as group, groupIndex}
+              <DropdownMenu.Label
+                class="px-2 pt-1 pb-0 text-[10px] font-medium uppercase text-gray-400 tracking-wide"
+              >
+                {group.label}
+              </DropdownMenu.Label>
+              {#each group.options as [id, option] (id)}
+                {@const checked = id === normalizedCurrent}
+                {@const IconComponent = option.resourceKind
+                  ? resourceIconMapping[option.resourceKind]
+                  : null}
+                {@const iconColor = option.resourceKind
+                  ? resourceColorMapping[option.resourceKind]
+                  : undefined}
+                <DropdownMenu.CheckboxItem
+                  class="cursor-pointer"
+                  {checked}
+                  checkSize={"h-3 w-3"}
+                  href={linkMaker(
+                    currentPath,
+                    depth,
+                    id,
+                    option,
+                    $page.route.id ?? "",
+                  )}
+                  preloadData={option.preloadData}
+                  on:click={() => {
+                    if (onSelect) {
+                      onSelect(id);
+                    }
+                  }}
+                >
+                  <span
+                    class="text-xs text-gray-800 flex-grow flex items-center gap-x-2"
                   >
-                    <span class="text-xs text-gray-800 flex-grow flex items-center gap-x-2">
-                      {#if IconComponent}
-                        <IconComponent
-                          size="14"
-                          color={iconColor}
-                          class="shrink-0 text-gray-500"
-                        />
-                      {/if}
-                      <span class="truncate">{option.label}</span>
-                    </span>
-                  </DropdownMenu.CheckboxItem>
-                {/each}
-                {#if groupIndex < partitionedOptions.grouped.length - 1}
-                  <DropdownMenu.Separator />
-                {/if}
+                    {#if IconComponent}
+                      <IconComponent
+                        size="14"
+                        color={iconColor}
+                        class="shrink-0 text-gray-500"
+                      />
+                    {/if}
+                    <span class="truncate">{option.label}</span>
+                  </span>
+                </DropdownMenu.CheckboxItem>
               {/each}
-              {#if partitionedOptions.ungrouped.length}
+              {#if groupIndex < partitionedOptions.grouped.length - 1}
                 <DropdownMenu.Separator />
               {/if}
-              {#each partitionedOptions.ungrouped as [id, option] (id)}
-                {@const checked = id === normalizedCurrent}
-                {@const IconComponent = option.resourceKind
-                  ? resourceIconMapping[option.resourceKind]
-                  : null}
-                {@const iconColor = option.resourceKind
-                  ? resourceColorMapping[option.resourceKind]
-                  : undefined}
-                <DropdownMenu.CheckboxItem
-                  class="cursor-pointer"
-                  checked={checked}
-                  checkSize={"h-3 w-3"}
-                  href={linkMaker(
-                    currentPath,
-                    depth,
-                    id,
-                    option,
-                    $page.route.id ?? "",
-                  )}
-                  preloadData={option.preloadData}
-                  on:click={() => {
-                    if (onSelect) {
-                      onSelect(id);
-                    }
-                  }}
-                >
-                  <span class="text-xs text-gray-800 flex-grow flex items-center gap-x-2">
-                    {#if IconComponent}
-                      <IconComponent
-                        size="14"
-                        color={iconColor}
-                        class="shrink-0 text-gray-500"
-                      />
-                    {/if}
-                    <span class="truncate">{option.label}</span>
-                  </span>
-                </DropdownMenu.CheckboxItem>
-              {/each}
-            {:else}
-              {#each options as [id, option] (id)}
-                {@const checked = id === normalizedCurrent}
-                {@const IconComponent = option.resourceKind
-                  ? resourceIconMapping[option.resourceKind]
-                  : null}
-                {@const iconColor = option.resourceKind
-                  ? resourceColorMapping[option.resourceKind]
-                  : undefined}
-                <DropdownMenu.CheckboxItem
-                  class="cursor-pointer"
-                  checked={checked}
-                  checkSize={"h-3 w-3"}
-                  href={linkMaker(
-                    currentPath,
-                    depth,
-                    id,
-                    option,
-                    $page.route.id ?? "",
-                  )}
-                  preloadData={option.preloadData}
-                  on:click={() => {
-                    if (onSelect) {
-                      onSelect(id);
-                    }
-                  }}
-                >
-                  <span class="text-xs text-gray-800 flex-grow flex items-center gap-x-2">
-                    {#if IconComponent}
-                      <IconComponent
-                        size="14"
-                        color={iconColor}
-                        class="shrink-0 text-gray-500"
-                      />
-                    {/if}
-                    <span class="truncate">{option.label}</span>
-                  </span>
-                </DropdownMenu.CheckboxItem>
-              {/each}
+            {/each}
+            {#if partitionedOptions.ungrouped.length}
+              <DropdownMenu.Separator />
             {/if}
+            {#each partitionedOptions.ungrouped as [id, option] (id)}
+              {@const checked = id === normalizedCurrent}
+              {@const IconComponent = option.resourceKind
+                ? resourceIconMapping[option.resourceKind]
+                : null}
+              {@const iconColor = option.resourceKind
+                ? resourceColorMapping[option.resourceKind]
+                : undefined}
+              <DropdownMenu.CheckboxItem
+                class="cursor-pointer"
+                {checked}
+                checkSize={"h-3 w-3"}
+                href={linkMaker(
+                  currentPath,
+                  depth,
+                  id,
+                  option,
+                  $page.route.id ?? "",
+                )}
+                preloadData={option.preloadData}
+                on:click={() => {
+                  if (onSelect) {
+                    onSelect(id);
+                  }
+                }}
+              >
+                <span
+                  class="text-xs text-gray-800 flex-grow flex items-center gap-x-2"
+                >
+                  {#if IconComponent}
+                    <IconComponent
+                      size="14"
+                      color={iconColor}
+                      class="shrink-0 text-gray-500"
+                    />
+                  {/if}
+                  <span class="truncate">{option.label}</span>
+                </span>
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          {:else}
+            {#each options as [id, option] (id)}
+              {@const checked = id === normalizedCurrent}
+              {@const IconComponent = option.resourceKind
+                ? resourceIconMapping[option.resourceKind]
+                : null}
+              {@const iconColor = option.resourceKind
+                ? resourceColorMapping[option.resourceKind]
+                : undefined}
+              <DropdownMenu.CheckboxItem
+                class="cursor-pointer"
+                {checked}
+                checkSize={"h-3 w-3"}
+                href={linkMaker(
+                  currentPath,
+                  depth,
+                  id,
+                  option,
+                  $page.route.id ?? "",
+                )}
+                preloadData={option.preloadData}
+                on:click={() => {
+                  if (onSelect) {
+                    onSelect(id);
+                  }
+                }}
+              >
+                <span
+                  class="text-xs text-gray-800 flex-grow flex items-center gap-x-2"
+                >
+                  {#if IconComponent}
+                    <IconComponent
+                      size="14"
+                      color={iconColor}
+                      class="shrink-0 text-gray-500"
+                    />
+                  {/if}
+                  <span class="truncate">{option.label}</span>
+                </span>
+              </DropdownMenu.CheckboxItem>
+            {/each}
+          {/if}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     {/if}

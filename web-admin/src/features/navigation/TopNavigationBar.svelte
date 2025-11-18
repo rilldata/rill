@@ -152,7 +152,9 @@
           ? resource?.explore?.spec?.displayName
           : resource?.canvas?.spec?.displayName) || name,
       section: groupId,
-      resourceKind: isMetricsExplorer ? ResourceKind.Explore : ResourceKind.Canvas,
+      resourceKind: isMetricsExplorer
+        ? ResourceKind.Explore
+        : ResourceKind.Canvas,
       groupId,
       groupLabel: isMetricsExplorer ? "Explores" : "Canvases",
       groupOrder: isMetricsExplorer ? 0 : 1,
