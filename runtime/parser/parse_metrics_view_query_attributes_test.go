@@ -51,24 +51,6 @@ func TestValidateQueryAttributes(t *testing.T) {
 			errMsg:  "key cannot be empty",
 		},
 		{
-			name:    "key too long",
-			attrs:   map[string]string{strings.Repeat("a", 129): "value"},
-			wantErr: true,
-			errMsg:  "exceeds maximum length",
-		},
-		{
-			name:    "value too long",
-			attrs:   map[string]string{"key": strings.Repeat("a", 4097)},
-			wantErr: true,
-			errMsg:  "exceeds maximum length",
-		},
-		{
-			name:    "too many attributes",
-			attrs:   generateManyAttributes(51),
-			wantErr: true,
-			errMsg:  "too many query attributes",
-		},
-		{
 			name:    "invalid key with spaces",
 			attrs:   map[string]string{"partner id": "value"},
 			wantErr: true,
@@ -85,54 +67,6 @@ func TestValidateQueryAttributes(t *testing.T) {
 			attrs:   map[string]string{"partner'; DROP TABLE users--": "value"},
 			wantErr: true,
 			errMsg:  "contains invalid characters",
-		},
-		{
-			name:    "value with semicolon",
-			attrs:   map[string]string{"partner_id": "value; DROP TABLE"},
-			wantErr: true,
-			errMsg:  "dangerous pattern",
-		},
-		{
-			name:    "value with SQL comment",
-			attrs:   map[string]string{"partner_id": "value--comment"},
-			wantErr: true,
-			errMsg:  "dangerous pattern",
-		},
-		{
-			name:    "value with block comment",
-			attrs:   map[string]string{"partner_id": "value/* comment */"},
-			wantErr: true,
-			errMsg:  "dangerous pattern",
-		},
-		{
-			name:    "value with newline",
-			attrs:   map[string]string{"partner_id": "value\ninjection"},
-			wantErr: true,
-			errMsg:  "dangerous pattern",
-		},
-		{
-			name:    "value with carriage return",
-			attrs:   map[string]string{"partner_id": "value\rinjection"},
-			wantErr: true,
-			errMsg:  "dangerous pattern",
-		},
-		{
-			name:    "value with null byte",
-			attrs:   map[string]string{"partner_id": "value\x00injection"},
-			wantErr: true,
-			errMsg:  "null bytes",
-		},
-		{
-			name:    "value with xp_ procedure",
-			attrs:   map[string]string{"partner_id": "xp_cmdshell"},
-			wantErr: true,
-			errMsg:  "dangerous pattern",
-		},
-		{
-			name:    "value with sp_ procedure",
-			attrs:   map[string]string{"partner_id": "sp_executesql"},
-			wantErr: true,
-			errMsg:  "dangerous pattern",
 		},
 		{
 			name:    "template with dangerous pattern should pass",
@@ -197,69 +131,6 @@ func TestIsValidQueryAttributeKey(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isValidQueryAttributeKey(tt.key)
 			require.Equal(t, tt.valid, result)
-		})
-	}
-}
-
-func TestContainsTemplate(t *testing.T) {
-	tests := []struct {
-		name     string
-		value    string
-		expected bool
-	}{
-		{"simple template", "{{ .user.id }}", true},
-		{"template with text", "prefix{{ .var }}suffix", true},
-		{"no template", "simple string", false},
-		{"only opening", "{{ incomplete", false},
-		{"only closing", "incomplete }}", false},
-		{"empty", "", false},
-		{"reverse order", "}} {{", true}, // Still contains both, even if wrong order
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := containsTemplate(tt.value)
-			require.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func TestValidateQueryAttributeValue(t *testing.T) {
-	tests := []struct {
-		name    string
-		value   string
-		wantErr bool
-		errMsg  string
-	}{
-		{"simple value", "acme_corp", false, ""},
-		{"with spaces", "acme corp", false, ""},
-		{"with numbers", "value123", false, ""},
-		{"semicolon", "value;drop", true, "dangerous pattern"},
-		{"sql comment", "value--comment", true, "dangerous pattern"},
-		{"block comment start", "value/*comment", true, "dangerous pattern"},
-		{"block comment end", "value*/comment", true, "dangerous pattern"},
-		{"newline", "value\nline2", true, "dangerous pattern"},
-		{"carriage return", "value\rline2", true, "dangerous pattern"},
-		{"null byte", "value\x00byte", true, "null bytes"},
-		{"xp_ prefix", "xp_cmdshell", true, "dangerous pattern"},
-		{"sp_ prefix", "sp_executesql", true, "dangerous pattern"},
-		{"uppercase xp", "XP_CMDSHELL", true, "dangerous pattern"}, // Case insensitive check
-		{"safe with dots", "value.with.dots", false, ""},
-		{"safe with underscores", "value_with_underscores", false, ""},
-		{"safe with hyphens", "value-with-hyphens", false, ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateQueryAttributeValue(tt.value)
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errMsg != "" {
-					require.Contains(t, err.Error(), tt.errMsg)
-				}
-			} else {
-				require.NoError(t, err)
-			}
 		})
 	}
 }

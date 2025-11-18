@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
@@ -54,9 +55,29 @@ func New(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtim
 	}
 
 	// Resolve query attributes once during initialization
-	queryAttrs, err := resolveQueryAttributes(ctx, rt, instanceID, mv, userAttrs)
-	if err != nil {
-		return nil, err
+	var queryAttrs map[string]string
+	if len(mv.QueryAttributes) > 0 {
+		// Get instance for template data
+		inst, err := rt.Instance(ctx, instanceID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance for query attributes: %w", err)
+		}
+
+		td := parser.TemplateData{
+			Environment: inst.Environment,
+			Variables:   inst.ResolveVariables(false),
+			User:        userAttrs,
+		}
+
+		// Resolve templates
+		queryAttrs = make(map[string]string)
+		for key, template := range mv.QueryAttributes {
+			val, err := parser.ResolveTemplate(template, td, false)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve query attribute %q: %w", key, err)
+			}
+			queryAttrs[key] = val
+		}
 	}
 
 	return &Executor{

@@ -78,6 +78,10 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 			"session_timezone":          "UTC",
 			"join_use_nulls":            1,
 		}
+		// Add query attributes to settings
+		for k, v := range stmt.QueryAttributes {
+			settings[k] = v
+		}
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 	}
 
@@ -134,9 +138,14 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		if c.config.QuerySettingsOverride != "" {
 			stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
 		} else {
-			stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
 			if c.config.QuerySettings != "" {
-				stmt.Query += ", " + c.config.QuerySettings
+				stmt.Query += "\n SETTINGS " + c.config.QuerySettings + ", cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+			} else {
+				stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+			}
+			// Add query attributes to settings
+			for k, v := range stmt.QueryAttributes {
+				stmt.Query += fmt.Sprintf(", %s = '%s'", k, v)
 			}
 		}
 	}
