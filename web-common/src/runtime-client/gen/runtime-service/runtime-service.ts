@@ -34,6 +34,7 @@ import type {
   RuntimeServiceDeleteFileParams,
   RuntimeServiceDeleteInstanceBody,
   RuntimeServiceEditInstanceBody,
+  RuntimeServiceGenerateCanvasDashboardFileBody,
   RuntimeServiceGenerateMetricsViewFileBody,
   RuntimeServiceGenerateRendererBody,
   RuntimeServiceGenerateResolverBody,
@@ -68,6 +69,7 @@ import type {
   V1DeleteFileResponse,
   V1DeleteInstanceResponse,
   V1EditInstanceResponse,
+  V1GenerateCanvasDashboardFileResponse,
   V1GenerateMetricsViewFileResponse,
   V1GenerateRendererResponse,
   V1GenerateResolverResponse,
@@ -2063,6 +2065,99 @@ export const createRuntimeServicePutFile = <
   TContext
 > => {
   const mutationOptions = getRuntimeServicePutFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary GenerateCanvasDashboardFile generates a canvas dashboard YAML file from a metrics view
+ */
+export const runtimeServiceGenerateCanvasDashboardFile = (
+  instanceId: string,
+  runtimeServiceGenerateCanvasDashboardFileBody: RuntimeServiceGenerateCanvasDashboardFileBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GenerateCanvasDashboardFileResponse>({
+    url: `/v1/instances/${instanceId}/files/generate-canvas-dashboard`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceGenerateCanvasDashboardFileBody,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGenerateCanvasDashboardFileMutationOptions = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceGenerateCanvasDashboardFileBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGenerateCanvasDashboardFileBody },
+  TContext
+> => {
+  const mutationKey = ["runtimeServiceGenerateCanvasDashboardFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+    { instanceId: string; data: RuntimeServiceGenerateCanvasDashboardFileBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceGenerateCanvasDashboardFile(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RuntimeServiceGenerateCanvasDashboardFileMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>
+  >;
+export type RuntimeServiceGenerateCanvasDashboardFileMutationBody =
+  RuntimeServiceGenerateCanvasDashboardFileBody;
+export type RuntimeServiceGenerateCanvasDashboardFileMutationError =
+  ErrorType<RpcStatus>;
+
+/**
+ * @summary GenerateCanvasDashboardFile generates a canvas dashboard YAML file from a metrics view
+ */
+export const createRuntimeServiceGenerateCanvasDashboardFile = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+      TError,
+      {
+        instanceId: string;
+        data: RuntimeServiceGenerateCanvasDashboardFileBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof runtimeServiceGenerateCanvasDashboardFile>>,
+  TError,
+  { instanceId: string; data: RuntimeServiceGenerateCanvasDashboardFileBody },
+  TContext
+> => {
+  const mutationOptions =
+    getRuntimeServiceGenerateCanvasDashboardFileMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };

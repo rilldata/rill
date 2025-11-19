@@ -2260,6 +2260,111 @@ export class GenerateMetricsViewFileResponse extends Message$1<GenerateMetricsVi
 }
 
 /**
+ * Request message for RuntimeService.GenerateCanvasDashboardFile
+ *
+ * @generated from message rill.runtime.v1.GenerateCanvasDashboardFileRequest
+ */
+export class GenerateCanvasDashboardFileRequest extends Message$1<GenerateCanvasDashboardFileRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Metrics view name to base the canvas dashboard on.
+   *
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * Path to save the canvas dashboard file to.
+   *
+   * @generated from field: string path = 3;
+   */
+  path = "";
+
+  /**
+   * If true, the AI will be used to generate the canvas dashboard file.
+   * Otherwise, it falls back to a simpler heuristic approach.
+   *
+   * @generated from field: bool use_ai = 4;
+   */
+  useAi = false;
+
+  constructor(data?: PartialMessage<GenerateCanvasDashboardFileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateCanvasDashboardFileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "use_ai", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateCanvasDashboardFileRequest {
+    return new GenerateCanvasDashboardFileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateCanvasDashboardFileRequest {
+    return new GenerateCanvasDashboardFileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateCanvasDashboardFileRequest {
+    return new GenerateCanvasDashboardFileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateCanvasDashboardFileRequest | PlainMessage<GenerateCanvasDashboardFileRequest> | undefined, b: GenerateCanvasDashboardFileRequest | PlainMessage<GenerateCanvasDashboardFileRequest> | undefined): boolean {
+    return proto3.util.equals(GenerateCanvasDashboardFileRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GenerateCanvasDashboardFile
+ *
+ * @generated from message rill.runtime.v1.GenerateCanvasDashboardFileResponse
+ */
+export class GenerateCanvasDashboardFileResponse extends Message$1<GenerateCanvasDashboardFileResponse> {
+  /**
+   * Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+   *
+   * @generated from field: bool ai_succeeded = 1;
+   */
+  aiSucceeded = false;
+
+  constructor(data?: PartialMessage<GenerateCanvasDashboardFileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GenerateCanvasDashboardFileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ai_succeeded", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GenerateCanvasDashboardFileResponse {
+    return new GenerateCanvasDashboardFileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GenerateCanvasDashboardFileResponse {
+    return new GenerateCanvasDashboardFileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GenerateCanvasDashboardFileResponse {
+    return new GenerateCanvasDashboardFileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GenerateCanvasDashboardFileResponse | PlainMessage<GenerateCanvasDashboardFileResponse> | undefined, b: GenerateCanvasDashboardFileResponse | PlainMessage<GenerateCanvasDashboardFileResponse> | undefined): boolean {
+    return proto3.util.equals(GenerateCanvasDashboardFileResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.GenerateResolverRequest
  */
 export class GenerateResolverRequest extends Message$1<GenerateResolverRequest> {

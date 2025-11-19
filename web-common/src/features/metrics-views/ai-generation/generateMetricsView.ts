@@ -16,6 +16,7 @@ import {
 import {
   type RuntimeServiceGenerateMetricsViewFileBody,
   type V1GenerateMetricsViewFileResponse,
+  runtimeServiceGenerateCanvasDashboardFile,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
 } from "../../../runtime-client";
@@ -465,6 +466,88 @@ export async function createModelAndMetricsAndExplore(
   } catch (err) {
     console.error("Failed to create model and metrics view:", err);
     throw err;
+  } finally {
+    // Always clean up the overlay
+    overlay.set(null);
+  }
+}
+
+/**
+ * Creates a Canvas dashboard from a metrics view using AI.
+ * This function is called from the "Create Canvas Dashboard" button on the metrics view page.
+ */
+export async function createCanvasDashboardFromMetricsView(
+  instanceId: string,
+  metricsViewName: string,
+) {
+  const isAiEnabled = get(featureFlags.ai);
+  let isAICancelled = false;
+  const abortController = new AbortController();
+
+  overlay.set({
+    title: `Creating Canvas dashboard${isAiEnabled ? " with AI" : ""}...`,
+    detail: {
+      component: OptionToCancelAIGeneration,
+      props: {
+        onCancel: () => {
+          abortController.abort("Canvas dashboard creation cancelled by user");
+          isAICancelled = true;
+        },
+      },
+    },
+  });
+
+  // Get a unique name for the canvas dashboard
+  const canvasName = getName(
+    `${metricsViewName}_canvas`,
+    fileArtifacts.getNamesForKind(ResourceKind.Canvas),
+  );
+  const canvasFilePath = `/dashboards/${canvasName}.yaml`;
+
+  try {
+    // Request AI-generated canvas dashboard
+    void runtimeServiceGenerateCanvasDashboardFile(
+      instanceId,
+      {
+        metricsViewName: metricsViewName,
+        path: canvasFilePath,
+        useAi: isAiEnabled,
+      },
+      abortController.signal,
+    );
+
+    // Poll every second until the generation is complete or canceled
+    while (!isAICancelled) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      try {
+        await runtimeServiceGetFile(instanceId, {
+          path: canvasFilePath,
+        });
+
+        // success, generation is done
+        break;
+      } catch {
+        // 404 error, generation is not done
+      }
+    }
+
+    // If the user canceled the AI request, submit another request with `useAi=false`
+    if (isAICancelled) {
+      await runtimeServiceGenerateCanvasDashboardFile(instanceId, {
+        metricsViewName: metricsViewName,
+        path: canvasFilePath,
+        useAi: false,
+      });
+    }
+
+    // Navigate to the Canvas preview page
+    await goto(`/files${canvasFilePath}`);
+  } catch (err) {
+    eventBus.emit("notification", {
+      message: "Failed to create Canvas dashboard for " + metricsViewName,
+      detail: err.response?.data?.message ?? err.message,
+    });
   } finally {
     // Always clean up the overlay
     overlay.set(null);

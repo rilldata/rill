@@ -11,6 +11,7 @@
   import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
   import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
+  import { createCanvasDashboardFromMetricsView } from "./ai-generation/generateMetricsView";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import NavigateOrDropdown from "./NavigateOrDropdown.svelte";
 
@@ -57,12 +58,24 @@
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           on:click={async () => {
+            if (resource?.meta?.name?.name)
+              await createCanvasDashboardFromMetricsView(
+                instanceId,
+                resource.meta.name.name,
+              );
+          }}
+        >
+          <Add />
+          Create Canvas dashboard
+        </DropdownMenu.Item>
+        <DropdownMenu.Item
+          on:click={async () => {
             if (resource)
               await createAndPreviewExplore(queryClient, instanceId, resource);
           }}
         >
           <Add />
-          Create dashboard
+          Create Explore dashboard
         </DropdownMenu.Item>
       </DropdownMenu.Group>
     </DropdownMenu.Content>
