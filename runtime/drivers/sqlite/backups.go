@@ -234,9 +234,9 @@ func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPa
 	}
 	defer snapshotDB.Close()
 
-	// Convert catalog `data` from protobuf to JSON.
+	// Convert the `data` field in each row in the `catalogv2` table from protobuf to JSON.
 	var offset int
-	for {
+	for range 1_000_000 { // Failsafe to avoid infinite loops; there should never be this many resources.
 		// Read one resource.
 		var r drivers.Resource
 		err := snapshotDB.GetContext(ctx, &r, "SELECT kind, name, data FROM catalogv2 ORDER BY kind, name LIMIT 1 OFFSET ?", offset)
@@ -259,7 +259,7 @@ func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPa
 			return fmt.Errorf("failed to marshal catalog resource to JSON: %w", err)
 		}
 
-		// Update the resource with the JSON data.
+		// Write the update back to the snapshot database.
 		_, err = snapshotDB.ExecContext(ctx, "UPDATE catalogv2 SET data = ? WHERE kind = ? AND name = ?", dataJSON, r.Kind, r.Name)
 		if err != nil {
 			return fmt.Errorf("failed to update catalog resource with JSON data: %w", err)
