@@ -6,6 +6,7 @@
     "dev": "vite dev",
     "build": "npm run generate:sveltekit -w web-common && svelte-kit sync && vite build && cp _redirects build",
     "preview": "vite preview",
+    "generate:client": "svelte-kit sync && orval",
     "test": "playwright test",
     "test:setup": "E2E_NO_TEARDOWN=true playwright test --project=setup",
     "test:dev": "E2E_NO_SETUP_OR_TEARDOWN=true playwright test --project=e2e",
@@ -13,8 +14,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check . && eslint .",
-    "format": "prettier --write .",
-    "generate:client": "svelte-kit sync && orval"
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@fontsource/fira-mono": "^4.5.0",
