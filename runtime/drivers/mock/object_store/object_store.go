@@ -173,14 +173,25 @@ func (h *handle) ListBuckets(ctx context.Context, pageSize int, pageToken string
 }
 
 // ListObjects implements drivers.ObjectStore.
-func (h *handle) ListObjects(ctx context.Context, bucketName, path, delimiter string, pageSize int, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
-	bucket, err := rillblob.NewBucket(h.bucket, h.logger)
+func (h *handle) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize int, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+	blobBucket, err := rillblob.NewBucket(h.bucket, h.logger)
 	if err != nil {
 		return nil, "", err
 	}
-	defer bucket.Close()
+	defer blobBucket.Close()
 
-	return bucket.ListObjects(ctx, path, delimiter, pageSize, pageToken)
+	return blobBucket.ListObjects(ctx, path, delimiter, pageSize, pageToken)
+}
+
+// ListObjectsForGlob implements drivers.ObjectStore.
+func (h *handle) ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]drivers.ObjectStoreEntry, error) {
+	blobBucket, err := rillblob.NewBucket(h.bucket, h.logger)
+	if err != nil {
+		return nil, err
+	}
+	defer blobBucket.Close()
+
+	return blobBucket.ListObjectsForGlob(ctx, glob)
 }
 
 // DownloadFiles implements drivers.ObjectStore.

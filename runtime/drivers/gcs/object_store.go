@@ -58,14 +58,25 @@ func (c *Connection) ListBuckets(ctx context.Context, pageSize int, pageToken st
 }
 
 // ListObjects implements drivers.ObjectStore.
-func (c *Connection) ListObjects(ctx context.Context, bucketName, path, delimiter string, pageSize int, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
-	bucket, err := c.openBucket(ctx, bucketName)
+func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize int, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+	blobBucket, err := c.openBucket(ctx, bucket)
 	if err != nil {
 		return nil, "", err
 	}
-	defer bucket.Close()
+	defer blobBucket.Close()
 
-	return bucket.ListObjects(ctx, path, delimiter, pageSize, pageToken)
+	return blobBucket.ListObjects(ctx, path, delimiter, pageSize, pageToken)
+}
+
+// ListObjectsForGlob implements drivers.ObjectStore.
+func (c *Connection) ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]drivers.ObjectStoreEntry, error) {
+	blobBucket, err := c.openBucket(ctx, bucket)
+	if err != nil {
+		return nil, err
+	}
+	defer blobBucket.Close()
+
+	return blobBucket.ListObjectsForGlob(ctx, glob)
 }
 
 // DownloadFiles returns a file iterator over objects stored in gcs.

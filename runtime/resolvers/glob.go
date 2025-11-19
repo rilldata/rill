@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"path"
 	"regexp"
@@ -188,7 +187,7 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q: %w", r.props.Path, err)
 	}
-	entries, _, err := store.ListObjects(ctx, url.Host, url.Path, "", math.MaxInt32, "")
+	entries, err := store.ListObjectsForGlob(ctx, url.Host, url.Path)
 	if err != nil {
 		return nil, err
 	}

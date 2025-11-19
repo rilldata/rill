@@ -11,10 +11,20 @@ import (
 
 // ObjectStore is an interface for object storage systems.
 type ObjectStore interface {
+	// ListBuckets lists the available buckets. pageSize limits the maximum results
+	// returned in one call, and pageToken is non-empty when more results are available.
+	// It returns the bucket names, the next page token, and any error.
 	ListBuckets(ctx context.Context, pageSize int, pageToken string) ([]string, string, error)
-	// ListObjects returns the paths that match the given properties.
-	// It resolves globs with support for all patterns supported by the doublestar package (notably "**").
-	ListObjects(ctx context.Context, bucketName, path, delimiter string, pageSize int, pageToken string) ([]ObjectStoreEntry, string, error)
+	// ListObjects lists the objects and any directory-like prefixes under the given
+	// bucket and path. Directories are included only when a delimiter (e.g., "/")
+	// is provided. pageSize limits the maximum results returned in one call, and
+	// pageToken is non-empty when more results are available. It returns the entries,
+	// the next page token, and any error.
+	ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize int, pageToken string) ([]ObjectStoreEntry, string, error)
+	// ListObjectsForGlob returns all objects in the given bucket whose paths match
+	// the specified glob pattern. The pattern supports doublestar syntax, including
+	// recursive patterns like "**". It returns the matching entries and any error.
+	ListObjectsForGlob(ctx context.Context, bucket, glob string) ([]ObjectStoreEntry, error)
 	// DownloadFiles provides an iterator for downloading and consuming files.
 	// It resolves globs similar to ListObjects.
 	DownloadFiles(ctx context.Context, path string) (FileIterator, error)

@@ -22,7 +22,6 @@ func TestObjectStore(t *testing.T) {
 	require.True(t, ok)
 	bucket := "integration-test.rilldata.com"
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
-	t.Run("testListObjectsGlob", func(t *testing.T) { testListObjectsGlob(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
 	t.Run("testListObjectsEmptyPrefix", func(t *testing.T) { testListObjectsEmptyPrefix(t, objectStore, bucket) })
@@ -65,24 +64,6 @@ func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bu
 
 	require.Equal(t, len(expected), pageCount, "unexpected number of pages")
 	require.Equal(t, expected, collected, "paginated order mismatch")
-}
-
-func testListObjectsGlob(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
-	ctx := context.Background()
-	glob := "glob_test/y=2024/*"
-
-	expected := []string{
-		"glob_test/y=2024/aaa.csv",
-		"glob_test/y=2024/bbb.csv",
-	}
-
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, glob, "", 10, "")
-	require.NoError(t, err)
-	require.Empty(t, nextToken)
-	require.Len(t, objects, len(expected))
-	for i, obj := range objects {
-		require.Equal(t, expected[i], obj.Path)
-	}
 }
 
 func testListObjectsDelimiter(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
