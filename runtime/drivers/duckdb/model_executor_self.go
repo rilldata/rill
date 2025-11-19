@@ -563,7 +563,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
 		} else if s3Config.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
 		}
 
 		if s3Config.SessionToken != "" {
@@ -624,7 +624,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 		if gcsConfig.KeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(gcsConfig.KeyID), safeSQLString(gcsConfig.Secret))
 		} else if gcsConfig.AllowHostAccess {
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
 		}
 		sb.WriteRune(')')
 		return sb.String(), dropSecretSQL, connectorType, nil
@@ -648,7 +648,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
 		} else if azureConfig.AllowHostAccess {
 			// duckdb will use default defaultazurecredential https://github.com/Azure/azure-sdk-for-cpp/blob/azure-identity_1.6.0/sdk/identity/azure-identity/README.md#defaultazurecredential
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
 		}
 		if azureConfig.GetAccount() != "" {
 			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.GetAccount()))
