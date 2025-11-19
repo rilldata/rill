@@ -2,15 +2,18 @@ package sqlite
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gocloud.dev/blob/fileblob"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestBackup(t *testing.T) {
@@ -48,7 +51,7 @@ func TestBackup(t *testing.T) {
 	require.NoError(t, catalog.CreateResource(t.Context(), v, drivers.Resource{
 		Kind: "a",
 		Name: "b",
-		Data: []byte("c"),
+		Data: must(proto.Marshal(&runtimev1.Resource{Meta: &runtimev1.ResourceMeta{Name: &runtimev1.ResourceName{Kind: "a", Name: "b"}}})),
 	}))
 	require.NoError(t, catalog.InsertModelPartition(t.Context(), "model1", drivers.ModelPartition{
 		Key:      "a",
@@ -85,6 +88,19 @@ func TestBackup(t *testing.T) {
 		require.NoError(t, err, "expected backup file %q to exist", filename)
 		require.Greater(t, attr.Size, int64(0), "expected backup file %q to be non-empty", filename)
 	}
+
+	// Move the catalog.parquet file to my dektop for deugging
+	f, err := bucket.NewReader(t.Context(), "catalog.parquet", nil)
+	require.NoError(t, err)
+	defer f.Close()
+	destPath := filepath.Join("/Users/benjamin/Desktop/catalog.parquet")
+	destFile, err := filepath.Abs(destPath)
+	require.NoError(t, err)
+	destF, err := os.OpenFile(destFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	require.NoError(t, err)
+	defer destF.Close()
+	_, err = destF.ReadFrom(f)
+	require.NoError(t, err)
 }
 
 func TestDBFilePath(t *testing.T) {
@@ -111,4 +127,11 @@ func TestDBFilePath(t *testing.T) {
 			require.Equal(t, tc.expected, dbPath)
 		})
 	}
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
