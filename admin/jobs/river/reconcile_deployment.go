@@ -34,50 +34,12 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		return err
 	}
 
-	proj, err := w.admin.DB.FindProject(ctx, depl.ProjectID)
-	if err != nil {
-		return err
-	}
-
-	org, err := w.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return err
-	}
-
-	// Resolve slots based on environment
-	var slots int
-	switch depl.Environment {
-	case "prod":
-		slots = proj.ProdSlots
-	case "dev":
-		slots = proj.DevSlots
-	default:
-		// Invalid environment, mark the deployment as errored.
-		_, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, "Invalid environment, must be either 'prod' or 'dev'")
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	// Resolve variables based on environment
-	vars, err := w.admin.ResolveVariables(ctx, proj.ID, depl.Environment, true)
-	if err != nil {
-		return err
-	}
-
 	var deplOpts *database.UpdateDeploymentOptions
 
 	switch depl.Status {
 	case database.DeploymentStatusPending:
 		// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-		rtCfg, err := w.admin.StartDeploymentInner(ctx, depl, &admin.StartDeploymentInnerOptions{
-			Annotations: w.admin.NewDeploymentAnnotations(org, proj),
-			Provisioner: proj.Provisioner,
-			Slots:       slots,
-			Version:     proj.ProdVersion,
-			Variables:   vars,
-		})
+		rtCfg, err := w.admin.StartDeploymentInner(ctx, depl)
 		if err != nil {
 			return err
 		}
@@ -107,11 +69,7 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 	case database.DeploymentStatusUpdating:
 		// Update the deployment by updating its runtime instance and resources.
-		err := w.admin.UpdateDeploymentInner(ctx, depl, &admin.UpdateDeploymentInnerOptions{
-			Annotations: w.admin.NewDeploymentAnnotations(org, proj),
-			Variables:   vars,
-			Version:     proj.ProdVersion,
-		})
+		err := w.admin.UpdateDeploymentInner(ctx, depl)
 		if err != nil {
 			return err
 		}

@@ -230,12 +230,15 @@ func (m *observabilityMiddleware) Work(ctx context.Context, job *rivertype.JobRo
 		m.jobLatencyHistogram.Record(ctx, duration.Milliseconds(), metric.WithAttributes(attribute.String("name", job.Kind), attribute.Bool("failed", err != nil)))
 
 		if err != nil {
-			m.logger.Error("job failed", zap.String("name", job.Kind), zap.Error(err), zap.Duration("duration", duration), observability.ZapCtx(ctx))
+			m.logger.Warn("job failed", zap.String("name", job.Kind), zap.Error(err), zap.Duration("duration", duration), observability.ZapCtx(ctx))
 		} else {
 			m.logger.Info("job completed", zap.String("name", job.Kind), zap.Duration("duration", duration), observability.ZapCtx(ctx))
 		}
 
 		span.SetAttributes(attrs...)
+		if err != nil {
+			span.SetAttributes(attribute.String("err", err.Error()))
+		}
 	}()
 
 	m.logger.Info("job started", zap.String("name", job.Kind), observability.ZapCtx(ctx))

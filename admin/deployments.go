@@ -49,7 +49,7 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerReconcileJob(ctx, depl.ID)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerReconcileJob(ctx, depl.ID)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerReconcileJob(ctx, depl.ID)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerReconcileJob(ctx, depl.ID)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 	}
 
 	// Trigger reconcile deployment job
-	err = s.triggerReconcileJob(ctx, depl.ID)
+	err = s.triggerDeploymentReconcileJob(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	}
 
 	grp, ctx := errgroup.WithContext(ctx)
-	grp.SetLimit(5)
+	grp.SetLimit(100)
 	var prodErr error
 	for _, d := range ds {
 		d := d
@@ -158,14 +158,6 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	return prodErr
 }
 
-type StartDeploymentInnerOptions struct {
-	Annotations DeploymentAnnotations
-	Provisioner string
-	Slots       int
-	Version     string
-	Variables   map[string]string
-}
-
 type RuntimeConfig struct {
 	Host       string
 	Audience   string
@@ -174,23 +166,49 @@ type RuntimeConfig struct {
 
 // StartDeploymentInner provisions a runtime and initializes an instance on it.
 // The implementation is idempotent, enabling it to be called from a retryable background job.
-func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deployment, opts *StartDeploymentInnerOptions) (*RuntimeConfig, error) {
-	// Validate the desired runtime version.
-	// This is usually "latest", which the provisioner internally may resolve to an actual version.
-	runtimeVersion := opts.Version
-	err := validateRuntimeVersion(runtimeVersion)
+func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deployment) (*RuntimeConfig, error) {
+	// Find project and organization
+	proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
 		return nil, err
+	}
+
+	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate the desired runtime version.
+	// This is usually "latest", which the provisioner internally may resolve to an actual version.
+	runtimeVersion := proj.ProdVersion
+	err = validateRuntimeVersion(runtimeVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	// Prepare deployment annotations
+	annotations := s.NewDeploymentAnnotations(org, proj)
+
+	// Resolve slots based on environment
+	var slots int
+	switch depl.Environment {
+	case "prod":
+		slots = proj.ProdSlots
+	case "dev":
+		slots = proj.DevSlots
+	default:
+		// Invalid environment
+		return nil, errors.New("Invalid environment, must be either 'prod' or 'dev'")
 	}
 
 	// Provision the runtime
 	r, err := s.provisionRuntime(ctx, &provisionRuntimeOptions{
 		DeploymentID: depl.ID,
 		Environment:  depl.Environment,
-		Provisioner:  opts.Provisioner,
-		Slots:        opts.Slots,
+		Provisioner:  proj.Provisioner,
+		Slots:        slots,
 		Version:      runtimeVersion,
-		Annotations:  opts.Annotations.ToMap(),
+		Annotations:  annotations.ToMap(),
 	})
 	if err != nil {
 		return nil, err
@@ -240,7 +258,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		"project_id":   depl.ProjectID,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	duckdbConfig, err := structpb.NewStruct(map[string]any{
@@ -249,7 +267,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	connectors := []*runtimev1.Connector{
 		// The admin connector
@@ -266,19 +284,14 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		},
 	}
 
-	// Look up project and organization to construct the full frontend URL
-	proj, err := s.DB.FindProject(ctx, depl.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Construct the full frontend URL including custom domain (if any) and org/project path
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
+	// Resolve variables based on environment
+	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment, true)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
@@ -289,8 +302,8 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		AdminConnector: "admin",
 		AiConnector:    "admin",
 		Connectors:     connectors,
-		Variables:      opts.Variables,
-		Annotations:    opts.Annotations.ToMap(),
+		Variables:      vars,
+		Annotations:    annotations.ToMap(),
 		FrontendUrl:    frontendURL,
 	})
 	if err != nil {
@@ -353,19 +366,24 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 	return nil
 }
 
-type UpdateDeploymentInnerOptions struct {
-	Annotations DeploymentAnnotations
-	Variables   map[string]string
-	Version     string
-}
-
 // UpdateDeploymentInner updates a deployment by updating its runtime instance and resources.
 // The implementation is idempotent, enabling it to be called from a retryable background job.
-func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deployment, opts *UpdateDeploymentInnerOptions) error {
+func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deployment) error {
+	// Find project and organization
+	proj, err := s.DB.FindProject(ctx, d.ProjectID)
+	if err != nil {
+		return err
+	}
+
+	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return err
+	}
+
 	// Validate the desired runtime version.
 	// This is usually "latest", which the provisioner internally may resolve to an actual version.
-	runtimeVersion := opts.Version
-	err := validateRuntimeVersion(runtimeVersion)
+	runtimeVersion := proj.ProdVersion
+	err = validateRuntimeVersion(runtimeVersion)
 	if err != nil {
 		return err
 	}
@@ -383,6 +401,9 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 		return err
 	}
 
+	// Prepare deployment annotations
+	annotations := s.NewDeploymentAnnotations(org, proj)
+
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
 	_, err = s.provisionRuntime(ctx, &provisionRuntimeOptions{
 		DeploymentID: d.ID,
@@ -390,25 +411,20 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 		Provisioner:  pr.Provisioner,
 		Slots:        args.Slots,
 		Version:      runtimeVersion,
-		Annotations:  opts.Annotations.ToMap(),
+		Annotations:  annotations.ToMap(),
 	})
-	if err != nil {
-		return err
-	}
-
-	// Look up project and organization to construct the full frontend URL
-	proj, err := s.DB.FindProject(ctx, d.ProjectID)
-	if err != nil {
-		return err
-	}
-
-	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return err
 	}
 
 	// Construct the full frontend URL including custom domain (if any) and org/project path
 	frontendURL := s.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name)
+
+	// Resolve variables based on environment
+	vars, err := s.ResolveVariables(ctx, proj.ID, d.Environment, true)
+	if err != nil {
+		return err
+	}
 
 	// Connect to the runtime, and update the instance's variables/annotations.
 	// Any call to EditInstance will also force it to check for any repo config changes (e.g. branch or archive ID).
@@ -419,8 +435,8 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	defer rt.Close()
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId:  d.RuntimeInstanceID,
-		Variables:   opts.Variables,
-		Annotations: opts.Annotations.ToMap(),
+		Variables:   vars,
+		Annotations: annotations.ToMap(),
 		FrontendUrl: &frontendURL,
 	})
 	if err != nil {
@@ -574,7 +590,7 @@ type provisionRuntimeOptions struct {
 	Annotations  map[string]string
 }
 
-func (s *Service) triggerReconcileJob(ctx context.Context, deploymentID string) error {
+func (s *Service) triggerDeploymentReconcileJob(ctx context.Context, deploymentID string) error {
 	// Trigger reconcile deployment job
 	_, err := s.Jobs.ReconcileDeployment(ctx, deploymentID)
 	if err != nil {

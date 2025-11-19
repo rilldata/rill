@@ -7,7 +7,7 @@
     "build": "npm run generate:sveltekit -w web-common && vite build && cp _redirects build",
     "preview": "vite preview",
     "test": "playwright test",
-     "generate:sveltekit": "svelte-kit sync",
+    "generate:sveltekit": "svelte-kit sync",
     "test:setup": "E2E_NO_TEARDOWN=true playwright test --project=setup",
     "test:dev": "E2E_NO_SETUP_OR_TEARDOWN=true playwright test --project=e2e",
     "test:teardown": "playwright test --project=teardown",
