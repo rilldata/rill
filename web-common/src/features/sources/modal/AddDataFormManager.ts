@@ -89,12 +89,18 @@ export class AddDataFormManager {
 
     const isSourceForm = formType === "source";
     const isConnectorForm = formType === "connector";
+    const isMultiStep = MULTI_STEP_CONNECTORS.includes(connector.name ?? "");
 
     // Base properties
+    // For multi-step connectors (e.g., gcs, azure), step 1 always configures the connector,
+    // even when the overall formType is "source". So prefer configProperties here.
     this.properties =
-      (isSourceForm
-        ? connector.sourceProperties
-        : connector.configProperties?.filter((p) => p.key !== "dsn")) ?? [];
+      (isMultiStep
+        ? connector.configProperties
+        : isSourceForm
+          ? connector.sourceProperties
+          : connector.configProperties
+      )?.filter((p) => p.key !== "dsn") ?? [];
 
     // Filter properties based on connector type
     this.filteredParamsProperties = (() => {
