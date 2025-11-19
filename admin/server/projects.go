@@ -1577,7 +1577,30 @@ func (s *Server) RemoveProjectMemberUserResources(ctx context.Context, req *admi
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, err
+		}
+		// Check if there is a pending invite for this user
+		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+		if err != nil {
+			return nil, err
+		}
+		if len(invite.Resources) == 0 {
+			return nil, status.Error(codes.FailedPrecondition, "pending invite does not have resource-scoped access")
+		}
+		remaining := subtractResourceNames(invite.Resources, resourceNamesFromProto(req.Resources))
+		if len(remaining) == len(invite.Resources) {
+			return &adminv1.RemoveProjectMemberUserResourcesResponse{}, nil
+		}
+		if len(remaining) == 0 {
+			err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
+		} else {
+			err = s.admin.DB.UpdateProjectInviteResources(ctx, invite.ID, remaining)
+		}
+		if err != nil {
+			return nil, err
+		}
+		return &adminv1.RemoveProjectMemberUserResourcesResponse{}, nil
 	}
 
 	role, err := s.admin.DB.FindProjectMemberUserRole(ctx, proj.ID, user.ID)
