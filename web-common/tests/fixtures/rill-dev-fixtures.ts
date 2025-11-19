@@ -4,7 +4,7 @@ import axios from "axios";
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { test as base } from "playwright/test";
+import { test as base, expect } from "playwright/test";
 import treeKill from "tree-kill";
 import { getOpenPort } from "@rilldata/web-common/tests/utils/get-open-port.ts";
 import { makeTempDir } from "@rilldata/web-common/tests/utils/make-temp-dir.ts";
@@ -129,22 +129,26 @@ export const rillDev = base.extend<MyFixtures>({
     await processExit;
 
     // Remove the test project directory after the dev process has fully exited.
-    // On some platforms, immediate removal can fail with ENOTEMPTY/EBUSY if files are
-    // still being released by the terminated process. Retry briefly.
-    for (let attempt = 1; attempt <= 6; attempt++) {
-      try {
-        rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
-        break;
-      } catch (err) {
-        // Only retry on transient FS errors
-        const code = (err as NodeJS.ErrnoException)?.code;
-        const isTransient =
-          code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM";
-        if (!isTransient || attempt === 6) throw err;
-        // Exponential backoff: 200ms, 400ms, 800ms, 1600ms, 3200ms
-        const delayMs = 200 * Math.pow(2, attempt - 1);
-        await new Promise((r) => setTimeout(r, delayMs));
-      }
-    }
+    // Use expect.poll with exponential intervals to handle transient FS errors.
+    await expect
+      .poll(
+        () => {
+          try {
+            rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
+            return true;
+          } catch (err) {
+            const code = (err as NodeJS.ErrnoException)?.code;
+            const isTransient =
+              code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM";
+            if (isTransient) return false;
+            throw err;
+          }
+        },
+        {
+          intervals: [200, 400, 800, 1600, 3200],
+          timeout: 7000,
+        },
+      )
+      .toBe(true);
   },
 });
