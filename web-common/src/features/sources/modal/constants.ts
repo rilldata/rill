@@ -7,10 +7,10 @@ export const CONNECTOR_TYPE_OPTIONS: {
   value: ClickHouseConnectorType;
   label: string;
 }[] = [
-    { value: "rill-managed", label: "Rill-managed ClickHouse" },
-    { value: "self-hosted", label: "Self-hosted ClickHouse" },
-    { value: "clickhouse-cloud", label: "ClickHouse Cloud" },
-  ];
+  { value: "rill-managed", label: "Rill-managed ClickHouse" },
+  { value: "self-hosted", label: "Self-hosted ClickHouse" },
+  { value: "clickhouse-cloud", label: "ClickHouse Cloud" },
+];
 
 export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
   { value: "parameters", label: "Enter parameters" },
@@ -25,25 +25,24 @@ export const GCS_AUTH_OPTIONS: {
   description: string;
   hint?: string;
 }[] = [
-    {
-      value: "credentials",
-      label: "GCP credentials",
-      description:
-        "Upload a JSON key file for a service account with GCS access.",
-    },
-    {
-      value: "hmac",
-      label: "HMAC keys",
-      description:
-        "Use HMAC access key and secret for S3-compatible authentication.",
-    },
-    {
-      value: "public",
-      label: "Public",
-      description:
-        "Access public GCS buckets without authentication.",
-    }
-  ];
+  {
+    value: "credentials",
+    label: "GCP credentials",
+    description:
+      "Upload a JSON key file for a service account with GCS access.",
+  },
+  {
+    value: "hmac",
+    label: "HMAC keys",
+    description:
+      "Use HMAC access key and secret for S3-compatible authentication.",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Access public GCS buckets without authentication.",
+  },
+];
 
 // pre-defined order for sources
 export const SOURCES = [

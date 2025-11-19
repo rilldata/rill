@@ -62,7 +62,7 @@
               alwaysShowError
             />
           </div>
-          {:else if option.value === "public"}
+        {:else if option.value === "public"}
           <!-- No further context needed -->
         {/if}
       </svelte:fragment>

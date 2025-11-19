@@ -123,7 +123,10 @@
   let clickhouseShowSaveAnyway: boolean = false;
   let cloudAuthMethod: string = "credentials";
 
-  $: isPublic =  cloudAuthMethod === "public" && isMultiStepConnector && stepState.step === "connector";
+  $: isPublic =
+    cloudAuthMethod === "public" &&
+    isMultiStepConnector &&
+    stepState.step === "connector";
 
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -447,10 +450,6 @@
         {/if}
 
         {#if isPublic}
-          <Button
-            onClick={() => formManager.handleSkip()}
-            type="primary"
-          >
             Continue
           </Button>
         {:else}
