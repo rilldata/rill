@@ -52,7 +52,7 @@ func (e *httpsToSelfExecutor) modelInputProperties(ctx context.Context, opts *dr
 	}
 
 	m := &ModelInputProperties{}
-	// Generate secret SQL to access the to access object store using duckdb
+	// Generate secret SQL to access the to access http url using duckdb
 	var err error
 	m.InternalCreateSecretSQL, m.InternalDropSecretSQL, _, err = generateSecretSQL(ctx, opts, opts.InputConnector, parsed.Path, opts.InputProperties)
 	if err != nil {

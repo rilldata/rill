@@ -264,14 +264,14 @@ tests:
       sql: "select setting_order,count(*) as count from duckdb_pre_exec_with_secret  group by setting_order"
     result_csv: |
       setting_order,count
-      nulls_last,3
+      NULLS_LAST,3
   - name: test_duckdb_pre_exec_without_secret
     resolver: sql
     properties:
       sql: "select setting_order,count(*) as count from duckdb_pre_exec_without_secret group by setting_order"
     result_csv: |
       setting_order,count
-      nulls_last,3
+      NULLS_LAST,3
   - name: test_duckdb_public_bucket
     resolver: sql
     properties:

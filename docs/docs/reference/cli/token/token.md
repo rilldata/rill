@@ -20,5 +20,5 @@ Manage personal access tokens
 * [rill](../cli.md)	 - A CLI for Rill
 * [rill token issue](issue.md)	 - Issue personal access token
 * [rill token list](list.md)	 - List personal access tokens
-* [rill token revoke](revoke.md)	 - Revoke personal access token
+* [rill token revoke](revoke.md)	 - Revoke personal access token(s)
 
