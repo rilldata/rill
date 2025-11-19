@@ -19,10 +19,6 @@ export function getOptimisticMessageId(): string {
   return `${OPTIMISTIC_MESSAGE_ID_PREFIX}${Date.now()}`;
 }
 
-export function isOptimisticMessageId(id: string) {
-  return id.startsWith(OPTIMISTIC_MESSAGE_ID_PREFIX);
-}
-
 // =============================================================================
 // ERROR HANDLING
 // =============================================================================
@@ -127,8 +123,4 @@ export function parseChartData(toolCall: any) {
     console.error("Failed to parse chart data:", error);
     return null;
   }
-}
-
-export function isUserMessage(message: V1Message) {
-  return message.type && message.type === "user";
 }

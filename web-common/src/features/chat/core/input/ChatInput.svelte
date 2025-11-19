@@ -14,7 +14,6 @@
   export let height: string | undefined = undefined;
 
   let textarea: ChatInputTextarea;
-  let placeholder = "Ask about your data...";
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
@@ -28,15 +27,6 @@
   $: canCancel = $isStreamingStore;
 
   const context = getExploreContext();
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (!$isStreamingStore) {
-        sendMessage();
-      }
-    }
-  }
 
   async function sendMessage() {
     if (!canSend) return;
@@ -82,6 +72,7 @@
     <ChatInputTextarea
       bind:this={textarea}
       onChange={(newValue) => draftMessageStore.set(newValue)}
+      onSubmit={sendMessage}
     />
   </div>
   <div class="chat-input-footer">
@@ -108,7 +99,7 @@
 
 <style lang="postcss">
   .chat-input-form {
-    @apply flex flex-col gap-1 p-1 mx-4;
+    @apply flex flex-col gap-1 p-1 m-4;
     @apply bg-background border rounded-md;
     transition: border-color 0.2s;
   }

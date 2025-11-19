@@ -1,8 +1,6 @@
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-import { get } from "svelte/store";
 import { localStorageStore } from "../../../../lib/store-utils/local-storage";
 import { sessionStorageStore } from "../../../../lib/store-utils/session-storage";
-import { getConversationManager } from "../../core/conversation-manager";
 
 // =============================================================================
 // SIDEBAR CONSTANTS

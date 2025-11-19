@@ -17,11 +17,7 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-import {
-  getOptimisticMessageId,
-  isOptimisticMessageId,
-  NEW_CONVERSATION_ID,
-} from "./utils";
+import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
 import { MessageContentType, MessageType, ToolName } from "./types";
 
 /**
@@ -274,6 +270,14 @@ export class Conversation {
     }
 
     if (response.message) {
+      // Skip ALL user messages from the stream
+      // Server echoes back the user message
+      // We've already added it optimistically, so we don't want duplicates
+      // Note: Server generates new IDs for streamed messages, can't match by ID
+      if (response.message.role === "user") {
+        return;
+      }
+
       this.addMessageToCache(response.message);
     }
   }
@@ -364,38 +368,14 @@ export class Conversation {
 
       const existingMessages = old.messages || [];
 
-      if (message.role !== "user") {
-        // Add new message to the end of the list
-        return {
-          ...old,
-          conversation: {
-            ...old.conversation,
-            updatedOn: new Date().toISOString(),
-          },
-          messages: [...existingMessages, message],
-        };
-      }
-
-      // We add a user message optimistically. So we need to replace it with the message from server.
-      // The message from server has a lot more info that will be helpful for us.
-      const existingIndex = existingMessages.findLastIndex((m) => {
-        const isOptimisticallyAddedUserMessage =
-          m.role === "user" && isOptimisticMessageId(m.id!);
-        const messageTextMatches =
-          m.content?.[0]?.text === message.content?.[0]?.text;
-        return isOptimisticallyAddedUserMessage && messageTextMatches;
-      });
+      // Add new message to the end of the list
       return {
         ...old,
         conversation: {
           ...old.conversation,
           updatedOn: new Date().toISOString(),
         },
-        messages: [
-          ...existingMessages.slice(0, existingIndex),
-          message,
-          ...existingMessages.slice(existingIndex + 1),
-        ],
+        messages: [...existingMessages, message],
       };
     });
   }

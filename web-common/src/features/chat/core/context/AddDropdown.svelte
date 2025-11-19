@@ -63,6 +63,9 @@
   }
 </script>
 
+<!-- bits-ui dropdown component captures focus, so chat text cannot be editted when it is open.
+     Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
+     TODO: move to dropdown component after upgrade. -->
 <div class="context-dropdown" style="left: {left}px; bottom: {bottom}px">
   {#if firstLevelSelection === null}
     {#each contextTopLevelOptions as option (option.value)}
@@ -76,12 +79,14 @@
       </button>
     {/each}
   {:else if firstLevelSelectedOption && secondLevelOptions}
-    <div class="content-item">
-      <button on:click={() => (firstLevelSelection = null)} type="button">
-        {"<"}
-      </button>
-      <span>{firstLevelSelectedOption.label}</span>
-    </div>
+    <button
+      class="content-item"
+      on:click={() => (firstLevelSelection = null)}
+      type="button"
+    >
+      {"<"}
+      {firstLevelSelectedOption.label}
+    </button>
     {#each secondLevelOptions as option (option.value)}
       <button
         class="content-item"
@@ -101,7 +106,11 @@
   }
 
   .content-item {
-    @apply flex flex-row items-center gap-x-2;
-    @apply cursor-default select-none rounded-sm px-2 py-1.5 text-xs outline-none;
+    @apply flex flex-row items-center gap-x-2 px-2 py-1.5 w-full;
+    @apply cursor-default select-none rounded-sm outline-none;
+    @apply text-xs text-left text-wrap break-words;
+  }
+  .content-item:hover {
+    @apply bg-accent text-accent-foreground cursor-pointer;
   }
 </style>

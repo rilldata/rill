@@ -82,7 +82,7 @@
 
 <style lang="postcss">
   .chat-sidebar {
-    @apply flex flex-col relative h-full pb-4 bg-surface border;
+    @apply flex flex-col relative h-full bg-surface border;
     width: var(--sidebar-width);
   }
 

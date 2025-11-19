@@ -17,10 +17,12 @@ const SPACE_TEXT = "\u00A0";
 export class ChatInputTextAreaManager {
   private editorElement: HTMLDivElement;
   private onChange: (newValue: string) => void;
+  private onSubmit: () => void;
 
   private isContextMode = false;
   private addContextComponent;
   private addContextNode;
+  private addContextChar: string = "";
   private elementToContextComponent = new Map<Node, ChatContext>();
 
   private readonly contextMetadataStore = getContextMetadataStore();
@@ -31,6 +33,10 @@ export class ChatInputTextAreaManager {
 
   public setOnChange(onChange: (newValue: string) => void) {
     this.onChange = onChange;
+  }
+
+  public setOnSubmit(onSubmit: () => void) {
+    this.onSubmit = onSubmit;
   }
 
   public setHtml(html: string) {
@@ -60,23 +66,35 @@ export class ChatInputTextAreaManager {
   }
 
   public handleKeydown = (event: KeyboardEvent) => {
-    if (this.isContextMode) {
-      this.handleContextMode(event);
-      return;
-    }
+    setTimeout(() => {
+      if (event.key === "Backspace") {
+        this.forEachSelectedNode((node) => {
+          const comp = this.elementToContextComponent.get(node);
+          if (node === this.addContextNode) {
+            this.isContextMode = false;
+            this.addContextNode = null;
+            this.addContextComponent = null;
+          }
+          comp?.$destroy();
+          this.elementToContextComponent.delete(node);
+        });
+      }
 
-    // Detect @ for pill mode (or any other trigger character)
-    if (event.key === "@") {
-      this.handleContextStarted();
-    } else if (event.key === "Backspace") {
-      this.forEachSelectedNode((node) => {
-        const comp = this.elementToContextComponent.get(node);
-        // comp?.$destroy();
-        return false;
-      }, false);
-    } else if (event.key === ":") {
-      this.handleContextSecondValue();
-    }
+      if (this.isContextMode) {
+        this.handleContextMode();
+        return;
+      }
+
+      // Detect @ for pill mode (or any other trigger character)
+      if (event.key === "@") {
+        this.handleContextStarted();
+      } else if (event.key === ":") {
+        this.handleContextSecondValue();
+      } else if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        this.onSubmit();
+      }
+    });
   };
 
   public updateValue = () => {
@@ -158,7 +176,6 @@ export class ChatInputTextAreaManager {
         selection.anchorNode as any,
       );
       if (node) {
-        range.insertNode(node);
         // Move cursor after the node
         range.setStartAfter(node);
         range.setEndAfter(node);
@@ -180,77 +197,73 @@ export class ChatInputTextAreaManager {
     this.updateValue();
   }
 
-  private handleContextMode(event: KeyboardEvent) {
-    if (event.key === "Backspace") {
-      const contextNodeRemoved = this.forEachSelectedNode((node) => {
-        if (node !== this.addContextNode) return false;
+  private handleContextMode() {
+    if (this.addContextNode && this.addContextComponent) {
+      const contextNodeValue: string = this.getValue(
+        this.addContextNode,
+      ).trim();
+      if (contextNodeValue.length === 0) {
         this.removeAddContextComponent();
-        return true;
-      }, true);
-      if (contextNodeRemoved) return;
-    }
-
-    setTimeout(() => {
-      if (this.addContextNode && this.addContextComponent) {
-        const contextNodeValue: string = this.getValue(
-          this.addContextNode,
-        ).trim();
-        if (contextNodeValue.length === 0) {
-          this.removeAddContextComponent();
-        } else {
-          const searchText = contextNodeValue.replace(/^@/, "");
-          this.addContextComponent.setText(searchText);
-        }
+      } else {
+        const searchText = contextNodeValue.replace(
+          new RegExp(`.*?${this.addContextChar}`),
+          "",
+        );
+        console.log(searchText);
+        this.addContextComponent.setText(searchText);
       }
-    });
+    }
   }
 
   private handleContextSecondValue() {
-    setTimeout(() => {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        if (
-          range.startOffset !== 1 ||
-          range.startContainer?.previousSibling?.nodeType !==
-            Node.COMMENT_NODE ||
-          !(range.startContainer as any)?.previousElementSibling
-        )
-          return;
-        const prevSibling = (range.startContainer as any)
-          ?.previousElementSibling as HTMLElement;
-        const comp = this.elementToContextComponent.get(prevSibling);
-        if (!comp) return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
 
-        const ctx = convertHTMLElementToContext(
-          prevSibling,
-          get(this.contextMetadataStore),
-        );
-        if (ctx?.type !== ChatContextEntryType.Dimensions) return;
-        ctx.type = ChatContextEntryType.DimensionValue;
+    const range = selection.getRangeAt(0);
+    if (
+      range.startOffset !== 1 ||
+      range.startContainer?.previousSibling?.nodeType !== Node.COMMENT_NODE ||
+      !(range.startContainer as any)?.previousElementSibling
+    )
+      return;
 
-        const rect = this.editorElement.getBoundingClientRect();
-        this.addContextComponent = new AddValueDropdown({
-          target: document.body,
-          props: {
-            left: rect.left,
-            bottom: window.innerHeight - rect.top,
-            chatCtx: ctx,
-            metadata: get(this.contextMetadataStore),
-            onAdd: (ctx) => {
-              comp.$destroy();
-              this.handleContextEnded(ctx);
-            },
-          },
-        });
-        this.addContextNode = range.startContainer;
-        this.isContextMode = true;
-      }
+    const prevSibling = (range.startContainer as any)
+      ?.previousElementSibling as HTMLElement;
+    const comp = this.elementToContextComponent.get(prevSibling);
+    if (!comp) return;
+
+    const ctx = convertHTMLElementToContext(
+      prevSibling,
+      get(this.contextMetadataStore),
+    );
+    if (ctx?.type !== ChatContextEntryType.Dimensions) return;
+    ctx.type = ChatContextEntryType.DimensionValue;
+
+    const rect = this.editorElement.getBoundingClientRect();
+    this.addContextComponent = new AddValueDropdown({
+      target: document.body,
+      props: {
+        left: rect.left,
+        bottom: window.innerHeight - rect.top,
+        chatCtx: ctx,
+        metadata: get(this.contextMetadataStore),
+        onAdd: (ctx) => {
+          comp.$destroy();
+          this.handleContextEnded(ctx);
+        },
+      },
     });
+    this.addContextNode = range.startContainer;
+    this.isContextMode = true;
+    this.addContextChar = ":";
   }
 
   private handleContextStarted() {
     this.isContextMode = true;
+    const selection = window.getSelection();
+    const anchorNode = selection?.anchorNode;
+    if (!anchorNode) return;
+
     this.insertSvelteComponent(() => {
       const rect = this.editorElement.getBoundingClientRect();
       this.addContextComponent = new AddDropdown({
@@ -261,63 +274,77 @@ export class ChatInputTextAreaManager {
           onAdd: this.handleContextEnded,
         },
       });
-      this.addContextNode = document.createTextNode(SPACE_TEXT);
-      return this.addContextNode;
+      this.addContextNode = anchorNode;
+      this.addContextChar = "@";
+      return anchorNode;
     });
   }
 
   private handleContextEnded = (chatCtx: ChatContextEntry) => {
     if (!this.addContextNode?.parentNode) return;
+    const spaceNode = document.createTextNode(SPACE_TEXT);
+    if (this.addContextNode.nextSibling) {
+      this.addContextNode.parentNode.insertBefore(
+        spaceNode,
+        this.addContextNode.nextSibling,
+      );
+    } else {
+      this.addContextNode.parentNode.appendChild(spaceNode);
+    }
+
     const comp = new ChatContext({
       target: this.addContextNode.parentNode,
-      anchor: this.addContextNode,
+      anchor: spaceNode as any,
       props: {
         chatCtx,
         metadata: get(this.contextMetadataStore),
         onUpdate: () => this.updateValue(),
       },
     });
-    this.elementToContextComponent.set(
-      this.addContextNode.previousElementSibling,
-      comp,
-    );
+    this.elementToContextComponent.set(spaceNode.previousElementSibling!, comp);
     this.removeAddContextComponent();
-    setTimeout(this.focusEditor);
+
+    const selection = window.getSelection();
+    const range = selection?.getRangeAt(0);
+    if (selection && range) {
+      range.setStartBefore(spaceNode);
+      range.setEndBefore(spaceNode);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    spaceNode.remove();
   };
 
   private removeAddContextComponent() {
     this.addContextComponent?.$destroy();
     this.isContextMode = false;
-    this.addContextNode?.parentNode?.removeChild(this.addContextNode);
+    this.addContextNode.textContent = this.addContextNode.textContent.replace(
+      new RegExp(`${this.addContextChar}.*$`),
+      "",
+    );
+    if (this.addContextNode.textContent.length === 0)
+      this.addContextNode.remove();
   }
 
-  private forEachSelectedNode(
-    callback: (node: Node) => boolean,
-    skipCollapsed: boolean,
-  ) {
+  private forEachSelectedNode(callback: (node: Node) => void) {
     const selection = window.getSelection();
-    if (
-      !selection ||
-      selection.rangeCount === 0 ||
-      (skipCollapsed && selection.isCollapsed)
-    )
-      return false;
+    if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
     let node: Node | null = range.startContainer;
-    if (node === this.editorElement) {
-      node = this.editorElement.firstChild;
+    if (!node) return;
+
+    if (selection.isCollapsed) {
+      console.log("Collapsed", range.startContainer?.previousSibling);
+      return;
+    } else {
+      console.log(range.startContainer);
     }
-    if (!node) return false;
 
     do {
-      if (callback(node)) {
-        return true;
-      }
+      callback(node);
       console.log(node?.nodeName);
       node = node.nextSibling;
     } while (node && node !== range.endContainer.nextSibling);
-
-    return false;
   }
 }
