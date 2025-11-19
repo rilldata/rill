@@ -90,12 +90,20 @@ export class AddDataFormManager {
 
     const isSourceForm = formType === "source";
     const isConnectorForm = formType === "connector";
+    const isMultiStep = MULTI_STEP_CONNECTORS.includes(connector.name ?? "");
 
     // Base properties
-    this.properties =
-      (isSourceForm
-        ? connector.sourceProperties
-        : connector.configProperties?.filter((p) => p.key !== "dsn")) ?? [];
+    // For multi-step connectors (e.g., gcs, s3), step 1 config is always based on connector config,
+    // even when the overall flow is "source". Step 2 will switch to source properties in the Svelte component.
+    if (isMultiStep) {
+      this.properties =
+        connector.configProperties?.filter((p) => p.key !== "dsn") ?? [];
+    } else {
+      this.properties =
+        (isSourceForm
+          ? connector.sourceProperties
+          : connector.configProperties?.filter((p) => p.key !== "dsn")) ?? [];
+    }
 
     // Filter properties based on connector type
     this.filteredParamsProperties = (() => {
@@ -220,16 +228,20 @@ export class AddDataFormManager {
         : "Test and Connect";
     }
 
-    if (isConnectorForm) {
-      if (this.isMultiStepConnector && step === "connector") {
+    // For multi-step connectors, the label should reflect the active step regardless of overall form type
+    if (this.isMultiStepConnector) {
+      if (step === "connector") {
         return submitting ? "Testing connection..." : "Test and Connect";
       }
-      if (this.isMultiStepConnector && step === "source") {
+      if (step === "source") {
         return submitting ? "Creating model..." : "Test and Add data";
       }
-      return submitting ? "Testing connection..." : "Test and Connect";
     }
 
+    // Non multi-step behavior
+    if (isConnectorForm) {
+      return submitting ? "Testing connection..." : "Test and Connect";
+    }
     return "Test and Add data";
   }
 
