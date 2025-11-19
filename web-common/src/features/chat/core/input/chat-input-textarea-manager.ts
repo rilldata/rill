@@ -10,6 +10,7 @@ import {
   convertHTMLElementToContext,
 } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
 import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
+import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { get } from "svelte/store";
 
 const SPACE_TEXT = "\u00A0";
@@ -25,6 +26,7 @@ export class ChatInputTextAreaManager {
   private addContextChar: string = "";
   private elementToContextComponent = new Map<Node, ChatContext>();
 
+  private readonly exploreNameStore = getExploreNameStore();
   private readonly contextMetadataStore = getContextMetadataStore();
 
   public setElement(editorElement: HTMLDivElement) {
@@ -63,6 +65,8 @@ export class ChatInputTextAreaManager {
   }
 
   public handleKeydown = (event: KeyboardEvent) => {
+    if (!get(this.exploreNameStore)) return; // Only supported within an explore right now.
+
     setTimeout(() => {
       if (event.key === "Backspace") {
         this.removeNodes();

@@ -70,7 +70,7 @@
   }
 
   .chat-message--user .chat-message-content {
-    @apply bg-primary-100/50 text-foreground rounded-br-lg;
+    @apply bg-muted text-foreground rounded-br-lg;
   }
 
   .chat-message--assistant .chat-message-content {

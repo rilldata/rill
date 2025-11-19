@@ -53,7 +53,7 @@
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        textarea.focusEditor();
+        textarea?.focusEditor();
       }, 100);
     });
   }
