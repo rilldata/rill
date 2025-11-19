@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "npm run generate:sveltekit -w web-common && vite build",
+    "build": "npm run generate:sveltekit -w web-common && svelte-kit sync && vite build",
     "install-and-build": "npm install && npm run build",
     "check": "svelte-kit sync && svelte-check --no-tsconfig",
     "check:watch": "svelte-check --no-ts-config --watch",
