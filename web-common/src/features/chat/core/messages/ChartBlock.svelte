@@ -4,6 +4,7 @@
     ChartContainer,
     type ChartType,
   } from "@rilldata/web-common/features/components/charts";
+  import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard";
   import { readable } from "svelte/store";
 
   export let chartType: ChartType;
@@ -31,7 +32,7 @@
     timeRange: timeRange,
     comparisonTimeRange: undefined,
     showTimeComparison: false,
-    where: chartSpec.where || {
+    where: mapResolverExpressionToV1Expression(chartSpec.where) || {
       cond: {
         op: "OPERATION_AND",
         exprs: [],

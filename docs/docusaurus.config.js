@@ -127,42 +127,46 @@ const config = {
         },
         items: [
           {
-            type: "doc",
-            docId: "get-started/get-started",
-            position: "left",
+            to: "/",
             label: "Docs",
-          },
-
-          {
-            type: "docSidebar",
-            sidebarId: "refSidebar",
             position: "left",
-            label: "Reference",
+            className: "navbar-docs-link",
+            activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
           },
-
+          {
+            to: "/reference/project-files",
+            label: "Reference",
+            position: "left",
+            className: "navbar-reference-link",
+            activeBasePath: "/reference",
+          },
           {
             to: "/api/admin/",
-            position: "left",
             label: "API",
+            position: "left",
+            className: "navbar-api-link",
+            activeBasePath: "/api/admin",
+          },
+          {
+            to: "/contact",
+            label: "Contact Us",
+            position: "left",
+            className: "navbar-contact-link",
+            activeBasePath: "/contact",
           },
 
-          {
-            type: "docSidebar",
-            sidebarId: "contactSidebar",
-            position: "left",
-            label: "Contact Us",
-          },
+
 
           // Right side items
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub">GitHub</i></a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog">Blog</i></a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
           },
 
           {

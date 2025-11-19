@@ -32,11 +32,9 @@
     getMetricsResolverQueryToUrlParamsMapperStore(exploreNameStore);
 
   $: renderedInExplore = !!$exploreNameStore;
-  $: hasMapper = !!$mapperStore.data;
-  $: convertCitationUrls =
-    renderedInExplore && hasMapper
-      ? getCitationUrlRewriter($mapperStore.data!)
-      : undefined;
+  $: convertCitationUrls = renderedInExplore
+    ? getCitationUrlRewriter($mapperStore.data)
+    : undefined;
 
   const contextMetadataStore = getContextMetadataStore();
 </script>
