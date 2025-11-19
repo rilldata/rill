@@ -13,7 +13,6 @@
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -52,12 +51,13 @@
       metricsView: { allDimensions, allSimpleMeasures },
       timeControls: {
         _canPan,
-        allTimeRange,
+        _allTimeInterval,
         timeRangeStateStore,
         comparisonRangeStateStore,
         selectedTimezone,
         minTimeGrain,
         set,
+        interval: _interval,
       },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -75,18 +75,14 @@
   $: availableTimeZones = $spec?.timeZones ?? [];
   $: timeRanges = $spec?.timeRanges ?? [];
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.invalid("Unable to parse time range");
+  $: interval = $_interval;
 
   $: allDimensionFilters = $allDimensionFilterItems;
 
   $: allMeasureFilters = $allMeasureFilterItems;
 
   $: canPan = $_canPan;
+  $: allTimeInterval = $_allTimeInterval;
 
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
@@ -133,7 +129,7 @@
     <Calendar size="16px" />
     <SuperPill
       context={canvasName}
-      allTimeRange={$allTimeRange}
+      allTimeRange={allTimeInterval}
       {selectedRangeAlias}
       showPivot={false}
       minTimeGrain={$minTimeGrain}
@@ -161,8 +157,8 @@
       {onPan}
     />
     <CanvasComparisonPill
-      allTimeRange={$allTimeRange}
-      {selectedTimeRange}
+      allTimeRange={allTimeInterval}
+      {interval}
       {selectedComparisonTimeRange}
       {activeTimeZone}
       minTimeGrain={$minTimeGrain}

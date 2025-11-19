@@ -10,10 +10,10 @@
     type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { DateTime, Interval } from "luxon";
+  import { Interval } from "luxon";
 
-  export let allTimeRange: TimeRange;
-  export let selectedTimeRange: DashboardTimeControls | undefined;
+  export let allTimeRange: Interval<true> | undefined;
+  export let interval: Interval<true> | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
   export let showFullRange = true;
   export let showTimeComparison = false;
@@ -23,13 +23,6 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onDisplayTimeComparison: (show: boolean) => void;
   export let onSetSelectedComparisonRange: (range: TimeRange) => void;
-
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
@@ -84,11 +77,11 @@
       </Label>
     </div>
   </button>
-  {#if activeTimeGrain && interval.isValid}
+  {#if activeTimeGrain && interval?.isValid}
     <Comparison
       {minTimeGrain}
-      maxDate={DateTime.fromJSDate(allTimeRange.end).setZone(activeTimeZone)}
-      minDate={DateTime.fromJSDate(allTimeRange.start).setZone(activeTimeZone)}
+      minDate={allTimeRange?.start}
+      maxDate={allTimeRange?.end}
       timeComparisonOptionsState={comparisonOptions}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}

@@ -18,7 +18,7 @@
   import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
-  export let allTimeRange: TimeRange;
+  export let allTimeRange: Interval<true> | undefined;
   export let selectedRangeAlias: string | undefined;
   export let showPivot: boolean;
   export let minTimeGrain: V1TimeGrain | undefined;
@@ -27,7 +27,7 @@
   export let timeRanges: V1ExploreTimeRange[];
   export let showDefaultItem: boolean;
   export let activeTimeGrain: V1TimeGrain | undefined;
-  export let interval: Interval;
+  export let interval: Interval<true> | undefined;
   export let hidePan = false;
   export let canPanLeft: boolean = !hidePan;
   export let canPanRight: boolean = !hidePan;
@@ -70,8 +70,8 @@
     <RangePickerV2
       {context}
       smallestTimeGrain={minTimeGrain}
-      minDate={DateTime.fromJSDate(allTimeRange.start).setZone(activeTimeZone)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end).setZone(activeTimeZone)}
+      minDate={allTimeRange?.start}
+      maxDate={allTimeRange?.end}
       {watermark}
       {showDefaultItem}
       {defaultTimeRange}
@@ -87,10 +87,10 @@
       {onSelectTimeZone}
       {onSelectRange}
     />
-  {:else if interval.isValid && activeTimeGrain}
+  {:else if interval?.isValid && activeTimeGrain}
     <Elements.RangePicker
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      minDate={allTimeRange?.start}
+      maxDate={allTimeRange?.end}
       ranges={rangeBuckets}
       {showDefaultItem}
       {showFullRange}
@@ -115,7 +115,7 @@
   {#if availableTimeZones.length && !$newPicker}
     <Elements.Zone
       {context}
-      watermark={interval.end ?? DateTime.fromJSDate(new Date())}
+      watermark={interval?.end ?? DateTime.now()}
       {activeTimeZone}
       {lockTimeZone}
       {availableTimeZones}

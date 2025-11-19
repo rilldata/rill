@@ -60,6 +60,19 @@ export function getAllowedEndingGrains(
   return getSmallerGrainsFromOrders(order, getGrainOrder(smallestTimeGrain));
 }
 
+export const V1TimeGrainToDefaultRange: Record<V1TimeGrain, string> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "60m as of latest/m+1m",
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "60m as of latest/m+1m",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "60m as of latest/m+1m",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "60m as of latest/m+1m",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "7d as of latest/d+1d",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "4w as of latest/w+1w",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "3M as of latest/M+1M",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "2Q as of latest/Q+1Q",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "5Y as of latest/Y+1Y",
+};
+
 export const V1TimeGrainToOrder: Record<V1TimeGrain, Order> = {
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: 0,
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: 0,

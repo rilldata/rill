@@ -48,6 +48,10 @@
   import { getValidComparisonOption } from "../time-controls/time-range-store";
   import { getPinnedTimeZones } from "../url-state/getDefaultExplorePreset";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import {
+    createAllTimeInterval,
+    createInterval,
+  } from "../../canvas/stores/time-control";
 
   const { rillTime } = featureFlags;
 
@@ -162,18 +166,18 @@
 
   $: availableTimeZones = getPinnedTimeZones(exploreSpec);
 
-  $: allTimeRangeInterval = allTimeRange
-    ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-    : Interval.invalid("Invalid interval");
+  $: allTimeRangeInterval = createAllTimeInterval(
+    allTimeRange?.start,
+    allTimeRange?.end,
+    activeTimeZone,
+    minTimeGrain,
+  );
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : allTimeRange
-      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : Interval.invalid("Invalid interval");
+  $: interval = createInterval(
+    selectedTimeRange?.start,
+    selectedTimeRange?.end,
+    activeTimeZone,
+  );
 
   $: baseTimeRange = selectedTimeRange?.start &&
     selectedTimeRange?.end && {
@@ -296,7 +300,7 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+    if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
       selectRange({
@@ -363,7 +367,7 @@
       </Tooltip.Root>
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
-          {allTimeRange}
+          allTimeRange={allTimeRangeInterval}
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}

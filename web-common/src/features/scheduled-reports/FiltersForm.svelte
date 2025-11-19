@@ -24,10 +24,14 @@
   } from "@rilldata/web-common/lib/time/types.ts";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { isMetricsViewQuery } from "@rilldata/web-common/runtime-client/invalidation.ts";
-  import { DateTime, Interval } from "luxon";
+  import { Interval } from "luxon";
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
+  import {
+    createAllTimeInterval,
+    createInterval,
+  } from "../canvas/stores/time-control";
 
   export let filters: Filters;
   export let timeControls: TimeControls;
@@ -98,15 +102,18 @@
 
   $: minTimeGrain = $_minTimeGrain;
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone($selectedTimezone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone($selectedTimezone),
-      )
-    : Interval.fromDateTimes(
-        $allTimeRange?.start ?? new Date(),
-        $allTimeRange?.end ?? new Date(),
-      );
+  $: allTimeInterval = createAllTimeInterval(
+    $allTimeRange?.start,
+    $allTimeRange?.end,
+    $selectedTimezone,
+    minTimeGrain,
+  );
+
+  $: interval = createInterval(
+    selectedTimeRange?.start,
+    selectedTimeRange?.end,
+    $selectedTimezone,
+  );
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -205,7 +212,7 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    if (!interval.isValid) return;
+    if (!interval?.isValid) return;
 
     if (selectedRangeAlias === TimeRangePreset.CUSTOM) {
       selectRange({
@@ -238,7 +245,7 @@
     <Calendar size="16px" />
     {#if $allTimeRange}
       <SuperPill
-        allTimeRange={$allTimeRange}
+        allTimeRange={allTimeInterval}
         {selectedRangeAlias}
         showPivot={false}
         {defaultTimeRange}
@@ -263,8 +270,8 @@
       />
       <CanvasComparisonPill
         {minTimeGrain}
-        allTimeRange={$allTimeRange}
-        {selectedTimeRange}
+        allTimeRange={allTimeInterval}
+        {interval}
         {selectedComparisonTimeRange}
         showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
           false}

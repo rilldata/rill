@@ -5,7 +5,6 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { DateTime, Interval } from "luxon";
   import type { TimeControls } from "../../stores/time-control";
 
   export let id: string;
@@ -21,12 +20,13 @@
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({
-    allTimeRange,
+    interval: _interval,
     timeRangeStateStore,
     comparisonRangeStateStore,
     selectedTimezone,
     minTimeGrain: _minTimeGrain,
     set,
+    _allTimeInterval,
     searchParamsStore,
     clearAll,
   } = localTimeControls);
@@ -46,12 +46,8 @@
   $: activeTimeZone = $selectedTimezone;
   $: minTimeGrain = $_minTimeGrain;
 
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : Interval.fromDateTimes($allTimeRange.start, $allTimeRange.end);
+  $: interval = $_interval;
+  $: allTimeRange = $_allTimeInterval;
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -89,7 +85,7 @@
     <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
       <SuperPill
         context="filters-input"
-        allTimeRange={$allTimeRange}
+        {allTimeRange}
         {selectedRangeAlias}
         showPivot={!showGrain}
         {minTimeGrain}
@@ -118,8 +114,8 @@
       {#if showComparison}
         <CanvasComparisonPill
           {minTimeGrain}
-          allTimeRange={$allTimeRange}
-          {selectedTimeRange}
+          {allTimeRange}
+          {interval}
           showFullRange={false}
           {selectedComparisonTimeRange}
           showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
