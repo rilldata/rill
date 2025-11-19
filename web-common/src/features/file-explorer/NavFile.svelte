@@ -155,10 +155,8 @@
         {#if resourceKind}
           {#if resourceKind === ResourceKind.Source}
             <SourceMenuItems {filePath} />
-            <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.Model}
             <ModelMenuItems {filePath} />
-            <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.MetricsView}
             <MetricsViewMenuItems {filePath} />
           {/if}
