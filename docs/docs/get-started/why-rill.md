@@ -67,11 +67,13 @@ This means that Rill projects can be completely generated via code agents that c
 
 Rill provides AI capabilities through two main channels:
 
+**Querying with AI**
 - **[AI Chat](/explore/ai-chat)**: Query your metrics views using natural language directly in Rill Cloud. AI Chat uses Rill's Model Context Protocol (MCP) integration to ensure responses are accurate and governed by your predefined measures and dimensions.
 - **[MCP Server](/explore/mcp)**: Connect external AI assistants (like Claude Desktop or ChatGPT) to your Rill projects. The MCP server exposes Rill's metrics view APIs to LLMs, enabling natural language queries while maintaining data governance through your existing security policies.
 
-<!-- **Development with AI**
-- **Developer Agent**: AI agents can generate SQL models and metrics view definitions within existing Rill projects. The developer agent analyzes your project structure and can create or update model and metrics view files based on your requirements.
-- **Code Generation**: Since Rill projects are defined as code (YAML files with SQL), they can be generated or modified by AI code agents that understand your data schema and business requirements. -->
+**Developing with AI**
+<!-- - **Developer Agent**: AI agents can generate SQL models and metrics view definitions within existing Rill projects. The developer agent analyzes your project structure and can create or update model and metrics view files based on your requirements. -->
+<!-- - **Code Generation**: Since Rill projects are defined as code (YAML files with SQL), they can be generated or modified by AI code agents that understand your data schema and business requirements. -->
+- **[Create Dashboards with AI](/build/metrics-view/what-are-metrics-views#creating-a-metrics-view-with-ai)**: Use AI to create your metrics view and dashboard from an external table for [BYO OLAP](/build/connectors/olap) or a model in a [Rill managed OLAP](/build/connectors/data-source).
 
 For more details on AI features, see the [AI Chat documentation](/explore/ai-chat) and [MCP Server documentation](/explore/mcp). 

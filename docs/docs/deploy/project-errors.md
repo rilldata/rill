@@ -26,7 +26,7 @@ To troubleshoot model errors:
 1. **Check the model's status** in the [project status page](/manage/project-management#checking-deployment-status)
 
 2. **Review the error message** for specific details about what failed. Common error messages and their solutions:
-   - **`Failed to connect to ...`**: Issue with your connector. If it worked locally, check your prod credentias[firewall settings](/build/connectors/data-source#externally-hosted-services)
+   - **`Failed to connect to ...`**: Issue with your connector. If it worked locally, check your prod credentials and [firewall settings](/build/connectors/data-source#externally-hosted-services)
    - **`Table with name ... does not exist!`**: Verify the table exists by running `rill query --sql "select * from {table_name} limit 1" --project {project_name}` or `rill project tables --project {project_name}`
    - **`IO Error: No files found that match the pattern...`**: Check that your production cloud storage folder path is correct and files exist
    - **`some partitions have errors`**: Run `rill project refresh --model {model_name} --errored-partitions` from your authenticated CLI
