@@ -61,7 +61,6 @@ export class MeasureSelection {
     const prompt =
       `Explain what drives ${measureMention}, ${timeRangeMention}. ` +
       `What dimensions have noticeably changed, as compared to other time windows?`;
-    console.log(prompt);
 
     sidebarActions.startChat(prompt);
   }

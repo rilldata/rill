@@ -42,7 +42,9 @@ export const sidebarActions = {
 
   startChat(prompt: string): void {
     chatOpen.set(true);
-    eventBus.emit("start-chat", prompt);
+    setTimeout(() => {
+      eventBus.emit("start-chat", prompt);
+    }, 50);
   },
 
   closeChat(): void {

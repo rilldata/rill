@@ -63,7 +63,7 @@
   }
 </script>
 
-<!-- bits-ui dropdown component captures focus, so chat text cannot be editted when it is open.
+<!-- bits-ui dropdown component captures focus, so chat text cannot be edited when it is open.
      Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
      TODO: move to dropdown component after upgrade. -->
 <div class="context-dropdown" style="left: {left}px; bottom: {bottom}px">

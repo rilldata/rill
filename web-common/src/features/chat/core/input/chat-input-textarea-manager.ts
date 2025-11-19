@@ -55,10 +55,7 @@ export class ChatInputTextAreaManager {
               onUpdate: () => this.updateValue(),
             },
           });
-          this.elementToContextComponent.set(
-            (node as any).previousElementSibling,
-            comp,
-          );
+          this.componentAdded(comp, node);
           parent.removeChild(node);
         },
       );
@@ -68,16 +65,7 @@ export class ChatInputTextAreaManager {
   public handleKeydown = (event: KeyboardEvent) => {
     setTimeout(() => {
       if (event.key === "Backspace") {
-        this.forEachSelectedNode((node) => {
-          const comp = this.elementToContextComponent.get(node);
-          if (node === this.addContextNode) {
-            this.isContextMode = false;
-            this.addContextNode = null;
-            this.addContextComponent = null;
-          }
-          comp?.$destroy();
-          this.elementToContextComponent.delete(node);
-        });
+        this.removeNodes();
       }
 
       if (this.isContextMode) {
@@ -209,7 +197,6 @@ export class ChatInputTextAreaManager {
           new RegExp(`.*?${this.addContextChar}`),
           "",
         );
-        console.log(searchText);
         this.addContextComponent.setText(searchText);
       }
     }
@@ -222,7 +209,6 @@ export class ChatInputTextAreaManager {
     const range = selection.getRangeAt(0);
     if (
       range.startOffset !== 1 ||
-      range.startContainer?.previousSibling?.nodeType !== Node.COMMENT_NODE ||
       !(range.startContainer as any)?.previousElementSibling
     )
       return;
@@ -301,7 +287,7 @@ export class ChatInputTextAreaManager {
         onUpdate: () => this.updateValue(),
       },
     });
-    this.elementToContextComponent.set(spaceNode.previousElementSibling!, comp);
+    this.componentAdded(comp, spaceNode);
     this.removeAddContextComponent();
 
     const selection = window.getSelection();
@@ -326,25 +312,36 @@ export class ChatInputTextAreaManager {
       this.addContextNode.remove();
   }
 
-  private forEachSelectedNode(callback: (node: Node) => void) {
+  private removeNodes() {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
     let node: Node | null = range.startContainer;
-    if (!node) return;
-
-    if (selection.isCollapsed) {
-      console.log("Collapsed", range.startContainer?.previousSibling);
-      return;
-    } else {
-      console.log(range.startContainer);
-    }
+    if (!node || selection.isCollapsed) return;
 
     do {
-      callback(node);
-      console.log(node?.nodeName);
+      if (node === this.addContextNode) {
+        this.addContextComponent.$destroy();
+        this.isContextMode = false;
+        this.addContextNode = null;
+        this.addContextComponent = null;
+      } else {
+        const comp = this.elementToContextComponent.get(node);
+        comp?.$destroy();
+        this.elementToContextComponent.delete(node);
+      }
+
       node = node.nextSibling;
     } while (node && node !== range.endContainer.nextSibling);
+  }
+
+  private componentAdded(comp: ChatContext, nextNode: Node) {
+    const node = (nextNode as any).previousElementSibling;
+    this.elementToContextComponent.set(node, comp);
+    // Remove the comment for HMR, it interferes with text editing. This is only added in dev mode.
+    if (nextNode.previousSibling?.nodeType === Node.COMMENT_NODE) {
+      nextNode.previousSibling.remove();
+    }
   }
 }

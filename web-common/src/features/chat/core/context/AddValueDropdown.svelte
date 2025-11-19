@@ -44,6 +44,9 @@
 
 <span>{chatCtx.label}</span>
 
+<!-- bits-ui dropdown component captures focus, so chat text cannot be edited when it is open.
+     Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
+     TODO: move to dropdown component after upgrade. -->
 <div class="context-dropdown" style="left: {left}px; bottom: {bottom}px">
   {#each dimensionValueOptions as option (option.value)}
     <button
@@ -63,7 +66,11 @@
   }
 
   .content-item {
-    @apply flex flex-row items-center gap-x-2;
-    @apply cursor-default select-none rounded-sm px-2 py-1.5 text-xs outline-none;
+    @apply flex flex-row items-center gap-x-2 px-2 py-1.5 w-full;
+    @apply cursor-default select-none rounded-sm outline-none;
+    @apply text-xs text-left text-wrap break-words;
+  }
+  .content-item:hover {
+    @apply bg-accent text-accent-foreground cursor-pointer;
   }
 </style>

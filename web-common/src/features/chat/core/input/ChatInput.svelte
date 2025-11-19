@@ -112,36 +112,6 @@
     margin: 0;
   }
 
-  .chat-input {
-    @apply w-full;
-    flex: 1;
-    border: none;
-    background: transparent;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    outline: none;
-    resize: none;
-    min-height: 1.75rem;
-    max-height: 6rem;
-    padding: 0.25rem;
-    font-family: inherit;
-    overflow-y: auto;
-  }
-
-  .chat-input.fixed-height {
-    min-height: unset;
-    max-height: unset;
-  }
-
-  .chat-input::placeholder {
-    color: #9ca3af;
-  }
-
-  .chat-input:disabled {
-    color: #9ca3af;
-    cursor: not-allowed;
-  }
-
   .stop-icon {
     color: #9ca3af; /* gray-400 base */
     display: flex;
