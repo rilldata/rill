@@ -82,12 +82,10 @@
           duration={block.duration}
         />
       {:else if block.type === "chart"}
-        <div class="chart-display">
-          <ChartBlock
-            chartType={block.chartData.chartType}
-            chartSpec={block.chartData.chartSpec}
-          />
-        </div>
+        <ChartBlock
+          chartType={block.chartData.chartType}
+          chartSpec={block.chartData.chartSpec}
+        />
       {/if}
     {/each}
   {/if}
@@ -160,10 +158,5 @@
       font-size: 0.875rem;
       line-height: 1.25rem;
     }
-  }
-
-  .chart-display {
-    @apply w-full max-w-full;
-    @apply mt-2 self-start;
   }
 </style>

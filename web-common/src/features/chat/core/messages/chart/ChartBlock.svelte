@@ -45,16 +45,25 @@
   });
 </script>
 
-<div
-  class="border rounded-md border-gray-150 px-1 py-2 bg-surface w-full h-[400px]"
->
-  <ChartContainer
-    {chartType}
-    {spec}
-    {timeAndFilterStore}
-    {project}
-    showExploreLink
-    {organization}
-    themeMode="light"
-  />
+<div class="chart-block">
+  <div
+    class="border rounded-md border-gray-150 px-1 py-2 bg-surface w-full h-[400px]"
+  >
+    <ChartContainer
+      {chartType}
+      {spec}
+      {timeAndFilterStore}
+      {project}
+      showExploreLink
+      {organization}
+      themeMode="light"
+    />
+  </div>
 </div>
+
+<style lang="postcss">
+  .chart-block {
+    @apply w-full max-w-full;
+    @apply self-start;
+  }
+</style>
