@@ -386,7 +386,7 @@
               paramsErrors={$paramsErrors}
               {onStringInputChange}
               {handleFileUpload}
-              bind:cloudAuthMethod
++             bind:cloudAuthMethod={cloudAuthMethod}
             />
           </AddDataFormSection>
         {:else}
