@@ -117,7 +117,7 @@ type ConfigProperties struct {
 	// Useful when different buckets or bucket prefixes use different credentials,
 	// allowing the system to select the appropriate connector based on the bucket path.
 	// Example formats:
-	//	- s3://my-bucket
+	//	- s3://my-bucket/
 	//	- s3://my-bucket/path/
 	//	- s3://my-bucket/path/prefix
 	PathPrefixes    []string `mapstructure:"path_prefixes"`
