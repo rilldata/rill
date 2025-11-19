@@ -5,13 +5,13 @@
   with results correlated via parent_id.
 -->
 <script lang="ts">
-  import CodeBlock from "../../../../components/code-block/CodeBlock.svelte";
-  import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
-  import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
-  import type { V1Message } from "../../../../runtime-client";
-  import { getToolDisplayName } from "../tool-display-names";
-  import { getToolIcon } from "../tool-icons";
-  import { isHiddenAgentTool, MessageContentType } from "../types";
+  import CodeBlock from "../../../../../components/code-block/CodeBlock.svelte";
+  import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
+  import LoadingSpinner from "../../../../../components/icons/LoadingSpinner.svelte";
+  import type { V1Message } from "../../../../../runtime-client";
+  import { getToolDisplayName } from "../../tool-display-names";
+  import { getToolIcon } from "../../tool-icons";
+  import { isHiddenAgentTool, MessageContentType } from "../../types";
 
   export let message: V1Message;
   export let resultMessage: V1Message | undefined = undefined;

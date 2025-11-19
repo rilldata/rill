@@ -1,18 +1,11 @@
 <script lang="ts">
   import { afterUpdate } from "svelte";
-  import type { V1Message } from "../../../../runtime-client";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { MessageContentType, MessageType, ToolName } from "../types";
-  import { parseChartData } from "../utils";
-  import ChartBlock from "./ChartBlock.svelte";
+  import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
-  import Message from "./Message.svelte";
-  import ThinkingBlock from "./ThinkingBlock.svelte";
-  import {
-    calculateThinkingDuration,
-    isThinkingBlockComplete,
-  } from "./thinking-block-utils";
+  import TextMessage from "./text/TextMessage.svelte";
+  import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -23,87 +16,23 @@
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
 
-  // Loading states - access the store from the conversation instance
-  $: isStreamingStore = currentConversation.isStreaming;
-  $: isStreaming = $isStreamingStore;
-  $: isConversationLoading = !!$getConversationQuery.isLoading;
-
   // Error handling
-  $: streamErrorStore = currentConversation.streamError;
   $: conversationQueryError = currentConversation.getConversationQueryError();
   $: hasConversationLoadError = !!$conversationQueryError;
+  $: streamErrorStore = currentConversation.streamError;
   $: hasStreamError = !!$streamErrorStore;
 
-  // Data
-  $: messages = $getConversationQuery.data?.messages ?? [];
+  // Message blocks for display
+  $: messageBlocksStore = currentConversation.getMessageBlocks();
+  $: messageBlocks = $messageBlocksStore;
 
-  // Build a map of result messages by parent ID for correlation with calls (excluding router_agent)
+  // Data for ThinkingBlock (still needs result map for CallMessage rendering)
+  $: messages = $getConversationQuery.data?.messages ?? [];
   $: resultMessagesByParentId = new Map(
     messages
-      .filter(
-        (msg) =>
-          msg.type === MessageType.RESULT && msg.tool !== ToolName.ROUTER_AGENT,
-      )
+      .filter((msg) => msg.type === "result" && msg.tool !== "router_agent")
       .map((msg) => [msg.parentId, msg]),
   );
-
-  // Filter out tool result messages (but keep router_agent results which are assistant responses)
-  $: displayMessages = messages.filter(
-    (msg) =>
-      msg.type !== MessageType.RESULT || msg.tool === ToolName.ROUTER_AGENT,
-  );
-
-  // Group messages: progress messages become headers for thinking blocks with nested tool calls
-  $: messageGroups = groupMessages(displayMessages);
-
-  function groupMessages(msgs: V1Message[]) {
-    const groups: Array<{
-      type: "text" | "thinking";
-      message?: V1Message;
-      messages?: V1Message[];
-    }> = [];
-
-    let currentThinkingBlock: V1Message[] | null = null;
-
-    for (const msg of msgs) {
-      if (msg.tool === ToolName.ROUTER_AGENT) {
-        // Text message (user/assistant) - close any open thinking block and add as standalone
-        if (currentThinkingBlock) {
-          groups.push({
-            type: "thinking",
-            messages: currentThinkingBlock,
-          });
-          currentThinkingBlock = null;
-        }
-        groups.push({ type: "text", message: msg });
-      } else if (msg.type === MessageType.PROGRESS) {
-        // Add to current thinking block or start a new one
-        if (currentThinkingBlock) {
-          currentThinkingBlock.push(msg);
-        } else {
-          currentThinkingBlock = [msg];
-        }
-      } else if (msg.type === MessageType.CALL) {
-        // Tool calls are always part of a thinking block
-        if (currentThinkingBlock) {
-          currentThinkingBlock.push(msg);
-        } else {
-          // Start a new thinking block (without a progress message yet)
-          currentThinkingBlock = [msg];
-        }
-      }
-    }
-
-    // Close any remaining thinking block
-    if (currentThinkingBlock) {
-      groups.push({
-        type: "thinking",
-        messages: currentThinkingBlock,
-      });
-    }
-
-    return groups;
-  }
 
   // Auto-scroll to bottom when messages change or loading state changes
   afterUpdate(() => {
@@ -126,9 +55,9 @@
   class:fullpage={layout === "fullpage"}
   bind:this={messagesContainer}
 >
-  {#if isConversationLoading}
+  {#if $getConversationQuery.isLoading}
     <div class="chat-loading">
-      <DelayedSpinner isLoading={isConversationLoading} size="24px" />
+      <DelayedSpinner isLoading={$getConversationQuery.isLoading} size="24px" />
     </div>
   {:else if hasConversationLoadError}
     <Error
@@ -142,37 +71,23 @@
       <div class="chat-empty-subtitle">Happy to help explore your data</div>
     </div>
   {:else}
-    {#each messageGroups as group, i (group.type === "text" ? group.message?.id : `thinking-${i}`)}
-      {#if group.type === "text" && group.message}
-        <Message message={group.message} />
-      {:else if group.type === "thinking" && group.messages}
-        {@const isComplete = isThinkingBlockComplete(group.messages, messages)}
-        {@const duration = calculateThinkingDuration(group.messages)}
+    {#each messageBlocks as block (block.id)}
+      {#if block.type === "text"}
+        <TextMessage message={block.message} />
+      {:else if block.type === "thinking"}
         <ThinkingBlock
-          messages={group.messages}
+          messages={block.messages}
           {resultMessagesByParentId}
-          {isComplete}
-          {duration}
+          isComplete={block.isComplete}
+          duration={block.duration}
         />
-
-        <!-- Render charts from this thinking block at top level -->
-        {#each group.messages as msg (msg.id)}
-          {#if msg.tool === ToolName.CREATE_CHART}
-            {@const resultMsg = resultMessagesByParentId.get(msg.id)}
-            {@const hasResult = !!resultMsg}
-            {@const isError =
-              resultMsg?.contentType === MessageContentType.ERROR}
-            {@const chartData = parseChartData({ input: msg.contentData })}
-            {#if chartData && hasResult && !isError}
-              <div class="chart-display">
-                <ChartBlock
-                  chartType={chartData.chartType}
-                  chartSpec={chartData.chartSpec}
-                />
-              </div>
-            {/if}
-          {/if}
-        {/each}
+      {:else if block.type === "chart"}
+        <div class="chart-display">
+          <ChartBlock
+            chartType={block.chartData.chartType}
+            chartSpec={block.chartData.chartSpec}
+          />
+        </div>
       {/if}
     {/each}
   {/if}

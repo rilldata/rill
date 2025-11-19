@@ -2,10 +2,10 @@
   Renders AI thinking/reasoning messages that appear during tool execution.
 -->
 <script lang="ts">
-  import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
-  import ChevronRight from "../../../../components/icons/ChevronRight.svelte";
-  import Markdown from "../../../../components/markdown/Markdown.svelte";
-  import type { V1Message } from "../../../../runtime-client";
+  import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
+  import ChevronRight from "../../../../../components/icons/ChevronRight.svelte";
+  import Markdown from "../../../../../components/markdown/Markdown.svelte";
+  import type { V1Message } from "../../../../../runtime-client";
 
   export let message: V1Message;
 

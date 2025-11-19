@@ -16,6 +16,10 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import {
+  MessageBlockTransformer,
+  type MessageBlock,
+} from "./messages/message-blocks";
 import { MessageContentType, MessageType, ToolName } from "./types";
 import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
 
@@ -76,6 +80,38 @@ export class Conversation {
       ($getConversationQuery) =>
         ($getConversationQuery.error as HTTPError)?.response?.data?.message ??
         null,
+    );
+  }
+
+  /**
+   * Get message blocks for rendering this conversation.
+   * Transforms raw messages into a structured list of blocks (text, thinking blocks, charts).
+   */
+  public getMessageBlocks(): Readable<MessageBlock[]> {
+    return derived(
+      [this.getConversationQuery(), this.isStreaming],
+      ([$query, $isStreaming]) => {
+        const messages = $query.data?.messages ?? [];
+        const isLoading = !!$query.isLoading;
+
+        // Build a map of result messages by parent ID for correlation with calls
+        const resultMessagesByParentId = new Map(
+          messages
+            .filter(
+              (msg) =>
+                msg.type === MessageType.RESULT &&
+                msg.tool !== ToolName.ROUTER_AGENT,
+            )
+            .map((msg) => [msg.parentId, msg]),
+        );
+
+        return MessageBlockTransformer.transform(
+          messages,
+          resultMessagesByParentId,
+          $isStreaming,
+          isLoading,
+        );
+      },
     );
   }
 

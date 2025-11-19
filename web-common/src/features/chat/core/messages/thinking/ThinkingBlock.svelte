@@ -3,13 +3,13 @@
   Messages are displayed in the exact order they were received.
 -->
 <script lang="ts">
-  import Brain from "../../../../components/icons/Brain.svelte";
-  import CaretDownIcon from "../../../../components/icons/CaretDownIcon.svelte";
-  import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
-  import Markdown from "../../../../components/markdown/Markdown.svelte";
-  import type { V1Message } from "../../../../runtime-client";
-  import { MessageType } from "../types";
+  import Brain from "../../../../../components/icons/Brain.svelte";
+  import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
+  import Markdown from "../../../../../components/markdown/Markdown.svelte";
+  import type { V1Message } from "../../../../../runtime-client";
+  import { MessageType } from "../../types";
   import CallMessage from "./CallMessage.svelte";
+  import ShimmerText from "./ShimmerText.svelte";
 
   export let messages: V1Message[];
   export let resultMessagesByParentId: Map<string | undefined, V1Message>;
@@ -58,12 +58,13 @@
         <Brain />
       {/if}
     </div>
-    {#if !isComplete}
-      <div class="thinking-spinner">
-        <LoadingSpinner size="0.875rem" />
-      </div>
-    {/if}
-    <div class="thinking-title">{headerText}</div>
+    <div class="thinking-title">
+      {#if !isComplete}
+        <ShimmerText>{headerText}</ShimmerText>
+      {:else}
+        {headerText}
+      {/if}
+    </div>
   </button>
 
   {#if isExpanded}
@@ -102,10 +103,6 @@
   }
 
   .thinking-icon {
-    @apply flex items-center;
-  }
-
-  .thinking-spinner {
     @apply flex items-center;
   }
 
