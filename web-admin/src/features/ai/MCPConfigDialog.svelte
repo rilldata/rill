@@ -18,7 +18,7 @@
       <Dialog.Description>
         Ask questions of your Rill project using natural language in any AI
         client that supports the Model Context Protocol (MCP). <a
-          href="https://docs.rilldata.com/explore/mcp"
+          href="https://docs.rilldata.com/users/explore/mcp"
           target="_blank"
           rel="noopener"
           class="text-primary-600 hover:text-primary-700 underline"

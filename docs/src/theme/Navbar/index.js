@@ -80,9 +80,9 @@ export default function NavbarWrapper(props) {
       if (!iconContainer) {
         iconContainer = document.createElement('span');
         iconContainer.className = 'icon-container';
-        
+
         // Clear existing Docusaurus toggle content (text/emojis)
-        btn.innerHTML = ''; 
+        btn.innerHTML = '';
         btn.appendChild(iconContainer);
       }
 
@@ -90,7 +90,7 @@ export default function NavbarWrapper(props) {
       // If Dark Mode -> Show Sun (to switch to Light)
       // If Light Mode -> Show Moon (to switch to Dark)
       const isDark = colorMode === 'dark';
-      
+
       iconContainer.innerHTML = `
         <img 
           src="/icons/${isDark ? 'Sun' : 'Moon'}.svg" 
@@ -99,7 +99,7 @@ export default function NavbarWrapper(props) {
           height="24" 
         />
       `;
-      
+
       btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
     });
   }, [colorMode]);
