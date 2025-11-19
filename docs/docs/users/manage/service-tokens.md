@@ -188,4 +188,3 @@ curl -X POST https://api.rilldata.com/v1/orgs/<org-name>/projects/<project-name>
 ```
 
 The response contains a short-lived JWT token that can be used to access Rill APIs on behalf of the user.
-

@@ -38,9 +38,9 @@ type config struct {
 	ConnInitSQL string `mapstructure:"conn_init_sql"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
-	// Secrets is a comma-separated list of connector names to create temporary secrets for before executing models.
+	// CreateSecretsFromConnectors is list of connector names to create temporary secrets for before executing models.
 	// The secrets are not created for read queries.
-	Secrets string `mapstructure:"secrets"`
+	CreateSecretsFromConnectors []string `mapstructure:"create_secrets_from_connectors"`
 	// Mode specifies the mode in which to open the database.
 	Mode string `mapstructure:"mode"`
 	// CanScaleToZero indicates if the underlying duckdb service may scale to zero when idle.
@@ -59,6 +59,10 @@ type config struct {
 	// SchemaName can be set to switch the default schema used by the DuckDB database.
 	// Only applicable for the generic rduckdb implementation.
 	SchemaName string `mapstructure:"schema_name"`
+	// EnableBackups enables periodic backups of the DuckDB database to object storage.
+	// It only takes effect if the runtime's storage config includes an object storage bucket.
+	// This is an internal property that should not be documented or set by users.
+	EnableBackups bool `mapstructure:"enable_backups"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
@@ -125,17 +129,6 @@ func (c *config) writeSettings() map[string]string {
 	// useful for motherduck but safe to pass at initial connect
 	writeSettings["custom_user_agent"] = "rill"
 	return writeSettings
-}
-
-func (c *config) secretConnectors() []string {
-	if c.Secrets == "" {
-		return nil
-	}
-	res := strings.Split(c.Secrets, ",")
-	for i, s := range res {
-		res[i] = strings.TrimSpace(s)
-	}
-	return res
 }
 
 // isMotherduck returns true if the Path or Attach config options reference a Motherduck database.

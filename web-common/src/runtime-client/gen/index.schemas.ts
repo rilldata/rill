@@ -1733,8 +1733,12 @@ export interface V1ModelSpec {
   retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
+  /** trigger indicates a normal refresh (incremental or full depending on the model type). */
   trigger?: boolean;
+  /** trigger_full indicates a full refresh regardless of the model type. */
   triggerFull?: boolean;
+  /** trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models. */
+  triggerPartitions?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
   definedAsSource?: boolean;
 }
@@ -2591,6 +2595,13 @@ export type RuntimeServiceCompleteStreamingBody = {
 export type RuntimeServiceCompleteStreaming200 = {
   result?: V1CompleteStreamingResponse;
   error?: RpcStatus;
+};
+
+export type RuntimeServiceListConversationsParams = {
+  /**
+   * Optional search pattern for filtering by user agent.
+   */
+  userAgentPattern?: string;
 };
 
 export type RuntimeServiceListFilesParams = {
