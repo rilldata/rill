@@ -1,0 +1,13 @@
+build/
+dist/
+node_modules/
+
+# Generated or vendor assets
+static/
+src/proto/gen/
+src/runtime-client/gen/
+tests/projects/
+
+# Generated single files
+src/features/dashboards/pivot/regular-table-style.css
+src/features/dashboards/url-state/filters/expression.cjs
