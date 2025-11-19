@@ -17,7 +17,7 @@ const CITATION_URL_PATHNAME_REGEX = /\/-\/open-query\/?$/;
  * @param mapper
  */
 export function getCitationUrlRewriter(
-  mapper: MetricsResolverQueryToUrlParamsMapper,
+  mapper: MetricsResolverQueryToUrlParamsMapper | undefined,
 ) {
   return (text: string): string | Promise<string> => {
     marked.use({
@@ -26,6 +26,11 @@ export function getCitationUrlRewriter(
           const url = new URL(tokens.href);
           // If the url is not a citation url, do not change the link.
           if (!CITATION_URL_PATHNAME_REGEX.test(url.pathname)) return false;
+
+          // If mapper was not provided, remove citation urls.
+          // This happens when something went wrong getting the mapper in an explore chat.
+          // Non-explore chat will not go throught his code path at all.
+          if (!mapper) return "";
 
           const queryJSON = url.searchParams.get("query");
           // If the url does not have a query arg, do not change the link.
@@ -68,9 +73,6 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
     getMetricsViewTimeRangeFromExploreQueryOptions(exploreNameStore),
   );
 
-  const emptyMapper = () =>
-    [false, new URLSearchParams()] as [boolean, URLSearchParams];
-
   return derived(
     [validSpecQuery, timeRangeQuery],
     ([validSpecResp, timeRangeResp]) => {
@@ -81,8 +83,6 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
       if (error || isLoading) {
         return {
           error,
-          // Return a mapper that always fails. This will make it so that citation link are removed
-          data: emptyMapper,
           isLoading,
         };
       }
@@ -92,8 +92,6 @@ export function getMetricsResolverQueryToUrlParamsMapperStore(
       if (!metricsViewSpec || !exploreSpec) {
         return {
           error: new Error("Failed to load metrics view or explore spec"),
-          // Return a mapper that always fails. This will make it so that citation link are removed
-          data: emptyMapper,
           isLoading: false,
         };
       }
