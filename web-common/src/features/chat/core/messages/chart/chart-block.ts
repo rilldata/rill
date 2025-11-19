@@ -1,6 +1,5 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType } from "../../types";
-import { parseChartData } from "../../utils";
 
 /**
  * Chart block representation.
@@ -35,4 +34,26 @@ export function createChartBlock(
     message,
     chartData,
   };
+}
+
+/**
+ * Parses chart data from a tool call.
+ * Returns null if parsing fails.
+ */
+function parseChartData(toolCall: any) {
+  try {
+    // Check if input is already an object or needs parsing
+    const parsed =
+      typeof toolCall?.input === "string"
+        ? JSON.parse(toolCall.input)
+        : toolCall?.input;
+
+    return {
+      chartType: parsed.chart_type,
+      chartSpec: parsed.spec,
+    };
+  } catch (error) {
+    console.error("Failed to parse chart data:", error);
+    return null;
+  }
 }

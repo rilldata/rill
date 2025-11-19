@@ -9,8 +9,8 @@
   import CaretDownIcon from "../../../../../components/icons/CaretDownIcon.svelte";
   import LoadingSpinner from "../../../../../components/icons/LoadingSpinner.svelte";
   import type { V1Message } from "../../../../../runtime-client";
-  import { getToolDisplayName } from "../../tool-display-names";
-  import { getToolIcon } from "../../tool-icons";
+  import { getToolDisplayName } from "./tool-display-names";
+  import { getToolIcon } from "./tool-icons";
   import { isHiddenAgentTool, MessageContentType } from "../../types";
 
   export let message: V1Message;

@@ -4,11 +4,11 @@
  */
 
 import type { ComponentType } from "svelte";
-import Chart from "../../../components/icons/Chart.svelte";
-import List from "../../../components/icons/List.svelte";
-import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
-import Search from "../../../components/icons/Search.svelte";
-import SummaryStatistics from "../../../components/icons/SummaryStatistics.svelte";
+import Chart from "../../../../../components/icons/Chart.svelte";
+import List from "../../../../../components/icons/List.svelte";
+import MetricsViewIcon from "../../../../../components/icons/MetricsViewIcon.svelte";
+import Search from "../../../../../components/icons/Search.svelte";
+import SummaryStatistics from "../../../../../components/icons/SummaryStatistics.svelte";
 
 /**
  * Tool icon mapping. Tools not in this mapping will fall back to the Search icon.
