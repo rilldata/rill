@@ -13,8 +13,6 @@ import (
 
 var errGCSUsesNativeCreds = errors.New("GCS uses native credentials")
 
-var errMissingRegion = errors.New("Missing s3 region")
-
 type objectStoreToSelfExecutor struct {
 	c *connection
 }

@@ -103,19 +103,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		connectorsForSecrets, autoDetected := connectorsForSecrets(inputProps.CreateSecretsFromConnectors, e.c.config.CreateSecretsFromConnectors, opts.Env.Connectors)
 		var createSecretSQLs, dropSecretSQLs []string
 		for _, connector := range connectorsForSecrets {
-			createSecretSQL, dropSecretSQL, connectorType, err := generateSecretSQL(ctx, opts, connector, "", nil)
+			// we donnot need to pass the parsedPath we are using because of s3 region detection
+			createSecretSQL, dropSecretSQL, connectorType, err := generateSecretSQL(ctx, opts, connector, parsedPath, nil)
 			if err != nil {
-				// If the error indicates a missing region and the parsed connector is S3,
-				// retry secret generation using the parsed path for region detection.
-				if errors.Is(err, errMissingRegion) && parsedConnectorType == "s3" {
-					if retryCreateSecretSQL, retryDropSecretSQL, retryConnectorType, retryErr := generateSecretSQL(ctx, opts, connector, parsedPath, nil); retryErr == nil {
-						connectorSecretsAvailable[retryConnectorType] = true
-						createSecretSQLs = append(createSecretSQLs, retryCreateSecretSQL)
-						dropSecretSQLs = append(dropSecretSQLs, retryDropSecretSQL)
-						continue
-					}
-				}
-
 				// Skip creating secrets when:
 				// - autoDetected: user didn't explicitly configure the secret container
 				// - errGCSUsesNativeCreds: DuckDB doesn't support native GCS credentials
@@ -198,7 +188,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	duration, err := e.createOrInsertIntoDuckDB(ctx, opts, inputProps, outputProps, tableName, asView)
 	if err != nil {
 		// On failure, try cleaning up secrets and retry without secrets for anonymous bucket access
-		if inputProps.InternalDropSecretSQL != "" && (strings.Contains(err.Error(), "HTTP 403") || strings.Contains(err.Error(), "region being set incorrectly")) {
+		if inputProps.InternalDropSecretSQL != "" && (strings.Contains(err.Error(), "HTTP 403") || strings.Contains(err.Error(), "IO Error") || strings.Contains(err.Error(), "region being set incorrectly")) {
 			// Restore original PreExec, append drop secret, and retry.
 			inputProps.PreExec = originalPreExec
 			if inputProps.PreExec != "" {
@@ -597,8 +587,6 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			}
 			sb.WriteString(", REGION ")
 			sb.WriteString(safeSQLString(reg))
-		} else {
-			return "", "", "", errMissingRegion
 		}
 		sb.WriteRune(')')
 		return sb.String(), dropSecretSQL, connectorType, nil
