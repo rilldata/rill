@@ -54,7 +54,7 @@ export class ConnectorExplorerStore {
           expandedItems,
           selectedKey,
         })
-      : writable({ showConnectors, expandedItems });
+      : writable({ showConnectors, expandedItems, selectedKey });
   }
 
   createItemIfNotExists(
