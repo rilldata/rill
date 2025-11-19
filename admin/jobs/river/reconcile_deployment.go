@@ -23,6 +23,10 @@ type ReconcileDeploymentWorker struct {
 	admin *admin.Service
 }
 
+// ReconcileDeploymentWorker is a state machine, it reconciles the state of a deployment based on its current status.
+// This job is responsible for transitioning deployments through their lifecycle states,
+// such as starting, updating, stopping, and deleting deployments.
+// We handle all deployment state transitions in this job to ensure consistency and to avoid concurrent conflicting operations on the same deployment.
 func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[ReconcileDeploymentArgs]) error {
 	depl, err := w.admin.DB.FindDeployment(ctx, job.Args.DeploymentID)
 	if err != nil {

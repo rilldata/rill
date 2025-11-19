@@ -590,6 +590,8 @@ type provisionRuntimeOptions struct {
 	Annotations  map[string]string
 }
 
+// triggerDeploymentReconcileJob triggers a reconcile deployment job for the given deployment ID.
+// For more details, see the comments in the ReconcileDeployment job.
 func (s *Service) triggerDeploymentReconcileJob(ctx context.Context, deploymentID string) error {
 	// Trigger reconcile deployment job
 	_, err := s.Jobs.ReconcileDeployment(ctx, deploymentID)
