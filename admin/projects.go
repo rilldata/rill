@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -155,9 +154,8 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	requiresReset := (proj.Provisioner != opts.Provisioner) || (proj.ProdSlots != opts.ProdSlots) || (proj.ProdVersion != opts.ProdVersion)
-
-	impactsDeployments := requiresReset ||
+	impactsDeployments := (proj.ProdVersion != opts.ProdVersion) ||
+		(proj.ProdSlots != opts.ProdSlots) ||
 		(proj.Name != opts.Name) ||
 		(proj.Subpath != opts.Subpath) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
@@ -173,20 +171,6 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	if !impactsDeployments {
 		return proj, nil
-	}
-
-	if requiresReset {
-		s.Logger.Info("update project: resetting deployment", observability.ZapCtx(ctx))
-
-		var oldDepl *database.Deployment
-		if proj.ProdDeploymentID != nil {
-			oldDepl, err = s.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
-			if err != nil && !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
-		}
-
-		return s.RedeployProject(ctx, proj, oldDepl)
 	}
 
 	s.Logger.Info("update project: updating deployments", observability.ZapCtx(ctx))
