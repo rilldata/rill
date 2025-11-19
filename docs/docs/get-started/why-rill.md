@@ -1,7 +1,7 @@
 ---
 title: Why Rill?
 sidebar_label: Why Rill?
-sidebar_position: 01
+sidebar_position: 10
 ---
 
 Rill's strategy for fast dashboards is threefold:
@@ -62,19 +62,16 @@ BI-as-code is a modern approach to business intelligence that treats analytics a
 
 This means that Rill projects can be completely generated via code agents that can be provided context on your specific use case and you can integrate Rill into your workflow to create and/or update your visualization via natural language.
 
-### AI-Powered Analytics Development
 
-Rill's BI-as-code approach enables powerful AI integration that transforms how analytics are created and maintained:
+### AI Integration
 
-**Code Agent Integration**
-- **Automated Project Generation**: AI agents can analyze your data schema and business requirements to automatically generate complete Rill projects
-- **Context-Aware Development**: Provide your AI agent with specific use cases, data sources, and business metrics to create tailored analytics solutions
-- **Intelligent Code Generation**: Agents can write SQL models, define metrics views, and configure dashboards based on your data structure and analytical needs
+Rill provides AI capabilities through two main channels:
 
-**Natural Language Workflows**
-- **Conversational Analytics**: Create and modify dashboards through natural language commands like "Show me revenue trends by region" or "Modify the default view to show last quarter data"
-- **Iterative Refinement**: Use natural language to refine existing visualizations: "Make this dashboard show monthly data instead of daily" or "Add a comparison with last year"
-- **Business User Friendly**: Non-technical team members can request changes and new analyses without writing code or learning complex interfaces
+- **[AI Chat](/explore/ai-chat)**: Query your metrics views using natural language directly in Rill Cloud. AI Chat uses Rill's Model Context Protocol (MCP) integration to ensure responses are accurate and governed by your predefined measures and dimensions.
+- **[MCP Server](/explore/mcp)**: Connect external AI assistants (like Claude Desktop or ChatGPT) to your Rill projects. The MCP server exposes Rill's metrics view APIs to LLMs, enabling natural language queries while maintaining data governance through your existing security policies.
 
+<!-- **Development with AI**
+- **Developer Agent**: AI agents can generate SQL models and metrics view definitions within existing Rill projects. The developer agent analyzes your project structure and can create or update model and metrics view files based on your requirements.
+- **Code Generation**: Since Rill projects are defined as code (YAML files with SQL), they can be generated or modified by AI code agents that understand your data schema and business requirements. -->
 
-This AI-powered approach democratizes analytics development while maintaining the rigor and control that engineering teams require, enabling faster iteration and broader participation in data-driven decision making. 
+For more details on AI features, see the [AI Chat documentation](/explore/ai-chat) and [MCP Server documentation](/explore/mcp). 
