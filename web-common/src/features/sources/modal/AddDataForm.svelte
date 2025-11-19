@@ -450,6 +450,7 @@
         {/if}
 
         {#if isPublic}
+          <Button onClick={() => formManager.handleSkip()} type="primary">
             Continue
           </Button>
         {:else}
