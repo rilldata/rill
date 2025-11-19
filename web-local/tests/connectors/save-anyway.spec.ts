@@ -37,19 +37,14 @@ test.describe("Save Anyway feature", () => {
     // Click "Save Anyway" button
     await page.getByRole("button", { name: "Save Anyway" }).click();
 
-    // Wait for navigation to the connector file
-    // Use a more flexible pattern to handle potential naming variations
-    await page.waitForURL(/.*\/files\/connectors\/.*\.yaml/, {
-      timeout: 15000,
-    });
-
-    // Verify we're on a connector file page
-    await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/);
-
-    // Verify the connector file content is visible
+    // Wait for the editor to appear (more robust than URL-only wait on CI), then assert URL
     const codeEditor = page
       .getByLabel("codemirror editor")
       .getByRole("textbox");
+    await expect(codeEditor).toBeVisible({ timeout: 45000 });
+    await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {
+      timeout: 45000,
+    });
 
     await expect(codeEditor).toBeVisible();
     await expect(codeEditor).toContainText("type: connector");
