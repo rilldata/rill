@@ -53,10 +53,7 @@ type ConfigProperties struct {
 	// A list of HTTP/HTTPS URL prefixes that this connector is allowed to access.
 	// Useful when different URL namespaces use different credentials, enabling the
 	// system to choose the appropriate connector based on the URL path.
-	// Example formats:
-	// 	- https://example.com/
-	// 	- https://example.com/path/
-	// 	- https://example.com/path/prefix
+	// Example formats: `https://example.com/` `https://example.com/path/` `https://example.com/path/prefix`
 	PathPrefixes []string `mapstructure:"path_prefixes"`
 }
 
