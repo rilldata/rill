@@ -77,6 +77,7 @@ type ConfigProperties struct {
 	// A list of container or virtual directory prefixes that this connector is allowed to access.
 	// Useful when different containers or paths use different credentials, allowing the system
 	// to route access through the appropriate connector based on the blob path.
+	// Example formats: `azure://my-container/` `azure://my-container/path/` `azure://my-container/path/prefix`
 	PathPrefixes    []string `mapstructure:"path_prefixes"`
 	AllowHostAccess bool     `mapstructure:"allow_host_access"`
 }

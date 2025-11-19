@@ -89,7 +89,10 @@ export class ConversationManager {
     RpcStatus
   > {
     return createQuery(
-      getRuntimeServiceListConversationsQueryOptions(this.instanceId),
+      getRuntimeServiceListConversationsQueryOptions(this.instanceId, {
+        // Filter to only show Rill client conversations, excluding MCP conversations
+        userAgentPattern: "rill%",
+      }),
       queryClient,
     );
   }
@@ -235,6 +238,9 @@ export class ConversationManager {
   private updateConversationListCache(conversationId: string): void {
     const listConversationsKey = getRuntimeServiceListConversationsQueryKey(
       this.instanceId,
+      {
+        userAgentPattern: "rill%",
+      },
     );
 
     // Check if we have existing cached data

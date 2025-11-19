@@ -519,6 +519,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: userAgentPattern
+          description: Optional search pattern for filtering by user agent.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}:
