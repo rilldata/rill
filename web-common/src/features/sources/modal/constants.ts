@@ -67,7 +67,7 @@ export const OLAP_ENGINES = [
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
 
 // Connectors that support multi-step forms (connector -> source)
-export const MULTI_STEP_CONNECTORS = ["gcs"];
+export const MULTI_STEP_CONNECTORS = ["gcs", "s3"];
 
 export const FORM_HEIGHT_TALL = "max-h-[38.5rem] min-h-[38.5rem]";
 export const FORM_HEIGHT_DEFAULT = "max-h-[34.5rem] min-h-[34.5rem]";

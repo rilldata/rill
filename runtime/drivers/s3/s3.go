@@ -25,14 +25,22 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/s3",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "aws_access_key_id",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_access_key_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS access key ID",
+			Description: "AWS access key ID for explicit credentials",
+			Placeholder: "Enter your AWS access key ID",
+			Secret:      true,
+			Required:    true,
 		},
 		{
-			Key:    "aws_secret_access_key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "aws_secret_access_key",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "AWS secret access key",
+			Description: "AWS secret access key for explicit credentials",
+			Placeholder: "Enter your AWS secret access key",
+			Secret:      true,
+			Required:    true,
 		},
 		{
 			Key:         "region",
@@ -51,24 +59,6 @@ var spec = drivers.Spec{
 			Placeholder: "https://s3.example.com",
 			Required:    false,
 			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3 compatible services, such as Cloudflare R2 or MinIO.",
-		},
-		{
-			Key:         "aws_role_arn",
-			Type:        drivers.StringPropertyType,
-			Secret:      true,
-			Description: "AWS Role ARN to assume",
-		},
-		{
-			Key:         "aws_role_session_name",
-			Type:        drivers.StringPropertyType,
-			Secret:      true,
-			Description: "Optional session name to use when assuming an AWS role. Defaults to 'rill-session'.",
-		},
-		{
-			Key:         "aws_external_id",
-			Type:        drivers.StringPropertyType,
-			Secret:      true,
-			Description: "Optional external ID to use when assuming an AWS role for cross-account access.",
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{

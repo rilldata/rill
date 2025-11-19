@@ -26,6 +26,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import S3MultiStepForm from "./S3MultiStepForm.svelte";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -377,19 +378,28 @@
         </AddDataFormSection>
       {:else if isMultiStepConnector}
         {#if stepState.step === "connector"}
-          <!-- GCS Step 1: Connector configuration -->
+          <!-- Step 1: Connector configuration -->
           <AddDataFormSection
             id={paramsFormId}
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
           >
-            <GCSMultiStepForm
-              properties={filteredParamsProperties}
-              {paramsForm}
-              paramsErrors={$paramsErrors}
-              {onStringInputChange}
-              {handleFileUpload}
-            />
+            {#if connector.name === "gcs"}
+              <GCSMultiStepForm
+                properties={stepProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+              />
+            {:else if connector.name === "s3"}
+              <S3MultiStepForm
+                properties={stepProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+              />
+            {/if}
           </AddDataFormSection>
         {:else}
           <!-- GCS Step 2: Source configuration -->
