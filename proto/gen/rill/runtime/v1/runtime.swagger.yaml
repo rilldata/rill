@@ -916,6 +916,44 @@ paths:
             title: Request message for RuntimeService.PutFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/generate-canvas-dashboard:
+    post:
+      summary: GenerateCanvasDashboardFile generates a canvas dashboard YAML file from a metrics view
+      operationId: RuntimeService_GenerateCanvasDashboardFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateCanvasDashboardFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              metricsViewName:
+                type: string
+                description: Metrics view name to base the canvas dashboard on.
+              path:
+                type: string
+                description: Path to save the canvas dashboard file to.
+              useAi:
+                type: boolean
+                description: |-
+                  If true, the AI will be used to generate the canvas dashboard file.
+                  Otherwise, it falls back to a simpler heuristic approach.
+            title: Request message for RuntimeService.GenerateCanvasDashboardFile
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/files/generate-metrics-view:
     post:
       summary: GenerateMetricsViewFile generates a metrics view YAML file from a table in an OLAP database
@@ -4990,6 +5028,13 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1GenerateCanvasDashboardFileResponse:
+    type: object
+    properties:
+      aiSucceeded:
+        type: boolean
+        description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+    title: Response message for RuntimeService.GenerateCanvasDashboardFile
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
