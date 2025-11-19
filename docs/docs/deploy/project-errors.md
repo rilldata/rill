@@ -18,16 +18,21 @@ There are times where you'll need to check upstream objects to find the true cau
 
 Model errors typically occur when there are issues with [connector credentials in production](/build/connectors/templating), data processing, SQL syntax, or data type mismatches. Most of these errors will have surfaced in Rill Developer but a few possible issues after deploying to Rill Cloud are:
 
-1. **Prod vs dev environment** - The prod parameters in your YAML files dont exist.
+1. **Prod vs dev environment** - The prod parameters in your YAML files don't exist.
 2. **Timeouts, OOM** - Assuming the data in prod is a lot larger, timeouts and OOM issues can occur. [Contact us](/contact) if you see any related error messages.
 
 To troubleshoot model errors:
-1. Check the model's status in the [project status page](https://ui.rilldata.com/)
-2. Review the error message for specific details about what failed
-    `some partitions have errors`
-3. Verify that all referenced tables and views exist and are accessible in prod environment 
-   1. Run the following from the CLI to see list of tables and size usage: `rill project tables --project <project_name>`
-4. Verify Credentials are correct for prod environment.
+
+1. **Check the model's status** in the [project status page](/manage/project-management#checking-deployment-status)
+
+2. **Review the error message** for specific details about what failed. Common error messages and their solutions:
+   - **`Failed to connect to ...`**: Issue with your connector. If it worked locally, check your prod credentias[firewall settings](/build/connectors/data-source#externally-hosted-services)
+   - **`Table with name ... does not exist!`**: Verify the table exists by running `rill query --sql "select * from {table_name} limit 1" --project {project_name}` or `rill project tables --project {project_name}`
+   - **`IO Error: No files found that match the pattern...`**: Check that your production cloud storage folder path is correct and files exist
+   - **`some partitions have errors`**: Run `rill project refresh --model {model_name} --errored-partitions` from your authenticated CLI
+   - **`Out of Memory Error: ...`**: [Contact support](/contact) for assistance with memory issues 
+
+
 
 If after going through the above steps, you are still unable to resolve the issue, [contact us!](/contact)
 
