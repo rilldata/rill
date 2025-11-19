@@ -146,12 +146,16 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		// Helper to add a fallback secret for a connector type
 		addFallbackSecret := func(connector string) {
 			secretName := safeName(fmt.Sprintf("%s__%s__secret", opts.ModelName, connector))
+			validation := ", VALIDATION 'none'"
+			// azure does not support this property
+			if connector == "azure" {
+				validation = ""
+			}
 			fallbackSecrets = append(fallbackSecrets, fmt.Sprintf(`
 			CREATE OR REPLACE TEMPORARY SECRET  %s (
 			TYPE %s,
-			PROVIDER credential_chain,
-			VALIDATION 'none'
-			)`, secretName, connector))
+			PROVIDER credential_chain%s
+			)`, secretName, connector, validation))
 			fallbackDrops = append(fallbackDrops, fmt.Sprintf(`DROP SECRET IF EXISTS %s`, secretName))
 		}
 
@@ -637,7 +641,7 @@ func generateSecretSQL(ctx context.Context, opts *drivers.ModelExecuteOptions, c
 			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(connectionString))
 		} else if azureConfig.AllowHostAccess {
 			// duckdb will use default defaultazurecredential https://github.com/Azure/azure-sdk-for-cpp/blob/azure-identity_1.6.0/sdk/identity/azure-identity/README.md#defaultazurecredential
-			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN, VALIDATION 'none'")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
 		if azureConfig.GetAccount() != "" {
 			fmt.Fprintf(&sb, ", ACCOUNT_NAME %s", safeSQLString(azureConfig.GetAccount()))
