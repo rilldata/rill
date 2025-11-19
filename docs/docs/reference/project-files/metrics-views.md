@@ -32,6 +32,10 @@ _[string]_ - Refers to the description for the metrics view
 
 _[string]_ - Extra instructions for [AI agents](/explore/mcp). Used to guide natural language question answering and routing. 
 
+### `parent`
+
+_[string]_ - Refers to the parent metrics view from which this metrics view is derived. If specified, this will inherit properties from the parent metrics view 
+
 ### `model`
 
 _[string]_ - Refers to the model powering the dashboard (either model or table is required) _(required)_
@@ -184,6 +188,38 @@ _[array of object]_ - Used to define the numeric aggregates of columns from your
 
   - **`treat_nulls_as`** - _[string]_ - used to configure what value to fill in for missing time buckets. This also works generally as COALESCING over non empty time buckets. 
 
+### `parent_dimensions`
+
+_[oneOf]_ - Optional field selectors for dimensions to inherit from the parent metrics view. 
+
+  - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+  - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+  - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+    - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+    - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
+### `parent_measures`
+
+_[oneOf]_ - Optional field selectors for measures to inherit from the parent metrics view. 
+
+  - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+  - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+  - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+    - **`regex`** - _[string]_ - Select fields using a regular expression 
+
+    - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic 
+
+    - **`exclude`** - _[object]_ - Select all fields except those listed here 
+
 ### `annotations`
 
 _[array of object]_ - Used to define annotations that can be displayed on charts 
@@ -259,6 +295,14 @@ _[object]_ - Defines [security rules and access control policies](/build/metrics
     - **`all`** - _[boolean]_ - When true, applies the rule to all fields (for field_access type rules) 
 
     - **`sql`** - _[string]_ - SQL expression for row filtering (for row_filter type rules) 
+
+### `explore`
+
+_[object]_ - Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true. 
+
+  - **`skip`** - _[boolean]_ - If true, disables the explore view for this metrics view. 
+
+  - **`name`** - _[string]_ - Name of the explore view. 
 
 ## Common Properties
 
