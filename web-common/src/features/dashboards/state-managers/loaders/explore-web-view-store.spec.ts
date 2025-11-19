@@ -30,6 +30,7 @@ import {
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { asyncWait, waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -182,7 +183,7 @@ describe("Explore web view store", () => {
       await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
 
       // apply mutations to main view to setup the initial state
-      applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
+      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
         AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
         AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
         AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
@@ -196,14 +197,14 @@ describe("Explore web view store", () => {
       // simulate going to the init view's url
       pageMock.gotoSearch(initialSearch);
       // apply any mutations in the init view
-      applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, initView.mutations);
+      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, initView.mutations);
       const initState = getCleanMetricsExploreForAssertion();
 
       const viewSearch = `view=${view.view}${view.additionalParams ?? ""}`;
       // simulate going to the view's url
       pageMock.gotoSearch(viewSearch);
       // apply any mutations in the view
-      applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, view.mutations);
+      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, view.mutations);
       const stateInView = getCleanMetricsExploreForAssertion();
 
       // All history changes before this are a combination of visiting the view and mutations.

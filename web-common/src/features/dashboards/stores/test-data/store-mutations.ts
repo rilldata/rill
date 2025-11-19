@@ -49,6 +49,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
@@ -455,14 +456,17 @@ export const AD_BIDS_SET_TIME_PIVOT_FILTER = (field: string) => {
     ])) as TestDashboardMutation;
 };
 
-export function applyMutationsToDashboard(
+export async function applyMutationsToDashboard(
   name: string,
   mutations: TestDashboardMutation[],
 ) {
-  updateMetricsExplorerByName(name, (dashboard) => {
-    const dashboardMutables = {
-      dashboard,
-    } as DashboardMutables;
-    mutations.forEach((mutation) => mutation(dashboardMutables));
-  });
+  for (const mutation of mutations) {
+    updateMetricsExplorerByName(name, (dashboard) => {
+      const dashboardMutables = {
+        dashboard,
+      } as DashboardMutables;
+      mutation(dashboardMutables);
+    });
+    await asyncWait(1);
+  }
 }
