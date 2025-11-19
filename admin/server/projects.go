@@ -1395,9 +1395,6 @@ func (s *Server) AddProjectMemberUserResources(ctx context.Context, req *adminv1
 		if currentRole.Name != database.ProjectRoleNameViewer {
 			return nil, status.Error(codes.InvalidArgument, "resource-scoped access can only be set for viewer members")
 		}
-		if currentRole.ID != role.ID {
-			return nil, status.Error(codes.AlreadyExists, "user is already a project member with a different role")
-		}
 		existingResources, resErr := s.admin.DB.FindProjectMemberUserResources(ctx, proj.ID, user.ID)
 		if resErr != nil {
 			return nil, resErr

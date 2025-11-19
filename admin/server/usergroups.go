@@ -502,13 +502,11 @@ func (s *Server) AddProjectMemberUsergroupResources(ctx context.Context, req *ad
 		}
 		currentRole, err := s.admin.DB.FindProjectMemberUsergroupRole(ctx, usergroup.ID, proj.ID)
 		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
+			return nil, err
 		}
 
 		if currentRole.Name != database.ProjectRoleNameViewer {
-			return nil, status.Error(codes.InvalidArgument, "resource-scoped access can only be set for viewer user groups")
+			return nil, status.Error(codes.InvalidArgument, "resource-scoped access can only be set for viewer usergroups")
 		}
 
 		existingResources, err := s.admin.DB.FindProjectMemberUsergroupResources(ctx, usergroup.ID, proj.ID)
