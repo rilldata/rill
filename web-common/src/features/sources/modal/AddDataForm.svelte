@@ -121,6 +121,9 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
+  let cloudAuthMethod: string = "credentials";
+
+  $: isPublic =  cloudAuthMethod === "public" && isMultiStepConnector && stepState.step === "connector";
 
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -380,6 +383,7 @@
               paramsErrors={$paramsErrors}
               {onStringInputChange}
               {handleFileUpload}
+              bind:cloudAuthMethod
             />
           </AddDataFormSection>
         {:else}
@@ -436,34 +440,43 @@
           </Button>
         {/if}
 
-        {#if isMultiStepConnector && stepState.step === "connector"}
+        {#if isMultiStepConnector && stepState.step === "connector" && !isPublic}
           <Button onClick={() => formManager.handleSkip()} type="secondary"
             >Skip</Button
           >
         {/if}
 
-        <Button
-          disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-            : submitting || isSubmitDisabled}
-          loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting
-            : submitting}
-          loadingCopy={connector.name === "clickhouse"
-            ? "Connecting..."
-            : "Testing connection..."}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-          submitForm
-          type="primary"
-        >
-          {formManager.getPrimaryButtonLabel({
-            isConnectorForm,
-            step: stepState.step,
-            submitting,
-            clickhouseConnectorType,
-            clickhouseSubmitting,
-          })}
-        </Button>
+        {#if isPublic}
+          <Button
+            onClick={() => formManager.handleSkip()}
+            type="primary"
+          >
+            Continue
+          </Button>
+        {:else}
+          <Button
+            disabled={connector.name === "clickhouse"
+              ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+              : submitting || isSubmitDisabled}
+            loading={connector.name === "clickhouse"
+              ? clickhouseSubmitting
+              : submitting}
+            loadingCopy={connector.name === "clickhouse"
+              ? "Connecting..."
+              : "Testing connection..."}
+            form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+            submitForm
+            type="primary"
+          >
+            {formManager.getPrimaryButtonLabel({
+              isConnectorForm,
+              step: stepState.step,
+              submitting,
+              clickhouseConnectorType,
+              clickhouseSubmitting,
+            })}
+          </Button>
+        {/if}
       </div>
     </div>
   </div>
