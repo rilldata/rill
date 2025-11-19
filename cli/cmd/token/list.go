@@ -11,6 +11,7 @@ import (
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
+	var refreshTokensOnly bool
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -22,17 +23,28 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			var refresh *bool
+			// check if flag was explicitly set
+			if cmd.Flags().Changed("refresh") {
+				refresh = &refreshTokensOnly
+			}
+
 			res, err := client.ListUserAuthTokens(cmd.Context(), &adminv1.ListUserAuthTokensRequest{
 				UserId:    "current",
 				PageSize:  pageSize,
 				PageToken: pageToken,
+				Refresh:   refresh,
 			})
 			if err != nil {
 				return err
 			}
 
 			if len(res.Tokens) == 0 {
-				ch.PrintfWarn("No tokens found\n")
+				if refreshTokensOnly {
+					ch.PrintfWarn("No refresh tokens found\n")
+				} else {
+					ch.PrintfWarn("No tokens found\n")
+				}
 				return nil
 			}
 
@@ -56,6 +68,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	listCmd.Flags().Uint32Var(&pageSize, "page-size", 1000, "Number of tokens to return per page")
 	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
+	listCmd.Flags().BoolVar(&refreshTokensOnly, "refresh", false, "List refresh tokens only")
 
 	return listCmd
 }

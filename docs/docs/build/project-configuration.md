@@ -346,6 +346,7 @@ features:
   - cloudDataViewer
 ```
 
+
 **Available feature flags:**
 - `cloudDataViewer`: Enables the cloud data viewer interface for exploring data directly in the browser (default: `false`)
 - `dimensionSearch`: Enables advanced dimension search functionality (default: `false`)
@@ -355,8 +356,8 @@ features:
 - `exportHeader`: Enables export header functionality (default: `false`)
 - `alerts`: Enables alerting features (default: `true`)
 - `reports`: Enables reporting functionality (default: `true`)
-- `darkMode`: Enables dark mode interface (default: `false`)
-- `chat`: Enables chat functionality (default: `false`)
+- `darkMode`: Enables dark mode interface (default: `true`)
+- `chat`: Enables chat functionality (default: `true`)
 - `dashboardChat`: Enables chat features within dashboards (default: `false`)
 
 **How to enable**: Add the `features` section to your `rill.yaml`

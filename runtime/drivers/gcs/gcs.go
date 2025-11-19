@@ -27,12 +27,31 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Google Cloud Storage",
 	Description: "Connect to Google Cloud Storage.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/gcs",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/gcs",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:  "google_application_credentials",
-			Type: drivers.FilePropertyType,
-			Hint: "Enter path of file to load from.",
+			Key:         "google_application_credentials",
+			Type:        drivers.FilePropertyType,
+			DisplayName: "GCP Credentials",
+			Description: "GCP credentials as JSON string",
+			Placeholder: "Paste your GCP service account JSON here",
+			Secret:      true,
+		},
+		{
+			Key:         "key_id",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Access Key ID",
+			Description: "HMAC access key ID for S3-compatible authentication",
+			Hint:        "Optional S3-compatible Key ID when used in compatibility mode",
+			Secret:      true,
+		},
+		{
+			Key:         "secret",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Secret Access Key",
+			Description: "HMAC secret access key for S3-compatible authentication",
+			Hint:        "Optional S3-compatible Secret when used in compatibility mode",
+			Secret:      true,
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{

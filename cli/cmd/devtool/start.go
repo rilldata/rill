@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -36,19 +37,32 @@ const (
 )
 
 var (
+	// Console log colors
 	logErr  = color.New(color.FgHiRed)
 	logWarn = color.New(color.FgHiYellow)
 	logInfo = color.New(color.FgHiGreen)
+
+	// Preset options
+	presets = []string{
+		// Full cloud setup
+		"cloud",
+		// Minimal cloud setup (no Clickhouse, no telemetry)
+		"minimal",
+		// Rill Developer setup (equivalent to `rill start`)
+		"local",
+		// Cloud setup for e2e tests
+		"e2e",
+		// TODO: What is this?
+		"other",
+	}
 )
 
-var presets = []string{"cloud", "local", "e2e", "other"}
-
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
-	var verbose, reset, refreshDotenv, full bool
+	var verbose, reset, refreshDotenv bool
 	services := &servicesCfg{}
 
 	cmd := &cobra.Command{
-		Use:   "start [cloud|local|e2e]",
+		Use:   "start [cloud|minimal|local|e2e]",
 		Short: "Start a local development environment",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var preset string
@@ -67,20 +81,19 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to parse services: %w", err)
 			}
 
-			return start(ch, preset, verbose, reset, refreshDotenv, full, services)
+			return start(ch, preset, verbose, reset, refreshDotenv, services)
 		},
 	}
 
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Set log level to debug")
 	cmd.Flags().BoolVar(&reset, "reset", false, "Reset local development state")
 	cmd.Flags().BoolVar(&refreshDotenv, "refresh-dotenv", true, "Refresh .env file from shared storage")
-	cmd.Flags().BoolVar(&full, "full", false, "Start all services instead of minimal set (cloud preset only)")
 	services.addFlags(cmd)
 
 	return cmd
 }
 
-func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv, full bool, services *servicesCfg) error {
+func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool, services *servicesCfg) error {
 	ctx := graceful.WithCancelOnTerminate(context.Background())
 
 	err := errors.Join(
@@ -94,12 +107,8 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv, ful
 	}
 
 	switch preset {
-	case "cloud":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "cloud", full, services)
-	case "e2e":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", false, services)
-	case "other":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "other", false, services)
+	case "cloud", "minimal", "e2e", "other":
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, preset, services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
@@ -230,7 +239,7 @@ func (s *servicesCfg) parse() error {
 
 type cloud struct{}
 
-func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, full bool, services *servicesCfg) error {
+func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, services *servicesCfg) error {
 	if refreshDotenv {
 		err := downloadDotenv(ctx, preset)
 		if err != nil {
@@ -239,17 +248,8 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		logInfo.Printf("Refreshed .env\n")
 	}
 
-	profiles := []string{preset}
 	if preset == "other" {
-		profiles = []string{"e2e"}
-	}
-
-	if preset == "cloud" {
-		if full {
-			profiles = []string{"core", "extras"}
-		} else {
-			profiles = []string{"core"}
-		}
+		preset = "e2e"
 	}
 
 	// Validate the .env file is well-formed.
@@ -279,7 +279,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
-		g.Go(func() error { return s.runDeps(ctx, verbose, profiles) })
+		g.Go(func() error { return s.runDeps(ctx, verbose, preset) })
 	}
 
 	depsReadyCh := make(chan struct{})
@@ -303,7 +303,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			if err := awaitClose(ctx, depsReadyCh); err != nil {
 				return err
 			}
-			return s.runAdmin(ctx, verbose)
+			return s.runAdmin(ctx, verbose, preset)
 		})
 	}
 
@@ -312,7 +312,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			if err := awaitClose(ctx, depsReadyCh); err != nil {
 				return err
 			}
-			return s.runRuntime(ctx, verbose)
+			return s.runRuntime(ctx, verbose, preset)
 		})
 	}
 
@@ -410,13 +410,18 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "down", "--volumes").Run()
 }
 
-func (s cloud) runDeps(ctx context.Context, verbose bool, profiles []string) error {
+func (s cloud) runDeps(ctx context.Context, verbose bool, preset string) error {
 	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	profileArgs := make([]string, 0, len(profiles)*2)
-	for _, p := range profiles {
-		profileArgs = append(profileArgs, "--profile", p)
+	profile := "full"
+	if preset == "minimal" {
+		profile = "minimal"
+	} else if preset == "e2e" {
+		profile = "e2e"
 	}
-	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s %s up\n", composeFile, strings.Join(profileArgs, " "))
+
+	args := []string{"docker", "compose", "--env-file", ".env", "-f", composeFile, "--profile", profile, "up"}
+
+	logInfo.Printf("Starting dependencies: %s\n", strings.Join(args, " "))
 	defer logInfo.Printf("Stopped dependencies\n")
 
 	err := prepareStripeConfig()
@@ -424,9 +429,6 @@ func (s cloud) runDeps(ctx context.Context, verbose bool, profiles []string) err
 		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
-	args := []string{"docker", "compose", "--env-file", ".env", "-f", composeFile}
-	args = append(args, profileArgs...)
-	args = append(args, "up")
 	cmd := newCmd(ctx, args[0], args[1:]...)
 	if verbose {
 		cmd.Stdout = os.Stdout
@@ -484,13 +486,25 @@ func (s cloud) awaitRedis(ctx context.Context) error {
 	}
 }
 
-func (s cloud) runAdmin(ctx context.Context, verbose bool) (err error) {
+func (s cloud) runAdmin(ctx context.Context, verbose bool, preset string) (err error) {
 	logInfo.Printf("Starting admin\n")
 	defer logInfo.Printf("Stopped admin\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "admin", "start")
+	cmd.Env = os.Environ()
+	if preset == "minimal" {
+		cmd.Env = append(
+			cmd.Env,
+			// This differs from the usual dev provisioner set in not having a Clickhouse provisioner.
+			`RILL_ADMIN_PROVISIONER_SET_JSON={"static":{"type":"static","spec":{"runtimes":[{"host":"http://localhost:8081","slots":50,"data_dir":"dev-cloud-state","audience_url":"http://localhost:8081"}]}}}`,
+			// Disable traces
+			"RILL_ADMIN_TRACES_EXPORTER="+string(observability.NoopExporter),
+			// Change metrics to Prometheus, which unlike Otel doesn't require an external collector.
+			"RILL_ADMIN_METRICS_EXPORTER="+string(observability.PrometheusExporter),
+		)
+	}
 	if verbose {
-		cmd.Env = append(os.Environ(), "RILL_ADMIN_LOG_LEVEL=debug")
+		cmd.Env = append(cmd.Env, "RILL_ADMIN_LOG_LEVEL=debug")
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
@@ -522,13 +536,23 @@ func (s cloud) awaitAdmin(ctx context.Context) error {
 	}
 }
 
-func (s cloud) runRuntime(ctx context.Context, verbose bool) (err error) {
+func (s cloud) runRuntime(ctx context.Context, verbose bool, preset string) (err error) {
 	logInfo.Printf("Starting runtime\n")
 	defer logInfo.Printf("Stopped runtime\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "runtime", "start")
+	cmd.Env = os.Environ()
+	if preset == "minimal" {
+		cmd.Env = append(
+			cmd.Env,
+			// Disable traces
+			"RILL_RUNTIME_TRACES_EXPORTER="+string(observability.NoopExporter),
+			// Change metrics to Prometheus, which unlike Otel doesn't require an external collector.
+			"RILL_RUNTIME_METRICS_EXPORTER="+string(observability.PrometheusExporter),
+		)
+	}
 	if verbose {
-		cmd.Env = append(os.Environ(), "RILL_RUNTIME_LOG_LEVEL=debug")
+		cmd.Env = append(cmd.Env, "RILL_RUNTIME_LOG_LEVEL=debug")
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout

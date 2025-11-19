@@ -18,10 +18,13 @@ export const getYupSchema = {
   }),
 
   gcs: yup.object().shape({
+    google_application_credentials: yup.string().optional(),
+    key_id: yup.string().optional(),
+    secret: yup.string().optional(),
     path: yup
       .string()
       .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
-      .required("GS URI is required"),
+      .optional(),
   }),
 
   https: yup.object().shape({

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -14,36 +13,12 @@ import (
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	testcontainersclickhouse "github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"go.uber.org/zap"
 )
 
 func TestClickHouseStatic(t *testing.T) {
 	// Create a test ClickHouse cluster
-	container, err := testcontainersclickhouse.Run(
-		context.Background(),
-		"clickhouse/clickhouse-server:24.11.1.2557",
-		// Add a user config file that enables access management for the "default" user
-		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
-			req.Files = append(req.Files, testcontainers.ContainerFile{
-				Reader:            strings.NewReader(`<clickhouse><users><default><access_management>1</access_management></default></users></clickhouse>`),
-				ContainerFilePath: "/etc/clickhouse-server/users.d/default.xml",
-				FileMode:          0o755,
-			})
-			return nil
-		}),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := container.Terminate(context.Background())
-		require.NoError(t, err)
-	})
-	host, err := container.Host(context.Background())
-	require.NoError(t, err)
-	port, err := container.MappedPort(context.Background(), "9000/tcp")
-	require.NoError(t, err)
-	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
+	dsn := testclickhouse.Start(t)
 
 	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{
@@ -114,33 +89,11 @@ func TestClickHouseStatic(t *testing.T) {
 
 func TestClickHouseStaticWithEnvVar(t *testing.T) {
 	// Create a test ClickHouse cluster
-	container, err := testcontainersclickhouse.Run(
-		context.Background(),
-		"clickhouse/clickhouse-server:24.11.1.2557",
-		// Add a user config file that enables access management for the "default" user
-		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
-			req.Files = append(req.Files, testcontainers.ContainerFile{
-				Reader:            strings.NewReader(`<clickhouse><users><default><access_management>1</access_management></default></users></clickhouse>`),
-				ContainerFilePath: "/etc/clickhouse-server/users.d/default.xml",
-				FileMode:          0o755,
-			})
-			return nil
-		}),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := container.Terminate(context.Background())
-		require.NoError(t, err)
-	})
-	host, err := container.Host(context.Background())
-	require.NoError(t, err)
-	port, err := container.MappedPort(context.Background(), "9000/tcp")
-	require.NoError(t, err)
-	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
+	dsn := testclickhouse.Start(t)
 
 	// Set environment variable
 	envVar := "TEST_CLICKHOUSE_DSN"
-	err = os.Setenv(envVar, dsn)
+	err := os.Setenv(envVar, dsn)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		os.Unsetenv(envVar)
@@ -200,29 +153,7 @@ func TestClickHouseStaticEnvVarEmpty(t *testing.T) {
 
 func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 	// Create a test ClickHouse cluster
-	container, err := testcontainersclickhouse.Run(
-		context.Background(),
-		"clickhouse/clickhouse-server:24.11.1.2557",
-		// Add a user config file that enables access management for the "default" user
-		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
-			req.Files = append(req.Files, testcontainers.ContainerFile{
-				Reader:            strings.NewReader(`<clickhouse><users><default><access_management>1</access_management></default></users></clickhouse>`),
-				ContainerFilePath: "/etc/clickhouse-server/users.d/default.xml",
-				FileMode:          0o755,
-			})
-			return nil
-		}),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := container.Terminate(context.Background())
-		require.NoError(t, err)
-	})
-	host, err := container.Host(context.Background())
-	require.NoError(t, err)
-	port, err := container.MappedPort(context.Background(), "9000/tcp")
-	require.NoError(t, err)
-	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
+	dsn := testclickhouse.Start(t)
 
 	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{
@@ -285,29 +216,7 @@ func TestClickHouseStaticHumanReadableNaming(t *testing.T) {
 
 func TestClickHouseStaticFallbackNaming(t *testing.T) {
 	// Create a test ClickHouse cluster
-	container, err := testcontainersclickhouse.Run(
-		context.Background(),
-		"clickhouse/clickhouse-server:24.11.1.2557",
-		// Add a user config file that enables access management for the "default" user
-		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
-			req.Files = append(req.Files, testcontainers.ContainerFile{
-				Reader:            strings.NewReader(`<clickhouse><users><default><access_management>1</access_management></default></users></clickhouse>`),
-				ContainerFilePath: "/etc/clickhouse-server/users.d/default.xml",
-				FileMode:          0o755,
-			})
-			return nil
-		}),
-	)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := container.Terminate(context.Background())
-		require.NoError(t, err)
-	})
-	host, err := container.Host(context.Background())
-	require.NoError(t, err)
-	port, err := container.MappedPort(context.Background(), "9000/tcp")
-	require.NoError(t, err)
-	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
+	dsn := testclickhouse.Start(t)
 
 	// Create the provisioner
 	specJSON, err := json.Marshal(&Spec{

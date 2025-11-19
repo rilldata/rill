@@ -24,17 +24,17 @@ export interface ConnectorDriverProperty {
   noPrompt?: boolean;
 }
 
-export type ConnectorDriverPropertyType =
-  (typeof ConnectorDriverPropertyType)[keyof typeof ConnectorDriverPropertyType];
+export type ConnectorDriverPropertyType = typeof ConnectorDriverPropertyType[keyof typeof ConnectorDriverPropertyType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ConnectorDriverPropertyType = {
-  TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
-  TYPE_NUMBER: "TYPE_NUMBER",
-  TYPE_BOOLEAN: "TYPE_BOOLEAN",
-  TYPE_STRING: "TYPE_STRING",
-  TYPE_FILE: "TYPE_FILE",
-  TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
+  TYPE_UNSPECIFIED: 'TYPE_UNSPECIFIED',
+  TYPE_NUMBER: 'TYPE_NUMBER',
+  TYPE_BOOLEAN: 'TYPE_BOOLEAN',
+  TYPE_STRING: 'TYPE_STRING',
+  TYPE_FILE: 'TYPE_FILE',
+  TYPE_INFORMATIONAL: 'TYPE_INFORMATIONAL',
 } as const;
 
 export interface MetricsViewFilterCond {
@@ -50,6 +50,7 @@ export interface MetricsViewSearchResponseSearchResult {
 
 export interface MetricsViewSpecDimension {
   name?: string;
+  type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
   column?: string;
@@ -60,6 +61,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
 }
 
@@ -68,6 +70,16 @@ export interface MetricsViewSpecDimensionSelector {
   timeGrain?: V1TimeGrain;
   desc?: boolean;
 }
+
+export type MetricsViewSpecDimensionType = typeof MetricsViewSpecDimensionType[keyof typeof MetricsViewSpecDimensionType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecDimensionType = {
+  DIMENSION_TYPE_UNSPECIFIED: 'DIMENSION_TYPE_UNSPECIFIED',
+  DIMENSION_TYPE_CATEGORICAL: 'DIMENSION_TYPE_CATEGORICAL',
+  DIMENSION_TYPE_TIME: 'DIMENSION_TYPE_TIME',
+} as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
 
@@ -89,15 +101,15 @@ export interface MetricsViewSpecMeasure {
   dataType?: Runtimev1Type;
 }
 
-export type MetricsViewSpecMeasureType =
-  (typeof MetricsViewSpecMeasureType)[keyof typeof MetricsViewSpecMeasureType];
+export type MetricsViewSpecMeasureType = typeof MetricsViewSpecMeasureType[keyof typeof MetricsViewSpecMeasureType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MetricsViewSpecMeasureType = {
-  MEASURE_TYPE_UNSPECIFIED: "MEASURE_TYPE_UNSPECIFIED",
-  MEASURE_TYPE_SIMPLE: "MEASURE_TYPE_SIMPLE",
-  MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
-  MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
+  MEASURE_TYPE_UNSPECIFIED: 'MEASURE_TYPE_UNSPECIFIED',
+  MEASURE_TYPE_SIMPLE: 'MEASURE_TYPE_SIMPLE',
+  MEASURE_TYPE_DERIVED: 'MEASURE_TYPE_DERIVED',
+  MEASURE_TYPE_TIME_COMPARISON: 'MEASURE_TYPE_TIME_COMPARISON',
 } as const;
 
 export interface MetricsViewSpecMeasureWindow {
@@ -133,42 +145,43 @@ export interface TopKEntry {
   count?: number;
 }
 
-export type TypeCode = (typeof TypeCode)[keyof typeof TypeCode];
+export type TypeCode = typeof TypeCode[keyof typeof TypeCode];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const TypeCode = {
-  CODE_UNSPECIFIED: "CODE_UNSPECIFIED",
-  CODE_BOOL: "CODE_BOOL",
-  CODE_INT8: "CODE_INT8",
-  CODE_INT16: "CODE_INT16",
-  CODE_INT32: "CODE_INT32",
-  CODE_INT64: "CODE_INT64",
-  CODE_INT128: "CODE_INT128",
-  CODE_INT256: "CODE_INT256",
-  CODE_UINT8: "CODE_UINT8",
-  CODE_UINT16: "CODE_UINT16",
-  CODE_UINT32: "CODE_UINT32",
-  CODE_UINT64: "CODE_UINT64",
-  CODE_UINT128: "CODE_UINT128",
-  CODE_UINT256: "CODE_UINT256",
-  CODE_FLOAT32: "CODE_FLOAT32",
-  CODE_FLOAT64: "CODE_FLOAT64",
-  CODE_TIMESTAMP: "CODE_TIMESTAMP",
-  CODE_INTERVAL: "CODE_INTERVAL",
-  CODE_DATE: "CODE_DATE",
-  CODE_TIME: "CODE_TIME",
-  CODE_STRING: "CODE_STRING",
-  CODE_BYTES: "CODE_BYTES",
-  CODE_ARRAY: "CODE_ARRAY",
-  CODE_STRUCT: "CODE_STRUCT",
-  CODE_MAP: "CODE_MAP",
-  CODE_DECIMAL: "CODE_DECIMAL",
-  CODE_JSON: "CODE_JSON",
-  CODE_UUID: "CODE_UUID",
+  CODE_UNSPECIFIED: 'CODE_UNSPECIFIED',
+  CODE_BOOL: 'CODE_BOOL',
+  CODE_INT8: 'CODE_INT8',
+  CODE_INT16: 'CODE_INT16',
+  CODE_INT32: 'CODE_INT32',
+  CODE_INT64: 'CODE_INT64',
+  CODE_INT128: 'CODE_INT128',
+  CODE_INT256: 'CODE_INT256',
+  CODE_UINT8: 'CODE_UINT8',
+  CODE_UINT16: 'CODE_UINT16',
+  CODE_UINT32: 'CODE_UINT32',
+  CODE_UINT64: 'CODE_UINT64',
+  CODE_UINT128: 'CODE_UINT128',
+  CODE_UINT256: 'CODE_UINT256',
+  CODE_FLOAT32: 'CODE_FLOAT32',
+  CODE_FLOAT64: 'CODE_FLOAT64',
+  CODE_TIMESTAMP: 'CODE_TIMESTAMP',
+  CODE_INTERVAL: 'CODE_INTERVAL',
+  CODE_DATE: 'CODE_DATE',
+  CODE_TIME: 'CODE_TIME',
+  CODE_STRING: 'CODE_STRING',
+  CODE_BYTES: 'CODE_BYTES',
+  CODE_ARRAY: 'CODE_ARRAY',
+  CODE_STRUCT: 'CODE_STRUCT',
+  CODE_MAP: 'CODE_MAP',
+  CODE_DECIMAL: 'CODE_DECIMAL',
+  CODE_JSON: 'CODE_JSON',
+  CODE_UUID: 'CODE_UUID',
 } as const;
 
 export interface ProtobufAny {
-  "@type"?: string;
+  '@type'?: string;
   [key: string]: unknown;
 }
 
@@ -180,12 +193,12 @@ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
-export type ProtobufNullValue =
-  (typeof ProtobufNullValue)[keyof typeof ProtobufNullValue];
+export type ProtobufNullValue = typeof ProtobufNullValue[keyof typeof ProtobufNullValue];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ProtobufNullValue = {
-  NULL_VALUE: "NULL_VALUE",
+  NULL_VALUE: 'NULL_VALUE',
 } as const;
 
 export interface RpcStatus {
@@ -224,9 +237,7 @@ export interface V1APISpec {
   skipNestedSecurity?: boolean;
 }
 
-export interface V1APIState {
-  [key: string]: unknown;
-}
+export interface V1APIState { [key: string]: unknown }
 
 export interface V1Alert {
   spec?: V1AlertSpec;
@@ -247,7 +258,7 @@ export type V1AlertSpecResolverProperties = { [key: string]: unknown };
 
 export type V1AlertSpecQueryForAttributes = { [key: string]: unknown };
 
-export type V1AlertSpecAnnotations = { [key: string]: string };
+export type V1AlertSpecAnnotations = {[key: string]: string};
 
 export interface V1AlertSpec {
   displayName?: string;
@@ -292,13 +303,13 @@ export interface V1AnalyzeVariablesResponse {
   variables?: V1AnalyzedVariable[];
 }
 
-export type V1AnalyzedConnectorConfig = { [key: string]: string };
+export type V1AnalyzedConnectorConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorPresetConfig = { [key: string]: string };
+export type V1AnalyzedConnectorPresetConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
+export type V1AnalyzedConnectorProjectConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
+export type V1AnalyzedConnectorEnvConfig = {[key: string]: string};
 
 export type V1AnalyzedConnectorProvisionArgs = { [key: string]: unknown };
 
@@ -328,23 +339,6 @@ export interface V1AnalyzedVariable {
   usedBy?: V1ResourceName[];
 }
 
-export type V1AppContextContextMetadata = { [key: string]: unknown };
-
-export interface V1AppContext {
-  contextType?: V1AppContextType;
-  contextMetadata?: V1AppContextContextMetadata;
-}
-
-export type V1AppContextType =
-  (typeof V1AppContextType)[keyof typeof V1AppContextType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1AppContextType = {
-  APP_CONTEXT_TYPE_UNSPECIFIED: "APP_CONTEXT_TYPE_UNSPECIFIED",
-  APP_CONTEXT_TYPE_PROJECT_CHAT: "APP_CONTEXT_TYPE_PROJECT_CHAT",
-  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD",
-} as const;
-
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 
 export interface V1AssertionResult {
@@ -353,15 +347,15 @@ export interface V1AssertionResult {
   errorMessage?: string;
 }
 
-export type V1AssertionStatus =
-  (typeof V1AssertionStatus)[keyof typeof V1AssertionStatus];
+export type V1AssertionStatus = typeof V1AssertionStatus[keyof typeof V1AssertionStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1AssertionStatus = {
-  ASSERTION_STATUS_UNSPECIFIED: "ASSERTION_STATUS_UNSPECIFIED",
-  ASSERTION_STATUS_PASS: "ASSERTION_STATUS_PASS",
-  ASSERTION_STATUS_FAIL: "ASSERTION_STATUS_FAIL",
-  ASSERTION_STATUS_ERROR: "ASSERTION_STATUS_ERROR",
+  ASSERTION_STATUS_UNSPECIFIED: 'ASSERTION_STATUS_UNSPECIFIED',
+  ASSERTION_STATUS_PASS: 'ASSERTION_STATUS_PASS',
+  ASSERTION_STATUS_FAIL: 'ASSERTION_STATUS_FAIL',
+  ASSERTION_STATUS_ERROR: 'ASSERTION_STATUS_ERROR',
 } as const;
 
 export interface V1BigQueryListDatasetsResponse {
@@ -374,14 +368,14 @@ export interface V1BigQueryListTablesResponse {
   names?: string[];
 }
 
-export type V1BuiltinMeasure =
-  (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
+export type V1BuiltinMeasure = typeof V1BuiltinMeasure[keyof typeof V1BuiltinMeasure];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1BuiltinMeasure = {
-  BUILTIN_MEASURE_UNSPECIFIED: "BUILTIN_MEASURE_UNSPECIFIED",
-  BUILTIN_MEASURE_COUNT: "BUILTIN_MEASURE_COUNT",
-  BUILTIN_MEASURE_COUNT_DISTINCT: "BUILTIN_MEASURE_COUNT_DISTINCT",
+  BUILTIN_MEASURE_UNSPECIFIED: 'BUILTIN_MEASURE_UNSPECIFIED',
+  BUILTIN_MEASURE_COUNT: 'BUILTIN_MEASURE_COUNT',
+  BUILTIN_MEASURE_COUNT_DISTINCT: 'BUILTIN_MEASURE_COUNT_DISTINCT',
 } as const;
 
 export interface V1Canvas {
@@ -670,7 +664,7 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
-export type V1ConnectorConfig = { [key: string]: string };
+export type V1ConnectorConfig = { [key: string]: unknown };
 
 export type V1ConnectorProvisionArgs = { [key: string]: unknown };
 
@@ -707,7 +701,7 @@ export interface V1ConnectorDriver {
   implementsWarehouse?: boolean;
 }
 
-export type V1ConnectorSpecProperties = { [key: string]: string };
+export type V1ConnectorSpecProperties = { [key: string]: unknown };
 
 export type V1ConnectorSpecProvisionArgs = { [key: string]: unknown };
 
@@ -738,18 +732,18 @@ export interface V1Conversation {
   id?: string;
   ownerId?: string;
   title?: string;
+  userAgent?: string;
   createdOn?: string;
   updatedOn?: string;
+  /** NOTE: Deprecated. */
   messages?: V1Message[];
 }
 
-export interface V1CreateDirectoryResponse {
-  [key: string]: unknown;
-}
+export interface V1CreateDirectoryResponse { [key: string]: unknown }
 
-export type V1CreateInstanceRequestVariables = { [key: string]: string };
+export type V1CreateInstanceRequestVariables = {[key: string]: string};
 
-export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
+export type V1CreateInstanceRequestAnnotations = {[key: string]: string};
 
 /**
  * Request message for RuntimeService.CreateInstance.
@@ -772,22 +766,16 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
-export interface V1CreateTriggerResponse {
-  [key: string]: unknown;
-}
+export interface V1CreateTriggerResponse { [key: string]: unknown }
 
 export interface V1DatabaseSchemaInfo {
   database?: string;
   databaseSchema?: string;
 }
 
-export interface V1DeleteFileResponse {
-  [key: string]: unknown;
-}
+export interface V1DeleteFileResponse { [key: string]: unknown }
 
-export interface V1DeleteInstanceResponse {
-  [key: string]: unknown;
-}
+export interface V1DeleteInstanceResponse { [key: string]: unknown }
 
 export interface V1DirEntry {
   path?: string;
@@ -812,15 +800,15 @@ export interface V1Explore {
   state?: V1ExploreState;
 }
 
-export type V1ExploreComparisonMode =
-  (typeof V1ExploreComparisonMode)[keyof typeof V1ExploreComparisonMode];
+export type V1ExploreComparisonMode = typeof V1ExploreComparisonMode[keyof typeof V1ExploreComparisonMode];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ExploreComparisonMode = {
-  EXPLORE_COMPARISON_MODE_UNSPECIFIED: "EXPLORE_COMPARISON_MODE_UNSPECIFIED",
-  EXPLORE_COMPARISON_MODE_NONE: "EXPLORE_COMPARISON_MODE_NONE",
-  EXPLORE_COMPARISON_MODE_TIME: "EXPLORE_COMPARISON_MODE_TIME",
-  EXPLORE_COMPARISON_MODE_DIMENSION: "EXPLORE_COMPARISON_MODE_DIMENSION",
+  EXPLORE_COMPARISON_MODE_UNSPECIFIED: 'EXPLORE_COMPARISON_MODE_UNSPECIFIED',
+  EXPLORE_COMPARISON_MODE_NONE: 'EXPLORE_COMPARISON_MODE_NONE',
+  EXPLORE_COMPARISON_MODE_TIME: 'EXPLORE_COMPARISON_MODE_TIME',
+  EXPLORE_COMPARISON_MODE_DIMENSION: 'EXPLORE_COMPARISON_MODE_DIMENSION',
 } as const;
 
 export interface V1ExploreComparisonTimeRange {
@@ -870,17 +858,17 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotTableMode?: string;
 }
 
-export type V1ExploreSortType =
-  (typeof V1ExploreSortType)[keyof typeof V1ExploreSortType];
+export type V1ExploreSortType = typeof V1ExploreSortType[keyof typeof V1ExploreSortType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ExploreSortType = {
-  EXPLORE_SORT_TYPE_UNSPECIFIED: "EXPLORE_SORT_TYPE_UNSPECIFIED",
-  EXPLORE_SORT_TYPE_VALUE: "EXPLORE_SORT_TYPE_VALUE",
-  EXPLORE_SORT_TYPE_PERCENT: "EXPLORE_SORT_TYPE_PERCENT",
-  EXPLORE_SORT_TYPE_DELTA_PERCENT: "EXPLORE_SORT_TYPE_DELTA_PERCENT",
-  EXPLORE_SORT_TYPE_DELTA_ABSOLUTE: "EXPLORE_SORT_TYPE_DELTA_ABSOLUTE",
-  EXPLORE_SORT_TYPE_DIMENSION: "EXPLORE_SORT_TYPE_DIMENSION",
+  EXPLORE_SORT_TYPE_UNSPECIFIED: 'EXPLORE_SORT_TYPE_UNSPECIFIED',
+  EXPLORE_SORT_TYPE_VALUE: 'EXPLORE_SORT_TYPE_VALUE',
+  EXPLORE_SORT_TYPE_PERCENT: 'EXPLORE_SORT_TYPE_PERCENT',
+  EXPLORE_SORT_TYPE_DELTA_PERCENT: 'EXPLORE_SORT_TYPE_DELTA_PERCENT',
+  EXPLORE_SORT_TYPE_DELTA_ABSOLUTE: 'EXPLORE_SORT_TYPE_DELTA_ABSOLUTE',
+  EXPLORE_SORT_TYPE_DIMENSION: 'EXPLORE_SORT_TYPE_DIMENSION',
 } as const;
 
 export interface V1ExploreSpec {
@@ -928,27 +916,27 @@ export interface V1ExploreTimeRange {
   comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
 }
 
-export type V1ExploreWebView =
-  (typeof V1ExploreWebView)[keyof typeof V1ExploreWebView];
+export type V1ExploreWebView = typeof V1ExploreWebView[keyof typeof V1ExploreWebView];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ExploreWebView = {
-  EXPLORE_WEB_VIEW_UNSPECIFIED: "EXPLORE_WEB_VIEW_UNSPECIFIED",
-  EXPLORE_WEB_VIEW_EXPLORE: "EXPLORE_WEB_VIEW_EXPLORE",
-  EXPLORE_WEB_VIEW_TIME_DIMENSION: "EXPLORE_WEB_VIEW_TIME_DIMENSION",
-  EXPLORE_WEB_VIEW_PIVOT: "EXPLORE_WEB_VIEW_PIVOT",
-  EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
+  EXPLORE_WEB_VIEW_UNSPECIFIED: 'EXPLORE_WEB_VIEW_UNSPECIFIED',
+  EXPLORE_WEB_VIEW_EXPLORE: 'EXPLORE_WEB_VIEW_EXPLORE',
+  EXPLORE_WEB_VIEW_TIME_DIMENSION: 'EXPLORE_WEB_VIEW_TIME_DIMENSION',
+  EXPLORE_WEB_VIEW_PIVOT: 'EXPLORE_WEB_VIEW_PIVOT',
+  EXPLORE_WEB_VIEW_CANVAS: 'EXPLORE_WEB_VIEW_CANVAS',
 } as const;
 
-export type V1ExportFormat =
-  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+export type V1ExportFormat = typeof V1ExportFormat[keyof typeof V1ExportFormat];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ExportFormat = {
-  EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
-  EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
-  EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
-  EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+  EXPORT_FORMAT_UNSPECIFIED: 'EXPORT_FORMAT_UNSPECIFIED',
+  EXPORT_FORMAT_CSV: 'EXPORT_FORMAT_CSV',
+  EXPORT_FORMAT_XLSX: 'EXPORT_FORMAT_XLSX',
+  EXPORT_FORMAT_PARQUET: 'EXPORT_FORMAT_PARQUET',
 } as const;
 
 export interface V1ExportReportResponse {
@@ -985,13 +973,14 @@ export interface V1FieldSelector {
 /**
  * FileEvent describes a file change.
  */
-export type V1FileEvent = (typeof V1FileEvent)[keyof typeof V1FileEvent];
+export type V1FileEvent = typeof V1FileEvent[keyof typeof V1FileEvent];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1FileEvent = {
-  FILE_EVENT_UNSPECIFIED: "FILE_EVENT_UNSPECIFIED",
-  FILE_EVENT_WRITE: "FILE_EVENT_WRITE",
-  FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
+  FILE_EVENT_UNSPECIFIED: 'FILE_EVENT_UNSPECIFIED',
+  FILE_EVENT_WRITE: 'FILE_EVENT_WRITE',
+  FILE_EVENT_DELETE: 'FILE_EVENT_DELETE',
 } as const;
 
 export interface V1GCSGetCredentialsInfoResponse {
@@ -1021,18 +1010,14 @@ export interface V1GenerateMetricsViewFileResponse {
   aiSucceeded?: boolean;
 }
 
-export type V1GenerateRendererResponseRendererProperties = {
-  [key: string]: unknown;
-};
+export type V1GenerateRendererResponseRendererProperties = { [key: string]: unknown };
 
 export interface V1GenerateRendererResponse {
   renderer?: string;
   rendererProperties?: V1GenerateRendererResponseRendererProperties;
 }
 
-export type V1GenerateResolverResponseResolverProperties = {
-  [key: string]: unknown;
-};
+export type V1GenerateResolverResponseResolverProperties = { [key: string]: unknown };
 
 export interface V1GenerateResolverResponse {
   resolver?: string;
@@ -1041,6 +1026,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
+  messages?: V1Message[];
 }
 
 export interface V1GetExploreResponse {
@@ -1070,15 +1056,13 @@ export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
 
-export type V1GetTableResponseSchema = { [key: string]: string };
+export type V1GetTableResponseSchema = {[key: string]: string};
 
 export interface V1GetTableResponse {
   schema?: V1GetTableResponseSchema;
 }
 
-export type V1HealthResponseInstancesHealth = {
-  [key: string]: V1InstanceHealth;
-};
+export type V1HealthResponseInstancesHealth = {[key: string]: V1InstanceHealth};
 
 export interface V1HealthResponse {
   limiterError?: string;
@@ -1088,23 +1072,23 @@ export interface V1HealthResponse {
   instancesHealth?: V1HealthResponseInstancesHealth;
 }
 
-export type V1HistogramMethod =
-  (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
+export type V1HistogramMethod = typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1HistogramMethod = {
-  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
-  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
-  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
+  HISTOGRAM_METHOD_UNSPECIFIED: 'HISTOGRAM_METHOD_UNSPECIFIED',
+  HISTOGRAM_METHOD_FD: 'HISTOGRAM_METHOD_FD',
+  HISTOGRAM_METHOD_DIAGNOSTIC: 'HISTOGRAM_METHOD_DIAGNOSTIC',
 } as const;
 
-export type V1InstanceVariables = { [key: string]: string };
+export type V1InstanceVariables = {[key: string]: string};
 
-export type V1InstanceProjectVariables = { [key: string]: string };
+export type V1InstanceProjectVariables = {[key: string]: string};
 
-export type V1InstanceFeatureFlags = { [key: string]: boolean };
+export type V1InstanceFeatureFlags = {[key: string]: boolean};
 
-export type V1InstanceAnnotations = { [key: string]: string };
+export type V1InstanceAnnotations = {[key: string]: string};
 
 /**
  * Instance represents a single data project, meaning one set of code artifacts,
@@ -1117,6 +1101,7 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   environment?: string;
+  projectDisplayName?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
@@ -1133,7 +1118,7 @@ export interface V1Instance {
   frontendUrl?: string;
 }
 
-export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
+export type V1InstanceHealthMetricsViewErrors = {[key: string]: string};
 
 export interface V1InstanceHealth {
   controllerError?: string;
@@ -1215,16 +1200,17 @@ export interface V1Log {
   jsonPayload?: string;
 }
 
-export type V1LogLevel = (typeof V1LogLevel)[keyof typeof V1LogLevel];
+export type V1LogLevel = typeof V1LogLevel[keyof typeof V1LogLevel];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1LogLevel = {
-  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
-  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
-  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
-  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
-  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
-  LOG_LEVEL_FATAL: "LOG_LEVEL_FATAL",
+  LOG_LEVEL_UNSPECIFIED: 'LOG_LEVEL_UNSPECIFIED',
+  LOG_LEVEL_DEBUG: 'LOG_LEVEL_DEBUG',
+  LOG_LEVEL_INFO: 'LOG_LEVEL_INFO',
+  LOG_LEVEL_WARN: 'LOG_LEVEL_WARN',
+  LOG_LEVEL_ERROR: 'LOG_LEVEL_ERROR',
+  LOG_LEVEL_FATAL: 'LOG_LEVEL_FATAL',
 } as const;
 
 export interface V1MapType {
@@ -1234,10 +1220,16 @@ export interface V1MapType {
 
 export interface V1Message {
   id?: string;
-  role?: string;
-  content?: V1ContentBlock[];
+  parentId?: string;
   createdOn?: string;
   updatedOn?: string;
+  index?: number;
+  role?: string;
+  type?: string;
+  tool?: string;
+  contentType?: string;
+  contentData?: string;
+  content?: V1ContentBlock[];
 }
 
 export interface V1MetricsView {
@@ -1283,9 +1275,7 @@ export interface V1MetricsViewAggregationMeasureComputeComparisonValue {
   measure?: string;
 }
 
-export interface V1MetricsViewAggregationMeasureComputeCount {
-  [key: string]: unknown;
-}
+export interface V1MetricsViewAggregationMeasureComputeCount { [key: string]: unknown }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
   dimension?: string;
@@ -1326,9 +1316,7 @@ export interface V1MetricsViewAggregationRequest {
   rows?: boolean;
 }
 
-export type V1MetricsViewAggregationResponseDataItem = {
-  [key: string]: unknown;
-};
+export type V1MetricsViewAggregationResponseDataItem = { [key: string]: unknown };
 
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
@@ -1347,9 +1335,7 @@ export interface V1MetricsViewAnnotationsResponse {
 /**
  * Any other fields are captured here. Will be used in predicates in the future.
  */
-export type V1MetricsViewAnnotationsResponseAnnotationAdditionalFields = {
-  [key: string]: unknown;
-};
+export type V1MetricsViewAnnotationsResponseAnnotationAdditionalFields = { [key: string]: unknown };
 
 export interface V1MetricsViewAnnotationsResponseAnnotation {
   /** Time when the annotation applies. Maps to `time` column from the table. */
@@ -1378,21 +1364,16 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
-export type V1MetricsViewComparisonMeasureType =
-  (typeof V1MetricsViewComparisonMeasureType)[keyof typeof V1MetricsViewComparisonMeasureType];
+export type V1MetricsViewComparisonMeasureType = typeof V1MetricsViewComparisonMeasureType[keyof typeof V1MetricsViewComparisonMeasureType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1MetricsViewComparisonMeasureType = {
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED",
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE",
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE",
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA",
-  METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-    "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED: 'METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED',
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE: 'METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE',
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE: 'METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE',
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA: 'METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA',
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA: 'METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA',
 } as const;
 
 export interface V1MetricsViewComparisonRequest {
@@ -1434,21 +1415,16 @@ export interface V1MetricsViewComparisonSort {
   sortType?: V1MetricsViewComparisonMeasureType;
 }
 
-export type V1MetricsViewComparisonSortType =
-  (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
+export type V1MetricsViewComparisonSortType = typeof V1MetricsViewComparisonSortType[keyof typeof V1MetricsViewComparisonSortType];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1MetricsViewComparisonSortType = {
-  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED:
-    "METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED",
-  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
-    "METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE",
-  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
-    "METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE",
-  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
-    "METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA",
-  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
-    "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED: 'METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED',
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE: 'METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE',
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE: 'METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE',
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA: 'METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA',
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA: 'METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA',
 } as const;
 
 export interface V1MetricsViewComparisonValue {
@@ -1571,6 +1547,11 @@ export interface V1MetricsViewTimeRangeResponse {
 }
 
 export interface V1MetricsViewTimeRangesResponse {
+  fullTimeRange?: V1TimeRangeSummary;
+  /** The resolved time ranges for the requested rilltime expressions. */
+  resolvedTimeRanges?: V1ResolvedTimeRange[];
+  /** The same values as resolved_time_ranges for backwards compatibility.
+Deprecated: use resolved_time_ranges instead. */
   timeRanges?: V1TimeRange[];
 }
 
@@ -1664,15 +1645,15 @@ export interface V1Model {
   state?: V1ModelState;
 }
 
-export type V1ModelChangeMode =
-  (typeof V1ModelChangeMode)[keyof typeof V1ModelChangeMode];
+export type V1ModelChangeMode = typeof V1ModelChangeMode[keyof typeof V1ModelChangeMode];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ModelChangeMode = {
-  MODEL_CHANGE_MODE_UNSPECIFIED: "MODEL_CHANGE_MODE_UNSPECIFIED",
-  MODEL_CHANGE_MODE_RESET: "MODEL_CHANGE_MODE_RESET",
-  MODEL_CHANGE_MODE_MANUAL: "MODEL_CHANGE_MODE_MANUAL",
-  MODEL_CHANGE_MODE_PATCH: "MODEL_CHANGE_MODE_PATCH",
+  MODEL_CHANGE_MODE_UNSPECIFIED: 'MODEL_CHANGE_MODE_UNSPECIFIED',
+  MODEL_CHANGE_MODE_RESET: 'MODEL_CHANGE_MODE_RESET',
+  MODEL_CHANGE_MODE_MANUAL: 'MODEL_CHANGE_MODE_MANUAL',
+  MODEL_CHANGE_MODE_PATCH: 'MODEL_CHANGE_MODE_PATCH',
 } as const;
 
 export type V1ModelPartitionData = { [key: string]: unknown };
@@ -1686,13 +1667,9 @@ export interface V1ModelPartition {
   elapsedMs?: number;
 }
 
-export type V1ModelSpecIncrementalStateResolverProperties = {
-  [key: string]: unknown;
-};
+export type V1ModelSpecIncrementalStateResolverProperties = { [key: string]: unknown };
 
-export type V1ModelSpecPartitionsResolverProperties = {
-  [key: string]: unknown;
-};
+export type V1ModelSpecPartitionsResolverProperties = { [key: string]: unknown };
 
 export type V1ModelSpecInputProperties = { [key: string]: unknown };
 
@@ -1723,8 +1700,12 @@ export interface V1ModelSpec {
   retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
+  /** trigger indicates a normal refresh (incremental or full depending on the model type). */
   trigger?: boolean;
+  /** trigger_full indicates a full refresh regardless of the model type. */
   triggerFull?: boolean;
+  /** trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models. */
+  triggerPartitions?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
   definedAsSource?: boolean;
 }
@@ -1812,9 +1793,7 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
-export type V1OLAPGetTableResponseUnsupportedColumns = {
-  [key: string]: string;
-};
+export type V1OLAPGetTableResponseUnsupportedColumns = {[key: string]: string};
 
 export interface V1OLAPGetTableResponse {
   schema?: V1StructType;
@@ -1840,23 +1819,24 @@ export interface V1OlapTableInfo {
   physicalSizeBytes?: string;
 }
 
-export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
+export type V1Operation = typeof V1Operation[keyof typeof V1Operation];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1Operation = {
-  OPERATION_UNSPECIFIED: "OPERATION_UNSPECIFIED",
-  OPERATION_EQ: "OPERATION_EQ",
-  OPERATION_NEQ: "OPERATION_NEQ",
-  OPERATION_LT: "OPERATION_LT",
-  OPERATION_LTE: "OPERATION_LTE",
-  OPERATION_GT: "OPERATION_GT",
-  OPERATION_GTE: "OPERATION_GTE",
-  OPERATION_OR: "OPERATION_OR",
-  OPERATION_AND: "OPERATION_AND",
-  OPERATION_IN: "OPERATION_IN",
-  OPERATION_NIN: "OPERATION_NIN",
-  OPERATION_LIKE: "OPERATION_LIKE",
-  OPERATION_NLIKE: "OPERATION_NLIKE",
+  OPERATION_UNSPECIFIED: 'OPERATION_UNSPECIFIED',
+  OPERATION_EQ: 'OPERATION_EQ',
+  OPERATION_NEQ: 'OPERATION_NEQ',
+  OPERATION_LT: 'OPERATION_LT',
+  OPERATION_LTE: 'OPERATION_LTE',
+  OPERATION_GT: 'OPERATION_GT',
+  OPERATION_GTE: 'OPERATION_GTE',
+  OPERATION_OR: 'OPERATION_OR',
+  OPERATION_AND: 'OPERATION_AND',
+  OPERATION_IN: 'OPERATION_IN',
+  OPERATION_NIN: 'OPERATION_NIN',
+  OPERATION_LIKE: 'OPERATION_LIKE',
+  OPERATION_NLIKE: 'OPERATION_NLIKE',
 } as const;
 
 export interface V1ParseError {
@@ -1882,9 +1862,7 @@ export interface V1ProjectParser {
   state?: V1ProjectParserState;
 }
 
-export interface V1ProjectParserSpec {
-  [key: string]: unknown;
-}
+export interface V1ProjectParserSpec { [key: string]: unknown }
 
 export interface V1ProjectParserState {
   parseErrors?: V1ParseError[];
@@ -1964,15 +1942,15 @@ export interface V1QueryResult {
   tableRowsResponse?: V1TableRowsResponse;
 }
 
-export type V1ReconcileStatus =
-  (typeof V1ReconcileStatus)[keyof typeof V1ReconcileStatus];
+export type V1ReconcileStatus = typeof V1ReconcileStatus[keyof typeof V1ReconcileStatus];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ReconcileStatus = {
-  RECONCILE_STATUS_UNSPECIFIED: "RECONCILE_STATUS_UNSPECIFIED",
-  RECONCILE_STATUS_IDLE: "RECONCILE_STATUS_IDLE",
-  RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
-  RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
+  RECONCILE_STATUS_UNSPECIFIED: 'RECONCILE_STATUS_UNSPECIFIED',
+  RECONCILE_STATUS_IDLE: 'RECONCILE_STATUS_IDLE',
+  RECONCILE_STATUS_PENDING: 'RECONCILE_STATUS_PENDING',
+  RECONCILE_STATUS_RUNNING: 'RECONCILE_STATUS_RUNNING',
 } as const;
 
 export interface V1RefreshModelTrigger {
@@ -2000,13 +1978,9 @@ If a model is specified, a normal incremental refresh is triggered. Use the "mod
   models?: V1RefreshModelTrigger[];
 }
 
-export interface V1RefreshTriggerState {
-  [key: string]: unknown;
-}
+export interface V1RefreshTriggerState { [key: string]: unknown }
 
-export interface V1RenameFileResponse {
-  [key: string]: unknown;
-}
+export interface V1RenameFileResponse { [key: string]: unknown }
 
 export interface V1Report {
   spec?: V1ReportSpec;
@@ -2021,7 +1995,7 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
-export type V1ReportSpecAnnotations = { [key: string]: string };
+export type V1ReportSpecAnnotations = {[key: string]: string};
 
 export interface V1ReportSpec {
   displayName?: string;
@@ -2054,16 +2028,12 @@ export interface V1ReportState {
 The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
 (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
  */
-export type V1ResolveCanvasResponseResolvedComponents = {
-  [key: string]: V1Resource;
-};
+export type V1ResolveCanvasResponseResolvedComponents = {[key: string]: V1Resource};
 
 /**
  * All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
  */
-export type V1ResolveCanvasResponseReferencedMetricsViews = {
-  [key: string]: V1Resource;
-};
+export type V1ResolveCanvasResponseReferencedMetricsViews = {[key: string]: V1Resource};
 
 export interface V1ResolveCanvasResponse {
   canvas?: V1Resource;
@@ -2075,12 +2045,24 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
-export type V1ResolveComponentResponseRendererProperties = {
-  [key: string]: unknown;
-};
+export type V1ResolveComponentResponseRendererProperties = { [key: string]: unknown };
 
 export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+}
+
+export interface V1ResolvedTimeRange {
+  /** The start of the resolved time range. */
+  start?: string;
+  /** The end of the resolved time range. */
+  end?: string;
+  grain?: V1TimeGrain;
+  /** The time dimension that was used to resolve the time range. */
+  timeDimension?: string;
+  /** The time zone that was used to resolve the time range. */
+  timeZone?: string;
+  /** The original expression used to resolve the time range. */
+  expression?: string;
 }
 
 export interface V1Resource {
@@ -2101,14 +2083,14 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
-export type V1ResourceEvent =
-  (typeof V1ResourceEvent)[keyof typeof V1ResourceEvent];
+export type V1ResourceEvent = typeof V1ResourceEvent[keyof typeof V1ResourceEvent];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ResourceEvent = {
-  RESOURCE_EVENT_UNSPECIFIED: "RESOURCE_EVENT_UNSPECIFIED",
-  RESOURCE_EVENT_WRITE: "RESOURCE_EVENT_WRITE",
-  RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
+  RESOURCE_EVENT_UNSPECIFIED: 'RESOURCE_EVENT_UNSPECIFIED',
+  RESOURCE_EVENT_WRITE: 'RESOURCE_EVENT_WRITE',
+  RESOURCE_EVENT_DELETE: 'RESOURCE_EVENT_DELETE',
 } as const;
 
 export interface V1ResourceMeta {
@@ -2286,9 +2268,7 @@ export interface V1TableColumnsRequest {
   priority?: number;
 }
 
-export type V1TableColumnsResponseUnsupportedColumns = {
-  [key: string]: string;
-};
+export type V1TableColumnsResponseUnsupportedColumns = {[key: string]: string};
 
 export interface V1TableColumnsResponse {
   profileColumns?: V1ProfileColumn[];
@@ -2321,7 +2301,7 @@ export interface V1Theme {
   state?: V1ThemeState;
 }
 
-export type V1ThemeColorsVariables = { [key: string]: string };
+export type V1ThemeColorsVariables = {[key: string]: string};
 
 export interface V1ThemeColors {
   primary?: string;
@@ -2338,24 +2318,23 @@ export interface V1ThemeSpec {
   dark?: V1ThemeColors;
 }
 
-export interface V1ThemeState {
-  [key: string]: unknown;
-}
+export interface V1ThemeState { [key: string]: unknown }
 
-export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
+export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TimeGrain = {
-  TIME_GRAIN_UNSPECIFIED: "TIME_GRAIN_UNSPECIFIED",
-  TIME_GRAIN_MILLISECOND: "TIME_GRAIN_MILLISECOND",
-  TIME_GRAIN_SECOND: "TIME_GRAIN_SECOND",
-  TIME_GRAIN_MINUTE: "TIME_GRAIN_MINUTE",
-  TIME_GRAIN_HOUR: "TIME_GRAIN_HOUR",
-  TIME_GRAIN_DAY: "TIME_GRAIN_DAY",
-  TIME_GRAIN_WEEK: "TIME_GRAIN_WEEK",
-  TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
-  TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
-  TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
+  TIME_GRAIN_UNSPECIFIED: 'TIME_GRAIN_UNSPECIFIED',
+  TIME_GRAIN_MILLISECOND: 'TIME_GRAIN_MILLISECOND',
+  TIME_GRAIN_SECOND: 'TIME_GRAIN_SECOND',
+  TIME_GRAIN_MINUTE: 'TIME_GRAIN_MINUTE',
+  TIME_GRAIN_HOUR: 'TIME_GRAIN_HOUR',
+  TIME_GRAIN_DAY: 'TIME_GRAIN_DAY',
+  TIME_GRAIN_WEEK: 'TIME_GRAIN_WEEK',
+  TIME_GRAIN_MONTH: 'TIME_GRAIN_MONTH',
+  TIME_GRAIN_QUARTER: 'TIME_GRAIN_QUARTER',
+  TIME_GRAIN_YEAR: 'TIME_GRAIN_YEAR',
 } as const;
 
 export interface V1TimeRange {
@@ -2415,13 +2394,9 @@ export interface V1TopK {
   entries?: TopKEntry[];
 }
 
-export interface V1UnpackEmptyResponse {
-  [key: string]: unknown;
-}
+export interface V1UnpackEmptyResponse { [key: string]: unknown }
 
-export interface V1UnpackExampleResponse {
-  [key: string]: unknown;
-}
+export interface V1UnpackExampleResponse { [key: string]: unknown }
 
 export interface V1WatchFilesResponse {
   event?: V1FileEvent;
@@ -2440,91 +2415,89 @@ export interface V1WatchResourcesResponse {
 }
 
 export type ConnectorServiceBigQueryListDatasetsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
+instanceId?: string;
+connector?: string;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type ConnectorServiceBigQueryListTablesParams = {
-  instanceId?: string;
-  connector?: string;
-  dataset?: string;
-  pageSize?: number;
-  pageToken?: string;
+instanceId?: string;
+connector?: string;
+dataset?: string;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type ConnectorServiceListDatabaseSchemasParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
+instanceId?: string;
+connector?: string;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type ConnectorServiceOLAPGetTableParams = {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  table?: string;
+instanceId?: string;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+table?: string;
 };
 
 export type ConnectorServiceGetTableParams = {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  table?: string;
+instanceId?: string;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+table?: string;
 };
 
 export type ConnectorServiceListTablesParams = {
-  instanceId?: string;
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  pageSize?: number;
-  pageToken?: string;
+instanceId?: string;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-  prefix?: string;
-  startOffset?: string;
-  endOffset?: string;
-  delimiter?: string;
+instanceId?: string;
+connector?: string;
+pageSize?: number;
+pageToken?: string;
+prefix?: string;
+startOffset?: string;
+endOffset?: string;
+delimiter?: string;
 };
 
 export type ConnectorServiceGCSListBucketsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
+instanceId?: string;
+connector?: string;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type ConnectorServiceGCSGetCredentialsInfoParams = {
-  instanceId?: string;
-  connector?: string;
+instanceId?: string;
+connector?: string;
 };
 
 export type RuntimeServiceListInstancesParams = {
-  pageSize?: number;
-  pageToken?: string;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type RuntimeServiceGetInstanceParams = {
-  sensitive?: boolean;
+sensitive?: boolean;
 };
 
 export type RuntimeServiceDeleteInstanceBody = { [key: string]: unknown };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
+export type RuntimeServiceEditInstanceBodyVariables = {[key: string]: string};
 
-export type RuntimeServiceEditInstanceBodyAnnotations = {
-  [key: string]: string;
-};
+export type RuntimeServiceEditInstanceBodyAnnotations = {[key: string]: string};
 
 /**
  * Request message for RuntimeService.EditInstance.
@@ -2544,14 +2517,24 @@ export type RuntimeServiceEditInstanceBody = {
 
 export type RuntimeServiceCompleteBody = {
   conversationId?: string;
-  messages?: V1Message[];
-  toolNames?: string[];
-  appContext?: V1AppContext;
+  prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
   conversationId?: string;
   prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {
@@ -2559,15 +2542,15 @@ export type RuntimeServiceCompleteStreaming200 = {
   error?: RpcStatus;
 };
 
-export type RuntimeServiceGetConversationParams = {
-  /**
-   * Whether to include system messages in the response (defaults to false for UI use)
-   */
-  includeSystemMessages?: boolean;
+export type RuntimeServiceListConversationsParams = {
+/**
+ * Optional search pattern for filtering by user agent.
+ */
+userAgentPattern?: string;
 };
 
 export type RuntimeServiceListFilesParams = {
-  glob?: string;
+glob?: string;
 };
 
 export type RuntimeServiceCreateDirectoryBody = {
@@ -2575,12 +2558,12 @@ export type RuntimeServiceCreateDirectoryBody = {
 };
 
 export type RuntimeServiceGetFileParams = {
-  path?: string;
+path?: string;
 };
 
 export type RuntimeServiceDeleteFileParams = {
-  path?: string;
-  force?: boolean;
+path?: string;
+force?: boolean;
 };
 
 export type RuntimeServicePutFileBody = {
@@ -2632,7 +2615,7 @@ export type RuntimeServiceUnpackExampleBody = {
 };
 
 export type RuntimeServiceWatchFilesParams = {
-  replay?: boolean;
+replay?: boolean;
 };
 
 export type RuntimeServiceWatchFiles200 = {
@@ -2640,9 +2623,7 @@ export type RuntimeServiceWatchFiles200 = {
   error?: RpcStatus;
 };
 
-export type RuntimeServiceGenerateRendererBodyResolverProperties = {
-  [key: string]: unknown;
-};
+export type RuntimeServiceGenerateRendererBodyResolverProperties = { [key: string]: unknown };
 
 export type RuntimeServiceGenerateRendererBody = {
   prompt?: string;
@@ -2660,41 +2641,41 @@ export type RuntimeServiceGenerateResolverBody = {
 };
 
 export type RuntimeServiceGetLogsParams = {
-  ascending?: boolean;
-  limit?: number;
-  level?: RuntimeServiceGetLogsLevel;
+ascending?: boolean;
+limit?: number;
+level?: RuntimeServiceGetLogsLevel;
 };
 
-export type RuntimeServiceGetLogsLevel =
-  (typeof RuntimeServiceGetLogsLevel)[keyof typeof RuntimeServiceGetLogsLevel];
+export type RuntimeServiceGetLogsLevel = typeof RuntimeServiceGetLogsLevel[keyof typeof RuntimeServiceGetLogsLevel];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RuntimeServiceGetLogsLevel = {
-  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
-  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
-  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
-  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
-  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
-  LOG_LEVEL_FATAL: "LOG_LEVEL_FATAL",
+  LOG_LEVEL_UNSPECIFIED: 'LOG_LEVEL_UNSPECIFIED',
+  LOG_LEVEL_DEBUG: 'LOG_LEVEL_DEBUG',
+  LOG_LEVEL_INFO: 'LOG_LEVEL_INFO',
+  LOG_LEVEL_WARN: 'LOG_LEVEL_WARN',
+  LOG_LEVEL_ERROR: 'LOG_LEVEL_ERROR',
+  LOG_LEVEL_FATAL: 'LOG_LEVEL_FATAL',
 } as const;
 
 export type RuntimeServiceWatchLogsParams = {
-  replay?: boolean;
-  replayLimit?: number;
-  level?: RuntimeServiceWatchLogsLevel;
+replay?: boolean;
+replayLimit?: number;
+level?: RuntimeServiceWatchLogsLevel;
 };
 
-export type RuntimeServiceWatchLogsLevel =
-  (typeof RuntimeServiceWatchLogsLevel)[keyof typeof RuntimeServiceWatchLogsLevel];
+export type RuntimeServiceWatchLogsLevel = typeof RuntimeServiceWatchLogsLevel[keyof typeof RuntimeServiceWatchLogsLevel];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RuntimeServiceWatchLogsLevel = {
-  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
-  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
-  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
-  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
-  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
-  LOG_LEVEL_FATAL: "LOG_LEVEL_FATAL",
+  LOG_LEVEL_UNSPECIFIED: 'LOG_LEVEL_UNSPECIFIED',
+  LOG_LEVEL_DEBUG: 'LOG_LEVEL_DEBUG',
+  LOG_LEVEL_INFO: 'LOG_LEVEL_INFO',
+  LOG_LEVEL_WARN: 'LOG_LEVEL_WARN',
+  LOG_LEVEL_ERROR: 'LOG_LEVEL_ERROR',
+  LOG_LEVEL_FATAL: 'LOG_LEVEL_FATAL',
 } as const;
 
 export type RuntimeServiceWatchLogs200 = {
@@ -2703,10 +2684,10 @@ export type RuntimeServiceWatchLogs200 = {
 };
 
 export type RuntimeServiceGetModelPartitionsParams = {
-  pending?: boolean;
-  errored?: boolean;
-  pageSize?: number;
-  pageToken?: string;
+pending?: boolean;
+errored?: boolean;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type QueryServiceResolveCanvasBodyArgs = { [key: string]: unknown };
@@ -2716,21 +2697,21 @@ export type QueryServiceResolveCanvasBody = {
 };
 
 export type QueryServiceColumnCardinalityParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+/**
+ * Required
+ */
+columnName?: string;
+priority?: number;
 };
 
 export type QueryServiceTableColumnsParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+priority?: number;
 };
 
 export type QueryServiceResolveComponentBodyArgs = { [key: string]: unknown };
@@ -2740,14 +2721,14 @@ export type QueryServiceResolveComponentBody = {
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+/**
+ * Required
+ */
+columnName?: string;
+priority?: number;
 };
 
 export type QueryServiceExportBody = {
@@ -2838,7 +2819,7 @@ export type QueryServiceMetricsViewRowsBody = {
 };
 
 export type QueryServiceMetricsViewSchemaParams = {
-  priority?: number;
+priority?: number;
 };
 
 export type QueryServiceMetricsViewSearchBody = {
@@ -2857,10 +2838,16 @@ export type QueryServiceMetricsViewTimeRangeBody = {
 };
 
 export type QueryServiceMetricsViewTimeRangesBody = {
+  /** Optional time range expressions to resolve (uses the rilltime expression syntax). */
   expressions?: string[];
+  /** Optional query priority. */
   priority?: number;
+  /** Optional time zone that overrides the time zones used when resolving the time range expressions. */
   timeZone?: string;
+  /** Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension. */
   timeDimension?: string;
+  /** Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
@@ -2909,33 +2896,33 @@ export type QueryServiceMetricsViewTotalsBody = {
 };
 
 export type QueryServiceColumnNullCountParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+/**
+ * Required
+ */
+columnName?: string;
+priority?: number;
 };
 
 export type QueryServiceColumnNumericHistogramParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+columnName?: string;
+histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
+priority?: number;
 };
 
-export type QueryServiceColumnNumericHistogramHistogramMethod =
-  (typeof QueryServiceColumnNumericHistogramHistogramMethod)[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
+export type QueryServiceColumnNumericHistogramHistogramMethod = typeof QueryServiceColumnNumericHistogramHistogramMethod[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
+
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const QueryServiceColumnNumericHistogramHistogramMethod = {
-  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
-  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
-  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
+  HISTOGRAM_METHOD_UNSPECIFIED: 'HISTOGRAM_METHOD_UNSPECIFIED',
+  HISTOGRAM_METHOD_FD: 'HISTOGRAM_METHOD_FD',
+  HISTOGRAM_METHOD_DIAGNOSTIC: 'HISTOGRAM_METHOD_DIAGNOSTIC',
 } as const;
 
 export type QueryServiceColumnRollupIntervalBody = {
@@ -2947,45 +2934,45 @@ export type QueryServiceColumnRollupIntervalBody = {
 };
 
 export type QueryServiceTableRowsParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  limit?: number;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+limit?: number;
+priority?: number;
 };
 
 export type QueryServiceColumnRugHistogramParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+columnName?: string;
+priority?: number;
 };
 
 export type QueryServiceColumnTimeGrainParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  /**
-   * Required
-   */
-  columnName?: string;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+/**
+ * Required
+ */
+columnName?: string;
+priority?: number;
 };
 
 export type QueryServiceTableCardinalityParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+priority?: number;
 };
 
 export type QueryServiceColumnTimeRangeParams = {
-  connector?: string;
-  database?: string;
-  databaseSchema?: string;
-  columnName?: string;
-  priority?: number;
+connector?: string;
+database?: string;
+databaseSchema?: string;
+columnName?: string;
+priority?: number;
 };
 
 export type QueryServiceColumnTimeSeriesBody = {
@@ -3029,13 +3016,9 @@ export type QueryServiceQueryBatch200 = {
   error?: RpcStatus;
 };
 
-export type RuntimeServiceQueryResolverBodyResolverProperties = {
-  [key: string]: unknown;
-};
+export type RuntimeServiceQueryResolverBodyResolverProperties = { [key: string]: unknown };
 
-export type RuntimeServiceQueryResolverBodyResolverArgs = {
-  [key: string]: unknown;
-};
+export type RuntimeServiceQueryResolverBodyResolverArgs = { [key: string]: unknown };
 
 export type RuntimeServiceQueryResolverBody = {
   resolver?: string;
@@ -3054,30 +3037,30 @@ This is used to generate header comments in the exported file when include_heade
 };
 
 export type RuntimeServiceGetResourceParams = {
-  "name.kind"?: string;
-  "name.name"?: string;
-  skipSecurityChecks?: boolean;
+'name.kind'?: string;
+'name.name'?: string;
+skipSecurityChecks?: boolean;
 };
 
 export type RuntimeServiceListResourcesParams = {
-  /**
-   * Filter by resource kind (optional).
-   */
-  kind?: string;
-  /**
-   * Filter by resource path (optional).
-   */
-  path?: string;
-  /**
-   * Skip security checks
-   */
-  skipSecurityChecks?: boolean;
+/**
+ * Filter by resource kind (optional).
+ */
+kind?: string;
+/**
+ * Filter by resource path (optional).
+ */
+path?: string;
+/**
+ * Skip security checks
+ */
+skipSecurityChecks?: boolean;
 };
 
 export type RuntimeServiceWatchResourcesParams = {
-  kind?: string;
-  replay?: boolean;
-  level?: string;
+kind?: string;
+replay?: boolean;
+level?: string;
 };
 
 export type RuntimeServiceWatchResources200 = {
@@ -3086,7 +3069,7 @@ export type RuntimeServiceWatchResources200 = {
 };
 
 export type RuntimeServiceGetExploreParams = {
-  name?: string;
+name?: string;
 };
 
 export type RuntimeServiceCreateTriggerBody = {
@@ -3107,44 +3090,45 @@ Note: Despite the name, it does not currently trigger alerts and reports. */
 };
 
 export type ConnectorServiceOLAPListTablesParams = {
-  instanceId?: string;
-  /**
-   * Connector to list tables from.
-   */
-  connector?: string;
-  /**
+instanceId?: string;
+/**
+ * Connector to list tables from.
+ */
+connector?: string;
+/**
  * Optional search pattern to filter tables by.
 Has the same syntax and behavior as ILIKE in SQL.
 If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
  */
-  searchPattern?: string;
-  pageSize?: number;
-  pageToken?: string;
+searchPattern?: string;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type ConnectorServiceS3GetBucketMetadataParams = {
-  instanceId?: string;
-  connector?: string;
+instanceId?: string;
+connector?: string;
 };
 
 export type ConnectorServiceS3ListObjectsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-  prefix?: string;
-  startAfter?: string;
-  delimiter?: string;
+instanceId?: string;
+connector?: string;
+pageSize?: number;
+pageToken?: string;
+prefix?: string;
+startAfter?: string;
+delimiter?: string;
 };
 
 export type ConnectorServiceS3ListBucketsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
+instanceId?: string;
+connector?: string;
+pageSize?: number;
+pageToken?: string;
 };
 
 export type ConnectorServiceS3GetCredentialsInfoParams = {
-  instanceId?: string;
-  connector?: string;
+instanceId?: string;
+connector?: string;
 };
+

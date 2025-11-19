@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
-  import { page } from "$app/stores";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import {
@@ -15,12 +14,28 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
+  import { writable } from "svelte/store";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
 
+  export let data;
+
+  $: ({
+    canvasName,
+    project: { name: project },
+    organization,
+  } = data);
+
   $: ({ instanceId } = $runtime);
-  $: canvasName = $page.params.dashboard;
+
+  const canvasNameStore = writable(canvasName);
+  $: canvasNameStore.set(canvasName);
+  const orgAndProjectNameStore = writable({ organization: "", project: "" });
+  $: orgAndProjectNameStore.set({
+    organization: organization,
+    project: project,
+  });
 
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas, {
     refetchInterval: (query) => {
@@ -33,15 +48,15 @@
     },
   });
 
-  $: canvasResource = $canvasQuery.data;
+  $: canvasQueryResponse = $canvasQuery;
+
+  $: ({ isError, error, data: canvasResource } = canvasQueryResponse);
 
   $: canvasTitle = canvasResource?.canvas?.state?.validSpec?.displayName;
   $: hasBanner = !!canvasResource?.canvas?.state?.validSpec?.banner;
 
   $: isCanvasNotFound =
-    !canvasResource &&
-    $canvasQuery.isError &&
-    $canvasQuery.error?.response?.status === 404;
+    !canvasResource && isError && error?.response?.status === 404;
 
   // If no canvas dashboard is found, show a 404 page
   $: if (isCanvasNotFound) {
@@ -101,5 +116,5 @@
 {#if isCanvasReconcilingForFirstTime(canvasResource)}
   <DashboardBuilding />
 {:else}
-  <CanvasDashboardEmbed resource={canvasResource} />
+  <CanvasDashboardEmbed resource={canvasResource} {canvasName} />
 {/if}

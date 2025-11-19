@@ -4,10 +4,16 @@ title: rill token revoke
 ---
 ## rill token revoke
 
-Revoke personal access token
+Revoke personal access token(s)
 
 ```
-rill token revoke <token-id> [flags]
+rill token revoke [token-id] [flags]
+```
+
+### Flags
+
+```
+      --all   Revoke all access and refresh tokens for the current user
 ```
 
 ### Global flags

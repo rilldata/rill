@@ -1,8 +1,9 @@
 syntax = "proto3";
 package rill.admin.v1;
 
+option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
+
 import "google/api/annotations.proto";
-import "google/api/visibility.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/export_format.proto";
@@ -12,26 +13,13 @@ import "protoc-gen-openapiv2/options/annotations.proto";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
-    title: "Rill API";
-    description: "It is used to manage organizations, projects, deployments, users, and roles.";
-    version: "v1";
-    license: {
-      name: "Apache 2.0";
-      url: "https://github.com/rilldata/rill/blob/main/LICENSE.md";
-    };
-
-    contact: {
-      name: "Rill Data";
-      url: "https://rilldata.com";
-    };
-  }
-
-  host: "api.rilldata.com"
-
+    title: "Rill Admin API";
+    description: "Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions."
+  };
   external_docs: {
-    description: "Rill API Reference";
-    url: "https://docs.rilldata.com/api/admin";
-  }
+    description: "Rill API Documentation";
+    url: "https://docs.rilldata.com";
+  };
 };
 
 service AdminService {
@@ -42,14 +30,28 @@ service AdminService {
 
   // ListOrganizations lists all the organizations currently managed by the admin
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {get: "/v1/orgs"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // GetOrganization returns information about a specific organization
   rpc GetOrganization(GetOrganizationRequest) returns (GetOrganizationResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {get: "/v1/orgs/{org}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // GetOrganizationNameForDomain finds the org name for a custom domain.
@@ -61,32 +63,60 @@ service AdminService {
 
   // CreateOrganization creates a new organization
   rpc CreateOrganization(CreateOrganizationRequest) returns (CreateOrganizationResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {
       post: "/v1/orgs",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
     };
   }
 
   // DeleteOrganization deletes an organization
   rpc DeleteOrganization(DeleteOrganizationRequest) returns (DeleteOrganizationResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {delete: "/v1/orgs/{org}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // UpdateOrganization deletes an organizations
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {
       patch: "/v1/orgs/{org}",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
     };
   }
 
   // ListProjectsForOrganization lists all the projects currently available for given organizations.
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {get: "/v1/orgs/{org}/projects"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListProjectsForOrganizationAndUser lists all the projects that an organization member user has access to.
@@ -103,8 +133,15 @@ service AdminService {
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListProjectsForUserByName returns projects matching a name accessible by the logged in user
@@ -124,37 +161,64 @@ service AdminService {
 
   // CreateProject creates a new project
   rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {
       post: "/v1/orgs/{org}/projects",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
     };
   }
 
   // DeleteProject deletes an project
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {
       patch: "/v1/orgs/{org}/projects/{project}",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
     };
   }
 
   // GetProjectVariables returns project variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/variables"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // UpdateProjectVariables updates variables for a project.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {
       put: "/v1/orgs/{org}/projects/{project}/variables",
       body: "*"
@@ -270,29 +334,57 @@ service AdminService {
 
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {get: "/v1/orgs/{org}/members"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // ListOrganizationInvites lists all the org invites
   rpc ListOrganizationInvites(ListOrganizationInvitesRequest) returns (ListOrganizationInvitesResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {get: "/v1/orgs/{org}/invites"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // AddOrganizationMemberUser adds a user to the organization
   rpc AddOrganizationMemberUser(AddOrganizationMemberUserRequest) returns (AddOrganizationMemberUserResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {
       post: "/v1/orgs/{org}/members",
       body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
     };
   }
 
   // RemoveOrganizationMemberUser removes member from the organization
   rpc RemoveOrganizationMemberUser(RemoveOrganizationMemberUserRequest) returns (RemoveOrganizationMemberUserResponse) {
-    option (google.api.method_visibility).restriction = "PUBLIC";
     option (google.api.http) = {delete: "/v1/orgs/{org}/members/{email}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      extensions: {
+        key: "x-visibility"
+        value: {
+          string_value: "public"
+        }
+      }
+    };
   }
 
   // LeaveOrganization removes the current user from the organization
@@ -304,6 +396,19 @@ service AdminService {
   rpc SetOrganizationMemberUserRole(SetOrganizationMemberUserRoleRequest) returns (SetOrganizationMemberUserRoleResponse) {
     option (google.api.http) = {
       put: "/v1/orgs/{org}/members/{email}",
+      body: "*"
+    };
+  }
+
+  // GetOrganizationMemberUser gets the member details
+  rpc GetOrganizationMemberUser(GetOrganizationMemberUserRequest) returns (GetOrganizationMemberUserResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/members/{email}"};
+  }
+
+  // UpdateOrganizationMemberUserAttributes updates the attributes for a member
+  rpc UpdateOrganizationMemberUserAttributes(UpdateOrganizationMemberUserAttributesRequest) returns (UpdateOrganizationMemberUserAttributesResponse) {
+    option (google.api.http) = {
+      put: "/v1/orgs/{org}/members/{email}/attributes",
       body: "*"
     };
   }
@@ -488,7 +593,13 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/users/-/tokens/{token_id}"};
   }
 
-  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user. 
+  // RevokeAllUserAuthTokens revokes all access and refresh tokens for a user.
+  // You can optionally pass "current" instead of the user ID to revoke all tokens for the current user.
+  rpc RevokeAllUserAuthTokens(RevokeAllUserAuthTokensRequest) returns (RevokeAllUserAuthTokensResponse) {
+    option (google.api.http) = {delete: "/v1/users/{user_id}/tokens"};
+  }
+
+  // RevokeRepresentativeAuthTokens revokes all active tokens created by the current user to act on behalf of the specified user.
   // This is primarily used for "unassume" flows.
   rpc RevokeRepresentativeAuthTokens(RevokeRepresentativeAuthTokensRequest) returns (RevokeRepresentativeAuthTokensResponse) {
     option (google.api.http) = {
@@ -1670,6 +1781,23 @@ message SetOrganizationMemberUserRoleRequest {
 
 message SetOrganizationMemberUserRoleResponse {}
 
+message GetOrganizationMemberUserRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+}
+
+message GetOrganizationMemberUserResponse {
+  OrganizationMemberUser member = 1;
+}
+
+message UpdateOrganizationMemberUserAttributesRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+  google.protobuf.Struct attributes = 3;
+}
+
+message UpdateOrganizationMemberUserAttributesResponse {}
+
 message ListSuperusersRequest {}
 
 message ListSuperusersResponse {
@@ -1905,6 +2033,7 @@ message ListProjectMemberUsergroupsRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string role = 5; // Optionally filter by role
+  bool include_counts = 6; // Optionally include counts
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }
@@ -2041,6 +2170,8 @@ message ListUserAuthTokensRequest {
   string page_token = 3;
   // Flag for superusers to override normal access checks.
   bool superuser_force_access = 4;
+  // Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+  optional bool refresh = 5;
 }
 
 message ListUserAuthTokensResponse {
@@ -2081,6 +2212,19 @@ message RevokeUserAuthTokenRequest {
 }
 
 message RevokeUserAuthTokenResponse {
+}
+
+message RevokeAllUserAuthTokensRequest {
+  // User ID to revoke all tokens for.
+  // Set to "current" to revoke all tokens for the current user.
+  string user_id = 1 [(validate.rules).string.min_len = 1];
+  // Flag for superusers to override normal access checks.
+  bool superuser_force_access = 2;
+}
+
+message RevokeAllUserAuthTokensResponse {
+  // Number of tokens revoked.
+  int32 tokens_revoked = 1;
 }
 
 message RevokeRepresentativeAuthTokensRequest {
@@ -2922,6 +3066,7 @@ message OrganizationMemberUser {
   string role_name = 4;
   uint32 projects_count = 8;
   uint32 usergroups_count = 9;
+  google.protobuf.Struct attributes = 10;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -2994,6 +3139,8 @@ message UserAuthToken {
   string auth_client_display_name = 4;
   string representing_user_id = 5;
   string prefix = 9;
+  google.protobuf.Struct attributes = 10;
+  bool refresh = 11;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp expires_on = 7;
   google.protobuf.Timestamp used_on = 8;

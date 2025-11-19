@@ -16,6 +16,7 @@ import {
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+import { MessageContentType, MessageType, ToolName } from "./types";
 import { getOptimisticMessageId, NEW_CONVERSATION_ID } from "./utils";
 
 /**
@@ -56,7 +57,6 @@ export class Conversation {
       getRuntimeServiceGetConversationQueryOptions(
         this.instanceId,
         this.conversationId,
-        undefined,
         {
           query: {
             enabled: this.conversationId !== NEW_CONVERSATION_ID,
@@ -262,20 +262,14 @@ export class Conversation {
 
     if (response.message) {
       // Skip ALL user messages from the stream
-      // Server echoes back the user message (potentially as multiple content blocks)
+      // Server echoes back the user message
       // We've already added it optimistically, so we don't want duplicates
       // Note: Server generates new IDs for streamed messages, can't match by ID
       if (response.message.role === "user") {
         return;
       }
 
-      // Check if this is a tool result message
-      const toolResult = response.message.content?.[0]?.toolResult;
-      if (toolResult?.id) {
-        this.handleToolResult(toolResult);
-      } else {
-        this.addMessageToCache(response.message);
-      }
+      this.addMessageToCache(response.message);
     }
   }
 
@@ -301,12 +295,13 @@ export class Conversation {
       queryClient.getQueryData<V1GetConversationResponse>(oldCacheKey);
 
     if (existingData?.conversation) {
-      // Transfer the conversation data to the real conversation ID cache
+      // Transfer the conversation data and messages to the real conversation ID cache
       queryClient.setQueryData<V1GetConversationResponse>(newCacheKey, {
         conversation: {
           ...existingData.conversation,
           id: realConversationId,
         },
+        messages: existingData.messages || [],
       });
     }
 
@@ -329,7 +324,10 @@ export class Conversation {
     const userMessage: V1Message = {
       id: getOptimisticMessageId(),
       role: "user",
-      content: [{ text: prompt }],
+      type: MessageType.CALL,
+      tool: ToolName.ROUTER_AGENT,
+      contentType: MessageContentType.JSON,
+      contentData: JSON.stringify({ prompt }),
       createdOn: new Date().toISOString(),
       updatedOn: new Date().toISOString(),
     };
@@ -339,7 +337,7 @@ export class Conversation {
   }
 
   /**
-   * Add or merge message to TanStack Query cache
+   * Add message to TanStack Query cache
    */
   private addMessageToCache(message: V1Message): void {
     const cacheKey = getRuntimeServiceGetConversationQueryKey(
@@ -352,57 +350,24 @@ export class Conversation {
         return {
           conversation: {
             id: this.conversationId,
-            messages: [message],
             createdOn: message.createdOn,
             updatedOn: new Date().toISOString(),
           },
+          messages: [message],
         };
       }
 
-      const existingMessages = old.conversation.messages || [];
+      const existingMessages = old.messages || [];
 
-      // Handle messages with same ID (multiple content blocks)
-      const existingIndex = existingMessages.findIndex(
-        (m) => m.id === message.id,
-      );
-
-      if (existingIndex >= 0) {
-        // Merge content blocks for messages with same ID
-        const existing = existingMessages[existingIndex];
-        const mergedContent = [
-          ...(existing.content || []),
-          ...(message.content || []),
-        ];
-
-        const result = {
-          ...old,
-          conversation: {
-            ...old.conversation,
-            messages: [
-              ...existingMessages.slice(0, existingIndex),
-              {
-                ...existing,
-                content: mergedContent,
-                updatedOn: message.updatedOn,
-              },
-              ...existingMessages.slice(existingIndex + 1),
-            ],
-            updatedOn: new Date().toISOString(),
-          },
-        };
-        return result;
-      } else {
-        // Add new message
-        const result = {
-          ...old,
-          conversation: {
-            ...old.conversation,
-            messages: [...existingMessages, message],
-            updatedOn: new Date().toISOString(),
-          },
-        };
-        return result;
-      }
+      // Add new message to the end of the list
+      return {
+        ...old,
+        conversation: {
+          ...old.conversation,
+          updatedOn: new Date().toISOString(),
+        },
+        messages: [...existingMessages, message],
+      };
     });
   }
 
@@ -422,44 +387,9 @@ export class Conversation {
         ...old,
         conversation: {
           ...old.conversation,
-          messages:
-            old.conversation.messages?.filter((m) => m.id !== messageId) || [],
           updatedOn: new Date().toISOString(),
         },
-      };
-    });
-  }
-
-  /**
-   * Handle incoming tool result by merging it with the corresponding tool call
-   */
-  private handleToolResult(toolResult: any): void {
-    const cacheKey = getRuntimeServiceGetConversationQueryKey(
-      this.instanceId,
-      this.conversationId,
-    );
-
-    // Find and merge with existing tool call
-    queryClient.setQueryData<V1GetConversationResponse>(cacheKey, (old) => {
-      if (!old?.conversation?.messages) return old;
-
-      const updatedMessages = old.conversation.messages.map((msg) => ({
-        ...msg,
-        content: msg.content?.map((block) => {
-          if (block.toolCall?.id === toolResult.id) {
-            return { ...block, toolResult };
-          }
-          return block;
-        }),
-      }));
-
-      return {
-        ...old,
-        conversation: {
-          ...old.conversation,
-          messages: updatedMessages,
-          updatedOn: new Date().toISOString(),
-        },
+        messages: old.messages?.filter((m) => m.id !== messageId) || [],
       };
     });
   }
@@ -566,7 +496,7 @@ export class Conversation {
       this.removeMessageFromCache(userMessage.id!);
 
       // Restore draft message so user can easily retry
-      const textContent = userMessage.content?.[0]?.text || "";
+      const textContent = userMessage.contentData || "";
       this.draftMessage.set(textContent);
     }
     // If we were streaming, message is already on server - keep it in UI

@@ -10,8 +10,12 @@ import (
 	"testing"
 
 	"github.com/joho/godotenv"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
@@ -32,11 +36,18 @@ type TestFileYAML struct {
 
 // TestYAML is the structure of a single resolver test executed against the runtime instance defined in TestFileYAML.
 type TestYAML struct {
-	Name               string           `yaml:"name"`
-	Resolver           string           `yaml:"resolver"`
-	Properties         yaml.Node        `yaml:"properties,omitempty"`      // Expects map[string]any, but using yaml.Node to preserve order for -update.
-	Args               yaml.Node        `yaml:"args,omitempty"`            // Expects map[string]any, but using yaml.Node to preserve order for -update.
-	UserAttributes     yaml.Node        `yaml:"user_attributes,omitempty"` // Expects map[string]any, but using yaml.Node to preserve order for -update.
+	Name            string    `yaml:"name"`
+	Resolver        string    `yaml:"resolver"`
+	Properties      yaml.Node `yaml:"properties,omitempty"`      // Expects map[string]any, but using yaml.Node to preserve order for -update.
+	Args            yaml.Node `yaml:"args,omitempty"`            // Expects map[string]any, but using yaml.Node to preserve order for -update.
+	UserAttributes  yaml.Node `yaml:"user_attributes,omitempty"` // Expects map[string]any, but using yaml.Node to preserve order for -update.
+	AdditionalRules []struct {
+		RowFilter        string `yaml:"row_filter,omitempty"` // Expects a metrics SQL expression
+		TransitiveAccess []struct {
+			Kind string `yaml:"kind,omitempty"`
+			Name string `yaml:"name,omitempty"`
+		} `yaml:"transitive_access,omitempty"`
+	} `yaml:"additional_rules,omitempty"`
 	SkipSecurityChecks bool             `yaml:"skip_security_checks,omitempty"`
 	Result             []map[string]any `yaml:"result,omitempty"`
 	ResultCSV          string           `yaml:"result_csv,omitempty"`
@@ -96,8 +107,8 @@ func TestResolvers(t *testing.T) {
 			if tf.Skip {
 				t.Skip("skipping test because it is marked skip: true")
 			}
-			if testing.Short() && tf.Expensive {
-				t.Skip("skipping test in short mode because it is marked expensive: true")
+			if tf.Expensive {
+				testmode.Expensive(t)
 			}
 
 			// Create a map of project files for the runtime instance.
@@ -154,12 +165,46 @@ func TestResolvers(t *testing.T) {
 					err = tc.UserAttributes.Decode(&userAttributes)
 					require.NoError(t, err, "failed to decode user_attributes into map[string]any")
 
+					// Parse additional security rules.
+					var additionalRules []*runtimev1.SecurityRule
+					for _, r := range tc.AdditionalRules {
+						// Parse row filters.
+						// NOTE: Uses metrics SQL filters, not JSON filters or raw SQL filters.
+						if r.RowFilter != "" {
+							expr, err := metricssql.ParseFilter(r.RowFilter)
+							require.NoError(t, err, "failed to parse additional rule row filter expression: %s", r.RowFilter)
+
+							additionalRules = append(additionalRules, &runtimev1.SecurityRule{
+								Rule: &runtimev1.SecurityRule_RowFilter{
+									RowFilter: &runtimev1.SecurityRuleRowFilter{
+										Expression: metricsview.ExpressionToProto(expr),
+									},
+								},
+							})
+						}
+
+						// Parse transitive access rules.
+						for _, ta := range r.TransitiveAccess {
+							additionalRules = append(additionalRules, &runtimev1.SecurityRule{
+								Rule: &runtimev1.SecurityRule_TransitiveAccess{
+									TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+										Resource: &runtimev1.ResourceName{
+											Kind: ta.Kind,
+											Name: ta.Name,
+										},
+									},
+								},
+							})
+						}
+					}
+
 					// Run the resolver.
 					opts := &testruntime.RequireResolveOptions{
 						Resolver:           tc.Resolver,
 						Properties:         properties,
 						Args:               args,
 						UserAttributes:     userAttributes,
+						AdditionalRules:    additionalRules,
 						SkipSecurityChecks: tc.SkipSecurityChecks,
 						Result:             tc.Result,
 						ResultCSV:          tc.ResultCSV,
@@ -171,14 +216,14 @@ func TestResolvers(t *testing.T) {
 					// If the -update flag is set, update the test case results instead of checking them.
 					// The updated test case will be written back to the test file later.
 					if update {
-						tc.ErrorContains = ""
-						if err != nil {
-							tc.ErrorContains = err.Error()
-						} else if tc.ResultCSV != "" {
+						preferCSV := tc.ResultCSV != ""
+						tc.Result = opts.Result
+						tc.ResultCSV = opts.ResultCSV
+						tc.ErrorContains = opts.ErrorContains
+						if preferCSV {
 							tc.Result = nil
-							tc.ResultCSV = opts.ResultCSV
 						} else {
-							tc.Result = opts.Result
+							tc.ResultCSV = ""
 						}
 						return
 					}

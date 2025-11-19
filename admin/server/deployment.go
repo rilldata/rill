@@ -625,6 +625,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	s.admin.Used.Deployment(prodDepl.ID)
 
 	if req.Branch != "" && req.Branch != prodDepl.Branch {
 		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment for given branch")
@@ -637,6 +638,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
+	// Get user attributes to pass in the JWT
 	var attr map[string]any
 	if req.For != nil {
 		switch forVal := req.For.(type) {
@@ -657,7 +659,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}
 	}
 
-	// Mark the token as embed. Can be used in security policy or feature flags by `.user.embed`
+	// Add an `embed` attribute for use in security policies or feature flags (as `{{.user.embed}}`).
 	if _, ok := attr["embed"]; !ok {
 		if attr == nil {
 			attr = make(map[string]any)
@@ -665,6 +667,32 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		attr["embed"] = true
 	}
 
+	// Backwards compatibility for req.Type and req.Kind
+	if req.Kind != "" { // nolint:staticcheck // For backwards compatibility
+		req.Type = req.Kind // nolint:staticcheck // For backwards compatibility
+	}
+	if req.Type == "" {
+		// Default to an explore if no type is explicitly provided
+		req.Type = runtime.ResourceKindExplore
+	}
+	req.Type = runtime.ResourceKindFromShorthand(req.Type)
+
+	// If navigation is disabled and a specific resource is requested, limit access to only that resource.
+	var rules []*runtimev1.SecurityRule
+	if !req.Navigation && req.Resource != "" {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_TransitiveAccess{
+				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+					Resource: &runtimev1.ResourceName{
+						Kind: req.Type,
+						Name: req.Resource,
+					},
+				},
+			},
+		})
+	}
+
+	// Determine TTL for the access token
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
@@ -683,30 +711,22 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 				runtime.UseAI,
 			},
 		},
-		Attributes: attr,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
-	s.admin.Used.Deployment(prodDepl.ID)
-
+	// Build the iframe URL search params
 	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
 	}
 
-	if req.Kind != "" { // nolint:staticcheck // For backwards compatibility
-		req.Type = req.Kind // nolint:staticcheck // For backwards compatibility
-	}
-	if req.Type == "" {
-		// Default to an explore if no type is explicitly provided
-		req.Type = runtime.ResourceKindExplore
-	}
-	req.Type = runtime.ResourceKindFromShorthand(req.Type)
 	iframeQuery["type"] = req.Type
-	iframeQuery["kind"] = iframeQuery["type"] // For backwards compatibility
+	iframeQuery["kind"] = req.Type // For backwards compatibility
 
 	if req.Resource != "" {
 		iframeQuery["resource"] = req.Resource

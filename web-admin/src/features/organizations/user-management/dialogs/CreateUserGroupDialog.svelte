@@ -4,11 +4,12 @@
   import {
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
+    createAdminServiceListOrganizationMemberUsersInfinite,
     getAdminServiceListOrganizationMemberUsergroupsQueryKey,
     getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
-  import AvatarListItem from "@rilldata/web-admin/features/organizations/user-management/AvatarListItem.svelte";
+  import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
   import {
@@ -29,15 +30,72 @@
 
   export let open = false;
   export let groupName: string;
-  export let organizationUsers: V1OrganizationMemberUser[] = [];
   export let currentUserEmail: string = "";
 
-  let searchText = "";
+  let searchInput = "";
+  let debouncedSearchText = "";
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
   let selectedUsers: V1OrganizationMemberUser[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
+  // Debounce search input to avoid too many API calls.
+  // Use a standard Svelte reactive block: it re-runs whenever `searchInput` changes.
+  // We capture `searchInput` into a local constant to avoid race conditions in the timeout.
+  $: {
+    const current = searchInput;
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      debouncedSearchText = current;
+    }, 300);
+  }
+
   $: organization = $page.params.organization;
+
+  // Infinite query for organization users (debounced by search)
+  $: organizationUsersInfiniteQuery =
+    createAdminServiceListOrganizationMemberUsersInfinite(
+      organization,
+      debouncedSearchText
+        ? {
+            pageSize: 50,
+            searchPattern: `${debouncedSearchText}%`,
+          }
+        : { pageSize: 50 },
+      {
+        query: {
+          enabled: open,
+          getNextPageParam: (lastPage) => {
+            return lastPage.nextPageToken !== ""
+              ? lastPage.nextPageToken
+              : undefined;
+          },
+        },
+      },
+    );
+
+  $: organizationUsers = $organizationUsersInfiniteQuery.data?.pages
+    ? $organizationUsersInfiniteQuery.data.pages.flatMap((p) => p.members ?? [])
+    : [];
+
+  $: hasMoreUsers =
+    // Prefer built-in flag if available
+    ($organizationUsersInfiniteQuery?.hasNextPage ??
+      (($organizationUsersInfiniteQuery?.data?.pages?.length ?? 0) > 0 &&
+        ($organizationUsersInfiniteQuery?.data?.pages?.[
+          ($organizationUsersInfiniteQuery?.data?.pages?.length ?? 1) - 1
+        ]?.nextPageToken ?? "") !== "")) ||
+    false;
+
+  $: isLoadingMoreUsers =
+    $organizationUsersInfiniteQuery?.isFetchingNextPage ?? false;
+
+  function loadMoreUsers() {
+    const fetchNext = $organizationUsersInfiniteQuery?.fetchNextPage;
+    if (typeof fetchNext === "function") {
+      fetchNext();
+    }
+  }
 
   const queryClient = useQueryClient();
   const createUserGroup = createAdminServiceCreateUsergroup();
@@ -186,10 +244,11 @@
 
   function handleClose() {
     open = false;
-    searchText = "";
+    searchInput = "";
     selectedUsers = [];
     pendingAdditions = [];
     pendingRemovals = [];
+    $errors = {};
     // Only reset the form if it has been modified
     if (hasFormChanges) {
       $form.name = initialValues.name;
@@ -239,10 +298,14 @@
             Users
           </label>
           <Combobox
-            searchValue={searchText}
+            bind:searchValue={searchInput}
             options={coercedUsersToOptions}
             placeholder="Search to add/remove users"
             {getMetadata}
+            enableClientFiltering={false}
+            loadMore={loadMoreUsers}
+            hasMore={hasMoreUsers}
+            isLoadingMore={isLoadingMoreUsers}
             selectedValues={[
               ...new Set(
                 [

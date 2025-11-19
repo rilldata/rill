@@ -36,6 +36,6 @@
   {#if isCanvasErrored}
     <br /> Canvas Error <br />
   {:else if data}
-    <CanvasDashboardEmbed {resource} {navigationEnabled} />
+    <CanvasDashboardEmbed {resource} {navigationEnabled} {canvasName} />
   {/if}
 {/if}
