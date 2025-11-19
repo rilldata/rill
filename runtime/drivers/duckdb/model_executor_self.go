@@ -149,7 +149,8 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 			fallbackSecrets = append(fallbackSecrets, fmt.Sprintf(`
 			CREATE OR REPLACE TEMPORARY SECRET  %s (
 			TYPE %s,
-			PROVIDER credential_chain
+			PROVIDER credential_chain,
+			VALIDATION 'none'
 			)`, secretName, connector))
 			fallbackDrops = append(fallbackDrops, fmt.Sprintf(`DROP SECRET IF EXISTS %s`, secretName))
 		}
