@@ -7421,6 +7421,13 @@ export class ListProjectMemberUsergroupsRequest extends Message<ListProjectMembe
   role = "";
 
   /**
+   * Optionally include counts
+   *
+   * @generated from field: bool include_counts = 6;
+   */
+  includeCounts = false;
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -7441,6 +7448,7 @@ export class ListProjectMemberUsergroupsRequest extends Message<ListProjectMembe
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "include_counts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -8688,6 +8696,13 @@ export class ListUserAuthTokensRequest extends Message<ListUserAuthTokensRequest
    */
   superuserForceAccess = false;
 
+  /**
+   * Flag to filter only refresh tokens. If not set, all tokens will be displayed. If false, only returns access tokens (non-refresh).
+   *
+   * @generated from field: optional bool refresh = 5;
+   */
+  refresh?: boolean;
+
   constructor(data?: PartialMessage<ListUserAuthTokensRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -8700,6 +8715,7 @@ export class ListUserAuthTokensRequest extends Message<ListUserAuthTokensRequest
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUserAuthTokensRequest {
@@ -8962,6 +8978,93 @@ export class RevokeUserAuthTokenResponse extends Message<RevokeUserAuthTokenResp
 
   static equals(a: RevokeUserAuthTokenResponse | PlainMessage<RevokeUserAuthTokenResponse> | undefined, b: RevokeUserAuthTokenResponse | PlainMessage<RevokeUserAuthTokenResponse> | undefined): boolean {
     return proto3.util.equals(RevokeUserAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RevokeAllUserAuthTokensRequest
+ */
+export class RevokeAllUserAuthTokensRequest extends Message<RevokeAllUserAuthTokensRequest> {
+  /**
+   * User ID to revoke all tokens for.
+   * Set to "current" to revoke all tokens for the current user.
+   *
+   * @generated from field: string user_id = 1;
+   */
+  userId = "";
+
+  /**
+   * Flag for superusers to override normal access checks.
+   *
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
+  constructor(data?: PartialMessage<RevokeAllUserAuthTokensRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RevokeAllUserAuthTokensRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevokeAllUserAuthTokensRequest {
+    return new RevokeAllUserAuthTokensRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevokeAllUserAuthTokensRequest {
+    return new RevokeAllUserAuthTokensRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevokeAllUserAuthTokensRequest {
+    return new RevokeAllUserAuthTokensRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevokeAllUserAuthTokensRequest | PlainMessage<RevokeAllUserAuthTokensRequest> | undefined, b: RevokeAllUserAuthTokensRequest | PlainMessage<RevokeAllUserAuthTokensRequest> | undefined): boolean {
+    return proto3.util.equals(RevokeAllUserAuthTokensRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RevokeAllUserAuthTokensResponse
+ */
+export class RevokeAllUserAuthTokensResponse extends Message<RevokeAllUserAuthTokensResponse> {
+  /**
+   * Number of tokens revoked.
+   *
+   * @generated from field: int32 tokens_revoked = 1;
+   */
+  tokensRevoked = 0;
+
+  constructor(data?: PartialMessage<RevokeAllUserAuthTokensResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RevokeAllUserAuthTokensResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tokens_revoked", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevokeAllUserAuthTokensResponse {
+    return new RevokeAllUserAuthTokensResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevokeAllUserAuthTokensResponse {
+    return new RevokeAllUserAuthTokensResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevokeAllUserAuthTokensResponse {
+    return new RevokeAllUserAuthTokensResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevokeAllUserAuthTokensResponse | PlainMessage<RevokeAllUserAuthTokensResponse> | undefined, b: RevokeAllUserAuthTokensResponse | PlainMessage<RevokeAllUserAuthTokensResponse> | undefined): boolean {
+    return proto3.util.equals(RevokeAllUserAuthTokensResponse, a, b);
   }
 }
 
@@ -16116,6 +16219,11 @@ export class UserAuthToken extends Message<UserAuthToken> {
   attributes?: Struct;
 
   /**
+   * @generated from field: bool refresh = 11;
+   */
+  refresh = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 6;
    */
   createdOn?: Timestamp;
@@ -16145,6 +16253,7 @@ export class UserAuthToken extends Message<UserAuthToken> {
     { no: 5, name: "representing_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "attributes", kind: "message", T: Struct },
+    { no: 11, name: "refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "created_on", kind: "message", T: Timestamp },
     { no: 7, name: "expires_on", kind: "message", T: Timestamp },
     { no: 8, name: "used_on", kind: "message", T: Timestamp },

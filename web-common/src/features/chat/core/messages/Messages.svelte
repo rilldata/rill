@@ -35,7 +35,7 @@
   $: hasStreamError = !!$streamErrorStore;
 
   // Data
-  $: messages = $getConversationQuery.data?.conversation?.messages ?? [];
+  $: messages = $getConversationQuery.data?.messages ?? [];
 
   // Build a map of result messages by parent ID for correlation with calls (excluding router_agent)
   $: resultMessagesByParentId = new Map(

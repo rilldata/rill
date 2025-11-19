@@ -295,12 +295,13 @@ export class Conversation {
       queryClient.getQueryData<V1GetConversationResponse>(oldCacheKey);
 
     if (existingData?.conversation) {
-      // Transfer the conversation data to the real conversation ID cache
+      // Transfer the conversation data and messages to the real conversation ID cache
       queryClient.setQueryData<V1GetConversationResponse>(newCacheKey, {
         conversation: {
           ...existingData.conversation,
           id: realConversationId,
         },
+        messages: existingData.messages || [],
       });
     }
 
@@ -349,23 +350,23 @@ export class Conversation {
         return {
           conversation: {
             id: this.conversationId,
-            messages: [message],
             createdOn: message.createdOn,
             updatedOn: new Date().toISOString(),
           },
+          messages: [message],
         };
       }
 
-      const existingMessages = old.conversation.messages || [];
+      const existingMessages = old.messages || [];
 
       // Add new message to the end of the list
       return {
         ...old,
         conversation: {
           ...old.conversation,
-          messages: [...existingMessages, message],
           updatedOn: new Date().toISOString(),
         },
+        messages: [...existingMessages, message],
       };
     });
   }
@@ -386,10 +387,9 @@ export class Conversation {
         ...old,
         conversation: {
           ...old.conversation,
-          messages:
-            old.conversation.messages?.filter((m) => m.id !== messageId) || [],
           updatedOn: new Date().toISOString(),
         },
+        messages: old.messages?.filter((m) => m.id !== messageId) || [],
       };
     });
   }

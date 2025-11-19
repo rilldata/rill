@@ -32,18 +32,12 @@ project_files:
     materialize: true
     pre_exec: "CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
     sql: "select * from read_csv('s3://integration-test.rilldata.com/glob_test/y=202*/a*.csv', auto_detect=true, ignore_errors=1, header=true)"
-  all_datatypes_duckdb_model_partitions.yaml:
+  all_datatypes_duckdb_model_parquet.yaml:
     type: model
     connector: duckdb
     materialize: true
     pre_exec: "CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
-    partitions:
-      glob:
-        path: s3://integration-test.rilldata.com/glob_test/y=202*/a*.csv
-    sql: "select * from read_csv('{{ .partition.uri }}', auto_detect=true, ignore_errors=0, header=true)"
-    output:
-      incremental_strategy: merge
-      unique_key: id
+    sql: "select * from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
   all_datatypes_duckdb_model_partition_paths_with_new_line.yaml:
     type: model
     connector: duckdb
@@ -57,12 +51,23 @@ project_files:
     output:
       incremental_strategy: merge
       unique_key: id
-  all_datatypes_duckdb_model_parquet.yaml:
+  all_datatypes_duckdb_model_partitions.yaml:
     type: model
     connector: duckdb
     materialize: true
     pre_exec: "CREATE SECRET secret1 (TYPE s3, KEY_ID '{{.env.connector.s3.aws_access_key_id}}', SECRET '{{.env.connector.s3.aws_secret_access_key}}', REGION 'us-east-1')"
-    sql: "select * from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
+    partitions:
+      glob:
+        path: s3://integration-test.rilldata.com/glob_test/y=202*/a*.csv
+    sql: "select * from read_csv('{{ .partition.uri }}', auto_detect=true, ignore_errors=0, header=true)"
+    output:
+      incremental_strategy: merge
+      unique_key: id
+  all_datatypes_duckdb_public_bucket.yaml:
+    type: model
+    connector: duckdb
+    materialize: true
+    sql: "select * from read_parquet('s3://rilldata-public/integration-test/all_datatypes.parquet')"
   all_datatypes_duckdb_source_csv.yaml:
     type: source
     connector: s3
@@ -75,11 +80,6 @@ project_files:
     type: source
     connector: duckdb
     sql: "select * from read_parquet('s3://integration-test.rilldata.com/parquet_test/all_datatypes.parquet')"
-  all_datatypes_duckdb_public_bucket.yaml:
-    type: model
-    connector: duckdb
-    materialize: true
-    sql: "select * from read_parquet('s3://rilldata-public/integration-test/all_datatypes.parquet')"
 tests:
   - name: query_all_result_duckdb_source_csv
     resolver: sql
@@ -159,8 +159,8 @@ tests:
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |
       id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,00:02:03.456000,00:02:03.456789,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,00:00:00,00:00:00,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
       3,,,,,,,,,,,,,,,,,,,
   - name: query_table_type_clickhouse_csv
     resolver: sql
@@ -189,8 +189,8 @@ tests:
       string_col,Nullable(String)
       decimal_col,Nullable(Float64)
       date_col,Nullable(Date)
-      time_millis_col,Nullable(DateTime64(9))
-      time_micros_col,Nullable(DateTime64(9))
+      time_millis_col,Nullable(String)
+      time_micros_col,Nullable(String)
       timestamp_millis_col,Nullable(DateTime64(9))
       timestamp_micros_col,Nullable(DateTime64(9))
       uuid_col,Nullable(String)
@@ -345,11 +345,11 @@ tests:
       # time is converted to datetime like 2025-01-01T00:02:03.456Z but should be 1970-01-01T00:02:03.456Z, which is wrong.
     result_csv: |
       id,boolean_col,int32_col,int64_col,float_col,double_col,byte_array_col,fixed_len_byte_array_col,string_col,decimal_col,date_col,time_millis_col,time_micros_col,timestamp_millis_col,timestamp_micros_col,uuid_col,list_int_col,list_string_col,map_col,struct_col
-      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      1,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,00:02:03.456000,00:02:03.456789,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      2,False,0,0,0,0,,0000000000000000,,0,1970-01-01,00:00:00,00:00:00,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
       3,,,,,,,,,,,,,,,,,,,
-      4,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,2025-01-01T00:02:03.456Z,2025-01-01T00:02:03.456789Z,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
-      5,False,0,0,0,0,,0000000000000000,,0,1970-01-01,2025-01-01T00:00:00Z,2025-01-01T00:00:00Z,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
+      4,True,123,45678901234,1.23,3.14159,abcd,1234567890abcdef,hello,123.45,2024-03-06,00:02:03.456000,00:02:03.456789,2024-03-06T12:34:56.789Z,2024-03-06T12:34:56.789123Z,uuidabcd1234efgh,[1 2 3],['apple' 'banana' 'cherry'],"[('key1', 10), ('key2', 20)]","{'field_int_col': 42, 'field_float_col': 3.140000104904175, 'field_string_col': 'example'}"
+      5,False,0,0,0,0,,0000000000000000,,0,1970-01-01,00:00:00,00:00:00,1970-01-01T00:00:00Z,1970-01-01T00:00:00Z,0000000000000000,[],[],[],"{'field_int_col': 0, 'field_float_col': 0.0, 'field_string_col': ''}"
       6,,,,,,,,,,,,,,,,,,,
   - name: query_count_duckdb_public_bucket
     resolver: sql
