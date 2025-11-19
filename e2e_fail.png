@@ -1,0 +1,1 @@
+{"error":"unauthorized","message":"Please provide authorization header compatible with Linear GraphQL API https://developers.linear.app/docs/graphql/working-with-the-graphql-api#authentication"}
