@@ -130,22 +130,19 @@ const config = {
             type: "docSidebar",
             sidebarId: "developersSidebar",
             position: "left",
+            className: "navbar-docs-link",
             label: "Developer Docs",
+            activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
+
           },
           {
             type: "docSidebar",
             sidebarId: "usersSidebar",
             position: "left",
+            className: "navbar-docs-link",
             label: "User Guide",
           },
 
-          {
-            type: "docSidebar",
-            sidebarId: "refSidebar",
-            position: "left",
-            className: "navbar-docs-link",
-            activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
-          },
           {
             to: "/reference/project-files",
             label: "Reference",
