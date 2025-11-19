@@ -467,6 +467,9 @@ export async function applyMutationsToDashboard(
       } as DashboardMutables;
       mutation(dashboardMutables);
     });
+    // DashboardStateSync.gotoNewState that listens to changes to the dashboard store is an async function.
+    // So go through the mutations individually and wait for 1ms for that to finish.
+    // Without this the lock in gotoNewState will stop the very quick successive changes to dashboard.
     await asyncWait(1);
   }
 }
