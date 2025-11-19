@@ -383,13 +383,23 @@
             enhance={paramsEnhance}
             onSubmit={paramsSubmit}
           >
-            <GCSMultiStepForm
-              properties={filteredParamsProperties}
-              {paramsForm}
-              paramsErrors={$paramsErrors}
-              {onStringInputChange}
-              {handleFileUpload}
-            />
+            {#if connector.name === "gcs"}
+              <GCSMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
+                {handleFileUpload}
+              />
+            {:else}
+              <FormRenderer
+                properties={filteredParamsProperties}
+                form={paramsForm}
+                errors={$paramsErrors}
+                {onStringInputChange}
+                uploadFile={handleFileUpload}
+              />
+            {/if}
           </AddDataFormSection>
         {:else}
           <!-- GCS Step 2: Source configuration -->
