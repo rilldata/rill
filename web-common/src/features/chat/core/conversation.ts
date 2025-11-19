@@ -17,7 +17,7 @@ import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, writable, type Readable } from "svelte/store";
 import type { HTTPError } from "../../../runtime-client/fetchWrapper";
 import {
-  MessageBlockTransformer,
+  transformToMessageBlocks,
   type MessageBlock,
 } from "./messages/message-blocks";
 import { MessageContentType, MessageType, ToolName } from "./types";
@@ -94,23 +94,7 @@ export class Conversation {
         const messages = $query.data?.messages ?? [];
         const isLoading = !!$query.isLoading;
 
-        // Build a map of result messages by parent ID for correlation with calls
-        const resultMessagesByParentId = new Map(
-          messages
-            .filter(
-              (msg) =>
-                msg.type === MessageType.RESULT &&
-                msg.tool !== ToolName.ROUTER_AGENT,
-            )
-            .map((msg) => [msg.parentId, msg]),
-        );
-
-        return MessageBlockTransformer.transform(
-          messages,
-          resultMessagesByParentId,
-          $isStreaming,
-          isLoading,
-        );
+        return transformToMessageBlocks(messages, $isStreaming, isLoading);
       },
     );
   }

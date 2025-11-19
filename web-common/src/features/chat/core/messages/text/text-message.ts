@@ -1,22 +1,22 @@
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 
 /**
- * Text block representation.
+ * Text message representation.
  * Contains a single text message (user or assistant).
  */
-export type TextBlock = {
+export type TextMessage = {
   type: "text";
   id: string;
   message: V1Message;
 };
 
 /**
- * Creates a text block from a message.
+ * Creates a text message block from a message.
  */
-export function createTextBlock(
+export function createTextMessage(
   message: V1Message,
   fallbackId: string,
-): TextBlock {
+): TextMessage {
   return {
     type: "text",
     id: message.id || fallbackId,
