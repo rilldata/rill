@@ -19,7 +19,7 @@ export function compileSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
 ) {
-  // Get the secret property keys.
+  // Get the secret property keys
   const secretPropertyKeys =
     connector.sourceProperties
       ?.filter((property) => property.secret)
