@@ -514,7 +514,7 @@ func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[
 			}
 		}
 	default:
-		return fmt.Errorf("unknown renderer type %q", renderer)
+		// don't error out for unknown renderers
 	}
 	return nil
 }
