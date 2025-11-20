@@ -8,6 +8,7 @@
 
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
+  export let limitToConnector: string | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
 
@@ -17,11 +18,16 @@
       select: (data) => {
         if (!data?.connectors) return;
 
-        const filtered = (
+        let filtered = (
           olapOnly
             ? data.connectors.filter((c) => c?.driver?.implementsOlap)
             : data.connectors
         ).sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+        if (limitToConnector) {
+          filtered = filtered.filter(
+            (c) => (c?.name as string) === limitToConnector,
+          );
+        }
         return { connectors: filtered };
       },
     },

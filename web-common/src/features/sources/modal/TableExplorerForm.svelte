@@ -2,6 +2,7 @@
   import ConnectorExplorer from "../../connectors/explorer/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../../connectors/explorer/connector-explorer-store";
 
+  export let connectorName: string | undefined = undefined;
   export let onSelect:
     | ((detail: {
         connector: string;
@@ -36,5 +37,5 @@
 
   <div class="border-t border-gray-200" />
 
-  <ConnectorExplorer {store} />
+  <ConnectorExplorer {store} limitToConnector={connectorName} />
 </section>

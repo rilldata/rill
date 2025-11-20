@@ -345,6 +345,7 @@
       {#if stepState.step === "explorer"}
         <!-- Step 3: Table Explorer (for supported connectors) -->
         <TableExplorerForm
+          connectorName={connector.name}
           onSelect={(detail) => {
             selectedConnectorForModel = detail.connector;
             selectedDatabaseForModel = detail.database;
