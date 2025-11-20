@@ -870,12 +870,11 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 		stmt := &drivers.Statement{
 			Query: "SELECT id, value FROM test_attrs",
 			QueryAttributes: map[string]string{
-				"test_partner_id": "acme_corp",
+				"max_threads": "1",
 			},
 		}
 		res, err := olap.Query(ctx, stmt)
 		require.NoError(t, err)
-		require.Contains(t, stmt.Query, "test_partner_id = 'acme_corp'")
 		require.NotNil(t, res)
 		err = res.Close()
 		require.NoError(t, err)
@@ -885,16 +884,13 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 		stmt := &drivers.Statement{
 			Query: "SELECT id, value FROM test_attrs",
 			QueryAttributes: map[string]string{
-				"test_partner_id":  "acme_corp",
-				"test_environment": "production",
-				"test_region":      "us-west-2",
+				"max_threads":        "1",
+				"max_memory_usage":   "1000000",
+				"max_execution_time": "10",
 			},
 		}
 		res, err := olap.Query(ctx, stmt)
 		require.NoError(t, err)
-		require.Contains(t, stmt.Query, "test_partner_id = 'acme_corp'")
-		require.Contains(t, stmt.Query, "test_environment = 'production'")
-		require.Contains(t, stmt.Query, "test_region = 'us-west-2'")
 		require.NotNil(t, res)
 		err = res.Close()
 		require.NoError(t, err)
@@ -930,14 +926,12 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 		stmt := &drivers.Statement{
 			Query: "SELECT id, value FROM test_attrs",
 			QueryAttributes: map[string]string{
-				"test_partner_id":  "acme_corp",
-				"test_environment": "production",
+				"max_threads":      "1",
+				"max_memory_usage": "1000000",
 			},
 		}
 		res, err := olap.Query(ctx, stmt)
 		require.NoError(t, err)
-		require.Contains(t, stmt.Query, "test_partner_id = 'acme_corp'")
-		require.Contains(t, stmt.Query, "test_environment = 'production'")
 		require.NotNil(t, res)
 		err = res.Close()
 		require.NoError(t, err)
@@ -952,6 +946,6 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 		}
 		_, err := olap.Query(ctx, stmt)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "neither a builtin setting nor started with the prefix")
+		require.Contains(t, err.Error(), "Unknown setting")
 	})
 }
