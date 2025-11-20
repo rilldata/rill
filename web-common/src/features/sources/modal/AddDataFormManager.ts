@@ -178,31 +178,6 @@ export class AddDataFormManager {
       : this.paramsFormId;
   }
 
-  /**
-   * Initialize the params form when (re)entering the connector step.
-   * Restores defaults for connector config properties and clears taint.
-   */
-  initializeConnectorStepForm(): void {
-    const initialValues = getInitialFormValuesFromProperties(
-      this.connector.configProperties ?? [],
-    );
-    (this.params.form as any).update(() => initialValues, {
-      taint: false,
-    } as any);
-  }
-
-  /**
-   * Initialize the params form when entering the source step.
-   * Uses only source properties defaults; does NOT merge connector config.
-   */
-  initializeSourceStepForm(): void {
-    const sourceProperties = this.connector.sourceProperties ?? [];
-    const initialValues = getInitialFormValuesFromProperties(sourceProperties);
-    (this.params.form as any).update(() => initialValues, {
-      taint: false,
-    } as any);
-  }
-
   handleSkip(): void {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;

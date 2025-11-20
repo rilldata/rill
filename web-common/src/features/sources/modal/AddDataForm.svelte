@@ -65,15 +65,28 @@
     isMultiStepConnector && stepState.step === "source"
       ? (connector.sourceProperties ?? [])
       : properties;
-  $: if (isMultiStepConnector && stepState.step === "source") {
-    // Delegate to manager to initialize source step form
-    formManager.initializeSourceStepForm();
+  $: if (
+    isMultiStepConnector &&
+    stepState.step === "source" &&
+    stepState.connectorConfig
+  ) {
+    // Initialize form with source properties and default values
+    const sourceProperties = connector.sourceProperties ?? [];
+    const initialValues = getInitialFormValuesFromProperties(sourceProperties);
+
+    // Merge with stored connector config
+    const combinedValues = { ...stepState.connectorConfig, ...initialValues };
+
+    paramsForm.update(() => combinedValues, { taint: false });
   }
 
   // Update form when (re)entering step 1: restore defaults for connector properties
   $: if (isMultiStepConnector && stepState.step === "connector") {
-    // Delegate to manager to initialize connector step form
-    formManager.initializeConnectorStepForm();
+    paramsForm.update(
+      () =>
+        getInitialFormValuesFromProperties(connector.configProperties ?? []),
+      { taint: false },
+    );
   }
 
   // Form 1: Individual parameters
