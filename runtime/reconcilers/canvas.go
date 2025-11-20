@@ -317,13 +317,13 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 // rendererRefs tracks all metrics views found in canvas component renderer properties.
 // It currently only tracks metrics views, but in the future we may want to add an option to also track metrics view fields and filters.
 // We did that previously, but removed it since such granular security was considered too strict (it also impacts ability to filter by fields no present on the canvas).
-// See this PR for details in case we want to reintroduce it: TODO
+// See this PR for details in case we want to reintroduce it: https://github.com/rilldata/rill/pull/8370
 type rendererRefs struct {
 	metricsViews map[string]bool
 }
 
 // populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.
-func (r *rendererRefs) populateRendererRefs(renderer string, rendererProps map[string]any) error {
+func (r *rendererRefs) populateRendererRefs(_ string, rendererProps map[string]any) error {
 	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
 	if !ok {
 		return nil
