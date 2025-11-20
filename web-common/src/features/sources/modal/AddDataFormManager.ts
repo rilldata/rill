@@ -273,8 +273,12 @@ export class AddDataFormManager {
         const stepState = get(connectorStepStore) as ConnectorStepState;
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
-          // Advance to Step 3 (Data Explorer) instead of closing
-          setStep("explorer");
+          // Advance to Step 3 (Table Explorer) only if supported; otherwise close
+          if (supportsTableExplorer) {
+            setStep("explorer");
+            return;
+          }
+          onClose();
           return;
         } else if (isMultiStepConnector && stepState.step === "connector") {
           await submitAddConnectorForm(queryClient, connector, values, true);
