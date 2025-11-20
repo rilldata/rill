@@ -107,6 +107,7 @@ type DB interface {
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
+	UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus DeploymentDesiredStatus) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 
 	// UpsertStaticRuntimeAssignment tracks the host and slots registered for a provisioner resource.
@@ -558,6 +559,17 @@ const (
 	DeploymentStatusDeleting    DeploymentStatus = 8
 )
 
+// DeploymentDesiredStatus is an enum representing the desired state of a deployment
+type DeploymentDesiredStatus int
+
+const (
+	DeploymentDesiredStatusUnspecified DeploymentDesiredStatus = 0
+	DeploymentDesiredStatusPending     DeploymentDesiredStatus = 1
+	DeploymentDesiredStatusUpdating    DeploymentDesiredStatus = 2
+	DeploymentDesiredStatusStopping    DeploymentDesiredStatus = 3
+	DeploymentDesiredStatusDeleting    DeploymentDesiredStatus = 4
+)
+
 func (d DeploymentStatus) String() string {
 	switch d {
 	case DeploymentStatusPending:
@@ -582,19 +594,21 @@ func (d DeploymentStatus) String() string {
 // Deployment is a single deployment of a git branch.
 // Deployments belong to a project.
 type Deployment struct {
-	ID                string           `db:"id"`
-	ProjectID         string           `db:"project_id"`
-	OwnerUserID       *string          `db:"owner_user_id"`
-	Environment       string           `db:"environment"`
-	Branch            string           `db:"branch"`
-	RuntimeHost       string           `db:"runtime_host"`
-	RuntimeInstanceID string           `db:"runtime_instance_id"`
-	RuntimeAudience   string           `db:"runtime_audience"`
-	Status            DeploymentStatus `db:"status"`
-	StatusMessage     string           `db:"status_message"`
-	CreatedOn         time.Time        `db:"created_on"`
-	UpdatedOn         time.Time        `db:"updated_on"`
-	UsedOn            time.Time        `db:"used_on"`
+	ID                     string                  `db:"id"`
+	ProjectID              string                  `db:"project_id"`
+	OwnerUserID            *string                 `db:"owner_user_id"`
+	Environment            string                  `db:"environment"`
+	Branch                 string                  `db:"branch"`
+	RuntimeHost            string                  `db:"runtime_host"`
+	RuntimeInstanceID      string                  `db:"runtime_instance_id"`
+	RuntimeAudience        string                  `db:"runtime_audience"`
+	Status                 DeploymentStatus        `db:"status"`
+	DesiredStatus          DeploymentDesiredStatus `db:"desired_status"`
+	StatusMessage          string                  `db:"status_message"`
+	CreatedOn              time.Time               `db:"created_on"`
+	UpdatedOn              time.Time               `db:"updated_on"`
+	UsedOn                 time.Time               `db:"used_on"`
+	DesiredStatusUpdatedOn time.Time               `db:"desired_status_updated_on"`
 }
 
 // InsertDeploymentOptions defines options for inserting a new Deployment.
@@ -608,6 +622,7 @@ type InsertDeploymentOptions struct {
 	RuntimeAudience   string
 	Status            DeploymentStatus
 	StatusMessage     string
+	DesiredStatus     DeploymentDesiredStatus
 }
 
 // UpdateDeploymentOptions defines options for updating a Deployment.

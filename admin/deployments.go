@@ -38,11 +38,12 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		OwnerUserID:       opts.OwnerUserID,
 		Environment:       opts.Environment,
 		Branch:            opts.Branch,
-		RuntimeHost:       "", // Will be populated after provisioning in startDeploymentInner
-		RuntimeInstanceID: "", // Will be populated after provisioning in startDeploymentInner
-		RuntimeAudience:   "", // Will be populated after provisioning in startDeploymentInner
-		Status:            database.DeploymentStatusPending,
+		RuntimeHost:       "",                               // Will be populated after provisioning in startDeploymentInner
+		RuntimeInstanceID: "",                               // Will be populated after provisioning in startDeploymentInner
+		RuntimeAudience:   "",                               // Will be populated after provisioning in startDeploymentInner
+		Status:            database.DeploymentStatusPending, // Initial status is pending so we can return a valid deployment state immediately
 		StatusMessage:     "Provisioning...",
+		DesiredStatus:     database.DeploymentDesiredStatusPending,
 	})
 	if err != nil {
 		return nil, err
@@ -58,8 +59,8 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 }
 
 func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment) (*database.Deployment, error) {
-	// Update the deployment status to pending
-	depl1, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning...")
+	// Update the desired deployment status to pending
+	depl1, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentDesiredStatusPending)
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +75,8 @@ func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment
 }
 
 func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Update the deployment status to stopping
-	_, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopping, "Stopping...")
+	// Update the deployment desired status to stopping
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentDesiredStatusStopping)
 	if err != nil {
 		return err
 	}
@@ -90,8 +91,8 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Update the deployment status to pending
-	_, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusUpdating, "Updating...")
+	// Update the desired deployment status to pending
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentDesiredStatusUpdating)
 	if err != nil {
 		return err
 	}
@@ -106,8 +107,8 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 }
 
 func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Update the deployment status to deleting
-	_, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusDeleting, "Deleting...")
+	// Update the desired deployment status to deleting
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentDesiredStatusDeleting)
 	if err != nil {
 		return err
 	}
@@ -158,24 +159,18 @@ func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.P
 	return prodErr
 }
 
-type RuntimeConfig struct {
-	Host       string
-	Audience   string
-	InstanceID string
-}
-
 // StartDeploymentInner provisions a runtime and initializes an instance on it.
 // The implementation is idempotent, enabling it to be called from a retryable background job.
-func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deployment) (*RuntimeConfig, error) {
+func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deployment) error {
 	// Find project and organization
 	proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Validate the desired runtime version.
@@ -183,7 +178,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	runtimeVersion := proj.ProdVersion
 	err = validateRuntimeVersion(runtimeVersion)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Prepare deployment annotations
@@ -198,7 +193,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		slots = proj.DevSlots
 	default:
 		// Invalid environment
-		return nil, errors.New("Invalid environment, must be either 'prod' or 'dev'")
+		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
 	}
 
 	// Provision the runtime
@@ -211,44 +206,48 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		Annotations:  annotations.ToMap(),
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cfg, err := provisioner.NewRuntimeConfig(r.Config)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Create instance ID
+	// Update the deployment with the runtime details
 	instanceID := strings.ReplaceAll(r.ID, "-", "") // Use the provisioned resource ID without dashes as the instance ID
-	depl.RuntimeInstanceID = instanceID
-	depl.RuntimeHost = cfg.Host
-	depl.RuntimeAudience = cfg.Audience
+	depl, err = s.DB.UpdateDeployment(ctx, depl.ID, &database.UpdateDeploymentOptions{
+		Branch:            depl.Branch,
+		RuntimeHost:       cfg.Host,
+		RuntimeInstanceID: instanceID,
+		RuntimeAudience:   cfg.Audience,
+		Status:            database.DeploymentStatusPending,
+		StatusMessage:     "Creating instance...",
+	})
+	if err != nil {
+		return err
+	}
 
 	// Connect to the runtime
 	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rt.Close()
 
 	// If the instance already exists, we can return now. (This can happen since this operation is idempotent and may be retried.)
 	_, err = rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: instanceID})
 	if err != nil && status.Code(err) != codes.NotFound {
-		return nil, err
+		return err
 	}
 	if err == nil {
 		// Instance already exists. We can return.
-		return &RuntimeConfig{
-			Host:       cfg.Host,
-			Audience:   cfg.Audience,
-			InstanceID: instanceID,
-		}, nil
+		return nil
 	}
 
 	// Create an access token that it can use to authenticate with the admin server.
 	dat, err := s.IssueDeploymentAuthToken(ctx, depl.ID, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Prepare connectors
@@ -258,7 +257,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		"project_id":   depl.ProjectID,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	duckdbConfig, err := structpb.NewStruct(map[string]any{
@@ -267,7 +266,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	connectors := []*runtimev1.Connector{
 		// The admin connector
@@ -290,7 +289,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	// Resolve variables based on environment
 	vars, err := s.ResolveVariables(ctx, proj.ID, depl.Environment, true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Create the instance
@@ -307,15 +306,11 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		FrontendUrl:    frontendURL,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Deployment is ready to use
-	return &RuntimeConfig{
-		Host:       cfg.Host,
-		Audience:   cfg.Audience,
-		InstanceID: instanceID,
-	}, nil
+	return nil
 }
 
 // StopDeploymentInner stops a deployment by tearing down its runtime instance and resources.

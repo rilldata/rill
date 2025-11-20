@@ -136,10 +136,30 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 		return err
 	}
 
+	// Teardown all deployments in background jobs.
 	for _, d := range ds {
 		err := s.TeardownDeployment(ctx, d)
 		if err != nil {
 			return err
+		}
+	}
+
+	// Poll until all deployments are deleted with a timeout.
+	pollCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	for {
+		select {
+		case <-pollCtx.Done():
+			return pollCtx.Err()
+		case <-time.After(2 * time.Second):
+			// Ready to check again.
+		}
+		depls, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
+		if err != nil {
+			return err
+		}
+		if len(depls) == 0 {
+			break
 		}
 	}
 
