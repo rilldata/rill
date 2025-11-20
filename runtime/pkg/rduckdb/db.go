@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/jmoiron/sqlx"
-	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
