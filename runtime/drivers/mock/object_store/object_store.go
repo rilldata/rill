@@ -168,12 +168,12 @@ func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error)
 	return nil, drivers.ErrNotNotifier
 }
 
-func (h *handle) ListBuckets(ctx context.Context, pageSize int, pageToken string) ([]string, string, error) {
+func (h *handle) ListBuckets(ctx context.Context, pageSize uint32, pageToken string) ([]string, string, error) {
 	return nil, "", errors.New("not implemented")
 }
 
 // ListObjects implements drivers.ObjectStore.
-func (h *handle) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize int, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+func (h *handle) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
 	blobBucket, err := rillblob.NewBucket(h.bucket, h.logger)
 	if err != nil {
 		return nil, "", err

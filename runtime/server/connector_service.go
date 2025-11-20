@@ -21,7 +21,7 @@ func (s *Server) ListBuckets(ctx context.Context, req *runtimev1.ListBucketsRequ
 		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
 	}
 
-	buckets, nextPageToken, err := os.ListBuckets(ctx, int(req.PageSize), req.PageToken)
+	buckets, nextPageToken, err := os.ListBuckets(ctx, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequ
 	if !ok {
 		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
 	}
-	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Prefix, req.Delimiter, int(req.PageSize), req.PageToken)
+	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Prefix, req.Delimiter, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}

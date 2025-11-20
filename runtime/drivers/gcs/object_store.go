@@ -15,8 +15,8 @@ import (
 	"google.golang.org/api/option"
 )
 
-func (c *Connection) ListBuckets(ctx context.Context, pageSize int, pageToken string) ([]string, string, error) {
-	validPageSize := pagination.ValidPageSize(uint32(pageSize), drivers.DefaultPageSize)
+func (c *Connection) ListBuckets(ctx context.Context, pageSize uint32, pageToken string) ([]string, string, error) {
+	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	unmarshalPageToken := ""
 	if pageToken != "" {
 		if err := pagination.UnmarshalPageToken(pageToken, &unmarshalPageToken); err != nil {
@@ -58,7 +58,7 @@ func (c *Connection) ListBuckets(ctx context.Context, pageSize int, pageToken st
 }
 
 // ListObjects implements drivers.ObjectStore.
-func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize int, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
+func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
 	blobBucket, err := c.openBucket(ctx, bucket)
 	if err != nil {
 		return nil, "", err

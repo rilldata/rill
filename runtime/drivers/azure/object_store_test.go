@@ -44,7 +44,7 @@ func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bu
 	var collected []string
 	pageCount := 0
 	for {
-		objects, nextToken, err := objectStore.ListObjects(ctx, bucket, prefix, "", pageSize, pageToken)
+		objects, nextToken, err := objectStore.ListObjects(ctx, bucket, prefix, "", uint32(pageSize), pageToken)
 		require.NoError(t, err)
 
 		pageCount++
