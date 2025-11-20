@@ -481,7 +481,7 @@ func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[
 				return err
 			}
 		}
-	case "donut_chart":
+	case "donut_chart", "pie_chart":
 		if colorField, ok := pathutil.GetPath(rendererProps, "color.field"); ok {
 			err = res.metricsViewField(mv, colorField)
 			if err != nil {
@@ -514,7 +514,7 @@ func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[
 			}
 		}
 	default:
-		return fmt.Errorf("unknown renderer type %q", renderer)
+		// don't error out for unknown renderers
 	}
 	return nil
 }
