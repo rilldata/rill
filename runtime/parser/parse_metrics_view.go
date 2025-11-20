@@ -1130,7 +1130,7 @@ func validateQueryAttributes(attrs map[string]string) error {
 	return nil
 }
 
-var queryAttributeKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
+var queryAttributeKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9_\.-]+$`)
 
 // isValidQueryAttributeKey checks if a key contains only safe characters
 func isValidQueryAttributeKey(key string) bool {
