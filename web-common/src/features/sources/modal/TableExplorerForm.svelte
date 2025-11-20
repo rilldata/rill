@@ -14,8 +14,8 @@
   const store = connectorExplorerStore.duplicateStore(
     (connector, database = "", schema = "", table = "") => {
       // Only emit selection when a table is toggled
-      if (table) {
-        onSelect?.({
+      if (table && onSelect) {
+        onSelect({
           connector,
           database,
           schema,
