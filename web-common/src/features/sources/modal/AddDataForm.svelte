@@ -96,6 +96,15 @@
     ? "max-h-[38.5rem] min-h-[38.5rem]"
     : "max-h-[34.5rem] min-h-[34.5rem]";
 
+  // Update form when (re)entering step 1: restore defaults for connector properties
+  $: if (isMultiStepConnector && stepState.step === "connector") {
+    paramsForm.update(
+      () =>
+        getInitialFormValuesFromProperties(connector.configProperties ?? []),
+      { taint: false },
+    );
+  }
+
   // Form 1: Individual parameters
   const paramsFormId = `add-data-${connector.name}-form`;
   const properties =
