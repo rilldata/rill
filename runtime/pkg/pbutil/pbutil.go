@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/chcol"
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/google/uuid"
-	"github.com/marcboeker/go-duckdb/v2"
 	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/clickhouse"
@@ -93,6 +94,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(v2), nil
 	case duckdb.Map:
 		return ToValue(map[any]any(v), t)
+	case *chcol.JSON:
+		return ToValue(v.NestedMap(), t)
+	case chcol.Variant:
+		return ToValue(v.Any(), t)
 	case map[any]any:
 		var t2 *runtimev1.MapType
 		if t != nil {
@@ -184,6 +189,12 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return structpb.NewNullValue(), nil
 		}
 		return structpb.NewNumberValue(*v), nil
+	case []*string:
+		v2, err := ToListValueUnknown(v, t)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewListValue(v2), nil
 	case *net.IP:
 		return structpb.NewStringValue(v.String()), nil
 	case orb.Point:
@@ -208,7 +219,20 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		}
 		return structpb.NewStructValue(v2), nil
 	}
-	// Default handling for basic types (ints, string, etc.)
+	// Try pointers to types handled above
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr {
+		return ToValue(rv.Elem().Interface(), t)
+	}
+	// Try slices of types handled above (e.g. []*int32)
+	if rv.Kind() == reflect.Slice {
+		v2, err := ToListValueUnknown(v, t)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewListValue(v2), nil
+	}
+	// Fallback handling
 	return structpb.NewValue(v)
 }
 

@@ -397,3 +397,28 @@ func (u *URLs) Billing(org string, upgrade bool) string {
 func (u *URLs) PaymentPortal(org string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing", "payment")
 }
+
+// OAuthProtectedResourceMetadata returns the URL for the OAuth 2.0 Protected Resource Metadata endpoint.
+// This endpoint is used by MCP clients to discover authorization server information.
+func (u *URLs) OAuthProtectedResourceMetadata() string {
+	return urlutil.MustJoinURL(u.External(), "/.well-known/oauth-protected-resource")
+}
+
+// OAuthRegister returns the URL for the OAuth 2.0 Dynamic Client Registration endpoint.
+func (u *URLs) OAuthRegister() string {
+	return urlutil.MustJoinURL(u.External(), "/auth/oauth/register")
+}
+
+// OAuthAuthorize returns the URL for the OAuth 2.0 Authorization endpoint.
+func (u *URLs) OAuthAuthorize() string {
+	return urlutil.MustJoinURL(u.External(), "/auth/oauth/authorize")
+}
+
+// OAuthToken returns the URL for the OAuth 2.0 Token endpoint.
+func (u *URLs) OAuthToken() string {
+	return urlutil.MustJoinURL(u.External(), "/auth/oauth/token")
+}
+
+func (u *URLs) OAuthJWKS() string {
+	return urlutil.MustJoinURL(u.External(), "/.well-known/jwks.json")
+}

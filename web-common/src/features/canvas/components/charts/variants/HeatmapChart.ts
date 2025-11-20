@@ -6,9 +6,10 @@ import {
 } from "@rilldata/web-common/features/components/charts/heatmap/HeatmapChartProvider";
 import type { ChartFieldsMap } from "@rilldata/web-common/features/components/charts/types";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import type {
-  V1MetricsViewSpec,
-  V1Resource,
+import {
+  MetricsViewSpecDimensionType,
+  type V1MetricsViewSpec,
+  type V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { type Readable } from "svelte/store";
 import type { ChartDataQuery } from "../../../../components/charts/types";
@@ -121,8 +122,9 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
   ): HeatmapCanvasChartSpec {
     // Select two dimensions and one measure if available
     const measures = metricsViewSpec?.measures || [];
-    const dimensions = metricsViewSpec?.dimensions || [];
-
+    const dimensions = [...(metricsViewSpec?.dimensions || [])].filter(
+      (d) => d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_CATEGORICAL,
+    );
     const randomMeasure = measures[Math.floor(Math.random() * measures.length)]
       ?.name as string;
 
@@ -153,7 +155,7 @@ export class HeatmapChartComponent extends BaseChart<HeatmapCanvasChartSpec> {
         field: randomMeasure,
         colorRange: {
           mode: "scheme",
-          scheme: "tealblues",
+          scheme: "sequential", // Use sequential palette for ordered data
         },
       },
     };

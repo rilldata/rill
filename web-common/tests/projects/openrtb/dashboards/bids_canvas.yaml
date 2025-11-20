@@ -13,6 +13,18 @@ rows:
         width: 12
     height: 80px
   - items:
+      - leaderboard:
+          metrics_view: bids_metrics
+          measures:
+            - overall_spend
+          dimensions:
+            - adomain
+            - advertiser_name
+            - app_or_site
+          num_rows: 7
+        width: 12
+    height: 348px
+  - items:
       - kpi_grid:
           metrics_view: bids_metrics
           measures:
@@ -54,15 +66,4 @@ rows:
             - impressions
         width: 12
     height: 40px
-  - items:
-      - leaderboard:
-          metrics_view: bids_metrics
-          measures:
-            - overall_spend
-          dimensions:
-            - adomain
-            - advertiser_name
-            - app_or_site
-          num_rows: 7
-        width: 12
-    height: 348px
+  

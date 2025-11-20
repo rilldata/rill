@@ -238,14 +238,16 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	defer cancel()
 
 	// Call AI service to infer a metrics view YAML
-	res, err := ai.Complete(ctx, msgs, nil, nil)
+	res, err := ai.Complete(ctx, &drivers.CompleteOptions{
+		Messages: msgs,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Extract text from content blocks
 	var responseText string
-	for _, block := range res.Content {
+	for _, block := range res.Message.Content {
 		switch blockType := block.GetBlockType().(type) {
 		case *aiv1.ContentBlock_Text:
 			if text := blockType.Text; text != "" {

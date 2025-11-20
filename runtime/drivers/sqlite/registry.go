@@ -37,6 +37,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		SELECT
 			id,
 			environment,
+			project_display_name,
 			olap_connector,
 			project_olap_connector,
 			repo_connector,
@@ -72,6 +73,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		err := rows.Scan(
 			&i.ID,
 			&i.Environment,
+			&i.ProjectDisplayName,
 			&i.OLAPConnector,
 			&i.ProjectOLAPConnector,
 			&i.RepoConnector,
@@ -205,6 +207,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		INSERT INTO instances(
 			id,
 			environment,
+			project_display_name,
 			olap_connector,
 			project_olap_connector,
 			repo_connector,
@@ -224,10 +227,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			ai_instructions,
 			frontend_url
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
 		`,
 		inst.ID,
 		inst.Environment,
+		inst.ProjectDisplayName,
 		inst.OLAPConnector,
 		inst.ProjectOLAPConnector,
 		inst.RepoConnector,
@@ -304,27 +308,29 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		`
 		UPDATE instances SET
 			environment = $2,
-			olap_connector = $3,
-			project_olap_connector = $4,
-			repo_connector = $5,
-			admin_connector = $6,
-			ai_connector = $7,
-			project_ai_connector = $8,
-			catalog_connector = $9,
-			updated_on = $10,
-			connectors = $11,
-			project_connectors = $12,
-			variables = $13,
-			project_variables = $14,
-			feature_flags = $15,
-			annotations = $16,
-			public_paths = $17,
-			ai_instructions = $18,
-			frontend_url = $19
+			project_display_name = $3,
+			olap_connector = $4,
+			project_olap_connector = $5,
+			repo_connector = $6,
+			admin_connector = $7,
+			ai_connector = $8,
+			project_ai_connector = $9,
+			catalog_connector = $10,
+			updated_on = $11,
+			connectors = $12,
+			project_connectors = $13,
+			variables = $14,
+			project_variables = $15,
+			feature_flags = $16,
+			annotations = $17,
+			public_paths = $18,
+			ai_instructions = $19,
+			frontend_url = $20
 		WHERE id = $1
 		`,
 		inst.ID,
 		inst.Environment,
+		inst.ProjectDisplayName,
 		inst.OLAPConnector,
 		inst.ProjectOLAPConnector,
 		inst.RepoConnector,

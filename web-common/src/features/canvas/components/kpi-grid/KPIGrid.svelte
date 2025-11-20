@@ -14,6 +14,7 @@
     specStore,
     timeAndFilterStore,
     parent: { name: canvasName },
+    visible,
   } = component);
   $: kpiGridProperties = $specStore;
   $: schema = validateKPIGridSchema(kpiGridProperties);
@@ -59,7 +60,12 @@
     >
       {#each kpis as kpi, i (i)}
         <div class="min-h-32 kpi-wrapper">
-          <KPIProvider spec={kpi} {timeAndFilterStore} {canvasName} />
+          <KPIProvider
+            spec={kpi}
+            {timeAndFilterStore}
+            {canvasName}
+            visible={$visible}
+          />
         </div>
       {/each}
     </div>
@@ -79,7 +85,7 @@
   }
 
   .border-overlay {
-    @apply absolute border-[12.5px] pointer-events-none border-surface size-full;
+    @apply absolute border-[12.5px] pointer-events-none border-card size-full;
     z-index: 50;
   }
 

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateManager from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateManager.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
@@ -44,9 +43,7 @@
           storageNamespacePrefix={EmbedStorageNamespacePrefix}
           disableMostRecentDashboardState
         >
-          <DashboardThemeProvider>
-            <Dashboard {exploreName} {metricsViewName} isEmbedded />
-          </DashboardThemeProvider>
+          <Dashboard {exploreName} {metricsViewName} isEmbedded />
         </DashboardStateManager>
       </StateManagersProvider>
     {/key}

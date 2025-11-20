@@ -699,6 +699,11 @@ paths:
           in: path
           required: true
           type: string
+        - name: userAgentPattern
+          description: Optional search pattern for filtering by user agent.
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}:
@@ -2075,6 +2080,10 @@ paths:
               timeDimension:
                 type: string
                 description: Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension.
+              executionTime:
+                type: string
+                format: date-time
+                description: Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -3400,6 +3409,9 @@ definitions:
     properties:
       name:
         type: string
+      type:
+        $ref: '#/definitions/MetricsViewSpecDimensionType'
+        description: The dimension type. Only populated in ValidSpec.
       displayName:
         type: string
       description:
@@ -3421,6 +3433,9 @@ definitions:
         type: string
       lookupDefaultExpression:
         type: string
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        description: The smallest time grain for the dimension. Only populated for time dimensions.
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the dimension. Only populated in ValidSpec.
@@ -3437,6 +3452,13 @@ definitions:
         type: boolean
         title: Only for when ordering (optional)
     title: Selector for a dimension
+  MetricsViewSpecDimensionType:
+    type: string
+    enum:
+      - DIMENSION_TYPE_UNSPECIFIED
+      - DIMENSION_TYPE_CATEGORICAL
+      - DIMENSION_TYPE_TIME
+    default: DIMENSION_TYPE_UNSPECIFIED
   MetricsViewSpecMeasure:
     type: object
     properties:
@@ -3808,18 +3830,12 @@ definitions:
         title: Connector driver metadata
       config:
         type: object
-        additionalProperties:
-          type: string
         title: Combined config properties for the connector
       presetConfig:
         type: object
-        additionalProperties:
-          type: string
         title: Config properties preset by the runtime or when the instance was created
       projectConfig:
         type: object
-        additionalProperties:
-          type: string
         title: Config properties set in project YAML files
       envConfig:
         type: object
@@ -4443,8 +4459,6 @@ definitions:
         title: Name of the connector
       config:
         type: object
-        additionalProperties:
-          type: string
         title: Config for the connector
       templatedProperties:
         type: array
@@ -4514,8 +4528,6 @@ definitions:
         type: string
       properties:
         type: object
-        additionalProperties:
-          type: string
       templatedProperties:
         type: array
         items:
@@ -6276,8 +6288,13 @@ definitions:
           $ref: '#/definitions/v1ModelTest'
       trigger:
         type: boolean
+        description: trigger indicates a normal refresh (incremental or full depending on the model type).
       triggerFull:
         type: boolean
+        description: trigger_full indicates a full refresh regardless of the model type.
+      triggerPartitions:
+        type: boolean
+        description: trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models.
       definedAsSource:
         type: boolean
         description: defined_as_source is true if it was defined by user as a source but converted internally to a model.

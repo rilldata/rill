@@ -472,7 +472,7 @@
 
     <!-- LEFT FOOTER -->
     <div
-      class="w-full bg-white border-t border-gray-200 p-6 flex justify-between gap-2"
+      class="w-full bg-surface border-t border-gray-200 p-6 flex justify-between gap-2"
     >
       <Button onClick={() => formManager.handleBack(onBack)} type="secondary"
         >Back</Button

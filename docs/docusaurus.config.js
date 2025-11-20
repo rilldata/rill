@@ -62,24 +62,22 @@ const config = {
         },
       }),
     ],
-    // [
-    //   'redocusaurus',
-    //   {
-    //     config: path.join(__dirname, 'redocly.yaml'),
-    //     specs: [
-    //       {
-    //         id: 'admin-api',
-    //         spec: 'api/rill/admin/v1/public.swagger.yaml',
-    //         route: '/api/admin/',
-    //         layout: {
-    //           title: "Rill Public API",
-    //           description: "Public Rill API documentation",
-    //         },
-    //       },
-    //     ],
-    //     theme: {},
-    //   },
-    // ]
+    [
+      'redocusaurus',
+      {
+        config: path.join(__dirname, 'redocly.yaml'),
+        specs: [
+          {
+            id: 'public',
+            spec: 'api/openapi.yaml',
+            route: '/api/admin/',
+          },
+        ],
+        theme: {
+          primaryColor: '#3524c7',
+        },
+      },
+    ]
   ],
 
   themeConfig:
@@ -129,42 +127,46 @@ const config = {
         },
         items: [
           {
-            type: "doc",
-            docId: "get-started/get-started",
-            position: "left",
+            to: "/",
             label: "Docs",
-          },
-
-          {
-            type: "docSidebar",
-            sidebarId: "refSidebar",
             position: "left",
+            className: "navbar-docs-link",
+            activeBaseRegex: "^(?!/(reference|api|contact|notes)).*", // Keep Docs active for all doc pages
+          },
+          {
+            to: "/reference/project-files",
             label: "Reference",
-          },
-
-          // {
-          //   to: "/api/admin/",
-          //   position: "left",
-          //   label: "API",
-          // },
-
-          {
-            type: "docSidebar",
-            sidebarId: "contactSidebar",
             position: "left",
-            label: "Contact Us",
+            className: "navbar-reference-link",
+            activeBasePath: "/reference",
           },
+          {
+            to: "/api/admin/",
+            label: "API",
+            position: "left",
+            className: "navbar-api-link",
+            activeBasePath: "/api/admin",
+          },
+          {
+            to: "/contact",
+            label: "Contact Us",
+            position: "left",
+            className: "navbar-contact-link",
+            activeBasePath: "/contact",
+          },
+
+
 
           // Right side items
           {
             type: "html",
             position: "right",
-            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub">GitHub</i></a>',
+            value: '<a href="https://github.com/rilldata/rill" class="navbar-icon-link" aria-label="GitHub" target="_blank" rel="noopener noreferrer">GitHub</a>',
           },
           {
             type: "html",
             position: "right",
-            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog">Blog</i></a>',
+            value: '<a href="https://www.rilldata.com/blog" class="navbar-icon-link" aria-label="Blog" target="_blank" rel="noopener noreferrer">Blog</a>',
           },
 
           {

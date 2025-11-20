@@ -1,3 +1,7 @@
+<!--
+  Renders conversational text exchanges between user and AI assistant.
+  Handles router_agent messages (user prompts and assistant responses).
+-->
 <script lang="ts">
   import { page } from "$app/stores";
   import {
@@ -7,25 +11,27 @@
   import { derived } from "svelte/store";
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
+  import { extractMessageText } from "../utils";
 
   export let message: V1Message;
-  export let content: string;
 
+  // Message content and styling
+  $: role = message.role || "assistant";
+  $: content = extractMessageText(message);
+
+  // Citation URL rewriting for explore dashboards
+  // When rendered in an explore context, converts relative citation URLs to full dashboard URLs
   const exploreNameStore = derived(
     page,
     (pageState) => pageState.params.dashboard ?? pageState.params.name ?? "",
   );
-  $: renderedInExplore = !!$exploreNameStore;
-
   const mapperStore =
     getMetricsResolverQueryToUrlParamsMapperStore(exploreNameStore);
-  $: hasMapper = !!$mapperStore.data;
-  $: convertCitationUrls =
-    renderedInExplore && hasMapper
-      ? getCitationUrlRewriter($mapperStore.data!)
-      : undefined;
 
-  $: role = message.role;
+  $: renderedInExplore = !!$exploreNameStore;
+  $: convertCitationUrls = renderedInExplore
+    ? getCitationUrlRewriter($mapperStore.data)
+    : undefined;
 </script>
 
 <div class="chat-message chat-message--{role}">
@@ -40,23 +46,19 @@
 
 <style lang="postcss">
   .chat-message {
-    max-width: 90%;
+    @apply max-w-[90%];
   }
 
   .chat-message--user {
-    align-self: flex-end;
+    @apply self-end;
   }
 
   .chat-message--assistant {
-    align-self: flex-start;
+    @apply self-start;
   }
 
   .chat-message-content {
-    padding: 0.375rem 0.5rem;
-    border-radius: 1rem;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    word-break: break-word;
+    @apply px-2 py-1.5 rounded-2xl text-sm leading-relaxed break-words;
   }
 
   .chat-message--user .chat-message-content {
@@ -64,6 +66,6 @@
   }
 
   .chat-message--assistant .chat-message-content {
-    color: #374151;
+    @apply text-gray-700;
   }
 </style>
