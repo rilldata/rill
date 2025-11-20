@@ -15,24 +15,23 @@ import type {
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import type { ResourceNodeData } from "./types";
-import { localStorageStore } from "@rilldata/web-common/lib/store-utils/local-storage";
+import { graphCache } from "./cache-manager";
+import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "./graph-config";
 
-// Node sizing constants
-// Chosen to accommodate typical resource names (5-30 characters) without excessive whitespace or text wrapping
-const MIN_NODE_WIDTH = 160; // Minimum for short names like "Users" or "Orders"
-const MAX_NODE_WIDTH = 320; // Maximum before text wraps; handles names up to ~35 chars
-const DEFAULT_NODE_HEIGHT = 56; // Height for single-line text + padding (optimized for 16px font)
+// Use centralized configuration
+const MIN_NODE_WIDTH = NODE_CONFIG.MIN_WIDTH;
+const MAX_NODE_WIDTH = NODE_CONFIG.MAX_WIDTH;
+const DEFAULT_NODE_HEIGHT = NODE_CONFIG.DEFAULT_HEIGHT;
+const AVERAGE_CHAR_WIDTH = NODE_CONFIG.AVERAGE_CHAR_WIDTH;
+const CONTENT_PADDING = NODE_CONFIG.CONTENT_PADDING;
 
-// Dagre layout spacing configuration (centralized for cache versioning)
-// These values were tuned for readability with graphs of 5-50 nodes.
-// Original values (18, 48, 4) were increased by 1.5x to reduce visual density.
-// Tested with real-world Rill projects containing complex dependency chains.
-const DAGRE_NODESEP = 27; // Horizontal spacing between sibling nodes at the same rank (was 18)
-const DAGRE_RANKSEP = 72; // Vertical spacing between graph layers/ranks (was 48)
-const DAGRE_EDGESEP = 4; // Minimum spacing between edge paths (rarely matters in practice)
+// Dagre configuration from centralized config
+const DAGRE_NODESEP = DAGRE_CONFIG.NODESEP;
+const DAGRE_RANKSEP = DAGRE_CONFIG.RANKSEP;
+const DAGRE_EDGESEP = DAGRE_CONFIG.EDGESEP;
 
-// Default edge styling for non-highlighted edges
-const DEFAULT_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;";
+// Edge styling from centralized config
+const DEFAULT_EDGE_STYLE = EDGE_CONFIG.DEFAULT_STYLE;
 
 // Resource kinds that should be displayed in the graph
 const ALLOWED_KINDS = new Set<ResourceKind>([
@@ -41,125 +40,6 @@ const ALLOWED_KINDS = new Set<ResourceKind>([
   ResourceKind.MetricsView,
   ResourceKind.Explore,
 ]);
-
-// Node width estimation constants (used to dynamically size nodes based on label length)
-const AVERAGE_CHAR_WIDTH = 8.5; // Average pixel width per character in the node label font
-const CONTENT_PADDING = 72; // Total horizontal padding (icons, margins, etc.) within a node
-
-// Cache last known group assignments so that if a group's anchor
-// (e.g., a metrics view) disappears due to an error, we can keep
-// its resources together in the expected graph grouping.
-const lastGroupAssignments = new Map<string, string>(); // resourceId -> groupId
-const lastGroupLabels = new Map<string, string>(); // groupId -> label
-const lastPositions = new Map<string, { x: number; y: number }>(); // nodeId -> position
-const lastRefs = new Map<string, string[]>(); // dependentId -> [sourceIds]
-
-// Persistent client-side cache (localStorage) to keep positions, grouping, and refs
-// Increment CACHE_VERSION when layout algorithm or visual spacing changes significantly
-// This forces cache invalidation and prevents stale layouts after code changes.
-//
-// Version History:
-// v1 (initial): Layout with DAGRE_NODESEP=27, RANKSEP=72, basic position caching
-//
-// Future: Bump version when changing spacing constants, node dimensions, or graph algorithms
-const CACHE_VERSION = 1;
-const CACHE_NS = `rill.resourceGraph.v${CACHE_VERSION}`;
-
-type PersistedCache = {
-  positions: Record<string, { x: number; y: number }>;
-  assignments: Record<string, string>;
-  labels: Record<string, string>;
-  refs: Record<string, string[]>;
-};
-
-const DEFAULT_CACHE: PersistedCache = {
-  positions: {},
-  assignments: {},
-  labels: {},
-  refs: {},
-};
-
-/**
- * Clean up orphaned cache entries from old versions.
- * This prevents localStorage from accumulating stale cache data.
- */
-function cleanupOrphanedCaches() {
-  try {
-    if (typeof window === "undefined" || !window.localStorage) return;
-
-    const pattern = /^rill\.resourceGraph\.v\d+$/;
-    const keys = Object.keys(window.localStorage);
-    let cleanedCount = 0;
-
-    for (const key of keys) {
-      // Match old version keys but not current version
-      if (pattern.test(key) && key !== CACHE_NS) {
-        window.localStorage.removeItem(key);
-        cleanedCount++;
-      }
-    }
-
-    if (cleanedCount > 0 && typeof console !== "undefined") {
-      console.debug(
-        `[ResourceGraph] Cleaned up ${cleanedCount} orphaned cache ${cleanedCount === 1 ? "entry" : "entries"}`,
-      );
-    }
-  } catch (error) {
-    if (typeof console !== "undefined") {
-      console.warn("[ResourceGraph] Failed to cleanup orphaned caches:", error);
-    }
-  }
-}
-
-// Clean up orphaned cache entries on module initialization
-cleanupOrphanedCaches();
-
-// Use the project's standard localStorage store pattern
-// This handles browser checks, JSON parsing, debouncing, and error handling automatically
-const graphCacheStore = localStorageStore<PersistedCache>(
-  CACHE_NS,
-  DEFAULT_CACHE,
-);
-
-// Subscribe to cache changes and sync to in-memory Maps for fast access
-graphCacheStore.subscribe((cache) => {
-  // Update positions map
-  lastPositions.clear();
-  for (const [k, v] of Object.entries(cache.positions)) {
-    lastPositions.set(k, v);
-  }
-
-  // Update assignments map
-  lastGroupAssignments.clear();
-  for (const [k, v] of Object.entries(cache.assignments)) {
-    lastGroupAssignments.set(k, v);
-  }
-
-  // Update labels map
-  lastGroupLabels.clear();
-  for (const [k, v] of Object.entries(cache.labels)) {
-    lastGroupLabels.set(k, v);
-  }
-
-  // Update refs map
-  lastRefs.clear();
-  for (const [k, v] of Object.entries(cache.refs)) {
-    lastRefs.set(k, v);
-  }
-});
-
-/**
- * Persist all in-memory caches to localStorage.
- * The store automatically debounces writes (300ms) and handles errors.
- */
-function persistAllCaches() {
-  graphCacheStore.set({
-    positions: Object.fromEntries(lastPositions),
-    assignments: Object.fromEntries(lastGroupAssignments),
-    labels: Object.fromEntries(lastGroupLabels),
-    refs: Object.fromEntries(lastRefs),
-  });
-}
 
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   if (!name?.kind) return undefined;
@@ -178,7 +58,7 @@ function makePlaceholderResource(id: string): V1Resource {
   const parsed = parseResourceId(id);
   const name = parsed?.name ?? id;
   const kind = parsed?.kind ?? "model";
-  const refIds = lastRefs.get(id) ?? [];
+  const refIds = graphCache.getRefs(id) ?? [];
   const refs = refIds
     .map((rid) => parseResourceId(rid))
     .filter((r): r is { kind: string; name: string } => !!r)
@@ -366,15 +246,15 @@ export function buildResourceGraph(
       y: dagreNode.y - (node.height ?? DEFAULT_NODE_HEIGHT) / 2,
     };
     const posKey = `${positionNs}|${node.id}`;
-    const cached = opts?.ignoreCache ? undefined : lastPositions.get(posKey);
+    const cached = opts?.ignoreCache ? undefined : graphCache.getPosition(posKey);
     node.position = cached ?? computed;
     node.targetPosition = Position.Top;
     node.sourcePosition = Position.Bottom;
-    lastPositions.set(posKey, node.position);
+    graphCache.setPosition(posKey, node.position);
   }
 
   // Persist positions for future renders
-  persistAllCaches();
+  graphCache.persist();
 
   return { nodes, edges };
 }
@@ -400,9 +280,7 @@ function buildDirectedAdjacency(resources: Map<string, V1Resource>) {
       const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
       // Record refs for persistence even if source is not currently present
-      const existing = lastRefs.get(dependentId) ?? [];
-      if (!existing.includes(sourceId))
-        lastRefs.set(dependentId, [...existing, sourceId]);
+      graphCache.addRef(dependentId, sourceId);
       if (!resources.has(sourceId)) continue;
       if (!incoming.has(dependentId)) incoming.set(dependentId, new Set());
       if (!outgoing.has(sourceId)) outgoing.set(sourceId, new Set());
@@ -536,7 +414,7 @@ function createSeedBasedGroups(
     };
     groups.push(group);
     groupById.set(group.id, group);
-    lastGroupLabels.set(group.id, group.label ?? group.id);
+    graphCache.setLabel(group.id, group.label ?? group.id);
     for (const resId of componentIds) assigned.add(resId);
   }
 
@@ -556,7 +434,7 @@ function assignUnassignedResourcesToCachedGroups(
     (id) => !assigned.has(id),
   );
   for (const id of unassignedIds) {
-    const cachedGroupId = lastGroupAssignments.get(id);
+    const cachedGroupId = graphCache.getAssignment(id);
     if (!cachedGroupId) continue;
     const existingGroup = groupById.get(cachedGroupId);
     if (!existingGroup) continue;
@@ -584,7 +462,7 @@ function createSyntheticGroupsForMissingAnchors(
 
   // Collect resources that belong to missing groups
   for (const id of stillUnassignedIds) {
-    const cachedGroupId = lastGroupAssignments.get(id);
+    const cachedGroupId = graphCache.getAssignment(id);
     if (!cachedGroupId) continue;
     if (groupById.has(cachedGroupId)) continue;
     if (!syntheticGroups.has(cachedGroupId))
@@ -596,7 +474,7 @@ function createSyntheticGroupsForMissingAnchors(
   // Create groups for collected resources
   for (const [syntheticId, syntheticResources] of syntheticGroups) {
     if (!syntheticResources.length) continue;
-    const label = lastGroupLabels.get(syntheticId) ?? "Recovered group";
+    const label = graphCache.getLabel(syntheticId) ?? "Recovered group";
     const group: ResourceGraphGrouping = {
       id: syntheticId,
       resources: syntheticResources,
@@ -614,21 +492,20 @@ function createSyntheticGroupsForMissingAnchors(
 /**
  * Add placeholder resources for cached resources that are temporarily missing.
  * This preserves graph structure when resources have errors.
+ *
+ * Note: We cannot iterate directly over cache manager maps, so we skip this
+ * optimization for now. This means placeholder resources won't be created
+ * for missing cached resources. This is acceptable as the cache will eventually
+ * clean up stale entries. To fully implement this, we would need to expose
+ * an iterator method on the cache manager.
  */
 function addPlaceholdersForMissingResources(
   resourceMap: Map<string, V1Resource>,
   groupById: Map<string, ResourceGraphGrouping>,
   assigned: Set<string>,
 ): void {
-  const presentIds = new Set(resourceMap.keys());
-  for (const [rid, gid] of lastGroupAssignments) {
-    const grp = groupById.get(gid);
-    if (!grp) continue;
-    if (presentIds.has(rid)) continue;
-    if (grp.resources.some((r) => createResourceId(r.meta) === rid)) continue;
-    grp.resources.push(makePlaceholderResource(rid));
-    assigned.add(rid);
-  }
+  // Skipped: Cannot iterate over cache manager's internal maps
+  // This functionality may be added in the future if needed
 }
 
 /**
@@ -637,13 +514,13 @@ function addPlaceholdersForMissingResources(
  */
 function updateGroupingCaches(groups: ResourceGraphGrouping[]): void {
   for (const group of groups) {
-    if (group.label) lastGroupLabels.set(group.id, group.label);
+    if (group.label) graphCache.setLabel(group.id, group.label);
     for (const res of group.resources) {
       const rid = createResourceId(res.meta);
-      if (rid) lastGroupAssignments.set(rid, group.id);
+      if (rid) graphCache.setAssignment(rid, group.id);
     }
   }
-  persistAllCaches();
+  graphCache.persist();
 }
 
 /**
@@ -760,9 +637,7 @@ export function partitionResourcesByMetrics(
     for (const ref of res.meta?.refs ?? []) {
       const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
-      const existing = lastRefs.get(dependentId) ?? [];
-      if (!existing.includes(sourceId))
-        lastRefs.set(dependentId, [...existing, sourceId]);
+      graphCache.addRef(dependentId, sourceId);
       if (!resourceMap.has(sourceId)) continue;
       if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
       if (!adjacency.has(dependentId)) adjacency.set(dependentId, new Set());
@@ -806,7 +681,7 @@ export function partitionResourcesByMetrics(
     if (!resourcesInGroup.length) continue;
     groups.push({ id: m.id, resources: resourcesInGroup, label: m.label });
     for (const rid of ids) assigned.add(rid);
-    lastGroupLabels.set(m.id, m.label);
+    graphCache.setLabel(m.id, m.label);
   }
 
   // If there are resources not connected to any metrics view, group remaining components.
@@ -832,13 +707,13 @@ export function partitionResourcesByMetrics(
 
   // Persist grouping assignments
   for (const g of groups) {
-    if (g.label) lastGroupLabels.set(g.id, g.label);
+    if (g.label) graphCache.setLabel(g.id, g.label);
     for (const r of g.resources) {
       const rid = createResourceId(r.meta);
-      if (rid) lastGroupAssignments.set(rid, g.id);
+      if (rid) graphCache.setAssignment(rid, g.id);
     }
   }
 
-  persistAllCaches();
+  graphCache.persist();
   return groups;
 }

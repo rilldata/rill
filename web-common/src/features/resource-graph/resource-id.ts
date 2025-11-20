@@ -24,7 +24,8 @@ const ID_SEPARATOR = ":" as const;
  * Reserved characters that are not allowed in resource names.
  * These could interfere with parsing or cause issues in URLs.
  */
-const RESERVED_CHARS = /[<>:"\/\\|?*\x00-\x1f]/g;
+const RESERVED_CHARS = /[<>\"\/\\|?*\x00-\x1f]/;
+const RESERVED_CHARS_GLOBAL = /[<>\"\/\\|?*\x00-\x1f]/g;
 
 /**
  * Maximum length for kind and name components.
@@ -208,7 +209,7 @@ export class ResourceId {
    */
   static sanitize(str: string): string {
     if (!str) return "";
-    return str.replace(RESERVED_CHARS, "_").trim();
+    return str.replace(RESERVED_CHARS_GLOBAL, "_").trim();
   }
 
   /**
