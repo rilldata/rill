@@ -10,7 +10,7 @@ The Resource Graph visualizes project dependencies (sources → models → metri
 
 ```svelte
 <script lang="ts">
-  import ResourceGraphOverlay from './ResourceGraphOverlay.svelte';
+  import ResourceGraphOverlay from "./ResourceGraphOverlay.svelte";
 
   export let resource; // V1Resource
   export let allResources; // V1Resource[]
@@ -18,7 +18,7 @@ The Resource Graph visualizes project dependencies (sources → models → metri
   let showGraph = false;
 </script>
 
-<button on:click={() => showGraph = true}>View Dependencies</button>
+<button on:click={() => (showGraph = true)}>View Dependencies</button>
 
 <ResourceGraphOverlay
   anchorResource={resource}
@@ -50,6 +50,7 @@ Navigate to `/graph?seed=<kind>:<name>` to show a specific resource's graph:
 ## Embedding in Components
 
 **Example: Dashboard widget (no URL sync)**
+
 ```svelte
 <ResourceGraph
   {resources}
@@ -61,10 +62,11 @@ Navigate to `/graph?seed=<kind>:<name>` to show a specific resource's graph:
 ```
 
 **Example: Sidebar mini-graph with expansion**
+
 ```svelte
 <script>
-  import { partitionResourcesBySeeds } from './build-resource-graph';
-  import GraphOverlay from './GraphOverlay.svelte';
+  import { partitionResourcesBySeeds } from "./build-resource-graph";
+  import GraphOverlay from "./GraphOverlay.svelte";
 
   $: groups = partitionResourcesBySeeds(resources, [`model:${name}`]);
   $: group = groups[0];
@@ -74,12 +76,18 @@ Navigate to `/graph?seed=<kind>:<name>` to show a specific resource's graph:
 
 <ResourceGraphCanvas flowId={group.id} resources={group.resources} />
 
-<GraphOverlay {group} open={expanded} mode="fullscreen" on:close={() => expanded = false} />
+<GraphOverlay
+  {group}
+  open={expanded}
+  mode="fullscreen"
+  on:close={() => (expanded = false)}
+/>
 ```
 
 ## Common Props
 
 **ResourceGraph**:
+
 - `resources` - V1Resource[] (required)
 - `seeds` - string[] for filtering/grouping
 - `syncExpandedParam` - bool, sync expansion with URL (default: true)
@@ -87,12 +95,14 @@ Navigate to `/graph?seed=<kind>:<name>` to show a specific resource's graph:
 - `showSummary`/`showCardTitles` - toggle UI elements
 
 **ResourceGraphCanvas**:
+
 - `resources` - V1Resource[] (required)
 - `flowId` - unique ID for this graph instance
 - `showControls` - show zoom/pan controls
 - `fillParent` - fill container height
 
 **ResourceGraphOverlay**:
+
 - `anchorResource` - resource to show graph for
 - `resources` - all project resources
 - `open` - visibility state
@@ -101,6 +111,7 @@ Navigate to `/graph?seed=<kind>:<name>` to show a specific resource's graph:
 ## Existing Integrations
 
 Graph navigation is already integrated in:
+
 - `features/sources/navigation/SourceMenuItems.svelte`
 - `features/models/navigation/ModelMenuItems.svelte`
 - `features/metrics-views/MetricsViewMenuItems.svelte`

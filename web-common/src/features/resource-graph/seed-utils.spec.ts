@@ -308,7 +308,7 @@ describe("seed-utils", () => {
       const result = expandSeedsByKind(
         ["model:orders"],
         resources,
-        mockCoerceKind
+        mockCoerceKind,
       );
 
       expect(result).toHaveLength(1);
@@ -442,7 +442,7 @@ describe("seed-utils", () => {
       const result = expandSeedsByKind(
         ["dashboards"],
         resources,
-        mockCoerceKind
+        mockCoerceKind,
       );
 
       expect(result).toHaveLength(2);
@@ -473,7 +473,7 @@ describe("seed-utils", () => {
       const result = expandSeedsByKind(
         ["model:orders", "sources"],
         resources,
-        mockCoerceKind
+        mockCoerceKind,
       );
 
       expect(result).toHaveLength(2);
@@ -500,7 +500,7 @@ describe("seed-utils", () => {
       const result = expandSeedsByKind(
         ["model:orders", "models", "model:orders"],
         resources,
-        mockCoerceKind
+        mockCoerceKind,
       );
 
       expect(result).toHaveLength(1);
@@ -545,7 +545,10 @@ describe("seed-utils", () => {
         },
         {
           meta: {
-            name: { kind: "rill.runtime.v1.Component" as ResourceKind, name: "button" },
+            name: {
+              kind: "rill.runtime.v1.Component" as ResourceKind,
+              name: "button",
+            },
             hidden: false,
           },
         },
@@ -691,7 +694,11 @@ describe("seed-utils", () => {
         },
       ];
 
-      const result = expandSeedsByKind(["sources"], resources, customCoerceKind);
+      const result = expandSeedsByKind(
+        ["sources"],
+        resources,
+        customCoerceKind,
+      );
 
       // Should find the "special" model that's coerced to Source
       expect(result).toHaveLength(1);
@@ -714,7 +721,7 @@ describe("seed-utils", () => {
       const result = expandSeedsByKind(
         ["model:orders", "", null, undefined] as string[],
         resources,
-        mockCoerceKind
+        mockCoerceKind,
       );
 
       expect(result).toHaveLength(1);

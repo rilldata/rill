@@ -8,10 +8,7 @@ import { resourceNameToId } from "../entity-management/resource-utils";
 const downstreamKindMapping = new Map<ResourceKind, Set<ResourceKind>>([
   [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
   [ResourceKind.Source, new Set([ResourceKind.Model])],
-  [
-    ResourceKind.Model,
-    new Set([ResourceKind.MetricsView, ResourceKind.Model]),
-  ],
+  [ResourceKind.Model, new Set([ResourceKind.MetricsView, ResourceKind.Model])],
 ]);
 
 function refsKey(refs?: V1ResourceName[] | null) {
@@ -74,8 +71,9 @@ export function findDownstreamResources(
 ) {
   const anchorResource =
     selectedResource ?? resources.find((resource) => !!resource);
-  const resourceKind = anchorResource?.meta?.name
-    ?.kind as ResourceKind | undefined;
+  const resourceKind = anchorResource?.meta?.name?.kind as
+    | ResourceKind
+    | undefined;
 
   if (!resourceKind) return [];
 
@@ -89,8 +87,9 @@ export function findDownstreamResources(
   const resourceKeySet = new Set(resourceKeys);
 
   return allResources.filter((candidate) => {
-    const candidateKind = candidate.meta?.name
-      ?.kind as ResourceKind | undefined;
+    const candidateKind = candidate.meta?.name?.kind as
+      | ResourceKind
+      | undefined;
     if (!candidateKind || !downstreamKinds.has(candidateKind)) return false;
 
     return (candidate.meta?.refs ?? []).some((ref) => {

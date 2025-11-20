@@ -1,7 +1,10 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { resourceNameToId } from "@rilldata/web-common/features/entity-management/resource-utils";
 import { ResourceShortNameToResourceKind } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import type { V1Resource, V1ResourceName } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Resource,
+  V1ResourceName,
+} from "@rilldata/web-common/runtime-client";
 
 /**
  * Normalize plural forms to singular forms for graph seed parsing.
@@ -13,14 +16,14 @@ function normalizePluralToSingular(kind: string): string {
 
   // Map plural forms to singular forms
   const pluralToSingular: Record<string, string> = {
-    'metrics': 'metricsview',
-    'models': 'model',
-    'sources': 'source',
-    'dashboards': 'explore',
+    metrics: "metricsview",
+    models: "model",
+    sources: "source",
+    dashboards: "explore",
     // Also handle "dashboard" -> "explore" for consistency
-    'dashboard': 'explore',
+    dashboard: "explore",
     // Handle "metric" -> "metricsview"
-    'metric': 'metricsview',
+    metric: "metricsview",
   };
 
   return pluralToSingular[normalized] ?? normalized;
@@ -120,7 +123,9 @@ export function isKindToken(s: string): ResourceKind | undefined {
  * tokenForKind(ResourceKind.Model) // "models"
  * tokenForKind("rill.runtime.v1.Source") // "sources"
  */
-export function tokenForKind(kind?: ResourceKind | string | null): "metrics" | "sources" | "models" | "dashboards" | null {
+export function tokenForKind(
+  kind?: ResourceKind | string | null,
+): "metrics" | "sources" | "models" | "dashboards" | null {
   if (!kind) return null;
   const key = `${kind}`.toLowerCase();
   if (key.includes("source")) return "sources";
@@ -142,7 +147,9 @@ export function tokenForKind(kind?: ResourceKind | string | null): "metrics" | "
  * tokenForSeedString("metrics") // "metrics"
  * tokenForSeedString("orders") // "metrics" (defaults to metrics)
  */
-export function tokenForSeedString(seed?: string | null): "metrics" | "sources" | "models" | "dashboards" | null {
+export function tokenForSeedString(
+  seed?: string | null,
+): "metrics" | "sources" | "models" | "dashboards" | null {
   if (!seed) return null;
   const normalized = seed.trim().toLowerCase();
   if (!normalized) return null;
@@ -203,7 +210,8 @@ export function expandSeedsByKind(
 
   // Filter to visible resources only (to align with graph rendering)
   const visible = resources.filter(
-    (r) => ALLOWED_FOR_GRAPH.has(coerceKindFn(r) as ResourceKind) && !r.meta?.hidden,
+    (r) =>
+      ALLOWED_FOR_GRAPH.has(coerceKindFn(r) as ResourceKind) && !r.meta?.hidden,
   );
 
   for (const raw of input) {

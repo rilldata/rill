@@ -4,7 +4,10 @@ import {
   parseResourceId,
   resourceNameToId,
 } from "./resource-utils";
-import type { V1ResourceMeta, V1ResourceName } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ResourceMeta,
+  V1ResourceName,
+} from "@rilldata/web-common/runtime-client";
 
 describe("resource-utils", () => {
   describe("resourceNameToId", () => {
@@ -13,33 +16,43 @@ describe("resource-utils", () => {
         kind: "rill.runtime.v1.Model",
         name: "orders",
       };
-      expect(resourceNameToId(resourceName)).toBe("rill.runtime.v1.Model:orders");
+      expect(resourceNameToId(resourceName)).toBe(
+        "rill.runtime.v1.Model:orders",
+      );
     });
 
     it("should handle different resource kinds", () => {
       expect(
-        resourceNameToId({ kind: "rill.runtime.v1.Source", name: "raw_data" })
+        resourceNameToId({ kind: "rill.runtime.v1.Source", name: "raw_data" }),
       ).toBe("rill.runtime.v1.Source:raw_data");
 
       expect(
-        resourceNameToId({ kind: "rill.runtime.v1.MetricsView", name: "revenue" })
+        resourceNameToId({
+          kind: "rill.runtime.v1.MetricsView",
+          name: "revenue",
+        }),
       ).toBe("rill.runtime.v1.MetricsView:revenue");
 
       expect(
-        resourceNameToId({ kind: "rill.runtime.v1.Explore", name: "dashboard" })
+        resourceNameToId({
+          kind: "rill.runtime.v1.Explore",
+          name: "dashboard",
+        }),
       ).toBe("rill.runtime.v1.Explore:dashboard");
     });
 
     it("should handle names with special characters", () => {
       expect(
-        resourceNameToId({ kind: "rill.runtime.v1.Model", name: "user_orders_2024" })
+        resourceNameToId({
+          kind: "rill.runtime.v1.Model",
+          name: "user_orders_2024",
+        }),
       ).toBe("rill.runtime.v1.Model:user_orders_2024");
 
       expect(
-        resourceNameToId({ kind: "rill.runtime.v1.Model", name: "orders-v2" })
+        resourceNameToId({ kind: "rill.runtime.v1.Model", name: "orders-v2" }),
       ).toBe("rill.runtime.v1.Model:orders-v2");
     });
-
   });
 
   describe("createResourceId", () => {
@@ -59,15 +72,12 @@ describe("resource-utils", () => {
           kind: "rill.runtime.v1.Model",
           name: "clean_orders",
         },
-        refs: [
-          { kind: "rill.runtime.v1.Source", name: "raw_orders" },
-        ],
+        refs: [{ kind: "rill.runtime.v1.Source", name: "raw_orders" }],
         reconcileError: "",
         hidden: false,
       };
       expect(createResourceId(meta)).toBe("rill.runtime.v1.Model:clean_orders");
     });
-
   });
 
   describe("parseResourceId", () => {
@@ -97,10 +107,12 @@ describe("resource-utils", () => {
     });
 
     it("should handle names with special characters", () => {
-      expect(parseResourceId("rill.runtime.v1.Model:user_orders_2024")).toEqual({
-        kind: "rill.runtime.v1.Model",
-        name: "user_orders_2024",
-      });
+      expect(parseResourceId("rill.runtime.v1.Model:user_orders_2024")).toEqual(
+        {
+          kind: "rill.runtime.v1.Model",
+          name: "user_orders_2024",
+        },
+      );
 
       expect(parseResourceId("rill.runtime.v1.Model:orders-v2")).toEqual({
         kind: "rill.runtime.v1.Model",
@@ -115,7 +127,6 @@ describe("resource-utils", () => {
         name: "table:column",
       });
     });
-
   });
 
   describe("round-trip conversion", () => {

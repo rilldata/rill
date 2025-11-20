@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { ResourceGraphGrouping } from './build-resource-graph';
-  import ResourceGraphCanvas from './ResourceGraphCanvas.svelte';
-  import { createEventDispatcher } from 'svelte';
+  import type { ResourceGraphGrouping } from "./build-resource-graph";
+  import ResourceGraphCanvas from "./ResourceGraphCanvas.svelte";
+  import { createEventDispatcher } from "svelte";
 
   export let group: ResourceGraphGrouping | null = null;
   export let open = false;
-  export let mode: 'inline' | 'fullscreen' | 'modal' = 'inline';
+  export let mode: "inline" | "fullscreen" | "modal" = "inline";
   export let showControls = true;
   export let showCloseButton = true;
 
@@ -17,11 +17,11 @@
   const dispatch = createEventDispatcher<{ close: void }>();
 
   function handleClose() {
-    dispatch('close');
+    dispatch("close");
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       handleClose();
     }
   }
@@ -30,7 +30,7 @@
   let overlayEl: HTMLDivElement | null = null;
   let previouslyFocused: HTMLElement | null = null;
 
-  $: if (open && overlayEl && (mode === 'fullscreen' || mode === 'modal')) {
+  $: if (open && overlayEl && (mode === "fullscreen" || mode === "modal")) {
     // Store the previously focused element before opening
     previouslyFocused = document.activeElement as HTMLElement;
     overlayEl.focus();
@@ -47,13 +47,13 @@
     bind:this={overlayEl}
     class="graph-overlay graph-overlay-{mode}"
     on:keydown={handleKeydown}
-    role={mode === 'inline' ? 'region' : 'dialog'}
-    aria-modal={mode !== 'inline'}
+    role={mode === "inline" ? "region" : "dialog"}
+    aria-modal={mode !== "inline"}
     aria-label="Expanded graph view"
-    tabindex={mode !== 'inline' ? 0 : undefined}
+    tabindex={mode !== "inline" ? 0 : undefined}
   >
     <div class="overlay-content">
-      {#if showCloseButton && mode !== 'inline'}
+      {#if showCloseButton && mode !== "inline"}
         <button
           class="close-btn"
           on:click={handleClose}
@@ -73,7 +73,7 @@
         anchorError={false}
         rootNodeIds={undefined}
         fillParent
-        showControls={showControls}
+        {showControls}
         showLock={false}
         enableExpand={false}
         {fitViewPadding}
@@ -82,9 +82,13 @@
       />
     </div>
 
-    {#if mode !== 'inline'}
+    {#if mode !== "inline"}
       <!-- Backdrop for fullscreen/modal modes -->
-      <div class="overlay-backdrop" on:click={handleClose} aria-hidden="true"></div>
+      <div
+        class="overlay-backdrop"
+        on:click={handleClose}
+        aria-hidden="true"
+      ></div>
     {/if}
   </div>
 {/if}

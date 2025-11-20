@@ -30,7 +30,7 @@ const DEFAULT_NODE_HEIGHT = 56; // Height for single-line text + padding (optimi
 // Tested with real-world Rill projects containing complex dependency chains.
 const DAGRE_NODESEP = 27; // Horizontal spacing between sibling nodes at the same rank (was 18)
 const DAGRE_RANKSEP = 72; // Vertical spacing between graph layers/ranks (was 48)
-const DAGRE_EDGESEP = 4;  // Minimum spacing between edge paths (rarely matters in practice)
+const DAGRE_EDGESEP = 4; // Minimum spacing between edge paths (rarely matters in practice)
 
 // Default edge styling for non-highlighted edges
 const DEFAULT_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;";
@@ -101,7 +101,9 @@ function cleanupOrphanedCaches() {
     }
 
     if (cleanedCount > 0 && typeof console !== "undefined") {
-      console.debug(`[ResourceGraph] Cleaned up ${cleanedCount} orphaned cache ${cleanedCount === 1 ? 'entry' : 'entries'}`);
+      console.debug(
+        `[ResourceGraph] Cleaned up ${cleanedCount} orphaned cache ${cleanedCount === 1 ? "entry" : "entries"}`,
+      );
     }
   } catch (error) {
     if (typeof console !== "undefined") {
@@ -115,7 +117,10 @@ cleanupOrphanedCaches();
 
 // Use the project's standard localStorage store pattern
 // This handles browser checks, JSON parsing, debouncing, and error handling automatically
-const graphCacheStore = localStorageStore<PersistedCache>(CACHE_NS, DEFAULT_CACHE);
+const graphCacheStore = localStorageStore<PersistedCache>(
+  CACHE_NS,
+  DEFAULT_CACHE,
+);
 
 // Subscribe to cache changes and sync to in-memory Maps for fast access
 graphCacheStore.subscribe((cache) => {
@@ -201,7 +206,8 @@ function estimateNodeWidth(label?: string | null) {
     ? Math.max(...segments.map((segment) => segment.length))
     : text.length;
   const estimated =
-    CONTENT_PADDING + Math.max(text.length, longestSegment) * AVERAGE_CHAR_WIDTH;
+    CONTENT_PADDING +
+    Math.max(text.length, longestSegment) * AVERAGE_CHAR_WIDTH;
   return Math.max(
     MIN_NODE_WIDTH,
     Math.min(MAX_NODE_WIDTH, Math.round(estimated)),
@@ -241,7 +247,10 @@ type BuildGraphOptions = {
  *   ignoreCache: false
  * });
  */
-export function buildResourceGraph(resources: V1Resource[], opts?: BuildGraphOptions) {
+export function buildResourceGraph(
+  resources: V1Resource[],
+  opts?: BuildGraphOptions,
+) {
   const positionNs = opts?.positionNs?.trim() || "global";
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setGraph({
@@ -393,7 +402,8 @@ function buildDirectedAdjacency(resources: Map<string, V1Resource>) {
       if (!sourceId) continue;
       // Record refs for persistence even if source is not currently present
       const existing = lastRefs.get(dependentId) ?? [];
-      if (!existing.includes(sourceId)) lastRefs.set(dependentId, [...existing, sourceId]);
+      if (!existing.includes(sourceId))
+        lastRefs.set(dependentId, [...existing, sourceId]);
       if (!resources.has(sourceId)) continue;
       if (!incoming.has(dependentId)) incoming.set(dependentId, new Set());
       if (!outgoing.has(sourceId)) outgoing.set(sourceId, new Set());
@@ -439,7 +449,10 @@ function traverseUpstream(seedId: string, incoming: Map<string, Set<string>>) {
 }
 
 // Traverse only downstream via outgoing edges
-function traverseDownstream(seedId: string, outgoing: Map<string, Set<string>>) {
+function traverseDownstream(
+  seedId: string,
+  outgoing: Map<string, Set<string>>,
+) {
   const visited = new Set<string>();
   const queue = [seedId];
   let queueIndex = 0;
@@ -458,7 +471,9 @@ function traverseDownstream(seedId: string, outgoing: Map<string, Set<string>>) 
  * Build a map of visible resources that are allowed in the graph.
  * Filters out hidden resources and disallowed kinds.
  */
-function buildVisibleResourceMap(resources: V1Resource[]): Map<string, V1Resource> {
+function buildVisibleResourceMap(
+  resources: V1Resource[],
+): Map<string, V1Resource> {
   const resourceMap = new Map<string, V1Resource>();
   for (const resource of resources) {
     const id = createResourceId(resource.meta);
@@ -493,7 +508,7 @@ function createSeedBasedGroups(
   normalizedSeeds: string[],
   resourceMap: Map<string, V1Resource>,
   incoming: Map<string, Set<string>>,
-  outgoing: Map<string, Set<string>>
+  outgoing: Map<string, Set<string>>,
 ): {
   groups: ResourceGraphGrouping[];
   groupById: Map<string, ResourceGraphGrouping>;
@@ -536,9 +551,11 @@ function createSeedBasedGroups(
 function assignUnassignedResourcesToCachedGroups(
   resourceMap: Map<string, V1Resource>,
   groupById: Map<string, ResourceGraphGrouping>,
-  assigned: Set<string>
+  assigned: Set<string>,
 ): void {
-  const unassignedIds = Array.from(resourceMap.keys()).filter((id) => !assigned.has(id));
+  const unassignedIds = Array.from(resourceMap.keys()).filter(
+    (id) => !assigned.has(id),
+  );
   for (const id of unassignedIds) {
     const cachedGroupId = lastGroupAssignments.get(id);
     if (!cachedGroupId) continue;
@@ -559,9 +576,11 @@ function createSyntheticGroupsForMissingAnchors(
   resourceMap: Map<string, V1Resource>,
   groupById: Map<string, ResourceGraphGrouping>,
   groups: ResourceGraphGrouping[],
-  assigned: Set<string>
+  assigned: Set<string>,
 ): void {
-  const stillUnassignedIds = Array.from(resourceMap.keys()).filter((id) => !assigned.has(id));
+  const stillUnassignedIds = Array.from(resourceMap.keys()).filter(
+    (id) => !assigned.has(id),
+  );
   const syntheticGroups = new Map<string, V1Resource[]>();
 
   // Collect resources that belong to missing groups
@@ -569,7 +588,8 @@ function createSyntheticGroupsForMissingAnchors(
     const cachedGroupId = lastGroupAssignments.get(id);
     if (!cachedGroupId) continue;
     if (groupById.has(cachedGroupId)) continue;
-    if (!syntheticGroups.has(cachedGroupId)) syntheticGroups.set(cachedGroupId, []);
+    if (!syntheticGroups.has(cachedGroupId))
+      syntheticGroups.set(cachedGroupId, []);
     const res = resourceMap.get(id);
     if (res) syntheticGroups.get(cachedGroupId)!.push(res);
   }
@@ -578,7 +598,11 @@ function createSyntheticGroupsForMissingAnchors(
   for (const [syntheticId, syntheticResources] of syntheticGroups) {
     if (!syntheticResources.length) continue;
     const label = lastGroupLabels.get(syntheticId) ?? "Recovered group";
-    const group: ResourceGraphGrouping = { id: syntheticId, resources: syntheticResources, label };
+    const group: ResourceGraphGrouping = {
+      id: syntheticId,
+      resources: syntheticResources,
+      label,
+    };
     groups.push(group);
     groupById.set(group.id, group);
     for (const res of syntheticResources) {
@@ -595,7 +619,7 @@ function createSyntheticGroupsForMissingAnchors(
 function addPlaceholdersForMissingResources(
   resourceMap: Map<string, V1Resource>,
   groupById: Map<string, ResourceGraphGrouping>,
-  assigned: Set<string>
+  assigned: Set<string>,
 ): void {
   const presentIds = new Set(resourceMap.keys());
   for (const [rid, gid] of lastGroupAssignments) {
@@ -669,11 +693,16 @@ export function partitionResourcesBySeeds(
     normalizedSeeds,
     resourceMap,
     incoming,
-    outgoing
+    outgoing,
   );
 
   assignUnassignedResourcesToCachedGroups(resourceMap, groupById, assigned);
-  createSyntheticGroupsForMissingAnchors(resourceMap, groupById, groups, assigned);
+  createSyntheticGroupsForMissingAnchors(
+    resourceMap,
+    groupById,
+    groups,
+    assigned,
+  );
   addPlaceholdersForMissingResources(resourceMap, groupById, assigned);
   updateGroupingCaches(groups);
 
@@ -733,7 +762,8 @@ export function partitionResourcesByMetrics(
       const sourceId = createResourceId({ name: ref });
       if (!sourceId) continue;
       const existing = lastRefs.get(dependentId) ?? [];
-      if (!existing.includes(sourceId)) lastRefs.set(dependentId, [...existing, sourceId]);
+      if (!existing.includes(sourceId))
+        lastRefs.set(dependentId, [...existing, sourceId]);
       if (!resourceMap.has(sourceId)) continue;
       if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Set());
       if (!adjacency.has(dependentId)) adjacency.set(dependentId, new Set());
@@ -743,7 +773,9 @@ export function partitionResourcesByMetrics(
   }
 
   const metricSeeds = Array.from(resourceMap.entries())
-    .filter(([, r]) => toResourceKind(r.meta?.name) === ResourceKind.MetricsView)
+    .filter(
+      ([, r]) => toResourceKind(r.meta?.name) === ResourceKind.MetricsView,
+    )
     .map(([id, r]) => ({ id, label: r.meta?.name?.name ?? id }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
@@ -779,7 +811,9 @@ export function partitionResourcesByMetrics(
   }
 
   // If there are resources not connected to any metrics view, group remaining components.
-  const remaining = Array.from(resourceMap.keys()).filter((id) => !assigned.has(id));
+  const remaining = Array.from(resourceMap.keys()).filter(
+    (id) => !assigned.has(id),
+  );
   const remainingSet = new Set(remaining);
   while (remainingSet.size) {
     const seed = remainingSet.values().next().value as string;
@@ -789,7 +823,11 @@ export function partitionResourcesByMetrics(
       .map((rid) => resourceMap.get(rid))
       .filter((x): x is V1Resource => !!x);
     if (resourcesInGroup.length) {
-      groups.push({ id: seed, resources: resourcesInGroup, label: "Other resources" });
+      groups.push({
+        id: seed,
+        resources: resourcesInGroup,
+        label: "Other resources",
+      });
     }
   }
 

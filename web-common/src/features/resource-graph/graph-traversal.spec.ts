@@ -31,7 +31,7 @@ describe("graph-traversal", () => {
       const result = traverseUpstream(new Set(["metrics1"]), edges);
 
       expect(result.visited).toEqual(
-        new Set(["metrics1", "model2", "model1", "source1"])
+        new Set(["metrics1", "model2", "model1", "source1"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e3", "e2", "e1"]));
     });
@@ -45,7 +45,7 @@ describe("graph-traversal", () => {
       const result = traverseUpstream(new Set(["model1", "model2"]), edges);
 
       expect(result.visited).toEqual(
-        new Set(["model1", "model2", "source1", "source2"])
+        new Set(["model1", "model2", "source1", "source2"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e1", "e2"]));
     });
@@ -63,15 +63,13 @@ describe("graph-traversal", () => {
       const result = traverseUpstream(new Set(["model3"]), edges);
 
       expect(result.visited).toEqual(
-        new Set(["model3", "model1", "model2", "source1"])
+        new Set(["model3", "model1", "model2", "source1"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e3", "e4", "e1", "e2"]));
     });
 
     it("should return only selected node when it has no upstream dependencies", () => {
-      const edges: Edge[] = [
-        { id: "e1", source: "source1", target: "model1" },
-      ];
+      const edges: Edge[] = [{ id: "e1", source: "source1", target: "model1" }];
 
       const result = traverseUpstream(new Set(["source1"]), edges);
 
@@ -87,9 +85,7 @@ describe("graph-traversal", () => {
     });
 
     it("should handle empty selected nodes", () => {
-      const edges: Edge[] = [
-        { id: "e1", source: "source1", target: "model1" },
-      ];
+      const edges: Edge[] = [{ id: "e1", source: "source1", target: "model1" }];
 
       const result = traverseUpstream(new Set([]), edges);
 
@@ -136,7 +132,9 @@ describe("graph-traversal", () => {
       const result = traverseDownstream(new Set(["source1"]), edges);
 
       // Should traverse all downstream nodes recursively
-      expect(result.visited).toEqual(new Set(["source1", "model1", "model2", "metrics1"]));
+      expect(result.visited).toEqual(
+        new Set(["source1", "model1", "model2", "metrics1"]),
+      );
       expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3"]));
     });
 
@@ -150,7 +148,7 @@ describe("graph-traversal", () => {
       const result = traverseDownstream(new Set(["source1"]), edges);
 
       expect(result.visited).toEqual(
-        new Set(["source1", "model1", "model2", "metrics1"])
+        new Set(["source1", "model1", "model2", "metrics1"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3"]));
     });
@@ -164,7 +162,7 @@ describe("graph-traversal", () => {
       const result = traverseDownstream(new Set(["source1", "source2"]), edges);
 
       expect(result.visited).toEqual(
-        new Set(["source1", "source2", "model1", "model2"])
+        new Set(["source1", "source2", "model1", "model2"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e1", "e2"]));
     });
@@ -181,15 +179,13 @@ describe("graph-traversal", () => {
       const result = traverseDownstream(new Set(["source1"]), edges);
 
       expect(result.visited).toEqual(
-        new Set(["source1", "model1", "metrics1", "metrics2"])
+        new Set(["source1", "model1", "metrics1", "metrics2"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3"]));
     });
 
     it("should return only selected node when it has no downstream dependents", () => {
-      const edges: Edge[] = [
-        { id: "e1", source: "source1", target: "model1" },
-      ];
+      const edges: Edge[] = [{ id: "e1", source: "source1", target: "model1" }];
 
       const result = traverseDownstream(new Set(["model1"]), edges);
 
@@ -205,9 +201,7 @@ describe("graph-traversal", () => {
     });
 
     it("should handle empty selected nodes", () => {
-      const edges: Edge[] = [
-        { id: "e1", source: "source1", target: "model1" },
-      ];
+      const edges: Edge[] = [{ id: "e1", source: "source1", target: "model1" }];
 
       const result = traverseDownstream(new Set([]), edges);
 
@@ -252,7 +246,7 @@ describe("graph-traversal", () => {
       const result = traverseBidirectional(new Set(["model1"]), edges);
 
       expect(result.visited).toEqual(
-        new Set(["model1", "source1", "metrics1"])
+        new Set(["model1", "source1", "metrics1"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e1", "e2"]));
     });
@@ -278,15 +272,13 @@ describe("graph-traversal", () => {
           "model3",
           "metrics1",
           "metrics2",
-        ])
+        ]),
       );
       expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3", "e4", "e5"]));
     });
 
     it("should handle isolated node", () => {
-      const edges: Edge[] = [
-        { id: "e1", source: "source1", target: "model1" },
-      ];
+      const edges: Edge[] = [{ id: "e1", source: "source1", target: "model1" }];
 
       const result = traverseBidirectional(new Set(["isolated"]), edges);
 
@@ -326,11 +318,11 @@ describe("graph-traversal", () => {
 
       const result = traverseBidirectional(
         new Set(["model1", "model2"]),
-        edges
+        edges,
       );
 
       expect(result.visited).toEqual(
-        new Set(["source1", "source2", "model1", "model2", "metrics1"])
+        new Set(["source1", "source2", "model1", "model2", "metrics1"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e1", "e2", "e3", "e4"]));
     });
@@ -367,7 +359,7 @@ describe("graph-traversal", () => {
       const result = traverseDownstream(new Set(["source1"]), edges);
 
       expect(result.visited).toEqual(
-        new Set(["source1", "model1", "metrics1"])
+        new Set(["source1", "model1", "metrics1"]),
       );
       expect(result.edgeIds).toEqual(new Set(["e1", undefined]));
     });

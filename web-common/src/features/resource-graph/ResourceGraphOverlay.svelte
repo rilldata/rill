@@ -39,7 +39,8 @@
   $: supportsGraph = anchorKind ? ALLOWED_FOR_GRAPH.has(anchorKind) : false;
 
   // Type-safe access to graphable kind properties
-  $: graphableKind = (supportsGraph && anchorKind) ? anchorKind as GraphableKind : null;
+  $: graphableKind =
+    supportsGraph && anchorKind ? (anchorKind as GraphableKind) : null;
 
   $: anchorSeed =
     graphableKind && anchorName
@@ -79,7 +80,11 @@
   <Overlay bg="rgba(15,23,42,0.8)">
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div class="graph-overlay__backdrop" on:click={handleBackdropClick} role="presentation">
+    <div
+      class="graph-overlay__backdrop"
+      on:click={handleBackdropClick}
+      role="presentation"
+    >
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <div
         class="graph-overlay"
@@ -90,58 +95,58 @@
           : "Resource graph"}
         on:click={handleDialogClick}
       >
-      <header class="graph-overlay__header">
-        <div class="graph-overlay__title">
-          <GitBranch size="16px" aria-hidden="true" />
-          <div>
-            <p class="graph-overlay__eyebrow">Resource graph</p>
-            <h2>{anchorName ?? "Select a resource"}</h2>
+        <header class="graph-overlay__header">
+          <div class="graph-overlay__title">
+            <GitBranch size="16px" aria-hidden="true" />
+            <div>
+              <p class="graph-overlay__eyebrow">Resource graph</p>
+              <h2>{anchorName ?? "Select a resource"}</h2>
+            </div>
           </div>
-        </div>
-        <div class="graph-overlay__actions">
-          <a class="graph-overlay__link" href={graphHref} rel="noreferrer">
-            Project Graphs
-          </a>
-          <button
-            class="graph-overlay__close"
-            on:click={closeOverlay}
-            aria-label="Close resource graph overlay"
-          >
-            <X size="18px" aria-hidden="true" />
-          </button>
-        </div>
-      </header>
+          <div class="graph-overlay__actions">
+            <a class="graph-overlay__link" href={graphHref} rel="noreferrer">
+              Project Graphs
+            </a>
+            <button
+              class="graph-overlay__close"
+              on:click={closeOverlay}
+              aria-label="Close resource graph overlay"
+            >
+              <X size="18px" aria-hidden="true" />
+            </button>
+          </div>
+        </header>
 
         <section class="graph-overlay__body">
-        {#if error}
-          <p class="graph-overlay__state graph-overlay__error">
-            {error}
-          </p>
-        {:else if emptyReason === "unsupported"}
-          <p class="graph-overlay__state">
-            This resource type doesn't have a project graph view.
-          </p>
-        {:else}
-          <div class="graph-overlay__graph">
-            <ResourceGraph
-              resources={resources}
-              {isLoading}
+          {#if error}
+            <p class="graph-overlay__state graph-overlay__error">
               {error}
-              seeds={overlaySeeds}
-              syncExpandedParam={false}
-              showSummary={false}
-              showCardTitles={false}
-              maxGroups={1}
-              showControls={false}
-              enableExpansion={false}
-              fitViewPadding={0.08}
-              fitViewMinZoom={0.01}
-              fitViewMaxZoom={1.35}
-              expandedHeightMobile="100%"
-              expandedHeightDesktop="100%"
-            />
-          </div>
-        {/if}
+            </p>
+          {:else if emptyReason === "unsupported"}
+            <p class="graph-overlay__state">
+              This resource type doesn't have a project graph view.
+            </p>
+          {:else}
+            <div class="graph-overlay__graph">
+              <ResourceGraph
+                {resources}
+                {isLoading}
+                {error}
+                seeds={overlaySeeds}
+                syncExpandedParam={false}
+                showSummary={false}
+                showCardTitles={false}
+                maxGroups={1}
+                showControls={false}
+                enableExpansion={false}
+                fitViewPadding={0.08}
+                fitViewMinZoom={0.01}
+                fitViewMaxZoom={1.35}
+                expandedHeightMobile="100%"
+                expandedHeightDesktop="100%"
+              />
+            </div>
+          {/if}
         </section>
       </div>
     </div>

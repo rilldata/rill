@@ -8,8 +8,16 @@
     partitionResourcesBySeeds,
     type ResourceGraphGrouping,
   } from "./build-resource-graph";
-  import { coerceResourceKind, ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { expandSeedsByKind, isKindToken, tokenForKind, tokenForSeedString } from "./seed-utils";
+  import {
+    coerceResourceKind,
+    ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    expandSeedsByKind,
+    isKindToken,
+    tokenForKind,
+    tokenForSeedString,
+  } from "./seed-utils";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
@@ -30,7 +38,7 @@
   // New props for modularity
   export let onExpandedChange: ((id: string | null) => void) | null = null;
   export let expandedId: string | null = null; // Controlled mode
-  export let overlayMode: 'inline' | 'fullscreen' | 'modal' = 'inline';
+  export let overlayMode: "inline" | "fullscreen" | "modal" = "inline";
   export let gridColumns: number = 3;
   export let expandedHeightMobile = "700px";
   export let expandedHeightDesktop = "860px";
@@ -60,10 +68,19 @@
   export let fitViewMaxZoom: number = 1.25;
 
   $: normalizedResources = resources ?? [];
-  $: normalizedSeeds = expandSeedsByKind(seeds, normalizedResources, coerceResourceKind);
+  $: normalizedSeeds = expandSeedsByKind(
+    seeds,
+    normalizedResources,
+    coerceResourceKind,
+  );
 
   // Determine which overview node should be highlighted based on current seeds
-  $: overviewActiveToken = (function (): "metrics" | "sources" | "models" | "dashboards" | null {
+  $: overviewActiveToken = (function ():
+    | "metrics"
+    | "sources"
+    | "models"
+    | "dashboards"
+    | null {
     const rawSeeds = seeds ?? [];
     for (const raw of rawSeeds) {
       const token = tokenForSeedString(raw);
@@ -82,9 +99,10 @@
     return null;
   })();
 
-  $: resourceGroups = (normalizedSeeds && normalizedSeeds.length)
-    ? partitionResourcesBySeeds(normalizedResources, normalizedSeeds)
-    : partitionResourcesByMetrics(normalizedResources);
+  $: resourceGroups =
+    normalizedSeeds && normalizedSeeds.length
+      ? partitionResourcesBySeeds(normalizedResources, normalizedSeeds)
+      : partitionResourcesByMetrics(normalizedResources);
   $: visibleResourceGroups =
     typeof maxGroups === "number" && maxGroups >= 0
       ? resourceGroups.slice(0, maxGroups)
@@ -106,19 +124,28 @@
   // Compute resource counts for the summary graph header.
   // We compute directly in a single pass rather than using filter().length for performance.
   // This is more efficient (O(n) instead of O(4n)) and clearer in intent.
-  $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } = (function computeCounts() {
-    let sources = 0, models = 0, metrics = 0, dashboards = 0;
-    for (const r of normalizedResources) {
-      if (r?.meta?.hidden) continue;
-      const k = coerceResourceKind(r);
-      if (!k) continue;
-      if (k === ResourceKind.Source) sources++;
-      else if (k === ResourceKind.Model) models++;
-      else if (k === ResourceKind.MetricsView) metrics++;
-      else if (k === ResourceKind.Explore) dashboards++;
-    }
-    return { sourcesCount: sources, modelsCount: models, metricsCount: metrics, dashboardsCount: dashboards };
-  })());
+  $: ({ sourcesCount, modelsCount, metricsCount, dashboardsCount } =
+    (function computeCounts() {
+      let sources = 0,
+        models = 0,
+        metrics = 0,
+        dashboards = 0;
+      for (const r of normalizedResources) {
+        if (r?.meta?.hidden) continue;
+        const k = coerceResourceKind(r);
+        if (!k) continue;
+        if (k === ResourceKind.Source) sources++;
+        else if (k === ResourceKind.Model) models++;
+        else if (k === ResourceKind.MetricsView) metrics++;
+        else if (k === ResourceKind.Explore) dashboards++;
+      }
+      return {
+        sourcesCount: sources,
+        modelsCount: models,
+        metricsCount: metrics,
+        dashboardsCount: dashboards,
+      };
+    })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
   // Without this, the SummaryCountsGraph component would re-render on every resource array change
@@ -160,18 +187,22 @@
     const found = group.resources.find((r) => resourceId(r) === rid);
     return found ?? null;
   }
-  
+
   function groupTitleParts(group: ResourceGraphGrouping, index: number) {
     const baseLabel = group.label ?? `Graph ${index + 1}`;
     const count = group.resources.length;
-    const errorCount = group.resources.filter((r) => !!r.meta?.reconcileError).length;
+    const errorCount = group.resources.filter(
+      (r) => !!r.meta?.reconcileError,
+    ).length;
     const anchor = anchorForGroup(group);
     const anchorError = !!anchor?.meta?.reconcileError;
     const labelWithCount = `${baseLabel} - ${count} resource${count === 1 ? "" : "s"}`;
     return { labelWithCount, errorCount, anchorError };
   }
 
-  function groupRootNodeIds(group: ResourceGraphGrouping): string[] | undefined {
+  function groupRootNodeIds(
+    group: ResourceGraphGrouping,
+  ): string[] | undefined {
     const anchor = anchorForGroup(group);
     const anchorId = anchor ? resourceId(anchor) : group.id;
     return anchorId ? [anchorId] : undefined;
@@ -188,9 +219,10 @@
 
   // When the URL seeds change, re-open the first seeded graph in expanded view
   let lastSeedsSignature = "";
-  $: areKindOnlySeeds = (seeds && seeds.length)
-    ? seeds.every((s) => Boolean(isKindToken((s || "").toLowerCase())))
-    : false;
+  $: areKindOnlySeeds =
+    seeds && seeds.length
+      ? seeds.every((s) => Boolean(isKindToken((s || "").toLowerCase())))
+      : false;
 
   // Track URL sync state for the expanded query param.
   // undefined -> follow $page value, string/null -> explicit override from client-side history updates.
@@ -216,11 +248,9 @@
 
   // Effective expanded param includes manual overrides made via history.replaceState.
   $: effectiveExpandedParam = syncExpandedParam
-    ? (
-        manualExpandedParam !== undefined
-          ? manualExpandedParam
-          : expandedParamFromUrl
-      )
+    ? manualExpandedParam !== undefined
+      ? manualExpandedParam
+      : expandedParamFromUrl
     : null;
 
   // Auto-expand logic when seeds change
@@ -230,7 +260,10 @@
       // Show a short loading state to indicate graphs are updating
       seedTransitionLoading = true;
       if (seedTransitionTimer) clearTimeout(seedTransitionTimer);
-      seedTransitionTimer = setTimeout(() => (seedTransitionLoading = false), 500);
+      seedTransitionTimer = setTimeout(
+        () => (seedTransitionLoading = false),
+        500,
+      );
 
       lastSeedsSignature = signature;
 
@@ -252,7 +285,11 @@
   }
 
   // Sync with URL expanded param (in uncontrolled mode with URL sync enabled)
-  $: if (!isControlledMode && syncExpandedParam && effectiveExpandedParam !== internalExpandedId) {
+  $: if (
+    !isControlledMode &&
+    syncExpandedParam &&
+    effectiveExpandedParam !== internalExpandedId
+  ) {
     internalExpandedId = effectiveExpandedParam;
   }
 
@@ -281,11 +318,27 @@
       if (typeof window !== "undefined") {
         const currentUrl = new URL(window.location.href);
         if (id) {
-          const newUrl = copyWithAdditionalArguments(currentUrl, { expanded: id }, {});
-          window.history.replaceState(window.history.state, "", newUrl.toString());
+          const newUrl = copyWithAdditionalArguments(
+            currentUrl,
+            { expanded: id },
+            {},
+          );
+          window.history.replaceState(
+            window.history.state,
+            "",
+            newUrl.toString(),
+          );
         } else {
-          const newUrl = copyWithAdditionalArguments(currentUrl, {}, { expanded: true });
-          window.history.replaceState(window.history.state, "", newUrl.toString());
+          const newUrl = copyWithAdditionalArguments(
+            currentUrl,
+            {},
+            { expanded: true },
+          );
+          window.history.replaceState(
+            window.history.state,
+            "",
+            newUrl.toString(),
+          );
         }
         return;
       }
@@ -293,11 +346,25 @@
     // Fallback to SvelteKit navigation if direct history manipulation fails
     const currentUrl = new URL($page.url);
     if (id) {
-      const newUrl = copyWithAdditionalArguments(currentUrl, { expanded: id }, {});
-      goto(newUrl.pathname + newUrl.search, { replaceState: true, noScroll: true });
+      const newUrl = copyWithAdditionalArguments(
+        currentUrl,
+        { expanded: id },
+        {},
+      );
+      goto(newUrl.pathname + newUrl.search, {
+        replaceState: true,
+        noScroll: true,
+      });
     } else {
-      const newUrl = copyWithAdditionalArguments(currentUrl, {}, { expanded: true });
-      goto(newUrl.pathname + newUrl.search, { replaceState: true, noScroll: true });
+      const newUrl = copyWithAdditionalArguments(
+        currentUrl,
+        {},
+        { expanded: true },
+      );
+      goto(newUrl.pathname + newUrl.search, {
+        replaceState: true,
+        noScroll: true,
+      });
     }
   }
 </script>
@@ -307,7 +374,13 @@
   style={`--graph-expanded-height-mobile:${expandedHeightMobile};--graph-expanded-height-desktop:${expandedHeightDesktop};`}
 >
   {#if showSummary}
-    <slot name="summary" sources={sourcesCount} {metricsCount} {modelsCount} dashboards={dashboardsCount}>
+    <slot
+      name="summary"
+      sources={sourcesCount}
+      {metricsCount}
+      {modelsCount}
+      dashboards={dashboardsCount}
+    >
       <div class="top-summary">
         <SummaryCountsGraph
           sources={summaryMemo.sources}
@@ -332,7 +405,7 @@
     <div class="state">
       <div class="loading-state">
         <DelayedSpinner isLoading={true} size="1.5rem" />
-        <p>{isLoading ? 'Loading project graph...' : 'Updating graphs...'}</p>
+        <p>{isLoading ? "Loading project graph..." : "Updating graphs..."}</p>
       </div>
     </div>
   {:else if !hasGraphs}
@@ -342,23 +415,17 @@
       </div>
     </slot>
   {:else}
-    <div
-      class="resource-graph-grid"
-      style:--grid-columns={gridColumns}
-    >
+    <div class="resource-graph-grid" style:--grid-columns={gridColumns}>
       {#each visibleResourceGroups as group, index (group.id)}
         {@const isExpanded = currentExpandedId === group.id}
-        <div
-          class="grid-item"
-          class:expanded={isExpanded}
-        >
-          {#if isExpanded && overlayMode !== 'inline'}
+        <div class="grid-item" class:expanded={isExpanded}>
+          {#if isExpanded && overlayMode !== "inline"}
             <!-- Fullscreen or modal overlay -->
             <GraphOverlay
               {group}
               open={isExpanded}
               mode={overlayMode}
-              showControls={showControls}
+              {showControls}
               on:close={() => handleExpandChange(null)}
             />
           {:else if isExpanded}
@@ -367,11 +434,17 @@
               flowId={group.id}
               resources={group.resources}
               title={null}
-              titleLabel={showCardTitles ? groupTitleParts(group, index).labelWithCount : null}
-              titleErrorCount={showCardTitles ? groupTitleParts(group, index).errorCount : null}
-              anchorError={showCardTitles ? groupTitleParts(group, index).anchorError : false}
+              titleLabel={showCardTitles
+                ? groupTitleParts(group, index).labelWithCount
+                : null}
+              titleErrorCount={showCardTitles
+                ? groupTitleParts(group, index).errorCount
+                : null}
+              anchorError={showCardTitles
+                ? groupTitleParts(group, index).anchorError
+                : false}
               rootNodeIds={groupRootNodeIds(group)}
-              showControls={showControls}
+              {showControls}
               showLock={false}
               fillParent={true}
               enableExpand={enableExpansion}
@@ -387,9 +460,15 @@
                 flowId={group.id}
                 resources={group.resources}
                 title={null}
-                titleLabel={showCardTitles ? groupTitleParts(group, index).labelWithCount : null}
-                titleErrorCount={showCardTitles ? groupTitleParts(group, index).errorCount : null}
-                anchorError={showCardTitles ? groupTitleParts(group, index).anchorError : false}
+                titleLabel={showCardTitles
+                  ? groupTitleParts(group, index).labelWithCount
+                  : null}
+                titleErrorCount={showCardTitles
+                  ? groupTitleParts(group, index).errorCount
+                  : null}
+                anchorError={showCardTitles
+                  ? groupTitleParts(group, index).anchorError
+                  : false}
                 rootNodeIds={groupRootNodeIds(group)}
                 showControls={false}
                 showLock={true}
@@ -452,6 +531,10 @@
     @apply flex items-center gap-x-3;
   }
 
-  .top-summary { @apply mb-2; }
-  .graph-section-title { @apply text-sm font-semibold text-foreground mt-4 mb-2; }
+  .top-summary {
+    @apply mb-2;
+  }
+  .graph-section-title {
+    @apply text-sm font-semibold text-foreground mt-4 mb-2;
+  }
 </style>

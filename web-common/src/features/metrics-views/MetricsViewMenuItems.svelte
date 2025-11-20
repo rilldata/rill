@@ -56,7 +56,7 @@
   const viewGraph = createGraphNavigationHandler(
     "MetricsViewMenuItems",
     "metrics",
-    () => resource
+    () => resource,
   );
 </script>
 

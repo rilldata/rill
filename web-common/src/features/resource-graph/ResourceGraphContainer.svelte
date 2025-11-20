@@ -22,8 +22,8 @@
 </script>
 
 <ResourceGraph
-  resources={resources}
+  {resources}
   isLoading={$resourcesQuery.isLoading}
   error={errorMessage}
-  seeds={seeds}
+  {seeds}
 />

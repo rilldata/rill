@@ -30,7 +30,7 @@ describe("navigation-utils", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "orders");
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders"
+        "/graph?seed=rill.runtime.v1.Model%3Aorders",
       );
     });
 
@@ -40,7 +40,7 @@ describe("navigation-utils", () => {
       ]);
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders&seed=rill.runtime.v1.Source%3Ausers"
+        "/graph?seed=rill.runtime.v1.Model%3Aorders&seed=rill.runtime.v1.Source%3Ausers",
       );
     });
 
@@ -48,7 +48,7 @@ describe("navigation-utils", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "my-model_v2");
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Amy-model_v2"
+        "/graph?seed=rill.runtime.v1.Model%3Amy-model_v2",
       );
     });
 
@@ -56,7 +56,7 @@ describe("navigation-utils", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "my model");
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Amy%20model"
+        "/graph?seed=rill.runtime.v1.Model%3Amy%20model",
       );
     });
 
@@ -76,7 +76,7 @@ describe("navigation-utils", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "orders", []);
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders"
+        "/graph?seed=rill.runtime.v1.Model%3Aorders",
       );
     });
 
@@ -84,28 +84,28 @@ describe("navigation-utils", () => {
       navigateToResourceGraph("rill.runtime.v1.Model", "orders", undefined);
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders"
+        "/graph?seed=rill.runtime.v1.Model%3Aorders",
       );
     });
 
     it("should navigate for different resource kinds", () => {
       navigateToResourceGraph("rill.runtime.v1.Source", "raw_data");
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Source%3Araw_data"
+        "/graph?seed=rill.runtime.v1.Source%3Araw_data",
       );
 
       gotoMock.mockClear();
 
       navigateToResourceGraph("rill.runtime.v1.MetricsView", "revenue");
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.MetricsView%3Arevenue"
+        "/graph?seed=rill.runtime.v1.MetricsView%3Arevenue",
       );
 
       gotoMock.mockClear();
 
       navigateToResourceGraph("rill.runtime.v1.Explore", "dashboard");
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Explore%3Adashboard"
+        "/graph?seed=rill.runtime.v1.Explore%3Adashboard",
       );
     });
   });
@@ -126,7 +126,7 @@ describe("navigation-utils", () => {
       ]);
 
       expect(url).toBe(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders&seed=rill.runtime.v1.Source%3Ausers"
+        "/graph?seed=rill.runtime.v1.Model%3Aorders&seed=rill.runtime.v1.Source%3Ausers",
       );
     });
 
@@ -198,13 +198,13 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => resource
+        () => resource,
       );
 
       handler();
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders"
+        "/graph?seed=rill.runtime.v1.Model%3Aorders",
       );
     });
 
@@ -220,14 +220,14 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => resource
+        () => resource,
       );
 
       handler();
 
       expect(gotoMock).not.toHaveBeenCalled();
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[TestComponent] Cannot navigate to graph: resource name is missing"
+        "[TestComponent] Cannot navigate to graph: resource name is missing",
       );
     });
 
@@ -235,14 +235,14 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => undefined
+        () => undefined,
       );
 
       handler();
 
       expect(gotoMock).not.toHaveBeenCalled();
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[TestComponent] Cannot navigate to graph: resource name is missing"
+        "[TestComponent] Cannot navigate to graph: resource name is missing",
       );
     });
 
@@ -252,14 +252,14 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => resource
+        () => resource,
       );
 
       handler();
 
       expect(gotoMock).not.toHaveBeenCalled();
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[TestComponent] Cannot navigate to graph: resource name is missing"
+        "[TestComponent] Cannot navigate to graph: resource name is missing",
       );
     });
 
@@ -271,14 +271,14 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => resource
+        () => resource,
       );
 
       handler();
 
       expect(gotoMock).not.toHaveBeenCalled();
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[TestComponent] Cannot navigate to graph: resource name is missing"
+        "[TestComponent] Cannot navigate to graph: resource name is missing",
       );
     });
 
@@ -288,7 +288,7 @@ describe("navigation-utils", () => {
         "rill.runtime.v1.Model",
         () => {
           throw new Error("Resource fetch failed");
-        }
+        },
       );
 
       handler();
@@ -296,7 +296,7 @@ describe("navigation-utils", () => {
       expect(gotoMock).not.toHaveBeenCalled();
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "[TestComponent] Failed to navigate to graph:",
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
@@ -304,13 +304,13 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "ModelMenuItems",
         "rill.runtime.v1.Model",
-        () => undefined
+        () => undefined,
       );
 
       handler();
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[ModelMenuItems] Cannot navigate to graph: resource name is missing"
+        "[ModelMenuItems] Cannot navigate to graph: resource name is missing",
       );
     });
 
@@ -327,13 +327,13 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "SourceMenuItems",
         "rill.runtime.v1.Source",
-        () => sourceResource
+        () => sourceResource,
       );
 
       handler();
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Source%3Araw_data"
+        "/graph?seed=rill.runtime.v1.Source%3Araw_data",
       );
     });
 
@@ -350,12 +350,12 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => currentResource
+        () => currentResource,
       );
 
       handler();
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Aorders"
+        "/graph?seed=rill.runtime.v1.Model%3Aorders",
       );
 
       gotoMock.mockClear();
@@ -372,7 +372,7 @@ describe("navigation-utils", () => {
 
       handler();
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Ausers"
+        "/graph?seed=rill.runtime.v1.Model%3Ausers",
       );
     });
 
@@ -389,13 +389,13 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => resource
+        () => resource,
       );
 
       handler();
 
       expect(gotoMock).toHaveBeenCalledWith(
-        "/graph?seed=rill.runtime.v1.Model%3Amy-model_v2"
+        "/graph?seed=rill.runtime.v1.Model%3Amy-model_v2",
       );
     });
   });
@@ -415,7 +415,7 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => null as any
+        () => null as any,
       );
 
       expect(() => handler()).not.toThrow();
@@ -426,7 +426,7 @@ describe("navigation-utils", () => {
       const handler = createGraphNavigationHandler(
         "TestComponent",
         "rill.runtime.v1.Model",
-        () => "not a resource" as any
+        () => "not a resource" as any,
       );
 
       expect(() => handler()).not.toThrow();
@@ -439,13 +439,13 @@ describe("navigation-utils", () => {
         "rill.runtime.v1.Model",
         () => {
           throw "string error";
-        }
+        },
       );
 
       expect(() => handler()).not.toThrow();
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "[TestComponent] Failed to navigate to graph:",
-        "string error"
+        "string error",
       );
     });
   });

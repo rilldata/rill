@@ -62,7 +62,9 @@
     try {
       const name = $sourceQuery.data?.meta?.name?.name;
       if (!name) {
-        console.warn("[SourceMenuItems] Cannot navigate to graph: source name is missing");
+        console.warn(
+          "[SourceMenuItems] Cannot navigate to graph: source name is missing",
+        );
         return;
       }
       navigateToResourceGraph("source", name);

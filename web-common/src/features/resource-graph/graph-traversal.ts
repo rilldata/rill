@@ -25,7 +25,7 @@ export interface TraversalResult {
  */
 export function traverseUpstream(
   selectedIds: Set<string>,
-  edges: Edge[]
+  edges: Edge[],
 ): TraversalResult {
   const visited = new Set<string>();
   const edgeIds = new Set<string>();
@@ -64,7 +64,7 @@ export function traverseUpstream(
  */
 export function traverseDownstream(
   selectedIds: Set<string>,
-  edges: Edge[]
+  edges: Edge[],
 ): TraversalResult {
   const visited = new Set<string>();
   const edgeIds = new Set<string>();
@@ -103,7 +103,7 @@ export function traverseDownstream(
  */
 export function traverseBidirectional(
   selectedIds: Set<string>,
-  edges: Edge[]
+  edges: Edge[],
 ): TraversalResult {
   const upstream = traverseUpstream(selectedIds, edges);
   const downstream = traverseDownstream(selectedIds, edges);

@@ -11,7 +11,7 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 export function navigateToResourceGraph(
   kind: string,
   name: string,
-  additionalSeeds?: string[]
+  additionalSeeds?: string[],
 ): void {
   const seedId = resourceNameToId({ kind, name });
   if (!seedId) return; // Early return if invalid kind/name
@@ -50,7 +50,7 @@ export function navigateToResourceGraph(
 export function createGraphNavigationHandler(
   componentName: string,
   kind: string,
-  getResource: () => V1Resource | undefined
+  getResource: () => V1Resource | undefined,
 ): () => void {
   return () => {
     try {
@@ -58,7 +58,7 @@ export function createGraphNavigationHandler(
       const name = resource?.meta?.name?.name;
       if (!name) {
         console.warn(
-          `[${componentName}] Cannot navigate to graph: resource name is missing`
+          `[${componentName}] Cannot navigate to graph: resource name is missing`,
         );
         return;
       }
@@ -76,7 +76,7 @@ export function createGraphNavigationHandler(
  * @returns The constructed graph URL
  */
 export function buildGraphUrl(
-  seeds: Array<{ kind: string; name: string }>
+  seeds: Array<{ kind: string; name: string }>,
 ): string {
   const seedParams = seeds
     .map(({ kind, name }) => {

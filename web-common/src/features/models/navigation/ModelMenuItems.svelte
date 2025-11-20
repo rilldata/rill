@@ -44,7 +44,7 @@
   const viewGraph = createGraphNavigationHandler(
     "ModelMenuItems",
     "model",
-    () => $modelQuery.data
+    () => $modelQuery.data,
   );
 
   async function handleCreateModel() {

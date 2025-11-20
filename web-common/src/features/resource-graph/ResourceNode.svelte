@@ -51,9 +51,10 @@
 
   $: resourceName = data?.resource?.meta?.name?.name ?? "";
   $: resourceKind = kind; // already normalized ResourceKind
-  $: artifact = resourceName && resourceKind
-    ? fileArtifacts.findFileArtifact(resourceKind, resourceName)
-    : undefined;
+  $: artifact =
+    resourceName && resourceKind
+      ? fileArtifacts.findFileArtifact(resourceKind, resourceName)
+      : undefined;
 
   function openFile(e?: MouseEvent) {
     e?.stopPropagation();
@@ -62,7 +63,7 @@
     // Set code view preference for this file
     try {
       const key = artifact.path;
-      const prefs = JSON.parse(localStorage.getItem(key) || '{}');
+      const prefs = JSON.parse(localStorage.getItem(key) || "{}");
       localStorage.setItem(key, JSON.stringify({ ...prefs, view: "code" }));
     } catch (error) {
       console.warn(`Failed to save file view preference:`, error);
@@ -87,7 +88,7 @@
   role="button"
   tabindex="0"
   on:keydown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleClick();
     }
@@ -106,7 +107,7 @@
     isConnectable={isConnectable ?? true}
   />
   <div class="icon-wrapper" style={`background:${color}20`}>
-    <svelte:component this={icon} size="20px" color={color} />
+    <svelte:component this={icon} size="20px" {color} />
   </div>
   <div class="details">
     <p class="title" title={data?.label}>{data?.label}</p>
@@ -118,13 +119,22 @@
       {/if}
     </p>
     {#if effectiveStatusLabel}
-      <p class="status" class:error={hasError} title={hasError ? data?.resource?.meta?.reconcileError : undefined}>
+      <p
+        class="status"
+        class:error={hasError}
+        title={hasError ? data?.resource?.meta?.reconcileError : undefined}
+      >
         {effectiveStatusLabel}
       </p>
     {/if}
   </div>
 
-  <NodeToolbar isVisible={selected && !hasError && !!artifact?.path} position={Position.Top} align="center" offset={2}>
+  <NodeToolbar
+    isVisible={selected && !hasError && !!artifact?.path}
+    position={Position.Top}
+    align="center"
+    offset={2}
+  >
     <button
       class="toolbar-open-btn"
       aria-label="Open in code"
@@ -145,16 +155,22 @@
               href={`/files${artifact.path}`}
               class="error-open"
               on:click|stopPropagation={openFile}
-              title={`Open ${artifact.path}`}
-              >Open YAML</a
+              title={`Open ${artifact.path}`}>Open YAML</a
             >
           {/if}
-          <button class="error-close" aria-label="Close error" on:click|stopPropagation={() => (showError = false)}>
+          <button
+            class="error-close"
+            aria-label="Close error"
+            on:click|stopPropagation={() => (showError = false)}
+          >
             ✕
           </button>
         </div>
       </div>
-      <pre class="error-message" title={data?.resource?.meta?.reconcileError}>{data?.resource?.meta?.reconcileError}</pre>
+      <pre
+        class="error-message"
+        title={data?.resource?.meta?.reconcileError}>{data?.resource?.meta
+          ?.reconcileError}</pre>
     </div>
   {/if}
 </div>
@@ -163,8 +179,11 @@
   .node {
     @apply relative flex items-center gap-x-3 rounded-lg border border-accent bg-surface px-3 py-2 cursor-pointer shadow-sm;
     border-color: color-mix(in srgb, var(--node-accent) 60%, transparent);
-    transition: box-shadow 120ms ease, border-color 120ms ease,
-      transform 120ms ease, background 120ms ease;
+    transition:
+      box-shadow 120ms ease,
+      border-color 120ms ease,
+      transform 120ms ease,
+      background 120ms ease;
   }
 
   .node.root {

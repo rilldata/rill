@@ -6,7 +6,7 @@
     type Edge,
     type Node,
   } from "@xyflow/svelte";
-  import '@xyflow/svelte/dist/base.css';
+  import "@xyflow/svelte/dist/base.css";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { writable } from "svelte/store";
   import { onMount, onDestroy } from "svelte";
@@ -51,7 +51,9 @@
   });
 
   onDestroy(() => {
-    try { ro?.disconnect(); } catch {}
+    try {
+      ro?.disconnect();
+    } catch {}
     ro = null;
   });
 
@@ -108,7 +110,7 @@
    */
   function calculateEdgeOffset(
     sourceNode: Node<ResourceNodeData> | undefined,
-    targetNode: Node<ResourceNodeData> | undefined
+    targetNode: Node<ResourceNodeData> | undefined,
   ): number {
     if (!sourceNode || !targetNode) return DEFAULT_EDGE_OFFSET;
 
@@ -116,7 +118,7 @@
     const sx = (sourceNode.position?.x ?? 0) + (sourceNode.width ?? 0) / 2;
     const sy = (sourceNode.position?.y ?? 0) + (sourceNode.height ?? 0); // bottom handle
     const tx = (targetNode.position?.x ?? 0) + (targetNode.width ?? 0) / 2;
-    const ty = (targetNode.position?.y ?? 0); // top handle
+    const ty = targetNode.position?.y ?? 0; // top handle
 
     const dx = Math.abs(tx - sx);
     const dy = Math.abs(ty - sy);
@@ -125,7 +127,7 @@
     if (dx < VERTICAL_EDGE_THRESHOLD_PX) return MIN_EDGE_OFFSET;
     return Math.max(
       MIN_EDGE_OFFSET,
-      Math.min(MAX_EDGE_OFFSET, Math.round(dy / EDGE_OFFSET_SCALING_FACTOR))
+      Math.min(MAX_EDGE_OFFSET, Math.round(dy / EDGE_OFFSET_SCALING_FACTOR)),
     );
   }
 
@@ -136,7 +138,7 @@
   function styleEdges(
     edges: Edge[],
     nodes: Node<ResourceNodeData>[],
-    highlightedEdgeIds: Set<string>
+    highlightedEdgeIds: Set<string>,
   ): Edge[] {
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
@@ -157,7 +159,10 @@
   /**
    * Apply default edge positioning when no nodes are selected.
    */
-  function styleEdgesDefault(edges: Edge[], nodes: Node<ResourceNodeData>[]): Edge[] {
+  function styleEdgesDefault(
+    edges: Edge[],
+    nodes: Node<ResourceNodeData>[],
+  ): Edge[] {
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
     return edges.map((e) => {
@@ -165,7 +170,10 @@
       const targetNode = nodeMap.get(e.target);
       const offset = calculateEdgeOffset(sourceNode, targetNode);
 
-      return { ...e, pathOptions: { offset, borderRadius: EDGE_BORDER_RADIUS } };
+      return {
+        ...e,
+        pathOptions: { offset, borderRadius: EDGE_BORDER_RADIUS },
+      };
     });
   }
 
@@ -176,15 +184,19 @@
   $: (function updateHighlightedEdges() {
     const nodes = $nodesStore as Node<ResourceNodeData>[];
     const edges = $edgesStore as Edge[];
-    const selectedIds = new Set(nodes.filter((n) => n.selected).map((n) => n.id));
+    const selectedIds = new Set(
+      nodes.filter((n) => n.selected).map((n) => n.id),
+    );
 
     // No selection: apply default styling and clear highlights
     if (!selectedIds.size) {
       edgesViewStore.set(styleEdgesDefault(edges, nodes));
-      nodesStore.update((nds) => nds.map((n) => ({
-        ...n,
-        data: { ...n.data, routeHighlighted: false },
-      })));
+      nodesStore.update((nds) =>
+        nds.map((n) => ({
+          ...n,
+          data: { ...n.data, routeHighlighted: false },
+        })),
+      );
       return;
     }
 
@@ -192,50 +204,70 @@
     const upstream = traverseUpstream(selectedIds, edges);
     const downstream = traverseDownstream(selectedIds, edges);
 
-    const highlightedEdgeIds = new Set<string>([...upstream.edgeIds, ...downstream.edgeIds]);
-    const highlightedNodeIds = new Set<string>([...upstream.visited, ...downstream.visited]);
+    const highlightedEdgeIds = new Set<string>([
+      ...upstream.edgeIds,
+      ...downstream.edgeIds,
+    ]);
+    const highlightedNodeIds = new Set<string>([
+      ...upstream.visited,
+      ...downstream.visited,
+    ]);
 
     // Apply highlighted styling to edges
     edgesViewStore.set(styleEdges(edges, nodes, highlightedEdgeIds));
 
     // Mark nodes along the traced paths as highlighted
-    nodesStore.update((nds) => nds.map((n) => ({
-      ...n,
-      data: { ...n.data, routeHighlighted: highlightedNodeIds.has(n.id) },
-    })));
+    nodesStore.update((nds) =>
+      nds.map((n) => ({
+        ...n,
+        data: { ...n.data, routeHighlighted: highlightedNodeIds.has(n.id) },
+      })),
+    );
   })();
 
   $: {
     const rootSet = new Set(rootNodeIds ?? []);
-    const graph = buildResourceGraph(resources ?? [], { positionNs: flowId, ignoreCache: true });
+    const graph = buildResourceGraph(resources ?? [], {
+      positionNs: flowId,
+      ignoreCache: true,
+    });
     const nodeIds = new Set(graph.nodes.map((n) => n.id));
     const filteredEdges = graph.edges.filter(
       (e) => nodeIds.has(e.source) && nodeIds.has(e.target),
     );
-    const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map((node) => ({
-      ...node,
-      data: { ...node.data, isRoot: rootSet.has(node.id) },
-    }));
+    const nodesWithRoots = (graph.nodes as Node<ResourceNodeData>[]).map(
+      (node) => ({
+        ...node,
+        data: { ...node.data, isRoot: rootSet.has(node.id) },
+      }),
+    );
     nodesStore.set(nodesWithRoots);
     edgesStore.set(filteredEdges);
     hasNodes = nodesWithRoots.length > 0;
     // Build a signature of the current graph to force SvelteFlow to remount and refit when graph changes
     try {
-      const nodeSig = nodesWithRoots.map((n) => n.id).sort().join(",");
+      const nodeSig = nodesWithRoots
+        .map((n) => n.id)
+        .sort()
+        .join(",");
       const edgeSig = filteredEdges
         .map((e) => e.id || `${e.source}->${e.target}`)
         .sort()
         .join(",");
-      flowKey = `${flowId ?? 'flow'}|${fillParent ? 'E' : 'N'}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
+      flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|n:${nodeSig}|e:${edgeSig}|c:${containerKey}`;
     } catch {
-      flowKey = `${flowId ?? 'flow'}|${fillParent ? 'E' : 'N'}|${Date.now()}`;
+      flowKey = `${flowId ?? "flow"}|${fillParent ? "E" : "N"}|${Date.now()}`;
     }
     // Debug logging (only in development)
     if (import.meta.env.DEV) {
       console.log("ResourceGraph graph", {
         title,
         nodes: nodesWithRoots.map((n) => n.id),
-        edges: filteredEdges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+        edges: filteredEdges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+        })),
       });
     }
   }
@@ -244,19 +276,20 @@
   $: (function applyPreselection() {
     const ids = new Set(preselectNodeIds ?? []);
     // Always set selected based on current ids; if empty, clear selection
-    nodesStore.update((nds) => nds.map((n) => ({ ...n, selected: ids.has(n.id) })));
+    nodesStore.update((nds) =>
+      nds.map((n) => ({ ...n, selected: ids.has(n.id) })),
+    );
   })();
-
 </script>
 
 <section class="graph-instance">
   {#if titleLabel != null}
     <h2 class="graph-title">
-      <span class={anchorError ? 'text-red-600' : ''}>{titleLabel}</span>
+      <span class={anchorError ? "text-red-600" : ""}>{titleLabel}</span>
       {#if titleErrorCount && titleErrorCount > 0}
-        <span class={anchorError ? 'text-red-600' : 'text-red-600'}>
-          {' '}
-          • {titleErrorCount} error{titleErrorCount === 1 ? '' : 's'}
+        <span class={anchorError ? "text-red-600" : "text-red-600"}>
+          {" "}
+          • {titleErrorCount} error{titleErrorCount === 1 ? "" : "s"}
         </span>
       {/if}
     </h2>
@@ -266,7 +299,7 @@
 
   {#if hasNodes}
     <div
-      class={"graph-container " + (fillParent ? 'h-full' : '')}
+      class={"graph-container " + (fillParent ? "h-full" : "")}
       bind:this={containerEl}
       style={`height:${containerInlineHeight}`}
     >
@@ -275,7 +308,7 @@
           class="expand-btn"
           aria-label="Expand graph"
           title="Expand"
-          on:click={() => dispatch('expand')}
+          on:click={() => dispatch("expand")}
         >
           ⤢
         </button>
@@ -286,7 +319,7 @@
           id={flowId}
           nodes={nodesStore}
           edges={edgesViewStore}
-          nodeTypes={nodeTypes}
+          {nodeTypes}
           colorMode={flowColorMode}
           proOptions={{ hideAttribution: true }}
           fitView
@@ -294,7 +327,7 @@
             padding: fitViewPadding,
             minZoom: fitViewMinZoom,
             maxZoom: fitViewMaxZoom,
-            duration: 200
+            duration: 200,
           }}
           preventScrolling={false}
           zoomOnScroll={false}
@@ -308,7 +341,7 @@
         >
           <Background gap={24} />
           {#if showControls}
-            <Controls position="top-right" showLock={showLock} />
+            <Controls position="top-right" {showLock} />
           {/if}
         </SvelteFlow>
       {/key}

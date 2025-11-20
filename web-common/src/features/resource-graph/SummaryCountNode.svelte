@@ -1,6 +1,9 @@
 <script lang="ts">
   import { Handle, Position } from "@xyflow/svelte";
-  import { resourceColorMapping, resourceIconMapping } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import {
+    resourceColorMapping,
+    resourceIconMapping,
+  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   import { goto } from "$app/navigation";
@@ -22,10 +25,10 @@
   function navigateByKind() {
     const kind = data?.kind;
     let token: string | null = null;
-    if (kind === ResourceKind.Source) token = 'sources';
-    else if (kind === ResourceKind.MetricsView) token = 'metrics';
-    else if (kind === ResourceKind.Model) token = 'models';
-    else if (kind === ResourceKind.Explore) token = 'dashboards';
+    if (kind === ResourceKind.Source) token = "sources";
+    else if (kind === ResourceKind.MetricsView) token = "metrics";
+    else if (kind === ResourceKind.Model) token = "models";
+    else if (kind === ResourceKind.Explore) token = "dashboards";
     if (token) goto(`/graph?seed=${token}`);
   }
 </script>
@@ -40,18 +43,28 @@
   role="button"
   tabindex="0"
   on:keydown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       navigateByKind();
     }
   }}
 >
   <!-- connection points for flow edges (left/right) -->
-  <Handle id="in" type="target" position={Position.Left} isConnectable={false} />
-  <Handle id="out" type="source" position={Position.Right} isConnectable={false} />
+  <Handle
+    id="in"
+    type="target"
+    position={Position.Left}
+    isConnectable={false}
+  />
+  <Handle
+    id="out"
+    type="source"
+    position={Position.Right}
+    isConnectable={false}
+  />
   <div class="icon">
     {#if Icon}
-      <svelte:component this={Icon} size="32px" color={color} />
+      <svelte:component this={Icon} size="32px" {color} />
     {/if}
   </div>
   <div class="content">
@@ -93,7 +106,9 @@
       transparent
     );
   }
-  .content { @apply flex items-baseline gap-2; }
+  .content {
+    @apply flex items-baseline gap-2;
+  }
   .label {
     @apply text-base font-medium;
     color: var(--muted-foreground, #4b5563);

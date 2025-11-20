@@ -659,13 +659,15 @@ describe("build-resource-graph", () => {
 
       expect(groups).toHaveLength(1);
       // Verify that model1 is included in the group
-      const model1 = groups[0].resources.find(r => r.meta?.name?.name === "model1");
+      const model1 = groups[0].resources.find(
+        (r) => r.meta?.name?.name === "model1",
+      );
       expect(model1).toBeDefined();
       expect(model1?.meta?.hidden).toBe(false);
 
       // Verify source1 is either not included OR included as placeholder (reconcileError set)
       const source1Visible = groups[0].resources.find(
-        r => r.meta?.name?.name === "source1" && !r.meta?.hidden
+        (r) => r.meta?.name?.name === "source1" && !r.meta?.hidden,
       );
       // If source1 is in the group without hidden flag, it should be a placeholder with error
       if (source1Visible) {
