@@ -109,12 +109,14 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
     persistRegulatedStatus(computed);
   };
 
-  const geoMaskInputFn = (
-    text: string,
-    element?: HTMLInputElement | HTMLTextAreaElement | null,
-  ) => {
+  const geoMaskInputFn = (text: string, element?: HTMLElement | null) => {
     if (!text) return text;
-    const inputType = element?.getAttribute?.("type")?.toLowerCase();
+    const inputType =
+      element instanceof HTMLInputElement
+        ? element.type?.toLowerCase()
+        : element instanceof HTMLTextAreaElement
+          ? element.getAttribute("type")?.toLowerCase()
+          : element?.getAttribute?.("type")?.toLowerCase();
     if (inputType === "password") {
       return maskValue(text);
     }
@@ -126,7 +128,6 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
     api_host: "https://us.i.posthog.com", // TODO: use a reverse proxy https://posthog.com/docs/advanced/proxy
     session_recording: {
       maskAllInputs: false,
-      maskAllText: false,
       maskInputFn: geoMaskInputFn,
       maskInputOptions: {
         password: true,
