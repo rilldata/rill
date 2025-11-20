@@ -391,20 +391,28 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 	if !ok {
 		return fmt.Errorf("can't update deployment %q because its runtime has not been initialized yet", d.ID)
 	}
-	args, err := provisioner.NewRuntimeArgs(pr.Args)
-	if err != nil {
-		return err
-	}
 
 	// Prepare deployment annotations
 	annotations := s.NewDeploymentAnnotations(org, proj)
+
+	// Resolve slots based on environment
+	var slots int
+	switch d.Environment {
+	case "prod":
+		slots = proj.ProdSlots
+	case "dev":
+		slots = proj.DevSlots
+	default:
+		// Invalid environment
+		return errors.New("Invalid environment, must be either 'prod' or 'dev'")
+	}
 
 	// Provision the runtime. This is idempotent and will (partially) update the existing provisioned runtime if the config has changed.
 	_, err = s.provisionRuntime(ctx, &provisionRuntimeOptions{
 		DeploymentID: d.ID,
 		Environment:  d.Environment,
 		Provisioner:  pr.Provisioner,
-		Slots:        args.Slots,
+		Slots:        slots,
 		Version:      runtimeVersion,
 		Annotations:  annotations.ToMap(),
 	})
