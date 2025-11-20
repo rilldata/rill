@@ -16,3 +16,15 @@ export type PathOption = {
 };
 
 export type PathOptions = Map<Param, PathOption>;
+
+export type PathOptionEntry = [Param, PathOption];
+
+export type PathOptionGroup = {
+  id: string;
+  label: string;
+  options: PathOptionEntry[];
+};
+
+export type PathOptionsWithGroups = PathOptions & {
+  groups?: PathOptionGroup[];
+};

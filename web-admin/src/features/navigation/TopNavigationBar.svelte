@@ -6,7 +6,11 @@
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+  import type {
+    PathOption,
+    PathOptionEntry,
+    PathOptionsWithGroups,
+  } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -142,24 +146,56 @@
     new Map<string, PathOption>(),
   );
 
-  $: visualizationPaths = visualizations.reduce((map, resource) => {
-    const name = resource.meta.name.name;
-    const isMetricsExplorer = !!resource?.explore;
-    const groupId = isMetricsExplorer ? "explore" : "canvas";
-    return map.set(name.toLowerCase(), {
-      label:
-        (isMetricsExplorer
-          ? resource?.explore?.spec?.displayName
-          : resource?.canvas?.spec?.displayName) || name,
-      section: groupId,
-      resourceKind: isMetricsExplorer
-        ? ResourceKind.Explore
-        : ResourceKind.Canvas,
-      groupId,
-      groupLabel: isMetricsExplorer ? "Explore" : "Canvas",
-      groupOrder: isMetricsExplorer ? 1 : 0,
+  $: visualizationPaths = (() => {
+    const map: PathOptionsWithGroups = new Map();
+    const canvasOptions: PathOptionEntry[] = [];
+    const exploreOptions: PathOptionEntry[] = [];
+
+    visualizations.forEach((resource) => {
+      const name = resource.meta.name.name;
+      const key = name.toLowerCase();
+      const isMetricsExplorer = !!resource?.explore;
+      const option: PathOption = {
+        label:
+          (isMetricsExplorer
+            ? resource?.explore?.spec?.displayName
+            : resource?.canvas?.spec?.displayName) || name,
+        section: isMetricsExplorer ? "explore" : "canvas",
+        resourceKind: isMetricsExplorer
+          ? ResourceKind.Explore
+          : ResourceKind.Canvas,
+      };
+
+      map.set(key, option);
+      const entry: PathOptionEntry = [key, option];
+
+      if (isMetricsExplorer) {
+        exploreOptions.push(entry);
+      } else {
+        canvasOptions.push(entry);
+      }
     });
-  }, new Map<string, PathOption>());
+
+    const sortByLabel = (a: PathOptionEntry, b: PathOptionEntry) =>
+      a[1].label.localeCompare(b[1].label);
+    canvasOptions.sort(sortByLabel);
+    exploreOptions.sort(sortByLabel);
+
+    map.groups = [
+      {
+        id: "canvas",
+        label: "Canvas",
+        options: canvasOptions,
+      },
+      {
+        id: "explore",
+        label: "Explore",
+        options: exploreOptions,
+      },
+    ].filter((group) => group.options.length);
+
+    return map;
+  })();
 
   $: alertPaths = alerts.reduce((map, alert) => {
     const name = alert.meta.name.name;
