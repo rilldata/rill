@@ -20,14 +20,9 @@ export function compileSourceYAML(
   formValues: Record<string, unknown>,
 ) {
   // Get the secret property keys.
-  // Treat both explicitly secret properties and file-type properties as secrets for preview masking.
   const secretPropertyKeys =
     connector.sourceProperties
-      ?.filter(
-        (property) =>
-          property.secret ||
-          property.type === ConnectorDriverPropertyType.TYPE_FILE,
-      )
+      ?.filter((property) => property.secret)
       .map((property) => property.key) || [];
 
   // Get the string property keys
