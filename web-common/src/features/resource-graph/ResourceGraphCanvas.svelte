@@ -53,7 +53,12 @@
   onDestroy(() => {
     try {
       ro?.disconnect();
-    } catch {}
+    } catch (error) {
+      console.debug(
+        "[ResourceGraphCanvas] Failed to disconnect observer",
+        error,
+      );
+    }
     ro = null;
   });
 

@@ -342,7 +342,9 @@
         }
         return;
       }
-    } catch {}
+    } catch (error) {
+      console.debug("[ResourceGraph] Skipped history update fallback", error);
+    }
     // Fallback to SvelteKit navigation if direct history manipulation fails
     const currentUrl = new URL($page.url);
     if (id) {

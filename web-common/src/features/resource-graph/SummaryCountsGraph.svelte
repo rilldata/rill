@@ -8,7 +8,6 @@
   import { onMount, onDestroy } from "svelte";
   import { themeControl } from "../themes/theme-control";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { ALLOWED_FOR_GRAPH } from "./seed-utils";
   import { goto } from "$app/navigation";
 
   export let sources = 0;
@@ -44,7 +43,12 @@
   onDestroy(() => {
     try {
       ro?.disconnect();
-    } catch {}
+    } catch (error) {
+      console.debug(
+        "[SummaryCountsGraph] Failed to disconnect observer",
+        error,
+      );
+    }
     ro = null;
   });
 
@@ -64,17 +68,6 @@
       k === ResourceKind.Explore
     );
   });
-  function listFor(kind: ResourceKind): V1Resource[] {
-    return visible
-      .filter((r) => coerceResourceKind(r) === kind)
-      .sort((a, b) =>
-        (a.meta?.name?.name || "").localeCompare(b.meta?.name?.name || ""),
-      );
-  }
-  $: srcList = listFor(ResourceKind.Source);
-  $: mtrList = listFor(ResourceKind.MetricsView);
-  $: mdlList = listFor(ResourceKind.Model);
-  $: dshList = listFor(ResourceKind.Explore);
 
   function navigateTokenForNode(id: string) {
     let token: "sources" | "metrics" | "models" | "dashboards" | null = null;
@@ -83,21 +76,6 @@
     else if (id === "models") token = "models";
     else if (id === "dashboards") token = "dashboards";
     if (token) goto(`/graph?seed=${token}`);
-  }
-  function toSeed(kind: ResourceKind, name: string) {
-    const k =
-      kind === ResourceKind.MetricsView
-        ? "metrics"
-        : kind === ResourceKind.Explore
-          ? "dashboard"
-          : kind === ResourceKind.Model
-            ? "model"
-            : "source";
-    return `${k}:${name}`;
-  }
-  function openGraph(kind: ResourceKind, name: string) {
-    const seed = toSeed(kind, name);
-    goto(`/graph?seed=${encodeURIComponent(seed)}`);
   }
 
   // Build nodes spaced across the available width

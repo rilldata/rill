@@ -22,7 +22,7 @@
   </div>
 
   <div slot="body" class="graph-wrapper">
-    <ResourceGraphContainer seeds={seeds} />
+    <ResourceGraphContainer {seeds} />
   </div>
 </WorkspaceContainer>
 

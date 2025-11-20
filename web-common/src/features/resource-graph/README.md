@@ -116,12 +116,367 @@ Graph navigation is already integrated in:
 - `features/models/navigation/ModelMenuItems.svelte`
 - `features/metrics-views/MetricsViewMenuItems.svelte`
 
+## Architecture & Maintainability
+
+### New Modular Structure
+
+The resource graph has been refactored for better maintainability:
+
+- **graph-config.ts**: Centralized configuration for all layout constants
+- **cache-manager.ts**: Unified cache management with debugging utilities
+- **resource-id.ts**: Type-safe ResourceId class replacing string manipulation
+- **use-graph-url-sync.ts**: Reusable composable for URL state management
+- **graph-error-handling.ts**: Comprehensive error handling utilities
+- **GraphErrorBoundary.svelte**: User-friendly error boundary component
+
+### Cache Management
+
+The graph uses localStorage to persist:
+
+- **Node positions**: Stable layouts across renders
+- **Group assignments**: Which resources belong to which graphs
+- **Group labels**: Display names for graph groups
+- **Resource refs**: Dependency relationships
+
+#### Cache Versioning
+
+Cache version is stored in `graph-config.ts`:
+
+```typescript
+export const CACHE_VERSION = 2; // Increment to invalidate old caches
+```
+
+**When to bump version:**
+
+- Changing layout spacing constants (DAGRE\_\*)
+- Modifying node sizing logic
+- Altering graph algorithms
+- Making any changes affecting node positions
+
+Old cache versions are automatically cleaned up on first load.
+
+#### Cache Debugging
+
+Enable debug mode in browser console:
+
+```javascript
+window.__DEBUG_RESOURCE_GRAPH = true;
+```
+
+Access cache manager for diagnostics:
+
+```javascript
+// Get cache health stats
+window.__RESOURCE_GRAPH_CACHE.getHealthStats();
+
+// Export cache data
+window.__RESOURCE_GRAPH_CACHE.export();
+
+// Clear all cached data
+window.__RESOURCE_GRAPH_CACHE.clearAll();
+
+// Import cache data (for testing/migration)
+window.__RESOURCE_GRAPH_CACHE.import(data);
+```
+
+#### Cache Invalidation Scenarios
+
+Cache is automatically invalidated when:
+
+1. **Version mismatch**: `CACHE_VERSION` doesn't match stored version
+2. **Manual clear**: User clears browser data or calls `clearAll()`
+3. **Storage quota**: Browser evicts localStorage data
+
+Cache persists across:
+
+- Page reloads
+- Tab closes
+- Browser restarts (unless cleared)
+
+### ResourceId Type Safety
+
+The new `ResourceId` class provides type-safe identifier handling:
+
+```typescript
+// Old (error-prone string manipulation)
+const id = `${resource.meta?.name?.kind}:${resource.meta?.name?.name}`;
+const parsed = id.split(":");
+
+// New (type-safe and validated)
+const id = ResourceId.fromMeta(resource.meta);
+if (id) {
+  console.log(id.kind, id.name);
+  console.log(id.toString());
+}
+```
+
+**Benefits:**
+
+- Input validation and sanitization
+- Protection against injection attacks
+- Consistent formatting
+- Better error messages
+- Prevents colons in kind breaking parsers
+
+**Migration:**
+
+```typescript
+// Backward compatible wrappers exist:
+createResourceId(meta); // Returns string | undefined
+parseResourceId(id); // Returns V1ResourceName | null
+resourceNameToId(name); // Returns string | undefined
+
+// Migrate to new API gradually:
+ResourceId.fromMeta(meta)?.toString();
+ResourceId.parse(id).toResourceName();
+ResourceId.fromResourceName(name)?.toString();
+```
+
+### Error Handling
+
+The new error handling system provides:
+
+**Typed Error Classes:**
+
+```typescript
+- ResourceGraphError: Base class
+- ResourceDataError: Invalid/missing data
+- GraphLayoutError: Layout computation failed
+- CacheError: Cache operations failed
+- NavigationError: Navigation failed
+```
+
+**Error Boundary Component:**
+
+```svelte
+<GraphErrorBoundary>
+  <ResourceGraph {resources} {seeds} />
+</GraphErrorBoundary>
+```
+
+**Manual Error Handling:**
+
+```typescript
+import { withErrorHandling, reportError } from "./graph-error-handling";
+
+const result = withErrorHandling(() => computeExpensiveLayout(), {
+  component: "MyComponent",
+  operation: "layout",
+});
+```
+
+### URL State Management
+
+Use the `useGraphUrlSync` composable for URL synchronization:
+
+```typescript
+const urlSync = useGraphUrlSync({
+  syncExpanded: true,
+  onSeedsChange: (seeds) => console.log(seeds),
+  onExpandedChange: (id) => console.log(id),
+});
+
+// Reactive state
+$: currentSeeds = $urlSync.seeds;
+$: expandedId = $urlSync.expandedId;
+
+// Update URL
+urlSync.setExpanded("model:orders");
+urlSync.addSeed("source:raw_data");
+urlSync.removeSeed("model:users");
+```
+
 ## Troubleshooting
 
-**Empty graph?** Only Sources, Models, MetricsView, Explore, and Canvas are shown. Hidden resources (`meta.hidden: true`) are filtered out.
+**Empty graph?**
+Only Sources, Models, MetricsView, Explore, and Canvas are shown. Hidden resources (`meta.hidden: true`) are filtered out.
 
-**Layout issues?** Clear cache: `localStorage.removeItem('rill.resourceGraph.v1')`
+**Layout issues?**
 
-**Seeds not working?** Verify resource exists and use correct kind alias. Check console for warnings.
+1. Clear cache: `localStorage.removeItem('rill.resourceGraph.v2')`
+2. Or use cache manager: `window.__RESOURCE_GRAPH_CACHE.clearAll()`
+3. Refresh page
+
+**Seeds not working?**
+Verify resource exists and use correct kind alias. Check console for warnings.
+
+**Performance issues?**
+Enable debug mode to see performance metrics:
+
+```javascript
+window.__DEBUG_RESOURCE_GRAPH = true;
+```
+
+**Cache not persisting?**
+Check browser storage quota and privacy settings. Incognito mode may disable localStorage.
+
+**TypeScript errors with ResourceId?**
+Make sure to handle null returns:
+
+```typescript
+const id = ResourceId.tryParse(idString);
+if (id) {
+  // Use id safely
+}
+```
+
+## Migration Guide
+
+### Migrating from v1 to v2
+
+**Step 1: Update cache references**
+
+Old:
+
+```typescript
+localStorage.removeItem("rill.resourceGraph.v1");
+```
+
+New:
+
+```typescript
+window.__RESOURCE_GRAPH_CACHE.clearAll();
+// Or: localStorage.removeItem('rill.resourceGraph.v2');
+```
+
+**Step 2: Initialize cache manager**
+
+Add to your app initialization:
+
+```typescript
+import { graphCache } from "./cache-manager";
+
+// Call on client-side mount
+graphCache.initialize();
+```
+
+**Step 3: Update string ID usage**
+
+Old:
+
+```typescript
+const id = createResourceId(meta);
+const parsed = parseResourceId(id!);
+```
+
+New (preferred):
+
+```typescript
+const id = ResourceId.fromMeta(meta);
+const parsed = id?.toResourceName();
+```
+
+Or (backward compatible):
+
+```typescript
+const id = createResourceId(meta); // Still works
+const parsed = parseResourceId(id!); // Still works
+```
+
+**Step 4: Add error boundaries**
+
+Wrap graph components:
+
+```svelte
+<GraphErrorBoundary>
+  <ResourceGraph {resources} />
+</GraphErrorBoundary>
+```
+
+**Step 5: Use new configuration**
+
+Old constants are deprecated. Import from `graph-config.ts`:
+
+```typescript
+import { NODE_CONFIG, DAGRE_CONFIG, FIT_VIEW_CONFIG } from "./graph-config";
+```
+
+### Breaking Changes
+
+None! All changes are backward compatible. The old string-based API still works via compatibility wrappers.
+
+### Deprecation Warnings
+
+The following will show deprecation warnings in dev mode:
+
+- Direct localStorage access for cache
+- String manipulation for resource IDs (use ResourceId class)
+- Hardcoded layout constants (use graph-config.ts)
+
+## Performance
+
+### Optimization Techniques
+
+1. **BFS with index-based iteration**: O(V + E) instead of O(V + E \* V) for array.shift()
+2. **Caching**: Node positions cached to avoid re-layout
+3. **Debounced writes**: Cache writes debounced to 300ms
+4. **Set-based lookups**: O(1) lookups instead of O(n) arrays
+5. **Lazy rendering**: Only visible elements rendered
+
+### Performance Monitoring
+
+Enable performance logging:
+
+```javascript
+window.__DEBUG_RESOURCE_GRAPH = true;
+```
+
+Operations are automatically profiled and logged to console.
+
+### Recommended Limits
+
+- **Max nodes per graph**: 200 (tested up to 500)
+- **Max graphs per page**: 10 (use `maxGroups` prop)
+- **Max cache entries**: 10,000 (automatic cleanup at 15,000)
+
+## Accessibility
+
+### Keyboard Navigation
+
+- **Tab**: Navigate between nodes
+- **Enter/Space**: Select node
+- **Escape**: Close modals/overlays
+- **Arrow keys**: Future: Navigate graph structure
+
+### Screen Reader Support
+
+- ARIA labels on all interactive elements
+- Role annotations for graph structure
+- Live regions for dynamic updates (coming soon)
+
+### Focus Management
+
+- Focus trapped in modals
+- Focus restored on close
+- Visible focus indicators
+
+## Development
+
+### Running Tests
+
+```bash
+npm test resource-graph
+```
+
+### Debug Mode
+
+```javascript
+window.__DEBUG_RESOURCE_GRAPH = true;
+```
+
+Enables:
+
+- Operation logging
+- Cache operation logging
+- Performance profiling
+- Internal state exposure
+
+### Adding New Features
+
+1. Update `graph-config.ts` for new constants
+2. Add types to appropriate files
+3. Write tests for new functionality
+4. Update this README with examples
+5. Consider cache version bump if layout changes
 
 For detailed examples, API reference, and advanced usage patterns, see the inline JSDoc comments in the component files.

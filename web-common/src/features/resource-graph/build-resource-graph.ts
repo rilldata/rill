@@ -12,7 +12,6 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-utils";
 import type {
   V1Resource,
-  V1ResourceMeta,
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import type { ResourceNodeData } from "./types";

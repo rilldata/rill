@@ -64,7 +64,7 @@ describe("build-resource-graph", () => {
         },
       ];
 
-      const { nodes, edges } = buildResourceGraph(resources);
+      const { nodes } = buildResourceGraph(resources);
 
       expect(nodes).toHaveLength(4);
       expect(nodes.map((n) => n.id)).toEqual([
