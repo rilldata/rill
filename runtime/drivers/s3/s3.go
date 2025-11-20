@@ -93,8 +93,6 @@ var spec = drivers.Spec{
 	ImplementsObjectStore: true,
 }
 
-const defaultPageSize = 20
-
 func init() {
 	drivers.Register("s3", driver{})
 	drivers.RegisterAsConnector("s3", driver{})

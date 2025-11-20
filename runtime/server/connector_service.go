@@ -18,7 +18,7 @@ func (s *Server) ListBuckets(ctx context.Context, req *runtimev1.ListBucketsRequ
 
 	os, ok := handle.AsObjectStore()
 	if !ok {
-		return nil, fmt.Errorf("driver: object store not implemented")
+		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
 	}
 
 	buckets, nextPageToken, err := os.ListBuckets(ctx, int(req.PageSize), req.PageToken)
@@ -40,7 +40,7 @@ func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequ
 	defer release()
 	os, ok := handle.AsObjectStore()
 	if !ok {
-		return nil, fmt.Errorf("driver: object store not implemented")
+		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
 	}
 	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Prefix, req.Delimiter, int(req.PageSize), req.PageToken)
 	if err != nil {
@@ -123,7 +123,7 @@ func (s *Server) ListDatabaseSchemas(ctx context.Context, req *runtimev1.ListDat
 
 	is, ok := handle.AsInformationSchema()
 	if !ok {
-		return nil, fmt.Errorf("driver: information schema not implemented")
+		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
 	items, next, err := is.ListDatabaseSchemas(ctx, req.PageSize, req.PageToken)
@@ -152,7 +152,7 @@ func (s *Server) ListTables(ctx context.Context, req *runtimev1.ListTablesReques
 
 	is, ok := handle.AsInformationSchema()
 	if !ok {
-		return nil, fmt.Errorf("driver: information schema not implemented")
+		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
 	items, next, err := is.ListTables(ctx, req.Database, req.DatabaseSchema, req.PageSize, req.PageToken)
@@ -181,7 +181,7 @@ func (s *Server) GetTable(ctx context.Context, req *runtimev1.GetTableRequest) (
 
 	is, ok := handle.AsInformationSchema()
 	if !ok {
-		return nil, fmt.Errorf("driver: information schema not implemented")
+		return nil, fmt.Errorf("connector %q does not implement information schema", req.Connector)
 	}
 
 	tableMetadata, err := is.GetTable(ctx, req.Database, req.DatabaseSchema, req.Table)

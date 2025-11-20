@@ -2525,6 +2525,18 @@ export type RuntimeServiceListConversationsParams = {
   userAgentPattern?: string;
 };
 
+export type ConnectorServiceListBucketsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceListObjectsParams = {
+  prefix?: string;
+  delimiter?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type RuntimeServiceListFilesParams = {
   glob?: string;
 };
@@ -3069,23 +3081,6 @@ Note: Despite the name, it does not currently trigger alerts and reports. */
 Currently, only models support full refreshes. It's equivalent to passing RefreshModelTrigger.full for those models.
 Note: Despite the name, it does not currently trigger alerts and reports. */
   allFull?: boolean;
-};
-
-export type ConnectorServiceListBucketsParams = {
-  instanceId?: string;
-  connector?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type ConnectorServiceListObjectsParams = {
-  instanceId?: string;
-  connector?: string;
-  bucket?: string;
-  prefix?: string;
-  delimiter?: string;
-  pageSize?: number;
-  pageToken?: string;
 };
 
 export type ConnectorServiceOLAPListTablesParams = {

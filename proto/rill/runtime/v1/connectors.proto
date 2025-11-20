@@ -7,14 +7,18 @@ import "rill/runtime/v1/schema.proto";
 import "validate/validate.proto";
 
 service ConnectorService {
-  // ListBuckets lists buckets accessible with the configured credentials.
+ // ListBuckets lists buckets accessible with the configured credentials.
   rpc ListBuckets(ListBucketsRequest) returns (ListBucketsResponse) {
-    option (google.api.http) = {get: "/v1/objectstore/buckets"};
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/connectors/{connector}/buckets"
+    };
   }
 
   // ListObjects lists objects for the given bucket.
   rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {
-    option (google.api.http) = {get: "/v1/objectstore/objects"};
+    option (google.api.http) = {
+      get: "/v1/instances/{instance_id}/connectors/{connector}/buckets/{bucket}/objects"
+    };
   }
 
   // OLAPListTables list all tables across all databases in an OLAP

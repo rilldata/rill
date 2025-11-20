@@ -550,6 +550,84 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/connectors/{connector}/buckets:
+    get:
+      summary: ListBuckets lists buckets accessible with the configured credentials.
+      operationId: ConnectorService_ListBuckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListBucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/instances/{instanceId}/connectors/{connector}/buckets/{bucket}/objects:
+    get:
+      summary: ListObjects lists objects for the given bucket.
+      operationId: ConnectorService_ListObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: bucket
+          in: path
+          required: true
+          type: string
+        - name: prefix
+          in: query
+          required: false
+          type: string
+        - name: delimiter
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/instances/{instanceId}/connectors/analyze:
     get:
       summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
@@ -2954,84 +3032,6 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/objectstore/buckets:
-    get:
-      summary: ListBuckets lists buckets accessible with the configured credentials.
-      operationId: ConnectorService_ListBuckets
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListBucketsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/objectstore/objects:
-    get:
-      summary: ListObjects lists objects for the given bucket.
-      operationId: ConnectorService_ListObjects
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListObjectsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: bucket
-          in: query
-          required: false
-          type: string
-        - name: prefix
-          in: query
-          required: false
-          type: string
-        - name: delimiter
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
   /v1/olap/tables:
     get:
       summary: OLAPListTables list all tables across all databases in an OLAP
