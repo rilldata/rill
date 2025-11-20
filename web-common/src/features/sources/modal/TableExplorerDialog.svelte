@@ -30,7 +30,7 @@
 
 <section class="flex flex-col gap-3">
   <div class="flex flex-col gap-1">
-    <h2 class="text-lg font-semibold">Table explorer</h2>
+    <h2 class="text-lg font-semibold">Data explorer</h2>
     <p class="text-slate-500 text-sm">Pick a table to power your model</p>
   </div>
 
