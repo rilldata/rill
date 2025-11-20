@@ -68,8 +68,16 @@ export interface V1AddOrganizationMemberUsergroupResponse {
   [key: string]: unknown;
 }
 
+export interface V1AddProjectMemberUserResourcesResponse {
+  pendingSignup?: boolean;
+}
+
 export interface V1AddProjectMemberUserResponse {
   pendingSignup?: boolean;
+}
+
+export interface V1AddProjectMemberUsergroupResourcesResponse {
+  [key: string]: unknown;
 }
 
 export interface V1AddProjectMemberUsergroupResponse {
@@ -855,6 +863,7 @@ export interface V1MemberUsergroup {
   usersCount?: number;
   createdOn?: string;
   updatedOn?: string;
+  resources?: V1ResourceName[];
 }
 
 export interface V1Organization {
@@ -981,6 +990,7 @@ export interface V1ProjectInvite {
   roleName?: string;
   orgRoleName?: string;
   invitedBy?: string;
+  resources?: V1ResourceName[];
 }
 
 export type V1ProjectMemberServiceAttributes = { [key: string]: unknown };
@@ -1008,6 +1018,7 @@ export interface V1ProjectMemberUser {
   orgRoleName?: string;
   createdOn?: string;
   updatedOn?: string;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectPermissions {
@@ -1033,6 +1044,8 @@ export interface V1ProjectPermissions {
   manageAlerts?: boolean;
   createBookmarks?: boolean;
   manageBookmarks?: boolean;
+  fullyResourceRestricted?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ProjectRole {
@@ -1126,7 +1139,15 @@ export interface V1RemoveProjectMemberServiceResponse {
   [key: string]: unknown;
 }
 
+export interface V1RemoveProjectMemberUserResourcesResponse {
+  [key: string]: unknown;
+}
+
 export interface V1RemoveProjectMemberUserResponse {
+  [key: string]: unknown;
+}
+
+export interface V1RemoveProjectMemberUsergroupResourcesResponse {
   [key: string]: unknown;
 }
 
@@ -1561,6 +1582,10 @@ export interface V1WhitelistedDomain {
   domain?: string;
   role?: string;
 }
+
+export type AdminServiceAddProjectMemberUserResourcesBodyBody = {
+  resources?: V1ResourceName[];
+};
 
 export type AdminServiceUpdateBillingSubscriptionBodyBody = {
   planName?: string;

@@ -182,12 +182,15 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	}
 
 	var attr map[string]any
+	var attrUserID string
+	var rules []*runtimev1.SecurityRule
 	if req.For == nil {
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
 			}
+			attrUserID = claims.OwnerID()
 		} else if claims.OwnerType() == auth.OwnerTypeService {
 			attr = map[string]any{"admin": true}
 		}
@@ -202,12 +205,12 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 
 		switch forVal := req.For.(type) {
 		case *adminv1.GetDeploymentRequest_UserId:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+			attr, attrUserID, permissions, err = s.getAttributesAndProjectPermissionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetDeploymentRequest_UserEmail:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
+			attr, attrUserID, permissions, err = s.getAttributesAndProjectPermissionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
@@ -221,6 +224,14 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.AccessTokenTtlSeconds > 0 {
 		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
+	}
+
+	// ignore resource level security rules if the user has a full role
+	if attrUserID != "" && permissions.FullyResourceRestricted {
+		rules = securityRulesFromResources(permissions.Resources)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	instancePermissions := []runtime.Permission{
@@ -257,7 +268,8 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		InstancePermissions: map[string][]runtime.Permission{
 			depl.RuntimeInstanceID: instancePermissions,
 		},
-		Attributes: attr,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
@@ -579,15 +591,26 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}
 
 	var attr map[string]any
-	if req.For != nil {
-		switch forVal := req.For.(type) {
-		case *adminv1.GetDeploymentCredentialsRequest_UserId:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+	var attrUserID string
+	var rules []*runtimev1.SecurityRule
+	if req.For == nil {
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 			if err != nil {
 				return nil, err
 			}
+			attrUserID = claims.OwnerID()
+		}
+	} else {
+		switch forVal := req.For.(type) {
+		case *adminv1.GetDeploymentCredentialsRequest_UserId:
+			attr, attrUserID, permissions, err = s.getAttributesAndProjectPermissionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+			if err != nil {
+				return nil, err
+			}
+
 		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
+			attr, attrUserID, permissions, err = s.getAttributesAndProjectPermissionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
@@ -603,6 +626,14 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
 
+	// ignore resource level security rules if the user has a full role
+	if attrUserID != "" && permissions.FullyResourceRestricted {
+		rules = securityRulesFromResources(permissions.Resources)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: prodDepl.RuntimeAudience,
@@ -616,7 +647,8 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 				runtime.UseAI,
 			},
 		},
-		Attributes: attr,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
@@ -676,15 +708,25 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	// Get user attributes to pass in the JWT
 	var attr map[string]any
-	if req.For != nil {
+	var attrUserID string
+	var rules []*runtimev1.SecurityRule
+	if req.For == nil {
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
+			if err != nil {
+				return nil, err
+			}
+			attrUserID = claims.OwnerID()
+		}
+	} else {
 		switch forVal := req.For.(type) {
 		case *adminv1.GetIFrameRequest_UserId:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
+			attr, attrUserID, permissions, err = s.getAttributesAndProjectPermissionsForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
 				return nil, err
 			}
 		case *adminv1.GetIFrameRequest_UserEmail:
-			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
+			attr, attrUserID, permissions, err = s.getAttributesAndProjectPermissionsForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
 				return nil, err
 			}
@@ -714,7 +756,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	req.Type = runtime.ResourceKindFromShorthand(req.Type)
 
 	// If navigation is disabled and a specific resource is requested, limit access to only that resource.
-	var rules []*runtimev1.SecurityRule
 	if !req.Navigation && req.Resource != "" {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_TransitiveAccess{
@@ -732,6 +773,14 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
+	}
+
+	// ignore resource level security rules if the user has a full role
+	if attrUserID != "" && permissions.FullyResourceRestricted {
+		rules = securityRulesFromResources(permissions.Resources)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Generate JWT
@@ -798,17 +847,17 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}, nil
 }
 
-// getAttributesFor returns a map of attributes for a given user and project.
+// getAttributesAndProjectPermissionsForUser returns a map of attributes for a given user and project.
 // The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
 // NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
-func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, error) {
+func (s *Server) getAttributesAndProjectPermissionsForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, string, *adminv1.ProjectPermissions, error) {
 	if userID == "" && userEmail == "" {
-		return nil, errors.New("must provide either userID or userEmail")
+		return nil, "", nil, errors.New("must provide either userID or userEmail")
 	}
 
 	if userEmail != "" {
 		if userID != "" {
-			return nil, errors.New("must provide either userID or userEmail, not both")
+			return nil, "", nil, errors.New("must provide either userID or userEmail, not both")
 		}
 
 		user, err := s.admin.DB.FindUserByEmail(ctx, userEmail)
@@ -821,9 +870,9 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 					"email":  userEmail,
 					"domain": userEmail[strings.LastIndex(userEmail, "@")+1:],
 					"admin":  false,
-				}, nil
+				}, "", nil, nil
 			}
-			return nil, err
+			return nil, "", nil, err
 		}
 
 		userID = user.ID
@@ -831,18 +880,18 @@ func (s *Server) getAttributesForUser(ctx context.Context, orgID, projID, userID
 
 	forOrgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, userID)
 	if err != nil {
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	forProjPerms, err := s.admin.ProjectPermissionsForUser(ctx, projID, userID, forOrgPerms)
 	if err != nil {
-		return nil, err
+		return nil, "", nil, err
 	}
 
 	attr, err := s.jwtAttributesForUser(ctx, userID, orgID, forProjPerms)
 	if err != nil {
-		return nil, err
+		return nil, "", nil, err
 	}
 
-	return attr, nil
+	return attr, userID, forProjPerms, nil
 }

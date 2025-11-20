@@ -67,10 +67,17 @@ components:
             type: object
         v1AddOrganizationMemberUsergroupResponse:
             type: object
+        v1AddProjectMemberUserResourcesResponse:
+            properties:
+                pendingSignup:
+                    type: boolean
+            type: object
         v1AddProjectMemberUserResponse:
             properties:
                 pendingSignup:
                     type: boolean
+            type: object
+        v1AddProjectMemberUsergroupResourcesResponse:
             type: object
         v1AddProjectMemberUsergroupResponse:
             type: object
@@ -1182,6 +1189,10 @@ components:
                     type: boolean
                 groupName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
                 roleName:
                     type: string
                 updatedOn:
@@ -1419,6 +1430,10 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
                 roleName:
                     type: string
             type: object
@@ -1456,6 +1471,10 @@ components:
                     type: string
                 orgRoleName:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
                 roleName:
                     type: string
                 updatedOn:
@@ -1481,6 +1500,9 @@ components:
                 createMagicAuthTokens:
                     type: boolean
                 createReports:
+                    type: boolean
+                fullyResourceRestricted:
+                    title: indicates whether all the roles have resource-restricted access
                     type: boolean
                 manageAlerts:
                     type: boolean
@@ -1516,6 +1538,11 @@ components:
                     type: boolean
                 readProvisionerResources:
                     type: boolean
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    title: list of resources the roles is restricted to, makes sense only if fully_resource_restricted is true
+                    type: array
             type: object
         v1ProjectRole:
             properties:
@@ -1621,7 +1648,11 @@ components:
             type: object
         v1RemoveProjectMemberServiceResponse:
             type: object
+        v1RemoveProjectMemberUserResourcesResponse:
+            type: object
         v1RemoveProjectMemberUserResponse:
+            type: object
+        v1RemoveProjectMemberUsergroupResourcesResponse:
             type: object
         v1RemoveProjectMemberUsergroupResponse:
             type: object
@@ -2793,6 +2824,8 @@ paths:
     /v1/orgs/{org}/projects/{project}/invites: {}
     /v1/orgs/{org}/projects/{project}/members: {}
     /v1/orgs/{org}/projects/{project}/members/{email}: {}
+    /v1/orgs/{org}/projects/{project}/members/{email}/resources: {}
+    /v1/orgs/{org}/projects/{project}/members/{email}/resources:remove: {}
     /v1/orgs/{org}/projects/{project}/redeploy: {}
     /v1/orgs/{org}/projects/{project}/reports: {}
     /v1/orgs/{org}/projects/{project}/reports/-/yaml: {}
@@ -2805,6 +2838,8 @@ paths:
     /v1/orgs/{org}/projects/{project}/services/{name}/role: {}
     /v1/orgs/{org}/projects/{project}/tokens/magic: {}
     /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles: {}
+    /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources: {}
+    /v1/orgs/{org}/projects/{project}/usergroups/{usergroup}/roles/resources:remove: {}
     /v1/orgs/{org}/projects/{project}/users/search: {}
     /v1/orgs/{org}/projects/{project}/variables:
         get:

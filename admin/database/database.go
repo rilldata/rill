@@ -221,7 +221,7 @@ type DB interface {
 	FindProjectRoles(ctx context.Context) ([]*ProjectRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
-	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*UserProjectRole, error)
 	ResolveOrganizationRoleForService(ctx context.Context, serviceID, orgID string) (*OrganizationRole, error)
 	ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*ProjectRole, error)
 
@@ -241,10 +241,12 @@ type DB interface {
 
 	FindProjectMemberUsers(ctx context.Context, orgID, projectID, filterRoleID, afterEmail string, limit int) ([]*ProjectMemberUser, error)
 	FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*ProjectRole, error)
-	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
+	FindProjectMemberUserResources(ctx context.Context, projectID, userID string) ([]ResourceName, error)
+	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string, resources []ResourceName) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
-	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
+	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string, resources []ResourceName) error
+	FindProjectMemberResourcesForUser(ctx context.Context, projectID, userID string) ([]ResourceName, error)
 	UpsertProjectMemberServiceRole(ctx context.Context, serviceID, projectID, roleID string) error
 	DeleteOrganizationMemberService(ctx context.Context, serviceID, orgID string) error
 	DeleteProjectMemberService(ctx context.Context, serviceID, projectID string) error
@@ -257,8 +259,9 @@ type DB interface {
 
 	FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*ProjectRole, error)
-	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
-	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	FindProjectMemberUsergroupResources(ctx context.Context, groupID, projectID string) ([]ResourceName, error)
+	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string, resources []ResourceName) error
+	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string, resources []ResourceName) error
 	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
 
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*OrganizationInviteWithRole, error)
@@ -276,7 +279,8 @@ type DB interface {
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
-	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
+	UpdateProjectInviteRole(ctx context.Context, id string, roleID string, resources []ResourceName) error
+	UpdateProjectInviteResources(ctx context.Context, id string, resources []ResourceName) error
 
 	FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*ProjectAccessRequest, error)
 	FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*ProjectAccessRequest, error)
@@ -960,6 +964,35 @@ type ProjectRole struct {
 	ManageBookmarks            bool `db:"manage_bookmarks"`
 }
 
+// UserProjectRole represents user's roles for a project.
+type UserProjectRole struct {
+	ID                         string
+	Name                       string
+	Admin                      bool `db:"admin"`
+	ReadProject                bool `db:"read_project"`
+	ManageProject              bool `db:"manage_project"`
+	ReadProd                   bool `db:"read_prod"`
+	ReadProdStatus             bool `db:"read_prod_status"`
+	ManageProd                 bool `db:"manage_prod"`
+	ReadDev                    bool `db:"read_dev"`
+	ReadDevStatus              bool `db:"read_dev_status"`
+	ManageDev                  bool `db:"manage_dev"`
+	ReadProvisionerResources   bool `db:"read_provisioner_resources"`
+	ManageProvisionerResources bool `db:"manage_provisioner_resources"`
+	ReadProjectMembers         bool `db:"read_project_members"`
+	ManageProjectMembers       bool `db:"manage_project_members"`
+	ManageProjectAdmins        bool `db:"manage_project_admins"`
+	CreateMagicAuthTokens      bool `db:"create_magic_auth_tokens"`
+	ManageMagicAuthTokens      bool `db:"manage_magic_auth_tokens"`
+	CreateReports              bool `db:"create_reports"`
+	ManageReports              bool `db:"manage_reports"`
+	CreateAlerts               bool `db:"create_alerts"`
+	ManageAlerts               bool `db:"manage_alerts"`
+	CreateBookmarks            bool `db:"create_bookmarks"`
+	ManageBookmarks            bool `db:"manage_bookmarks"`
+	Resources                  []ResourceName
+}
+
 // OrganizationMemberUser is a convenience type used for display-friendly representation of an org member
 type OrganizationMemberUser struct {
 	ID              string
@@ -984,6 +1017,7 @@ type ProjectMemberUser struct {
 	OrgRoleName string    `db:"org_role_name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
+	Resources   []ResourceName
 }
 
 // UsergroupMemberUser is a convenience type used for display-friendly representation of a usergroup member
@@ -1006,6 +1040,7 @@ type MemberUsergroup struct {
 	UsersCount int       `db:"users_count"`
 	CreatedOn  time.Time `db:"created_on"`
 	UpdatedOn  time.Time `db:"updated_on"`
+	Resources  []ResourceName
 }
 
 // OrganizationInvite represents an outstanding invitation to join an org.
@@ -1037,6 +1072,7 @@ type ProjectInvite struct {
 	ProjectRoleID   string    `db:"project_role_id"`
 	InvitedByUserID string    `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
+	Resources       []ResourceName
 }
 
 // ProjectInviteWithRole is a convenience type used for display-friendly representation of a ProjectInvite.
@@ -1046,6 +1082,7 @@ type ProjectInviteWithRole struct {
 	RoleName    string `db:"role_name"`
 	OrgRoleName string `db:"org_role_name"`
 	InvitedBy   string `db:"invited_by"`
+	Resources   []ResourceName
 }
 
 type ProjectsQuotaUsage struct {
@@ -1108,6 +1145,7 @@ type InsertProjectInviteOptions struct {
 	ProjectID   string `validate:"required"`
 	RoleID      string `validate:"required"`
 	InviterID   string
+	Resources   []ResourceName
 }
 
 type ProjectAccessRequest struct {

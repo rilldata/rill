@@ -51,6 +51,50 @@ type connection struct {
 	encKeyring []*database.EncryptionKey
 }
 
+func marshalResourceNames(resources []database.ResourceName) ([]byte, error) {
+	resources = dedupeResourceNames(resources)
+	if resources == nil {
+		resources = []database.ResourceName{}
+	}
+	return json.Marshal(resources)
+}
+
+func assignResourceNames(jsonb pgtype.JSONB) ([]database.ResourceName, error) {
+	if jsonb.Status != pgtype.Present {
+		return nil, nil
+	}
+	var res []database.ResourceName
+	err := jsonb.AssignTo(&res)
+	if err != nil {
+		return nil, err
+	}
+	return dedupeResourceNames(res), nil
+}
+
+func dedupeResourceNames(resources []database.ResourceName) []database.ResourceName {
+	if len(resources) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(resources))
+	deduped := make([]database.ResourceName, 0, len(resources))
+	for _, r := range resources {
+		if r.Type == "" || r.Name == "" {
+			continue
+		}
+		key := strings.ToLower(r.Type) + "|" + strings.ToLower(r.Name)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		deduped = append(deduped, r)
+	}
+	if len(deduped) == 0 {
+		return nil
+	}
+	return deduped
+}
+
 func (c *connection) Close() error {
 	return c.db.Close()
 }
@@ -1810,21 +1854,23 @@ func (c *connection) ResolveOrganizationRolesForUser(ctx context.Context, userID
 	return res, nil
 }
 
-func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*database.ProjectRole, error) {
-	var res []*database.ProjectRole
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT r.* FROM users_projects_roles upr
+func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*database.UserProjectRole, error) {
+	var dtos []*userProjectRoleDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT r.*, upr.resources FROM users_projects_roles upr
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.user_id = $1 AND upr.project_id = $2
 		UNION
-		SELECT * FROM project_roles WHERE id IN (
-			SELECT project_role_id FROM usergroups_projects_roles upr JOIN usergroups_users uug
-			ON upr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND upr.project_id = $2
-		)`, userID, projectID)
+		SELECT r.*, upr.resources FROM usergroups_projects_roles upr
+		JOIN project_roles r ON upr.project_role_id = r.id
+		JOIN usergroups_users uug ON upr.usergroup_id = uug.usergroup_id
+		WHERE uug.user_id = $1 AND upr.project_id = $2
+	`, userID, projectID)
 	if err != nil {
 		return nil, parseErr("project roles", err)
 	}
-	return res, nil
+
+	return c.userProjectRolesFromDTOs(dtos)
 }
 
 // ResolveOrganizationRoleForService returns the organization role for the service
@@ -2141,7 +2187,8 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectI
 				JOIN users_orgs_roles uor
 				ON orr.id = uor.org_role_id
 				WHERE uor.user_id = u.id AND uor.org_id = $1
-			) as org_role_name
+			) as org_role_name,
+			upr.resources
 		FROM users u
 		JOIN users_projects_roles upr ON upr.user_id = u.id
 		WHERE upr.project_id = $2
@@ -2152,12 +2199,12 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, orgID, projectI
 	}
 	qry.WriteString(" AND lower(u.email) > lower($3) ORDER BY lower(u.email) LIMIT $4")
 
-	var res []*database.ProjectMemberUser
-	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	var dtos []*projectMemberUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("project members", err)
 	}
-	return res, nil
+	return c.projectMemberUsersFromDTOs(dtos)
 }
 
 func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, userID string) (*database.ProjectRole, error) {
@@ -2171,6 +2218,46 @@ func (c *connection) FindProjectMemberUserRole(ctx context.Context, projectID, u
 		return nil, parseErr("project member role", err)
 	}
 	return role, nil
+}
+
+func (c *connection) FindProjectMemberUserResources(ctx context.Context, projectID, userID string) ([]database.ResourceName, error) {
+	var resJSON pgtype.JSONB
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT resources FROM users_projects_roles WHERE project_id=$1 AND user_id=$2
+	`, projectID, userID).Scan(&resJSON)
+	if err != nil {
+		return nil, parseErr("project member resources", err)
+	}
+	return assignResourceNames(resJSON)
+}
+
+func (c *connection) FindProjectMemberResourcesForUser(ctx context.Context, projectID, userID string) ([]database.ResourceName, error) {
+	type resourceRow struct {
+		Resources pgtype.JSONB `db:"resources"`
+	}
+
+	var rows []resourceRow
+	err := c.getDB(ctx).SelectContext(ctx, &rows, `
+		SELECT resources FROM users_projects_roles WHERE project_id = $1 AND user_id = $2
+		UNION ALL
+		SELECT upr.resources FROM usergroups_projects_roles upr
+		JOIN usergroups_users uug ON upr.usergroup_id = uug.usergroup_id
+		WHERE upr.project_id = $1 AND uug.user_id = $2
+	`, projectID, userID)
+	if err != nil {
+		return nil, parseErr("project member resources", err)
+	}
+
+	var resources []database.ResourceName
+	for _, row := range rows {
+		resNames, err := assignResourceNames(row.Resources)
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, resNames...)
+	}
+
+	return dedupeResourceNames(resources), nil
 }
 
 func (c *connection) FindSuperusers(ctx context.Context) ([]*database.User, error) {
@@ -2187,8 +2274,13 @@ func (c *connection) UpdateSuperuser(ctx context.Context, userID string, superus
 	return checkUpdateRow("superuser", res, err)
 }
 
-func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_projects_roles (user_id, project_id, project_role_id) VALUES ($1, $2, $3)", userID, projectID, roleID)
+func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_projects_roles (user_id, project_id, project_role_id, resources) VALUES ($1, $2, $3, $4)", userID, projectID, roleID, resJSON)
 	if err != nil {
 		return parseErr("project member", err)
 	}
@@ -2273,7 +2365,7 @@ func (c *connection) DeleteOrganizationMemberUsergroup(ctx context.Context, grou
 func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{projectID, afterName, limit}
 	var qry strings.Builder
-	qry.WriteString(`SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name"`)
+	qry.WriteString(`SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name", upr.resources`)
 	if withCounts {
 		qry.WriteString(`,
 			(
@@ -2293,12 +2385,12 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 	}
 	qry.WriteString(" AND lower(ug.name) > lower($2) ORDER BY lower(ug.name) LIMIT $3")
 
-	var res []*database.MemberUsergroup
-	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	var dtos []*memberUsergroupDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("project groups", err)
 	}
-	return res, nil
+	return c.memberUsergroupsFromDTOs(dtos)
 }
 
 func (c *connection) FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*database.ProjectRole, error) {
@@ -2314,20 +2406,41 @@ func (c *connection) FindProjectMemberUsergroupRole(ctx context.Context, groupID
 	return role, nil
 }
 
-func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id) VALUES ($1, $2, $3)
-	`, groupID, projectID, roleID)
+func (c *connection) FindProjectMemberUsergroupResources(ctx context.Context, groupID, projectID string) ([]database.ResourceName, error) {
+	var resJSON pgtype.JSONB
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT resources FROM usergroups_projects_roles WHERE usergroup_id=$1 AND project_id=$2
+	`, groupID, projectID).Scan(&resJSON)
+	if err != nil {
+		return nil, parseErr("project group member resources", err)
+	}
+	return assignResourceNames(resJSON)
+}
+
+func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id, resources) VALUES ($1, $2, $3, $4)
+	`, groupID, projectID, roleID, resJSON)
 	if err != nil {
 		return parseErr("project group member", err)
 	}
 	return nil
 }
 
-func (c *connection) UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
+func (c *connection) UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
 	res, err := c.getDB(ctx).ExecContext(ctx, `
-		UPDATE usergroups_projects_roles SET project_role_id = $3 WHERE usergroup_id = $1 AND project_id = $2
-	`, groupID, projectID, roleID)
+		UPDATE usergroups_projects_roles SET project_role_id = $3, resources = $4 WHERE usergroup_id = $1 AND project_id = $2
+	`, groupID, projectID, roleID, resJSON)
 	return checkUpdateRow("project group member", res, err)
 }
 
@@ -2349,8 +2462,13 @@ func (c *connection) DeleteAllProjectMemberUserForOrganization(ctx context.Conte
 	return nil
 }
 
-func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_projects_roles SET project_role_id = $1 WHERE user_id = $2 AND project_id = $3`, roleID, userID, projectID)
+func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_projects_roles SET project_role_id = $1, resources = $4 WHERE user_id = $2 AND project_id = $3`, roleID, userID, projectID, resJSON)
 	return checkUpdateRow("project member", res, err)
 }
 
@@ -2481,9 +2599,9 @@ func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleI
 }
 
 func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.ProjectInviteWithRole, error) {
-	var res []*database.ProjectInviteWithRole
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by
+	var dtos []*projectInviteWithRoleDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by, upi.resources
 		FROM project_invites upi
 		JOIN project_roles upr ON upi.project_role_id = upr.id
 		LEFT JOIN users u ON upi.invited_by_user_id = u.id
@@ -2495,40 +2613,44 @@ func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEma
 	if err != nil {
 		return nil, parseErr("project invites", err)
 	}
-	return res, nil
+	return c.projectInviteWithRolesFromDTOs(dtos)
 }
 
 func (c *connection) FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*database.ProjectInvite, error) {
-	var res []*database.ProjectInvite
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM project_invites WHERE lower(email) = lower($1)", userEmail)
+	var dtos []*projectInviteDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, "SELECT * FROM project_invites WHERE lower(email) = lower($1)", userEmail)
 	if err != nil {
 		return nil, parseErr("project invites", err)
 	}
-	return res, nil
+	return projectInvitesFromDTOs(dtos)
 }
 
 func (c *connection) FindProjectInvite(ctx context.Context, projectID, userEmail string) (*database.ProjectInvite, error) {
-	res := &database.ProjectInvite{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_invites WHERE lower(email) = lower($1) AND project_id = $2", userEmail, projectID).StructScan(res)
+	dto := &projectInviteDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_invites WHERE lower(email) = lower($1) AND project_id = $2", userEmail, projectID).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("project invite", err)
 	}
-	return res, nil
+	return dto.asModel()
 }
 
 func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.InsertProjectInviteOptions) error {
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-
 	var inviterID any
 	if opts.InviterID != "" {
 		inviterID = opts.InviterID
 	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx,
-		`INSERT INTO project_invites (email, org_invite_id, project_id, project_role_id, invited_by_user_id) VALUES ($1, $2, $3, $4, $5)`,
-		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, inviterID)
+	resJSON, err := marshalResourceNames(opts.Resources)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.getDB(ctx).ExecContext(ctx,
+		`INSERT INTO project_invites (email, org_invite_id, project_id, project_role_id, invited_by_user_id, resources) VALUES ($1, $2, $3, $4, $5, $6)`,
+		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, inviterID, resJSON)
 	if err != nil {
 		return parseErr("project invite", err)
 	}
@@ -2540,8 +2662,23 @@ func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 	return checkDeleteRow("project invite", res, err)
 }
 
-func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1 WHERE id = $2`, roleID, id)
+func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1, resources = $3 WHERE id = $2`, roleID, id, resJSON)
+	return checkUpdateRow("project invite", res, err)
+}
+
+func (c *connection) UpdateProjectInviteResources(ctx context.Context, id string, resources []database.ResourceName) error {
+	resJSON, err := marshalResourceNames(resources)
+	if err != nil {
+		return err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET resources = $1 WHERE id = $2`, resJSON, id)
 	return checkUpdateRow("project invite", res, err)
 }
 
@@ -3324,6 +3461,136 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	}
 
 	return dto.MagicAuthTokenWithUser, nil
+}
+
+type userProjectRoleDTO struct {
+	*database.UserProjectRole
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (c *connection) userProjectRoleFromDTO(dto *userProjectRoleDTO) (*database.UserProjectRole, error) {
+	resources, err := assignResourceNames(dto.Resources)
+	if err != nil {
+		return nil, err
+	}
+	dto.UserProjectRole.Resources = resources
+	return dto.UserProjectRole, nil
+}
+
+func (c *connection) userProjectRolesFromDTOs(dtos []*userProjectRoleDTO) ([]*database.UserProjectRole, error) {
+	res := make([]*database.UserProjectRole, len(dtos))
+	for i, dto := range dtos {
+		role, err := c.userProjectRoleFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = role
+	}
+	return res, nil
+}
+
+type projectMemberUserDTO struct {
+	*database.ProjectMemberUser
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (c *connection) projectMemberUserFromDTO(dto *projectMemberUserDTO) (*database.ProjectMemberUser, error) {
+	resources, err := assignResourceNames(dto.Resources)
+	if err != nil {
+		return nil, err
+	}
+	dto.ProjectMemberUser.Resources = resources
+	return dto.ProjectMemberUser, nil
+}
+
+func (c *connection) projectMemberUsersFromDTOs(dtos []*projectMemberUserDTO) ([]*database.ProjectMemberUser, error) {
+	res := make([]*database.ProjectMemberUser, len(dtos))
+	for i, dto := range dtos {
+		member, err := c.projectMemberUserFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = member
+	}
+	return res, nil
+}
+
+type memberUsergroupDTO struct {
+	*database.MemberUsergroup
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (c *connection) memberUsergroupFromDTO(dto *memberUsergroupDTO) (*database.MemberUsergroup, error) {
+	resources, err := assignResourceNames(dto.Resources)
+	if err != nil {
+		return nil, err
+	}
+	dto.MemberUsergroup.Resources = resources
+	return dto.MemberUsergroup, nil
+}
+
+func (c *connection) memberUsergroupsFromDTOs(dtos []*memberUsergroupDTO) ([]*database.MemberUsergroup, error) {
+	res := make([]*database.MemberUsergroup, len(dtos))
+	for i, dto := range dtos {
+		group, err := c.memberUsergroupFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = group
+	}
+	return res, nil
+}
+
+type projectInviteDTO struct {
+	*database.ProjectInvite
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (dto *projectInviteDTO) asModel() (*database.ProjectInvite, error) {
+	resources, err := assignResourceNames(dto.Resources)
+	if err != nil {
+		return nil, err
+	}
+	dto.ProjectInvite.Resources = resources
+	return dto.ProjectInvite, nil
+}
+
+func projectInvitesFromDTOs(dtos []*projectInviteDTO) ([]*database.ProjectInvite, error) {
+	res := make([]*database.ProjectInvite, len(dtos))
+	for i, dto := range dtos {
+		model, err := dto.asModel()
+		if err != nil {
+			return nil, err
+		}
+		res[i] = model
+	}
+	return res, nil
+}
+
+type projectInviteWithRoleDTO struct {
+	*database.ProjectInviteWithRole
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (c *connection) projectInviteWithRoleFromDTO(dto *projectInviteWithRoleDTO) (*database.ProjectInviteWithRole, error) {
+	resources, err := assignResourceNames(dto.Resources)
+	if err != nil {
+		return nil, err
+	}
+	dto.ProjectInviteWithRole.Resources = resources
+	return dto.ProjectInviteWithRole, nil
+}
+
+func (c *connection) projectInviteWithRolesFromDTOs(dtos []*projectInviteWithRoleDTO) ([]*database.ProjectInviteWithRole, error) {
+	res := make([]*database.ProjectInviteWithRole, len(dtos))
+	for i, dto := range dtos {
+		model, err := c.projectInviteWithRoleFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = model
+	}
+	return res, nil
 }
 
 type notificationTokenWithSecretDTO struct {
