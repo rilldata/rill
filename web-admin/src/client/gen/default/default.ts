@@ -40,6 +40,7 @@ import type {
   AdminServiceCreateServiceBody,
   AdminServiceCreateUsergroupBodyBody,
   AdminServiceDeleteUserParams,
+  AdminServiceDeleteVirtualFileParams,
   AdminServiceEditUsergroupBody,
   AdminServiceGetAlertMetaBody,
   AdminServiceGetBillingSubscriptionParams,
@@ -55,6 +56,7 @@ import type {
   AdminServiceGetReportMetaBody,
   AdminServiceGetUserParams,
   AdminServiceGetUsergroupParams,
+  AdminServiceGetVirtualFileParams,
   AdminServiceHibernateProjectParams,
   AdminServiceIssueMagicAuthTokenBody,
   AdminServiceIssueUserAuthTokenBody,
@@ -129,6 +131,7 @@ import type {
   V1DeleteServiceResponse,
   V1DeleteUserResponse,
   V1DeleteUsergroupResponse,
+  V1DeleteVirtualFileResponse,
   V1DenyProjectAccessResponse,
   V1EditAlertResponse,
   V1EditReportResponse,
@@ -162,6 +165,7 @@ import type {
   V1GetServiceResponse,
   V1GetUserResponse,
   V1GetUsergroupResponse,
+  V1GetVirtualFileResponse,
   V1HibernateProjectResponse,
   V1IssueMagicAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
@@ -12314,6 +12318,198 @@ export function createAdminServicePullVirtualRepo<
   return query;
 }
 
+/**
+ * @summary GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+ */
+export const adminServiceGetVirtualFile = (
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetVirtualFileResponse>({
+    url: `/v1/projects/${projectId}/repo/virtual/file`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetVirtualFileQueryKey = (
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+) => {
+  return [
+    `/v1/projects/${projectId}/repo/virtual/file`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceGetVirtualFileQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetVirtualFileQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetVirtualFile>>
+  > = ({ signal }) => adminServiceGetVirtualFile(projectId, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetVirtualFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetVirtualFile>>
+>;
+export type AdminServiceGetVirtualFileQueryError = RpcStatus;
+
+/**
+ * @summary GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
+ */
+
+export function createAdminServiceGetVirtualFile<
+  TData = Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceGetVirtualFileParams,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetVirtualFile>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetVirtualFileQueryOptions(
+    projectId,
+    params,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary DeleteVirtualFile deletes a virtual file from a project's virtual repo
+ */
+export const adminServiceDeleteVirtualFile = (
+  projectId: string,
+  params?: AdminServiceDeleteVirtualFileParams,
+) => {
+  return httpClient<V1DeleteVirtualFileResponse>({
+    url: `/v1/projects/${projectId}/repo/virtual/file`,
+    method: "DELETE",
+    params,
+  });
+};
+
+export const getAdminServiceDeleteVirtualFileMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+    TError,
+    { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+  TError,
+  { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteVirtualFile"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+    { projectId: string; params?: AdminServiceDeleteVirtualFileParams }
+  > = (props) => {
+    const { projectId, params } = props ?? {};
+
+    return adminServiceDeleteVirtualFile(projectId, params);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteVirtualFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>
+>;
+
+export type AdminServiceDeleteVirtualFileMutationError = RpcStatus;
+
+/**
+ * @summary DeleteVirtualFile deletes a virtual file from a project's virtual repo
+ */
+export const createAdminServiceDeleteVirtualFile = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+      TError,
+      { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteVirtualFile>>,
+  TError,
+  { projectId: string; params?: AdminServiceDeleteVirtualFileParams },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteVirtualFileMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
  */
