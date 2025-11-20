@@ -13,8 +13,7 @@
   export let paramsErrors: Record<string, any>;
   export let onStringInputChange: (e: Event) => void;
   export let handleFileUpload: (file: File) => Promise<string>;
-
-  let gcsAuthMethod: GCSAuthMethod = "credentials";
+  export let cloudAuthMethod: GCSAuthMethod = "credentials";
 
   const filteredParamsProperties = properties;
 
@@ -46,7 +45,7 @@
   <div class="py-1.5 first:pt-0 last:pb-0">
     <div class="text-sm font-medium mb-4">Authentication method</div>
     <Radio
-      bind:value={gcsAuthMethod}
+      bind:value={cloudAuthMethod}
       options={GCS_AUTH_OPTIONS}
       name="gcs-auth-method"
     >
@@ -85,6 +84,8 @@
               alwaysShowError
             />
           </div>
+        {:else if option.value === "public"}
+          <!-- No further context needed -->
         {/if}
       </svelte:fragment>
     </Radio>
