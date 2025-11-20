@@ -38,7 +38,7 @@ var (
 		"instances": "SELECT * EXCLUDE (variables, project_variables, feature_flags, annotations, connectors, project_connectors, public_paths) FROM instances",
 		// Table `instance_health`
 		"instance_health": "SELECT * FROM instance_health",
-		// Table `catalogv2`
+		// Table `catalogv2` (NOTE: the `data` column has already been converted to JSON in rewriteSnapshotForAnalytics below).
 		"catalog": "SELECT * FROM catalogv2",
 		// Table `model_partitions`
 		"model_partitions": "SELECT * FROM model_partitions",
@@ -235,18 +235,16 @@ func (c *connection) rewriteSnapshotForAnalytics(ctx context.Context, snapshotPa
 	defer snapshotDB.Close()
 
 	// Convert the `data` field in each row in the `catalogv2` table from protobuf to JSON.
-	var offset int
-	for range 1_000_000 { // Failsafe to avoid infinite loops; there should never be this many resources.
+	for offset := range 50_000 { // Failsafe to avoid infinite loops; we don't anticipate this many resources.
 		// Read one resource.
 		var r drivers.Resource
-		err := snapshotDB.GetContext(ctx, &r, "SELECT kind, name, data FROM catalogv2 ORDER BY kind, name LIMIT 1 OFFSET ?", offset)
+		err := snapshotDB.QueryRowContext(ctx, "SELECT kind, name, data FROM catalogv2 ORDER BY kind, name LIMIT 1 OFFSET ?", offset).Scan(&r.Kind, &r.Name, &r.Data)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				break
 			}
 			return fmt.Errorf("failed to query catalog resource: %w", err)
 		}
-		offset++
 
 		// Convert data from protobuf message rill.runtime.v1.Resource to JSON.
 		pb := &runtimev1.Resource{}
