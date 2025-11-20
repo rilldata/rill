@@ -138,14 +138,16 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 		if c.config.QuerySettingsOverride != "" {
 			stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
 		} else {
-			if c.config.QuerySettings != "" {
-				stmt.Query += "\n SETTINGS " + c.config.QuerySettings + ", cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
-			} else {
-				stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
-			}
-			// Add query attributes to settings
+			var settingsParts []string
+			settingsParts = append(settingsParts, "cast_keep_nullable = 1", "join_use_nulls = 1", "session_timezone = 'UTC'", "prefer_global_in_and_join = 1", "insert_distributed_sync = 1")
 			for k, v := range stmt.QueryAttributes {
-				stmt.Query += fmt.Sprintf(", %s = '%s'", k, v)
+				settingsParts = append(settingsParts, fmt.Sprintf("%s = '%s'", k, v))
+			}
+			settingsStr := strings.Join(settingsParts, ", ")
+			if c.config.QuerySettings != "" {
+				stmt.Query += "\n SETTINGS " + c.config.QuerySettings + ", " + settingsStr
+			} else {
+				stmt.Query += "\n SETTINGS " + settingsStr
 			}
 		}
 	}

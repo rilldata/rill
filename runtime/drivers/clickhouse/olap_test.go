@@ -38,6 +38,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 	t.Run("TestOptimizeTable", func(t *testing.T) { testOptimizeTable(t, c, olap) })
+	t.Run("QueryAttributesSETTINGSInjection", func(t *testing.T) { testQueryAttributesSETTINGSInjection(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -848,4 +849,109 @@ func testDualDSNModelOperations(t *testing.T, c *Connection, olap drivers.OLAPSt
 	require.Equal(t, "initial", results[0].Status)
 	require.Equal(t, 2, results[1].ID)
 	require.Equal(t, "added", results[1].Status)
+}
+
+func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+
+	// Create test table
+	err := olap.Exec(ctx, &drivers.Statement{
+		Query: "CREATE TABLE test_attrs (id Int32, value String) ENGINE=Memory",
+	})
+	require.NoError(t, err)
+
+	// Insert test data
+	err = olap.Exec(ctx, &drivers.Statement{
+		Query: "INSERT INTO test_attrs VALUES (1, 'test')",
+	})
+	require.NoError(t, err)
+
+	t.Run("SingleQueryAttribute", func(t *testing.T) {
+		stmt := &drivers.Statement{
+			Query: "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{
+				"test_partner_id": "acme_corp",
+			},
+		}
+		res, err := olap.Query(ctx, stmt)
+		require.NoError(t, err)
+		require.Contains(t, stmt.Query, "test_partner_id = 'acme_corp'")
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("MultipleQueryAttributes", func(t *testing.T) {
+		stmt := &drivers.Statement{
+			Query: "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{
+				"test_partner_id":  "acme_corp",
+				"test_environment": "production",
+				"test_region":      "us-west-2",
+			},
+		}
+		res, err := olap.Query(ctx, stmt)
+		require.NoError(t, err)
+		require.Contains(t, stmt.Query, "test_partner_id = 'acme_corp'")
+		require.Contains(t, stmt.Query, "test_environment = 'production'")
+		require.Contains(t, stmt.Query, "test_region = 'us-west-2'")
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("EmptyQueryAttributes", func(t *testing.T) {
+		stmt := &drivers.Statement{
+			Query:           "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{},
+		}
+		res, err := olap.Query(ctx, stmt)
+		require.NoError(t, err)
+		// Ensure no custom settings are added beyond defaults
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("NilQueryAttributes", func(t *testing.T) {
+		stmt := &drivers.Statement{
+			Query:           "SELECT id, value FROM test_attrs",
+			QueryAttributes: nil,
+		}
+		res, err := olap.Query(ctx, stmt)
+		require.NoError(t, err)
+		// Ensure no custom settings are added beyond defaults
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("QueryAttributeWithExistingPrefix", func(t *testing.T) {
+		stmt := &drivers.Statement{
+			Query: "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{
+				"test_partner_id":  "acme_corp",
+				"test_environment": "production",
+			},
+		}
+		res, err := olap.Query(ctx, stmt)
+		require.NoError(t, err)
+		require.Contains(t, stmt.Query, "test_partner_id = 'acme_corp'")
+		require.Contains(t, stmt.Query, "test_environment = 'production'")
+		require.NotNil(t, res)
+		err = res.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("QueryAttributeWithoutPrefix", func(t *testing.T) {
+		stmt := &drivers.Statement{
+			Query: "SELECT id, value FROM test_attrs",
+			QueryAttributes: map[string]string{
+				"other_setting": "value",
+			},
+		}
+		_, err := olap.Query(ctx, stmt)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "neither a builtin setting nor started with the prefix")
+	})
 }
