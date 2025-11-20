@@ -31,9 +31,7 @@
 <section class="flex flex-col gap-3">
   <div class="flex flex-col gap-1">
     <h2 class="text-lg font-semibold">Table explorer</h2>
-    <p class="text-slate-500 text-sm">
-      Pick a table to power your first dashboard
-    </p>
+    <p class="text-slate-500 text-sm">Pick a table to power your model</p>
   </div>
 
   <div class="border-t border-gray-200" />
