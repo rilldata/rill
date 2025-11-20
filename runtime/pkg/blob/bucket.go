@@ -43,7 +43,7 @@ func (b *Bucket) Underlying() *blob.Bucket {
 }
 
 func (b *Bucket) ListObjects(ctx context.Context, path, delimiter string, pageSize uint32, pageToken string) ([]drivers.ObjectStoreEntry, string, error) {
-	validPageSize := pagination.ValidPageSize(uint32(pageSize), drivers.DefaultPageSize)
+	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	driverPageToken := blob.FirstPageToken
 	if pageToken != "" {
 		if err := pagination.UnmarshalPageToken(pageToken, &driverPageToken); err != nil {
