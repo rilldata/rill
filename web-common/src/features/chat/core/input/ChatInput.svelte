@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
-  import ChatInputTextarea from "@rilldata/web-common/features/chat/core/input/ChatInputTextarea.svelte";
+  import { ChatInputTextAreaManager } from "@rilldata/web-common/features/chat/core/input/chat-input-textarea-manager.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
@@ -13,7 +13,9 @@
   export let noMargin = false;
   export let height: string | undefined = undefined;
 
-  let textarea: ChatInputTextarea;
+  const placeholder = "Ask about your data...";
+  let editorElement: HTMLDivElement;
+  let value = "";
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
@@ -28,12 +30,18 @@
 
   const context = getExploreContext();
 
+  const manager = new ChatInputTextAreaManager(
+    (newValue) => draftMessageStore.set(newValue),
+    () => void sendMessage(),
+  );
+  $: manager.setElement(editorElement);
+
   async function sendMessage() {
     if (!canSend) return;
 
     // Message handling with input focus
     try {
-      textarea.setPrompt("");
+      manager.setPrompt("");
       await currentConversation.sendMessage($context);
       onSend?.();
     } catch (error) {
@@ -42,7 +50,7 @@
 
     // Let the parent component manage the input value
     await tick();
-    textarea.focusEditor();
+    manager.focusEditor();
   }
 
   function cancelStream() {
@@ -53,13 +61,13 @@
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        textarea?.focusEditor();
+        manager?.focusEditor();
       }, 100);
     });
   }
 
   onMount(() =>
-    eventBus.on("start-chat", (prompt) => textarea.setPrompt(prompt)),
+    eventBus.on("start-chat", (prompt) => manager.setPrompt(prompt)),
   );
 </script>
 
@@ -69,14 +77,21 @@
   on:submit|preventDefault={sendMessage}
 >
   <div class="w-full">
-    <ChatInputTextarea
-      bind:this={textarea}
-      onChange={(newValue) => draftMessageStore.set(newValue)}
-      onSubmit={sendMessage}
-    />
+    <div
+      bind:this={editorElement}
+      contenteditable="true"
+      role="textbox"
+      tabindex="0"
+      class="chat-input"
+      class:fixed-height={!!height}
+      style:height
+      data-placeholder={placeholder}
+      class:empty={!$draftMessageStore.length}
+      on:input={manager.updateValue}
+      on:keydown={manager.handleKeydown}
+    ></div>
   </div>
   <div class="chat-input-footer">
-    <div class="chat-input-dashboard-scope"></div>
     <div>
       {#if canCancel}
         <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
@@ -112,6 +127,21 @@
     margin: 0;
   }
 
+  .chat-input {
+    @apply p-2 min-h-[2.5rem] outline-none;
+    @apply text-sm leading-relaxed;
+  }
+
+  .chat-input.fixed-height {
+    min-height: unset;
+    max-height: unset;
+  }
+
+  .chat-input.empty:before {
+    content: attr(data-placeholder);
+    @apply text-gray-400 pointer-events-none absolute;
+  }
+
   .stop-icon {
     color: #9ca3af; /* gray-400 base */
     display: flex;
@@ -134,10 +164,5 @@
 
   .chat-input-footer {
     @apply flex flex-row;
-  }
-
-  .chat-input-dashboard-scope {
-    @apply flex flex-row items-center w-full mx-1 gap-1;
-    @apply text-xs text-muted-foreground;
   }
 </style>

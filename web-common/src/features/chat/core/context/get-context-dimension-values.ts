@@ -49,7 +49,7 @@ export function getContextDimensionValuesQueryOptions(
         metricsViewName,
         {
           dimensions: [{ name: dimensionName }],
-          limit: "10",
+          limit: "50",
           offset: "0",
           sort: [{ name: dimensionName }],
           where,

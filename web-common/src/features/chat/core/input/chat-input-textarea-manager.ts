@@ -7,18 +7,15 @@ import {
 } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
 import {
   convertContextToInlinePrompt,
-  convertHTMLElementToContext,
+  convertContextValueToEntry,
+  PROMPT_INLINE_CONTEXT_TAG,
 } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
 import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
 import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { get } from "svelte/store";
 
-const SPACE_TEXT = "\u00A0";
-
 export class ChatInputTextAreaManager {
   private editorElement: HTMLDivElement;
-  private onChange: (newValue: string) => void;
-  private onSubmit: () => void;
 
   private isContextMode = false;
   private addContextComponent;
@@ -29,38 +26,41 @@ export class ChatInputTextAreaManager {
   private readonly exploreNameStore = getExploreNameStore();
   private readonly contextMetadataStore = getContextMetadataStore();
 
+  public constructor(
+    private readonly onChange: (newValue: string) => void,
+    private readonly onSubmit: () => void,
+  ) {}
+
   public setElement(editorElement: HTMLDivElement) {
     this.editorElement = editorElement;
   }
 
-  public setOnChange(onChange: (newValue: string) => void) {
-    this.onChange = onChange;
-  }
-
-  public setOnSubmit(onSubmit: () => void) {
-    this.onSubmit = onSubmit;
-  }
-
-  public setHtml(html: string) {
+  public setPrompt(html: string) {
     this.editorElement.innerHTML = html;
     setTimeout(() => {
-      this.editorElement.focus();
+      // Cleanup any old components
       this.elementToContextComponent.values().forEach((c) => c.$destroy());
-      this.findInlineContextNodes(this.editorElement).forEach(
-        ([parent, node, chatCtx]) => {
-          const comp = new ChatContext({
-            target: parent as any,
-            anchor: node as any,
-            props: {
-              chatCtx,
-              metadata: get(this.contextMetadataStore),
-              onUpdate: () => this.updateValue(),
-            },
-          });
-          this.componentAdded(comp, node);
-          parent.removeChild(node);
-        },
+
+      const inlineContextNodes = this.findInlineContextNodes(
+        this.editorElement,
       );
+      inlineContextNodes.forEach(([parent, node, chatCtx]) => {
+        const comp = new ChatContext({
+          target: parent as any,
+          anchor: node as any,
+          props: {
+            chatCtx,
+            metadata: get(this.contextMetadataStore),
+            onUpdate: this.updateValue,
+          },
+        });
+        this.componentAdded(comp, node);
+        parent.removeChild(node);
+      });
+
+      this.editorElement.focus();
+
+      setTimeout(this.updateValue);
     });
   }
 
@@ -70,6 +70,8 @@ export class ChatInputTextAreaManager {
     setTimeout(() => {
       if (event.key === "Backspace") {
         this.removeNodes();
+      } else if (event.key === "Escape" && this.isContextMode) {
+        this.removeAddContextComponent(true);
       }
 
       if (this.isContextMode) {
@@ -102,11 +104,11 @@ export class ChatInputTextAreaManager {
     if (node.nodeType === Node.TEXT_NODE) {
       return node.textContent ?? "";
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const ctx = convertHTMLElementToContext(
-        node as any,
-        get(this.contextMetadataStore),
-      );
-      if (ctx) return convertContextToInlinePrompt(ctx);
+      const comp = this.elementToContextComponent.get(node);
+      if (comp) {
+        const ctx = comp.getChatContext();
+        return convertContextToInlinePrompt(ctx);
+      }
 
       const prefix = node.nodeName === "DIV" && level !== 0 ? "\n" : "";
       return (
@@ -129,8 +131,12 @@ export class ChatInputTextAreaManager {
         continue;
       }
 
-      const chatCtx = convertHTMLElementToContext(
-        childNode as HTMLElement,
+      if (childNode.nodeName.toLowerCase() !== PROMPT_INLINE_CONTEXT_TAG) {
+        continue;
+      }
+
+      const chatCtx = convertContextValueToEntry(
+        (childNode as HTMLElement).innerText,
         get(this.contextMetadataStore),
       );
       if (!chatCtx) continue;
@@ -139,54 +145,6 @@ export class ChatInputTextAreaManager {
     }
 
     return inlineContextNodes;
-  }
-
-  private isChildOfEditor(node: Node | null | undefined) {
-    if (!node) return false;
-    if (this.editorElement.contains(node)) return true;
-    return this.isChildOfEditor(node.parentNode);
-  }
-
-  private insertSvelteComponent(
-    componentCreator: (
-      target: Element | Document | ShadowRoot,
-      anchor: Element | undefined,
-    ) => Node | null | undefined,
-  ) {
-    const selection = window.getSelection();
-
-    if (
-      selection &&
-      selection.rangeCount > 0 &&
-      this.isChildOfEditor(selection.anchorNode?.parentNode)
-    ) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-
-      const node = componentCreator(
-        selection.anchorNode?.parentNode as any,
-        selection.anchorNode as any,
-      );
-      if (node) {
-        // Move cursor after the node
-        range.setStartAfter(node);
-        range.setEndAfter(node);
-      }
-
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } else {
-      const node = componentCreator(this.editorElement, undefined);
-      if (node) {
-        if (this.editorElement.childNodes.length === 0) {
-          this.editorElement.appendChild(node);
-        } else {
-          this.editorElement.insertBefore(node, this.editorElement.firstChild);
-        }
-      }
-    }
-
-    this.updateValue();
   }
 
   private handleContextMode() {
@@ -211,21 +169,17 @@ export class ChatInputTextAreaManager {
     if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
-    if (
+    const notDirectlyBesideComponent =
       range.startOffset !== 1 ||
-      !(range.startContainer as any)?.previousElementSibling
-    )
-      return;
+      !(range.startContainer as any)?.previousElementSibling;
+    if (notDirectlyBesideComponent) return;
 
     const prevSibling = (range.startContainer as any)
       ?.previousElementSibling as HTMLElement;
     const comp = this.elementToContextComponent.get(prevSibling);
     if (!comp) return;
 
-    const ctx = convertHTMLElementToContext(
-      prevSibling,
-      get(this.contextMetadataStore),
-    );
+    const ctx = comp.getChatContext();
     if (ctx?.type !== ChatContextEntryType.Dimensions) return;
     ctx.type = ChatContextEntryType.DimensionValue;
 
@@ -254,64 +208,61 @@ export class ChatInputTextAreaManager {
     const anchorNode = selection?.anchorNode;
     if (!anchorNode) return;
 
-    this.insertSvelteComponent(() => {
-      const rect = this.editorElement.getBoundingClientRect();
-      this.addContextComponent = new AddDropdown({
-        target: document.body,
-        props: {
-          left: rect.left,
-          bottom: window.innerHeight - rect.top,
-          onAdd: this.handleContextEnded,
-        },
-      });
-      this.addContextNode = anchorNode;
-      this.addContextChar = "@";
-      return anchorNode;
+    const rect = this.editorElement.getBoundingClientRect();
+    this.addContextComponent = new AddDropdown({
+      target: document.body,
+      props: {
+        left: rect.left,
+        bottom: window.innerHeight - rect.top,
+        onAdd: this.handleContextEnded,
+      },
     });
+    this.addContextNode = anchorNode;
+    this.addContextChar = "@";
   }
 
   private handleContextEnded = (chatCtx: ChatContextEntry) => {
     if (!this.addContextNode?.parentNode) return;
-    const spaceNode = document.createTextNode(SPACE_TEXT);
-    if (this.addContextNode.nextSibling) {
-      this.addContextNode.parentNode.insertBefore(
-        spaceNode,
-        this.addContextNode.nextSibling,
-      );
-    } else {
-      this.addContextNode.parentNode.appendChild(spaceNode);
-    }
 
     const comp = new ChatContext({
       target: this.addContextNode.parentNode,
-      anchor: spaceNode as any,
+      anchor: this.addContextNode,
       props: {
         chatCtx,
         metadata: get(this.contextMetadataStore),
-        onUpdate: () => this.updateValue(),
+        onUpdate: this.updateValue,
       },
     });
-    this.componentAdded(comp, spaceNode);
-    this.removeAddContextComponent();
 
-    const selection = window.getSelection();
-    const range = selection?.getRangeAt(0);
-    if (selection && range) {
-      range.setStartBefore(spaceNode);
-      range.setEndBefore(spaceNode);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    spaceNode.remove();
+    // Wait a loop to ensure the component is added to the DOM.
+    setTimeout(() => {
+      this.componentAdded(comp, this.addContextNode);
+
+      const selection = window.getSelection();
+      const range = selection?.getRangeAt(0);
+      if (selection && range) {
+        range.setStartBefore(this.addContextNode);
+        range.setEndBefore(this.addContextNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      this.removeAddContextComponent();
+    });
   };
 
-  private removeAddContextComponent() {
+  private removeAddContextComponent(keepTextNode = false) {
     this.addContextComponent?.$destroy();
     this.isContextMode = false;
+    if (keepTextNode) return;
+
+    // Remove the search text after context char.
     this.addContextNode.textContent = this.addContextNode.textContent.replace(
       new RegExp(`${this.addContextChar}.*$`),
       "",
     );
+    // Only remove the text node if it's empty after removing the search text.
+    // If the search was started in the middle of a line, there will be other text.
     if (this.addContextNode.textContent.length === 0)
       this.addContextNode.remove();
   }

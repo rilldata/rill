@@ -7,7 +7,6 @@
     type ContextMetadata,
     ContextTypeData,
   } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
-  import { convertContextToAttrs } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
   import { builderActions, getAttrs } from "bits-ui";
   import { ChevronDownIcon } from "lucide-svelte";
   import { readable, writable } from "svelte/store";
@@ -23,9 +22,9 @@
   $: optionsForType = $contextOptions[chatCtx.type] ?? [];
   $: hasOptions = chatCtx.type in $contextOptions;
 
-  $: attrs = convertContextToAttrs(chatCtx);
-
-  $: if (attrs) setTimeout(() => onUpdate(), 50);
+  export function getChatContext() {
+    return chatCtx;
+  }
 
   function updateValue(newValue: string) {
     if (chatCtx.type === ChatContextEntryType.DimensionValue) {
@@ -35,14 +34,12 @@
     }
     chatCtx.label =
       ContextTypeData[chatCtx.type]?.getLabel(chatCtx, metadata) ?? newValue;
+
+    setTimeout(onUpdate);
   }
 </script>
 
-<span
-  class="inline-block gap-1 text-sm underline"
-  contenteditable="false"
-  {...attrs}
->
+<span class="inline-block gap-1 text-sm underline" contenteditable="false">
   <div class="flex flex-row items-center">
     <span>{chatCtx.label}</span>
     {#if hasOptions}
