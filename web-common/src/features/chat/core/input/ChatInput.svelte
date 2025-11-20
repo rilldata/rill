@@ -92,6 +92,7 @@
     ></div>
   </div>
   <div class="chat-input-footer">
+    <div class="grow"></div>
     <div>
       {#if canCancel}
         <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>

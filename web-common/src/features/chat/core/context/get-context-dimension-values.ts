@@ -18,7 +18,7 @@ import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
 export function getContextDimensionValuesQueryOptions(
-  ctxStore: Readable<ChatContextEntry>,
+  ctxStore: Readable<ChatContextEntry | null>,
   searchTextStore: Readable<string>,
 ) {
   const exploreNameStore = getExploreNameStore();
@@ -32,7 +32,7 @@ export function getContextDimensionValuesQueryOptions(
     [runtime, ctxStore, validSpecQuery, searchTextStore],
     ([{ instanceId }, ctx, validSpecResp, searchText]) => {
       const dimensionName =
-        ctx.type === ChatContextEntryType.DimensionValue ? ctx.value : "";
+        ctx?.type === ChatContextEntryType.DimensionValue ? ctx?.value : "";
 
       const metricsViewName =
         validSpecResp.data?.exploreSpec?.metricsView ?? "";

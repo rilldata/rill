@@ -1,5 +1,4 @@
 import AddDropdown from "@rilldata/web-common/features/chat/core/context/AddDropdown.svelte";
-import AddValueDropdown from "@rilldata/web-common/features/chat/core/context/AddValueDropdown.svelte";
 import ChatContext from "@rilldata/web-common/features/chat/core/context/ChatContext.svelte";
 import {
   type ChatContextEntry,
@@ -14,13 +13,18 @@ import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core
 import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { get } from "svelte/store";
 
+const GENERAL_CONTEXT_TRIGGER = "@";
+const MEASURES_CONTEXT_TRIGGER = "$";
+const DIMENSIONS_CONTEXT_TRIGGER = "#";
+const DIMENSION_VALUES_CONTEXT_TRIGGER = ":";
+
 export class ChatInputTextAreaManager {
   private editorElement: HTMLDivElement;
 
   private isContextMode = false;
-  private addContextComponent;
-  private addContextNode;
-  private addContextChar: string = "";
+  private addContextComponent: AddDropdown | null = null;
+  private addContextNode: Node | null = null;
+  private contextTriggerChar: string = "";
   private elementToContextComponent = new Map<Node, ChatContext>();
 
   private readonly exploreNameStore = getExploreNameStore();
@@ -75,15 +79,23 @@ export class ChatInputTextAreaManager {
       }
 
       if (this.isContextMode) {
-        this.handleContextMode();
+        if (event.key === "Tab") {
+          this.addContextComponent?.selectFirst();
+        } else {
+          this.handleContextMode();
+        }
         return;
       }
 
       // Detect @ for pill mode (or any other trigger character)
-      if (event.key === "@") {
-        this.handleContextStarted();
-      } else if (event.key === ":") {
-        this.handleContextSecondValue();
+      if (event.key === GENERAL_CONTEXT_TRIGGER) {
+        this.handleContextStarted(GENERAL_CONTEXT_TRIGGER);
+      } else if (event.key === DIMENSION_VALUES_CONTEXT_TRIGGER) {
+        this.handleContextStarted(DIMENSION_VALUES_CONTEXT_TRIGGER);
+      } else if (event.key === MEASURES_CONTEXT_TRIGGER) {
+        this.handleContextStarted(MEASURES_CONTEXT_TRIGGER);
+      } else if (event.key === DIMENSIONS_CONTEXT_TRIGGER) {
+        this.handleContextStarted(DIMENSIONS_CONTEXT_TRIGGER);
       } else if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
         this.onSubmit();
@@ -156,7 +168,7 @@ export class ChatInputTextAreaManager {
         this.removeAddContextComponent();
       } else {
         const searchText = contextNodeValue.replace(
-          new RegExp(`.*?${this.addContextChar}`),
+          new RegExp(`.*?${maybeEscapeTriggerChar(this.contextTriggerChar)}`),
           "",
         );
         this.addContextComponent.setText(searchText);
@@ -164,49 +176,44 @@ export class ChatInputTextAreaManager {
     }
   }
 
-  private handleContextSecondValue() {
+  private handleContextStarted(contextTriggerChar: string) {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-
+    if (!selection) return;
     const range = selection.getRangeAt(0);
-    const notDirectlyBesideComponent =
-      range.startOffset !== 1 ||
-      !(range.startContainer as any)?.previousElementSibling;
-    if (notDirectlyBesideComponent) return;
 
-    const prevSibling = (range.startContainer as any)
-      ?.previousElementSibling as HTMLElement;
-    const comp = this.elementToContextComponent.get(prevSibling);
-    if (!comp) return;
+    const node = range.startContainer;
+    if (!node) return;
 
-    const ctx = comp.getChatContext();
-    if (ctx?.type !== ChatContextEntryType.Dimensions) return;
-    ctx.type = ChatContextEntryType.DimensionValue;
+    let chatCtx: ChatContextEntry | null = null;
+    let comp: ChatContext | null = null;
 
-    const rect = this.editorElement.getBoundingClientRect();
-    this.addContextComponent = new AddValueDropdown({
-      target: document.body,
-      props: {
-        left: rect.left,
-        bottom: window.innerHeight - rect.top,
-        chatCtx: ctx,
-        metadata: get(this.contextMetadataStore),
-        onAdd: (ctx) => {
-          comp.$destroy();
-          this.handleContextEnded(ctx);
-        },
-      },
-    });
-    this.addContextNode = range.startContainer;
-    this.isContextMode = true;
-    this.addContextChar = ":";
-  }
+    switch (contextTriggerChar) {
+      case MEASURES_CONTEXT_TRIGGER:
+        chatCtx = { type: ChatContextEntryType.Measures } as ChatContextEntry;
+        break;
 
-  private handleContextStarted() {
-    this.isContextMode = true;
-    const selection = window.getSelection();
-    const anchorNode = selection?.anchorNode;
-    if (!anchorNode) return;
+      case DIMENSIONS_CONTEXT_TRIGGER:
+        chatCtx = { type: ChatContextEntryType.Dimensions } as ChatContextEntry;
+        break;
+
+      case DIMENSION_VALUES_CONTEXT_TRIGGER:
+        {
+          const notDirectlyBesideComponent =
+            range.startOffset !== 1 || !(node as any)?.previousElementSibling;
+          if (notDirectlyBesideComponent) return;
+
+          const prevSibling = (range.startContainer as any)
+            ?.previousElementSibling as HTMLElement;
+          comp = this.elementToContextComponent.get(prevSibling) ?? null;
+          if (!comp) return;
+
+          chatCtx = comp.getChatContext();
+          if (chatCtx?.type !== ChatContextEntryType.Dimensions) return;
+          chatCtx.type = ChatContextEntryType.DimensionValue;
+          console.log(chatCtx);
+        }
+        break;
+    }
 
     const rect = this.editorElement.getBoundingClientRect();
     this.addContextComponent = new AddDropdown({
@@ -214,19 +221,25 @@ export class ChatInputTextAreaManager {
       props: {
         left: rect.left,
         bottom: window.innerHeight - rect.top,
-        onAdd: this.handleContextEnded,
+        chatCtx,
+        onAdd: (ctx) => {
+          comp?.$destroy();
+          this.handleContextEnded(ctx);
+        },
+        focusEditor: this.focusEditor,
       },
     });
-    this.addContextNode = anchorNode;
-    this.addContextChar = "@";
+    this.isContextMode = true;
+    this.addContextNode = node;
+    this.contextTriggerChar = contextTriggerChar;
   }
 
   private handleContextEnded = (chatCtx: ChatContextEntry) => {
     if (!this.addContextNode?.parentNode) return;
 
     const comp = new ChatContext({
-      target: this.addContextNode.parentNode,
-      anchor: this.addContextNode,
+      target: this.addContextNode.parentNode as any,
+      anchor: this.addContextNode as any,
       props: {
         chatCtx,
         metadata: get(this.contextMetadataStore),
@@ -236,13 +249,13 @@ export class ChatInputTextAreaManager {
 
     // Wait a loop to ensure the component is added to the DOM.
     setTimeout(() => {
-      this.componentAdded(comp, this.addContextNode);
+      this.componentAdded(comp, this.addContextNode!);
 
       const selection = window.getSelection();
       const range = selection?.getRangeAt(0);
       if (selection && range) {
-        range.setStartBefore(this.addContextNode);
-        range.setEndBefore(this.addContextNode);
+        range.setStartBefore(this.addContextNode!);
+        range.setEndBefore(this.addContextNode!);
         selection.removeAllRanges();
         selection.addRange(range);
       }
@@ -254,17 +267,18 @@ export class ChatInputTextAreaManager {
   private removeAddContextComponent(keepTextNode = false) {
     this.addContextComponent?.$destroy();
     this.isContextMode = false;
-    if (keepTextNode) return;
+    if (keepTextNode || !this.addContextNode) return;
 
     // Remove the search text after context char.
-    this.addContextNode.textContent = this.addContextNode.textContent.replace(
-      new RegExp(`${this.addContextChar}.*$`),
-      "",
-    );
+    this.addContextNode.textContent =
+      this.addContextNode.textContent?.replace(
+        new RegExp(`${maybeEscapeTriggerChar(this.contextTriggerChar)}.*$`),
+        "",
+      ) ?? "";
     // Only remove the text node if it's empty after removing the search text.
     // If the search was started in the middle of a line, there will be other text.
     if (this.addContextNode.textContent.length === 0)
-      this.addContextNode.remove();
+      (this.addContextNode as Element).remove();
   }
 
   private removeNodes() {
@@ -277,7 +291,7 @@ export class ChatInputTextAreaManager {
 
     do {
       if (node === this.addContextNode) {
-        this.addContextComponent.$destroy();
+        this.addContextComponent?.$destroy();
         this.isContextMode = false;
         this.addContextNode = null;
         this.addContextComponent = null;
@@ -299,4 +313,9 @@ export class ChatInputTextAreaManager {
       nextNode.previousSibling.remove();
     }
   }
+}
+
+function maybeEscapeTriggerChar(triggerChar: string) {
+  const prefix = triggerChar === MEASURES_CONTEXT_TRIGGER ? "\\" : "";
+  return `${prefix}${triggerChar}`;
 }

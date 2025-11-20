@@ -4,11 +4,13 @@
     type ChatContextEntry,
     ChatContextEntryType,
   } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
-  import { readable, writable } from "svelte/store";
+  import { writable } from "svelte/store";
 
+  export let chatCtx: ChatContextEntry | null = null;
   export let left: number;
   export let bottom: number;
   export let onAdd: (ctx: ChatContextEntry) => void;
+  export let focusEditor: () => void;
 
   type Option = { label: string; value: string };
   const searchTextStore = writable("");
@@ -27,16 +29,19 @@
       label: "Explores",
     },
   ];
+  $: shouldShowTopLevelOptions = chatCtx === null;
 
-  const contextOptions = getContextOptions(
-    readable({} as any), // unused
-    searchTextStore,
-  );
+  const chatCtxStore = writable(chatCtx);
+  $: chatCtxStore.set(chatCtx);
+  const contextOptions = getContextOptions(chatCtxStore, searchTextStore);
 
-  let firstLevelSelection: ChatContextEntryType | null = null;
-  $: firstLevelSelectedOption = contextTopLevelOptions.find(
-    (o) => o.value === firstLevelSelection,
-  );
+  let firstLevelSelection: ChatContextEntryType | null = chatCtx?.type ?? null;
+  $: isDimensionValueMode =
+    firstLevelSelection === ChatContextEntryType.DimensionValue &&
+    chatCtx !== null;
+  $: firstLevelSelectedOption = isDimensionValueMode
+    ? { label: `${chatCtx!.label}`, value: firstLevelSelection }
+    : contextTopLevelOptions.find((o) => o.value === firstLevelSelection);
   $: secondLevelOptions = firstLevelSelection
     ? $contextOptions[firstLevelSelection]
     : null;
@@ -45,21 +50,44 @@
     searchTextStore.set(newText);
   }
 
+  export function selectFirst() {
+    const option = secondLevelOptions?.[0];
+    if (!option) return;
+    onOptionSelect(option);
+  }
+
+  function unselectMode() {
+    if (!shouldShowTopLevelOptions) return;
+
+    firstLevelSelection = null;
+    setTimeout(focusEditor);
+  }
+
   function selectMode(e, selection: ChatContextEntryType) {
     e.preventDefault();
     e.stopPropagation();
     firstLevelSelection = selection;
+
+    setTimeout(focusEditor);
   }
 
   function onOptionSelect(option: Option) {
     if (!firstLevelSelectedOption) return;
 
-    onAdd({
+    const newCtx = {
       type: firstLevelSelectedOption.value,
       value: option.value,
       subValue: null,
       label: option.label,
-    });
+    } as ChatContextEntry;
+
+    if (isDimensionValueMode) {
+      newCtx.value = chatCtx!.value!;
+      newCtx.subValue = option.value;
+      newCtx.label = `${chatCtx!.label}: ${option.label}`;
+    }
+
+    onAdd(newCtx);
   }
 </script>
 
@@ -70,7 +98,7 @@
   {#if firstLevelSelection === null}
     {#each contextTopLevelOptions as option (option.value)}
       <button
-        class="content-item"
+        class="content-item content-item-selectable"
         on:click={(e) => selectMode(e, option.value)}
         type="button"
       >
@@ -80,21 +108,26 @@
     {/each}
   {:else if firstLevelSelectedOption && secondLevelOptions}
     <button
-      class="content-item"
-      on:click={() => (firstLevelSelection = null)}
+      class="content-item font-semibold"
+      on:click={unselectMode}
       type="button"
     >
-      {"<"}
+      {#if shouldShowTopLevelOptions}
+        {"<"}
+      {/if}
       {firstLevelSelectedOption.label}
     </button>
+    <div class="content-separator"></div>
     {#each secondLevelOptions as option (option.value)}
       <button
-        class="content-item"
+        class="content-item content-item-selectable"
         on:click={() => onOptionSelect(option)}
         type="button"
       >
         {option.label}
       </button>
+    {:else}
+      <div class="contents-empty">No results</div>
     {/each}
   {/if}
 </div>
@@ -110,7 +143,15 @@
     @apply cursor-default select-none rounded-sm outline-none;
     @apply text-xs text-left text-wrap break-words;
   }
-  .content-item:hover {
+  .content-item-selectable:hover {
     @apply bg-accent text-accent-foreground cursor-pointer;
+  }
+
+  .contents-empty {
+    @apply px-2 py-1.5 w-full ui-copy-inactive;
+  }
+
+  .content-separator {
+    @apply -mx-1 my-1 h-px bg-muted;
   }
 </style>

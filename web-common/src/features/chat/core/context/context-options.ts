@@ -15,7 +15,7 @@ import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 
 export function getContextOptions(
-  ctxStore: Readable<ChatContextEntry>,
+  ctxStore: Readable<ChatContextEntry | null>,
   searchTextStore: Readable<string>,
 ) {
   const exploreNameStore = getExploreNameStore();
