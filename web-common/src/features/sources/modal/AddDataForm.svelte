@@ -26,7 +26,7 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
-  import TableExplorerDialog from "./TableExplorerDialog.svelte";
+  import DataExplorerDialog from "./DataExplorerDialog.svelte";
   import { goto } from "$app/navigation";
   import {
     createSqlModelFromTable,
@@ -344,7 +344,7 @@
     >
       {#if stepState.step === "explorer"}
         <!-- Step 3: Table Explorer (for supported connectors) -->
-        <TableExplorerDialog
+        <DataExplorerDialog
           connectorDriver={connector}
           onSelect={(detail) => {
             selectedConnectorForModel = detail.connector;
