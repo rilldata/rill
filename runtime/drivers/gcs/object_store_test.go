@@ -28,6 +28,22 @@ func TestObjectStore(t *testing.T) {
 	t.Run("testListObjectsNoMatch", func(t *testing.T) { testListObjectsNoMatch(t, objectStore, bucket) })
 }
 
+func TestObjectStoreHMAC(t *testing.T) {
+	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
+	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	objectStore, ok := conn.AsObjectStore()
+	require.True(t, ok)
+	bucket := "integration-test.rilldata.com"
+	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
+	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
+	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
+	t.Run("testListObjectsEmptyPrefix", func(t *testing.T) { testListObjectsEmptyPrefix(t, objectStore, bucket) })
+	t.Run("testListObjectsNoMatch", func(t *testing.T) { testListObjectsNoMatch(t, objectStore, bucket) })
+}
+
 func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
 	prefix := "glob_test/"
