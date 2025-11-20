@@ -37,13 +37,13 @@ const EU_COUNTRIES = new Set([
 ]);
 
 type PosthogWithGeo = typeof posthog & {
-  getPersonProperty?: (property: string) => unknown;
-  setPersonProperties?: (properties: Record<string, unknown>) => void;
+  get_property?: (property: string) => unknown;
+  set_person_properties?: (properties: Record<string, unknown>) => void;
   onFeatureFlags?: (callback: () => void) => void;
 };
 
 const maskValue = (text?: string | null) =>
-  text ? MASK_CHARACTER.repeat(text.length) : text ?? "";
+  text ? MASK_CHARACTER.repeat(text.length) : (text ?? "");
 
 export function initPosthog(rillVersion: string, sessionId?: string | null) {
   // No need to proceed if PostHog is already initialized
@@ -60,16 +60,16 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
 
   const persistRegulatedStatus = (value: boolean) => {
     if (persistedRegulatedStatus === value) return;
-    geoAwarePosthog.setPersonProperties?.({
+    geoAwarePosthog.set_person_properties?.({
       [REGULATED_REGION_PROPERTY]: value,
     });
     persistedRegulatedStatus = value;
   };
 
   const evaluateGeoRegulation = () => {
-    const existingValue = geoAwarePosthog.getPersonProperty?.(
+    const existingValue = geoAwarePosthog.get_property?.(
       REGULATED_REGION_PROPERTY,
-    );
+    ) as unknown;
     if (typeof existingValue === "boolean") {
       isRegulatedUser = existingValue;
       persistRegulatedStatus(existingValue);
@@ -85,14 +85,21 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
       }
     }
 
-    const country = geoAwarePosthog
-      .getPersonProperty?.(GEOIP_COUNTRY_PROPERTY)
-      ?.toString()
-      .toUpperCase();
-    const subdivision = geoAwarePosthog
-      .getPersonProperty?.(GEOIP_SUBDIVISION_PROPERTY)
-      ?.toString()
-      .toUpperCase();
+    const countryRaw = geoAwarePosthog.get_property?.(
+      GEOIP_COUNTRY_PROPERTY,
+    ) as unknown;
+    const subdivisionRaw = geoAwarePosthog.get_property?.(
+      GEOIP_SUBDIVISION_PROPERTY,
+    ) as unknown;
+
+    const normalizeRegionCode = (value: unknown) => {
+      if (typeof value === "string") return value.toUpperCase();
+      if (typeof value === "number") return value.toString().toUpperCase();
+      return undefined;
+    };
+
+    const country = normalizeRegionCode(countryRaw);
+    const subdivision = normalizeRegionCode(subdivisionRaw);
 
     if (!country) return;
 
@@ -115,7 +122,6 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
     return maskValue(text);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   posthog.init(POSTHOG_API_KEY, {
     api_host: "https://us.i.posthog.com", // TODO: use a reverse proxy https://posthog.com/docs/advanced/proxy
     session_recording: {
@@ -144,7 +150,6 @@ export function initPosthog(rillVersion: string, sessionId?: string | null) {
 }
 
 export function posthogIdentify(userID: string, userProperties?: Properties) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   posthog.identify(userID, userProperties);
 }
 
