@@ -26,6 +26,11 @@ func (e *selfToObjectStoreExecutor) Concurrency(desired int) (int, bool) {
 	return 10, true // Default
 }
 
+// CheckOutput implements drivers.ModelExecutor.
+func (e *selfToObjectStoreExecutor) CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	return nil, nil
+}
+
 func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	props := &drivers.ObjectStoreModelOutputProperties{}
 	if err := mapstructure.Decode(opts.OutputProperties, props); err != nil {

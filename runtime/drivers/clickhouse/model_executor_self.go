@@ -21,6 +21,11 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 	return _defaultConcurrentInserts, true
 }
 
+// CheckOutput implements drivers.ModelExecutor.
+func (e *selfToSelfExecutor) CheckOutput(ctx context.Context, modelName string, partitionKey string, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	return nil, nil
+}
+
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Parse the input and output properties
 	inputProps := &ModelInputProperties{}

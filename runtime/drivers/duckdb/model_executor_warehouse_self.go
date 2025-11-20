@@ -24,6 +24,11 @@ func (e *warehouseToSelfExecutor) Concurrency(desired int) (int, bool) {
 	return 1, true
 }
 
+// CheckOutput implements drivers.ModelExecutor.
+func (e *warehouseToSelfExecutor) CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	return nil, nil
+}
+
 func (e *warehouseToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	iter, err := e.w.QueryAsFiles(ctx, opts.InputProperties)
 	if err != nil {

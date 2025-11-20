@@ -24,13 +24,18 @@ type localFileToSelfExecutor struct {
 	c         *Connection
 }
 
-var _ drivers.ModelExecutor = &selfToSelfExecutor{}
+var _ drivers.ModelExecutor = &localFileToSelfExecutor{}
 
 func (e *localFileToSelfExecutor) Concurrency(desired int) (int, bool) {
 	if desired > 1 {
 		return desired, true
 	}
 	return _defaultConcurrentInserts, true
+}
+
+// CheckOutput implements drivers.ModelExecutor.
+func (e *localFileToSelfExecutor) CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	return nil, nil
 }
 
 func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {

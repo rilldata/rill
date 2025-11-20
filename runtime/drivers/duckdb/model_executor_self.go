@@ -37,6 +37,45 @@ func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
 	return 1, true
 }
 
+// CheckOutput implements drivers.ModelExecutor.
+func (e *selfToSelfExecutor) CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	parsed := &ModelOutputProperties{}
+	if err := mapstructure.WeakDecode(outputProps, parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
+	var tableName string
+	usedModelName := false
+	if parsed.Table == "" {
+		tableName = modelName
+		usedModelName = true
+	} else {
+		tableName = parsed.Table
+	}
+	_, err := e.c.InformationSchema().Lookup(ctx, "", "", tableName)
+	if err != nil {
+		// not found
+		return nil, nil
+	}
+
+	// Build result props
+	resultProps := &ModelResultProperties{
+		Table:         tableName,
+		View:          false, // partitioned models always materialize
+		UsedModelName: usedModelName,
+	}
+	resultPropsMap := map[string]interface{}{}
+	err = mapstructure.WeakDecode(resultProps, &resultPropsMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode result properties: %w", err)
+	}
+	return &drivers.ModelResult{
+		Connector:  outputConnector, // output connector is not known here
+		Properties: resultPropsMap,
+		Table:      tableName,
+	}, nil
+}
+
 var createSecretRegex = regexp.MustCompile(`(?i)\bcreate\b(?:\s+\w+)*?\s+secret\b`)
 
 func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {

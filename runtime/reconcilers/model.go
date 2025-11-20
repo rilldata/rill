@@ -242,10 +242,18 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Check if the output still exists (might have been corrupted/lost somehow)
 	var exists bool
+	var orphanRes *drivers.ModelResult
 	if prevManager != nil {
 		exists, err = prevManager.Exists(ctx, prevResult)
 		if err != nil {
 			r.C.Logger.Warn("failed to check if model output exists", zap.String("model", n.Name), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	} else {
+		// as a special case check if the table exists when we have no prevManager
+		// to handle cases when the catalog is wiped off but the underlying table still exists
+		orphanRes, err = r.checkOutput(ctx, self, model)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
 		}
 	}
 
@@ -299,8 +307,37 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// Build the model
-	executorConnector, execRes, firstRunIncremental, execErr := r.executeAll(ctx, self, model, modelEnv, trigger, prevResult)
+	var (
+		executorConnector   string
+		execRes             *drivers.ModelResult
+		firstRunIncremental bool
+		execErr             error
+	)
+	if orphanRes == nil {
+		// Build the model
+		executorConnector, execRes, firstRunIncremental, execErr = r.executeAll(ctx, self, model, modelEnv, trigger, prevResult)
+	} else {
+		// create partitions in catalog and mark all partitions as completed
+		err = r.resolveAndSyncPartitions(ctx, self, model, map[string]any{})
+		if err != nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync partitions: %w", err)}
+		}
+
+		catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+		defer release()
+
+		err = catalog.UpdateModelPartitionsExecuted(ctx, model.State.PartitionsModelId)
+		if err != nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to mark partitions as executed: %w", err)}
+		}
+
+		executorConnector = model.Spec.OutputConnector
+		execRes = orphanRes
+		firstRunIncremental = true
+	}
 
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
@@ -1792,6 +1829,46 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 	}
 
 	return fmt.Sprintf("%s: test did not pass", test.Name), nil
+}
+
+// checkOutput checks if the output table exists for a partitioned model.
+// This handles cases where the catalog is wiped off but the underlying table still exists.
+func (r *ModelReconciler) checkOutput(ctx context.Context, self *runtimev1.Resource, model *runtimev1.Model) (*drivers.ModelResult, error) {
+	// Only check for partitioned models with patch or manual change mode
+	if model.Spec.PartitionsResolver == "" {
+		return nil, nil
+	}
+	// Only check for patch or manual change modes - for normal modes full rebuild is expected
+	if model.Spec.ChangeMode != runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_PATCH &&
+		model.Spec.ChangeMode != runtimev1.ModelChangeMode_MODEL_CHANGE_MODE_MANUAL {
+		return nil, nil
+	}
+
+	// Fetch contextual config
+	modelEnv, err := r.newModelEnv(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	executor, release, err := r.acquireExecutor(ctx, self, model, modelEnv)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	// resolve templates in output props
+	outputProps, err := r.resolveTemplatedProps(ctx, self, nil, nil, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap())
+	if err != nil {
+		return nil, err
+	}
+
+	// It is okay to skip stage execution here because we are only interested in presence of the final output table
+	res, err := executor.final.CheckOutput(ctx, self.Meta.Name.Name, "", model.Spec.OutputConnector, outputProps)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 // newTestsError creates a new error that summarizes the messages returned from runModelTests.
