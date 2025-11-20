@@ -20,11 +20,12 @@
       select: (data) => {
         if (!data?.connectors) return;
 
-        let filtered = (
+        const filtered = (
           olapOnly
             ? data.connectors.filter((c) => c?.driver?.implementsOlap)
             : data.connectors
         ).sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+
         return { connectors: filtered };
       },
     },
