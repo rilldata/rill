@@ -62,10 +62,15 @@ driver: ${getDriverNameForConnector(connector.name as string)}`;
     properties = properties.filter(options.fieldFilter);
   }
 
-  // Get the secret property keys
+  // Get the secret property keys.
+  // Treat both explicitly secret properties and file-type properties as secrets for preview masking.
   const secretPropertyKeys =
     connector.configProperties
-      ?.filter((property) => property.secret)
+      ?.filter(
+        (property) =>
+          property.secret ||
+          property.type === ConnectorDriverPropertyType.TYPE_FILE,
+      )
       .map((property) => property.key) || [];
 
   // Get the string property keys
