@@ -26,6 +26,15 @@
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
   import AddDataFormSection from "./AddDataFormSection.svelte";
+  import DataExplorerDialog from "./DataExplorerDialog.svelte";
+  import { goto } from "$app/navigation";
+  import {
+    createSqlModelFromTable,
+    createYamlModelFromTable,
+  } from "../../connectors/code-utils";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../../connectors/selectors";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -130,6 +139,17 @@
   let clickhouseParamsForm;
   let clickhouseDsnForm;
   let clickhouseShowSaveAnyway: boolean = false;
+  let selectedConnectorForModel = "";
+  let selectedDatabaseForModel = "";
+  let selectedSchemaForModel = "";
+  let selectedTableForModel = "";
+  let creatingModel = false;
+  $: ({ instanceId } = $runtime);
+  $: modelingSupportQuery = useIsModelingSupportedForConnector(
+    instanceId,
+    selectedConnectorForModel || "",
+  );
+  $: isModelingSupportedForSelected = $modelingSupportQuery.data || false;
 
   $: isSubmitDisabled = (() => {
     if (onlyDsn || connectionTab === "dsn") {
@@ -296,6 +316,32 @@
       $paramsTainted as Record<string, boolean> | null | undefined,
     );
   }
+
+  async function handleCreateModel() {
+    if (!selectedConnectorForModel || !selectedTableForModel) return;
+    try {
+      creatingModel = true;
+      const [newModelPath] = isModelingSupportedForSelected
+        ? await createSqlModelFromTable(
+            queryClient,
+            selectedConnectorForModel,
+            selectedDatabaseForModel,
+            selectedSchemaForModel,
+            selectedTableForModel,
+          )
+        : await createYamlModelFromTable(
+            queryClient,
+            selectedConnectorForModel,
+            selectedDatabaseForModel,
+            selectedSchemaForModel,
+            selectedTableForModel,
+          );
+      await goto(`/files${newModelPath}`);
+      onClose();
+    } finally {
+      creatingModel = false;
+    }
+  }
 </script>
 
 <div class="add-data-layout flex flex-col h-full w-full md:flex-row">
@@ -304,9 +350,26 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
+      class={cn(
+        "flex flex-col flex-grow",
+        formManager.formHeight,
+        stepState.step === "explorer"
+          ? "overflow-hidden p-0"
+          : "overflow-y-auto p-6",
+      )}
     >
-      {#if connector.name === "clickhouse"}
+      {#if stepState.step === "explorer"}
+        <!-- Step 3: Table Explorer (for supported connectors) -->
+        <DataExplorerDialog
+          connectorDriver={connector}
+          onSelect={(detail) => {
+            selectedConnectorForModel = detail.connector;
+            selectedDatabaseForModel = detail.database;
+            selectedSchemaForModel = detail.schema;
+            selectedTableForModel = detail.table;
+          }}
+        />
+      {:else if connector.name === "clickhouse"}
         <AddClickHouseForm
           {connector}
           {onClose}
@@ -451,60 +514,74 @@
           >
         {/if}
 
-        <Button
-          disabled={connector.name === "clickhouse"
-            ? clickhouseSubmitting || clickhouseIsSubmitDisabled
-            : submitting || isSubmitDisabled}
-          loading={connector.name === "clickhouse"
-            ? clickhouseSubmitting
-            : submitting}
-          loadingCopy={connector.name === "clickhouse"
-            ? "Connecting..."
-            : "Testing connection..."}
-          form={connector.name === "clickhouse" ? clickhouseFormId : formId}
-          submitForm
-          type="primary"
-        >
-          {formManager.getPrimaryButtonLabel({
-            isConnectorForm,
-            step: stepState.step,
-            submitting,
-            clickhouseConnectorType,
-            clickhouseSubmitting,
-          })}
-        </Button>
+        {#if stepState.step !== "explorer"}
+          <Button
+            disabled={connector.name === "clickhouse"
+              ? clickhouseSubmitting || clickhouseIsSubmitDisabled
+              : submitting || isSubmitDisabled}
+            loading={connector.name === "clickhouse"
+              ? clickhouseSubmitting
+              : submitting}
+            loadingCopy={connector.name === "clickhouse"
+              ? "Connecting..."
+              : "Testing connection..."}
+            form={connector.name === "clickhouse" ? clickhouseFormId : formId}
+            submitForm
+            type="primary"
+          >
+            {formManager.getPrimaryButtonLabel({
+              isConnectorForm,
+              step: stepState.step,
+              submitting,
+              clickhouseConnectorType,
+              clickhouseSubmitting,
+            })}
+          </Button>
+        {:else}
+          <Button
+            disabled={!selectedTableForModel || creatingModel}
+            loading={creatingModel}
+            loadingCopy="Creating model..."
+            onClick={handleCreateModel}
+            type="primary"
+          >
+            Create model
+          </Button>
+        {/if}
       </div>
     </div>
   </div>
 
   <!-- RIGHT SIDE PANEL -->
-  <div
-    class="add-data-side-panel flex flex-col gap-6 p-6 bg-surface w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
-  >
-    {#if dsnError || paramsError || clickhouseError}
-      <SubmissionError
-        message={clickhouseError ??
-          (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
-          ""}
-        details={clickhouseErrorDetails ??
-          (onlyDsn || connectionTab === "dsn"
-            ? dsnErrorDetails
-            : paramsErrorDetails) ??
-          ""}
+  {#if stepState.step !== "explorer"}
+    <div
+      class="add-data-side-panel flex flex-col gap-6 p-6 bg-[#FAFAFA] w-full max-w-full border-l-0 border-t mt-6 pl-0 pt-6 md:w-96 md:min-w-[320px] md:max-w-[400px] md:border-l md:border-t-0 md:mt-0 md:pl-6"
+    >
+      {#if dsnError || paramsError || clickhouseError}
+        <SubmissionError
+          message={clickhouseError ??
+            (onlyDsn || connectionTab === "dsn" ? dsnError : paramsError) ??
+            ""}
+          details={clickhouseErrorDetails ??
+            (onlyDsn || connectionTab === "dsn"
+              ? dsnErrorDetails
+              : paramsErrorDetails) ??
+            ""}
+        />
+      {/if}
+
+      <YamlPreview
+        title={isMultiStepConnector
+          ? stepState.step === "connector"
+            ? "Connector preview"
+            : "Model preview"
+          : isSourceForm
+            ? "Model preview"
+            : "Connector preview"}
+        yaml={yamlPreview}
       />
-    {/if}
 
-    <YamlPreview
-      title={isMultiStepConnector
-        ? stepState.step === "connector"
-          ? "Connector preview"
-          : "Model preview"
-        : isSourceForm
-          ? "Model preview"
-          : "Connector preview"}
-      yaml={yamlPreview}
-    />
-
-    <NeedHelpText {connector} />
-  </div>
+      <NeedHelpText {connector} />
+    </div>
+  {/if}
 </div>

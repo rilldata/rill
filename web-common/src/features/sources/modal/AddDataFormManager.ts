@@ -42,7 +42,7 @@ type SuperFormUpdateEvent = {
 
 // Shape of the step store for multi-step connectors
 type ConnectorStepState = {
-  step: "connector" | "source";
+  step: "connector" | "source" | "explorer";
   connectorConfig: Record<string, unknown> | null;
 };
 
@@ -189,6 +189,11 @@ export class AddDataFormManager {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (this.isMultiStepConnector && stepState.step === "source") {
       setStep("connector");
+    } else if (this.isMultiStepConnector && stepState.step === "explorer") {
+      setStep("source");
+    } else if (!this.isMultiStepConnector && stepState.step === "explorer") {
+      // For non-multi-step connectors, return to the prior step based on form type
+      setStep(this.isSourceForm ? "source" : "connector");
     } else {
       onBack();
     }
@@ -251,6 +256,10 @@ export class AddDataFormManager {
       connector.name ?? "",
     );
     const isConnectorForm = this.formType === "connector";
+    const supportsTableExplorer =
+      Boolean((connector as any)?.implementsOlap) ||
+      Boolean((connector as any)?.implementsSqlStore) ||
+      Boolean((connector as any)?.implementsWarehouse);
 
     return async (event: {
       form: SuperValidated<
@@ -267,7 +276,13 @@ export class AddDataFormManager {
         const stepState = get(connectorStepStore) as ConnectorStepState;
         if (isMultiStepConnector && stepState.step === "source") {
           await submitAddSourceForm(queryClient, connector, values);
+          // Advance to Step 3 (Table Explorer) only if supported; otherwise close
+          if (supportsTableExplorer) {
+            setStep("explorer");
+            return;
+          }
           onClose();
+          return;
         } else if (isMultiStepConnector && stepState.step === "connector") {
           await submitAddConnectorForm(queryClient, connector, values, true);
           setConnectorConfig(values);
@@ -275,9 +290,17 @@ export class AddDataFormManager {
           return;
         } else if (this.formType === "source") {
           await submitAddSourceForm(queryClient, connector, values);
+          if (supportsTableExplorer) {
+            setStep("explorer");
+            return;
+          }
           onClose();
         } else {
           await submitAddConnectorForm(queryClient, connector, values, true);
+          if (supportsTableExplorer) {
+            setStep("explorer");
+            return;
+          }
           onClose();
         }
       } catch (e) {
