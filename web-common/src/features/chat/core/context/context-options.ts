@@ -88,7 +88,7 @@ export function getContextOptions(
       return {
         [ChatContextEntryType.Measures]: measuresOptions,
         [ChatContextEntryType.Dimensions]: dimensionsOptions,
-        [ChatContextEntryType.DimensionValue]: dimensionValuesOptions,
+        [ChatContextEntryType.DimensionValues]: dimensionValuesOptions,
         [ChatContextEntryType.Explore]: exploreOptions,
       };
     },

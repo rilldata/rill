@@ -27,7 +27,7 @@
   }
 
   function updateValue(newValue: string) {
-    if (chatCtx.type === ChatContextEntryType.DimensionValue) {
+    if (chatCtx.type === ChatContextEntryType.DimensionValues) {
       chatCtx.subValue = newValue;
     } else {
       chatCtx.value = newValue;

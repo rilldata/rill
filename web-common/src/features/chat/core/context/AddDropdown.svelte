@@ -37,7 +37,7 @@
 
   let firstLevelSelection: ChatContextEntryType | null = chatCtx?.type ?? null;
   $: isDimensionValueMode =
-    firstLevelSelection === ChatContextEntryType.DimensionValue &&
+    firstLevelSelection === ChatContextEntryType.DimensionValues &&
     chatCtx !== null;
   $: firstLevelSelectedOption = isDimensionValueMode
     ? { label: `${chatCtx!.label}`, value: firstLevelSelection }

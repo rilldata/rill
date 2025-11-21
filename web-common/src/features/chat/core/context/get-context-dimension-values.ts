@@ -32,7 +32,7 @@ export function getContextDimensionValuesQueryOptions(
     [runtime, ctxStore, validSpecQuery, searchTextStore],
     ([{ instanceId }, ctx, validSpecResp, searchText]) => {
       const dimensionName =
-        ctx?.type === ChatContextEntryType.DimensionValue ? ctx?.value : "";
+        ctx?.type === ChatContextEntryType.DimensionValues ? ctx?.value : "";
 
       const metricsViewName =
         validSpecResp.data?.exploreSpec?.metricsView ?? "";

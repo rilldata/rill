@@ -20,11 +20,12 @@ import {
 
 export enum ChatContextEntryType {
   Explore = "explore",
-  TimeRange = "timeRange",
+  MetricsView = "metrics_view",
+  TimeRange = "time_range",
   Where = "where",
   Measures = "measures",
   Dimensions = "dimensions",
-  DimensionValue = "dimensionValue",
+  DimensionValues = "dimension_values",
 }
 
 export type ChatContextEntry = {
@@ -124,7 +125,9 @@ export const ContextTypeData: Partial<
       getDimensionDisplayName(meta.dimensions[ctx.value]) || ctx.value,
   },
 
-  [ChatContextEntryType.DimensionValue]: <ContextDataPerType<"dimensionValue">>{
+  [ChatContextEntryType.DimensionValues]: <
+    ContextDataPerType<"dimensionValue">
+  >{
     key: "dimensionValue",
     icon: Compare,
     serializer: () => ({}),

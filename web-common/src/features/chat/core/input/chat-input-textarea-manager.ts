@@ -1,31 +1,24 @@
-import AddDropdown from "@rilldata/web-common/features/chat/core/context/AddDropdown.svelte";
-import ChatContext from "@rilldata/web-common/features/chat/core/context/ChatContext.svelte";
-import {
-  type ChatContextEntry,
-  ChatContextEntryType,
-} from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
 import {
   convertContextToInlinePrompt,
-  convertContextValueToEntry,
-  PROMPT_INLINE_CONTEXT_TAG,
-} from "@rilldata/web-common/features/chat/core/context/conversions.ts";
-import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
+  convertPromptValueToContext,
+  INLINE_CHAT_CONTEXT_TAG,
+  type InlineChatContext,
+} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import InlineChatContextComponent from "@rilldata/web-common/features/chat/core/context/InlineChatContext.svelte";
 import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { get } from "svelte/store";
-
-const GENERAL_CONTEXT_TRIGGER = "@";
-const MEASURES_CONTEXT_TRIGGER = "$";
-const DIMENSIONS_CONTEXT_TRIGGER = "#";
-const DIMENSION_VALUES_CONTEXT_TRIGGER = ":";
 
 export class ChatInputTextAreaManager {
   private editorElement: HTMLDivElement;
 
   private isContextMode = false;
-  private addContextComponent: AddDropdown | null = null;
+  private addContextComponent: InlineChatContextComponent | null = null;
   private addContextNode: Node | null = null;
-  private contextTriggerChar: string = "";
-  private elementToContextComponent = new Map<Node, ChatContext>();
+  private elementToContextComponent = new Map<
+    Node,
+    InlineChatContextComponent
+  >();
 
   private readonly exploreNameStore = getExploreNameStore();
   private readonly contextMetadataStore = getContextMetadataStore();
@@ -48,14 +41,14 @@ export class ChatInputTextAreaManager {
       const inlineContextNodes = this.findInlineContextNodes(
         this.editorElement,
       );
-      inlineContextNodes.forEach(([parent, node, chatCtx]) => {
-        const comp = new ChatContext({
+      inlineContextNodes.forEach(([parent, node, inlineChatContext]) => {
+        const comp = new InlineChatContextComponent({
           target: parent as any,
           anchor: node as any,
           props: {
-            chatCtx,
-            metadata: get(this.contextMetadataStore),
-            onUpdate: this.updateValue,
+            inlineChatContext,
+            onUpdate: this.contextUpdated,
+            focusEditor: this.focusEditor,
           },
         });
         this.componentAdded(comp, node);
@@ -75,11 +68,11 @@ export class ChatInputTextAreaManager {
       if (event.key === "Backspace") {
         this.removeNodes();
       } else if (event.key === "Escape" && this.isContextMode) {
-        this.removeAddContextComponent(true);
+        this.exitContextMode(false, true);
       }
 
       if (this.isContextMode) {
-        if (event.key === "Tab") {
+        if (event.key === "Enter") {
           this.addContextComponent?.selectFirst();
         } else {
           this.handleContextMode();
@@ -88,14 +81,8 @@ export class ChatInputTextAreaManager {
       }
 
       // Detect @ for pill mode (or any other trigger character)
-      if (event.key === GENERAL_CONTEXT_TRIGGER) {
-        this.handleContextStarted(GENERAL_CONTEXT_TRIGGER);
-      } else if (event.key === DIMENSION_VALUES_CONTEXT_TRIGGER) {
-        this.handleContextStarted(DIMENSION_VALUES_CONTEXT_TRIGGER);
-      } else if (event.key === MEASURES_CONTEXT_TRIGGER) {
-        this.handleContextStarted(MEASURES_CONTEXT_TRIGGER);
-      } else if (event.key === DIMENSIONS_CONTEXT_TRIGGER) {
-        this.handleContextStarted(DIMENSIONS_CONTEXT_TRIGGER);
+      if (event.key === "@") {
+        this.handleContextStarted();
       } else if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
         this.onSubmit();
@@ -112,6 +99,14 @@ export class ChatInputTextAreaManager {
     this.editorElement.focus();
   };
 
+  private contextUpdated = () => {
+    if (this.isContextMode) {
+      this.exitContextMode(true, false);
+    }
+
+    this.updateValue();
+  };
+
   private getValue(node: Node, level: number = 0): string {
     if (node.nodeType === Node.TEXT_NODE) {
       return node.textContent ?? "";
@@ -119,7 +114,7 @@ export class ChatInputTextAreaManager {
       const comp = this.elementToContextComponent.get(node);
       if (comp) {
         const ctx = comp.getChatContext();
-        return convertContextToInlinePrompt(ctx);
+        return ctx ? convertContextToInlinePrompt(ctx) : "";
       }
 
       const prefix = node.nodeName === "DIV" && level !== 0 ? "\n" : "";
@@ -134,8 +129,10 @@ export class ChatInputTextAreaManager {
     return "";
   }
 
-  private findInlineContextNodes(node: Node): [Node, Node, ChatContextEntry][] {
-    const inlineContextNodes: [Node, Node, ChatContextEntry][] = [];
+  private findInlineContextNodes(
+    node: Node,
+  ): [Node, Node, InlineChatContext | null][] {
+    const inlineContextNodes: [Node, Node, InlineChatContext | null][] = [];
 
     for (const childNode of node.childNodes) {
       if (childNode.nodeName === "DIV") {
@@ -143,13 +140,12 @@ export class ChatInputTextAreaManager {
         continue;
       }
 
-      if (childNode.nodeName.toLowerCase() !== PROMPT_INLINE_CONTEXT_TAG) {
+      if (childNode.nodeName.toLowerCase() !== INLINE_CHAT_CONTEXT_TAG) {
         continue;
       }
 
-      const chatCtx = convertContextValueToEntry(
+      const chatCtx = convertPromptValueToContext(
         (childNode as HTMLElement).innerText,
-        get(this.contextMetadataStore),
       );
       if (!chatCtx) continue;
 
@@ -160,125 +156,59 @@ export class ChatInputTextAreaManager {
   }
 
   private handleContextMode() {
-    if (this.addContextNode && this.addContextComponent) {
-      const contextNodeValue: string = this.getValue(
-        this.addContextNode,
-      ).trim();
-      if (contextNodeValue.length === 0) {
-        this.removeAddContextComponent();
-      } else {
-        const searchText = contextNodeValue.replace(
-          new RegExp(`.*?${maybeEscapeTriggerChar(this.contextTriggerChar)}`),
-          "",
-        );
-        this.addContextComponent.setText(searchText);
-      }
+    if (!this.addContextNode || !this.addContextComponent) return;
+
+    const contextNodeValue: string = this.getValue(this.addContextNode).trim();
+    // If the context node is empty then exit context mode, remove the node and component.
+    // This happens when the `@` is removed is some way or another.
+    if (contextNodeValue.length === 0) {
+      this.exitContextMode(true, true);
+    } else {
+      const searchText = contextNodeValue.replace(/.*?@/, "");
+      this.addContextComponent.setText(searchText);
     }
   }
 
-  private handleContextStarted(contextTriggerChar: string) {
+  private handleContextStarted() {
     const selection = window.getSelection();
     if (!selection) return;
     const range = selection.getRangeAt(0);
 
-    const node = range.startContainer;
-    if (!node) return;
+    const anchorNode = range.startContainer;
+    if (!anchorNode) return;
 
-    let chatCtx: ChatContextEntry | null = null;
-    let comp: ChatContext | null = null;
+    // Remove the last character of anchor node to avoid adding a space.
+    anchorNode.textContent =
+      anchorNode.textContent?.slice(0, anchorNode.textContent.length - 1) ?? "";
 
-    switch (contextTriggerChar) {
-      case MEASURES_CONTEXT_TRIGGER:
-        chatCtx = { type: ChatContextEntryType.Measures } as ChatContextEntry;
-        break;
+    // Move the cursor to the end of anchor before adding the node for search text.
+    range.setStartAfter(anchorNode);
+    range.setEndAfter(anchorNode);
+    const contextNode = document.createTextNode("@");
+    range.insertNode(contextNode);
 
-      case DIMENSIONS_CONTEXT_TRIGGER:
-        chatCtx = { type: ChatContextEntryType.Dimensions } as ChatContextEntry;
-        break;
-
-      case DIMENSION_VALUES_CONTEXT_TRIGGER:
-        {
-          const notDirectlyBesideComponent =
-            range.startOffset !== 1 || !(node as any)?.previousElementSibling;
-          if (notDirectlyBesideComponent) return;
-
-          const prevSibling = (range.startContainer as any)
-            ?.previousElementSibling as HTMLElement;
-          comp = this.elementToContextComponent.get(prevSibling) ?? null;
-          if (!comp) return;
-
-          chatCtx = comp.getChatContext();
-          if (chatCtx?.type !== ChatContextEntryType.Dimensions) return;
-          chatCtx.type = ChatContextEntryType.DimensionValue;
-          console.log(chatCtx);
-        }
-        break;
-    }
-
-    const rect = this.editorElement.getBoundingClientRect();
-    this.addContextComponent = new AddDropdown({
-      target: document.body,
+    this.addContextComponent = new InlineChatContextComponent({
+      target: contextNode.parentNode as any,
+      anchor: contextNode as any,
       props: {
-        left: rect.left,
-        bottom: window.innerHeight - rect.top,
-        chatCtx,
-        onAdd: (ctx) => {
-          comp?.$destroy();
-          this.handleContextEnded(ctx);
-        },
+        inlineChatContext: null,
+        onUpdate: this.contextUpdated,
         focusEditor: this.focusEditor,
       },
     });
     this.isContextMode = true;
-    this.addContextNode = node;
-    this.contextTriggerChar = contextTriggerChar;
-  }
-
-  private handleContextEnded = (chatCtx: ChatContextEntry) => {
-    if (!this.addContextNode?.parentNode) return;
-
-    const comp = new ChatContext({
-      target: this.addContextNode.parentNode as any,
-      anchor: this.addContextNode as any,
-      props: {
-        chatCtx,
-        metadata: get(this.contextMetadataStore),
-        onUpdate: this.updateValue,
-      },
-    });
+    this.addContextNode = contextNode;
 
     // Wait a loop to ensure the component is added to the DOM.
     setTimeout(() => {
-      this.componentAdded(comp, this.addContextNode!);
+      this.componentAdded(this.addContextComponent!, this.addContextNode!);
 
-      const selection = window.getSelection();
-      const range = selection?.getRangeAt(0);
-      if (selection && range) {
-        range.setStartBefore(this.addContextNode!);
-        range.setEndBefore(this.addContextNode!);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-
-      this.removeAddContextComponent();
+      // Move the cursor to the end of search text node.
+      range.setStartAfter(contextNode);
+      range.setEndAfter(contextNode);
+      selection.removeAllRanges();
+      selection.addRange(range);
     });
-  };
-
-  private removeAddContextComponent(keepTextNode = false) {
-    this.addContextComponent?.$destroy();
-    this.isContextMode = false;
-    if (keepTextNode || !this.addContextNode) return;
-
-    // Remove the search text after context char.
-    this.addContextNode.textContent =
-      this.addContextNode.textContent?.replace(
-        new RegExp(`${maybeEscapeTriggerChar(this.contextTriggerChar)}.*$`),
-        "",
-      ) ?? "";
-    // Only remove the text node if it's empty after removing the search text.
-    // If the search was started in the middle of a line, there will be other text.
-    if (this.addContextNode.textContent.length === 0)
-      (this.addContextNode as Element).remove();
   }
 
   private removeNodes() {
@@ -290,22 +220,30 @@ export class ChatInputTextAreaManager {
     if (!node || selection.isCollapsed) return;
 
     do {
+      const comp = this.elementToContextComponent.get(node);
+      comp?.$destroy();
+      this.elementToContextComponent.delete(node);
+
       if (node === this.addContextNode) {
-        this.addContextComponent?.$destroy();
-        this.isContextMode = false;
-        this.addContextNode = null;
-        this.addContextComponent = null;
-      } else {
-        const comp = this.elementToContextComponent.get(node);
-        comp?.$destroy();
-        this.elementToContextComponent.delete(node);
+        this.exitContextMode(false, false);
       }
 
       node = node.nextSibling;
     } while (node && node !== range.endContainer.nextSibling);
   }
 
-  private componentAdded(comp: ChatContext, nextNode: Node) {
+  private exitContextMode(
+    removeContextNode: boolean,
+    removeContextComponent: boolean,
+  ) {
+    this.isContextMode = false;
+    if (removeContextNode) (this.addContextNode as Element)?.remove();
+    this.addContextNode = null;
+    if (removeContextComponent) this.addContextComponent?.$destroy();
+    this.addContextComponent = null;
+  }
+
+  private componentAdded(comp: InlineChatContextComponent, nextNode: Node) {
     const node = (nextNode as any).previousElementSibling;
     this.elementToContextComponent.set(node, comp);
     // Remove the comment for HMR, it interferes with text editing. This is only added in dev mode.
@@ -313,9 +251,4 @@ export class ChatInputTextAreaManager {
       nextNode.previousSibling.remove();
     }
   }
-}
-
-function maybeEscapeTriggerChar(triggerChar: string) {
-  const prefix = triggerChar === MEASURES_CONTEXT_TRIGGER ? "\\" : "";
-  return `${prefix}${triggerChar}`;
 }

@@ -53,6 +53,25 @@ export function useMetricsView(
   );
 }
 
+export function getValidMetricsViewsQueryOptions() {
+  return derived(runtime, ({ instanceId }) => {
+    return getRuntimeServiceListResourcesQueryOptions(
+      instanceId,
+      {
+        kind: ResourceKind.MetricsView,
+      },
+      {
+        query: {
+          select: (data) =>
+            data?.resources?.filter(
+              (res) => !!res.metricsView?.state?.validSpec,
+            ),
+        },
+      },
+    );
+  });
+}
+
 export function useValidExplores(instanceId: string) {
   // This is used in cloud as well so do not use "useClientFilteredResources"
   return useFilteredResources(instanceId, ResourceKind.Explore, (data) =>
