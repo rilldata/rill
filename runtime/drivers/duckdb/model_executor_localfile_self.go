@@ -33,6 +33,11 @@ func (e *localFileToSelfExecutor) Concurrency(desired int) (int, bool) {
 	return 1, true
 }
 
+// CheckOutput implements drivers.ModelExecutor.
+func (e *localFileToSelfExecutor) CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	return nil, nil
+}
+
 func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	if opts.IncrementalRun {
 		return nil, fmt.Errorf("duckdb: incremental models are not supported for the local_file connector")

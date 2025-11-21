@@ -23,6 +23,11 @@ func (e *httpsToSelfExecutor) Concurrency(desired int) (int, bool) {
 	return 1, true
 }
 
+// CheckOutput implements drivers.ModelExecutor.
+func (e *httpsToSelfExecutor) CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	return nil, nil
+}
+
 func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Build the model executor options with updated input properties
 	clone := *opts

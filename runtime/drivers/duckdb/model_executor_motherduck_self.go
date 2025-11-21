@@ -45,6 +45,11 @@ func (e *mdToSelfExecutor) Concurrency(desired int) (int, bool) {
 	return 1, true
 }
 
+// CheckOutput implements drivers.ModelExecutor.
+func (e *mdToSelfExecutor) CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	return nil, nil
+}
+
 func (e *mdToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	inputProps := &mdToSelfInputProps{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {

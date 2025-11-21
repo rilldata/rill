@@ -337,6 +337,11 @@ func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, model
 	return nil
 }
 
+func (c *catalogStore) UpdateModelPartitionsExecuted(ctx context.Context, modelID string) error {
+	_, err := c.db.ExecContext(ctx, "UPDATE model_partitions SET executed_on=CURRENT_TIMESTAMP WHERE instance_id=? AND model_id=? AND executed_on IS NULL", c.instanceID, modelID)
+	return err
+}
+
 func (c *catalogStore) DeleteModelPartitions(ctx context.Context, modelID string) error {
 	_, err := c.db.ExecContext(ctx, "DELETE FROM model_partitions WHERE instance_id=? AND model_id=?", c.instanceID, modelID)
 	if err != nil {

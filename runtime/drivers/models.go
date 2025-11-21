@@ -14,6 +14,12 @@ type ModelExecutor interface {
 	// For partition runs, Execute may be called concurrently by multiple workers.
 	Execute(ctx context.Context, opts *ModelExecuteOptions) (*ModelResult, error)
 
+	// CheckOutput checks if the output table already exists and returns result without executing anything.
+	// This should only be called for partitioned models.
+	//
+	// In future the checks can be extended to support checking specific partition keys.
+	CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*ModelResult, error)
+
 	// Concurrency returns the number of concurrent calls that may be made to Execute given a user-provided desired concurrency.
 	// If the desired concurrency is 0, it should return the recommended default concurrency.
 	// If the desired concurrency is too high, it should return false.

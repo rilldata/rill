@@ -26,6 +26,11 @@ func (e *selfToFileExecutor) Concurrency(desired int) (int, bool) {
 	return 1, true
 }
 
+// CheckOutput implements drivers.ModelExecutor.
+func (e *selfToFileExecutor) CheckOutput(ctx context.Context, modelName, partitionKey, outputConnector string, outputProps map[string]any) (*drivers.ModelResult, error) {
+	return nil, nil
+}
+
 func (e *selfToFileExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	olap, ok := e.c.AsOLAP(e.c.instanceID)
 	if !ok {
