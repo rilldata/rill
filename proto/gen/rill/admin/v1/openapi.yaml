@@ -491,6 +491,8 @@ components:
             type: object
         v1DeleteUsergroupResponse:
             type: object
+        v1DeleteVirtualFileResponse:
+            type: object
         v1DenyProjectAccessResponse:
             type: object
         v1Deployment:
@@ -852,6 +854,11 @@ components:
                     type: string
                 usergroup:
                     $ref: '#/components/schemas/v1Usergroup'
+            type: object
+        v1GetVirtualFileResponse:
+            properties:
+                file:
+                    $ref: '#/components/schemas/v1VirtualFile'
             type: object
         v1GithubPermission:
             default: GITHUB_PERMISSION_UNSPECIFIED
@@ -2218,7 +2225,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.76.2
+    version: v0.76.1
 openapi: 3.0.3
 paths:
     /v1/ai/complete:
@@ -6394,6 +6401,11 @@ paths:
                   name: pageToken
                   schema:
                     type: string
+                - description: If set and the caller is a superuser, force access regardless of project permissions.
+                  in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     content:
@@ -6408,6 +6420,87 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: PullVirtualRepo fetches files from a project's virtual repo
+    /v1/projects/{projectId}/repo/virtual/file:
+        delete:
+            operationId: AdminService_DeleteVirtualFile
+            parameters:
+                - description: The project ID to delete the virtual file from.
+                  in: path
+                  name: projectId
+                  required: true
+                  schema:
+                    type: string
+                - description: |-
+                    The environment to delete the virtual file from.
+                    It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+                  in: query
+                  name: environment
+                  schema:
+                    type: string
+                - description: The path of the virtual file to delete.
+                  in: query
+                  name: path
+                  schema:
+                    type: string
+                - description: If set and the caller is a superuser, force access regardless of project permissions.
+                  in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeleteVirtualFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: DeleteVirtualFile deletes a virtual file from a project's virtual repo
+        get:
+            operationId: AdminService_GetVirtualFile
+            parameters:
+                - description: The project ID to get the virtual file for.
+                  in: path
+                  name: projectId
+                  required: true
+                  schema:
+                    type: string
+                - description: |-
+                    The environment to get the virtual file for.
+                    It is optional. If the call is made with a deployment access token, it defaults to the environment of the deployment. Otherwise, it defaults to "prod".
+                  in: query
+                  name: environment
+                  schema:
+                    type: string
+                - description: The path of the virtual file to get.
+                  in: query
+                  name: path
+                  schema:
+                    type: string
+                - description: If set and the caller is a superuser, force access regardless of project permissions.
+                  in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetVirtualFileResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: GetVirtualFile returns the contents of a specific virtual file in a project's virtual repo
     /v1/projects/{projectId}/reports/meta:
         post:
             operationId: AdminService_GetReportMeta

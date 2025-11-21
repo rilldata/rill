@@ -12,8 +12,8 @@
   $: repoName = getRepoNameFromGitRemote(gitRemote);
 </script>
 
-<div class="flex flex-col w-fit mx-auto text-center text-sm">
-  <div class="flex flex-row gap-x-1 items-center">
+<div class="flex flex-col items-center gap-y-1 mx-auto text-center text-sm">
+  <div class="flex flex-row gap-x-1 items-center justify-center w-full">
     <Github className="w-4 h-4" />
     <a
       href={getGitUrlFromRemote(gitRemote)}
