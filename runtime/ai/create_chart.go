@@ -223,7 +223,13 @@ Example with country filter:
 ### 1. Bar Chart (` + "`bar_chart`" + `)
 **Use for:** Comparing values across different categories
 
-Example Specification: Plotting a bar chart of the top 20 advertisers by total bids
+Example Specification: Plotting a bar chart of the top 20 advertisers by total bids.
+
+Field details:
+bids_metrics: metrics_view
+advertiser_name: dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "bar_chart",
@@ -251,6 +257,13 @@ Example Specification: Plotting a bar chart of the top 20 advertisers by total b
 ` + "```" + `
 
 Example with filters: Bar chart showing top advertisers in specific countries
+
+Field details:
+bids_metrics: metrics_view
+advertiser_name: dimension
+country: dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "bar_chart",
@@ -289,6 +302,13 @@ Example with filters: Bar chart showing top advertisers in specific countries
 **Use for:** Showing trends over time
 
 Example Specification: Line chart with monthly aggregation
+
+Field details:
+bids_metrics: metrics_view
+device_os: dimension
+__time: timestamp dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "line_chart",
@@ -320,6 +340,13 @@ Example Specification: Line chart with monthly aggregation
 ` + "```" + `
 
 Example with filters and time grain: Daily trends for specific device types
+
+Field details:
+bids_metrics: metrics_view
+device_os: dimension
+__time: timestamp dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "line_chart",
@@ -360,6 +387,13 @@ Example with filters and time grain: Daily trends for specific device types
 **Use for:** Showing magnitude of change over time with filled areas
 
 Example Specification
+
+Field details:
+auction_metrics: metrics_view
+app_or_site: dimension
+__time: timestamp dimension
+requests: measure
+
 ` + "```json" + `
 {
   "chart_type": "area_chart",
@@ -391,8 +425,15 @@ Example Specification
 ### 4. Stacked Bar Chart (` + "`stacked_bar`" + `)
 **Use for:** Showing multiple data series stacked on top of each other.
 
-
 Example Specification
+
+Field details:
+bids_metrics: metrics_view
+rill_measures: special field
+__time: timestamp dimension
+clicks, video_starts, video_completes, ctr, ecpm, impressions: measures
+
+
 ` + "```json" + `
 {
   "chart_type": "stacked_bar",
@@ -437,6 +478,13 @@ Note that when charting out multiple fields using "fields" key, you must also ad
 **Use for:** Showing proportions instead of absolute values (100% stacked)
 
 Example Specification
+
+Field details:
+rill_commits_metrics: metrics_view
+username: dimension
+date: timestamp dimension
+number_of_commits: measure
+
 ` + "```json" + `
 {
   "chart_type": "stacked_bar_normalized",
@@ -469,6 +517,12 @@ Example Specification
 **Use for:** Displaying data as segments of a circle with a hollow center
 
 Example Specification
+
+Field details:
+rill_commits_metrics: metrics_view
+username: dimension
+number_of_commits: measure
+
 ` + "```json" + `
 {
   "chart_type": "donut_chart",
@@ -497,6 +551,12 @@ Example Specification
 **Use for:** Showing flow through a process with decreasing values at each stage or measure
 
 Example Specification with 1 dimension and 1 measure breakdown
+
+Field details:
+Funnel_Dataset_metrics: metrics_view
+stage: dimension
+total_users_measure: measure
+
 ` + "```json" + `
 {
   "chart_type": "funnel_chart",
@@ -523,6 +583,11 @@ Example Specification with 1 dimension and 1 measure breakdown
 ` + "```" + `
 
 Example Specification with multiple measures breakdown
+
+Field details:
+bids: metrics_view
+impressions, video_starts, video_completes: measures
+
 ` + "```json" + `
 {
   "chart_type": "funnel_chart",
@@ -552,6 +617,13 @@ Example Specification with multiple measures breakdown
 **Use for:** Visualizing data density using color intensity across two dimensions
 
 Example Specification
+
+Field details:
+bids_metrics: metrics_view
+day: dimension
+hour: dimension
+total_bids: measure
+
 ` + "```json" + `
 {
   "chart_type": "heatmap",
@@ -593,6 +665,15 @@ Example Specification
 **Use for:** Combining different chart types (like bars and lines) in a single visualization
 
 Example Specification
+
+Field details:
+auction_metrics: metrics_view
+__time: timestamp dimension
+date: timestamp dimension
+1d_qps: measure
+requests: measure
+rill_measures: special field
+
 ` + "```json" + `
 {
   "chart_type": "combo_chart",
@@ -603,7 +684,7 @@ Example Specification
       "end": "2024-12-31T23:59:59Z"
     },
     "color": {
-      "field": "measures",
+      "field": "rill_measures",
       "legendOrientation": "top",
       "type": "value"
     },
@@ -651,7 +732,6 @@ Example Specification
 - **showTotal**: Displays the measure total without any breakdown. Only used for donut chart to display totals in center
 
 ### Special Fields
-- **__time**: Built-in time dimension field
 - **rill_measures**: Special field for multiple measures in stacked charts and area charts. The field name is only used in color field object. DO NOT USE it for other keys except for "color" key in the field object.
 
 ## Color Configuration
@@ -725,7 +805,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **'time_grain'**: Controls temporal aggregation granularity
   - Default: "TIME_GRAIN_DAY"
   - Use to adjust time-based grouping (e.g., hour, day, week, month)
-- **'__time' field**: When referencing the time dimension, always set type to "temporal"
+- **timestamp dimension field**: When referencing the time dimension, always set type to "temporal"
 
 ### Data Filtering
 - **'where'**: Apply filters to chart data
