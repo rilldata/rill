@@ -70,21 +70,34 @@
         </p>
       {/if}
     </div>
-    <div class="p-4">
+    <div class="first:pt-0 last:pb-0 p-4">
       <div class="flex flex-col gap-4">
         {#if sidebar.length > 0}
           {#each sidebar as c (c.name)}
             <button
-              class="w-full text-left text-sm px-3 py-2 rounded-md border hover:bg-slate-50"
+              class="w-full text-left text-sm px-4 py-3 rounded-2xl border transition-colors flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
               class:border-gray-200={selectedConnectorName !== c.name}
-              class:border-indigo-200={selectedConnectorName === c.name}
+              class:border-indigo-500={selectedConnectorName === c.name}
               class:bg-indigo-50={selectedConnectorName === c.name}
               aria-label={c.name}
               on:click={() => {
                 selectedConnectorName = String(c.name);
               }}
             >
-              {c.name}
+              <span
+                class="inline-flex items-center justify-center h-4 w-4 rounded-full border-2"
+                class:border-gray-300={selectedConnectorName !== c.name}
+                class:border-indigo-500={selectedConnectorName === c.name}
+                class:bg-indigo-500={selectedConnectorName === c.name}
+                aria-hidden="true"
+              >
+                <span
+                  class="h-2 w-2 rounded-full"
+                  class:bg-transparent={selectedConnectorName !== c.name}
+                  class:bg-white={selectedConnectorName === c.name}
+                />
+              </span>
+              <span class="text-base text-gray-900">{c.name}</span>
             </button>
           {/each}
         {:else}
