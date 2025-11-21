@@ -20,7 +20,6 @@ const config = defineConfig({
       "@rilldata/web-common": "/../web-common/src",
       "@rilldata/web-admin": "/../web-admin/src",
     },
-    preserveSymlinks: true,
   },
   server: {
     strictPort: true,
@@ -38,13 +37,6 @@ const config = defineConfig({
   envPrefix: "RILL_UI_PUBLIC_",
   optimizeDeps: {
     force: true,
-    exclude: [
-      "@rilldata/web-common",
-      "@rilldata/web-admin",
-      "svelte",
-      "@sveltejs/kit",
-      "svelte/internal",
-    ],
   },
 });
 
