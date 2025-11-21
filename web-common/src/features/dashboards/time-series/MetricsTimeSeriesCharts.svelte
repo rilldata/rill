@@ -285,6 +285,8 @@
     }),
   );
 
+  $: effectiveGrain = grainAllowed ? activeTimeGrain : minTimeGrain;
+
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
     const pivot = $exploreState?.pivot;
@@ -358,26 +360,25 @@
         selectedItems={visibleMeasureNames}
       />
 
-      {#if $rillTime && activeTimeGrain}
+      {#if $rillTime && effectiveGrain}
         <DropdownMenu.Root bind:open>
           <DropdownMenu.Trigger asChild let:builder>
             <button
               {...builder}
               use:builder.action
-              class:!text-red-600={!grainAllowed}
               class="flex gap-x-1 items-center text-gray-700 hover:text-primary-700"
             >
               by <b>
-                {V1TimeGrainToDateTimeUnit[activeTimeGrain]}
+                {V1TimeGrainToDateTimeUnit[effectiveGrain]}
               </b>
 
               <span class:-rotate-90={open} class="transition-transform">
                 <CaretDownIcon />
               </span>
-              {#if !grainAllowed && minTimeGrain}
+              {#if !grainAllowed && minTimeGrain && activeTimeGrain}
                 <Tooltip.Root portal="body">
                   <Tooltip.Trigger>
-                    <AlertCircleOutline className="size-3.5 text-red-600" />
+                    <AlertCircleOutline className="size-3.5 " />
                   </Tooltip.Trigger>
                   <Tooltip.Content side="top" class="z-50 w-64" sideOffset={8}>
                     <TooltipContent>
