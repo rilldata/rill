@@ -191,6 +191,9 @@ export class AddDataFormManager {
       setStep("connector");
     } else if (this.isMultiStepConnector && stepState.step === "explorer") {
       setStep("source");
+    } else if (!this.isMultiStepConnector && stepState.step === "explorer") {
+      // For non-multi-step connectors, return to the prior step based on form type
+      setStep(this.isSourceForm ? "source" : "connector");
     } else {
       onBack();
     }
