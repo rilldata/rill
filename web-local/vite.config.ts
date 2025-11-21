@@ -35,6 +35,9 @@ const config = defineConfig({
   plugins: [sveltekit()],
   envDir: "../",
   envPrefix: "RILL_UI_PUBLIC_",
+  optimizeDeps: {
+    force: true,
+  },
 });
 
 export default config;
