@@ -52,7 +52,7 @@
         {allResources}
         {filePath}
         current
-        graphSupported={graphSupported}
+        {graphSupported}
         openGraph={() => (graphOverlayOpen = true)}
       />
     </div>
@@ -79,5 +79,4 @@
   .resource-breadcrumbs__crumbs {
     @apply flex items-center gap-x-1.5 flex-1 min-w-0 overflow-hidden truncate line-clamp-1;
   }
-
 </style>

@@ -22,7 +22,7 @@
   import type { V1Source } from "@rilldata/web-common/runtime-client";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { WandIcon } from "lucide-svelte";
+  import { WandIcon, GitBranch } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
@@ -31,8 +31,7 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import ConnectorIcon from "../../../components/icons/ConnectorIcon.svelte";
-  import { navigateToResourceGraph } from "@rilldata/web-common/features/resource-graph/navigation-utils";
+  import { openResourceGraphOverlay } from "@rilldata/web-common/features/resource-graph/resource-graph-overlay-store";
 
   export let filePath: string;
 
@@ -58,20 +57,23 @@
   const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = source?.state?.table as string;
 
-  function viewGraph() {
-    try {
-      const name = $sourceQuery.data?.meta?.name?.name;
-      if (!name) {
-        console.warn(
-          "[SourceMenuItems] Cannot navigate to graph: source name is missing",
-        );
-        return;
-      }
-      navigateToResourceGraph("source", name);
-    } catch (error) {
-      console.error("[SourceMenuItems] Failed to navigate to graph:", error);
-      // TODO: Show toast notification to user when toast system is available
+  async function viewGraph() {
+    const anchorResource = $sourceQuery.data;
+    if (!anchorResource) {
+      console.warn(
+        "[SourceMenuItems] Cannot open resource graph: resource is unavailable",
+      );
+      return;
     }
+    try {
+      await goto(`/files${filePath}`);
+    } catch (error) {
+      console.error(
+        "[SourceMenuItems] Failed to navigate before opening graph:",
+        error,
+      );
+    }
+    openResourceGraphOverlay(anchorResource);
   }
 
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
@@ -199,7 +201,7 @@
 </NavigationMenuItem>
 
 <NavigationMenuItem on:click={viewGraph}>
-  <ConnectorIcon slot="icon" />
+  <GitBranch slot="icon" size="14px" />
   View dependency graph
 </NavigationMenuItem>
 

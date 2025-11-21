@@ -9,7 +9,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { WandIcon } from "lucide-svelte";
+  import { WandIcon, GitBranch } from "lucide-svelte";
   import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import Model from "../../../components/icons/Model.svelte";
@@ -19,8 +19,7 @@
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import ConnectorIcon from "../../../components/icons/ConnectorIcon.svelte";
-  import { createGraphNavigationHandler } from "@rilldata/web-common/features/resource-graph/navigation-utils";
+  import { openResourceGraphOverlay } from "@rilldata/web-common/features/resource-graph/resource-graph-overlay-store";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -41,11 +40,24 @@
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
-  const viewGraph = createGraphNavigationHandler(
-    "ModelMenuItems",
-    "model",
-    () => $modelQuery.data,
-  );
+  async function viewGraph() {
+    const anchorResource = $modelQuery.data;
+    if (!anchorResource) {
+      console.warn(
+        "[ModelMenuItems] Cannot open resource graph: resource is unavailable",
+      );
+      return;
+    }
+    try {
+      await goto(`/files${filePath}`);
+    } catch (error) {
+      console.error(
+        "[ModelMenuItems] Failed to navigate before opening graph:",
+        error,
+      );
+    }
+    openResourceGraphOverlay(anchorResource);
+  }
 
   async function handleCreateModel() {
     try {
@@ -124,7 +136,7 @@
 </NavigationMenuItem>
 
 <NavigationMenuItem on:click={viewGraph}>
-  <ConnectorIcon slot="icon" />
+  <GitBranch slot="icon" size="14px" />
   View dependency graph
 </NavigationMenuItem>
 

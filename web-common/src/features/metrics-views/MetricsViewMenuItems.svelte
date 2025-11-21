@@ -15,8 +15,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
-  import ConnectorIcon from "@rilldata/web-common/components/icons/ConnectorIcon.svelte";
-  import { createGraphNavigationHandler } from "@rilldata/web-common/features/resource-graph/navigation-utils";
+  import { GitBranch } from "lucide-svelte";
+  import { openResourceGraphOverlay } from "@rilldata/web-common/features/resource-graph/resource-graph-overlay-store";
 
   export let filePath: string;
 
@@ -53,11 +53,23 @@
     );
   };
 
-  const viewGraph = createGraphNavigationHandler(
-    "MetricsViewMenuItems",
-    "metrics",
-    () => resource,
-  );
+  async function viewGraph() {
+    if (!resource) {
+      console.warn(
+        "[MetricsViewMenuItems] Cannot open resource graph: resource is unavailable",
+      );
+      return;
+    }
+    try {
+      await goto(`/files${filePath}`);
+    } catch (error) {
+      console.error(
+        "[MetricsViewMenuItems] Failed to navigate before opening graph:",
+        error,
+      );
+    }
+    openResourceGraphOverlay(resource);
+  }
 </script>
 
 {#if referenceModelName}
@@ -76,6 +88,6 @@
 {/if}
 
 <NavigationMenuItem on:click={viewGraph}>
-  <ConnectorIcon slot="icon" />
+  <GitBranch slot="icon" size="14px" />
   View dependency graph
 </NavigationMenuItem>
