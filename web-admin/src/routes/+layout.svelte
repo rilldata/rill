@@ -3,7 +3,6 @@
   import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
   import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
   import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
-  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
@@ -14,12 +13,15 @@
   } from "@rilldata/web-admin/features/navigation/nav-utils";
   import OrganizationTabs from "@rilldata/web-admin/features/organizations/OrganizationTabs.svelte";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
+  import "@rilldata/web-common/app.css";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
+  import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+  import { cancelQueriesOnHidden } from "@rilldata/web-common/lib/svelte-query/cancel-queries-on-hidden";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
@@ -27,7 +29,6 @@
   import { onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
-  import "@rilldata/web-common/app.css";
 
   export let data;
 
@@ -60,6 +61,7 @@
       errorStore.set(createUserFacingError(null, error.message));
     }
   };
+  cancelQueriesOnHidden();
 
   // The admin server enables some dashboard features like scheduled reports and alerts
   // Set read-only mode so that the user can't edit the dashboard

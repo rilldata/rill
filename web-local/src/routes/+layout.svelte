@@ -1,6 +1,7 @@
 <script lang="ts">
   import { dev } from "$app/environment";
   import { page } from "$app/stores";
+  import "@rilldata/web-common/app.css";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
@@ -15,6 +16,7 @@
     initPosthog,
     posthogIdentify,
   } from "@rilldata/web-common/lib/analytics/posthog";
+  import { cancelQueriesOnHidden } from "@rilldata/web-common/lib/svelte-query/cancel-queries-on-hidden";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     errorEventHandler,
@@ -27,7 +29,6 @@
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import type { LayoutData } from "./$types";
-  import "@rilldata/web-common/app.css";
 
   export let data: LayoutData;
 
@@ -37,6 +38,8 @@
     error: AxiosError,
     query: Query,
   ) => errorEventHandler?.requestErrorEventHandler(error, query);
+  cancelQueriesOnHidden();
+
   initPylonWidget();
 
   let removeJavascriptListeners: () => void;
