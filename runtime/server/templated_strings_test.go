@@ -34,10 +34,10 @@ func TestResolveTemplatedString_BasicTemplate(t *testing.T) {
 	// Test basic Sprig template functions
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       "Hello {{ upper .Variables.test_var }}!",
+		Body:       "Hello {{ upper .env.test_var }}!",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "Hello HELLO!", res.ResolvedData)
+	require.Equal(t, "Hello HELLO!", res.Body)
 }
 
 func TestResolveTemplatedString_UserAttributes(t *testing.T) {
@@ -60,10 +60,10 @@ func TestResolveTemplatedString_UserAttributes(t *testing.T) {
 
 	res, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       "Welcome {{ .User.name }} ({{ .User.email }})",
+		Body:       "Welcome {{ .user.name }} ({{ .user.email }})",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "Welcome John Doe (john@example.com)", res.ResolvedData)
+	require.Equal(t, "Welcome John Doe (john@example.com)", res.Body)
 }
 
 func TestResolveTemplatedString_MetricsSQL_SimpleQuery(t *testing.T) {
@@ -94,10 +94,10 @@ measures:
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `Total revenue is {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
+		Body:       `Total revenue is {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "Total revenue is 300", res.ResolvedData)
+	require.Equal(t, "Total revenue is 300", res.Body)
 }
 
 func TestResolveTemplatedString_MetricsSQL_WithFormatTokens(t *testing.T) {
@@ -128,11 +128,11 @@ measures:
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId:      instanceID,
-		Data:            `Total: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
+		Body:            `Total: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
 		UseFormatTokens: true,
 	})
 	require.NoError(t, err)
-	require.Contains(t, res.ResolvedData, `__RILL__FORMAT__("mv", "total_revenue", 300.8)`)
+	require.Contains(t, res.Body, `__RILL__FORMAT__("mv", "total_revenue", 300.8)`)
 }
 
 func TestResolveTemplatedString_MetricsSQL_MultipleQueries(t *testing.T) {
@@ -165,12 +165,12 @@ measures:
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data: `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}
+		Body: `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}
 Orders: {{ metrics_sql "SELECT total_orders FROM mv" }}`,
 	})
 	require.NoError(t, err)
-	require.Contains(t, res.ResolvedData, "Revenue: 300")
-	require.Contains(t, res.ResolvedData, "Orders: 15")
+	require.Contains(t, res.Body, "Revenue: 300")
+	require.Contains(t, res.Body, "Orders: 15")
 }
 
 func TestResolveTemplatedString_MetricsSQL_WithFilters(t *testing.T) {
@@ -201,10 +201,10 @@ measures:
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `US Revenue: {{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
+		Body:       `US Revenue: {{ metrics_sql "SELECT total_revenue FROM mv WHERE country = 'US'" }}`,
 	})
 	require.NoError(t, err)
-	require.Equal(t, "US Revenue: 100", res.ResolvedData)
+	require.Equal(t, "US Revenue: 100", res.Body)
 }
 
 func TestResolveTemplatedString_MetricsSQL_WithAdditionalWhere(t *testing.T) {
@@ -259,14 +259,14 @@ measures:
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
+		Body:       `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
 		AdditionalWhereByMetricsView: map[string]*runtimev1.Expression{
 			"mv": additionalWhere,
 		},
 	})
 	require.NoError(t, err)
 	// Should exclude CA, so 100 + 200 = 300
-	require.Equal(t, "Revenue: 300", res.ResolvedData)
+	require.Equal(t, "Revenue: 300", res.Body)
 }
 
 func TestResolveTemplatedString_MetricsSQL_MultipleMetricsViewsWithDifferentFilters(t *testing.T) {
@@ -351,7 +351,7 @@ measures:
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}, Sales: {{ metrics_sql "SELECT total_sales FROM mv2" }}`,
+		Body:       `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv1" }}, Sales: {{ metrics_sql "SELECT total_sales FROM mv2" }}`,
 		AdditionalWhereByMetricsView: map[string]*runtimev1.Expression{
 			"mv1": filterMv1,
 			"mv2": filterMv2,
@@ -360,7 +360,7 @@ measures:
 	require.NoError(t, err)
 	// mv1: 100 + 200 = 300 (excludes CA)
 	// mv2: 500 (only Electronics)
-	require.Equal(t, "Revenue: 300, Sales: 500", res.ResolvedData)
+	require.Equal(t, "Revenue: 300, Sales: 500", res.Body)
 }
 
 func TestResolveTemplatedString_MetricsSQL_ErrorNotSingleValue(t *testing.T) {
@@ -392,11 +392,11 @@ measures:
 	// Query returns multiple columns
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `{{ metrics_sql "SELECT country, total_revenue FROM mv" }}`,
+		Body:       `{{ metrics_sql "SELECT country, total_revenue FROM mv" }}`,
 	})
 	require.Error(t, err)
 	require.Nil(t, res)
-	require.Contains(t, err.Error(), "must return exactly one value")
+	require.Contains(t, err.Error(), "expected one field")
 }
 
 func TestResolveTemplatedString_MetricsSQL_ErrorMultipleRows(t *testing.T) {
@@ -428,11 +428,11 @@ measures:
 	// Query returns multiple rows - select dimension without aggregation
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `{{ metrics_sql "SELECT country FROM mv" }}`,
+		Body:       `{{ metrics_sql "SELECT country FROM mv" }}`,
 	})
 	require.Error(t, err)
 	require.Nil(t, res)
-	require.Contains(t, err.Error(), "must return exactly one row")
+	require.Contains(t, err.Error(), "multiple rows")
 }
 
 func TestResolveTemplatedString_MetricsSQL_ErrorInvalidQuery(t *testing.T) {
@@ -460,11 +460,11 @@ measures:
 	// Invalid SQL syntax
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `{{ metrics_sql "SELECT invalid syntax FROM mv" }}`,
+		Body:       `{{ metrics_sql "SELECT invalid syntax FROM mv" }}`,
 	})
 	require.Error(t, err)
 	require.Nil(t, res)
-	require.Contains(t, err.Error(), "failed to parse metrics SQL")
+	require.Contains(t, err.Error(), "selected column `invalid` not found")
 }
 
 func TestResolveTemplatedString_MetricsSQL_ErrorMetricsViewNotFound(t *testing.T) {
@@ -479,7 +479,7 @@ func TestResolveTemplatedString_MetricsSQL_ErrorMetricsViewNotFound(t *testing.T
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `{{ metrics_sql "SELECT total_revenue FROM nonexistent_mv" }}`,
+		Body:       `{{ metrics_sql "SELECT total_revenue FROM nonexistent_mv" }}`,
 	})
 	require.Error(t, err)
 	require.Nil(t, res)
@@ -523,7 +523,7 @@ security:
 
 	res, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `{{ metrics_sql "SELECT total_revenue FROM mv" }}`,
+		Body:       `{{ metrics_sql "SELECT total_revenue FROM mv" }}`,
 	})
 	require.Error(t, err)
 	require.Nil(t, res)
@@ -548,7 +548,7 @@ func TestResolveTemplatedString_ErrorNoReadAPIPermission(t *testing.T) {
 
 	res, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       "Hello World",
+		Body:       "Hello World",
 	})
 	require.Error(t, err)
 	require.Nil(t, res)
@@ -567,11 +567,11 @@ func TestResolveTemplatedString_InvalidTemplateError(t *testing.T) {
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       "Hello {{ .Invalid.Syntax",
+		Body:       "Hello {{ .Invalid.Syntax",
 	})
 	require.Error(t, err)
 	require.Nil(t, res)
-	require.Contains(t, err.Error(), "failed to parse template")
+	require.Contains(t, err.Error(), "failed to resolve template")
 }
 
 func TestResolveTemplatedString_EnvFunctionsDisabled(t *testing.T) {
@@ -587,7 +587,7 @@ func TestResolveTemplatedString_EnvFunctionsDisabled(t *testing.T) {
 	// env and expandenv should not be available
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       `{{ env "PATH" }}`,
+		Body:       `{{ env "PATH" }}`,
 	})
 	require.Error(t, err)
 	require.Nil(t, res)
@@ -634,9 +634,9 @@ measures:
 		},
 	})
 
-	markdown := `# Sales Report for {{ .Variables.company_name }}
+	markdown := `# Sales Report for {{ .env.company_name }}
 
-Welcome, {{ .User.name }}!
+Welcome, {{ .user.name }}!
 
 ## Key Metrics
 
@@ -651,15 +651,15 @@ The total revenue is {{ metrics_sql "SELECT total_revenue FROM mv" }}, which is 
 
 	res, err := server.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Data:       markdown,
+		Body:       markdown,
 	})
 	require.NoError(t, err)
-	require.Contains(t, res.ResolvedData, "# Sales Report for Acme Corp")
-	require.Contains(t, res.ResolvedData, "Welcome, Jane Doe!")
-	require.Contains(t, res.ResolvedData, "**Total Revenue**: 300")
-	require.Contains(t, res.ResolvedData, "**Total Orders**: 15")
-	require.Contains(t, res.ResolvedData, "**Average Order Value**: 20")
-	require.Contains(t, res.ResolvedData, "above target")
+	require.Contains(t, res.Body, "# Sales Report for Acme Corp")
+	require.Contains(t, res.Body, "Welcome, Jane Doe!")
+	require.Contains(t, res.Body, "**Total Revenue**: 300")
+	require.Contains(t, res.Body, "**Total Orders**: 15")
+	require.Contains(t, res.Body, "**Average Order Value**: 20")
+	require.Contains(t, res.Body, "above target")
 }
 
 func TestResolveTemplatedString_MetricsSQL_WithAdditionalTimeRange(t *testing.T) {
@@ -707,10 +707,10 @@ measures:
 
 	res, err := server.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId:          instanceID,
-		Data:                `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
+		Body:                `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
 		AdditionalTimeRange: additionalTimeRange,
 	})
 	require.NoError(t, err)
 	// Should only include January
-	require.Equal(t, "Revenue: 300", res.ResolvedData)
+	require.Equal(t, "Revenue: 700", res.Body)
 }

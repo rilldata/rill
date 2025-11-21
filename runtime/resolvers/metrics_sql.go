@@ -15,45 +15,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// CreateMetricsSQLCompiler creates a metrics SQL compiler with standard security-aware callbacks
-func CreateMetricsSQLCompiler(ctx context.Context, rt *runtime.Runtime, instanceID string, claims *runtime.SecurityClaims, priority int) (*metricssql.Compiler, error) {
-	ctrl, err := rt.Controller(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	compiler := metricssql.New(&metricssql.CompilerOptions{
-		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
-			mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
-			if err != nil {
-				return nil, err
-			}
-			sec, err := rt.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
-			if err != nil {
-				return nil, err
-			}
-			if !sec.CanAccess() {
-				return nil, runtime.ErrForbidden
-			}
-			return mv, nil
-		},
-		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
-			sec, err := rt.ResolveSecurity(ctx, ctrl.InstanceID, claims, mv)
-			if err != nil {
-				return metricsview.TimestampsResult{}, err
-			}
-			e, err := executor.New(ctx, rt, instanceID, mv.GetMetricsView().State.ValidSpec, false, sec, priority)
-			if err != nil {
-				return metricsview.TimestampsResult{}, err
-			}
-			defer e.Close()
-			return e.Timestamps(ctx, timeDim)
-		},
-	})
-
-	return compiler, nil
-}
-
 func init() {
 	runtime.RegisterResolverInitializer("metrics_sql", newMetricsSQL)
 }

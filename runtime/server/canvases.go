@@ -80,7 +80,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 				return nil, err
 			}
 
-			// Add to map without resolving templates use ResolveTemplatedString RPC for template resolution.
+			// Add to map without resolving templates. Use ResolveTemplatedString RPC for template resolution.
 			components[item.Component] = cmp
 		}
 	}
