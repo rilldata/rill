@@ -48,20 +48,20 @@
 <div class="flex flex-col md:flex-row h-full">
   <!-- Left sidebar: existing connectors of the same type -->
   <aside
-    class="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-200"
+    class="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-200 bg-[#FAFAFA]"
   >
     <div class="p-4">
       {#if sidebar.length > 0}
         <h3 class="text-sm font-semibold text-gray-700">Existing connectors</h3>
         <p class="mt-1 text-xs text-slate-500">
-          Choose data from an existing connector create a new one
+          Choose data from an existing connector create a new one.
         </p>
       {:else}
         <h3 class="text-sm font-semibold text-gray-700">
           Connected successfully!
         </h3>
         <p class="mt-1 text-xs text-slate-500">
-          Pick a table to power your first model
+          Pick a table to power your first model.
         </p>
       {/if}
       <div class="mt-3 flex flex-col gap-2">
@@ -84,14 +84,14 @@
   </aside>
 
   <!-- Right content: data explorer -->
-  <section class="flex-1 flex flex-col gap-3 p-4">
+  <section class="flex-1 flex flex-col gap-4 p-4">
     <div class="flex flex-col gap-1">
       <h2 class="text-lg font-semibold">Data explorer</h2>
       <p class="text-slate-500 text-sm">Pick a table to power your model</p>
     </div>
 
-    <div class="border-t border-gray-200" />
-
-    <ConnectorExplorer {store} limitedConnectorDriver={connectorDriver} />
+    <div class="border border-gray-200 rounded-md overflow-hidden">
+      <ConnectorExplorer {store} limitedConnectorDriver={connectorDriver} />
+    </div>
   </section>
 </div>

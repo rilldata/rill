@@ -34,6 +34,7 @@
   } from "../../connectors/code-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useIsModelingSupportedForConnectorOLAP as useIsModelingSupportedForConnector } from "../../connectors/selectors";
+  import { cn } from "@rilldata/web-common/lib/shadcn";
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
@@ -340,7 +341,11 @@
     class="add-data-form-panel flex-1 flex flex-col min-w-0 md:pr-0 pr-0 relative"
   >
     <div
-      class="flex flex-col flex-grow {formManager.formHeight} overflow-y-auto p-6"
+      class={cn(
+        "flex flex-col flex-grow overflow-y-auto",
+        formManager.formHeight,
+        stepState.step === "explorer" ? "p-0" : "p-6",
+      )}
     >
       {#if stepState.step === "explorer"}
         <!-- Step 3: Table Explorer (for supported connectors) -->
