@@ -48,9 +48,9 @@
 <div class="flex flex-col md:flex-row h-full">
   <!-- Left sidebar: existing connectors of the same type -->
   <aside
-    class="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-200 bg-[#FAFAFA]"
+    class="w-full md:w-64 h-full overflow-y-auto md:border-r border-gray-200 bg-[#FAFAFA]"
   >
-    <div class="p-4">
+    <div class="sticky top-0 z-10 bg-[#FAFAFA] p-4 border-gray-200">
       {#if sidebar.length > 0}
         <h3 class="text-sm font-semibold text-gray-700">Existing connectors</h3>
         <p class="mt-1 text-xs text-slate-500">
@@ -64,7 +64,9 @@
           Pick a table to power your first model.
         </p>
       {/if}
-      <div class="mt-3 flex flex-col gap-2">
+    </div>
+    <div class="p-4">
+      <div class="flex flex-col gap-4">
         {#if sidebar.length > 0}
           {#each sidebar as c (c.name)}
             <button

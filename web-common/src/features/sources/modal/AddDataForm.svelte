@@ -342,9 +342,11 @@
   >
     <div
       class={cn(
-        "flex flex-col flex-grow overflow-y-auto",
+        "flex flex-col flex-grow",
         formManager.formHeight,
-        stepState.step === "explorer" ? "p-0" : "p-6",
+        stepState.step === "explorer"
+          ? "overflow-hidden p-0"
+          : "overflow-y-auto p-6",
       )}
     >
       {#if stepState.step === "explorer"}
