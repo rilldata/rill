@@ -79,6 +79,11 @@
   $: resourcesError = $resourcesQuery.error
     ? "Failed to load project resources."
     : null;
+  $: resourceGraphOverlayState = {
+    resources: allResources,
+    isLoading: resourcesLoading,
+    error: resourcesError,
+  };
 
   function viewGraph() {
     graphOverlayOpen = true;
@@ -228,7 +233,5 @@
 <ResourceGraphOverlay
   bind:open={graphOverlayOpen}
   anchorResource={$sourceQuery.data}
-  resources={allResources}
-  isLoading={resourcesLoading}
-  error={resourcesError}
+  {...resourceGraphOverlayState}
 />
