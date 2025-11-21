@@ -51,9 +51,19 @@
     class="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-200"
   >
     <div class="p-4">
-      <h3 class="text-sm font-semibold text-gray-700">
-        {connectorDriver?.name || "Connector"}
-      </h3>
+      {#if sidebar.length > 0}
+        <h3 class="text-sm font-semibold text-gray-700">Existing connectors</h3>
+        <p class="mt-1 text-xs text-slate-500">
+          Choose data from an existing connector create a new one
+        </p>
+      {:else}
+        <h3 class="text-sm font-semibold text-gray-700">
+          Connected successfully!
+        </h3>
+        <p class="mt-1 text-xs text-slate-500">
+          Pick a table to power your first model
+        </p>
+      {/if}
       <div class="mt-3 flex flex-col gap-2">
         {#if sidebar.length > 0}
           {#each sidebar as c (c.name)}
