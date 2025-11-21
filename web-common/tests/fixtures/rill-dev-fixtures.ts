@@ -4,7 +4,7 @@ import axios from "axios";
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { test as base } from "playwright/test";
+import { test as base, expect } from "playwright/test";
 import treeKill from "tree-kill";
 import { getOpenPort } from "@rilldata/web-common/tests/utils/get-open-port.ts";
 import { makeTempDir } from "@rilldata/web-common/tests/utils/make-temp-dir.ts";
@@ -117,10 +117,8 @@ export const rillDev = base.extend<MyFixtures>({
 
     await use(page);
 
-    rmSync(TEST_PROJECT_DIRECTORY, {
-      force: true,
-      recursive: true,
-    });
+    // Close browser context to release any connections/resources first
+    await context.close();
 
     const processExit = new Promise((resolve) => {
       childProcess.on("exit", resolve);
@@ -129,5 +127,28 @@ export const rillDev = base.extend<MyFixtures>({
     if (childProcess.pid) treeKill(childProcess.pid);
 
     await processExit;
+
+    // Remove the test project directory after the dev process has fully exited.
+    // Use expect.poll with exponential intervals to handle transient FS errors.
+    await expect
+      .poll(
+        () => {
+          try {
+            rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
+            return true;
+          } catch (err) {
+            const code = (err as NodeJS.ErrnoException)?.code;
+            const isTransient =
+              code === "ENOTEMPTY" || code === "EBUSY" || code === "EPERM";
+            if (isTransient) return false;
+            throw err;
+          }
+        },
+        {
+          intervals: [200, 400, 800, 1600, 3200],
+          timeout: 7000,
+        },
+      )
+      .toBe(true);
   },
 });
