@@ -200,6 +200,7 @@ The cache automatically manages its size to prevent localStorage quota errors:
 - **Prune throttling**: Max once per 5 seconds to prevent thrashing
 
 When quota is exceeded:
+
 1. Cache writes are disabled to prevent errors
 2. Console warning is displayed
 3. Existing cache is cleared automatically
@@ -210,14 +211,17 @@ When quota is exceeded:
 **Problem: Graphs show unexpected layouts or missing connections**
 
 Solution: Clear the cache to force recalculation:
+
 ```javascript
 window.__RESOURCE_GRAPH_CACHE.clearAll();
 ```
+
 Then reload the page.
 
 **Problem: Console shows "LocalStorage quota exceeded" warning**
 
 Solution: The cache has exceeded browser limits. It will auto-clear, but you can manually clear:
+
 ```javascript
 window.__RESOURCE_GRAPH_CACHE.clearAll();
 ```
@@ -225,15 +229,17 @@ window.__RESOURCE_GRAPH_CACHE.clearAll();
 **Problem: Graph positions keep resetting**
 
 Possible causes:
+
 - Private browsing mode (cache disabled)
 - Browser security settings blocking localStorage
 - Cache version was bumped (intentional invalidation)
 
 Check quota status:
+
 ```javascript
 const stats = window.__RESOURCE_GRAPH_CACHE.getHealthStats();
-console.log('Quota exceeded:', stats.quotaExceeded);
-console.log('Cache size:', stats.estimatedSizeBytes);
+console.log("Quota exceeded:", stats.quotaExceeded);
+console.log("Cache size:", stats.estimatedSizeBytes);
 ```
 
 #### Cache Invalidation Scenarios

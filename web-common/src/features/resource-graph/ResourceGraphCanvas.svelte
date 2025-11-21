@@ -14,11 +14,7 @@
   import { traverseUpstream, traverseDownstream } from "./graph-traversal";
   import ResourceNode from "./ResourceNode.svelte";
   import type { ResourceNodeData } from "./types";
-  import {
-    UI_CONFIG,
-    EDGE_CONFIG,
-    FIT_VIEW_CONFIG,
-  } from "./graph-config";
+  import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "./graph-config";
 
   export let resources: V1Resource[] = [];
   export let title: string | null = null;
