@@ -7,7 +7,6 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   createResourceId,
-  parseResourceId,
   resourceNameToId,
 } from "@rilldata/web-common/features/entity-management/resource-utils";
 import type {
@@ -44,37 +43,6 @@ const ALLOWED_KINDS = new Set<ResourceKind>([
 function toResourceKind(name?: V1ResourceName): ResourceKind | undefined {
   if (!name?.kind) return undefined;
   return name.kind as ResourceKind;
-}
-
-/**
- * Create a placeholder resource for a missing or errored dependency.
- * Placeholder resources represent cached nodes that are no longer available
- * but are retained to maintain graph stability and show errors.
- *
- * @param id - Resource ID in format "kind:name"
- * @returns Partial V1Resource with minimal required fields for graph rendering
- */
-function makePlaceholderResource(id: string): V1Resource {
-  const parsed = parseResourceId(id);
-  const name = parsed?.name ?? id;
-  const kind = parsed?.kind ?? "model";
-  const refIds = graphCache.getRefs(id) ?? [];
-  const refs = refIds
-    .map((rid) => parseResourceId(rid))
-    .filter((r): r is { kind: string; name: string } => !!r)
-    .map((r) => ({ kind: r.kind, name: r.name }));
-
-  // Create a partial resource object with only the fields needed for graph visualization
-  // This is a safe type assertion because we're providing all required fields for the graph
-  return {
-    meta: {
-      name: { kind, name },
-      refs,
-      reconcileError:
-        "Resource unavailable due to error or missing spec (cached)",
-      hidden: false,
-    },
-  } as V1Resource;
 }
 
 function estimateNodeWidth(label?: string | null) {
@@ -246,7 +214,9 @@ export function buildResourceGraph(
       y: dagreNode.y - (node.height ?? DEFAULT_NODE_HEIGHT) / 2,
     };
     const posKey = `${positionNs}|${node.id}`;
-    const cached = opts?.ignoreCache ? undefined : graphCache.getPosition(posKey);
+    const cached = opts?.ignoreCache
+      ? undefined
+      : graphCache.getPosition(posKey);
     node.position = cached ?? computed;
     node.targetPosition = Position.Top;
     node.sourcePosition = Position.Bottom;
@@ -490,25 +460,6 @@ function createSyntheticGroupsForMissingAnchors(
 }
 
 /**
- * Add placeholder resources for cached resources that are temporarily missing.
- * This preserves graph structure when resources have errors.
- *
- * Note: We cannot iterate directly over cache manager maps, so we skip this
- * optimization for now. This means placeholder resources won't be created
- * for missing cached resources. This is acceptable as the cache will eventually
- * clean up stale entries. To fully implement this, we would need to expose
- * an iterator method on the cache manager.
- */
-function addPlaceholdersForMissingResources(
-  resourceMap: Map<string, V1Resource>,
-  groupById: Map<string, ResourceGraphGrouping>,
-  assigned: Set<string>,
-): void {
-  // Skipped: Cannot iterate over cache manager's internal maps
-  // This functionality may be added in the future if needed
-}
-
-/**
  * Update persistent caches with current grouping state.
  * Stores group labels and resource-to-group assignments.
  */
@@ -579,7 +530,6 @@ export function partitionResourcesBySeeds(
     groups,
     assigned,
   );
-  addPlaceholdersForMissingResources(resourceMap, groupById, assigned);
   updateGroupingCaches(groups);
 
   return groups;

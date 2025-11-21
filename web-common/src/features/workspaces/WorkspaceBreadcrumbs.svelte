@@ -7,7 +7,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import WorkspaceCrumb from "./WorkspaceCrumb.svelte";
   import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
-  import { GitBranch } from "lucide-svelte";
   import { ALLOWED_FOR_GRAPH } from "@rilldata/web-common/features/resource-graph/seed-utils";
 
   export let resource: V1Resource | undefined;
@@ -53,19 +52,10 @@
         {allResources}
         {filePath}
         current
+        graphSupported={graphSupported}
+        openGraph={() => (graphOverlayOpen = true)}
       />
     </div>
-    {#if resource && graphSupported}
-      <button
-        type="button"
-        class="graph-trigger"
-        on:click={() => (graphOverlayOpen = true)}
-        aria-label="Open resource graph"
-      >
-        <GitBranch size="13px" aria-hidden="true" />
-        <span class="sr-only">Open resource graph</span>
-      </button>
-    {/if}
   </div>
 </nav>
 
@@ -90,27 +80,4 @@
     @apply flex items-center gap-x-1.5 flex-1 min-w-0 overflow-hidden truncate line-clamp-1;
   }
 
-  .graph-trigger {
-    @apply flex-none inline-flex items-center justify-center rounded-md border transition-colors shadow-sm ml-1 px-2 py-[3px];
-    border-color: var(--border, #e5e7eb);
-    background-color: var(--surface, #ffffff);
-    color: var(--muted-foreground, #6b7280);
-    min-width: 30px;
-    height: 26px;
-  }
-
-  .graph-trigger:hover {
-    color: var(--foreground, #1f2937);
-    border-color: color-mix(
-      in srgb,
-      var(--border, #e5e7eb) 70%,
-      var(--foreground, #1f2937)
-    );
-  }
-
-  .graph-trigger:focus-visible {
-    @apply outline-none ring ring-offset-1;
-    ring-color: var(--ring, #93c5fd);
-    ring-offset-color: var(--surface, #ffffff);
-  }
 </style>

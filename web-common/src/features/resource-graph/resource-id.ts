@@ -24,8 +24,9 @@ const ID_SEPARATOR = ":" as const;
  * Reserved characters that are not allowed in resource names.
  * These could interfere with parsing or cause issues in URLs.
  */
-const RESERVED_CHARS = /[<>\"\/\\|?*\x00-\x1f]/;
-const RESERVED_CHARS_GLOBAL = /[<>\"\/\\|?*\x00-\x1f]/g;
+const RESERVED_CHARS_PATTERN = '[<>"/\\\\|?*\\u0000-\\u001F]';
+const RESERVED_CHARS = new RegExp(RESERVED_CHARS_PATTERN);
+const RESERVED_CHARS_GLOBAL = new RegExp(RESERVED_CHARS_PATTERN, "g");
 
 /**
  * Maximum length for kind and name components.

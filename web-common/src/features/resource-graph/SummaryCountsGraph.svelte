@@ -2,7 +2,6 @@
   import { Background, SvelteFlow, type Node, type Edge } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/base.css";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { coerceResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import SummaryCountNode from "./SummaryCountNode.svelte";
   import { writable } from "svelte/store";
   import { onMount, onDestroy } from "svelte";
@@ -55,19 +54,6 @@
   // Stores for SvelteFlow
   const nodesStore = writable<Node[]>([]);
   const edgesStore = writable<Edge[]>([]);
-
-  // Build filtered lists by kind
-  let visible: V1Resource[] = [];
-  $: visible = (resources || []).filter((r) => {
-    if (r?.meta?.hidden) return false;
-    const k = coerceResourceKind(r);
-    return (
-      k === ResourceKind.Source ||
-      k === ResourceKind.Model ||
-      k === ResourceKind.MetricsView ||
-      k === ResourceKind.Explore
-    );
-  });
 
   function navigateTokenForNode(id: string) {
     let token: "sources" | "metrics" | "models" | "dashboards" | null = null;
@@ -182,7 +168,11 @@
   } as const;
 </script>
 
-<section class="summary-graph" aria-label="Resource summary graph">
+<section
+  class="summary-graph"
+  aria-label="Resource summary graph"
+  data-total-resources={resources.length}
+>
   <div class="title">Overview</div>
   <div class="canvas" bind:this={containerEl}>
     {#key flowKey}
