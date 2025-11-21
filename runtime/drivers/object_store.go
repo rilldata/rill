@@ -3,10 +3,14 @@ package drivers
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/runtime/pkg/pagination"
 )
 
 // ObjectStore is an interface for object storage systems.
@@ -91,4 +95,52 @@ type ObjectStoreModelOutputProperties struct {
 type ObjectStoreModelResultProperties struct {
 	Path   string `mapstructure:"path"`
 	Format string `mapstructure:"format"`
+}
+
+// ListBucketsFromPathPrefixes returns the list of buckets allowed by PathPrefixes,
+// with deterministic sorting and pagination.
+func ListBucketsFromPathPrefixes(pathPrefixes []string, pageSize uint32, pageToken string) ([]string, string, error) {
+	uniqueBuckets := make(map[string]bool)
+	for _, p := range pathPrefixes {
+		u, err := url.Parse(p)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid path prefix %q: %w", p, err)
+		}
+		var bucket string
+		if u.Host != "" {
+			bucket = u.Host
+		} else {
+			trimmed := strings.TrimPrefix(u.Path, "/")
+			parts := strings.SplitN(trimmed, "/", 2)
+			bucket = parts[0]
+		}
+		if bucket != "" {
+			uniqueBuckets[bucket] = true
+		}
+	}
+
+	buckets := make([]string, 0, len(uniqueBuckets))
+	for b := range uniqueBuckets {
+		buckets = append(buckets, b)
+	}
+	sort.Strings(buckets)
+
+	validPageSize := pagination.ValidPageSize(pageSize, DefaultPageSize)
+	startIndex := 0
+	if pageToken != "" {
+		if err := pagination.UnmarshalPageToken(pageToken, &startIndex); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
+		}
+	}
+
+	endIndex := startIndex + validPageSize
+	if endIndex > len(buckets) {
+		endIndex = len(buckets)
+	}
+
+	next := ""
+	if endIndex < len(buckets) {
+		next = pagination.MarshalPageToken(endIndex)
+	}
+	return buckets[startIndex:endIndex], next, nil
 }

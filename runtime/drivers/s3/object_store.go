@@ -15,6 +15,13 @@ import (
 )
 
 func (c *Connection) ListBuckets(ctx context.Context, pageSize uint32, pageToken string) ([]string, string, error) {
+	// If PathPrefixes is configured, return buckets derived from those prefixes.
+	// This is used when ListBuckets permissions may not be available, or when
+	// the user explicitly wants to restrict access to specific buckets.
+	if len(c.config.PathPrefixes) > 0 {
+		return drivers.ListBucketsFromPathPrefixes(c.config.PathPrefixes, pageSize, pageToken)
+	}
+
 	validPageSize := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 	unmarshalPageToken := ""
 	if pageToken != "" {
