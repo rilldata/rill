@@ -90,7 +90,7 @@
       <p class="text-slate-500 text-sm">Pick a table to power your model</p>
     </div>
 
-    <div class="border border-gray-200 rounded-md overflow-hidden">
+    <div class="border border-gray-200 rounded-md overflow-y-auto py-2">
       <ConnectorExplorer {store} limitedConnectorDriver={connectorDriver} />
     </div>
   </section>
