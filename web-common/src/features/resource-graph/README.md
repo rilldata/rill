@@ -166,8 +166,19 @@ window.__DEBUG_RESOURCE_GRAPH = true;
 Access cache manager for diagnostics:
 
 ```javascript
-// Get cache health stats
+// Get cache health stats (includes size and quota info)
 window.__RESOURCE_GRAPH_CACHE.getHealthStats();
+// Returns: {
+//   initialized: true,
+//   dirty: false,
+//   quotaExceeded: false,
+//   positions: 45,
+//   assignments: 30,
+//   labels: 5,
+//   refs: 60,
+//   totalEntries: 140,
+//   estimatedSizeBytes: 102400
+// }
 
 // Export cache data
 window.__RESOURCE_GRAPH_CACHE.export();
@@ -179,19 +190,69 @@ window.__RESOURCE_GRAPH_CACHE.clearAll();
 window.__RESOURCE_GRAPH_CACHE.import(data);
 ```
 
+#### Cache Size Management
+
+The cache automatically manages its size to prevent localStorage quota errors:
+
+- **Maximum size**: 4MB (configurable in `CACHE_CONFIG.MAX_SIZE_BYTES`)
+- **Auto-pruning**: Removes 25% of oldest entries when limit reached
+- **Quota protection**: Catches and handles QuotaExceededError gracefully
+- **Prune throttling**: Max once per 5 seconds to prevent thrashing
+
+When quota is exceeded:
+1. Cache writes are disabled to prevent errors
+2. Console warning is displayed
+3. Existing cache is cleared automatically
+4. Call `clearAll()` to re-enable writes
+
+#### Troubleshooting Cache Issues
+
+**Problem: Graphs show unexpected layouts or missing connections**
+
+Solution: Clear the cache to force recalculation:
+```javascript
+window.__RESOURCE_GRAPH_CACHE.clearAll();
+```
+Then reload the page.
+
+**Problem: Console shows "LocalStorage quota exceeded" warning**
+
+Solution: The cache has exceeded browser limits. It will auto-clear, but you can manually clear:
+```javascript
+window.__RESOURCE_GRAPH_CACHE.clearAll();
+```
+
+**Problem: Graph positions keep resetting**
+
+Possible causes:
+- Private browsing mode (cache disabled)
+- Browser security settings blocking localStorage
+- Cache version was bumped (intentional invalidation)
+
+Check quota status:
+```javascript
+const stats = window.__RESOURCE_GRAPH_CACHE.getHealthStats();
+console.log('Quota exceeded:', stats.quotaExceeded);
+console.log('Cache size:', stats.estimatedSizeBytes);
+```
+
 #### Cache Invalidation Scenarios
 
 Cache is automatically invalidated when:
 
 1. **Version mismatch**: `CACHE_VERSION` doesn't match stored version
 2. **Manual clear**: User clears browser data or calls `clearAll()`
-3. **Storage quota**: Browser evicts localStorage data
+3. **Storage quota exceeded**: Browser quota limit reached, cache auto-clears
+4. **Size limit exceeded**: Cache exceeds 4MB, oldest entries pruned automatically
+5. **Security error**: localStorage access denied (private browsing), caching disabled
 
 Cache persists across:
 
 - Page reloads
 - Tab closes
 - Browser restarts (unless cleared)
+
+**Private browsing mode**: Cache writes are disabled if localStorage throws SecurityError. Graphs will work but positions won't persist.
 
 ### ResourceId Type Safety
 

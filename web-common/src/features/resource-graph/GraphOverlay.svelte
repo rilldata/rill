@@ -2,6 +2,7 @@
   import type { ResourceGraphGrouping } from "./build-resource-graph";
   import ResourceGraphCanvas from "./ResourceGraphCanvas.svelte";
   import { createEventDispatcher } from "svelte";
+  import { FIT_VIEW_CONFIG } from "./graph-config";
 
   export let group: ResourceGraphGrouping | null = null;
   export let open = false;
@@ -10,9 +11,9 @@
   export let showCloseButton = true;
 
   // Fit view configuration for better centering
-  export let fitViewPadding: number = 0.15;
-  export let fitViewMinZoom: number = 0.1;
-  export let fitViewMaxZoom: number = 1.25;
+  export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
+  export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
+  export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
 
   const dispatch = createEventDispatcher<{ close: void }>();
 

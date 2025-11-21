@@ -16,6 +16,7 @@ import {
   CACHE_KEY_PATTERN,
   debugLog,
   PERFORMANCE_CONFIG,
+  CACHE_CONFIG,
 } from "./graph-config";
 
 /**
@@ -61,6 +62,10 @@ export class GraphCacheManager {
   // Track if we have pending changes to persist
   private dirty = false;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Track cache health
+  private quotaExceeded = false;
+  private lastPruneTime = 0;
 
   /**
    * Initialize the cache manager.
@@ -161,6 +166,7 @@ export class GraphCacheManager {
 
   /**
    * Immediately persist in-memory state to localStorage.
+   * Includes error handling for quota exceeded, disabled storage, and size limits.
    */
   persist(): void {
     if (!this.initialized) {
@@ -173,16 +179,146 @@ export class GraphCacheManager {
       return;
     }
 
+    // Skip if quota was previously exceeded (until cleared)
+    if (this.quotaExceeded) {
+      debugLog(
+        "Cache",
+        "Skipping persist: quota exceeded, cache disabled until cleared",
+      );
+      return;
+    }
+
     debugLog("Cache", "Persisting cache to localStorage");
 
-    this.store.set({
-      positions: Object.fromEntries(this.positions),
-      assignments: Object.fromEntries(this.assignments),
-      labels: Object.fromEntries(this.labels),
-      refs: Object.fromEntries(this.refs),
-    });
+    try {
+      const data: PersistedCache = {
+        positions: Object.fromEntries(this.positions),
+        assignments: Object.fromEntries(this.assignments),
+        labels: Object.fromEntries(this.labels),
+        refs: Object.fromEntries(this.refs),
+      };
 
-    this.dirty = false;
+      // Check size before writing
+      const dataSize = this.estimateCacheSize(data);
+      debugLog("Cache", `Estimated cache size: ${dataSize} bytes`);
+
+      if (dataSize > CACHE_CONFIG.MAX_SIZE_BYTES) {
+        console.warn(
+          `[ResourceGraph] Cache size (${dataSize} bytes) exceeds limit (${CACHE_CONFIG.MAX_SIZE_BYTES} bytes), pruning...`,
+        );
+        this.pruneOldestEntries();
+        // Retry persist after pruning
+        return this.persist();
+      }
+
+      // Attempt to write to localStorage
+      this.store.set(data);
+      this.dirty = false;
+      this.quotaExceeded = false; // Reset quota flag on success
+      debugLog("Cache", "Persist successful");
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        (error.name === "QuotaExceededError" ||
+          error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+      ) {
+        console.warn(
+          "[ResourceGraph] LocalStorage quota exceeded, clearing cache and disabling until manually cleared",
+        );
+        this.quotaExceeded = true;
+        this.clearAll();
+      } else if (
+        error instanceof DOMException &&
+        error.name === "SecurityError"
+      ) {
+        console.warn(
+          "[ResourceGraph] LocalStorage access denied (private browsing or disabled), cache will not persist",
+        );
+        this.quotaExceeded = true; // Disable further writes
+      } else {
+        console.error("[ResourceGraph] Failed to persist cache:", error);
+        // Don't set quotaExceeded for unknown errors, allow retry
+      }
+      this.dirty = false; // Clear dirty flag to prevent infinite retry
+    }
+  }
+
+  /**
+   * Estimate cache size in bytes using JSON serialization.
+   * This is approximate but sufficient for quota management.
+   */
+  private estimateCacheSize(data: PersistedCache): number {
+    try {
+      return JSON.stringify(data).length * 2; // UTF-16 uses 2 bytes per char
+    } catch (error) {
+      console.error("[ResourceGraph] Failed to estimate cache size:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * Prune oldest entries based on LRU strategy.
+   * Removes oldest positions first, then assignments, then refs.
+   * Labels are kept as they're small and important for recovery.
+   */
+  private pruneOldestEntries(): void {
+    const now = Date.now();
+    // Prevent excessive pruning (max once per 5 seconds)
+    if (now - this.lastPruneTime < CACHE_CONFIG.MIN_PRUNE_INTERVAL_MS) {
+      debugLog("Cache", "Skipping prune: too soon since last prune");
+      return;
+    }
+
+    this.lastPruneTime = now;
+    debugLog("Cache", "Pruning oldest cache entries");
+
+    const initialSize =
+      this.positions.size +
+      this.assignments.size +
+      this.refs.size +
+      this.labels.size;
+
+    // Prune 25% of positions (oldest positions are least likely to be reused)
+    const positionsToRemove = Math.ceil(this.positions.size * 0.25);
+    const positionKeys = Array.from(this.positions.keys());
+    for (let i = 0; i < positionsToRemove && i < positionKeys.length; i++) {
+      this.positions.delete(positionKeys[i]);
+    }
+
+    // Prune 25% of assignments if positions pruning wasn't enough
+    if (positionsToRemove < 10) {
+      const assignmentsToRemove = Math.ceil(this.assignments.size * 0.25);
+      const assignmentKeys = Array.from(this.assignments.keys());
+      for (
+        let i = 0;
+        i < assignmentsToRemove && i < assignmentKeys.length;
+        i++
+      ) {
+        this.assignments.delete(assignmentKeys[i]);
+      }
+    }
+
+    // Prune 25% of refs if still needed
+    if (positionsToRemove < 10) {
+      const refsToRemove = Math.ceil(this.refs.size * 0.25);
+      const refKeys = Array.from(this.refs.keys());
+      for (let i = 0; i < refsToRemove && i < refKeys.length; i++) {
+        this.refs.delete(refKeys[i]);
+      }
+    }
+
+    const finalSize =
+      this.positions.size +
+      this.assignments.size +
+      this.refs.size +
+      this.labels.size;
+
+    debugLog(
+      "Cache",
+      `Pruned ${initialSize - finalSize} entries (${initialSize} → ${finalSize})`,
+    );
+
+    this.markDirty();
   }
 
   /**
@@ -267,15 +403,25 @@ export class GraphCacheManager {
   getHealthStats(): {
     initialized: boolean;
     dirty: boolean;
+    quotaExceeded: boolean;
     positions: number;
     assignments: number;
     labels: number;
     refs: number;
     totalEntries: number;
+    estimatedSizeBytes: number;
   } {
+    const data = {
+      positions: Object.fromEntries(this.positions),
+      assignments: Object.fromEntries(this.assignments),
+      labels: Object.fromEntries(this.labels),
+      refs: Object.fromEntries(this.refs),
+    };
+
     return {
       initialized: this.initialized,
       dirty: this.dirty,
+      quotaExceeded: this.quotaExceeded,
       positions: this.positions.size,
       assignments: this.assignments.size,
       labels: this.labels.size,
@@ -285,12 +431,14 @@ export class GraphCacheManager {
         this.assignments.size +
         this.labels.size +
         this.refs.size,
+      estimatedSizeBytes: this.estimateCacheSize(data),
     };
   }
 
   /**
    * Clear all cached data.
    * Useful for debugging or when cache becomes corrupted.
+   * Also resets quota exceeded flag to allow future writes.
    */
   clearAll(): void {
     debugLog("Cache", "Clearing all cached data");
@@ -299,6 +447,9 @@ export class GraphCacheManager {
     this.assignments.clear();
     this.labels.clear();
     this.refs.clear();
+
+    // Reset quota flag to allow writes again
+    this.quotaExceeded = false;
 
     this.markDirty();
     this.persist();

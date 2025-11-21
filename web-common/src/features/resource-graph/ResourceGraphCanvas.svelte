@@ -14,6 +14,11 @@
   import { traverseUpstream, traverseDownstream } from "./graph-traversal";
   import ResourceNode from "./ResourceNode.svelte";
   import type { ResourceNodeData } from "./types";
+  import {
+    UI_CONFIG,
+    EDGE_CONFIG,
+    FIT_VIEW_CONFIG,
+  } from "./graph-config";
 
   export let resources: V1Resource[] = [];
   export let title: string | null = null;
@@ -69,9 +74,9 @@
   export let enableExpand = true;
   export let fillParent = false;
   // Fit view configuration - allows customization of how the graph is centered and zoomed
-  export let fitViewPadding: number = 0.15; // 15% padding by default (reduced from 22%)
-  export let fitViewMinZoom: number = 0.1; // Minimum zoom level
-  export let fitViewMaxZoom: number = 1.25; // Maximum zoom level
+  export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
+  export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
+  export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher<{ expand: void }>();
   // Tie Svelte Flow theme to the app theme
@@ -81,19 +86,10 @@
     | "dark"
     | "light";
 
-  // Layout constants
-  const CARD_HEIGHT_PX = 260; // Sized to fit 3x3 grid comfortably on standard displays
-  const EDGE_BORDER_RADIUS = 6; // Rounded corners for edge paths
-
-  // Edge offset calculation constants
-  const DEFAULT_EDGE_OFFSET = 8; // Default offset when nodes are moderately spaced
-  const MIN_EDGE_OFFSET = 4; // Minimal offset for nearly-vertical edges
-  const MAX_EDGE_OFFSET = 18; // Maximum offset for widely-spaced nodes
-  const VERTICAL_EDGE_THRESHOLD_PX = 12; // Treat edge as vertical if horizontal distance < this
-  const EDGE_OFFSET_SCALING_FACTOR = 10; // Divides vertical distance to compute dynamic offset
-
   // Use inline height to avoid Tailwind class generation issues with dynamic arbitrary values
-  $: containerInlineHeight = fillParent ? "100%" : `${CARD_HEIGHT_PX}px`;
+  $: containerInlineHeight = fillParent
+    ? "100%"
+    : `${UI_CONFIG.CARD_HEIGHT_PX}px`;
 
   const nodeTypes = {
     "resource-node": ResourceNode,
@@ -101,13 +97,10 @@
 
   const edgeOptions = {
     type: "smoothstep",
-    style: "stroke:#b1b1b7;stroke-width:1px;opacity:0.85;",
+    style: EDGE_CONFIG.DEFAULT_STYLE,
     // Small offset so edges clear nodes slightly
     pathOptions: { offset: 3, borderRadius: 4 },
   } as const;
-
-  const HIGHLIGHT_EDGE_STYLE = "stroke:#3b82f6;stroke-width:2px;opacity:1;";
-  const DIM_EDGE_STYLE = "stroke:#b1b1b7;stroke-width:1px;opacity:0.25;";
 
   /**
    * Calculate dynamic edge offset based on node positions to create smoother, straighter routes.
@@ -117,7 +110,7 @@
     sourceNode: Node<ResourceNodeData> | undefined,
     targetNode: Node<ResourceNodeData> | undefined,
   ): number {
-    if (!sourceNode || !targetNode) return DEFAULT_EDGE_OFFSET;
+    if (!sourceNode || !targetNode) return EDGE_CONFIG.DEFAULT_OFFSET;
 
     // Calculate center x and handle y positions
     const sx = (sourceNode.position?.x ?? 0) + (sourceNode.width ?? 0) / 2;
@@ -129,10 +122,13 @@
     const dy = Math.abs(ty - sy);
 
     // For nearly-vertical edges, use minimal offset; otherwise scale with distance
-    if (dx < VERTICAL_EDGE_THRESHOLD_PX) return MIN_EDGE_OFFSET;
+    if (dx < EDGE_CONFIG.VERTICAL_THRESHOLD_PX) return EDGE_CONFIG.MIN_OFFSET;
     return Math.max(
-      MIN_EDGE_OFFSET,
-      Math.min(MAX_EDGE_OFFSET, Math.round(dy / EDGE_OFFSET_SCALING_FACTOR)),
+      EDGE_CONFIG.MIN_OFFSET,
+      Math.min(
+        EDGE_CONFIG.MAX_OFFSET,
+        Math.round(dy / EDGE_CONFIG.OFFSET_SCALING_FACTOR),
+      ),
     );
   }
 
@@ -155,8 +151,10 @@
 
       return {
         ...e,
-        style: isHighlighted ? HIGHLIGHT_EDGE_STYLE : DIM_EDGE_STYLE,
-        pathOptions: { offset, borderRadius: EDGE_BORDER_RADIUS },
+        style: isHighlighted
+          ? EDGE_CONFIG.HIGHLIGHT_STYLE
+          : EDGE_CONFIG.DIM_STYLE,
+        pathOptions: { offset, borderRadius: EDGE_CONFIG.BORDER_RADIUS },
       };
     });
   }
@@ -177,7 +175,7 @@
 
       return {
         ...e,
-        pathOptions: { offset, borderRadius: EDGE_BORDER_RADIUS },
+        pathOptions: { offset, borderRadius: EDGE_CONFIG.BORDER_RADIUS },
       };
     });
   }

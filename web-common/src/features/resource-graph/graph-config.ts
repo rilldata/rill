@@ -225,6 +225,28 @@ export const PERFORMANCE_CONFIG = {
 } as const;
 
 /**
+ * Cache size and pruning configuration.
+ */
+export const CACHE_CONFIG = {
+  /**
+   * Maximum cache size in bytes (4MB).
+   * localStorage typically has 5-10MB quota, leaving room for other data.
+   */
+  MAX_SIZE_BYTES: 4 * 1024 * 1024,
+
+  /**
+   * Minimum interval between pruning operations in milliseconds.
+   * Prevents thrashing when cache is near limit.
+   */
+  MIN_PRUNE_INTERVAL_MS: 5000,
+
+  /**
+   * Percentage of entries to remove during pruning (0.25 = 25%).
+   */
+  PRUNE_PERCENTAGE: 0.25,
+} as const;
+
+/**
  * Debug mode configuration.
  * Set window.__DEBUG_RESOURCE_GRAPH = true to enable.
  */

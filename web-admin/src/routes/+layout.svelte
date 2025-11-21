@@ -17,6 +17,7 @@
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import ResourceGraphQuickView from "@rilldata/web-common/features/resource-graph/ResourceGraphQuickView.svelte";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import { isEmbedPage } from "@rilldata/web-common/layout/navigation/navigation-utils.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
@@ -160,3 +161,5 @@
 </QueryClientProvider>
 
 <NotificationCenter />
+
+<ResourceGraphQuickView />

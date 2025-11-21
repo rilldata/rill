@@ -23,6 +23,7 @@
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
   import SummaryCountsGraph from "./SummaryCountsGraph.svelte";
   import { onDestroy } from "svelte";
+  import { UI_CONFIG, FIT_VIEW_CONFIG } from "./graph-config";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -39,9 +40,9 @@
   export let onExpandedChange: ((id: string | null) => void) | null = null;
   export let expandedId: string | null = null; // Controlled mode
   export let overlayMode: "inline" | "fullscreen" | "modal" = "inline";
-  export let gridColumns: number = 3;
-  export let expandedHeightMobile = "700px";
-  export let expandedHeightDesktop = "860px";
+  export let gridColumns: number = UI_CONFIG.DEFAULT_GRID_COLUMNS;
+  export let expandedHeightMobile = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
+  export let expandedHeightDesktop = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
 
   type SummaryMemo = {
     sources: number;
@@ -63,9 +64,9 @@
   }
 
   // Fit view configuration for better centering
-  export let fitViewPadding: number = 0.15;
-  export let fitViewMinZoom: number = 0.1;
-  export let fitViewMaxZoom: number = 1.25;
+  export let fitViewPadding: number = FIT_VIEW_CONFIG.PADDING;
+  export let fitViewMinZoom: number = FIT_VIEW_CONFIG.MIN_ZOOM;
+  export let fitViewMaxZoom: number = FIT_VIEW_CONFIG.MAX_ZOOM;
 
   $: normalizedResources = resources ?? [];
   $: normalizedSeeds = expandSeedsByKind(
