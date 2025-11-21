@@ -45,14 +45,15 @@ import (
 
 // TemplateData contains data for resolving a template.
 type TemplateData struct {
-	Environment string
-	User        map[string]any
-	Variables   map[string]string
-	State       map[string]any
-	ExtraProps  map[string]any
-	Self        TemplateResource
-	Resolve     func(ref ResourceName) (string, error)
-	Lookup      func(name ResourceName) (TemplateResource, error)
+	Environment   string
+	User          map[string]any
+	Variables     map[string]string
+	State         map[string]any
+	ExtraProps    map[string]any
+	Self          TemplateResource
+	Resolve       func(ref ResourceName) (string, error)
+	Lookup        func(name ResourceName) (TemplateResource, error)
+	CallbackFuncs map[string]any
 }
 
 // TemplateResource contains data for a resource for injection into a template.
@@ -209,6 +210,11 @@ func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool)
 	// Add no-ops
 	funcMap["configure"] = func(parts ...string) error { return nil }
 	funcMap["dependency"] = func(parts ...string) error { return nil }
+
+	// Add callback funcs
+	for k, v := range data.CallbackFuncs {
+		funcMap[k] = v
+	}
 
 	// Add func to resolve a "ref"
 	funcMap["ref"] = func(parts ...string) (string, error) {

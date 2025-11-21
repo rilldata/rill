@@ -110,10 +110,10 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Inject the additional where clause if provided
-	query.Where = applyAdditionalWhere(query.Where, props.AdditionalWhere)
+	query.Where = ApplyAdditionalWhere(query.Where, props.AdditionalWhere)
 
 	// Inject the additional time range if provided
-	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
+	query.TimeRange = ApplyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
 
 	// Set the additional timezone if provided
 	if props.TimeZone != "" {
@@ -136,8 +136,8 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	return newMetrics(ctx, resolverOpts)
 }
 
-// applyAdditionalWhere combines the existing where clause with the additional where clause
-func applyAdditionalWhere(current, additional *metricsview.Expression) *metricsview.Expression {
+// ApplyAdditionalWhere combines the existing where clause with the additional where clause
+func ApplyAdditionalWhere(current, additional *metricsview.Expression) *metricsview.Expression {
 	if current == nil {
 		return additional
 	}
@@ -157,8 +157,8 @@ func applyAdditionalWhere(current, additional *metricsview.Expression) *metricsv
 	}
 }
 
-// applyAdditionalTimeRange merges the existing time range with the additional time range
-func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metricsview.TimeRange {
+// ApplyAdditionalTimeRange merges the existing time range with the additional time range
+func ApplyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metricsview.TimeRange {
 	if current == nil {
 		return additional
 	}

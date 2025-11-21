@@ -62,20 +62,6 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		}, nil
 	}
 
-	// Setup templating data
-	inst, err := s.runtime.Instance(ctx, req.InstanceId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	templateData := parser.TemplateData{
-		Environment: inst.Environment,
-		User:        claims.UserAttributes,
-		Variables:   inst.ResolveVariables(false),
-		ExtraProps: map[string]any{
-			"args": req.Args.AsMap(),
-		},
-	}
-
 	components := make(map[string]*runtimev1.Resource)
 
 	for _, row := range spec.Rows {
@@ -86,8 +72,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 			}
 
 			// Get component resource.
-			// NOTE: By passing true, we get a cloned object that is safe to modify in-place.
-			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: item.Component}, true)
+			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: item.Component}, false)
 			if err != nil {
 				if errors.Is(err, drivers.ErrResourceNotFound) {
 					return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
@@ -95,28 +80,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 				return nil, err
 			}
 
-			// Resolve the renderer properties in the valid_spec.
-			validSpec := cmp.GetComponent().State.ValidSpec
-			if validSpec != nil && validSpec.RendererProperties != nil {
-				v, err := parser.ResolveTemplateRecursively(validSpec.RendererProperties.AsMap(), templateData, false)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "component %q: failed to resolve templating: %s", item.Component, err.Error())
-				}
-
-				props, ok := v.(map[string]any)
-				if !ok {
-					return nil, status.Errorf(codes.Internal, "component %q: failed to convert resolved renderer properties to map: %v", item.Component, v)
-				}
-
-				propsPB, err := structpb.NewStruct(props)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "component %q: failed to convert renderer properties to struct: %s", item.Component, err.Error())
-				}
-
-				validSpec.RendererProperties = propsPB
-			}
-
-			// Add to map.
+			// Add to map without resolving templates. Use ResolveTemplatedString RPC for template resolution.
 			components[item.Component] = cmp
 		}
 	}
