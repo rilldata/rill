@@ -635,7 +635,7 @@ func generateCanvasDashboardYAMLSimple(metricsViewName string, measures, dimensi
 		Type:        "canvas",
 		DisplayName: identifierToDisplayName(metricsViewName) + " Dashboard",
 		Defaults: &canvasDefaults{
-			TimeRange:      "P2D",
+			TimeRange:      "P7D",
 			ComparisonMode: "time",
 		},
 	}
@@ -807,9 +807,6 @@ func insertEmptyLinesInCanvasYaml(node *yaml.Node) {
 
 				if keyNode.Value == "rows" {
 					keyNode.HeadComment = "\n"
-				}
-				if keyNode.Value == "type" {
-					valueNode.LineComment = "\n\n"
 				}
 				insertEmptyLinesInCanvasYaml(valueNode)
 			}
