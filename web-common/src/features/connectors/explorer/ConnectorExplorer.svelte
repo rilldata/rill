@@ -9,6 +9,7 @@
 
   export let store: ConnectorExplorerStore;
   export let olapOnly: boolean = false;
+  export let limitToConnector: string | undefined = undefined;
   export let limitedConnectorDriver: V1ConnectorDriver | undefined = undefined;
 
   $: ({ instanceId } = $runtime);
@@ -20,11 +21,14 @@
       select: (data) => {
         if (!data?.connectors) return;
 
-        const filtered = (
+        let filtered = (
           olapOnly
             ? data.connectors.filter((c) => c?.driver?.implementsOlap)
             : data.connectors
         ).sort((a, b) => (a?.name as string).localeCompare(b?.name as string));
+        if (limitToConnector) {
+          filtered = filtered.filter((c) => c?.name === limitToConnector);
+        }
 
         return { connectors: filtered };
       },
@@ -35,7 +39,8 @@
     ? {
         connectors: [
           {
-            name: (limitedConnectorDriver.name as string) ?? "",
+            name: (limitToConnector as string) ??
+              ((limitedConnectorDriver.name as string) ?? ""),
             driver: limitedConnectorDriver,
           },
         ],

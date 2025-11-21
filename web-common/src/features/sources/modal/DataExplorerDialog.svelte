@@ -43,6 +43,11 @@
     },
   });
   $: sidebar = $connectorsQuery?.data?.connectors ?? [];
+
+  let selectedConnectorName: string | undefined = undefined;
+  $: if (!selectedConnectorName && sidebar.length > 0) {
+    selectedConnectorName = sidebar[0]?.name as string;
+  }
 </script>
 
 <div class="flex flex-col md:flex-row h-full">
@@ -70,10 +75,14 @@
         {#if sidebar.length > 0}
           {#each sidebar as c (c.name)}
             <button
-              class="w-full text-left text-sm px-3 py-2 rounded-md border border-gray-200 hover:bg-slate-50"
+              class="w-full text-left text-sm px-3 py-2 rounded-md border hover:bg-slate-50"
+              class:border-gray-200={selectedConnectorName !== c.name}
+              class:border-indigo-200={selectedConnectorName === c.name}
+              class:bg-indigo-50={selectedConnectorName === c.name}
               aria-label={c.name}
-              disabled
-              title="Switching connectors not yet supported"
+              on:click={() => {
+                selectedConnectorName = String(c.name);
+              }}
             >
               {c.name}
             </button>
@@ -93,7 +102,11 @@
     </div>
 
     <div class="border border-gray-200 rounded-md overflow-y-auto py-2">
-      <ConnectorExplorer {store} limitedConnectorDriver={connectorDriver} />
+      <ConnectorExplorer
+        {store}
+        limitedConnectorDriver={connectorDriver}
+        limitToConnector={selectedConnectorName}
+      />
     </div>
   </section>
 </div>
