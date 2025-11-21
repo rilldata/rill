@@ -24,27 +24,14 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/azure",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "azure_storage_account",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_sas_token",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_connection_string",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "azure_storage_connection_string",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Azure Connection String",
+			Description: "Azure connection string for storage account",
+			Placeholder: "Paste your Azure connection string here",
+			Secret:      true,
 		},
 	},
-	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",

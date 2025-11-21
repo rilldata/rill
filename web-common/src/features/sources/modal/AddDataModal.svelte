@@ -71,6 +71,8 @@
   });
 
   function goToConnectorForm(connector: V1ConnectorDriver) {
+    // Ensure multi-step connectors always start on the connector step
+    resetConnectorStep();
     const state = {
       step: 2,
       selectedConnector: connector,
