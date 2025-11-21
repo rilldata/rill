@@ -68,19 +68,23 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 
 	// We can not directly append settings to the query as in Execute method because some queries like CREATE TABLE will not support it.
 	// Instead, we set the settings in the context.
-	// TODO: Fix query_settings_override not honoured here.
 	ctx = contextWithQueryID(ctx)
 	if c.supportSettings {
-		settings := map[string]any{
-			"cast_keep_nullable":        1,
-			"insert_distributed_sync":   1,
-			"prefer_global_in_and_join": 1,
-			"session_timezone":          "UTC",
-			"join_use_nulls":            1,
-		}
-		// Add query attributes to settings
-		for k, v := range stmt.QueryAttributes {
-			settings[k] = v
+		var settings map[string]any
+		if c.config.QuerySettingsOverride != "" {
+			settings = parseSettings(c.config.QuerySettingsOverride)
+		} else {
+			settings = map[string]any{
+				"cast_keep_nullable":        1,
+				"insert_distributed_sync":   1,
+				"prefer_global_in_and_join": 1,
+				"session_timezone":          "UTC",
+				"join_use_nulls":            1,
+			}
+			// Add query attributes to settings
+			for k, v := range stmt.QueryAttributes {
+				settings[k] = v
+			}
 		}
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 	}
@@ -135,29 +139,30 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	if c.supportSettings {
-		settings := map[string]any{
-			"cast_keep_nullable":        1,
-			"insert_distributed_sync":   1,
-			"prefer_global_in_and_join": 1,
-			"session_timezone":          "UTC",
-			"join_use_nulls":            1,
-		}
-		if c.config.QuerySettings != "" {
-			parsed := parseSettings(c.config.QuerySettings)
-			for k, v := range parsed {
+		var settings map[string]any
+		if c.config.QuerySettingsOverride != "" {
+			settings = parseSettings(c.config.QuerySettingsOverride)
+		} else {
+			settings = map[string]any{
+				"cast_keep_nullable":        1,
+				"insert_distributed_sync":   1,
+				"prefer_global_in_and_join": 1,
+				"session_timezone":          "UTC",
+				"join_use_nulls":            1,
+			}
+			if c.config.QuerySettings != "" {
+				parsed := parseSettings(c.config.QuerySettings)
+				for k, v := range parsed {
+					settings[k] = v
+				}
+			}
+
+			for k, v := range stmt.QueryAttributes {
 				settings[k] = v
 			}
 		}
 
-		for k, v := range stmt.QueryAttributes {
-			settings[k] = v
-		}
-
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
-
-		if c.config.QuerySettingsOverride != "" {
-			stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
-		}
 	}
 
 	// Gather metrics only for actual queries
