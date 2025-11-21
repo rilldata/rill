@@ -70,23 +70,23 @@ func (c *Connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	// Instead, we set the settings in the context.
 	ctx = contextWithQueryID(ctx)
 	if c.supportSettings {
-		var settings map[string]any
-		if c.config.QuerySettingsOverride != "" {
-			settings = parseSettings(c.config.QuerySettingsOverride)
-		} else {
-			settings = map[string]any{
-				"cast_keep_nullable":        1,
-				"insert_distributed_sync":   1,
-				"prefer_global_in_and_join": 1,
-				"session_timezone":          "UTC",
-				"join_use_nulls":            1,
-			}
-			// Add query attributes to settings
+		settings := map[string]any{
+			"cast_keep_nullable":        1,
+			"insert_distributed_sync":   1,
+			"prefer_global_in_and_join": 1,
+			"session_timezone":          "UTC",
+			"join_use_nulls":            1,
+		}
+		if len(stmt.QueryAttributes) > 0 {
 			for k, v := range stmt.QueryAttributes {
 				settings[k] = v
 			}
 		}
 		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(settings))
+
+		if c.config.QuerySettingsOverride != "" {
+			stmt.Query += " SETTINGS " + c.config.QuerySettingsOverride
+		}
 	}
 
 	// We use the meta conn for dry run queries
@@ -139,26 +139,28 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	}
 
 	if c.supportSettings {
-		var settings map[string]any
-		if c.config.QuerySettingsOverride != "" {
-			settings = parseSettings(c.config.QuerySettingsOverride)
-		} else {
-			settings = map[string]any{
-				"cast_keep_nullable":        1,
-				"insert_distributed_sync":   1,
-				"prefer_global_in_and_join": 1,
-				"session_timezone":          "UTC",
-				"join_use_nulls":            1,
-			}
-			if c.config.QuerySettings != "" {
-				parsed := parseSettings(c.config.QuerySettings)
-				for k, v := range parsed {
+		settings := map[string]any{
+			"cast_keep_nullable":        1,
+			"insert_distributed_sync":   1,
+			"prefer_global_in_and_join": 1,
+			"session_timezone":          "UTC",
+			"join_use_nulls":            1,
+		}
+
+		if c.supportSettings {
+			if len(stmt.QueryAttributes) > 0 {
+				for k, v := range stmt.QueryAttributes {
 					settings[k] = v
 				}
 			}
 
-			for k, v := range stmt.QueryAttributes {
-				settings[k] = v
+			if c.config.QuerySettingsOverride != "" {
+				stmt.Query += "\n SETTINGS " + c.config.QuerySettingsOverride
+			} else {
+				stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
+				if c.config.QuerySettings != "" {
+					stmt.Query += ", " + c.config.QuerySettings
+				}
 			}
 		}
 
@@ -780,28 +782,4 @@ func splitStructFieldStr(fieldStr string) (string, string, bool) {
 	typeStr := strings.TrimLeft(fieldStr[idx:], " ")
 
 	return nameStr, typeStr, true
-}
-
-func parseSettings(s string) map[string]any {
-	m := make(map[string]any)
-	if s == "" {
-		return m
-	}
-	parts := strings.Split(s, ",")
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		kv := strings.SplitN(part, "=", 2)
-		if len(kv) == 2 {
-			key := strings.TrimSpace(kv[0])
-			val := strings.TrimSpace(kv[1])
-			if len(val) > 1 && val[0] == '\'' && val[len(val)-1] == '\'' {
-				val = val[1 : len(val)-1]
-			}
-			m[key] = val
-		}
-	}
-	return m
 }
