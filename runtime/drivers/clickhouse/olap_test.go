@@ -868,7 +868,7 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 
 	t.Run("SingleQueryAttribute", func(t *testing.T) {
 		stmt := &drivers.Statement{
-			Query: "SELECT id, value FROM test_attrs",
+			Query: "SELECT id, value, getSetting('max_threads') as max_threads FROM test_attrs",
 			QueryAttributes: map[string]string{
 				"max_threads": "1",
 			},
@@ -876,13 +876,19 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 		res, err := olap.Query(ctx, stmt)
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var id int
+		var value string
+		var maxThreads int
+		require.NoError(t, res.Scan(&id, &value, &maxThreads))
+		require.Equal(t, 1, maxThreads)
 		err = res.Close()
 		require.NoError(t, err)
 	})
 
 	t.Run("MultipleQueryAttributes", func(t *testing.T) {
 		stmt := &drivers.Statement{
-			Query: "SELECT id, value FROM test_attrs",
+			Query: "SELECT id, value, getSetting('max_threads') as max_threads, getSetting('max_memory_usage') as max_memory, getSetting('max_execution_time') as max_exec_time FROM test_attrs",
 			QueryAttributes: map[string]string{
 				"max_threads":        "1",
 				"max_memory_usage":   "1000000",
@@ -892,6 +898,16 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 		res, err := olap.Query(ctx, stmt)
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var id int
+		var value string
+		var maxThreads int
+		var maxMemory int64
+		var maxExecTime int
+		require.NoError(t, res.Scan(&id, &value, &maxThreads, &maxMemory, &maxExecTime))
+		require.Equal(t, 1, maxThreads)
+		require.Equal(t, int64(1000000), maxMemory)
+		require.Equal(t, 10, maxExecTime)
 		err = res.Close()
 		require.NoError(t, err)
 	})
@@ -924,7 +940,7 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 
 	t.Run("QueryAttributeWithExistingPrefix", func(t *testing.T) {
 		stmt := &drivers.Statement{
-			Query: "SELECT id, value FROM test_attrs",
+			Query: "SELECT id, value, getSetting('max_threads') as max_threads, getSetting('max_memory_usage') as max_memory FROM test_attrs",
 			QueryAttributes: map[string]string{
 				"max_threads":      "1",
 				"max_memory_usage": "1000000",
@@ -933,6 +949,14 @@ func testQueryAttributesSETTINGSInjection(t *testing.T, olap drivers.OLAPStore) 
 		res, err := olap.Query(ctx, stmt)
 		require.NoError(t, err)
 		require.NotNil(t, res)
+		require.True(t, res.Next())
+		var id int
+		var value string
+		var maxThreads int
+		var maxMemory int64
+		require.NoError(t, res.Scan(&id, &value, &maxThreads, &maxMemory))
+		require.Equal(t, 1, maxThreads)
+		require.Equal(t, int64(1000000), maxMemory)
 		err = res.Close()
 		require.NoError(t, err)
 	})
