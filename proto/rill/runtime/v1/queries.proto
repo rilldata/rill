@@ -188,6 +188,14 @@ service QueryService {
     };
   }
 
+  // ResolveTemplatedString resolves a templated strings.
+  rpc ResolveTemplatedString(ResolveTemplatedStringRequest) returns (ResolveTemplatedStringResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/resolve-templated-string",
+      body: "*"
+    };
+  }
+
   // Profiling APIs
 
   // ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -265,16 +273,6 @@ service QueryService {
   // TableRows returns table rows
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
-  }
-
-  // Markdown APIs
-
-  // ResolveTemplatedString resolves a markdown string with Rill templating.
-  rpc ResolveTemplatedString(ResolveTemplatedStringRequest) returns (ResolveTemplatedStringResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/queries/resolve-templated-string",
-      body: "*"
-    };
   }
 }
 
@@ -1306,7 +1304,7 @@ message TableRowsResponse {
 message ResolveTemplatedStringRequest {
   string instance_id = 1;
   // Any string with Go templating
-  string data = 2;
+  string body = 2;
   // If true, output format tokens instead of raw values.
   bool use_format_tokens = 3;
   // Additional filters to inject into metrics SQL queries by metrics view name
@@ -1316,5 +1314,5 @@ message ResolveTemplatedStringRequest {
 }
 
 message ResolveTemplatedStringResponse {
-  string resolved_data = 1;
+  string body = 1;
 }

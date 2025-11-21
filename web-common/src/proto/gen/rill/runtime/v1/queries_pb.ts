@@ -6508,9 +6508,9 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
   /**
    * Any string with Go templating
    *
-   * @generated from field: string data = 2;
+   * @generated from field: string body = 2;
    */
-  data = "";
+  body = "";
 
   /**
    * If true, output format tokens instead of raw values.
@@ -6542,7 +6542,7 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
   static readonly typeName = "rill.runtime.v1.ResolveTemplatedStringRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "use_format_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "additional_where_by_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 5, name: "additional_time_range", kind: "message", T: TimeRange },
@@ -6570,9 +6570,9 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
  */
 export class ResolveTemplatedStringResponse extends Message<ResolveTemplatedStringResponse> {
   /**
-   * @generated from field: string resolved_data = 1;
+   * @generated from field: string body = 1;
    */
-  resolvedData = "";
+  body = "";
 
   constructor(data?: PartialMessage<ResolveTemplatedStringResponse>) {
     super();
@@ -6582,7 +6582,7 @@ export class ResolveTemplatedStringResponse extends Message<ResolveTemplatedStri
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ResolveTemplatedStringResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "resolved_data", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "body", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveTemplatedStringResponse {
