@@ -491,6 +491,8 @@ components:
             type: object
         v1DeleteUsergroupResponse:
             type: object
+        v1DeleteVirtualFileResponse:
+            type: object
         v1DenyProjectAccessResponse:
             type: object
         v1Deployment:
@@ -855,6 +857,11 @@ components:
                     type: string
                 usergroup:
                     $ref: '#/components/schemas/v1Usergroup'
+            type: object
+        v1GetVirtualFileResponse:
+            properties:
+                file:
+                    $ref: '#/components/schemas/v1VirtualFile'
             type: object
         v1GithubPermission:
             default: GITHUB_PERMISSION_UNSPECIFIED
@@ -2221,7 +2228,7 @@ externalDocs:
 info:
     description: Rill Admin API enables programmatic management of Rill Cloud resources, including organizations, projects, and user access. It provides endpoints for creating, updating, and deleting these resources, as well as managing authentication and permissions.
     title: Rill Admin API
-    version: v0.76.0
+    version: v0.76.2
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
@@ -2879,6 +2886,7 @@ paths:
     /v1/projects/{projectId}/alerts/meta: {}
     /v1/projects/{projectId}/repo/meta: {}
     /v1/projects/{projectId}/repo/virtual: {}
+    /v1/projects/{projectId}/repo/virtual/file: {}
     /v1/projects/{projectId}/reports/meta: {}
     /v1/roles: {}
     /v1/services/tokens/{tokenId}: {}
