@@ -4,6 +4,8 @@
 -->
 <script lang="ts">
   import { page } from "$app/stores";
+  import { convertContextToHtml } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
+  import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
   import {
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
@@ -12,6 +14,7 @@
   import Markdown from "../../../../components/markdown/Markdown.svelte";
   import type { V1Message } from "../../../../runtime-client";
   import { extractMessageText } from "../utils";
+  import DOMPurify from "dompurify";
 
   export let message: V1Message;
 
@@ -32,6 +35,8 @@
   $: convertCitationUrls = renderedInExplore
     ? getCitationUrlRewriter($mapperStore.data)
     : undefined;
+
+  const contextMetadataStore = getContextMetadataStore();
 </script>
 
 <div class="chat-message chat-message--{role}">
@@ -39,7 +44,9 @@
     {#if role === "assistant"}
       <Markdown {content} converter={convertCitationUrls} />
     {:else}
-      {content}
+      {@html DOMPurify.sanitize(
+        convertContextToHtml(content, $contextMetadataStore),
+      )}
     {/if}
   </div>
 </div>
@@ -58,11 +65,12 @@
   }
 
   .chat-message-content {
-    @apply px-2 py-1.5 rounded-2xl text-sm leading-relaxed break-words;
+    @apply px-4 py-2 rounded-2xl;
+    @apply text-sm leading-relaxed break-words;
   }
 
   .chat-message--user .chat-message-content {
-    @apply bg-primary-400 text-white rounded-br-lg;
+    @apply bg-muted text-foreground rounded-br-lg;
   }
 
   .chat-message--assistant .chat-message-content {

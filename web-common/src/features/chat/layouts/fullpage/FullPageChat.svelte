@@ -6,7 +6,6 @@
     cleanupConversationManager,
     getConversationManager,
   } from "../../core/conversation-manager";
-  import ChatFooter from "../../core/input/ChatFooter.svelte";
   import ChatInput from "../../core/input/ChatInput.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import ConversationSidebar from "./ConversationSidebar.svelte";
@@ -71,7 +70,6 @@
           onSend={onMessageSend}
           bind:this={chatInputComponent}
         />
-        <ChatFooter />
       </div>
     </div>
   </div>

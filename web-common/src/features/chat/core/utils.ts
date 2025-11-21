@@ -4,7 +4,6 @@
  * Common functions used across ConversationManager and Conversation classes to avoid duplication
  * and maintain consistency in error handling, ID generation, and cache management.
  */
-
 import type { V1Message } from "@rilldata/web-common/runtime-client";
 import { MessageContentType, ToolName } from "./types";
 

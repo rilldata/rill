@@ -1,3 +1,4 @@
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { localStorageStore } from "../../../../lib/store-utils/local-storage";
 import { sessionStorageStore } from "../../../../lib/store-utils/session-storage";
 
@@ -37,6 +38,13 @@ export const sidebarActions = {
 
   openChat(): void {
     chatOpen.set(true);
+  },
+
+  startChat(prompt: string): void {
+    chatOpen.set(true);
+    setTimeout(() => {
+      eventBus.emit("start-chat", prompt);
+    }, 50);
   },
 
   closeChat(): void {

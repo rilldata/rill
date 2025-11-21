@@ -3,6 +3,7 @@
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     type DashboardTimeControls,
@@ -56,6 +57,7 @@
     }
 
     const isMac = window.navigator.userAgent.includes("Macintosh");
+    const isExplainKey = e.key === "e" && !e.metaKey && !e.ctrlKey;
 
     if (e.key === "ArrowLeft" && !e.metaKey && !e.altKey) {
       if ($canPanLeft) {
@@ -75,6 +77,8 @@
         e.key === "Escape"
       ) {
         metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
+      } else if (isExplainKey) {
+        measureSelection.startAnomalyExplanationChat();
       }
     } else if (
       priorRange &&
@@ -83,6 +87,8 @@
     ) {
       e.preventDefault();
       undoZoom();
+    } else if (isExplainKey) {
+      measureSelection.startAnomalyExplanationChat();
     }
   }
 

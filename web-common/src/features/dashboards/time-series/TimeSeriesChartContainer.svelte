@@ -10,6 +10,7 @@ A container GraphicContext for the time series in a metrics dashboard.
   export let workspaceWidth: number;
   export let timeSeriesWidth: number;
   export let enableFullWidth = false;
+  export let bottom = 4;
 
   const paddingForFullWidth = 80;
   const paddingForSplitView = 30;
@@ -17,7 +18,7 @@ A container GraphicContext for the time series in a metrics dashboard.
 
 <div class="max-w-full h-fit flex flex-col max-h-full pr-2">
   <GraphicContext
-    bottom={4}
+    {bottom}
     height={enableFullWidth
       ? MEASURE_CONFIG.chart.fullHeight
       : MEASURE_CONFIG.chart.height}

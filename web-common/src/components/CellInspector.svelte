@@ -30,8 +30,12 @@
     // Only handle Space key when not in an input, textarea, or other form element
     const target = event.target as HTMLElement;
     const tagName = target.tagName.toLowerCase();
+    const isContentEditable = target.getAttribute("contenteditable") !== null;
     const isFormElement =
-      tagName === "input" || tagName === "textarea" || tagName === "select";
+      tagName === "input" ||
+      tagName === "textarea" ||
+      tagName === "select" ||
+      isContentEditable;
 
     if (event.code === "Space" && !event.repeat && !isFormElement) {
       event.preventDefault();

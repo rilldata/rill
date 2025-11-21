@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { getExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
+  import { ChatInputTextAreaManager } from "@rilldata/web-common/features/chat/core/input/chat-input-textarea-manager.ts";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
@@ -10,8 +13,9 @@
   export let noMargin = false;
   export let height: string | undefined = undefined;
 
-  let textarea: HTMLTextAreaElement;
-  let placeholder = "Ask about your data...";
+  const placeholder = "Ask about your data...";
+  let editorElement: HTMLDivElement;
+  let value = "";
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
   $: currentConversation = $currentConversationStore;
@@ -24,28 +28,21 @@
   $: canSend = !disabled && value.trim();
   $: canCancel = $isStreamingStore;
 
-  function handleInput(e: Event) {
-    const target = e.target as HTMLTextAreaElement;
-    const value = target.value;
-    draftMessageStore.set(value);
-    autoResize();
-  }
+  const context = getExploreContext();
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (!$isStreamingStore) {
-        sendMessage();
-      }
-    }
-  }
+  const manager = new ChatInputTextAreaManager(
+    (newValue) => draftMessageStore.set(newValue),
+    () => void sendMessage(),
+  );
+  $: manager.setElement(editorElement);
 
   async function sendMessage() {
     if (!canSend) return;
 
     // Message handling with input focus
     try {
-      await currentConversation.sendMessage();
+      manager.setPrompt("");
+      await currentConversation.sendMessage($context);
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -53,38 +50,25 @@
 
     // Let the parent component manage the input value
     await tick();
-    autoResize();
-    textarea?.focus();
+    manager.focusEditor();
   }
 
   function cancelStream() {
     currentConversation.cancelStream();
   }
 
-  function autoResize() {
-    if (textarea && !height) {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    }
-  }
-
   // Public method to focus input (can be called from parent)
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        textarea?.focus();
+        manager?.focusEditor();
       }, 100);
     });
   }
 
-  onMount(() => {
-    autoResize();
-  });
-
-  // Auto-resize when value changes
-  $: if (textarea && value !== undefined) {
-    autoResize();
-  }
+  onMount(() =>
+    eventBus.on("start-chat", (prompt) => manager.setPrompt(prompt)),
+  );
 </script>
 
 <form
@@ -92,44 +76,47 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <textarea
-    bind:this={textarea}
-    {value}
-    class="chat-input"
-    class:fixed-height={!!height}
-    style:height
-    {placeholder}
-    rows="1"
-    on:keydown={handleKeydown}
-    on:input={handleInput}
-  />
-  {#if canCancel}
-    <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
-      <span class="stop-icon">
-        <StopCircle size="1.2em" />
-      </span>
-    </IconButton>
-  {:else}
-    <IconButton
-      ariaLabel="Send message"
-      disabled={!canSend}
-      on:click={sendMessage}
-    >
-      <SendIcon size="1.3em" disabled={!canSend} />
-    </IconButton>
-  {/if}
+  <div class="w-full">
+    <div
+      bind:this={editorElement}
+      contenteditable="true"
+      role="textbox"
+      tabindex="0"
+      class="chat-input"
+      class:fixed-height={!!height}
+      style:height
+      data-placeholder={placeholder}
+      class:empty={!$draftMessageStore.length}
+      on:input={manager.updateValue}
+      on:keydown={manager.handleKeydown}
+    ></div>
+  </div>
+  <div class="chat-input-footer">
+    <div class="grow"></div>
+    <div>
+      {#if canCancel}
+        <IconButton ariaLabel="Cancel streaming" on:click={cancelStream}>
+          <span class="stop-icon">
+            <StopCircle size="1.2em" />
+          </span>
+        </IconButton>
+      {:else}
+        <IconButton
+          ariaLabel="Send message"
+          disabled={!canSend}
+          on:click={sendMessage}
+        >
+          <SendIcon size="1.3em" disabled={!canSend} />
+        </IconButton>
+      {/if}
+    </div>
+  </div>
 </form>
 
 <style lang="postcss">
   .chat-input-form {
-    display: flex;
-    align-items: flex-end;
-    gap: 0.25rem;
-    background: var(--background);
-    border: 1px solid var(--border);
-    border-radius: 0.75rem;
-    padding: 0.25rem;
-    margin: 0 1rem;
+    @apply flex flex-col gap-1 p-1 m-4;
+    @apply bg-background border rounded-md;
     transition: border-color 0.2s;
   }
 
@@ -142,18 +129,8 @@
   }
 
   .chat-input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    outline: none;
-    resize: none;
-    min-height: 1.75rem;
-    max-height: 6rem;
-    padding: 0.25rem;
-    font-family: inherit;
-    overflow-y: auto;
+    @apply p-2 min-h-[2.5rem] outline-none;
+    @apply text-sm leading-relaxed;
   }
 
   .chat-input.fixed-height {
@@ -161,13 +138,9 @@
     max-height: unset;
   }
 
-  .chat-input::placeholder {
-    color: #9ca3af;
-  }
-
-  .chat-input:disabled {
-    color: #9ca3af;
-    cursor: not-allowed;
+  .chat-input.empty:before {
+    content: attr(data-placeholder);
+    @apply text-gray-400 pointer-events-none absolute;
   }
 
   .stop-icon {
@@ -188,5 +161,9 @@
   }
   .stop-icon:active {
     transform: scale(0.97);
+  }
+
+  .chat-input-footer {
+    @apply flex flex-row;
   }
 </style>
