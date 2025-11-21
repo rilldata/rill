@@ -19,7 +19,9 @@
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import { openResourceGraphOverlay } from "@rilldata/web-common/features/resource-graph/resource-graph-overlay-store";
+  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { queryClient as globalQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -40,23 +42,30 @@
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
-  async function viewGraph() {
-    const anchorResource = $modelQuery.data;
-    if (!anchorResource) {
-      console.warn(
-        "[ModelMenuItems] Cannot open resource graph: resource is unavailable",
-      );
-      return;
-    }
-    try {
-      await goto(`/files${filePath}`);
-    } catch (error) {
-      console.error(
-        "[ModelMenuItems] Failed to navigate before opening graph:",
-        error,
-      );
-    }
-    openResourceGraphOverlay(anchorResource);
+  let graphOverlayOpen = false;
+
+  $: resourcesQuery = createRuntimeServiceListResources(
+    instanceId,
+    undefined,
+    {
+      query: {
+        retry: 2,
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
+        enabled: !!instanceId && graphOverlayOpen,
+      },
+    },
+    globalQueryClient,
+  );
+
+  $: allResources = $resourcesQuery.data?.resources ?? [];
+  $: resourcesLoading = $resourcesQuery.isLoading;
+  $: resourcesError = $resourcesQuery.error
+    ? "Failed to load project resources."
+    : null;
+
+  function viewGraph() {
+    graphOverlayOpen = true;
   }
 
   async function handleCreateModel() {
@@ -160,3 +169,11 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
+
+<ResourceGraphOverlay
+  bind:open={graphOverlayOpen}
+  anchorResource={$modelQuery.data}
+  resources={allResources}
+  isLoading={resourcesLoading}
+  error={resourcesError}
+/>

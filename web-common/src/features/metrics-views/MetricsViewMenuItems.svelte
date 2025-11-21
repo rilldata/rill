@@ -16,7 +16,8 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import { GitBranch } from "lucide-svelte";
-  import { openResourceGraphOverlay } from "@rilldata/web-common/features/resource-graph/resource-graph-overlay-store";
+  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 
   export let filePath: string;
 
@@ -53,22 +54,30 @@
     );
   };
 
-  async function viewGraph() {
-    if (!resource) {
-      console.warn(
-        "[MetricsViewMenuItems] Cannot open resource graph: resource is unavailable",
-      );
-      return;
-    }
-    try {
-      await goto(`/files${filePath}`);
-    } catch (error) {
-      console.error(
-        "[MetricsViewMenuItems] Failed to navigate before opening graph:",
-        error,
-      );
-    }
-    openResourceGraphOverlay(resource);
+  let graphOverlayOpen = false;
+
+  $: resourcesQuery = createRuntimeServiceListResources(
+    instanceId,
+    undefined,
+    {
+      query: {
+        retry: 2,
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
+        enabled: !!instanceId && graphOverlayOpen,
+      },
+    },
+    queryClient,
+  );
+
+  $: allResources = $resourcesQuery.data?.resources ?? [];
+  $: resourcesLoading = $resourcesQuery.isLoading;
+  $: resourcesError = $resourcesQuery.error
+    ? "Failed to load project resources."
+    : null;
+
+  function viewGraph() {
+    graphOverlayOpen = true;
   }
 </script>
 
@@ -91,3 +100,11 @@
   <GitBranch slot="icon" size="14px" />
   View dependency graph
 </NavigationMenuItem>
+
+<ResourceGraphOverlay
+  bind:open={graphOverlayOpen}
+  anchorResource={resource}
+  resources={allResources}
+  isLoading={resourcesLoading}
+  error={resourcesError}
+/>

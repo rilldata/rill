@@ -8,7 +8,6 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import RemoteProjectManager from "@rilldata/web-common/features/project/RemoteProjectManager.svelte";
-  import ResourceGraphQuickView from "@rilldata/web-common/features/resource-graph/ResourceGraphQuickView.svelte";
   import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -113,8 +112,6 @@
 {/if}
 
 <NotificationCenter />
-
-<ResourceGraphQuickView />
 
 <style>
   /* Prevent trackpad navigation (like other code editors, like vscode.dev). */

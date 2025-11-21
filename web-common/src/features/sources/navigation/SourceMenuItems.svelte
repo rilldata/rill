@@ -31,7 +31,8 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import { openResourceGraphOverlay } from "@rilldata/web-common/features/resource-graph/resource-graph-overlay-store";
+  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
+  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 
   export let filePath: string;
 
@@ -57,23 +58,30 @@
   const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = source?.state?.table as string;
 
-  async function viewGraph() {
-    const anchorResource = $sourceQuery.data;
-    if (!anchorResource) {
-      console.warn(
-        "[SourceMenuItems] Cannot open resource graph: resource is unavailable",
-      );
-      return;
-    }
-    try {
-      await goto(`/files${filePath}`);
-    } catch (error) {
-      console.error(
-        "[SourceMenuItems] Failed to navigate before opening graph:",
-        error,
-      );
-    }
-    openResourceGraphOverlay(anchorResource);
+  let graphOverlayOpen = false;
+
+  $: resourcesQuery = createRuntimeServiceListResources(
+    instanceId,
+    undefined,
+    {
+      query: {
+        retry: 2,
+        refetchOnMount: true,
+        refetchOnWindowFocus: false,
+        enabled: !!instanceId && graphOverlayOpen,
+      },
+    },
+    queryClient,
+  );
+
+  $: allResources = $resourcesQuery.data?.resources ?? [];
+  $: resourcesLoading = $resourcesQuery.isLoading;
+  $: resourcesError = $resourcesQuery.error
+    ? "Failed to load project resources."
+    : null;
+
+  function viewGraph() {
+    graphOverlayOpen = true;
   }
 
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
@@ -216,3 +224,11 @@
     Replace source with uploaded file
   </NavigationMenuItem>
 {/if}
+
+<ResourceGraphOverlay
+  bind:open={graphOverlayOpen}
+  anchorResource={$sourceQuery.data}
+  resources={allResources}
+  isLoading={resourcesLoading}
+  error={resourcesError}
+/>

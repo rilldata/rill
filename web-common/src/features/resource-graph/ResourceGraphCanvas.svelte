@@ -379,7 +379,11 @@
   }
 
   .expand-btn {
-    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface text-sm text-muted-foreground hover:bg-muted hover:text-foreground;
+    @apply absolute right-2 top-2 z-20 h-7 w-7 rounded border bg-surface text-sm text-muted-foreground;
     line-height: 1.25rem;
+  }
+
+  .expand-btn:hover {
+    @apply bg-muted text-foreground;
   }
 </style>

@@ -173,11 +173,27 @@
   }
 
   .btn-primary {
-    @apply rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+    @apply rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white;
+  }
+
+  .btn-primary:hover {
+    @apply bg-red-700;
+  }
+
+  .btn-primary:focus {
+    @apply outline-none ring-2 ring-red-500 ring-offset-2;
   }
 
   .btn-secondary {
-    @apply rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+    @apply rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-red-50;
+  }
+
+  .btn-secondary:focus {
+    @apply outline-none ring-2 ring-red-500 ring-offset-2;
   }
 
   .error-details {
@@ -185,7 +201,11 @@
   }
 
   .error-details summary {
-    @apply cursor-pointer text-sm font-medium text-red-700 hover:text-red-900;
+    @apply cursor-pointer text-sm font-medium text-red-700;
+  }
+
+  .error-details summary:hover {
+    @apply text-red-900;
   }
 
   .error-details pre {

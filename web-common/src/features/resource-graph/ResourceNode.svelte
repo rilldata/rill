@@ -227,8 +227,12 @@
   }
 
   .error-close {
-    @apply h-6 w-6 rounded border border-red-300 bg-white text-xs text-red-600 hover:bg-red-50 hover:text-red-700;
+    @apply h-6 w-6 rounded border border-red-300 bg-white text-xs text-red-600;
     line-height: 1rem;
+  }
+
+  .error-close:hover {
+    @apply bg-red-50 text-red-700;
   }
 
   .error-actions {
@@ -236,7 +240,11 @@
   }
 
   .error-open {
-    @apply text-xs text-red-700 underline hover:text-red-800;
+    @apply text-xs text-red-700 underline;
+  }
+
+  .error-open:hover {
+    @apply text-red-800;
   }
 
   .error-message {
@@ -268,10 +276,18 @@
   }
 
   .toolbar-open-btn {
-    @apply h-6 w-6 rounded-sm border flex items-center justify-center shadow-sm ring-1 ring-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 transition-colors;
+    @apply h-6 w-6 rounded-sm border flex items-center justify-center shadow-sm ring-1 ring-black/5 transition-colors;
     background-color: var(--surface, #ffffff);
     color: var(--muted-foreground, #6b7280);
     border-color: color-mix(in srgb, var(--border, #e5e7eb) 80%, transparent);
+  }
+
+  .toolbar-open-btn:focus {
+    @apply outline-none;
+  }
+
+  .toolbar-open-btn:focus-visible {
+    @apply ring-2 ring-blue-400/60;
   }
 
   .toolbar-open-btn:hover {

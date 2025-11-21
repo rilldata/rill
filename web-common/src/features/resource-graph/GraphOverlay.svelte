@@ -101,7 +101,14 @@
 
   /* Inline mode: expands within the grid */
   .graph-overlay-inline {
-    @apply col-span-full h-[700px] md:h-[860px];
+    @apply col-span-full;
+    height: 700px;
+  }
+
+  @media (min-width: 768px) {
+    .graph-overlay-inline {
+      height: 860px;
+    }
   }
 
   /* Fullscreen mode: covers entire viewport */
@@ -134,8 +141,12 @@
   }
 
   .close-btn {
-    @apply absolute right-4 top-4 z-[52] flex h-8 w-8 items-center justify-center rounded-md border bg-background text-2xl font-light text-muted-foreground hover:bg-muted hover:text-foreground;
+    @apply absolute right-4 top-4 z-[52] flex h-8 w-8 items-center justify-center rounded-md border bg-background text-2xl font-light text-muted-foreground;
     line-height: 1;
+  }
+
+  .close-btn:hover {
+    @apply bg-muted text-foreground;
   }
 
   /* Ensure inline mode content fills available space */

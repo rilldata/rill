@@ -186,11 +186,19 @@
   }
 
   .graph-overlay__link {
-    @apply text-xs font-medium text-primary-700 border border-primary-200 rounded-full px-3 py-1 hover:bg-primary-50 transition-colors;
+    @apply text-xs font-medium text-primary-700 border border-primary-200 rounded-full px-3 py-1 transition-colors;
+  }
+
+  .graph-overlay__link:hover {
+    @apply bg-primary-50;
   }
 
   .graph-overlay__close {
-    @apply rounded-full border border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300 p-1;
+    @apply rounded-full border border-gray-200 text-gray-500 p-1;
+  }
+
+  .graph-overlay__close:hover {
+    @apply text-gray-700 border-gray-300;
   }
 
   .graph-overlay__body {
