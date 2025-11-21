@@ -33,10 +33,10 @@ export type MarkType = "bar" | "line";
 
 export type ComboChartSpec = {
   metrics_view: string;
-  x?: FieldConfig;
-  y1?: FieldConfig;
-  y2?: FieldConfig;
-  color?: FieldConfig;
+  x?: FieldConfig<"nominal" | "time">;
+  y1?: FieldConfig<"quantitative" | "mark">;
+  y2?: FieldConfig<"quantitative" | "mark">;
+  color?: FieldConfig<"nominal">;
 };
 
 export type ComboChartDefaultOptions = {

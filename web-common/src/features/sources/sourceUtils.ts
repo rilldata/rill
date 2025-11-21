@@ -83,17 +83,18 @@ export function compileLocalFileSourceYAML(path: string) {
   return `${SOURCE_MODEL_FILE_TOP}\n\nconnector: duckdb\nsql: "${buildDuckDbQuery(path)}"`;
 }
 
-function buildDuckDbQuery(path: string): string {
-  const extension = extractFileExtension(path);
+function buildDuckDbQuery(path: string | undefined): string {
+  const safePath = typeof path === "string" ? path : "";
+  const extension = extractFileExtension(safePath);
   if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
-    return `select * from read_csv('${path}', auto_detect=true, ignore_errors=1, header=true)`;
+    return `select * from read_csv('${safePath}', auto_detect=true, ignore_errors=1, header=true)`;
   } else if (extensionContainsParts(extension, [".parquet"])) {
-    return `select * from read_parquet('${path}')`;
+    return `select * from read_parquet('${safePath}')`;
   } else if (extensionContainsParts(extension, [".json", ".ndjson"])) {
-    return `select * from read_json('${path}', auto_detect=true, format='auto')`;
+    return `select * from read_json('${safePath}', auto_detect=true, format='auto')`;
   }
 
-  return `select * from '${path}'`;
+  return `select * from '${safePath}'`;
 }
 
 /**
@@ -210,6 +211,19 @@ export function prepareSourceFormData(
 ): [V1ConnectorDriver, Record<string, unknown>] {
   // Create a copy of form values to avoid mutating the original
   const processedValues = { ...formValues };
+
+  // Strip connector configuration keys from the source form values to prevent
+  // leaking connector-level fields (e.g., credentials) into the model file.
+  if (connector.configProperties) {
+    const connectorPropertyKeys = new Set(
+      connector.configProperties.map((p) => p.key).filter(Boolean),
+    );
+    for (const key of Object.keys(processedValues)) {
+      if (connectorPropertyKeys.has(key)) {
+        delete processedValues[key];
+      }
+    }
+  }
 
   // Handle placeholder values for required source properties
   if (connector.sourceProperties) {

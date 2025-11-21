@@ -47,8 +47,8 @@ TableCells – the cell contents.
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
    * to render on initial load.
    */
-  export let rowOverscanAmount = 40;
-  export let columnOverscanAmount = 5;
+  export let rowOverscanAmount = 120;
+  export let columnOverscanAmount = 12;
 
   let container: HTMLDivElement;
 
@@ -102,6 +102,10 @@ TableCells – the cell contents.
     getScrollElement: () => container,
     count: rows.length,
     estimateSize: () => config.rowHeight,
+    // Provides a stable identity for each virtualized row so the virtualizer can reuse DOM nodes
+    // instead of remounting them during fast scrolls or data updates. This reduces blank frames,
+    // preserves focus/hover state, and avoids unnecessary re-renders.
+    getItemKey: (index) => String(rows?.[index]?.[dimensionName] ?? index),
     overscan: rowOverscanAmount,
     paddingStart: config.columnHeaderHeight,
     initialOffset: rowScrollOffset,
@@ -191,17 +195,15 @@ TableCells – the cell contents.
     bind:this={container}
     on:scroll={() => {
       horizontalScrolling = container?.scrollLeft > 0;
-    }}
-    style:width="100%"
-    style:height="100%"
-    class="overflow-auto grid max-w-fit"
-    style:grid-template-columns="max-content auto"
-    on:scroll={() => {
       /** capture to suppress cell tooltips. Otherwise,
        * there's quite a bit of rendering jank.
        */
       scrolling = true;
     }}
+    style:width="100%"
+    style:height="100%"
+    class="overflow-auto grid max-w-fit"
+    style:grid-template-columns="max-content auto"
   >
     {#if $rowVirtualizer}
       <div
@@ -211,6 +213,7 @@ TableCells – the cell contents.
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}
         style:will-change="transform, contents"
+        style:contain="content"
         style:width="{virtualWidth}px"
         style:height="{virtualHeight}px"
       >
@@ -235,22 +238,24 @@ TableCells – the cell contents.
             {toggleComparisonDimension}
             on:select-item={(event) => onSelectItem(event)}
           />
-          <DimensionValueHeader
-            on:resize-column={handleResizeDimensionColumn}
-            virtualRowItems={virtualRows}
-            totalHeight={virtualHeight}
-            width={estimateColumnSize[0]}
-            column={dimensionColumn}
-            {rows}
-            {activeIndex}
-            {selectedIndex}
-            {excludeMode}
-            {scrolling}
-            {horizontalScrolling}
-            on:dimension-sort
-            on:select-item={(event) => onSelectItem(event)}
-            on:inspect={setActiveIndex}
-          />
+          {#if dimensionColumn}
+            <DimensionValueHeader
+              on:resize-column={handleResizeDimensionColumn}
+              virtualRowItems={virtualRows}
+              totalHeight={virtualHeight}
+              width={estimateColumnSize[0]}
+              column={dimensionColumn}
+              {rows}
+              {activeIndex}
+              {selectedIndex}
+              {excludeMode}
+              {scrolling}
+              {horizontalScrolling}
+              on:dimension-sort
+              on:select-item={(event) => onSelectItem(event)}
+              on:inspect={setActiveIndex}
+            />
+          {/if}
         </div>
         {#if rows.length}
           <!-- VirtualTableBody -->

@@ -42,15 +42,19 @@ sequenceDiagram
 ### Create a service token
 Use the Rill CLI to create a service token for your current organization using the following command:
 ```bash
-rill service create <service_name>
+# Create with organization role
+rill service create <service_name> --org-role viewer
+
+# Or create with project-specific role
+rill service create <service_name> --project <project_name> --project-role viewer
 ```
 
 :::info
-See our CLI reference docs for more details on managing a [service account and token](../reference/cli/service).
+For comprehensive documentation on service tokens, including roles, custom attributes, and management, see [Service Tokens](/manage/service-tokens). Also see the [CLI reference](../reference/cli/service) for command details.
 :::
 
 :::caution
-The service account _provides admin-level access to your organization_ and should be handled confidentially. Therefore, the service account itself should **not** be integrated directly in frontend or other user-facing code that can be exposed publicly.
+Service tokens can have broad permissions and should be handled confidentially. Therefore, the service token itself should **not** be integrated directly in frontend or other user-facing code that can be exposed publicly.
 :::
 
 ### Backend: Build an iframe URL

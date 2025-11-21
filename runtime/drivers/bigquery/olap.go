@@ -15,6 +15,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/sqlconvert"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 )
@@ -53,7 +54,7 @@ func (c *Connection) Query(ctx context.Context, stmt *drivers.Statement) (res *d
 	if c.config.LogQueries {
 		c.logger.Info("bigquery query", zap.String("sql", c.Dialect().SanitizeQueryForLogging(stmt.Query)), zap.Any("args", stmt.Args), observability.ZapCtx(ctx))
 	}
-	client, err := c.acquireClient(ctx)
+	client, err := c.getClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -126,15 +127,17 @@ func (c *Connection) LoadPhysicalSize(ctx context.Context, tables []*drivers.Ola
 
 // Lookup implements drivers.OLAPInformationSchema.
 func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*drivers.OlapTable, error) {
-	meta, err := c.GetTable(ctx, db, schema, name)
+	client, err := c.getClient(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get BigQuery client: %w", err)
 	}
-	bqSchema := make(bigquery.Schema, 0, len(meta.Schema))
-	for colName, colType := range meta.Schema {
-		bqSchema = append(bqSchema, &bigquery.FieldSchema{Name: colName, Type: bigquery.FieldType(colType)})
+
+	table := client.Dataset(schema).Table(name)
+	meta, err := table.Metadata(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get table metadata: %w", err)
 	}
-	runtimeSchema, err := fromBQSchema(bqSchema)
+	runtimeSchema, err := fromBQSchema(meta.Schema)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +145,7 @@ func (c *Connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		Database:          db,
 		DatabaseSchema:    schema,
 		Name:              name,
-		View:              meta.View,
+		View:              meta.Type == bigquery.ViewTable,
 		Schema:            runtimeSchema,
 		UnsupportedCols:   nil, // all columns are currently being mapped though may not be as specific as in BigQuery
 		PhysicalSizeBytes: 0,
@@ -249,7 +252,11 @@ func (r *rows) Scan(dest ...any) error {
 	}
 
 	for i := range dest {
-		dest[i], err = convertValue(r.ri.Schema[i], row[i])
+		v, err := convertValue(r.ri.Schema[i], row[i])
+		if err != nil {
+			return err
+		}
+		err = sqlconvert.ConvertAssign(dest[i], v)
 		if err != nil {
 			return err
 		}
@@ -290,6 +297,10 @@ func fromBQSchema(bqSchema bigquery.Schema) (*runtimev1.StructType, error) {
 
 func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	t := &runtimev1.Type{Nullable: !field.Required}
+	if field.Repeated {
+		t.Code = runtimev1.Type_CODE_ARRAY
+		return t, nil
+	}
 	switch field.Type {
 	case bigquery.StringFieldType:
 		t.Code = runtimev1.Type_CODE_STRING
@@ -329,7 +340,7 @@ func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	return t, nil
 }
 
-func convertValue(field *bigquery.FieldSchema, value bigquery.Value) (sqldriver.Value, error) {
+func convertValue(field *bigquery.FieldSchema, value bigquery.Value) (any, error) {
 	val, err := convertValueHelper(field, value)
 	if err != nil {
 		return nil, err

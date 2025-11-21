@@ -1,0 +1,39 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboards
+
+type: canvas
+display_name: "Bids Canvas Dashboard For Bookmarks"
+defaults:
+  time_range: PT24H
+  comparison_mode: time
+rows:
+  - items:
+      - image:
+          url: https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg
+        width: 12
+    height: 80px
+  - items:
+      - kpi_grid:
+          metrics_view: bids_metrics
+          measures:
+            - overall_spend
+            - total_bids
+            - impressions
+            - win_rate
+          comparison:
+            - delta
+            - percent_change
+        width: 12
+    height: 304px
+  - items:
+      - leaderboard:
+          metrics_view: bids_metrics
+          measures:
+            - overall_spend
+          dimensions:
+            - adomain
+            - advertiser_name
+            - app_or_site
+          num_rows: 7
+        width: 12
+    height: 348px

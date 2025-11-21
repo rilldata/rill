@@ -21,7 +21,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Azure Blob Storage",
 	Description: "Connect to Azure Blob Storage.",
-	DocsURL:     "https://docs.rilldata.com/connect/data-source/azure",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/data-source/azure",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:    "azure_storage_account",
@@ -74,7 +74,12 @@ type ConfigProperties struct {
 	Key              string `mapstructure:"azure_storage_key"`
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
 	ConnectionString string `mapstructure:"azure_storage_connection_string"`
-	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
+	// A list of container or virtual directory prefixes that this connector is allowed to access.
+	// Useful when different containers or paths use different credentials, allowing the system
+	// to route access through the appropriate connector based on the blob path.
+	// Example formats: `azure://my-container/` `azure://my-container/path/` `azure://my-container/path/prefix`
+	PathPrefixes    []string `mapstructure:"path_prefixes"`
+	AllowHostAccess bool     `mapstructure:"allow_host_access"`
 }
 
 func (c *ConfigProperties) GetAccount() string {

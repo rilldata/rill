@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/clickhouse/testclickhouse"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -40,9 +41,7 @@ func TestClickhouseSingle(t *testing.T) {
 }
 
 func TestClickhouseCluster(t *testing.T) {
-	if testing.Short() {
-		t.Skip("clickhouse: skipping test in short mode")
-	}
+	testmode.Expensive(t)
 
 	dsn, cluster := testclickhouse.StartCluster(t)
 
@@ -408,8 +407,8 @@ func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	_, err := c.createTableAsSelect(context.Background(), "dict", "SELECT 1 AS id, 'Earth' AS planet", &ModelOutputProperties{
 		Typ:                      "DICTIONARY",
 		PrimaryKey:               "id",
-		DictionarySourceUser:     "clickhouse",
-		DictionarySourcePassword: "clickhouse",
+		DictionarySourceUser:     "default",
+		DictionarySourcePassword: "default",
 	})
 	require.NoError(t, err)
 

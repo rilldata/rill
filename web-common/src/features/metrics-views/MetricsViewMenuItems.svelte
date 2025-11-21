@@ -6,6 +6,7 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -35,6 +36,8 @@
   $: referenceModelName = $resourceQuery?.data?.meta?.refs?.filter(
     (ref) => ref.kind === ResourceKind.Model,
   )?.[0]?.name;
+
+  $: hasMenuItems = Boolean(referenceModelName || resource);
 
   const editModel = async () => {
     if (!referenceModelName) return;
@@ -81,19 +84,23 @@
   }
 </script>
 
-{#if referenceModelName}
-  <NavigationMenuItem on:click={editModel}>
-    <Model slot="icon" />
-    Edit model
-  </NavigationMenuItem>
-{/if}
-{#if resource}
-  <NavigationMenuItem
-    on:click={() => createAndPreviewExplore(queryClient, instanceId, resource)}
-  >
-    <ExploreIcon slot="icon" />
-    Generate dashboard
-  </NavigationMenuItem>
+{#if hasMenuItems}
+  {#if referenceModelName}
+    <NavigationMenuItem on:click={editModel}>
+      <Model slot="icon" />
+      Edit model
+    </NavigationMenuItem>
+  {/if}
+  {#if resource}
+    <NavigationMenuItem
+      on:click={() =>
+        createAndPreviewExplore(queryClient, instanceId, resource)}
+    >
+      <ExploreIcon slot="icon" />
+      Generate dashboard
+    </NavigationMenuItem>
+  {/if}
+  <NavigationMenuSeparator />
 {/if}
 
 <NavigationMenuItem on:click={viewGraph}>

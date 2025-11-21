@@ -777,6 +777,24 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
+func (c *connection) FindUserWithAttributes(ctx context.Context, userID, orgID string) (*database.User, map[string]any, error) {
+	var dto userWithAttributesDTO
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT u.*, uor.attributes
+		FROM users u
+		LEFT JOIN users_orgs_roles uor ON u.id = uor.user_id AND uor.org_id = $2
+		WHERE u.id = $1
+	`, userID, orgID).StructScan(&dto)
+	if err != nil {
+		return nil, nil, parseErr("user with org attributes", err)
+	}
+	user, attributes, err := dto.userWithAttributesFromDTO()
+	if err != nil {
+		return nil, nil, err
+	}
+	return user, attributes, nil
+}
+
 func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u
@@ -840,11 +858,13 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_refresh_token=$5, quota_singleuser_orgs=$6, quota_trial_orgs=$7, preference_time_zone=$8, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_token=$5, github_token_expires_on=$6, github_refresh_token=$7, quota_singleuser_orgs=$8, quota_trial_orgs=$9, preference_time_zone=$10, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
 		opts.GithubUsername,
+		opts.GithubToken,
+		opts.GithubTokenExpiresOn,
 		opts.GithubRefreshToken,
 		opts.QuotaSingleuserOrgs,
 		opts.QuotaTrialOrgs,
@@ -1067,7 +1087,7 @@ func (c *connection) DeleteManagedUsergroupsMemberUser(ctx context.Context, orgI
 	return nil
 }
 
-func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*database.UserAuthToken, error) {
+func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int, refresh *bool) ([]*database.UserAuthToken, error) {
 	var qry strings.Builder
 	qry.WriteString(`
 		SELECT
@@ -1078,11 +1098,18 @@ func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID str
 		WHERE t.user_id = $1 AND (t.expires_on IS NULL OR t.expires_on > now())
 	`)
 	args := []any{userID}
+
+	// Filter by refresh token status if specified
+	if refresh != nil {
+		qry.WriteString(" AND t.refresh = $2")
+		args = append(args, *refresh)
+	}
+
 	if afterID != "" {
-		qry.WriteString(" AND t.id > $2 ORDER BY t.id LIMIT $3")
+		qry.WriteString(fmt.Sprintf(" AND t.id > $%d ORDER BY t.id LIMIT $%d", len(args)+1, len(args)+2))
 		args = append(args, afterID, limit)
 	} else {
-		qry.WriteString(" ORDER BY t.id LIMIT $2")
+		qry.WriteString(fmt.Sprintf(" ORDER BY t.id LIMIT $%d", len(args)+1))
 		args = append(args, limit)
 	}
 
@@ -1110,9 +1137,9 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expires_on)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpiresOn,
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, refresh, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.Refresh, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("auth token", err)
@@ -1131,6 +1158,21 @@ func (c *connection) UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
+}
+
+func (c *connection) DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error) {
+	qry := "DELETE FROM user_auth_tokens WHERE user_id=$1"
+	args := []any{userID}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, qry, args...)
+	if err != nil {
+		return 0, parseErr("delete all auth tokens", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, parseErr("delete all auth tokens", err)
+	}
+	return int(n), nil
 }
 
 func (c *connection) DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error {
@@ -1684,6 +1726,37 @@ func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retent
 	return parseErr("authorization code", err)
 }
 
+func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes []string) (*database.AuthClient, error) {
+	if grantTypes == nil {
+		grantTypes = []string{}
+	}
+	dto := &authClientDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`INSERT INTO auth_clients (display_name, scope, grant_types) VALUES ($1, $2, $3) RETURNING *`,
+		displayName, scope, grantTypes).StructScan(dto)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return dto.AsModel()
+}
+
+func (c *connection) FindAuthClient(ctx context.Context, id string) (*database.AuthClient, error) {
+	dto := &authClientDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM auth_clients WHERE id = $1", id).StructScan(dto)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return dto.AsModel()
+}
+
+func (c *connection) UpdateAuthClientUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE auth_clients SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("auth client", err)
+	}
+	return nil
+}
+
 func (c *connection) FindOrganizationRoles(ctx context.Context) ([]*database.OrganizationRole, error) {
 	var res []*database.OrganizationRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM org_roles")
@@ -1787,7 +1860,7 @@ func (c *connection) ResolveProjectRolesForService(ctx context.Context, serviceI
 func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*database.OrganizationMemberUser, error) {
 	args := []any{orgID, afterEmail, limit}
 	var qry strings.Builder
-	qry.WriteString("SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name")
+	qry.WriteString("SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes")
 	if withCounts {
 		qry.WriteString(`,
 			(
@@ -1822,9 +1895,17 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, fil
 	qry.WriteString(" AND lower(u.email) > lower($2) ORDER BY lower(u.email) LIMIT $3")
 
 	var res []*database.OrganizationMemberUser
-	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	var dtos []*organizationMemberUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("org members", err)
+	}
+	for _, dto := range dtos {
+		user, err := dto.organizationMemberUserFromDTO()
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, user)
 	}
 	return res, nil
 }
@@ -1861,6 +1942,40 @@ func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgI
 	return res, nil
 }
 
+func (c *connection) FindOrganizationMemberUser(ctx context.Context, orgID, userID string) (*database.OrganizationMemberUser, error) {
+	qry := `SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes,
+			(
+				SELECT COUNT(*) FROM projects p WHERE p.org_id = $1 AND p.id IN (
+					SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = u.id
+					UNION
+					SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = u.id
+				)
+			) as projects_count,
+			(
+				SELECT COUNT(*)
+				FROM usergroups_users uus
+				JOIN usergroups ugu ON uus.usergroup_id = ugu.id
+				WHERE ugu.org_id = $1 AND uus.user_id = u.id
+			) as usergroups_count
+		FROM users u
+		JOIN users_orgs_roles uor ON u.id = uor.user_id
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id = $1 AND uor.user_id = $2`
+
+	var dto organizationMemberUserDTO
+	err := c.getDB(ctx).QueryRowxContext(ctx, qry, orgID, userID).StructScan(&dto)
+	if err != nil {
+		return nil, parseErr("org member", err)
+	}
+
+	user, err := dto.organizationMemberUserFromDTO()
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error) {
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
 		SELECT
@@ -1876,9 +1991,14 @@ func (c *connection) FindOrganizationMemberUserAdminStatus(ctx context.Context, 
 	return isAdmin, isLastAdmin, nil
 }
 
-func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error) {
+func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]interface{}, ifNotExists bool) (bool, error) {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
+		return false, err
+	}
+
 	if !ifNotExists {
-		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id) VALUES ($1, $2, $3)", userID, orgID, roleID)
+		res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4)", userID, orgID, roleID, attrs)
 		if err != nil {
 			return false, parseErr("org member", err)
 		}
@@ -1893,10 +2013,10 @@ func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, us
 	}
 
 	res, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO users_orgs_roles (user_id, org_id, org_role_id)
-		VAlUES ($1, $2, $3)
+		INSERT INTO users_orgs_roles (user_id, org_id, org_role_id, attributes)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id, org_id) DO NOTHING
-	`, userID, orgID, roleID)
+	`, userID, orgID, roleID, attributes)
 	if err != nil {
 		return false, parseErr("org member", err)
 	}
@@ -1920,6 +2040,30 @@ func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID
 	return checkUpdateRow("org member", res, err)
 }
 
+func (c *connection) UpdateOrganizationMemberUserAttributes(ctx context.Context, orgID, userID string, attributes map[string]any) (bool, error) {
+	attrs, err := c.validateAttributes(attributes)
+	if err != nil {
+		return false, err
+	}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE users_orgs_roles
+		SET attributes = $1
+		WHERE user_id = $2 AND org_id = $3
+	`, attrs, userID, orgID)
+	if err != nil {
+		return false, parseErr("org member attributes", err)
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if rows > 1 {
+		panic(fmt.Errorf("expected to update 0 or 1 row, but updated %d", rows))
+	}
+	return rows != 0, nil
+}
+
 func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
@@ -1937,8 +2081,9 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 
 func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.OrganizationMemberUser, error) {
 	var res []*database.OrganizationMemberUser
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name
+	var dtos []*organizationMemberUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name as role_name, uor.attributes
 		FROM users u
 		JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
@@ -1947,6 +2092,13 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 	`, orgID)
 	if err != nil {
 		return nil, parseErr("org members", err)
+	}
+	for _, dto := range dtos {
+		user, err := dto.organizationMemberUserFromDTO()
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, user)
 	}
 	return res, nil
 }
@@ -2118,11 +2270,19 @@ func (c *connection) DeleteOrganizationMemberUsergroup(ctx context.Context, grou
 	return checkDeleteRow("org group member", res, err)
 }
 
-func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	args := []any{projectID, afterName, limit}
 	var qry strings.Builder
+	qry.WriteString(`SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name"`)
+	if withCounts {
+		qry.WriteString(`,
+			(
+				SELECT COUNT(*) FROM usergroups_users uug WHERE uug.usergroup_id = ug.id
+			) as users_count
+		`)
+	}
 	qry.WriteString(`
-		SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name" FROM usergroups ug
+		FROM usergroups ug
 		JOIN usergroups_projects_roles upr ON ug.id = upr.usergroup_id
 		JOIN project_roles r ON upr.project_role_id = r.id
 		WHERE upr.project_id=$1
@@ -2227,7 +2387,7 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 		SELECT uoi.id, uoi.email, ur.name as role_name, u.email as invited_by
 		FROM org_invites uoi
 		JOIN org_roles ur ON uoi.org_role_id = ur.id
-		JOIN users u ON uoi.invited_by_user_id = u.id
+		LEFT JOIN users u ON uoi.invited_by_user_id = u.id
 		WHERE uoi.org_id = $1 AND lower(uoi.email) > lower($2)
 		ORDER BY lower(uoi.email) LIMIT $3
 	`, orgID, afterEmail, limit)
@@ -2277,7 +2437,12 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		return err
 	}
 
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.OrgID, opts.RoleID)
+	var inviterID any
+	if opts.InviterID != "" {
+		inviterID = opts.InviterID
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, inviterID, opts.OrgID, opts.RoleID)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
@@ -2321,7 +2486,7 @@ func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEma
 		SELECT upi.id, upi.email, upr.name as role_name, uor.name as org_role_name, u.email as invited_by
 		FROM project_invites upi
 		JOIN project_roles upr ON upi.project_role_id = upr.id
-		JOIN users u ON upi.invited_by_user_id = u.id
+		LEFT JOIN users u ON upi.invited_by_user_id = u.id
 		LEFT JOIN org_invites uoi ON upi.org_invite_id = uoi.id
 		LEFT JOIN org_roles uor ON uoi.org_role_id = uor.id
 		WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
@@ -2356,9 +2521,14 @@ func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.Ins
 		return err
 	}
 
+	var inviterID any
+	if opts.InviterID != "" {
+		inviterID = opts.InviterID
+	}
+
 	_, err := c.getDB(ctx).ExecContext(ctx,
 		`INSERT INTO project_invites (email, org_invite_id, project_id, project_role_id, invited_by_user_id) VALUES ($1, $2, $3, $4, $5)`,
-		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, opts.InviterID)
+		opts.Email, opts.OrgInviteID, opts.ProjectID, opts.RoleID, inviterID)
 	if err != nil {
 		return parseErr("project invite", err)
 	}
@@ -2473,9 +2643,9 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, data, resource_kind, resource_name, project_id, user_id, "default", shared)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, url_search, resource_kind, resource_name, project_id, user_id, "default", shared)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.DisplayName, opts.Description, opts.Data, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
+		opts.DisplayName, opts.Description, opts.URLSearch, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -2486,8 +2656,8 @@ func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBo
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3, shared=$4 WHERE id=$5`,
-		opts.DisplayName, opts.Description, opts.Data, opts.Shared, opts.BookmarkID)
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, url_search=$3, shared=$4 WHERE id=$5`,
+		opts.DisplayName, opts.Description, opts.URLSearch, opts.Shared, opts.BookmarkID)
 	return checkUpdateRow("bookmark", res, err)
 }
 
@@ -3187,6 +3357,21 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 	return o.OrganizationInvite, nil
 }
 
+type authClientDTO struct {
+	*database.AuthClient
+	GrantTypes pgtype.TextArray `db:"grant_types"`
+}
+
+func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
+	if dto.AuthClient == nil {
+		dto.AuthClient = &database.AuthClient{}
+	}
+	if err := dto.GrantTypes.AssignTo(&dto.AuthClient.GrantTypes); err != nil {
+		return nil, err
+	}
+	return dto.AuthClient, nil
+}
+
 type billingIssueDTO struct {
 	ID               string                     `db:"id"`
 	OrgID            string                     `db:"org_id"`
@@ -3291,6 +3476,55 @@ func (d *projectMemberServiceWithProjectDTO) projectMemberServiceWithProjectFrom
 		return nil, err
 	}
 	return d.ProjectMemberServiceWithProject, nil
+}
+
+type organizationMemberUserDTO struct {
+	*database.OrganizationMemberUser
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (dto *organizationMemberUserDTO) organizationMemberUserFromDTO() (*database.OrganizationMemberUser, error) {
+	user := &database.OrganizationMemberUser{
+		ID:              dto.ID,
+		Email:           dto.Email,
+		DisplayName:     dto.DisplayName,
+		PhotoURL:        dto.PhotoURL,
+		RoleName:        dto.RoleName,
+		ProjectsCount:   dto.ProjectsCount,
+		UsergroupsCount: dto.UsergroupsCount,
+		CreatedOn:       dto.CreatedOn,
+		UpdatedOn:       dto.UpdatedOn,
+	}
+
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := dto.Attributes.AssignTo(&attrs); err != nil {
+		return nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+	user.Attributes = attrs
+
+	return user, nil
+}
+
+type userWithAttributesDTO struct {
+	*database.User
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (dto *userWithAttributesDTO) userWithAttributesFromDTO() (*database.User, map[string]any, error) {
+	// Handle Attributes: Normalize NULL JSONB to empty map
+	var attrs map[string]any
+	if err := dto.Attributes.AssignTo(&attrs); err != nil {
+		return nil, nil, err
+	}
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+
+	return dto.User, attrs, nil
 }
 
 func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
@@ -3479,4 +3713,41 @@ func decrypt(ciphertext, key []byte) ([]byte, error) {
 		return nil, err
 	}
 	return d, nil
+}
+
+// validateAttributes validates keys and values of an attributes map, handling nil input
+func (c *connection) validateAttributes(attributes map[string]any) (map[string]any, error) {
+	if attributes == nil {
+		return make(map[string]any), nil
+	}
+
+	if len(attributes) > 50 {
+		return nil, fmt.Errorf("too many attributes: maximum 50 allowed, got %d", len(attributes))
+	}
+
+	for key, value := range attributes {
+		// Validate key format
+		if !isValidAttributeKey(key) {
+			return nil, fmt.Errorf("invalid attribute key '%s': must contain only alphanumeric characters and underscores", key)
+		}
+
+		// Validate value length
+		if str, ok := value.(string); ok && len(str) > 256 {
+			return nil, fmt.Errorf("attribute value for key '%s' too long: maximum 256 characters, got %d", key, len(str))
+		}
+	}
+	return attributes, nil
+}
+
+// isValidAttributeKey checks if an attribute key contains only alphanumeric characters and underscores
+func isValidAttributeKey(key string) bool {
+	if key == "" {
+		return false
+	}
+	for _, r := range key {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_') {
+			return false
+		}
+	}
+	return true
 }

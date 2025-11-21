@@ -33,14 +33,12 @@ func Start(t TestingT) string {
 	ctx := context.Background()
 	clickHouseContainer, err := clickhouse.Run(
 		ctx,
-		"clickhouse/clickhouse-server:24.6.2.17",
-		clickhouse.WithUsername("clickhouse"),
-		clickhouse.WithPassword("clickhouse"),
+		"clickhouse/clickhouse-server:25.5.1.2782",
 		clickhouse.WithConfigFile(filepath.Join(testdataPath, "clickhouse-config.xml")),
 		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      filepath.Join(testdataPath, "users.xml"),
-				ContainerFilePath: "/etc/clickhouse-server/users.xml",
+				ContainerFilePath: "/etc/clickhouse-server/users.d/default.xml",
 				FileMode:          0o755,
 			}
 			req.Files = append(req.Files, cf)
@@ -59,7 +57,7 @@ func Start(t TestingT) string {
 	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
 	require.NoError(t, err)
 
-	dsn := fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
+	dsn := fmt.Sprintf("clickhouse://default:default@%v:%v", host, port.Port())
 	return dsn
 }
 

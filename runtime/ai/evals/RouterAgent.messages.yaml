@@ -1,0 +1,200 @@
+- id: 75d620bf-f0fb-4ad0-8935-dd61ccae6902
+  parent_id: ""
+  session_id: ""
+  time: 2025-10-26T17:52:10.077999Z
+  index: 0
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"What country has the highest revenue?","skip_handoff":true}'
+- id: 4d8b1f6c-9345-4521-be72-d5ae49319f41
+  parent_id: 75d620bf-f0fb-4ad0-8935-dd61ccae6902
+  session_id: ""
+  time: 2025-10-26T17:52:10.078048Z
+  index: 1
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: c70f43b8-6776-4447-908d-ab06466d2ed0
+  parent_id: 4d8b1f6c-9345-4521-be72-d5ae49319f41
+  session_id: ""
+  time: 2025-10-26T17:52:10.794282Z
+  index: 2
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"analyst_agent"}'
+- id: 9bad0eb4-0b83-4561-82c2-df9a1176b825
+  parent_id: 75d620bf-f0fb-4ad0-8935-dd61ccae6902
+  session_id: ""
+  time: 2025-10-26T17:52:10.794366Z
+  index: 3
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+- id: 86071352-18cc-4d98-99b4-bb868d726d84
+  parent_id: ""
+  session_id: ""
+  time: 2025-10-26T17:52:10.794443Z
+  index: 4
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"Repeat the answer you gave to my last question","skip_handoff":true}'
+- id: e925c03b-7e83-4f12-bb86-e012a9bd03c6
+  parent_id: 86071352-18cc-4d98-99b4-bb868d726d84
+  session_id: ""
+  time: 2025-10-26T17:52:10.794778Z
+  index: 5
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: 5d08f9bf-4bce-40d4-afb2-c14b8daedf60
+  parent_id: e925c03b-7e83-4f12-bb86-e012a9bd03c6
+  session_id: ""
+  time: 2025-10-26T17:52:11.508678Z
+  index: 6
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"analyst_agent"}'
+- id: ec129e9a-5dd7-4b0b-975b-95f3816ed946
+  parent_id: 86071352-18cc-4d98-99b4-bb868d726d84
+  session_id: ""
+  time: 2025-10-26T17:52:11.508743Z
+  index: 7
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'
+- id: 4557533d-aa37-419b-85e9-c721ae45eb38
+  parent_id: ""
+  session_id: ""
+  time: 2025-10-26T17:52:11.508826Z
+  index: 8
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"Create a model called ''sales_data'' that selects all columns from the ''orders'' table.","skip_handoff":true}'
+- id: 892ac682-3192-4db0-b4de-60efdc360a56
+  parent_id: 4557533d-aa37-419b-85e9-c721ae45eb38
+  session_id: ""
+  time: 2025-10-26T17:52:11.50917Z
+  index: 9
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: e174e068-fc99-421f-82f4-a91d175bedb0
+  parent_id: 892ac682-3192-4db0-b4de-60efdc360a56
+  session_id: ""
+  time: 2025-10-26T17:52:12.945159Z
+  index: 10
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"developer_agent"}'
+- id: 5c584ca1-b5db-4c9c-a95b-1d59a2d311e8
+  parent_id: 4557533d-aa37-419b-85e9-c721ae45eb38
+  session_id: ""
+  time: 2025-10-26T17:52:12.945227Z
+  index: 11
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+- id: eab4c9ad-8a8c-4f8f-aec1-f2e2942bd9be
+  parent_id: ""
+  session_id: ""
+  time: 2025-10-26T17:52:12.945296Z
+  index: 12
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"Do another one for the ''customers'' table.","skip_handoff":true}'
+- id: 8d90a3ec-109d-4fdf-8bdd-2cbcb502ebe1
+  parent_id: eab4c9ad-8a8c-4f8f-aec1-f2e2942bd9be
+  session_id: ""
+  time: 2025-10-26T17:52:12.945663Z
+  index: 13
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: 674e168f-a250-481e-a85c-7e106f6b5b2d
+  parent_id: 8d90a3ec-109d-4fdf-8bdd-2cbcb502ebe1
+  session_id: ""
+  time: 2025-10-26T17:52:14.477978Z
+  index: 14
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"developer_agent"}'
+- id: 4aee4c68-f552-4145-a91d-e7bbb9d821c5
+  parent_id: eab4c9ad-8a8c-4f8f-aec1-f2e2942bd9be
+  session_id: ""
+  time: 2025-10-26T17:52:14.478039Z
+  index: 15
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"developer_agent\". Response omitted.","agent":"developer_agent"}'
+- id: 23d55d9b-4bef-477e-88aa-d153c7a6b53d
+  parent_id: ""
+  session_id: ""
+  time: 2025-10-26T17:52:14.478103Z
+  index: 16
+  role: user
+  type: call
+  tool: router_agent
+  content_type: json
+  content: '{"prompt":"What is 2 + 2?","skip_handoff":true}'
+- id: 5eee44f6-42b8-4df4-afa5-6410ebefc904
+  parent_id: 23d55d9b-4bef-477e-88aa-d153c7a6b53d
+  session_id: ""
+  time: 2025-10-26T17:52:14.478498Z
+  index: 17
+  role: assistant
+  type: call
+  tool: Agent choice
+  content_type: json
+  content: "null"
+- id: 047975db-6ab5-4dda-8ad4-7e67cc99f8f3
+  parent_id: 5eee44f6-42b8-4df4-afa5-6410ebefc904
+  session_id: ""
+  time: 2025-10-26T17:52:15.526082Z
+  index: 18
+  role: assistant
+  type: result
+  tool: Agent choice
+  content_type: json
+  content: '{"agent":"analyst_agent"}'
+- id: 28923b4f-b42b-4ef3-a5a8-0cb4176203d1
+  parent_id: 23d55d9b-4bef-477e-88aa-d153c7a6b53d
+  session_id: ""
+  time: 2025-10-26T17:52:15.526147Z
+  index: 19
+  role: user
+  type: result
+  tool: router_agent
+  content_type: json
+  content: '{"response":"Routed to agent \"analyst_agent\". Response omitted.","agent":"analyst_agent"}'

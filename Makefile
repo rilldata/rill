@@ -51,7 +51,6 @@ docs.generate:
 	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-cli docs/docs/reference/cli/
 	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate-project docs/docs/reference/project-files/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
-	cd proto && buf generate --template buf.gen.docusaurus-openapi.yaml --path rill/admin
 
 .PHONY: proto.generate
 proto.generate:
@@ -60,6 +59,12 @@ proto.generate:
 	cd proto && buf generate --template buf.gen.openapi-runtime.yaml --path rill/runtime
 	cd proto && buf generate --template buf.gen.local.yaml --path rill/local
 	cd proto && buf generate --template buf.gen.ui.yaml
-	cd proto && buf generate --template buf.gen.docusaurus-openapi.yaml --path rill/admin
+	go run -ldflags="-X main.Version=$(shell git describe --tags $(shell git rev-list --tags --max-count=1))" \
+		scripts/convert-openapi-v2-to-v3/convert.go --force \
+		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/openapi.yaml
+	go run -ldflags="-X main.Version=$(shell git describe --tags $(shell git rev-list --tags --max-count=1))" \
+		scripts/convert-openapi-v2-to-v3/convert.go --force --public-only \
+		proto/gen/rill/admin/v1/admin.swagger.yaml proto/gen/rill/admin/v1/public.openapi.yaml
 	npm run generate:runtime-client -w web-common
 	npm run generate:client -w web-admin
+	

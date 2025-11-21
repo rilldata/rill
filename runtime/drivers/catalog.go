@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 )
@@ -45,18 +44,18 @@ type CatalogStore interface {
 	CheckModelPartitionsHaveErrors(ctx context.Context, modelID string) (bool, error)
 	InsertModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
 	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
-	UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error
-	UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error
+	UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error
 	DeleteModelPartitions(ctx context.Context, modelID string) error
 
 	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
 	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 
-	FindConversations(ctx context.Context, ownerID string) ([]*Conversation, error)
-	FindConversation(ctx context.Context, conversationID string) (*Conversation, error)
-	InsertConversation(ctx context.Context, ownerID, title string, appContextType string, appContextMetadataJSON string) (string, error)
-	FindMessages(ctx context.Context, conversationID string) ([]*Message, error)
-	InsertMessage(ctx context.Context, conversationID, role string, content []MessageContent) (string, error)
+	FindAISessions(ctx context.Context, ownerID string, userAgentPattern string) ([]*AISession, error)
+	FindAISession(ctx context.Context, sessionID string) (*AISession, error)
+	InsertAISession(ctx context.Context, s *AISession) error
+	UpdateAISession(ctx context.Context, s *AISession) error
+	FindAIMessages(ctx context.Context, sessionID string) ([]*AIMessage, error)
+	InsertAIMessage(ctx context.Context, m *AIMessage) error
 }
 
 // Resource is an entry in a catalog store
@@ -105,63 +104,28 @@ type InstanceHealth struct {
 	UpdatedOn  time.Time `db:"updated_on"`
 }
 
-// Conversation represents a conversation entity in the catalog
-type Conversation struct {
-	ID                     string    `db:"conversation_id"`
-	OwnerID                string    `db:"owner_id"`
-	Title                  string    `db:"title"`
-	AppContextType         string    `db:"app_context_type"`
-	AppContextMetadataJSON string    `db:"app_context_metadata_json"`
-	CreatedOn              time.Time `db:"created_on"`
-	UpdatedOn              time.Time `db:"updated_on"`
+// AISession represents a session of AI interaction, such as a chat or MCP connection.
+type AISession struct {
+	ID         string    `db:"id"`
+	InstanceID string    `db:"instance_id"`
+	OwnerID    string    `db:"owner_id"`
+	Title      string    `db:"title"`
+	UserAgent  string    `db:"user_agent"`
+	CreatedOn  time.Time `db:"created_on"`
+	UpdatedOn  time.Time `db:"updated_on"`
 }
 
-// Message represents a message entity in the catalog
-type Message struct {
-	ID             string    `db:"message_id"`
-	ConversationID string    `db:"conversation_id"`
-	SeqNum         int       `db:"seq_num"`
-	Role           string    `db:"role"`
-	ContentJSON    []byte    `db:"content_json"`
-	CreatedOn      time.Time `db:"created_on"`
-	UpdatedOn      time.Time `db:"updated_on"`
-}
-
-// GetContent returns the parsed message content
-func (m *Message) GetContent() ([]MessageContent, error) {
-	if len(m.ContentJSON) == 0 {
-		return nil, nil
-	}
-	var content []MessageContent
-	err := json.Unmarshal(m.ContentJSON, &content)
-	return content, err
-}
-
-// SetContent sets the message content by marshaling to JSON
-func (m *Message) SetContent(content []MessageContent) error {
-	contentJSON, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-	m.ContentJSON = contentJSON
-	return nil
-}
-
-// MessageContent represents a flattened, JSON-serializable content block
-type MessageContent struct {
-	// Content type indicator
-	Type string `json:"type"` // "text", "tool_call", "tool_result"
-
-	// Text content (when Type == "text")
-	Text string `json:"text,omitempty"`
-
-	// Tool call content (when Type == "tool_call")
-	ToolCallID    string                 `json:"tool_call_id,omitempty"`
-	ToolCallName  string                 `json:"tool_call_name,omitempty"`
-	ToolCallInput map[string]interface{} `json:"tool_call_input,omitempty"`
-
-	// Tool result content (when Type == "tool_result")
-	ToolResultID      string `json:"tool_result_id,omitempty"`
-	ToolResultContent string `json:"tool_result_content,omitempty"`
-	ToolResultIsError bool   `json:"tool_result_is_error,omitempty"`
+// AIMessage represents a message in an AISession.
+type AIMessage struct {
+	ID          string    `db:"id"`
+	ParentID    string    `db:"parent_id"`
+	SessionID   string    `db:"session_id"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+	Index       int       `db:"index"`
+	Role        string    `db:"role"`
+	Type        string    `db:"type"`
+	Tool        string    `db:"tool"`
+	ContentType string    `db:"content_type"`
+	Content     string    `db:"content"`
 }

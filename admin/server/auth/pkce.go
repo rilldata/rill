@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/oauth"
+	"go.uber.org/zap"
 )
-
-const authorizationCodeGrantType = "authorization_code"
 
 func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clientID, userID, codeChallenge, codeChallengeMethod, redirectURI string) {
 	// Generate a unique authorization code
@@ -74,6 +74,8 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
+	responseVersion := values.Get("token_response_version")
+
 	// get the authorization code from the database
 	authCode, err := a.admin.DB.FindAuthorizationCode(r.Context(), code)
 	if err != nil {
@@ -110,6 +112,17 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
+	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.Error(w, fmt.Sprintf("invalid client_id %q", clientID), http.StatusBadRequest)
+			return
+		}
+		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
+		return
+	}
+	a.admin.Used.Client(clientID)
+
 	// Check if the authorization code has expired
 	if time.Now().After(authCode.Expiration) {
 		http.Error(w, "authorization code has expired", http.StatusBadRequest)
@@ -122,8 +135,162 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
-	// Issue an access token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, nil)
+	scope := authClient.Scope
+	longLivedAccess := hasScope(scope, longLivedAccessTokenScope)
+	refreshAllowed := hasGrantType(authClient.GrantTypes, refreshTokenGrantType)
+	var respBytes []byte
+	// Issue long-lived access token for clients explicitly whitelisted
+	if longLivedAccess {
+		authToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "", nil, nil, false)
+		if err != nil {
+			if errors.Is(err, r.Context().Err()) {
+				http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+				return
+			}
+			internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
+			return
+		}
+
+		if responseVersion == "standard" {
+			resp := oauth.TokenResponse{
+				AccessToken: authToken.Token().String(),
+				TokenType:   "Bearer",
+				ExpiresIn:   0, // never expires
+				Scope:       scope,
+				UserID:      userID,
+			}
+			respBytes, err = json.Marshal(resp)
+			if err != nil {
+				internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
+				return
+			}
+		} else {
+			resp := oauth.LegacyTokenResponse{
+				AccessToken: authToken.Token().String(),
+				TokenType:   "Bearer",
+				ExpiresIn:   0, // never expires
+				UserID:      userID,
+			}
+			respBytes, err = json.Marshal(resp)
+			if err != nil {
+				internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
+				return
+			}
+		}
+	} else {
+		// Issue access token (60 minutes TTL)
+		accessTTL := 60 * time.Minute
+		accessToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Access Token", nil, &accessTTL, false)
+		if err != nil {
+			if errors.Is(err, r.Context().Err()) {
+				http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+				return
+			}
+			internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
+			return
+		}
+
+		resp := oauth.TokenResponse{
+			AccessToken: accessToken.Token().String(),
+			ExpiresIn:   int64(accessTTL.Seconds()),
+			TokenType:   "Bearer",
+			Scope:       scope,
+			UserID:      userID,
+		}
+		if refreshAllowed {
+			// Issue refresh token (365 days TTL)
+			refreshTTL := 365 * 24 * time.Hour
+			refreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, authCode.ClientID, "Refresh Token", nil, &refreshTTL, true)
+			if err != nil {
+				if errors.Is(err, r.Context().Err()) {
+					http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+					return
+				}
+				internalServerError(w, fmt.Errorf("failed to issue refresh token, %w", err))
+				return
+			}
+
+			resp.RefreshToken = refreshToken.Token().String()
+		}
+		respBytes, err = json.Marshal(resp)
+		if err != nil {
+			internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
+			return
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(respBytes)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
+		return
+	}
+	a.logger.Debug("Exchanged authorization code for tokens", zap.String("userID", userID), zap.String("clientID", clientID), zap.Bool("long_lived_access_token", longLivedAccess), zap.Bool("refresh_token_grant", refreshAllowed))
+}
+
+// getAccessTokenForRefreshToken exchanges a refresh token for a new access token and refresh token
+func (a *Authenticator) getAccessTokenForRefreshToken(w http.ResponseWriter, r *http.Request, values url.Values) {
+	// Extract the refresh token
+	refreshTokenStr := values.Get("refresh_token")
+	if refreshTokenStr == "" {
+		http.Error(w, "refresh_token is required", http.StatusBadRequest)
+		return
+	}
+
+	// Extract the client ID
+	clientID := values.Get("client_id")
+	if clientID == "" {
+		http.Error(w, "client_id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the refresh token
+	refreshToken, err := a.admin.ValidateAuthToken(r.Context(), refreshTokenStr)
+	if err != nil {
+		http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+		return
+	}
+
+	// Ensure it's actually a refresh token
+	userToken, ok := refreshToken.TokenModel().(*database.UserAuthToken)
+	if !ok {
+		http.Error(w, "invalid token type", http.StatusBadRequest)
+		return
+	}
+
+	if !userToken.Refresh {
+		http.Error(w, "token is not a refresh token", http.StatusBadRequest)
+		return
+	}
+
+	userID := refreshToken.OwnerID()
+	tknClientID := ""
+	if userToken.AuthClientID != nil {
+		tknClientID = *userToken.AuthClientID
+	}
+	if tknClientID != clientID {
+		http.Error(w, "client_id does not match token's client ID", http.StatusBadRequest)
+		return
+	}
+
+	authClient, err := a.admin.DB.FindAuthClient(r.Context(), clientID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			http.Error(w, fmt.Sprintf("invalid client_id %q", clientID), http.StatusBadRequest)
+			return
+		}
+		internalServerError(w, fmt.Errorf("failed to lookup auth client, %w", err))
+		return
+	}
+	a.admin.Used.Client(clientID)
+
+	if !hasGrantType(authClient.GrantTypes, refreshTokenGrantType) {
+		http.Error(w, "client is not permitted to use refresh tokens", http.StatusBadRequest)
+		return
+	}
+
+	// Issue new access token (60 minutes TTL)
+	accessTTL := 60 * time.Minute
+	accessToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Access Token", nil, &accessTTL, false)
 	if err != nil {
 		if errors.Is(err, r.Context().Err()) {
 			http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
@@ -133,11 +300,25 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		return
 	}
 
+	// Issue new refresh token (365 days TTL)
+	newRefreshTTL := 365 * 24 * time.Hour
+	newRefreshToken, err := a.admin.IssueUserAuthToken(r.Context(), userID, clientID, "Refresh Token", nil, &newRefreshTTL, true)
+	if err != nil {
+		if errors.Is(err, r.Context().Err()) {
+			http.Error(w, "request cancelled or timeout", http.StatusRequestTimeout)
+			return
+		}
+		internalServerError(w, fmt.Errorf("failed to issue refresh token, %w", err))
+		return
+	}
+
 	resp := oauth.TokenResponse{
-		AccessToken: authToken.Token().String(),
-		TokenType:   "Bearer",
-		ExpiresIn:   0, // never expires
-		UserID:      userID,
+		AccessToken:  accessToken.Token().String(),
+		ExpiresIn:    int64(accessTTL.Seconds()),
+		RefreshToken: newRefreshToken.Token().String(),
+		TokenType:    "Bearer",
+		Scope:        authClient.Scope,
+		UserID:       userID,
 	}
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
@@ -150,6 +331,15 @@ func (a *Authenticator) getAccessTokenForAuthorizationCode(w http.ResponseWriter
 		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
 		return
 	}
+
+	// Delete the old refresh token
+	err = a.admin.RevokeAuthToken(r.Context(), refreshTokenStr)
+	if err != nil {
+		a.logger.Warn("failed to revoke old refresh token", zap.Error(err))
+		// Continue anyway
+	}
+
+	a.logger.Debug("Refreshed access and refresh tokens", zap.String("userID", userID), zap.String("clientID", clientID))
 }
 
 // verifyCodeChallenge validates the code verifier with the stored code challenge
@@ -162,6 +352,24 @@ func verifyCodeChallenge(verifier, challenge, method string) bool {
 	default:
 		return false
 	}
+}
+
+func hasScope(scopes, scope string) bool {
+	for _, token := range strings.Fields(scopes) {
+		if token == scope {
+			return true
+		}
+	}
+	return false
+}
+
+func hasGrantType(grants []string, grant string) bool {
+	for _, g := range grants {
+		if g == grant {
+			return true
+		}
+	}
+	return false
 }
 
 // Generates a random string for use as the authorization code
