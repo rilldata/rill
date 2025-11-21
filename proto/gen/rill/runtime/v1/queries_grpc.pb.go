@@ -50,7 +50,6 @@ const (
 	QueryService_TableCardinality_FullMethodName            = "/rill.runtime.v1.QueryService/TableCardinality"
 	QueryService_TableColumns_FullMethodName                = "/rill.runtime.v1.QueryService/TableColumns"
 	QueryService_TableRows_FullMethodName                   = "/rill.runtime.v1.QueryService/TableRows"
-	QueryService_ResolveTemplatedString_FullMethodName      = "/rill.runtime.v1.QueryService/ResolveTemplatedString"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -153,8 +152,6 @@ type QueryServiceClient interface {
 	TableColumns(ctx context.Context, in *TableColumnsRequest, opts ...grpc.CallOption) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(ctx context.Context, in *TableRowsRequest, opts ...grpc.CallOption) (*TableRowsResponse, error)
-	// ResolveTemplatedString resolves a markdown string with Rill templating.
-	ResolveTemplatedString(ctx context.Context, in *ResolveTemplatedStringRequest, opts ...grpc.CallOption) (*ResolveTemplatedStringResponse, error)
 }
 
 type queryServiceClient struct {
@@ -484,16 +481,6 @@ func (c *queryServiceClient) TableRows(ctx context.Context, in *TableRowsRequest
 	return out, nil
 }
 
-func (c *queryServiceClient) ResolveTemplatedString(ctx context.Context, in *ResolveTemplatedStringRequest, opts ...grpc.CallOption) (*ResolveTemplatedStringResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ResolveTemplatedStringResponse)
-	err := c.cc.Invoke(ctx, QueryService_ResolveTemplatedString_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // QueryServiceServer is the server API for QueryService service.
 // All implementations must embed UnimplementedQueryServiceServer
 // for forward compatibility.
@@ -594,8 +581,6 @@ type QueryServiceServer interface {
 	TableColumns(context.Context, *TableColumnsRequest) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error)
-	// ResolveTemplatedString resolves a markdown string with Rill templating.
-	ResolveTemplatedString(context.Context, *ResolveTemplatedStringRequest) (*ResolveTemplatedStringResponse, error)
 	mustEmbedUnimplementedQueryServiceServer()
 }
 
@@ -698,9 +683,6 @@ func (UnimplementedQueryServiceServer) TableColumns(context.Context, *TableColum
 }
 func (UnimplementedQueryServiceServer) TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
-}
-func (UnimplementedQueryServiceServer) ResolveTemplatedString(context.Context, *ResolveTemplatedStringRequest) (*ResolveTemplatedStringResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ResolveTemplatedString not implemented")
 }
 func (UnimplementedQueryServiceServer) mustEmbedUnimplementedQueryServiceServer() {}
 func (UnimplementedQueryServiceServer) testEmbeddedByValue()                      {}
@@ -1274,24 +1256,6 @@ func _QueryService_TableRows_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _QueryService_ResolveTemplatedString_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResolveTemplatedStringRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServiceServer).ResolveTemplatedString(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: QueryService_ResolveTemplatedString_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServiceServer).ResolveTemplatedString(ctx, req.(*ResolveTemplatedStringRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // QueryService_ServiceDesc is the grpc.ServiceDesc for QueryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1418,10 +1382,6 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TableRows",
 			Handler:    _QueryService_TableRows_Handler,
-		},
-		{
-			MethodName: "ResolveTemplatedString",
-			Handler:    _QueryService_ResolveTemplatedString_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

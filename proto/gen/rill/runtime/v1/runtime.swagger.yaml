@@ -2346,7 +2346,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/resolve-templated-string:
     post:
-      summary: ResolveTemplatedString resolves a markdown string with Rill templating.
+      summary: ResolveTemplatedString resolves a templated strings.
       operationId: QueryService_ResolveTemplatedString
       responses:
         "200":
@@ -2368,7 +2368,7 @@ paths:
           schema:
             type: object
             properties:
-              data:
+              body:
                 type: string
                 title: Any string with Go templating
               useFormatTokens:
@@ -6723,7 +6723,7 @@ definitions:
   v1ResolveTemplatedStringResponse:
     type: object
     properties:
-      resolvedData:
+      body:
         type: string
   v1ResolvedTimeRange:
     type: object

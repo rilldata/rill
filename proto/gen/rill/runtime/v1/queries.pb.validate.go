@@ -16787,7 +16787,7 @@ func (m *ResolveTemplatedStringRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for Data
+	// no validation rules for Body
 
 	// no validation rules for UseFormatTokens
 
@@ -16969,7 +16969,7 @@ func (m *ResolveTemplatedStringResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ResolvedData
+	// no validation rules for Body
 
 	if len(errors) > 0 {
 		return ResolveTemplatedStringResponseMultiError(errors)

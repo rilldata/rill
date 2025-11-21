@@ -2121,7 +2121,7 @@ export interface V1ResolveComponentResponse {
 }
 
 export interface V1ResolveTemplatedStringResponse {
-  resolvedData?: string;
+  body?: string;
 }
 
 export interface V1ResolvedTimeRange {
@@ -2984,7 +2984,7 @@ export type QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView =
   { [key: string]: V1Expression };
 
 export type QueryServiceResolveTemplatedStringBody = {
-  data?: string;
+  body?: string;
   /** If true, output format tokens instead of raw values. */
   useFormatTokens?: boolean;
   additionalWhereByMetricsView?: QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView;
