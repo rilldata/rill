@@ -39,8 +39,10 @@
     ? {
         connectors: [
           {
-            name: (limitToConnector as string) ??
-              ((limitedConnectorDriver.name as string) ?? ""),
+            name:
+              (limitToConnector as string) ??
+              (limitedConnectorDriver.name as string) ??
+              "",
             driver: limitedConnectorDriver,
           },
         ],
