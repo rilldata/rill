@@ -220,7 +220,7 @@
             bind:searchValue={searchText}
             minHeight="auto"
             maxHeight="200px"
-            onItemClick={handleHiddenItemClick}
+            draggable={false}
           >
             <div
               slot="header"
@@ -249,7 +249,7 @@
                 slot="item"
                 let:item
                 let:index
-                class="w-full flex gap-x-1 justify-between items-center cursor-pointer py-1"
+                class="w-full flex gap-x-1 justify-between items-center py-1"
               >
                 {@const itemData = allItemsMap.get(item.id)}
                 {@const displayName =
