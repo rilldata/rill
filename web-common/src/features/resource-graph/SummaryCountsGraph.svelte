@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { Background, SvelteFlow, type Node, type Edge } from "@xyflow/svelte";
+  import {
+    Background,
+    SvelteFlow,
+    type Node,
+    type Edge,
+    type NodeTypes,
+  } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/base.css";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import SummaryCountNode from "./SummaryCountNode.svelte";
@@ -156,7 +162,9 @@
     edgesStore.set(buildEdges());
   }
 
-  const nodeTypes = { "summary-count": SummaryCountNode } as const;
+  const nodeTypes: NodeTypes = {
+    "summary-count": SummaryCountNode as NodeTypes[string],
+  };
   $: flowColorMode = ($themeControl === "dark" ? "dark" : "light") as
     | "dark"
     | "light";

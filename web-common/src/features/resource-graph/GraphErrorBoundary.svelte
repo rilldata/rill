@@ -7,8 +7,11 @@
     type ErrorContext,
     ErrorSeverity,
   } from "./graph-error-handling";
-
-  export let fallback: ((error: Error | null) => any) | null = null;
+  import type { ComponentType, SvelteComponentTyped } from "svelte";
+  type FallbackComponent = ComponentType<
+    SvelteComponentTyped<{ error: Error | null }>
+  >;
+  export let fallback: FallbackComponent | null = null;
   export let onError: ((error: Error, context: ErrorContext) => void) | null =
     null;
 

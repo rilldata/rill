@@ -12,10 +12,43 @@
   import { goto } from "$app/navigation";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
 
+  export let id: string;
+  export let type: string;
   export let data: ResourceNodeData;
-  export let selected = false;
+  export let selected: boolean = false;
   export let width: number | undefined = undefined;
-  export let isConnectable = true;
+  export let height: number | undefined = undefined;
+  export let sourcePosition: Position | undefined = undefined;
+  export let targetPosition: Position | undefined = undefined;
+  export let dragHandle: string | undefined = undefined;
+  export let parentId: string | undefined = undefined;
+  export let dragging: boolean = false;
+  export let zIndex = 0;
+  export let selectable: boolean = true;
+  export let deletable: boolean = true;
+  export let draggable: boolean = false;
+  export let isConnectable: boolean = true;
+  export let positionAbsoluteX = 0;
+  export let positionAbsoluteY = 0;
+
+  // XYFlow injects these props for layout, but we only need them for typing support.
+  const ensureFlowProps = (..._args: unknown[]) => {};
+  $: ensureFlowProps(
+    id,
+    type,
+    height,
+    sourcePosition,
+    targetPosition,
+    dragHandle,
+    parentId,
+    dragging,
+    zIndex,
+    selectable,
+    deletable,
+    draggable,
+    positionAbsoluteX,
+    positionAbsoluteY,
+  );
 
   const DEFAULT_COLOR = "#6B7280";
   const DEFAULT_ICON = resourceIconMapping[ResourceKind.Model];

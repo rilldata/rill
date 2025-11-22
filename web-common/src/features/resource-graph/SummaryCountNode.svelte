@@ -8,6 +8,8 @@
 
   import { goto } from "$app/navigation";
 
+  export let id: string;
+  export let type: string;
   export let data: {
     label: string;
     count: number;
@@ -15,6 +17,41 @@
     active?: boolean;
   };
   export let selected: boolean = false;
+  export let width: number | undefined = undefined;
+  export let height: number | undefined = undefined;
+  export let sourcePosition: Position | undefined = undefined;
+  export let targetPosition: Position | undefined = undefined;
+  export let dragHandle: string | undefined = undefined;
+  export let parentId: string | undefined = undefined;
+  export let dragging: boolean = false;
+  export let zIndex = 0;
+  export let selectable: boolean = true;
+  export let deletable: boolean = true;
+  export let draggable: boolean = false;
+  export let isConnectable: boolean = false;
+  export let positionAbsoluteX = 0;
+  export let positionAbsoluteY = 0;
+
+  // XYFlow passes these props when rendering custom nodes.
+  const ensureFlowProps = (..._args: unknown[]) => {};
+  $: ensureFlowProps(
+    id,
+    type,
+    width,
+    height,
+    sourcePosition,
+    targetPosition,
+    dragHandle,
+    parentId,
+    dragging,
+    zIndex,
+    selectable,
+    deletable,
+    draggable,
+    isConnectable,
+    positionAbsoluteX,
+    positionAbsoluteY,
+  );
 
   $: color = resourceColorMapping[data?.kind] || "#6B7280";
   $: Icon = resourceIconMapping[data?.kind] || null;

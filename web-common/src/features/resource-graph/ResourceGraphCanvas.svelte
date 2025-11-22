@@ -5,6 +5,7 @@
     SvelteFlow,
     type Edge,
     type Node,
+    type NodeTypes,
   } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/base.css";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -87,8 +88,8 @@
     ? "100%"
     : `${UI_CONFIG.CARD_HEIGHT_PX}px`;
 
-  const nodeTypes = {
-    "resource-node": ResourceNode,
+  const nodeTypes: NodeTypes = {
+    "resource-node": ResourceNode as NodeTypes[string],
   };
 
   const edgeOptions = {

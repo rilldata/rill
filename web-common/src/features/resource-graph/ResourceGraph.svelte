@@ -41,8 +41,8 @@
   export let expandedId: string | null = null; // Controlled mode
   export let overlayMode: "inline" | "fullscreen" | "modal" = "inline";
   export let gridColumns: number = UI_CONFIG.DEFAULT_GRID_COLUMNS;
-  export let expandedHeightMobile = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
-  export let expandedHeightDesktop = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
+  export let expandedHeightMobile: string = UI_CONFIG.EXPANDED_HEIGHT_MOBILE;
+  export let expandedHeightDesktop: string = UI_CONFIG.EXPANDED_HEIGHT_DESKTOP;
 
   type SummaryMemo = {
     sources: number;
