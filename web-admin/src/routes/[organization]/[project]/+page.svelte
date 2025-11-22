@@ -5,7 +5,7 @@
   import InlineChat from "@rilldata/web-common/features/chat/layouts/inline/InlineChat.svelte";
   import DelayedContent from "@rilldata/web-common/features/entity-management/DelayedContent.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
+  import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   const { chat } = featureFlags;
@@ -16,12 +16,11 @@
 
   $: ({ instanceId } = $runtime);
 
-  // Query the instance to get the project display name
-  $: instanceQuery = createRuntimeServiceGetInstance(instanceId);
-  $: projectDisplayName =
-    $instanceQuery.data?.instance?.projectDisplayName || project;
-  $: isLoadingDisplayName = $instanceQuery.isLoading;
-  $: isErrorDisplayName = $instanceQuery.isError;
+  // Query the project metadata to get the display name from rill.yaml
+  $: projectTitleQuery = useProjectTitle(instanceId);
+  $: projectDisplayName = $projectTitleQuery?.data || project;
+  $: isLoadingDisplayName = $projectTitleQuery?.isLoading;
+  $: isErrorDisplayName = $projectTitleQuery?.isError;
 </script>
 
 <svelte:head>
