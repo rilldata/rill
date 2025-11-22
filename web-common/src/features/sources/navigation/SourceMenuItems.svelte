@@ -12,7 +12,6 @@
     useSourceFromYaml,
   } from "@rilldata/web-common/features/sources/selectors";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -32,8 +31,7 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/resource-graph-quick-view-store";
 
   export let filePath: string;
 
@@ -59,35 +57,16 @@
   const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = source?.state?.table as string;
 
-  let graphOverlayOpen = false;
-
-  $: resourcesQuery = createRuntimeServiceListResources(
-    instanceId,
-    undefined,
-    {
-      query: {
-        retry: 2,
-        refetchOnMount: true,
-        refetchOnWindowFocus: false,
-        enabled: !!instanceId && graphOverlayOpen,
-      },
-    },
-    queryClient,
-  );
-
-  $: allResources = $resourcesQuery.data?.resources ?? [];
-  $: resourcesLoading = $resourcesQuery.isLoading;
-  $: resourcesError = $resourcesQuery.error
-    ? "Failed to load project resources."
-    : null;
-  $: resourceGraphOverlayState = {
-    resources: allResources,
-    isLoading: resourcesLoading,
-    error: resourcesError,
-  };
+  $: sourceResource = $sourceQuery.data;
 
   function viewGraph() {
-    graphOverlayOpen = true;
+    if (!sourceResource) {
+      console.warn(
+        "[SourceMenuItems] Cannot open resource graph: resource unavailable.",
+      );
+      return;
+    }
+    openResourceGraphQuickView(sourceResource);
   }
 
   $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
@@ -230,6 +209,3 @@
     Replace source with uploaded file
   </NavigationMenuItem>
 {/if}
-
-
-<NavigationMenuSeparator />

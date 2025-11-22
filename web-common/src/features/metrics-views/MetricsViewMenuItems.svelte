@@ -17,8 +17,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import { GitBranch } from "lucide-svelte";
-  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/resource-graph-quick-view-store";
 
   export let filePath: string;
 
@@ -57,30 +56,14 @@
     );
   };
 
-  let graphOverlayOpen = false;
-
-  $: resourcesQuery = createRuntimeServiceListResources(
-    instanceId,
-    undefined,
-    {
-      query: {
-        retry: 2,
-        refetchOnMount: true,
-        refetchOnWindowFocus: false,
-        enabled: !!instanceId && graphOverlayOpen,
-      },
-    },
-    queryClient,
-  );
-
-  $: allResources = $resourcesQuery.data?.resources ?? [];
-  $: resourcesLoading = $resourcesQuery.isLoading;
-  $: resourcesError = $resourcesQuery.error
-    ? "Failed to load project resources."
-    : null;
-
   function viewGraph() {
-    graphOverlayOpen = true;
+    if (!resource) {
+      console.warn(
+        "[MetricsViewMenuItems] Cannot open resource graph: resource unavailable.",
+      );
+      return;
+    }
+    openResourceGraphQuickView(resource);
   }
 </script>
 
@@ -107,11 +90,3 @@
   <GitBranch slot="icon" size="14px" />
   View dependency graph
 </NavigationMenuItem>
-
-<ResourceGraphOverlay
-  bind:open={graphOverlayOpen}
-  anchorResource={resource}
-  resources={allResources}
-  isLoading={resourcesLoading}
-  error={resourcesError}
-/>

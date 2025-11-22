@@ -3,7 +3,6 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -20,9 +19,7 @@
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-  import { queryClient as globalQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/resource-graph-quick-view-store";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -35,42 +32,22 @@
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
+  $: modelResource = $modelQuery.data;
+  $: connector = modelResource?.model?.spec?.outputConnector;
   $: modelIsIdle =
-    $modelQuery.data?.meta?.reconcileStatus ===
+    modelResource?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
-  $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
-
-  let graphOverlayOpen = false;
-
-  $: resourcesQuery = createRuntimeServiceListResources(
-    instanceId,
-    undefined,
-    {
-      query: {
-        retry: 2,
-        refetchOnMount: true,
-        refetchOnWindowFocus: false,
-        enabled: !!instanceId && graphOverlayOpen,
-      },
-    },
-    globalQueryClient,
-  );
-
-  $: allResources = $resourcesQuery.data?.resources ?? [];
-  $: resourcesLoading = $resourcesQuery.isLoading;
-  $: resourcesError = $resourcesQuery.error
-    ? "Failed to load project resources."
-    : null;
-  $: resourceGraphOverlayState = {
-    resources: allResources,
-    isLoading: resourcesLoading,
-    error: resourcesError,
-  };
+  $: tableName = modelResource?.model?.state?.resultTable ?? "";
 
   function viewGraph() {
-    graphOverlayOpen = true;
+    if (!modelResource) {
+      console.warn(
+        "[ModelMenuItems] Cannot open resource graph: resource unavailable.",
+      );
+      return;
+    }
+    openResourceGraphQuickView(modelResource);
   }
 
   async function handleCreateModel() {
@@ -174,6 +151,3 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
-
-
-<NavigationMenuSeparator />
