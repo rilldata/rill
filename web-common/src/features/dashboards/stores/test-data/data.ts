@@ -4,6 +4,8 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
+import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params.ts";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
@@ -28,7 +30,6 @@ import {
   V1ExploreWebView,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
-  type V1StructType,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 
@@ -107,20 +108,25 @@ export const AD_BIDS_ADVANCED_MEASURES: MetricsViewSpecMeasure[] = [
 export const AD_BIDS_INIT_DIMENSIONS: MetricsViewSpecDimension[] = [
   {
     name: AD_BIDS_PUBLISHER_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
   {
     name: AD_BIDS_DOMAIN_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
 ];
 export const AD_BIDS_THREE_DIMENSIONS: MetricsViewSpecDimension[] = [
   {
     name: AD_BIDS_PUBLISHER_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
   {
     name: AD_BIDS_DOMAIN_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
   {
     name: AD_BIDS_COUNTRY_DIMENSION,
+    dataType: { code: TypeCode.CODE_STRING },
   },
 ];
 
@@ -187,6 +193,7 @@ export const AD_BIDS_METRICS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
     {
       name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
       expression: "case when publisher is null then true else false end",
+      dataType: { code: TypeCode.CODE_BOOL },
     },
   ],
 };
@@ -290,47 +297,6 @@ export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
   undefined,
 );
 
-export const AD_BIDS_SCHEMA: V1StructType = {
-  fields: [
-    {
-      name: AD_BIDS_PUBLISHER_DIMENSION,
-      type: {
-        code: TypeCode.CODE_STRING,
-      },
-    },
-    {
-      name: AD_BIDS_DOMAIN_DIMENSION,
-      type: {
-        code: TypeCode.CODE_STRING,
-      },
-    },
-    {
-      name: AD_BIDS_COUNTRY_DIMENSION,
-      type: {
-        code: TypeCode.CODE_STRING,
-      },
-    },
-    {
-      name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
-      type: {
-        code: TypeCode.CODE_BOOL,
-      },
-    },
-    {
-      name: AD_BIDS_IMPRESSIONS_MEASURE,
-      type: {
-        code: TypeCode.CODE_INT64,
-      },
-    },
-    {
-      name: AD_BIDS_BID_PRICE_MEASURE,
-      type: {
-        code: TypeCode.CODE_FLOAT64,
-      },
-    },
-  ],
-};
-
 export function getOffsetByHour(time: Date) {
   return getOffset(
     getStartOfPeriod(time, Period.HOUR, getLocalIANA()),
@@ -422,3 +388,15 @@ export const AD_BIDS_PIVOT_ENTITY: Partial<ExploreState> = {
     tableMode: "nest",
   },
 };
+
+export const AD_BIDS_RILL_DEFAULT_EXPLORE_STATE = getRillDefaultExploreState(
+  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+  AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+  AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+);
+export const AD_BIDS_RILL_DEFAULT_EXPLORE_URL_PARAMS =
+  getRillDefaultExploreUrlParams(
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+    AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+    AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+  );

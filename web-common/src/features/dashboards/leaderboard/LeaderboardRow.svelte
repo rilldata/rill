@@ -17,11 +17,11 @@
     DEFAULT_COLUMN_WIDTH,
     valueColumn,
     deltaColumn,
+    MEASURES_PADDING,
   } from "./leaderboard-widths";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let tableWidth: number;
   export let borderTop = false;
   export let borderBottom = false;
   export let isBeingCompared: boolean;
@@ -101,7 +101,11 @@
       : "var(--color-theme-100)";
 
   // Calculate bar width excluding dimension column
-  $: barWidth = leaderboardMeasureNames.length > 1 ? $valueColumn : tableWidth;
+  $: barWidth =
+    $valueColumn +
+    (leaderboardMeasureNames.length === 1
+      ? dimensionColumnWidth
+      : -MEASURES_PADDING);
   // Calculate bar lengths based on max value. For percent-of-total measure, this will be the total.
   $: barLengths = Object.fromEntries(
     Object.entries(values).map(([name, value]) => {
@@ -150,7 +154,7 @@
             return [
               name,
               length
-                ? `linear-gradient(to right, transparent 16px, ${barColor} 16px, ${barColor} ${length + 16}px, transparent ${length + 16}px)`
+                ? `linear-gradient(to right, transparent ${MEASURES_PADDING}px, ${barColor} ${MEASURES_PADDING}px, ${barColor} ${length + MEASURES_PADDING}px, transparent ${length + MEASURES_PADDING}px)`
                 : undefined,
             ];
           }),

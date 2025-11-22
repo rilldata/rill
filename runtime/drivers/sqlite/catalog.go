@@ -2,11 +2,9 @@ package sqlite
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -164,7 +162,7 @@ func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.Fi
 		args = append(args, opts.BeforeExecutedOn, opts.BeforeExecutedOn, opts.AfterKey)
 	}
 
-	qry.WriteString(" ORDER BY executed_on DESC, key")
+	qry.WriteString(" ORDER BY executed_on DESC, idx")
 
 	if opts.Limit != 0 {
 		qry.WriteString(" LIMIT ?")
@@ -305,28 +303,33 @@ func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string,
 	return nil
 }
 
-func (c *catalogStore) UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
-		c.instanceID,
-		modelID,
-		partitionKey,
-	)
-	if err != nil {
-		return err
+func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, modelID string, wherePartitionKeyIn []string, whereErrored bool) error {
+	var qry strings.Builder
+	var args []any
+
+	qry.WriteString("UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=?")
+	args = append(args, c.instanceID, modelID)
+
+	// Add conditions
+	qry.WriteString(" AND (false") // false ensures it's a no-op if no conditions are added; safer that way
+	if whereErrored {
+		qry.WriteString(" OR error != ''")
 	}
+	if len(wherePartitionKeyIn) > 0 {
+		qry.WriteString(" OR key IN (")
+		for i, k := range wherePartitionKeyIn {
+			if i == 0 {
+				qry.WriteString("?")
+			} else {
+				qry.WriteString(",?")
+			}
+			args = append(args, k)
+		}
+		qry.WriteString(")")
+	}
+	qry.WriteString(")")
 
-	return nil
-}
-
-func (c *catalogStore) UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error {
-	_, err := c.db.ExecContext(
-		ctx,
-		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
-		c.instanceID,
-		modelID,
-	)
+	_, err := c.db.ExecContext(ctx, qry.String(), args...)
 	if err != nil {
 		return err
 	}
@@ -360,105 +363,114 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 	return err
 }
 
-// FindConversations fetches all conversations in an instance for a given owner.
-func (c *catalogStore) FindConversations(ctx context.Context, ownerID string) ([]*drivers.Conversation, error) {
-	rows, err := c.db.QueryxContext(ctx, `
-		SELECT conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on
-		FROM conversations
+func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPattern string) ([]*drivers.AISession, error) {
+	query := `
+		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
+		FROM ai_sessions
 		WHERE instance_id = ? AND owner_id = ?
-		ORDER BY updated_on DESC
-	`, c.instanceID, ownerID)
+	`
+	args := []interface{}{c.instanceID, ownerID}
+
+	// Add optional user agent pattern filter
+	if userAgentPattern != "" {
+		query += " AND user_agent LIKE ?"
+		args = append(args, userAgentPattern)
+	}
+
+	query += " ORDER BY updated_on DESC"
+
+	rows, err := c.db.QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var result []*drivers.Conversation
+	var result []*drivers.AISession
 	for rows.Next() {
-		var conv drivers.Conversation
-		if err := rows.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.AppContextType, &conv.AppContextMetadataJSON, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
+		var s drivers.AISession
+		if err := rows.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.CreatedOn, &s.UpdatedOn); err != nil {
 			return nil, err
 		}
-		result = append(result, &conv)
+		result = append(result, &s)
 	}
-
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
 	return result, nil
 }
 
-// FindConversation fetches a conversation by ID.
-func (c *catalogStore) FindConversation(ctx context.Context, conversationID string) (*drivers.Conversation, error) {
+func (c *catalogStore) FindAISession(ctx context.Context, sessionID string) (*drivers.AISession, error) {
 	row := c.db.QueryRowxContext(ctx, `
-		SELECT conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on
-		FROM conversations
-		WHERE instance_id = ? AND conversation_id = ?
-	`, c.instanceID, conversationID)
+		SELECT id, instance_id, owner_id, title, user_agent, created_on, updated_on
+		FROM ai_sessions
+		WHERE instance_id = ? AND id = ?
+	`, c.instanceID, sessionID)
 
-	var conv drivers.Conversation
-	if err := row.Scan(&conv.ID, &conv.OwnerID, &conv.Title, &conv.AppContextType, &conv.AppContextMetadataJSON, &conv.CreatedOn, &conv.UpdatedOn); err != nil {
+	var s drivers.AISession
+	if err := row.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.CreatedOn, &s.UpdatedOn); err != nil {
 		return nil, err
 	}
-
-	return &conv, nil
+	return &s, nil
 }
 
-// InsertConversation inserts a new conversation.
-func (c *catalogStore) InsertConversation(ctx context.Context, ownerID, title, appContextType, appContextMetadataJSON string) (string, error) {
-	conversationID := uuid.NewString()
+func (c *catalogStore) InsertAISession(ctx context.Context, s *drivers.AISession) error {
 	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO conversations (instance_id, conversation_id, owner_id, title, app_context_type, app_context_metadata_json, created_on, updated_on)
-		VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-  `, c.instanceID, conversationID, ownerID, title, appContextType, appContextMetadataJSON)
-	return conversationID, err
+		INSERT INTO ai_sessions (id, instance_id, owner_id, title, user_agent, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, s.ID, s.InstanceID, s.OwnerID, s.Title, s.UserAgent, s.CreatedOn, s.UpdatedOn)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-// FindMessages fetches all messages for a conversation, ordered by sequence number.
-func (c *catalogStore) FindMessages(ctx context.Context, conversationID string) ([]*drivers.Message, error) {
+func (c *catalogStore) UpdateAISession(ctx context.Context, s *drivers.AISession) error {
+	now := time.Now()
+	_, err := c.db.ExecContext(ctx, `
+		UPDATE ai_sessions SET owner_id = ?, title = ?, user_agent = ?, updated_on = ?
+		WHERE id = ?
+	`, s.OwnerID, s.Title, s.UserAgent, now, s.ID)
+	if err != nil {
+		return err
+	}
+	s.UpdatedOn = now
+	return nil
+}
+
+func (c *catalogStore) FindAIMessages(ctx context.Context, sessionID string) ([]*drivers.AIMessage, error) {
 	rows, err := c.db.QueryxContext(ctx, `
-		SELECT message_id, conversation_id, seq_num, role, content_json, created_on, updated_on
-		FROM messages
-		WHERE instance_id = ? AND conversation_id = ?
-		ORDER BY seq_num ASC
-  `, c.instanceID, conversationID)
+		SELECT id, parent_id, session_id, created_on, updated_on, "index", role, type, tool, content_type, content
+		FROM ai_messages
+		WHERE session_id = ?
+		ORDER BY "index" ASC
+	`, sessionID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var result []*drivers.Message
+	var result []*drivers.AIMessage
 	for rows.Next() {
-		var msg drivers.Message
-		if err := rows.StructScan(&msg); err != nil {
+		var m drivers.AIMessage
+		err := rows.Scan(&m.ID, &m.ParentID, &m.SessionID, &m.CreatedOn, &m.UpdatedOn, &m.Index, &m.Role, &m.Type, &m.Tool, &m.ContentType, &m.Content)
+		if err != nil {
 			return nil, err
 		}
-		result = append(result, &msg)
+		result = append(result, &m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
 
-// InsertMessage inserts a new message into a conversation.
-func (c *catalogStore) InsertMessage(ctx context.Context, conversationID, role string, content []drivers.MessageContent) (string, error) {
-	messageID := uuid.NewString()
-
-	// Create message struct and set content
-	msg := &drivers.Message{
-		ID:             messageID,
-		ConversationID: conversationID,
-		Role:           role,
-	}
-	if err := msg.SetContent(content); err != nil {
-		return "", fmt.Errorf("failed to marshal content: %w", err)
-	}
-
-	// Auto-calculate seq_num using a subquery - this is atomic and race-condition safe
+func (c *catalogStore) InsertAIMessage(ctx context.Context, m *drivers.AIMessage) error {
 	_, err := c.db.ExecContext(ctx, `
-  	INSERT INTO messages (instance_id, conversation_id, seq_num, message_id, role, content_json, created_on, updated_on)
-  	VALUES (?, ?, 
-  	  (SELECT COALESCE(MAX(seq_num), 0) + 1 FROM messages WHERE instance_id = ? AND conversation_id = ?),
-  	  ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-  `, c.instanceID, conversationID, c.instanceID, conversationID, messageID, role, msg.ContentJSON)
-	return messageID, err
+		INSERT INTO ai_messages (id, parent_id, session_id, created_on, updated_on, "index", role, type, tool, content_type, content)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, m.ID, m.ParentID, m.SessionID, m.CreatedOn, m.UpdatedOn, m.Index, m.Role, m.Type, m.Tool, m.ContentType, m.Content)
+	if err != nil {
+		return err
+	}
+	return nil
 }

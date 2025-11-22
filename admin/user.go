@@ -16,14 +16,14 @@ import (
 //
 // The function transactionally also adds the user to the relevant managed usergroups in the org.
 // It may be called with or without holding an existing transaction.
-func (s *Service) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) error {
+func (s *Service) InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]interface{}, ifNotExists bool) error {
 	ctx, tx, err := s.DB.NewTx(ctx, true)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	inserted, err := s.DB.InsertOrganizationMemberUser(ctx, orgID, userID, roleID, ifNotExists)
+	inserted, err := s.DB.InsertOrganizationMemberUser(ctx, orgID, userID, roleID, attributes, ifNotExists)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (s *Service) InsertOrganizationMemberUser(ctx context.Context, orgID, userI
 // InsertProjectMemberUser inserts a user as a member of a project.
 // If the user is not already a member of the project's organization, it transactionally adds them as a guest of the org as well.
 // It may be called with or without holding an existing transaction.
-func (s *Service) InsertProjectMemberUser(ctx context.Context, orgID, projectID, userID, roleID string) error {
+func (s *Service) InsertProjectMemberUser(ctx context.Context, orgID, projectID, userID, roleID string, attributes map[string]interface{}) error {
 	guestRole, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameGuest)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (s *Service) InsertProjectMemberUser(ctx context.Context, orgID, projectID,
 
 	// All project-level members must also be org members.
 	// So if the user is not already a member of the organization, add them as a guest.
-	err = s.InsertOrganizationMemberUser(ctx, orgID, userID, guestRole.ID, true)
+	err = s.InsertOrganizationMemberUser(ctx, orgID, userID, guestRole.ID, attributes, true)
 	if err != nil {
 		return err
 	}
@@ -139,13 +139,15 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	user, err := s.DB.FindUserByEmail(ctx, email)
 	if err == nil {
 		return s.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-			DisplayName:         name,
-			PhotoURL:            photoURL,
-			GithubUsername:      user.GithubUsername,
-			GithubRefreshToken:  user.GithubRefreshToken,
-			QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-			QuotaTrialOrgs:      user.QuotaTrialOrgs,
-			PreferenceTimeZone:  user.PreferenceTimeZone,
+			DisplayName:          name,
+			PhotoURL:             photoURL,
+			GithubUsername:       user.GithubUsername,
+			GithubToken:          user.GithubToken,
+			GithubTokenExpiresOn: user.GithubTokenExpiresOn,
+			GithubRefreshToken:   user.GithubRefreshToken,
+			QuotaSingleuserOrgs:  user.QuotaSingleuserOrgs,
+			QuotaTrialOrgs:       user.QuotaTrialOrgs,
+			PreferenceTimeZone:   user.PreferenceTimeZone,
 		})
 	} else if !errors.Is(err, database.ErrNotFound) {
 		return nil, err
@@ -197,7 +199,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID, false)
+		err = s.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID, nil, false)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +248,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.InsertOrganizationMemberUser(ctx, whitelist.OrgID, user.ID, whitelist.OrgRoleID, false)
+		err = s.InsertOrganizationMemberUser(ctx, whitelist.OrgID, user.ID, whitelist.OrgRoleID, nil, false)
 		if err != nil {
 			return nil, err
 		}
@@ -262,7 +264,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, invite.ProjectID, user.ID, invite.ProjectRoleID)
+		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, invite.ProjectID, user.ID, invite.ProjectRoleID, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +292,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, whitelist.ProjectID, user.ID, whitelist.ProjectRoleID)
+		err = s.InsertProjectMemberUser(ctx, project.OrganizationID, whitelist.ProjectID, user.ID, whitelist.ProjectRoleID, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -400,7 +402,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 	if err != nil {
 		return fmt.Errorf("failed to find admin role when preparing org: %w", err)
 	}
-	err = s.InsertOrganizationMemberUser(ctx, orgID, userID, role.ID, false)
+	err = s.InsertOrganizationMemberUser(ctx, orgID, userID, role.ID, nil, false)
 	if err != nil {
 		return err
 	}

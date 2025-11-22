@@ -123,7 +123,7 @@
         grab
         fullWidth
         type={displayMap[item]?.type ?? "dimension"}
-        on:remove={() => handleRemove(item)}
+        onRemove={() => handleRemove(item)}
         label="{item} chip"
       >
         <span class="font-bold truncate" slot="body">
@@ -147,7 +147,7 @@
     item={dragData}
     position={dragStart}
     removable
-    on:release={() => (dragData = null)}
+    onRelease={() => (dragData = null)}
   />
 {/if}
 

@@ -9,9 +9,8 @@ sidebar_position: 0
 Once you've built your data pipeline, Rill provides powerful tools to explore, analyze, and share your insights.
 
 ### AI-Powered Analysis
-
-- **[Natural Language Queries (MCP)](/explore/mcp)** - Ask questions about your data using plain English with Claude integration
-<!-- - **[AI Chat in Rill Cloud](/explore/ai-chat)** - Have conversations with your data using AI-powered chat interface -->
+- **[AI Chat in Rill Cloud](/explore/ai-chat)** - Have conversations with your data using AI-powered chat interface
+- **[Natural Language Queries (MCP)](/explore/mcp)** - Ask questions about your data using everyday conversational language with Claude integration
 
 ### Interactive Dashboards
 

@@ -31,7 +31,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 	pbs := make([]*runtimev1.Instance, len(instances))
 	for i, inst := range instances {
-		featureFlags, err := runtime.ResolveFeatureFlags(inst, claims)
+		featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -71,7 +71,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims)
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -116,7 +116,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims)
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -207,7 +207,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		s.logger.Error("failed to acquire repo after editing instance", zap.String("instance_id", req.InstanceId), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
-	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims)
+	featureFlags, err := runtime.ResolveFeatureFlags(inst, claims.UserAttributes, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -305,12 +305,13 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 
 func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitive bool) *runtimev1.Instance {
 	pb := &runtimev1.Instance{
-		InstanceId:     inst.ID,
-		CreatedOn:      timestamppb.New(inst.CreatedOn),
-		UpdatedOn:      timestamppb.New(inst.UpdatedOn),
-		FeatureFlags:   featureFlags,
-		AiInstructions: inst.AIInstructions,
-		FrontendUrl:    inst.FrontendURL,
+		InstanceId:         inst.ID,
+		ProjectDisplayName: inst.ProjectDisplayName,
+		CreatedOn:          timestamppb.New(inst.CreatedOn),
+		UpdatedOn:          timestamppb.New(inst.UpdatedOn),
+		FeatureFlags:       featureFlags,
+		AiInstructions:     inst.AIInstructions,
+		FrontendUrl:        inst.FrontendURL,
 	}
 
 	if sensitive {

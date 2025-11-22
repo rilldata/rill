@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/marcboeker/go-duckdb/v2"
+	"github.com/duckdb/duckdb-go/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestRuntime_EditInstance(t *testing.T) {
@@ -41,17 +42,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -65,17 +66,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -92,17 +93,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo1",
-						Config: map[string]string{"dsn": repodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "olap1",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog1",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -116,17 +117,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo1",
-						Config: map[string]string{"dsn": repodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "olap1",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog1",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -143,17 +144,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:?access_mode=read_write"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:?access_mode=read_write"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -167,17 +168,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:?access_mode=read_write"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:?access_mode=read_write"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -194,17 +195,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": newRepodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": newRepodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -218,17 +219,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": newRepodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": newRepodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			},
@@ -245,17 +246,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": newRepodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": newRepodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 				Annotations: map[string]string{
@@ -272,17 +273,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": newRepodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": newRepodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 					{
 						Type:   "sqlite",
 						Name:   "catalog",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 				Annotations: map[string]string{
@@ -307,12 +308,12 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ":memory:"},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": ":memory:"})),
 					},
 				},
 			}
@@ -385,12 +386,12 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					{
 						Type:   "file",
 						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
+						Config: must(structpb.NewStruct(map[string]any{"dsn": repodsn})),
 					},
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{},
+						Config: must(structpb.NewStruct(map[string]any{})),
 					},
 				},
 			}
@@ -450,12 +451,12 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 			{
 				Type:   "file",
 				Name:   "repo",
-				Config: map[string]string{"dsn": t.TempDir()},
+				Config: must(structpb.NewStruct(map[string]any{"dsn": t.TempDir()})),
 			},
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{},
+				Config: must(structpb.NewStruct(map[string]any{})),
 			},
 		},
 	}
@@ -491,122 +492,6 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoFileExists(t, dbpath)
 }
 
-func Test_ResolveFeatureFlags(t *testing.T) {
-	featureFlagTemplates := map[string]string{
-		"dimension_search": `{{if eq (.user.domain) "rilldata.com"}}true{{end}}`,
-		"alerts":           `'{{.user.domain}}' = 'rilldata.com'`,
-		"reports":          `'{{.user.domain}}' in ['rilldata.com', 'gmail.com']`,
-		"chat":             `{{not .user.embed}}`,
-		"dashboard_chat":   `{{.user.embed}}`,
-	}
-
-	tests := []struct {
-		name         string
-		userAttrs    map[string]any
-		featureFlags map[string]bool
-	}{
-		{
-			name: "rilldata user",
-			userAttrs: map[string]any{
-				"domain": "rilldata.com",
-			},
-			featureFlags: map[string]bool{
-				"exports":             true,
-				"cloudDataViewer":     false,
-				"dimensionSearch":     true,
-				"twoTieredNavigation": false,
-				"rillTime":            true,
-				"hidePublicUrl":       false,
-				"exportHeader":        false,
-				"alerts":              true,
-				"reports":             true,
-				"darkMode":            false,
-				"chat":                true,
-				"dashboardChat":       false,
-				"deploy":              true,
-			},
-		},
-		{
-			name: "gmail user",
-			userAttrs: map[string]any{
-				"domain": "gmail.com",
-			},
-			featureFlags: map[string]bool{
-				"exports":             true,
-				"cloudDataViewer":     false,
-				"dimensionSearch":     false,
-				"twoTieredNavigation": false,
-				"rillTime":            true,
-				"hidePublicUrl":       false,
-				"exportHeader":        false,
-				"alerts":              false,
-				"reports":             true,
-				"darkMode":            false,
-				"chat":                true,
-				"dashboardChat":       false,
-				"deploy":              true,
-			},
-		},
-		{
-			name: "yahoo user",
-			userAttrs: map[string]any{
-				"domain": "yahoo.com",
-			},
-			featureFlags: map[string]bool{
-				"exports":             true,
-				"cloudDataViewer":     false,
-				"dimensionSearch":     false,
-				"twoTieredNavigation": false,
-				"rillTime":            true,
-				"hidePublicUrl":       false,
-				"exportHeader":        false,
-				"alerts":              false,
-				"reports":             false,
-				"darkMode":            false,
-				"chat":                true,
-				"dashboardChat":       false,
-				"deploy":              true,
-			},
-		},
-		{
-			name: "embedded user",
-			userAttrs: map[string]any{
-				"embed": true,
-			},
-			featureFlags: map[string]bool{
-				"exports":             true,
-				"cloudDataViewer":     false,
-				"dimensionSearch":     false,
-				"twoTieredNavigation": false,
-				"rillTime":            true,
-				"hidePublicUrl":       true,
-				"exportHeader":        false,
-				"alerts":              false,
-				"reports":             false,
-				"darkMode":            false,
-				"chat":                false,
-				"dashboardChat":       true,
-				"deploy":              true,
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			featureFlags, err := ResolveFeatureFlags(
-				&drivers.Instance{
-					FeatureFlags: featureFlagTemplates,
-				},
-				&SecurityClaims{
-					UserAttributes: test.userAttrs,
-				},
-			)
-			require.NoError(t, err)
-			require.Equal(t, test.featureFlags, featureFlags)
-		})
-	}
-}
-
 // New returns a runtime configured for use in tests.
 func newTestRuntime(t *testing.T) *Runtime {
 	globalConnectors := []*runtimev1.Connector{
@@ -615,7 +500,7 @@ func newTestRuntime(t *testing.T) *Runtime {
 			Name: "metastore",
 			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 			// "cache=shared" is needed to prevent threading problems.
-			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+			Config: must(structpb.NewStruct(map[string]any{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())})),
 		},
 	}
 
@@ -643,5 +528,12 @@ func connectorsEqual(a, b *runtimev1.Connector) bool {
 	if (a != nil) != (b != nil) {
 		return false
 	}
-	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Config, b.Config)
+	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Config.AsMap(), b.Config.AsMap())
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

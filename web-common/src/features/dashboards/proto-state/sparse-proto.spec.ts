@@ -6,7 +6,6 @@ import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_INIT,
-  AD_BIDS_SCHEMA,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
@@ -89,7 +88,7 @@ describe("sparse proto", () => {
 
   describe("should reset dashboard store", () => {
     for (const { title, mutations } of TestCases) {
-      it(`from ${title}`, () => {
+      it(`from ${title}`, async () => {
         const dashboard = getFullInitExploreState(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
@@ -103,14 +102,13 @@ describe("sparse proto", () => {
           AD_BIDS_EXPLORE_INIT,
         );
 
-        applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
         metricsExplorerStore.syncFromUrl(
           AD_BIDS_EXPLORE_NAME,
           defaultProto,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_EXPLORE_INIT,
-          AD_BIDS_SCHEMA,
         );
         assertDashboardEquals(AD_BIDS_EXPLORE_NAME, dashboard);
       });
@@ -119,8 +117,8 @@ describe("sparse proto", () => {
 
   describe("should reset partial dashboard store", () => {
     for (const { title, mutations, keys } of TestCases) {
-      it(`to ${title}`, () => {
-        applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+      it(`to ${title}`, async () => {
+        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
         const partialDashboard = getPartialDashboard(
           AD_BIDS_EXPLORE_NAME,
           keys,
@@ -130,7 +128,7 @@ describe("sparse proto", () => {
           AD_BIDS_EXPLORE_INIT,
         );
 
-        applyMutationsToDashboard(
+        await applyMutationsToDashboard(
           AD_BIDS_EXPLORE_NAME,
           TestCasesOppositeMutations,
         );
@@ -140,7 +138,6 @@ describe("sparse proto", () => {
           partialProto,
           AD_BIDS_METRICS_INIT,
           AD_BIDS_EXPLORE_INIT,
-          AD_BIDS_SCHEMA,
         );
         assertDashboardEquals(AD_BIDS_EXPLORE_NAME, {
           ...get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],

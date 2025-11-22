@@ -3,8 +3,7 @@
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
   import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseEntry from "./DatabaseEntry.svelte";
-  import { useDatabasesFromSchemas } from "../selectors";
-  import { useDatabasesOLAP as useDatabasesLegacy } from "../selectors";
+  import { useListDatabaseSchemas } from "../selectors";
   import type { ConnectorExplorerStore } from "./connector-explorer-store";
 
   export let instanceId: string;
@@ -13,18 +12,9 @@
 
   $: connectorName = connector?.name as string;
 
-  // Determine which API to use based on connector capabilities (optimized - direct access)
-  $: shouldUseNewAPI =
-    connector.driver?.implementsSqlStore ||
-    connector.driver?.implementsWarehouse ||
-    !connector.driver?.implementsOlap;
+  $: databaseSchemasQuery = useListDatabaseSchemas(instanceId, connectorName);
 
-  // Use appropriate selector based on connector type
-  $: databasesQuery = shouldUseNewAPI
-    ? useDatabasesFromSchemas(instanceId, connectorName)
-    : useDatabasesLegacy(instanceId, connectorName);
-
-  $: ({ data, error, isLoading } = $databasesQuery);
+  $: ({ data, error, isLoading } = $databaseSchemasQuery);
 </script>
 
 <div class="wrapper">
@@ -40,13 +30,7 @@
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}
-          <DatabaseEntry
-            {instanceId}
-            {connector}
-            {database}
-            {store}
-            useNewAPI={shouldUseNewAPI}
-          />
+          <DatabaseEntry {instanceId} {connector} {database} {store} />
         {/each}
       </ol>
     {/if}

@@ -44,6 +44,9 @@ type DeployOpts struct {
 	// Github indicates if the project should be connected to GitHub for automatic deploys.
 	Github bool
 
+	// SkipDeploy skips the runtime deployment step. Used for testing.
+	SkipDeploy bool
+
 	// remoteURL is the git remote url of the repository if detected. Set internally.
 	remoteURL string
 	// pushToProject is set if the deploy should push current changes to this existing project. Set internally.
@@ -80,7 +83,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 	}
 
 	// check if specified project already exists
-	if o.Name != "" {
+	if o.Name != "" && ch.Org != "" {
 		p, err := getProject(ctx, ch, ch.Org, o.Name)
 		if err != nil && !errors.Is(err, cmdutil.ErrNoMatchingProject) {
 			return err
@@ -141,6 +144,10 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			ch.PrintfError("A project in another org deploys from this repository. Please switch to org %q to push changes to the project %q.\n", o.pushToProject.OrgName, o.pushToProject.Name)
 			return fmt.Errorf("aborting deploy")
 		}
+		if subpath != "" && o.pushToProject.Subpath != subpath {
+			// just for verification confirm that subpath matches the one stored in project
+			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Try doing deploy using rill cli from github repo root by passing explicit subpath using `rill deploy --subpath %s`", subpath, o.pushToProject.Subpath, o.pushToProject.Subpath)
+		}
 		// set flags based on existing project
 		o.Managed = o.pushToProject.ManagedGitId != ""
 		o.Github = o.pushToProject.ManagedGitId == "" && o.pushToProject.GitRemote != ""
@@ -183,7 +190,7 @@ func (o *DeployOpts) ValidateAndApplyDefaults(ctx context.Context, ch *cmdutil.H
 			return err
 		}
 		connectToGithub = !ok
-	} else if !o.Github {
+	} else if !o.Github && ch.Interactive {
 		// still confirm if user wants to connect to github
 		connectToGithub, err = cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", true)
 		if err != nil {
@@ -296,6 +303,14 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		}
 	}
 
+	deployCmd.Flags().BoolVar(&opts.SkipDeploy, "skip-deploy", false, "Skip the runtime deployment step (for testing only)")
+	if !ch.IsDev() {
+		err := deployCmd.Flags().MarkHidden("skip-deploy")
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return deployCmd
 }
 
@@ -375,6 +390,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ProdSlots:     int64(opts.Slots),
 		Public:        opts.Public,
 		DirectoryName: filepath.Base(localProjectPath),
+		SkipDeploy:    opts.SkipDeploy,
 	}
 
 	ch.Printer.Println("Starting upload.")
@@ -429,8 +445,12 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 		if ch.Interactive {
 			ch.PrintfSuccess("Opening project in browser...\n")
-			time.Sleep(3 * time.Second)
-			_ = browser.Open(res.Project.FrontendUrl)
+			select {
+			case <-time.After(3 * time.Second):
+				_ = browser.Open(res.Project.FrontendUrl)
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 	}
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
@@ -449,19 +469,21 @@ func redeployProject(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts) 
 			return err
 		}
 	} else if proj.GitRemote != "" {
-		config := &gitutil.Config{
-			Remote:        opts.pushToProject.GitRemote,
-			DefaultBranch: opts.pushToProject.ProdBranch,
-		}
+		// Infer repo root and subpath for git operations
 		repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(opts.LocalProjectPath())
 		if err != nil {
 			return err
 		}
-		// just for verification confirm that subpath matches the one stored in project
+		// Verify subpath matches the one stored in the project
 		if subpath != proj.Subpath {
 			return fmt.Errorf("current project subpath %q does not match the one stored in rill %q. Run rill cli from github repo root and pass explicit subpath using `rill deploy --subpath %s`", subpath, proj.Subpath, proj.Subpath)
 		}
-		err = gitutil.CommitAndForcePush(ctx, repoRoot, config, "", nil)
+		config := &gitutil.Config{
+			Remote:        opts.pushToProject.GitRemote,
+			DefaultBranch: opts.pushToProject.ProdBranch,
+			Subpath:       subpath,
+		}
+		err = ch.CommitAndSafePush(ctx, repoRoot, config, "", nil, "1")
 		if err != nil {
 			return err
 		}

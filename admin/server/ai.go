@@ -2,13 +2,18 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/rilldata/rill/runtime/pkg/ai"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 )
 
 func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*adminv1.CompleteResponse, error) {
@@ -31,25 +36,50 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 		}
 	}
 
+	// Parse schema if given
+	var outputSchema *jsonschema.Schema
+	if req.OutputJsonSchema != "" {
+		err := json.Unmarshal([]byte(req.OutputJsonSchema), &outputSchema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse output JSON schema: %w", err)
+		}
+	}
+
 	// Pass messages and tools to the AI service
-	msg, err := s.admin.AI.Complete(ctx, messages, req.Tools)
+	res, err := s.admin.AI.Complete(ctx, &ai.CompleteOptions{
+		Messages:     messages,
+		Tools:        req.Tools,
+		OutputSchema: outputSchema,
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	if len(msg.Content) == 0 {
+	if len(res.Message.Content) == 0 {
 		return nil, errors.New("the AI responded with an empty message")
 	}
 
+	// Log token usage
+	s.logger.Info("llm completion successful",
+		zap.Int("input_messages", len(messages)),
+		zap.Int("output_messages", len(res.Message.Content)),
+		zap.Int("input_tokens", res.InputTokens),
+		zap.Int("output_tokens", res.OutputTokens),
+		observability.ZapCtx(ctx),
+	)
+
 	// Handle response backwards compatibility: if request used old format,
 	// populate both data and content fields for old runtime compatibility
-	responseMessage := msg
+	responseMessage := res.Message
 	if needsBackwardsCompatibleResponse {
-		responseMessage = convertContentToData(msg)
+		responseMessage = convertContentToData(res.Message)
 	}
 
 	// Any tool use response will be passed to the client (the runtime server) for execution.
-	return &adminv1.CompleteResponse{Message: responseMessage}, nil
+	return &adminv1.CompleteResponse{
+		Message:      responseMessage,
+		InputTokens:  uint32(res.InputTokens),
+		OutputTokens: uint32(res.OutputTokens),
+	}, nil
 }
 
 // convertDataToContent converts a message's deprecated 'data' field to 'content' blocks

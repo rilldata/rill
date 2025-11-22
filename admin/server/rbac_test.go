@@ -11,6 +11,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestRBAC(t *testing.T) {
@@ -331,6 +332,22 @@ func TestRBAC(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		// Create a project and add the usergroup to it
+		r3, err := c1.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			Org:        r1.Organization.Name,
+			Project:    "proj1",
+			ProdSlots:  1,
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+		_, err = c1.AddProjectMemberUsergroup(ctx, &adminv1.AddProjectMemberUsergroupRequest{
+			Org:       r1.Organization.Name,
+			Project:   r3.Project.Name,
+			Usergroup: r2.Usergroup.GroupName,
+			Role:      database.ProjectRoleNameViewer,
+		})
+		require.NoError(t, err)
+
 		// Add a user to the usergroup
 		u2, _ := fix.NewUser(t)
 		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
@@ -347,35 +364,61 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check the counts for the usergroup
-		r3, err := c1.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
+		r4, err := c1.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
 			Org:           r1.Organization.Name,
 			IncludeCounts: true,
 		})
 		require.NoError(t, err)
-		require.Len(t, r3.Members, 4) // There are three system-managed autogroups and the one we added
-		for _, m := range r3.Members {
+		require.Len(t, r4.Members, 4) // There are three system-managed autogroups and the one we added
+		for _, m := range r4.Members {
 			m.GroupId = ""
 			m.CreatedOn = nil
 			m.UpdatedOn = nil
 		}
-		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+		require.Contains(t, r4.Members, &adminv1.MemberUsergroup{
 			GroupName:    database.UsergroupNameAutogroupUsers,
 			GroupManaged: true,
 			UsersCount:   2,
 		})
-		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+		require.Contains(t, r4.Members, &adminv1.MemberUsergroup{
 			GroupName:    database.UsergroupNameAutogroupMembers,
 			GroupManaged: true,
 			UsersCount:   1,
 		})
-		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+		require.Contains(t, r4.Members, &adminv1.MemberUsergroup{
 			GroupName:    database.UsergroupNameAutogroupGuests,
 			GroupManaged: true,
 			UsersCount:   1,
 		})
-		require.Contains(t, r3.Members, &adminv1.MemberUsergroup{
+		require.Contains(t, r4.Members, &adminv1.MemberUsergroup{
 			GroupName:    r2.Usergroup.GroupName,
 			GroupManaged: false,
+			UsersCount:   1,
+		})
+
+		// Check the counts for the project usergroup listing
+		r5, err := c1.ListProjectMemberUsergroups(ctx, &adminv1.ListProjectMemberUsergroupsRequest{
+			Org:           r1.Organization.Name,
+			Project:       r3.Project.Name,
+			IncludeCounts: true,
+		})
+		require.NoError(t, err)
+		require.Len(t, r5.Members, 2)
+		for _, m := range r5.Members {
+			m.GroupId = ""
+			m.CreatedOn = nil
+			m.UpdatedOn = nil
+		}
+		require.Contains(t, r5.Members, &adminv1.MemberUsergroup{
+			GroupName:    database.UsergroupNameAutogroupMembers,
+			GroupManaged: true,
+			RoleName:     database.ProjectRoleNameViewer,
+			UsersCount:   1,
+		})
+		require.Contains(t, r5.Members, &adminv1.MemberUsergroup{
+			GroupName:    r2.Usergroup.GroupName,
+			GroupManaged: false,
+			RoleName:     database.ProjectRoleNameViewer,
 			UsersCount:   1,
 		})
 	})
@@ -1331,6 +1374,79 @@ func TestRBAC(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, usergroups.Usergroups, 3)
 		require.Equal(t, group1.Usergroup.GroupName, usergroups.Usergroups[2].GroupName)
+	})
+
+	t.Run("User attributes", func(t *testing.T) {
+		// Create users
+		u1, c1 := fix.NewUserWithEmail(t, "attr_user@example.com")
+		u2, c2 := fix.NewUser(t)
+
+		// Create org
+		r1, err := c1.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+
+		// Add user2 as member
+		_, err = c1.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u2.Email,
+			Role:  database.OrganizationRoleNameViewer,
+		})
+		require.NoError(t, err)
+
+		// Set custom attributes for user1
+		attrs := map[string]interface{}{
+			"restaurant_id": "123",
+			"department":    "engineering",
+		}
+		attrStruct, err := structpb.NewStruct(attrs)
+		require.NoError(t, err)
+
+		// Test setting attributes
+		_, err = c1.UpdateOrganizationMemberUserAttributes(ctx, &adminv1.UpdateOrganizationMemberUserAttributesRequest{
+			Org:        r1.Organization.Name,
+			Email:      u1.Email,
+			Attributes: attrStruct,
+		})
+		require.NoError(t, err)
+
+		// Test permission check: user2 cannot set attributes for user1
+		_, err = c2.UpdateOrganizationMemberUserAttributes(ctx, &adminv1.UpdateOrganizationMemberUserAttributesRequest{
+			Org:        r1.Organization.Name,
+			Email:      u1.Email,
+			Attributes: attrStruct,
+		})
+		require.Error(t, err) // Should fail due to insufficient permissions
+
+		// Verify attributes were set
+		resp, err := c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u1.Email,
+		})
+		require.NoError(t, err)
+		require.Equal(t, attrs, resp.Member.Attributes.AsMap())
+
+		// Test updating attributes
+		newAttrs := map[string]interface{}{
+			"restaurant_id": "456",
+			"team":          "platform",
+		}
+		newAttrStruct, err := structpb.NewStruct(newAttrs)
+		require.NoError(t, err)
+
+		_, err = c1.UpdateOrganizationMemberUserAttributes(ctx, &adminv1.UpdateOrganizationMemberUserAttributesRequest{
+			Org:        r1.Organization.Name,
+			Email:      u1.Email,
+			Attributes: newAttrStruct,
+		})
+		require.NoError(t, err)
+
+		// Verify updated attributes
+		updatedResp, err := c1.GetOrganizationMemberUser(ctx, &adminv1.GetOrganizationMemberUserRequest{
+			Org:   r1.Organization.Name,
+			Email: u1.Email,
+		})
+		require.NoError(t, err)
+		require.Equal(t, newAttrs, updatedResp.Member.Attributes.AsMap())
 	})
 
 }
