@@ -617,7 +617,7 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 	var args []any
 	switch d {
 	case DialectDuckDB:
-		return fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", d.EscapeIdentifier(alias), start.Format(time.RFC3339), end.Format(time.RFC3339), d.ConvertToDateTruncSpecifier(grain)), nil, nil
+		return fmt.Sprintf("SELECT timezone('%s', range) AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", tz.String(), d.EscapeIdentifier(alias), start.In(tz).Format(time.DateTime), end.In(tz).Format(time.DateTime), d.ConvertToDateTruncSpecifier(grain)), nil, nil
 	case DialectClickHouse:
 		// format - SELECT c1 AS "alias" FROM VALUES(toDateTime('2021-01-01 00:00:00'), toDateTime('2021-01-01 00:00:00'),...)
 		var sb strings.Builder
