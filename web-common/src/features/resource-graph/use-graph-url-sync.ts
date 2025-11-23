@@ -220,7 +220,6 @@ export function useGraphUrlSync(
     }
 
     // Preserve other query parameters
-    const currentUrl = new URL(window.location.href);
     for (const [key, value] of currentUrl.searchParams) {
       if (key !== seedParam && key !== expandedParam) {
         params.append(key, value);
