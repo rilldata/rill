@@ -12,6 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"go.uber.org/zap"
 )
 
@@ -149,8 +150,14 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 	if !access {
 		return nil, fmt.Errorf("resource not found")
 	}
-	if r.GetMetricsView().State.ValidSpec == nil {
+	mvState := r.GetMetricsView().State
+	if mvState.ValidSpec == nil {
 		return nil, fmt.Errorf("metrics view %q is invalid", metricsView)
+	}
+
+	// Validate that all field references in the chart spec exist in the metrics view
+	if err := validateChartFields(chartType, spec, mvState.ValidSpec); err != nil {
+		return nil, fmt.Errorf("field validation failed: %w", err)
 	}
 
 	// Return the chart specification in a structured format
@@ -159,6 +166,163 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 		Spec:      spec,
 		Message:   fmt.Sprintf("Chart created successfully: %s", chartType),
 	}, nil
+}
+
+// validateChartFields validates that all field references in the chart spec exist in the metrics view
+func validateChartFields(chartType string, spec map[string]any, mvSpec *runtimev1.MetricsViewSpec) error {
+	// Build a map of available fields (dimensions and measures)
+	availableFields := make(map[string]bool)
+
+	// Add time dimension if present
+	if mvSpec.TimeDimension != "" {
+		availableFields[mvSpec.TimeDimension] = true
+	}
+
+	// Add dimensions
+	for _, dim := range mvSpec.Dimensions {
+		if dim.Name != "" {
+			availableFields[dim.Name] = true
+		}
+	}
+
+	// Add measures
+	for _, measure := range mvSpec.Measures {
+		if measure.Name != "" {
+			availableFields[measure.Name] = true
+		}
+	}
+
+	// Validate fields based on chart type
+	switch chartType {
+	case "heatmap":
+		if colorField, ok := pathutil.GetPath(spec, "color.field"); ok {
+			if err := validateField(availableFields, colorField); err != nil {
+				return fmt.Errorf("invalid color field: %w", err)
+			}
+		}
+		if xField, ok := pathutil.GetPath(spec, "x.field"); ok {
+			if err := validateField(availableFields, xField); err != nil {
+				return fmt.Errorf("invalid x field: %w", err)
+			}
+		}
+		if yField, ok := pathutil.GetPath(spec, "y.field"); ok {
+			if err := validateField(availableFields, yField); err != nil {
+				return fmt.Errorf("invalid y field: %w", err)
+			}
+		}
+
+	case "funnel_chart":
+		if stageField, ok := pathutil.GetPath(spec, "stage.field"); ok {
+			if err := validateField(availableFields, stageField); err != nil {
+				return fmt.Errorf("invalid stage field: %w", err)
+			}
+		}
+		if measureField, ok := pathutil.GetPath(spec, "measure.field"); ok {
+			if err := validateField(availableFields, measureField); err != nil {
+				return fmt.Errorf("invalid measure field: %w", err)
+			}
+		}
+		// Validate fields array if present
+		if fields, ok := pathutil.GetPath(spec, "measure.fields"); ok {
+			if err := validateFieldsArray(availableFields, fields); err != nil {
+				return fmt.Errorf("invalid measure fields: %w", err)
+			}
+		}
+
+	case "donut_chart", "pie_chart":
+		if colorField, ok := pathutil.GetPath(spec, "color.field"); ok {
+			if err := validateField(availableFields, colorField); err != nil {
+				return fmt.Errorf("invalid color field: %w", err)
+			}
+		}
+		if measureField, ok := pathutil.GetPath(spec, "measure.field"); ok {
+			if err := validateField(availableFields, measureField); err != nil {
+				return fmt.Errorf("invalid measure field: %w", err)
+			}
+		}
+
+	case "bar_chart", "line_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
+		if colorField, ok := pathutil.GetPath(spec, "color.field"); ok {
+			// Skip validation for special field "rill_measures"
+			if fieldStr, ok := colorField.(string); !ok || fieldStr != "rill_measures" {
+				if err := validateField(availableFields, colorField); err != nil {
+					return fmt.Errorf("invalid color field: %w", err)
+				}
+			}
+		}
+		if xField, ok := pathutil.GetPath(spec, "x.field"); ok {
+			if err := validateField(availableFields, xField); err != nil {
+				return fmt.Errorf("invalid x field: %w", err)
+			}
+		}
+		if yField, ok := pathutil.GetPath(spec, "y.field"); ok {
+			if err := validateField(availableFields, yField); err != nil {
+				return fmt.Errorf("invalid y field: %w", err)
+			}
+		}
+		// Validate y.fields array if present
+		if fields, ok := pathutil.GetPath(spec, "y.fields"); ok {
+			if err := validateFieldsArray(availableFields, fields); err != nil {
+				return fmt.Errorf("invalid y fields: %w", err)
+			}
+		}
+
+	case "combo_chart":
+		// For combo_chart, color.type must be "value"
+		if colorType, ok := pathutil.GetPath(spec, "color.type"); ok {
+			if typeStr, ok := colorType.(string); !ok || typeStr != "value" {
+				return fmt.Errorf("combo_chart color type must be 'value', got %q", colorType)
+			}
+		}
+		if xField, ok := pathutil.GetPath(spec, "x.field"); ok {
+			if err := validateField(availableFields, xField); err != nil {
+				return fmt.Errorf("invalid x field: %w", err)
+			}
+		}
+		if y1Field, ok := pathutil.GetPath(spec, "y1.field"); ok {
+			if err := validateField(availableFields, y1Field); err != nil {
+				return fmt.Errorf("invalid y1 field: %w", err)
+			}
+		}
+		if y2Field, ok := pathutil.GetPath(spec, "y2.field"); ok {
+			if err := validateField(availableFields, y2Field); err != nil {
+				return fmt.Errorf("invalid y2 field: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateField checks if a single field exists in the available fields
+func validateField(availableFields map[string]bool, field any) error {
+	fieldStr, ok := field.(string)
+	if !ok {
+		return fmt.Errorf("field is not a string")
+	}
+	if fieldStr == "" {
+		return nil
+	}
+
+	if !availableFields[fieldStr] {
+		return fmt.Errorf("field %q not found in metrics view", fieldStr)
+	}
+	return nil
+}
+
+// validateFieldsArray validates an array of field names
+func validateFieldsArray(availableFields map[string]bool, fields any) error {
+	fieldsArray, ok := fields.([]any)
+	if !ok {
+		return fmt.Errorf("fields is not an array")
+	}
+
+	for i, field := range fieldsArray {
+		if err := validateField(availableFields, field); err != nil {
+			return fmt.Errorf("field at index %d: %w", i, err)
+		}
+	}
+	return nil
 }
 
 const createChartDescription = `# Chart Visualization Tool
@@ -805,6 +969,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **'time_grain'**: Controls temporal aggregation granularity
   - Default: "TIME_GRAIN_DAY"
   - Use to adjust time-based grouping (e.g., hour, day, week, month)
+  - ALWAYS add a time_grain if a temporal dimension is mentioned in the chart spec
 - **timestamp dimension field**: When referencing the time dimension, always set type to "temporal"
 
 ### Data Filtering

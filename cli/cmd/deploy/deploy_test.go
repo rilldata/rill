@@ -2,6 +2,7 @@ package deploy_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -100,9 +101,14 @@ func TestGithubDeploy(t *testing.T) {
 	t.Run("self-hosted git deploy", func(t *testing.T) {
 		testSelfHostedDeploy(t, c, ghClient, u1)
 	})
+
+	t.Run("self-hosted git deploy with monorepo", func(t *testing.T) {
+		testSelfHostedMonorepoDeploy(t, c, ghClient, u1)
+	})
 }
 
 func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *github.Client, adm *testcli.Fixture) {
+	testmode.Expensive(t)
 	result := adm.Run(t, "org", "create", "github-test")
 	require.Equal(t, 0, result.ExitCode)
 
@@ -128,7 +134,7 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 		Name:  "Rill test user",
 		Email: "test.user@rilldata.com",
 	}
-	err = gitutil.CommitAndForcePush(t.Context(), tempDir, &gitutil.Config{
+	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
 		Remote:        *repo.CloneURL,
 		DefaultBranch: "main",
 	}, "", author)
@@ -165,6 +171,117 @@ func testSelfHostedDeploy(t *testing.T, adminClient *client.Client, ghClient *gi
 
 	// verify changes are pushed to Github repo
 	verifyGithubRepoContents(t, ghClient, resp.Project.GitRemote, changes)
+}
+
+func testSelfHostedMonorepoDeploy(t *testing.T, adminClient *client.Client, ghClient *github.Client, adm *testcli.Fixture) {
+	testmode.Expensive(t)
+	result := adm.Run(t, "org", "create", "github-monorepo-test")
+	require.Equal(t, 0, result.ExitCode)
+
+	// create a monorepo structure
+	tempDir := initMonorepo(t)
+
+	// create a github repo
+	repo, _, err := ghClient.Repositories.Create(t.Context(), "", &github.Repository{
+		Name:    github.Ptr("self-hosted-monorepo" + uuid.NewString()[:8]),
+		Private: github.Ptr(true),
+	})
+	require.NoError(t, err)
+
+	// cleanup repo
+	t.Cleanup(func() {
+		owner, ghrepo, ok := gitutil.SplitGithubRemote(*repo.CloneURL)
+		require.True(t, ok, "invalid github remote: %s", *repo.CloneURL)
+		_, err = ghClient.Repositories.Delete(context.Background(), owner, ghrepo)
+		require.NoError(t, err, "failed to delete github repo %s/%s: %v", owner, ghrepo, err)
+	})
+
+	author := &object.Signature{
+		Name:  "Rill test user",
+		Email: "test.user@rilldata.com",
+	}
+	err = gitutil.CommitAndPush(t.Context(), tempDir, &gitutil.Config{
+		Remote:        *repo.CloneURL,
+		DefaultBranch: "main",
+	}, "", author)
+	require.NoError(t, err, "failed to push to github repo")
+
+	// Clone two separate copies of the same repo to simulate independent working directories
+	// This demonstrates that different subpaths can be worked on independently
+	clone1Dir := t.TempDir()
+	clone2Dir := t.TempDir()
+
+	// Clone repo to first directory
+	err = cloneRepo(t.Context(), *repo.CloneURL, clone1Dir)
+	require.NoError(t, err, "failed to clone repo to first directory")
+
+	// Clone repo to second directory
+	err = cloneRepo(t.Context(), *repo.CloneURL, clone2Dir)
+	require.NoError(t, err, "failed to clone repo to second directory")
+
+	// deploy project1 from first clone
+	project1Path := filepath.Join(clone1Dir, "project1")
+	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-monorepo-test", "--project=monorepo-project1", "--skip-deploy=true", "--path="+project1Path)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// verify the first project is correctly created with subpath
+	resp1, err := adminClient.GetProject(t.Context(), &adminv1.GetProjectRequest{
+		Org:     "github-monorepo-test",
+		Project: "monorepo-project1",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "monorepo-project1", resp1.Project.Name)
+	require.Empty(t, resp1.Project.ManagedGitId)
+	require.Equal(t, "project1", resp1.Project.Subpath)
+
+	// deploy project2 from second clone (independent of first clone)
+	project2Path := filepath.Join(clone2Dir, "project2")
+	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-monorepo-test", "--project=monorepo-project2", "--skip-deploy=true", "--path="+project2Path)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// verify the second project is correctly created with different subpath
+	resp2, err := adminClient.GetProject(t.Context(), &adminv1.GetProjectRequest{
+		Org:     "github-monorepo-test",
+		Project: "monorepo-project2",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "monorepo-project2", resp2.Project.Name)
+	require.Empty(t, resp2.Project.ManagedGitId)
+	require.Equal(t, "project2", resp2.Project.Subpath)
+	require.Equal(t, resp1.Project.GitRemote, resp2.Project.GitRemote)
+
+	// make changes to project1 in first clone only
+	changesProject1 := map[string]string{
+		"project1/models/model.sql": `SELECT 1 AS one`,
+	}
+	putFiles(t, clone1Dir, changesProject1)
+
+	// redeploy project1 with changes from first clone
+	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-monorepo-test", "--project=monorepo-project1", "--skip-deploy=true", "--path="+project1Path)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// verify changes are pushed to Github repo in project1 subpath
+	verifyGithubRepoContents(t, ghClient, resp1.Project.GitRemote, changesProject1)
+
+	// make changes to project2 in second clone independently
+	changesProject2 := map[string]string{
+		"project2/models/model.sql": `SELECT 2 AS two`,
+	}
+	putFiles(t, clone2Dir, changesProject2)
+
+	// redeploy project2 with changes from second clone
+	result = adm.Run(t, "deploy", "--interactive=false", "--org=github-monorepo-test", "--project=monorepo-project2", "--skip-deploy=true", "--path="+project2Path)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// verify changes are pushed to Github repo in project2 subpath
+	verifyGithubRepoContents(t, ghClient, resp2.Project.GitRemote, changesProject2)
+
+	// verify both projects' changes exist in the repo, demonstrating independence
+	allChanges := map[string]string{
+		"project1/models/model.sql": `SELECT 1 AS one`,
+		"project2/models/model.sql": `SELECT 2 AS two`,
+	}
+	verifyGithubRepoContents(t, ghClient, resp1.Project.GitRemote, allChanges)
 }
 
 func verifyGithubRepoContents(t *testing.T, client *github.Client, remote string, changes map[string]string) {
@@ -234,4 +351,40 @@ display_name: Untitled Rill Project
 olap_connector: duckdb`,
 	})
 	return tempDir
+}
+
+func initMonorepo(t *testing.T) string {
+	tempDir := t.TempDir()
+
+	// Create project1 in monorepo
+	putFiles(t, tempDir, map[string]string{
+		"project1/rill.yaml": `compiler: rillv1
+display_name: Monorepo Project 1
+olap_connector: duckdb`,
+		"project1/models/.gitkeep": "",
+	})
+
+	// Create project2 in monorepo
+	putFiles(t, tempDir, map[string]string{
+		"project2/rill.yaml": `compiler: rillv1
+display_name: Monorepo Project 2
+olap_connector: duckdb`,
+		"project2/models/.gitkeep": "",
+	})
+
+	// Add root level README for the monorepo
+	putFiles(t, tempDir, map[string]string{
+		"README.md": "# Test Monorepo\nThis is a test monorepo with multiple Rill projects.",
+	})
+
+	return tempDir
+}
+
+func cloneRepo(ctx context.Context, repoURL, path string) error {
+	cmd := exec.CommandContext(ctx, "git", "clone", repoURL, path)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("clone repo failed with error: %s(%s)", out, err)
+	}
+	return nil
 }
