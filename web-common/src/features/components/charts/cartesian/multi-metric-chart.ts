@@ -3,8 +3,14 @@ import {
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
 import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { VisualizationSpec } from "svelte-vega";
-import type { Field } from "vega-lite/build/src/channeldef";
+import type {
+  Field,
+  NumericMarkPropDef,
+  OffsetDef,
+} from "vega-lite/build/src/channeldef";
+import type { Encoding } from "vega-lite/build/src/encoding";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
 import type { Transform } from "vega-lite/build/src/transform";
@@ -42,12 +48,43 @@ export function generateVLMultiMetricChartSpec(
     measureDisplayNames[measure] = data.fields[measure]?.displayName || measure;
   });
 
+  // Check if comparison mode is enabled
+  const hasComparison = data.hasComparison;
+
+  // Build the list of fields to fold
+  // In comparison mode, include both current and previous measures
+  const fieldsToFold: string[] = [];
+  if (hasComparison) {
+    measures.forEach((measure) => {
+      fieldsToFold.push(measure);
+      fieldsToFold.push(measure + ComparisonDeltaPreviousSuffix);
+    });
+  } else {
+    fieldsToFold.push(...measures);
+  }
+
   const transforms: Transform[] = [
     {
-      fold: measures,
+      fold: fieldsToFold,
       as: [measureField, valueField],
     },
   ];
+
+  // Add comparison-specific transforms
+  if (hasComparison) {
+    // Create a clean measure name field (without _prev suffix)
+    transforms.push({
+      calculate: `replace(datum['${measureField}'], '${ComparisonDeltaPreviousSuffix}', '')`,
+      as: "measure_clean",
+    });
+
+    // Create a sort order field to ensure current appears before comparison
+    transforms.push({
+      calculate: `indexof(datum['${measureField}'], '${ComparisonDeltaPreviousSuffix}') >= 0 ? 1 : 0`,
+      as: "sortOrder",
+    });
+  }
+
   spec.transform = transforms;
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
@@ -61,11 +98,25 @@ export function generateVLMultiMetricChartSpec(
         .join("") + "datum.value",
   };
 
+  // In comparison mode, use the clean measure name for coloring
+  // so both current and comparison bars have the same color per measure
+  const colorField = hasComparison ? "measure_clean" : measureField;
+
   const baseColorEncoding = {
     ...createColorEncoding(config.color, data),
-    field: measureField,
+    field: colorField,
     title: measureField,
     legend,
+  };
+
+  const opacityComparisonEncoding: NumericMarkPropDef<Field> = {
+    condition: [
+      {
+        test: `indexof(datum['${measureField}'], '${ComparisonDeltaPreviousSuffix}') >= 0`,
+        value: 0.4,
+      },
+    ],
+    value: 1,
   };
 
   if (typeof baseColorEncoding === "object" && "scale" in baseColorEncoding) {
@@ -120,14 +171,34 @@ export function generateVLMultiMetricChartSpec(
       },
     ];
 
-    measures.forEach((measure) => {
-      multiValueTooltipChannel!.push({
-        field: sanitizeValueForVega(measure),
-        title: measureDisplayNames[measure],
-        type: "quantitative",
-        formatType: sanitizeFieldName(measure),
+    if (hasComparison) {
+      measures.forEach((measure) => {
+        // Current period value
+        multiValueTooltipChannel!.push({
+          field: sanitizeValueForVega(measure),
+          title: measureDisplayNames[measure],
+          type: "quantitative",
+          formatType: sanitizeFieldName(measure),
+        });
+
+        // Comparison period value
+        multiValueTooltipChannel!.push({
+          field: sanitizeValueForVega(measure) + "_prev",
+          title: measureDisplayNames[measure] + "_prev",
+          type: "quantitative",
+          formatType: sanitizeFieldName(measure),
+        });
       });
-    });
+    } else {
+      measures.forEach((measure) => {
+        multiValueTooltipChannel!.push({
+          field: sanitizeValueForVega(measure),
+          title: measureDisplayNames[measure],
+          type: "quantitative",
+          formatType: sanitizeFieldName(measure),
+        });
+      });
+    }
 
     multiValueTooltipChannel = multiValueTooltipChannel.slice(0, 50);
   }
@@ -222,15 +293,29 @@ export function generateVLMultiMetricChartSpec(
       break;
     }
     case "grouped_bar": {
+      const barEncoding: Partial<Encoding<Field>> = {
+        y: sumYEncoding,
+        color: baseColorEncoding,
+      };
+
+      if (hasComparison) {
+        const xOffset: OffsetDef<Field> = {
+          field: measureField,
+          sort: { field: "sortOrder" },
+        };
+        barEncoding.xOffset = xOffset;
+        barEncoding.opacity = opacityComparisonEncoding;
+      } else {
+        // Normal mode: group by measure only
+        const xOffset: OffsetDef<Field> = { field: measureField };
+        barEncoding.xOffset = xOffset;
+      }
+
       spec.layer = [
         hoverRuleLayer,
         {
           mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: {
-            y: sumYEncoding,
-            xOffset: { field: measureField },
-            color: baseColorEncoding,
-          },
+          encoding: barEncoding,
         },
       ];
       break;

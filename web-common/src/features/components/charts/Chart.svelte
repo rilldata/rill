@@ -14,9 +14,9 @@
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import type { View } from "vega-typings";
+  import { getChroma } from "../../themes/theme-utils";
   import type { ChartDataResult, ChartType } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
-  import { getChroma } from "../../themes/theme-utils";
 
   export let chartType: ChartType;
   export let chartSpec: CanvasChartSpec;

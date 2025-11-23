@@ -41,8 +41,6 @@ export function generateVLBarChartSpec(
 
   spec.encoding = { x: createPositionEncoding(config.x, data) };
 
-  console.log(multiValueTooltipChannel);
-
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
 
