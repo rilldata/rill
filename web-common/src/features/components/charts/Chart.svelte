@@ -12,11 +12,11 @@
   } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-  import chroma from "chroma-js";
   import type { Readable } from "svelte/store";
   import type { View } from "vega-typings";
   import type { ChartDataResult, ChartType } from "./types";
   import { generateSpec, getColorMappingForChart } from "./util";
+  import { getChroma } from "../../themes/theme-utils";
 
   export let chartType: ChartType;
   export let chartSpec: CanvasChartSpec;
@@ -42,10 +42,10 @@
         ...$chartData,
         theme: {
           primary: theme.primary
-            ? chroma(theme.primary)
+            ? getChroma(theme.primary)
             : $chartData.theme.primary,
           secondary: theme.secondary
-            ? chroma(theme.secondary)
+            ? getChroma(theme.secondary)
             : $chartData.theme.secondary,
         },
       }

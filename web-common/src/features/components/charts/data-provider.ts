@@ -1,18 +1,14 @@
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
-import {
-  defaultPrimaryColors,
-  defaultSecondaryColors,
-} from "@rilldata/web-common/features/themes/color-config";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
-import chroma from "chroma-js";
 import { derived, type Readable } from "svelte/store";
 import type { CanvasEntity } from "../../canvas/stores/canvas-entity";
+import { primary, secondary } from "../../themes/colors";
 import type {
   ChartDataQuery,
   ChartDataResult,
@@ -131,10 +127,10 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         theme: {
           primary:
             theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.primary ||
-            chroma(`hsl(${defaultPrimaryColors[500]})`),
+            primary["500"],
           secondary:
             theme?.colors?.[isThemeModeDark ? "dark" : "light"]?.secondary ||
-            chroma(`hsl(${defaultSecondaryColors[500]})`),
+            secondary["500"],
         },
       };
     },

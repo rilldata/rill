@@ -88,7 +88,7 @@ describe("sparse proto", () => {
 
   describe("should reset dashboard store", () => {
     for (const { title, mutations } of TestCases) {
-      it(`from ${title}`, () => {
+      it(`from ${title}`, async () => {
         const dashboard = getFullInitExploreState(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
@@ -102,7 +102,7 @@ describe("sparse proto", () => {
           AD_BIDS_EXPLORE_INIT,
         );
 
-        applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
 
         metricsExplorerStore.syncFromUrl(
           AD_BIDS_EXPLORE_NAME,
@@ -117,8 +117,8 @@ describe("sparse proto", () => {
 
   describe("should reset partial dashboard store", () => {
     for (const { title, mutations, keys } of TestCases) {
-      it(`to ${title}`, () => {
-        applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+      it(`to ${title}`, async () => {
+        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
         const partialDashboard = getPartialDashboard(
           AD_BIDS_EXPLORE_NAME,
           keys,
@@ -128,7 +128,7 @@ describe("sparse proto", () => {
           AD_BIDS_EXPLORE_INIT,
         );
 
-        applyMutationsToDashboard(
+        await applyMutationsToDashboard(
           AD_BIDS_EXPLORE_NAME,
           TestCasesOppositeMutations,
         );

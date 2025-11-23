@@ -19,6 +19,7 @@ import type {
   ColorMapping,
   FieldConfig,
 } from "./types";
+import { getChroma } from "../../themes/theme-utils";
 
 export function isFieldConfig(field: unknown): field is FieldConfig {
   return (
@@ -311,8 +312,8 @@ export function colorToVariableReference(
 
     // Compare colors (normalize by converting both to chroma and back)
     try {
-      const inputChroma = chroma(resolvedColor);
-      const paletteChroma = chroma(resolved);
+      const inputChroma = getChroma(resolvedColor);
+      const paletteChroma = getChroma(resolved);
 
       // Check if colors are the same (with small tolerance for rounding)
       if (chroma.deltaE(inputChroma, paletteChroma) < 1) {

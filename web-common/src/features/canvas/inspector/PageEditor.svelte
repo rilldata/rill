@@ -113,7 +113,11 @@
   }
 </script>
 
-<SidebarWrapper type="secondary" disableHorizontalPadding title="Canvas">
+<SidebarWrapper
+  type="secondary"
+  disableHorizontalPadding
+  title="Canvas configurations"
+>
   <div class="page-param">
     <Input
       hint="Shown in global header and when deployed to Rill Cloud"

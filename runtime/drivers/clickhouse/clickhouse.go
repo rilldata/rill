@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
+	"net"
 	"strings"
 	"time"
 
@@ -318,7 +320,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, fmt.Errorf("failed to open write connection: %w", err)
 		}
 	}
-
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
 	row := db.QueryRow(`
         WITH
@@ -326,7 +327,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
             toInt32(parts[1]) AS major,
             toInt32(parts[2]) AS minor
         SELECT (major > 22) OR ((major = 22) AND (minor >= 7)) AS is_supported
-`)
+	`)
+
 	var isSupported bool
 	if err := row.Scan(&isSupported); err != nil {
 		return nil, err
@@ -335,20 +337,46 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
 	}
 
+	// Using the harmless, non–side-effecting setting
+	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
+	// whether the cluster mode supports modifying query settings. This setting
+	// has no practical use for our purposes.
+	supportSettings := true
+	if _, err := db.Exec("SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
+		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
+			supportSettings = false
+		}
+	}
+
+	// Compute OLAP queue size
+	var olapSemSize int
+	if conf.MaxOpenConns < 1 {
+		// MaxOpenConns <= 0 means unlimited connections
+		olapSemSize = math.MaxInt
+	} else if conf.MaxOpenConns > 1 {
+		// Leave one connection for meta queries. All others can be used for OLAP.
+		olapSemSize = conf.MaxOpenConns - 1
+	} else {
+		// If there is only one connection, both meta and olap queries need to share it.
+		// There will be contention at the database/sql layer, but it will work.
+		olapSemSize = 1
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Connection{
-		readDB:     db,
-		writeDB:    writeDB,
-		config:     conf,
-		logger:     logger,
-		activity:   ac,
-		instanceID: instanceID,
-		ctx:        ctx,
-		cancel:     cancel,
-		metaSem:    semaphore.NewWeighted(1),
-		olapSem:    priorityqueue.NewSemaphore(conf.MaxOpenConns - 1),
-		opts:       opts,
-		embed:      embed,
+		readDB:          db,
+		writeDB:         writeDB,
+		config:          conf,
+		logger:          logger,
+		activity:        ac,
+		instanceID:      instanceID,
+		supportSettings: supportSettings,
+		ctx:             ctx,
+		cancel:          cancel,
+		metaSem:         semaphore.NewWeighted(1),
+		olapSem:         priorityqueue.NewSemaphore(olapSemSize),
+		opts:            opts,
+		embed:           embed,
 	}
 
 	c.used()
@@ -370,12 +398,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	readDB     *sqlx.DB
-	writeDB    *sqlx.DB
-	config     *configProperties
-	logger     *zap.Logger
-	activity   *activity.Client
-	instanceID string
+	readDB          *sqlx.DB
+	writeDB         *sqlx.DB
+	config          *configProperties
+	logger          *zap.Logger
+	activity        *activity.Client
+	instanceID      string
+	supportSettings bool
 
 	// context that is cancelled when the connection is closed
 	ctx    context.Context
@@ -789,9 +818,6 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		}
 		opts.DialTimeout = d
 	}
-	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
-		opts.DialTimeout = time.Second * 60
-	}
 
 	if conf.ReadTimeout != "" {
 		d, err := time.ParseDuration(conf.ReadTimeout)
@@ -804,15 +830,38 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		opts.ReadTimeout = time.Second * 300
 	}
 
+	// NOTE: After https://github.com/ClickHouse/clickhouse-go/pull/1709, we can remove the manual TCP dial and
+	// the default 60s DialTimeout.
+	// The manual dial currently ensures that the host and port are reachable.
+	// This check only verifies that the TCP socket is open — it will succeed even if the ClickHouse instance is scaled to zero.
+	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
+	if conf.Host != "" && conf.Port != 0 {
+		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
+		conn, err := net.DialTimeout("tcp", target, 25*time.Second)
+		if err != nil {
+			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
+		}
+		conn.Close()
+	}
+	if opts.DialTimeout == 0 { // Apply an increased default to reduce the chance of dropped connections with scaled-to-zero ClickHouse.
+		opts.DialTimeout = time.Second * 60
+	}
+
 	// Open the connection
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 	err := db.Ping()
 	if err != nil {
-		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
-			return nil, err
+		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
+		if strings.Contains(err.Error(), "EOF") ||
+			strings.Contains(err.Error(), "[handshake] unexpected packet [21]") ||
+			(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+			return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
 		}
-
-		if conf.DSN != "" {
+		// Return immediately without retrying in the following cases:
+		//   1. The current protocol is already HTTP (no need to retry with HTTP again).
+		//   2. A DSN was explicitly provided (respect the user’s configuration).
+		//   3. The error is not "unexpected packet [72]" → The native protocol hit an HTTP endpoint.
+		if opts.Protocol == clickhouse.HTTP || conf.DSN != "" || !strings.Contains(err.Error(), "[handshake] unexpected packet [72]") {
 			return nil, err
 		}
 		// may be the port is http, also try with http protocol if DSN is not provided
@@ -820,6 +869,11 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 		err := db.Ping()
 		if err != nil {
+			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
+			if strings.Contains(err.Error(), "EOF") ||
+				(strings.Contains(err.Error(), "malformed HTTP response") && strings.Contains(err.Error(), "\\x15")) {
+				return nil, fmt.Errorf("handshake failed (this usually happens due to SSL/TLS mismatch): %w", err)
+			}
 			return nil, err
 		}
 		// connection with http protocol is successful

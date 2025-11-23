@@ -5,12 +5,13 @@
  * for data visualization.
  */
 
-import chroma, { type Color } from "chroma-js";
+import { type Color } from "chroma-js";
 import {
   generatePalette,
   DEFAULT_STEP_COUNT,
   DEFAULT_GAMMA,
 } from "./color-generation";
+import { getChroma } from "./theme-utils";
 
 /**
  * Palette type definitions for data visualization
@@ -31,7 +32,7 @@ export function setSequentialColor(
   }
 
   const root = scopeElement || document.documentElement;
-  const chromaColor = typeof color === "string" ? chroma(color) : color;
+  const chromaColor = typeof color === "string" ? getChroma(color) : color;
   const { light, dark } = generatePalette(
     chromaColor,
     false,
@@ -64,7 +65,7 @@ export function setDivergingColor(
   }
 
   const root = scopeElement || document.documentElement;
-  const chromaColor = typeof color === "string" ? chroma(color) : color;
+  const chromaColor = typeof color === "string" ? getChroma(color) : color;
   const { light, dark } = generatePalette(
     chromaColor,
     false,
@@ -94,7 +95,7 @@ export function setQualitativeColor(
   }
 
   const root = scopeElement || document.documentElement;
-  const chromaColor = typeof color === "string" ? chroma(color) : color;
+  const chromaColor = typeof color === "string" ? getChroma(color) : color;
   const { light, dark } = generatePalette(
     chromaColor,
     false,

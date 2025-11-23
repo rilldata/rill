@@ -104,9 +104,11 @@ type InstanceConfig struct {
 	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
 	// Can be "", "none", "new", "pushdown".
 	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
-	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
+	// AlertsDefaultStreamingRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
+	// AlertsFastStreamingRefreshCron is similar to AlertsDefaultStreamingRefreshCron but is used for alerts that are based on always-on OLAP connectors (i.e. that have MayScaleToZero == false).
+	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -166,7 +168,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
-		AlertsDefaultStreamingRefreshCron:    "*/10 * * * *", // Every 10 minutes
+		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
+		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 	}
 
 	// Resolve variables
@@ -188,4 +191,39 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	}
 
 	return res, nil
+}
+
+func (i *Instance) ResolveConnectors() []*runtimev1.Connector {
+	var res []*runtimev1.Connector
+	res = append(res, i.Connectors...)
+	res = append(res, i.ProjectConnectors...)
+	// implicit connectors
+	vars := i.ResolveVariables(true)
+	for k := range vars {
+		if !strings.HasPrefix(k, "connector.") {
+			continue
+		}
+
+		parts := strings.Split(k, ".")
+		if len(parts) <= 2 {
+			continue
+		}
+
+		// Implicitly defined connectors always have the same name as the driver
+		name := parts[1]
+		found := false
+		for _, c := range res {
+			if c.Name == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			res = append(res, &runtimev1.Connector{
+				Type: name,
+				Name: name,
+			})
+		}
+	}
+	return res
 }

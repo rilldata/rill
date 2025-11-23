@@ -111,3 +111,161 @@ func TestVariables(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "a=1 b.a=2 b.a=2", resolved)
 }
+
+func TestAsSQLList(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name:     "strings",
+			template: `{{ as_sql_list (list "a" "b" "c") }}`,
+			want:     "('a', 'b', 'c')",
+		},
+		{
+			name:     "ints",
+			template: `{{ as_sql_list (list 1 2 3) }}`,
+			want:     "(1, 2, 3)",
+		},
+		{
+			name:     "mixed types",
+			template: `{{ as_sql_list (list 1 "b" 3) }}`,
+			want:     "(1, 'b', 3)",
+		},
+		{
+			name:     "empty list",
+			template: `{{ as_sql_list (list) }}`,
+			want:     "()",
+		},
+		{
+			name:     "nil input",
+			template: `{{ as_sql_list nil }}`,
+			want:     "()",
+		},
+		{
+			name:     "single string",
+			template: `{{ as_sql_list "hello" }}`,
+			want:     "('hello')",
+		},
+		{
+			name:     "string with quotes",
+			template: `{{ as_sql_list "hello'world" }}`,
+			want:     "('hello''world')",
+		},
+		{
+			name:     "booleans",
+			template: `{{ as_sql_list (list true false) }}`,
+			want:     "(true, false)",
+		},
+		{
+			name:     "floats",
+			template: `{{ as_sql_list (list 1.5 2.7 3.14) }}`,
+			want:     "(1.5, 2.7, 3.14)",
+		},
+		{
+			name:     "mixed with null",
+			template: `{{ as_sql_list (list "a" nil "c") }}`,
+			want:     "('a', NULL, 'c')",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolved, err := ResolveTemplate(tt.template, TemplateData{}, false)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, resolved)
+		})
+	}
+}
+
+func TestAsSQLListSecurityPolicies(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		data     TemplateData
+		want     string
+	}{
+		{
+			name:     "single restaurant access",
+			template: `restaurant_id = {{ .user.restaurant_id }}`,
+			data: TemplateData{
+				User: map[string]any{
+					"restaurant_id": "rest_123",
+				},
+			},
+			want: "restaurant_id = rest_123",
+		},
+		{
+			name:     "multi-valued campaigns with as_sql_list",
+			template: `campaign IN {{ .user.allowed_campaigns | as_sql_list }}`,
+			data: TemplateData{
+				User: map[string]any{
+					"allowed_campaigns": []string{"campaign1", "campaign2", "camp\"ign3"},
+				},
+			},
+			want: `campaign IN ('campaign1', 'campaign2', 'camp"ign3')`,
+		},
+		{
+			name:     "mixed types with admin flag and numeric budget",
+			template: `region = '{{ .user.region }}' AND budget > {{ .user.min_budget }}`,
+			data: TemplateData{
+				User: map[string]any{
+					"region":     "us-west",
+					"min_budget": 1000,
+				},
+			},
+			want: "region = 'us-west' AND budget > 1000",
+		},
+		{
+			name:     "access check with len function",
+			template: `{{ len .user.allowed_campaigns }} > 0`,
+			data: TemplateData{
+				User: map[string]any{
+					"allowed_campaigns": []string{"campaign1", "campaign2"},
+				},
+			},
+			want: "2 > 0",
+		},
+		{
+			name:     "boolean admin check",
+			template: `{{ .user.is_admin }} == true`,
+			data: TemplateData{
+				User: map[string]any{
+					"is_admin": true,
+				},
+			},
+			want: "true == true",
+		},
+		{
+			name:     "null check for access control",
+			template: `{{ .user.restaurant_id }} IS NOT NULL`,
+			data: TemplateData{
+				User: map[string]any{
+					"restaurant_id": "rest_456",
+				},
+			},
+			want: "rest_456 IS NOT NULL",
+		},
+		{
+			name:     "complex security policy with quotes and mixed types",
+			template: `user_id IN {{ .user.allowed_users | as_sql_list }} AND priority >= {{ .user.min_priority }} AND status = '{{ .user.status }}'`,
+			data: TemplateData{
+				User: map[string]any{
+					"allowed_users": []interface{}{"user'1", "user2", 123},
+					"min_priority":  5,
+					"status":        "active",
+				},
+			},
+			want: `user_id IN ('user''1', 'user2', 123) AND priority >= 5 AND status = 'active'`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolved, err := ResolveTemplate(tt.template, tt.data, false)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, resolved)
+		})
+	}
+}

@@ -122,6 +122,7 @@ type DB interface {
 	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
+	FindUserWithAttributes(ctx context.Context, userID, orgID string) (*User, map[string]any, error)
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
@@ -151,11 +152,12 @@ type DB interface {
 	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteManagedUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
-	FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*UserAuthToken, error)
+	FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int, refresh *bool) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
+	DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error)
 	DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 	DeleteInactiveUserAuthTokens(ctx context.Context, retention time.Duration) error
@@ -210,6 +212,10 @@ type DB interface {
 	DeleteAuthorizationCode(ctx context.Context, code string) error
 	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
 
+	InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes []string) (*AuthClient, error)
+	FindAuthClient(ctx context.Context, id string) (*AuthClient, error)
+	UpdateAuthClientUsedOn(ctx context.Context, ids []string) error
+
 	FindOrganizationRoles(ctx context.Context) ([]*OrganizationRole, error)
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRoles(ctx context.Context) ([]*ProjectRole, error)
@@ -220,12 +226,14 @@ type DB interface {
 	ResolveProjectRolesForService(ctx context.Context, serviceID, projectID string) ([]*ProjectRole, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, withCounts bool, afterEmail string, limit int, searchPattern string) ([]*OrganizationMemberUser, error)
+	FindOrganizationMemberUser(ctx context.Context, orgID, userID string) (*OrganizationMemberUser, error)
 	CountOrganizationMemberUsers(ctx context.Context, orgID, filterRoleID string, searchPattern string) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	FindOrganizationMemberUserAdminStatus(ctx context.Context, orgID, userID string) (isAdmin, isLastAdmin bool, err error)
-	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, ifNotExists bool) (bool, error)
+	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string, attributes map[string]any, ifNotExists bool) (bool, error)
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
+	UpdateOrganizationMemberUserAttributes(ctx context.Context, orgID, userID string, attributes map[string]any) (bool, error)
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*OrganizationMemberUser, error)
 	InsertOrganizationMemberService(ctx context.Context, serviceID, orgID, roleID string) error
@@ -247,7 +255,7 @@ type DB interface {
 	UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error
 
-	FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID, afterName string, limit int) ([]*MemberUsergroup, error)
+	FindProjectMemberUsergroups(ctx context.Context, projectID, filterRoleID string, withCounts bool, afterName string, limit int) ([]*MemberUsergroup, error)
 	FindProjectMemberUsergroupRole(ctx context.Context, groupID, projectID string) (*ProjectRole, error)
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
@@ -714,6 +722,7 @@ type UserAuthToken struct {
 	AuthClientID          *string    `db:"auth_client_id"`
 	AuthClientDisplayName *string    `db:"auth_client_display_name"`
 	RepresentingUserID    *string    `db:"representing_user_id"`
+	Refresh               bool       `db:"refresh"`
 	CreatedOn             time.Time  `db:"created_on"`
 	ExpiresOn             *time.Time `db:"expires_on"`
 	UsedOn                time.Time  `db:"used_on"`
@@ -727,6 +736,7 @@ type InsertUserAuthTokenOptions struct {
 	DisplayName        string
 	AuthClientID       *string
 	RepresentingUserID *string
+	Refresh            bool // indicates if its refresh token
 	ExpiresOn          *time.Time
 }
 
@@ -841,7 +851,10 @@ type InsertNotificationTokenOptions struct {
 // AuthClient is a client that requests and consumes auth tokens.
 type AuthClient struct {
 	ID          string
-	DisplayName string
+	DisplayName string    `db:"display_name"`
+	Scope       string    `db:"scope"`
+	GrantTypes  []string  `db:"grant_types"`
+	UsedOn      time.Time `db:"used_on"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
 }
@@ -951,13 +964,14 @@ type ProjectRole struct {
 type OrganizationMemberUser struct {
 	ID              string
 	Email           string
-	DisplayName     string    `db:"display_name"`
-	PhotoURL        string    `db:"photo_url"`
-	RoleName        string    `db:"role_name"`
-	ProjectsCount   int       `db:"projects_count"`
-	UsergroupsCount int       `db:"usergroups_count"`
-	CreatedOn       time.Time `db:"created_on"`
-	UpdatedOn       time.Time `db:"updated_on"`
+	DisplayName     string         `db:"display_name"`
+	PhotoURL        string         `db:"photo_url"`
+	RoleName        string         `db:"role_name"`
+	Attributes      map[string]any `db:"attributes"`
+	ProjectsCount   int            `db:"projects_count"`
+	UsergroupsCount int            `db:"usergroups_count"`
+	CreatedOn       time.Time      `db:"created_on"`
+	UpdatedOn       time.Time      `db:"updated_on"`
 }
 
 // ProjectMemberUser is a convenience type used for display-friendly representation of a project member

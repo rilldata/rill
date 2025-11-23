@@ -203,8 +203,12 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	}
 
 	// Validate and rewrite dimensions
+	timeDims := make(map[string]struct{})
 	allDims := make([]string, 0, len(mv.Dimensions))
 	for _, d := range mv.Dimensions {
+		if d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME {
+			timeDims[d.Name] = struct{}{}
+		}
 		allDims = append(allDims, d.Name)
 	}
 	spec.Dimensions, err = fieldselectorpb.ResolveFields(spec.Dimensions, spec.DimensionsSelector, allDims)
@@ -241,6 +245,19 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 		}
 		p.Measures = measures
 		p.MeasuresSelector = nil
+	}
+
+	// Filter out all time dimensions from the explore's spec.
+	// TODO: Remove when the UI supports multiple time dimensions.
+	spec.Dimensions = slices.DeleteFunc(spec.Dimensions, func(v string) bool {
+		_, isTime := timeDims[v]
+		return isTime
+	})
+	if spec.DefaultPreset != nil {
+		spec.DefaultPreset.Dimensions = slices.DeleteFunc(spec.DefaultPreset.Dimensions, func(v string) bool {
+			_, isTime := timeDims[v]
+			return isTime
+		})
 	}
 
 	// Done with rewriting

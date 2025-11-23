@@ -15,6 +15,7 @@ rill token list [flags]
 ```
       --page-size uint32    Number of tokens to return per page (default 1000)
       --page-token string   Pagination token
+      --refresh             List refresh tokens only
 ```
 
 ### Global flags

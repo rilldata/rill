@@ -65,16 +65,63 @@ This ensures **trustworthy, governed analytics** while empowering users to **sel
 
 To use the Rill MCP server, you'll need:
 
-- An **MCP client** (we recommend [Claude Desktop](https://claude.ai/download), but you can use any compatible client. [Why?](#configure-claude-desktop))
+- An **MCP client** (we recommend [Claude Desktop](https://claude.ai/download), but you can use any compatible client. [Why?](#edit-claude-desktop-configuration))
 - A **running Rill project** (locally or hosted on Rill Cloud)
-- **Node.js**, which can be downloaded from [nodejs.org](https://nodejs.org/en)
+
+## Connect using OAuth (Recommended)
+
+The easiest way to connect your Rill app to Claude Desktop or ChatGPT is through their custom connector interfaces, which handle authentication automatically via OAuth. This eliminates the need to manually create access tokens or edit configuration files.
+
+### Claude Desktop (Paid Plan)
+
+:::info Paid Claude Desktop Required
+Custom connectors are only available in the paid plan of Claude Desktop. [Learn more about Claude Desktop custom connectors →](https://support.claude.com/en/articles/11175166-getting-started-with-custom-connectors-using-remote-mcp)
+:::
+
+1. Open Claude Desktop and navigate to **Settings → Connectors**
+2. Click **Add custom connector**
+3. Enter the Rill MCP URL for your project:
+   ```
+   https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp
+   ```
+   Replace `{org_name}` and `{project_name}` with your organization and project names.
+4. The OAuth flow will automatically start in your browser
+5. Log in to Rill and authorize the connection
+6. Claude Desktop will receive an access token and your Rill app will be connected
+
+### ChatGPT Web Interface (Paid Plan)
+
+:::info Paid ChatGPT Required
+Custom apps with Developer mode are only available in the paid plans of ChatGPT. [Learn more about ChatGPT Developer mode →](https://platform.openai.com/docs/guides/developer-mode)
+:::
+
+1. Open ChatGPT and navigate to **Settings → Apps & Connectors → Advanced Settings**
+2. Enable **Developer mode**
+3. Go back to **Apps & Connectors** and click **Create** in the Apps section
+4. Enter the Rill MCP URL for your project:
+   ```
+   https://api.rilldata.com/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp
+   ```
+   Replace `{org_name}` and `{project_name}` with your organization and project names.
+5. The OAuth flow will automatically start in your browser
+6. Log in to Rill and authorize the connection
+7. ChatGPT will receive an access token and your Rill app will be connected
+
+## Manual Configuration (Alternative Method)
+
+If you prefer to manually configure the connection or need to connect to a local Rill instance, you can edit configuration files directly and provide your own access token.
+Note: If you select this option, you must have Node.js installed on your system which can be downloaded from [nodejs.org](https://nodejs.org/en)
 
 ### Create a Rill Personal Access Token (if your project is on Rill Cloud)
-You can navigate to the AI tab in your project to retrieve both the JSON and create a Rill personal access token.
+
+**Via UI (recommended):**
+
+Navigate to the AI tab in your project to retrieve both the JSON config and create a personal access token automatically:
+
 <img src='/img/explore/mcp/project-ai.png' class='rounded-gif'/>
 <br />
 
-Alternatively, if you want to create the token via the CLI:
+**Via CLI:**
 
 ```bash
 # Install the Rill CLI if you haven't already
@@ -83,6 +130,10 @@ curl https://rill.sh | sh
 # Create a token
 rill token issue
 ```
+
+:::tip Learn more about user tokens
+For comprehensive documentation on creating, managing, and using personal access tokens, see [User Tokens](/manage/user-tokens).
+:::
 
 ### Configure Claude Desktop
 
