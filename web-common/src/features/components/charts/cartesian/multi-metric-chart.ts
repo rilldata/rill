@@ -2,6 +2,7 @@ import {
   sanitizeFieldName,
   sanitizeValueForVega,
 } from "@rilldata/web-common/components/vega/util";
+import { SortOrderField } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
 import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { VisualizationSpec } from "svelte-vega";
@@ -78,10 +79,16 @@ export function generateVLMultiMetricChartSpec(
       as: "measure_clean",
     });
 
-    // Create a sort order field to ensure current appears before comparison
+    // Create a period field for stacked bar xOffset
     transforms.push({
-      calculate: `indexof(datum['${measureField}'], '${ComparisonDeltaPreviousSuffix}') >= 0 ? 1 : 0`,
-      as: "sortOrder",
+      calculate: `indexof(datum['${measureField}'], '${ComparisonDeltaPreviousSuffix}') >= 0 ? 'comparison' : 'current'`,
+      as: "period",
+    });
+
+    // Create a sort order field to ensure current appears before comparison using period
+    transforms.push({
+      calculate: `datum['period'] === 'comparison' ? 1 : 0`,
+      as: SortOrderField,
     });
   }
 
@@ -109,10 +116,20 @@ export function generateVLMultiMetricChartSpec(
     legend,
   };
 
-  const opacityComparisonEncoding: NumericMarkPropDef<Field> = {
+  const opacityComparisonEncodingMeasure: NumericMarkPropDef<Field> = {
     condition: [
       {
         test: `indexof(datum['${measureField}'], '${ComparisonDeltaPreviousSuffix}') >= 0`,
+        value: 0.4,
+      },
+    ],
+    value: 1,
+  };
+
+  const opacityComparisonEncodingPeriod: NumericMarkPropDef<Field> = {
+    condition: [
+      {
+        test: "datum.period === 'comparison'",
         value: 0.4,
       },
     ],
@@ -183,8 +200,8 @@ export function generateVLMultiMetricChartSpec(
 
         // Comparison period value
         multiValueTooltipChannel!.push({
-          field: sanitizeValueForVega(measure) + "_prev",
-          title: measureDisplayNames[measure] + "_prev",
+          field: sanitizeValueForVega(measure) + ComparisonDeltaPreviousSuffix,
+          title: measureDisplayNames[measure] + ComparisonDeltaPreviousSuffix,
           type: "quantitative",
           formatType: sanitizeFieldName(measure),
         });
@@ -235,12 +252,22 @@ export function generateVLMultiMetricChartSpec(
 
   switch (markType) {
     case "line": {
+      const lineLayerEncoding: Partial<Encoding<Field>> = {
+        y: baseYEncoding,
+        color: baseColorEncoding,
+      };
+
+      if (hasComparison) {
+        lineLayerEncoding.detail = {
+          field: measureField,
+          type: "nominal",
+        };
+        lineLayerEncoding.opacity = opacityComparisonEncodingPeriod;
+      }
+
       const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [
         {
-          encoding: {
-            y: baseYEncoding,
-            color: baseColorEncoding,
-          },
+          encoding: lineLayerEncoding,
           layer: [{ mark: { type: "line", clip: true } }, hoverPointLayer],
         },
         hoverRuleLayer,
@@ -267,27 +294,49 @@ export function generateVLMultiMetricChartSpec(
       break;
     }
     case "stacked_bar": {
+      const stackedBarEncoding: Partial<Encoding<Field>> = {
+        y: stackedYEncoding,
+        color: baseColorEncoding,
+      };
+
+      if (hasComparison) {
+        const xOffset: OffsetDef<Field> = {
+          field: "period",
+          sort: { field: SortOrderField },
+        };
+        stackedBarEncoding.xOffset = xOffset;
+        stackedBarEncoding.opacity = opacityComparisonEncodingPeriod;
+      }
+
       spec.layer = [
         hoverRuleLayer,
         {
           mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: {
-            y: stackedYEncoding,
-            color: baseColorEncoding,
-          },
+          encoding: stackedBarEncoding,
         },
       ];
       break;
     }
     case "stacked_bar_normalized": {
+      const normalizedBarEncoding: Partial<Encoding<Field>> = {
+        y: normalizedYEncoding,
+        color: baseColorEncoding,
+      };
+
+      if (hasComparison) {
+        const xOffset: OffsetDef<Field> = {
+          field: "period",
+          sort: { field: SortOrderField },
+        };
+        normalizedBarEncoding.xOffset = xOffset;
+        normalizedBarEncoding.opacity = opacityComparisonEncodingPeriod;
+      }
+
       spec.layer = [
         hoverRuleLayer,
         {
           mark: { type: "bar", clip: true, width: { band: 0.9 } },
-          encoding: {
-            y: normalizedYEncoding,
-            color: baseColorEncoding,
-          },
+          encoding: normalizedBarEncoding,
         },
       ];
       break;
@@ -301,10 +350,10 @@ export function generateVLMultiMetricChartSpec(
       if (hasComparison) {
         const xOffset: OffsetDef<Field> = {
           field: measureField,
-          sort: { field: "sortOrder" },
+          sort: { field: SortOrderField },
         };
         barEncoding.xOffset = xOffset;
-        barEncoding.opacity = opacityComparisonEncoding;
+        barEncoding.opacity = opacityComparisonEncodingMeasure;
       } else {
         // Normal mode: group by measure only
         const xOffset: OffsetDef<Field> = { field: measureField };

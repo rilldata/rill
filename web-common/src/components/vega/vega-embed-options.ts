@@ -1,4 +1,5 @@
 import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
+import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { EmbedOptions } from "svelte-vega";
 import { get } from "svelte/store";
@@ -87,13 +88,13 @@ export function getTooltipFormatter(colorMapping: ColorMapping) {
     for (const [key, val] of Object.entries(items)) {
       if (val === undefined) continue;
 
-      if (key.endsWith("_prev")) {
-        const baseKey = key.slice(0, -"_prev".length);
+      if (key.endsWith(ComparisonDeltaPreviousSuffix)) {
+        const baseKey = key.slice(0, -ComparisonDeltaPreviousSuffix.length);
         const existing = groupedItems.get(baseKey) || {};
         groupedItems.set(baseKey, { ...existing, previous: val });
         hasComparison = true;
       } else {
-        const prevKey = key + "_prev";
+        const prevKey = key + ComparisonDeltaPreviousSuffix;
         if (prevKey in items) {
           const existing = groupedItems.get(key) || {};
           groupedItems.set(key, { ...existing, current: val });

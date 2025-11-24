@@ -4,14 +4,16 @@ import {
   buildHoverRuleLayer,
   createCartesianMultiValueTooltipChannel,
   createColorEncoding,
-  createComparisonOpacityEncoding,
-  createComparisonTransforms,
-  createComparisonXOffsetEncoding,
   createConfigWithLegend,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "@rilldata/web-common/features/components/charts/builder";
+import {
+  createComparisonOpacityEncoding,
+  createComparisonTransforms,
+  createComparisonXOffsetEncoding,
+} from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";

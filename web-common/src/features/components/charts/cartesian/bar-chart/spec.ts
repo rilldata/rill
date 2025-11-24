@@ -4,14 +4,18 @@ import {
   buildHoverRuleLayer,
   createCartesianMultiValueTooltipChannel,
   createColorEncoding,
-  createComparisonOpacityEncoding,
-  createComparisonTransforms,
-  createComparisonXOffsetEncoding,
   createConfigWithLegend,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "@rilldata/web-common/features/components/charts/builder";
+import {
+  ColorWithComparisonField,
+  createComparisonOpacityEncoding,
+  createComparisonTransforms,
+  createComparisonXOffsetEncoding,
+  SortOrderField,
+} from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { UnitSpec } from "vega-lite/build/src/spec/unit";
@@ -98,8 +102,8 @@ export function generateVLBarChartSpec(
 
     // Use the synthetic color_with_comparison field for xOffset to group by both color and period
     barLayer.encoding!.xOffset = {
-      field: "color_with_comparison",
-      sort: { field: "sortOrder" },
+      field: ColorWithComparisonField,
+      sort: { field: SortOrderField },
     };
     barLayer.encoding!.opacity = createComparisonOpacityEncoding(yField);
   } else if (hasComparison) {

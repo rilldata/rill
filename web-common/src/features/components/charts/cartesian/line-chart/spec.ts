@@ -5,13 +5,17 @@ import {
   buildHoverRuleLayer,
   createCartesianMultiValueTooltipChannel,
   createColorEncoding,
-  createComparisonOpacityEncoding,
-  createComparisonTransforms,
   createConfigWithLegend,
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "@rilldata/web-common/features/components/charts/builder";
+import {
+  ColorWithComparisonField,
+  createComparisonOpacityEncoding,
+  createComparisonTransforms,
+  MeasureKeyField,
+} from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
 import type { LayerSpec } from "vega-lite/build/src/spec/layer";
@@ -82,7 +86,7 @@ export function generateVLLineChartSpec(
     // Use detail encoding to separate lines by color_with_comparison
     // while keeping the original color for legend and coloring
     lineLayer.encoding!.detail = {
-      field: "color_with_comparison",
+      field: ColorWithComparisonField,
       type: "nominal",
     };
     lineLayer.encoding!.opacity = createComparisonOpacityEncoding(yField);
@@ -96,7 +100,7 @@ export function generateVLLineChartSpec(
 
     // Use detail encoding to separate current and comparison lines
     lineLayer.encoding!.detail = {
-      field: "measure_key",
+      field: MeasureKeyField,
       type: "nominal",
     };
     lineLayer.encoding!.opacity = createComparisonOpacityEncoding(yField);

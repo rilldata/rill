@@ -4,15 +4,18 @@ import {
   buildHoverRuleLayer,
   createCartesianMultiValueTooltipChannel,
   createColorEncoding,
-  createComparisonOpacityEncoding,
-  createComparisonTransforms,
-  createComparisonXOffsetEncoding,
   createConfigWithLegend,
   createDefaultTooltipEncoding,
   createEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
 } from "@rilldata/web-common/features/components/charts/builder";
+import {
+  createComparisonOpacityEncoding,
+  createComparisonTransforms,
+  createComparisonXOffsetEncoding,
+  MeasureKeyField,
+} from "@rilldata/web-common/features/components/charts/comparison-builder";
 import type { TooltipValue } from "@rilldata/web-common/features/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/build/src/channeldef";
@@ -60,7 +63,7 @@ export function generateVLStackedBarNormalizedSpec(
     // so each period (current vs comparison) totals to 100% independently
     const groupbyFields = config.x?.field ? [config.x.field] : [];
     if (hasComparison) {
-      groupbyFields.push("measure_key");
+      groupbyFields.push(MeasureKeyField);
     }
 
     const percentageTransforms: Transform[] = [

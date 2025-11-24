@@ -37,14 +37,11 @@ import type { Config } from "vega-lite";
 import type {
   ColorDef,
   Field,
-  NumericMarkPropDef,
-  OffsetDef,
   PositionFieldDef,
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec, UnitSpec } from "vega-lite/build/src/spec/unit";
-import type { Transform } from "vega-lite/build/src/transform";
 import type { ExprRef, SignalRef } from "vega-typings";
 
 export function createMultiLayerBaseSpec() {
@@ -375,7 +372,7 @@ export function createCartesianMultiValueTooltipChannel(
 
         // Add previous period value
         tooltipFields.push({
-          field: sanitizeValueForVega(value) + "_prev",
+          field: sanitizeValueForVega(value) + ComparisonDeltaPreviousSuffix,
           type: "quantitative" as const,
           formatType: yFormatType,
         });
@@ -393,8 +390,8 @@ export function createCartesianMultiValueTooltipChannel(
         formatType: yFormatType,
       },
       {
-        field: sanitizedYField + "_prev",
-        title: yTitle + "_prev",
+        field: sanitizedYField + ComparisonDeltaPreviousSuffix,
+        title: yTitle + ComparisonDeltaPreviousSuffix,
         type: "quantitative" as const,
         formatType: yFormatType,
       },
@@ -502,90 +499,5 @@ export function buildHoverRuleLayer(args: {
         },
       },
     ],
-  };
-}
-
-/**
- * Creates Vega-Lite transforms for period-over-period comparison.
- * This function generates the fold and calculate transforms needed to
- * display current and comparison data side-by-side.
- *
- * The data structure has current and previous values as separate measure fields:
- * e.g., "total_bids" (current) and "total_bids_prev" (comparison)
- */
-export function createComparisonTransforms(
-  xField: string | undefined,
-  measureField: string | undefined,
-  colorField?: string,
-): Transform[] {
-  if (!xField || !measureField) return [];
-
-  const sanitizedMeasure = sanitizeValueForVega(measureField);
-  const sanitizedComparisonMeasure = sanitizeValueForVega(
-    measureField + ComparisonDeltaPreviousSuffix,
-  );
-  const transforms: Transform[] = [];
-
-  // Fold the current and previous measure fields
-  // This creates two rows per original row: one for current, one for previous
-  transforms.push({
-    fold: [sanitizedMeasure, sanitizedComparisonMeasure],
-    as: ["measure_key", sanitizedMeasure],
-  });
-
-  // If there's a color field, create a synthetic nominal field for grouping
-  // This combines the color dimension with the comparison key for proper stacking
-  if (colorField) {
-    const sanitizedColor = sanitizeValueForVega(colorField);
-    transforms.push({
-      calculate: `datum['${sanitizedColor}'] + (datum.measure_key === '${sanitizedComparisonMeasure}' ? '_prev' : '')`,
-      as: "color_with_comparison",
-    });
-
-    // Add a sort order field that groups by color first, then by period
-    // This ensures the order is: A_current, A_previous, B_current, B_previous
-    transforms.push({
-      calculate: `datum['${sanitizedColor}'] + '_' + (datum.measure_key === '${sanitizedComparisonMeasure}' ? '1' : '0')`,
-      as: "sortOrder",
-    });
-  } else {
-    // Add a sort order field to ensure current appears before comparison
-    transforms.push({
-      calculate: `datum.measure_key === '${sanitizedComparisonMeasure}' ? 1 : 0`,
-      as: "sortOrder",
-    });
-  }
-
-  return transforms;
-}
-
-/**
- * Creates an opacity encoding for comparison mode.
- */
-export function createComparisonOpacityEncoding(
-  measureField: string,
-): NumericMarkPropDef<Field> {
-  const sanitizedComparisonMeasure = sanitizeValueForVega(
-    measureField + ComparisonDeltaPreviousSuffix,
-  );
-  return {
-    condition: [
-      {
-        test: `datum.measure_key === '${sanitizedComparisonMeasure}'`,
-        value: 0.4,
-      },
-    ],
-    value: 1,
-  };
-}
-
-/**
- * Creates an xOffset encoding for comparison mode.
- * This positions current and comparison bars/lines side-by-side.
- */
-export function createComparisonXOffsetEncoding(): OffsetDef<Field> {
-  return {
-    field: "measure_key",
-    sort: { field: "sortOrder" },
   };
 }
