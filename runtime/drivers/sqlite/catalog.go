@@ -2,7 +2,6 @@ package sqlite
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -339,7 +338,6 @@ func (c *catalogStore) UpdateModelPartitionsTriggered(ctx context.Context, model
 }
 
 func (c *catalogStore) UpdateModelPartitionsExecuted(ctx context.Context, modelID string, keys []string) error {
-	fmt.Printf("Updating %v partitions\n", len(keys))
 	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
 	var qry strings.Builder
 	var args []any

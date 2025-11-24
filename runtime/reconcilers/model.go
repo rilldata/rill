@@ -1010,7 +1010,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// If we're not partitionting execution, run the executor directly and return
 	if !usePartitions {
-		res, err := r.executeSingle(ctx, executor, self, model, prevResult, incrementalRun, incrementalState, "", nil)
+		res, err := r.executeSingle(ctx, executor, self, model, incrementalRun, incrementalState, "", nil)
 		if err != nil {
 			return "", nil, false, err
 		}
@@ -1212,7 +1212,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 	// Execute the partition.
 	start := time.Now()
 	errStr := ""
-	res, err := r.executeSingle(ctx, executor, self, mdl, prevResult, incrementalRun, incrementalState, partition.Key, data)
+	res, err := r.executeSingle(ctx, executor, self, mdl, incrementalRun, incrementalState, partition.Key, data)
 	if err != nil {
 		// Unless cancelled or explicitly told to return the error, we save the error in the partition and continue.
 		if returnErr {
@@ -1240,7 +1240,7 @@ func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.
 }
 
 // executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a partition is optional.
-func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*drivers.ModelResult, error) {
+func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalRun bool, incrementalState map[string]any, partitionKey string, partitionData map[string]any) (*drivers.ModelResult, error) {
 	// Resolve templating in the input and output props
 	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partitionData, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
 	if err != nil {
