@@ -4,8 +4,7 @@
   import Body from "@rilldata/web-common/components/data-graphic/elements/Body.svelte";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import WithBisector from "@rilldata/web-common/components/data-graphic/functional-components/WithBisector.svelte";
-  import WithRoundToTimegrain
-    from "@rilldata/web-common/components/data-graphic/functional-components/WithRoundToTimegrain.svelte";
+  import WithRoundToTimegrain from "@rilldata/web-common/components/data-graphic/functional-components/WithRoundToTimegrain.svelte";
   import {
     Axis,
     Grid,
@@ -23,23 +22,13 @@
   } from "@rilldata/web-common/components/data-graphic/state/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import {
-    tableInteractionStore,
-  } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
-  import DimensionValueMouseover
-    from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
-  import {
-    measureSelection,
-  } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
-  import MeasureSelection
-    from "@rilldata/web-common/features/dashboards/time-series/measure-selection/MeasureSelection.svelte";
+  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
+  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+  import MeasureSelection from "@rilldata/web-common/features/dashboards/time-series/measure-selection/MeasureSelection.svelte";
   import MeasurePan from "@rilldata/web-common/features/dashboards/time-series/MeasurePan.svelte";
-  import type {
-    DimensionDataItem,
-  } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  import {
-    roundDownToTimeUnit,
-  } from "@rilldata/web-common/features/dashboards/time-series/round-to-nearest-time-unit.ts";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { roundDownToTimeUnit } from "@rilldata/web-common/features/dashboards/time-series/round-to-nearest-time-unit.ts";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -66,6 +55,7 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
 
   export let measure: MetricsViewSpecMeasure;
   export let exploreName: string;
@@ -96,6 +86,7 @@
   export let scrubEnd;
 
   const { validSpecStore, metricsViewName } = getStateManagers();
+  const { dashboardChat } = featureFlags;
 
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
@@ -226,6 +217,7 @@
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
     const shouldUpdateSelectedRange =
+      $dashboardChat &&
       !isScrubbing &&
       measureSelection.hasSelection() &&
       // Type safety
@@ -251,8 +243,8 @@
 
     const comparisonTimeRange = showComparison
       ? ({
-        name: TimeComparisonOption.CONTIGUOUS,
-      } as DashboardTimeControls) // FIXME wrong typecasting across application
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls) // FIXME wrong typecasting across application
       : undefined;
 
     metricsExplorerStore.selectTimeRange(
@@ -287,12 +279,13 @@
     if (mouseOutsideOfScrubRange) {
       resetScrub();
       measureSelection.clear();
-    } else if (measure.name) {
+    } else if (measure.name && $dashboardChat) {
       measureSelection.setRange(measure.name, scrubStart, scrubEnd);
     }
   }
 
   function maybeSelectMeasureHoverTime() {
+    if (!$dashboardChat) return;
     const hasValidMeasureSelectionTarget =
       hoveredTime && measure.name && TIME_GRAIN[timeGrain];
     if (!hasValidMeasureSelectionTarget) return;
@@ -332,27 +325,27 @@
     <Grid />
     <MeasurePan onPan={(e) => updateRange(e.start, e.end)} hovering={hovered} />
     <Body>
-    <ChartBody
-      {data}
-      {dimensionData}
-      dimensionValue={hoveredDimensionValue}
-      isHovering={Boolean(hoveredTime)}
-      {scrubEnd}
-      {scrubStart}
-      {showComparison}
-      {xAccessor}
-      {xMax}
-      {xMin}
-      {yAccessor}
-      {yExtentMax}
-    />
-    <line
-      class="stroke-theme-200"
-      x1={config.plotLeft}
-      x2={config.plotLeft + config.plotRight}
-      y1={yScale(0)}
-      y2={yScale(0)}
-    />
+      <ChartBody
+        {data}
+        {dimensionData}
+        dimensionValue={hoveredDimensionValue}
+        isHovering={Boolean(hoveredTime)}
+        {scrubEnd}
+        {scrubStart}
+        {showComparison}
+        {xAccessor}
+        {xMax}
+        {xMin}
+        {yAccessor}
+        {yExtentMax}
+      />
+      <line
+        class="stroke-theme-200"
+        x1={config.plotLeft}
+        x2={config.plotLeft + config.plotRight}
+        y1={yScale(0)}
+        y2={yScale(0)}
+      />
     </Body>
     {#if !isScrubbing && hoveredTime && !isFetchingDimensions}
       <WithRoundToTimegrain
@@ -443,18 +436,20 @@
       <Annotations {annotationsStore} {mouseoverValue} {mouseOverThisChart} />
     {/if}
 
-    <MeasureSelection
-      {data}
-      measureName={measure.name ?? ""}
-      metricsViewName={$metricsViewName}
-      {xAccessor}
-      {yAccessor}
-      {internalXMin}
-      {internalXMax}
-      {mouseoverFormat}
-      {numberKind}
-      {inBounds}
-    />
+    {#if $dashboardChat}
+      <MeasureSelection
+        {data}
+        measureName={measure.name ?? ""}
+        metricsViewName={$metricsViewName}
+        {xAccessor}
+        {yAccessor}
+        {internalXMin}
+        {internalXMax}
+        {mouseoverFormat}
+        {numberKind}
+        {inBounds}
+      />
+    {/if}
   </SimpleDataGraphic>
 
   <!-- Contains non-svg elements. So keep it outside SimpleDataGraphic -->

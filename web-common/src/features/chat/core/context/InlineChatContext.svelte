@@ -53,6 +53,12 @@
       )
     : "";
 
+  $: supportsEditing =
+    !inlineChatContext ||
+    inlineChatContext.type === ChatContextEntryType.MetricsView ||
+    inlineChatContext.type === ChatContextEntryType.Measures ||
+    inlineChatContext.type === ChatContextEntryType.Dimensions;
+
   function toggleDropdown() {
     open = !open;
     tooltipOpen = false;
@@ -63,10 +69,8 @@
     open = false;
     searchTextStore.set("");
 
-    setTimeout(() => {
-      onUpdate();
-      focusEditor();
-    });
+    onUpdate();
+    focusEditor();
   }
 
   export function setText(newText: string) {
@@ -79,7 +83,10 @@
   }
 
   export function selectFirst() {
-    const option = $filteredOptions?.[0]?.metricsViewContext;
+    const option =
+      $filteredOptions?.[0]?.measures?.[0] ??
+      $filteredOptions?.[0]?.dimensions?.[0] ??
+      $filteredOptions?.[0]?.metricsViewContext;
     if (!option) return;
     select(option);
   }
@@ -117,87 +124,91 @@
       {:else}
         <span>{label}</span>
       {/if}
-      <button on:click={toggleDropdown} type="button">
-        <ChevronDownIcon size="12px" />
-      </button>
+      {#if supportsEditing}
+        <button on:click={toggleDropdown} type="button">
+          <ChevronDownIcon size="12px" />
+        </button>
+      {/if}
     </div>
   {/if}
 
-  <!-- bits-ui dropdown component captures focus, so chat text cannot be edited when it is open.
+  {#if supportsEditing}
+    <!-- bits-ui dropdown component captures focus, so chat text cannot be edited when it is open.
        Newer versions of bits-ui have "trapFocus=false" param but it needs svelte5 upgrade.
        TODO: move to dropdown component after upgrade. -->
-  <div
-    class="inline-chat-context-dropdown"
-    style="left: {left}px; bottom: {bottom}px; display: {open
-      ? 'block'
-      : 'none'};"
-  >
-    {#each $filteredOptions as { metricsViewContext, recentlyUsed, currentlyActive, measures, dimensions } (metricsViewContext.values[0])}
-      {@const metricsViewSelected =
-        inlineChatContext !== null &&
-        inlineChatContextsAreEqual(metricsViewContext, inlineChatContext)}
-      <Collapsible.Root
-        open={currentlyActive || recentlyUsed || $searchTextStore.length > 2}
-        class="border-b last:border-b-0"
-      >
-        <Collapsible.Trigger asChild let:builder>
-          <button
-            class="context-item metrics-view-context-item"
-            type="button"
-            {...getAttrs([builder])}
-            use:builderActions={{ builders: [builder] }}
-          >
-            <ChevronDownIcon size="12px" strokeWidth={4} />
-            <input
-              type="radio"
-              checked={metricsViewSelected}
-              on:click|stopPropagation={() => select(metricsViewContext)}
-              class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
-            />
-            <span class="text-sm grow">{metricsViewContext.label}</span>
-            {#if recentlyUsed}
-              <span class="metrics-view-context-label">Recent asked</span>
-            {:else if currentlyActive}
-              <span class="metrics-view-context-label">Current</span>
+    <div
+      class="inline-chat-context-dropdown"
+      style="left: {left}px; bottom: {bottom}px; display: {open
+        ? 'block'
+        : 'none'};"
+    >
+      {#each $filteredOptions as { metricsViewContext, recentlyUsed, currentlyActive, measures, dimensions } (metricsViewContext.values[0])}
+        {@const metricsViewSelected =
+          inlineChatContext !== null &&
+          inlineChatContextsAreEqual(metricsViewContext, inlineChatContext)}
+        <Collapsible.Root
+          open={currentlyActive || recentlyUsed || $searchTextStore.length > 2}
+          class="border-b last:border-b-0"
+        >
+          <Collapsible.Trigger asChild let:builder>
+            <button
+              class="context-item metrics-view-context-item"
+              type="button"
+              {...getAttrs([builder])}
+              use:builderActions={{ builders: [builder] }}
+            >
+              <ChevronDownIcon size="12px" strokeWidth={4} />
+              <input
+                type="radio"
+                checked={metricsViewSelected}
+                on:click|stopPropagation={() => select(metricsViewContext)}
+                class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
+              />
+              <span class="text-sm grow">{metricsViewContext.label}</span>
+              {#if recentlyUsed}
+                <span class="metrics-view-context-label">Recent asked</span>
+              {:else if currentlyActive}
+                <span class="metrics-view-context-label">Current</span>
+              {/if}
+            </button>
+          </Collapsible.Trigger>
+          <Collapsible.Content class="flex flex-col ml-5 gap-y-0.5">
+            {#each measures as measure (measure.values[1])}
+              <button
+                class="context-item"
+                type="button"
+                on:click={() => select(measure)}
+              >
+                <div class="square"></div>
+                <span>{measure.label}</span>
+              </button>
+            {/each}
+
+            {#if measures.length > 0 && dimensions.length > 0}
+              <div class="content-separator"></div>
             {/if}
-          </button>
-        </Collapsible.Trigger>
-        <Collapsible.Content class="flex flex-col ml-5 gap-y-0.5">
-          {#each measures as measure (measure.values[1])}
-            <button
-              class="context-item"
-              type="button"
-              on:click={() => select(measure)}
-            >
-              <div class="square"></div>
-              <span>{measure.label}</span>
-            </button>
-          {/each}
 
-          {#if measures.length > 0 && dimensions.length > 0}
-            <div class="content-separator"></div>
-          {/if}
+            {#each dimensions as dimension (dimension.values[1])}
+              <button
+                class="context-item"
+                type="button"
+                on:click={() => select(dimension)}
+              >
+                <div class="circle"></div>
+                <span>{dimension.label}</span>
+              </button>
+            {/each}
 
-          {#each dimensions as dimension (dimension.values[1])}
-            <button
-              class="context-item"
-              type="button"
-              on:click={() => select(dimension)}
-            >
-              <div class="circle"></div>
-              <span>{dimension.label}</span>
-            </button>
-          {/each}
-
-          {#if measures.length === 0 && dimensions.length === 0}
-            <div class="contents-empty">No dimensions or measures found</div>
-          {/if}
-        </Collapsible.Content>
-      </Collapsible.Root>
-    {:else}
-      <div class="contents-empty">No matches found</div>
-    {/each}
-  </div>
+            {#if measures.length === 0 && dimensions.length === 0}
+              <div class="contents-empty">No dimensions or measures found</div>
+            {/if}
+          </Collapsible.Content>
+        </Collapsible.Root>
+      {:else}
+        <div class="contents-empty">No matches found</div>
+      {/each}
+    </div>
+  {/if}
 </span>
 
 <style lang="postcss">

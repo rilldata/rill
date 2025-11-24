@@ -59,7 +59,10 @@ export class ChatInputTextAreaManager {
             focusEditor: this.focusEditor,
           },
         });
-        this.elementToContextComponent.set(node, comp);
+        this.elementToContextComponent.set(
+          (node as any).previousElementSibling,
+          comp,
+        );
         parent.removeChild(node);
       });
 
@@ -78,6 +81,7 @@ export class ChatInputTextAreaManager {
       if (event.key === "Escape") {
         this.exitContextMode(false, true);
       } else if (isEnter) {
+        event.preventDefault();
         this.addContextComponent?.selectFirst();
       } else {
         // Wait for DOM to update.
@@ -228,7 +232,7 @@ export class ChatInputTextAreaManager {
     // Wait a loop to ensure the component is added to the DOM.
     setTimeout(() => {
       this.elementToContextComponent.set(
-        this.addContextNode!,
+        (this.addContextNode as any).previousElementSibling,
         this.addContextComponent!,
       );
 

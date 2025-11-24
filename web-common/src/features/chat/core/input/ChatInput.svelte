@@ -30,12 +30,30 @@
 
   const context = getExploreContext();
 
+  let lastPrompt = "";
+  $: syncPrompts($draftMessageStore);
+
   const chatManager = new ChatInputTextAreaManager(
-    (newValue) => draftMessageStore.set(newValue),
+    (newValue) => {
+      // Update both the message in conversation and the `lastValue` used to keep input in sync.
+      // This avoids calling `setPrompt` leading to an infinite loop.
+      lastPrompt = newValue;
+      draftMessageStore.set(newValue);
+    },
     () => void sendMessage(),
   );
   $: chatManager.setElement(editorElement);
   $: chatManager.setConversationManager(conversationManager);
+
+  /**
+   * Changes to conversation's draftMessage outside of the input should be synced back to the input.
+   * This updates the prompt only if the value from prompt is different.
+   */
+  function syncPrompts(newPrompt: string) {
+    if (lastPrompt === newPrompt) return;
+    lastPrompt = newPrompt;
+    chatManager.setPrompt(lastPrompt);
+  }
 
   async function sendMessage() {
     if (!canSend) return;
