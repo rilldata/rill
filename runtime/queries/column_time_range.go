@@ -65,7 +65,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 
 	// TODO: Try and merge this with metrics_time_range. Both use same queries but metrics_time_range uses a specific timestamp column from metrics_view
 	switch olap.Dialect() {
-	case drivers.DialectDuckDB, drivers.DialectClickHouse:
+	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectStarRocks:
 		return q.resolveDuckDBAndClickhouse(ctx, olap, priority)
 	case drivers.DialectDruid:
 		return q.resolveDruid(ctx, olap, priority)
@@ -78,7 +78,7 @@ func (q *ColumnTimeRange) resolveDuckDBAndClickhouse(ctx context.Context, olap d
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
 		safeName(q.ColumnName),
-		drivers.DialectDuckDB.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
 	rows, err := olap.Query(ctx, &drivers.Statement{

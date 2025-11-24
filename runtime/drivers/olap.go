@@ -198,6 +198,7 @@ const (
 	DialectDruid
 	DialectClickHouse
 	DialectPinot
+	DialectStarRocks
 
 	// Below dialects are not fully supported dialects.
 	DialectBigQuery
@@ -220,6 +221,8 @@ func (d Dialect) String() string {
 		return "clickhouse"
 	case DialectPinot:
 		return "pinot"
+	case DialectStarRocks:
+		return "starrocks"
 	case DialectBigQuery:
 		return "bigquery"
 	case DialectSnowflake:
@@ -248,8 +251,8 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	}
 
 	switch d {
-	case DialectMySQL, DialectBigQuery:
-		// MySQL uses backticks for quoting identifiers
+	case DialectMySQL, DialectBigQuery, DialectStarRocks:
+		// MySQL and StarRocks use backticks for quoting identifiers
 		// Replace any backticks inside the identifier with double backticks.
 		return fmt.Sprintf("`%s`", strings.ReplaceAll(ident, "`", "``"))
 
@@ -581,6 +584,11 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain r
 			return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS') AS TIMESTAMP)", specifier, expr), nil
 		}
 		return fmt.Sprintf("CAST(date_trunc('%s', %s, 'MILLISECONDS', '%s') AS TIMESTAMP)", specifier, expr, tz), nil
+	case DialectStarRocks:
+		// StarRocks supports date_trunc similar to DuckDB
+		// TODO: Handle firstDayOfWeek and firstMonthOfYear
+		// For now, StarRocks doesn't support timezone in date_trunc, so we ignore tz parameter
+		return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -593,7 +601,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		return fmt.Sprintf("DATEDIFF('%s', parseDateTimeBestEffort('%s'), parseDateTimeBestEffort('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectDruid:
 		return fmt.Sprintf("TIMESTAMPDIFF(%q, TIME_PARSE('%s'), TIME_PARSE('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
-	case DialectDuckDB:
+	case DialectDuckDB, DialectStarRocks:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectPinot:
 		return fmt.Sprintf("DATEDIFF('%s', %d, %d)", unit, t1.UnixMilli(), t2.UnixMilli()), nil
@@ -604,7 +612,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 
 func (d Dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.TimeGrain) (string, error) {
 	switch d {
-	case DialectClickHouse, DialectDruid, DialectDuckDB:
+	case DialectClickHouse, DialectDruid, DialectDuckDB, DialectStarRocks:
 		return fmt.Sprintf("(%s - INTERVAL (%s) %s)", tsExpr, unitExpr, d.ConvertToDateTruncSpecifier(grain)), nil
 	case DialectPinot:
 		return fmt.Sprintf("CAST((dateAdd('%s', -1 * %s, %s)) AS TIMESTAMP)", d.ConvertToDateTruncSpecifier(grain), unitExpr, tsExpr), nil

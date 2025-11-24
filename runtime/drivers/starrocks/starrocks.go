@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"net/url"
 	"strings"
 	"time"
 
@@ -152,95 +151,42 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 		return c.DSN, nil
 	}
 
-	var userInfo *url.Userinfo
-	if c.Username != "" {
-		if c.Password != "" {
-			userInfo = url.UserPassword(c.Username, c.Password)
-		} else {
-			userInfo = url.User(c.Username)
-		}
-	}
+	// Use mysql.Config to build DSN properly
+	cfg := mysql.NewConfig()
+	cfg.User = c.Username
+	cfg.Passwd = c.Password
+	cfg.Net = "tcp"
 
-	host := c.Host
-	port := c.Port
-
-	// Check if host already contains a port (e.g., "192.168.0.232:9030")
-	// If not, append the port to the host
-	if !strings.Contains(host, ":") {
+	// Set address
+	if strings.Contains(c.Host, ":") {
+		cfg.Addr = c.Host
+	} else {
+		port := c.Port
 		if port == 0 {
 			port = 9030 // StarRocks default MySQL protocol port
 		}
-		host = fmt.Sprintf("%s:%d", host, port)
+		cfg.Addr = fmt.Sprintf("%s:%d", c.Host, port)
 	}
 
-	var path string
-	if c.Database != "" {
-		path = "/" + c.Database
+	cfg.DBName = c.Database
+
+	// Enable parseTime to automatically parse DATE and DATETIME into time.Time
+	cfg.ParseTime = true
+
+	// Format DSN
+	dsn := cfg.FormatDSN()
+
+	// Debug: log DSN (without password)
+	// TODO: Remove this debug log
+	if c.Password != "" {
+		fmt.Printf("DEBUG: StarRocks DSN (masked): %s\n", strings.Replace(dsn, c.Password, "***", -1))
+	} else {
+		fmt.Printf("DEBUG: StarRocks DSN: %s\n", dsn)
 	}
 
-	u := &url.URL{
-		Scheme: "mysql",
-		User:   userInfo,
-		Host:   host,
-		Path:   path,
-	}
-
-	return encodeSpecialChars(u.String()), nil
+	return dsn, nil
 }
 
-// encodeSpecialChars encodes & and = characters to their hex codes.
-// Required for proper DSN parsing.
-func encodeSpecialChars(s string) string {
-	var buf strings.Builder
-	for i := 0; i < len(s); i++ {
-		b := s[i]
-		if b == '&' || b == '=' {
-			buf.WriteString(fmt.Sprintf("%%%02X", b))
-		} else {
-			buf.WriteByte(b)
-		}
-	}
-	return buf.String()
-}
-
-// resolveGoMySQLDSN converts the DSN to Go MySQL driver format.
-func (c *ConfigProperties) resolveGoMySQLDSN() (string, error) {
-	dsn, err := c.ResolveDSN()
-	if err != nil {
-		return "", err
-	}
-
-	u, err := url.Parse(dsn)
-	if err != nil {
-		return "", fmt.Errorf("invalid DSN: %w", err)
-	}
-
-	var user, pass string
-	if u.User != nil {
-		user = u.User.Username()
-		pass, _ = u.User.Password()
-	}
-	addr := u.Host
-	dbName := strings.TrimPrefix(u.Path, "/")
-
-	cfg := mysql.NewConfig()
-	cfg.User = user
-	cfg.Passwd = pass
-	cfg.Net = "tcp"
-	cfg.Addr = addr
-	cfg.DBName = dbName
-
-	// Configure SSL/TLS
-	if c.SSL {
-		cfg.TLSConfig = "skip-verify"
-	}
-
-	// StarRocks specific settings
-	cfg.AllowNativePasswords = true
-	cfg.InterpolateParams = true
-
-	return cfg.FormatDSN(), nil
-}
 
 // Open creates a new StarRocks connection handle.
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -411,7 +357,7 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return c.db, c.dbErr
 	}
 
-	dsn, err := c.configProp.resolveGoMySQLDSN()
+	dsn, err := c.configProp.ResolveDSN()
 	if err != nil {
 		c.dbErr = err
 		return nil, c.dbErr

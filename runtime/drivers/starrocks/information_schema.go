@@ -44,11 +44,10 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 		args = append(args, startAfter)
 	}
 
-	q += `
+	q += fmt.Sprintf(`
 	ORDER BY schema_name
-	LIMIT ?
-	`
-	args = append(args, limit+1)
+	LIMIT %d
+	`, limit+1)
 
 	db, err := c.getDB(ctx)
 	if err != nil {
@@ -122,11 +121,10 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 		args = append(args, startAfter)
 	}
 
-	q += `
+	q += fmt.Sprintf(`
 	ORDER BY table_name
-	LIMIT ?
-	`
-	args = append(args, limit+1)
+	LIMIT %d
+	`, limit+1)
 
 	db, err := c.getDB(ctx)
 	if err != nil {

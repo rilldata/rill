@@ -17,7 +17,7 @@ var _ drivers.OLAPStore = (*connection)(nil)
 
 // Dialect implements drivers.OLAPStore.
 func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectMySQL
+	return drivers.DialectStarRocks
 }
 
 // MayBeScaledToZero implements drivers.OLAPStore.
@@ -438,11 +438,9 @@ func prepareScanDest(schema *runtimev1.StructType) []any {
 			dest = &sql.NullString{} // Decimals are returned as strings for precision
 		case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES:
 			dest = &sql.NullString{}
-		case runtimev1.Type_CODE_DATE:
-			dest = &sql.NullString{}
-		case runtimev1.Type_CODE_TIMESTAMP:
-			// StarRocks DATETIME is returned as string from MySQL driver
-			dest = &sql.NullString{}
+		case runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+			// StarRocks DATE and DATETIME types
+			dest = &sql.NullTime{}
 		case runtimev1.Type_CODE_JSON:
 			dest = &sql.NullString{}
 		case runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_STRUCT:
