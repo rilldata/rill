@@ -4,13 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -162,15 +159,12 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	var conditionResources []*runtimev1.ResourceName
 	refs := &rendererRefs{
 		metricsViews: make(map[string]bool),
-		mvFields:     make(map[string]map[string]bool),
-		mvFilters:    make(map[string][]string),
 	}
 
 	canvas := res.GetCanvas()
 	if canvas == nil {
 		return nil, fmt.Errorf("resource is not a canvas")
 	}
-
 	spec := canvas.GetState().GetValidSpec()
 	if spec == nil {
 		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
@@ -218,13 +212,12 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		if componentSpec == nil {
 			componentSpec = componentRes.GetComponent().Spec
 		}
-
 		if componentSpec.RendererProperties == nil {
 			continue
 		}
 
-		rendererProps := componentSpec.RendererProperties.AsMap()
-		err = populateRendererRefs(refs, componentSpec.Renderer, rendererProps)
+		// Track refs
+		err = refs.populateRendererRefs(componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse renderer properties for component %q: %w", componentName, err)
 		}
@@ -236,37 +229,6 @@ func (r *CanvasReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	for mv := range refs.metricsViews {
 		// allow access to the referenced metrics view
 		conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: mv})
-
-		mvf, ok := refs.mvFields[mv]
-		if ok && len(mvf) > 0 {
-			fields := make([]string, 0, len(mvf))
-			for f := range mvf {
-				fields = append(fields, f)
-			}
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_FieldAccess{
-					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-						ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: mv}},
-						Fields:             fields,
-						Allow:              true,
-					},
-				},
-			})
-		}
-
-		mvr, ok := refs.mvFilters[mv]
-		if ok && len(mvr) > 0 {
-			// Combine multiple row filters with OR
-			rowFilter := strings.Join(mvr, " OR ")
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_RowFilter{
-					RowFilter: &runtimev1.SecurityRuleRowFilter{
-						ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: mv}},
-						Sql:                rowFilter,
-					},
-				},
-			})
-		}
 	}
 
 	if len(conditionKinds) > 0 || len(conditionResources) > 0 {
@@ -352,256 +314,33 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 	return nil
 }
 
-// populateRendererRefs extracts all metricsview and its field names and filters from renderer properties based on the renderer type
-// Depending on the component, fields will be named differently - Also there can be computed time dimension like <time_dim>_rill_TIME_GRAIN_<GRAIN>
-//
-//		"leaderboard" - "dimensions" and "measures"
-//		"kpi_grid" - "dimensions" and "measures"
-//		"table" - "columns" (can have computed time dim)
-//		"pivot" - "row_dimensions", "col_dimensions" and "measures" (row/col can have computed time dim)
-//		"heatmap" - "color"."field", "x"."field" and "y"."field"
-//	 	"multi_metric_chart" - "measures" and "x"."field"
-//		"funnel_chart" - "stage"."field", "measure"."field"
-//		"donut_chart" - "color"."field", "measure"."field"
-//		"bar_chart" - "color"."field", "x"."field" and "y"."field"
-//		"line_chart" - "color"."field", "x"."field" and "y"."field"
-//		"area_chart" - "color"."field", "x"."field" and "y"."field"
-//		"stacked_bar" - "color"."field", "x"."field" and "y"."field"
-//		"stacked_bar_normalized" - "color"."field", "x"."field" and "y"."field"
-func populateRendererRefs(res *rendererRefs, renderer string, rendererProps map[string]any) error {
+// rendererRefs tracks all metrics views found in canvas component renderer properties.
+// It currently only tracks metrics views, but in the future we may want to add an option to also track metrics view fields and filters.
+// We did that previously, but removed it since such granular security was considered too strict (it also impacts ability to filter by fields not present on the canvas).
+// See this PR for details in case we want to reintroduce it: https://github.com/rilldata/rill/pull/8370
+type rendererRefs struct {
+	metricsViews map[string]bool
+}
+
+// populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.
+func (r *rendererRefs) populateRendererRefs(_ string, rendererProps map[string]any) error {
 	mv, ok := pathutil.GetPath(rendererProps, "metrics_view")
 	if !ok {
 		return nil
 	}
-	err := res.metricsView(mv)
+	err := r.metricsView(mv)
 	if err != nil {
 		return err
 	}
-	if filter, ok := pathutil.GetPath(rendererProps, "dimension_filters"); ok {
-		err = res.metricsViewRowFilter(mv, filter)
-		if err != nil {
-			return err
-		}
-	}
-	switch renderer {
-	case "leaderboard":
-		if dims, ok := pathutil.GetPath(rendererProps, "dimensions"); ok {
-			err = res.metricsViewFields(mv, dims)
-			if err != nil {
-				return err
-			}
-		}
-		if meas, ok := pathutil.GetPath(rendererProps, "measures"); ok {
-			err = res.metricsViewFields(mv, meas)
-			if err != nil {
-				return err
-			}
-		}
-	case "kpi_grid":
-		if dims, ok := pathutil.GetPath(rendererProps, "dimensions"); ok {
-			err = res.metricsViewFields(mv, dims)
-			if err != nil {
-				return err
-			}
-		}
-		if meas, ok := pathutil.GetPath(rendererProps, "measures"); ok {
-			err = res.metricsViewFields(mv, meas)
-			if err != nil {
-				return err
-			}
-		}
-	case "table":
-		if cols, ok := pathutil.GetPath(rendererProps, "columns"); ok {
-			err = res.metricsViewFields(mv, cols)
-			if err != nil {
-				return err
-			}
-		}
-	case "pivot":
-		if rowDims, ok := pathutil.GetPath(rendererProps, "row_dimensions"); ok {
-			err = res.metricsViewFields(mv, rowDims)
-			if err != nil {
-				return err
-			}
-		}
-		if colDims, ok := pathutil.GetPath(rendererProps, "col_dimensions"); ok {
-			err = res.metricsViewFields(mv, colDims)
-			if err != nil {
-				return err
-			}
-		}
-		if meas, ok := pathutil.GetPath(rendererProps, "measures"); ok {
-			err = res.metricsViewFields(mv, meas)
-			if err != nil {
-				return err
-			}
-		}
-	case "heatmap":
-		if colorField, ok := pathutil.GetPath(rendererProps, "color.field"); ok {
-			err = res.metricsViewField(mv, colorField)
-			if err != nil {
-				return err
-			}
-		}
-		if xField, ok := pathutil.GetPath(rendererProps, "x.field"); ok {
-			err = res.metricsViewField(mv, xField)
-			if err != nil {
-				return err
-			}
-		}
-		if yField, ok := pathutil.GetPath(rendererProps, "y.field"); ok {
-			err = res.metricsViewField(mv, yField)
-			if err != nil {
-				return err
-			}
-		}
-	case "multi_metric_chart":
-		if meas, ok := pathutil.GetPath(rendererProps, "measures"); ok {
-			err = res.metricsViewFields(mv, meas)
-			if err != nil {
-				return err
-			}
-		}
-		if xField, ok := pathutil.GetPath(rendererProps, "x.field"); ok {
-			err = res.metricsViewField(mv, xField)
-			if err != nil {
-				return err
-			}
-		}
-	case "funnel_chart":
-		if stageField, ok := pathutil.GetPath(rendererProps, "stage.field"); ok {
-			err = res.metricsViewField(mv, stageField)
-			if err != nil {
-				return err
-			}
-		}
-		if measureField, ok := pathutil.GetPath(rendererProps, "measure.field"); ok {
-			err = res.metricsViewField(mv, measureField)
-			if err != nil {
-				return err
-			}
-		}
-	case "donut_chart":
-		if colorField, ok := pathutil.GetPath(rendererProps, "color.field"); ok {
-			err = res.metricsViewField(mv, colorField)
-			if err != nil {
-				return err
-			}
-		}
-		if measureField, ok := pathutil.GetPath(rendererProps, "measure.field"); ok {
-			err = res.metricsViewField(mv, measureField)
-			if err != nil {
-				return err
-			}
-		}
-	case "bar_chart", "line_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
-		if colorField, ok := pathutil.GetPath(rendererProps, "color.field"); ok {
-			err = res.metricsViewField(mv, colorField)
-			if err != nil {
-				return err
-			}
-		}
-		if xField, ok := pathutil.GetPath(rendererProps, "x.field"); ok {
-			err = res.metricsViewField(mv, xField)
-			if err != nil {
-				return err
-			}
-		}
-		if yField, ok := pathutil.GetPath(rendererProps, "y.field"); ok {
-			err = res.metricsViewField(mv, yField)
-			if err != nil {
-				return err
-			}
-		}
-	default:
-		return fmt.Errorf("unknown renderer type %q", renderer)
-	}
+
 	return nil
 }
 
-// extractDimension return the dimension or extracts the base time dimension from computed time field if present
-// example - from "<time_dim>_rill_TIME_GRAIN_<GRAIN>" extracts "<time_dim>"
-func extractDimension(field string) string {
-	if strings.Contains(field, "_rill_TIME_GRAIN_") {
-		parts := strings.Split(field, "_rill_TIME_GRAIN_")
-		if len(parts) > 0 {
-			return parts[0]
-		}
-	}
-	return field
-}
-
-type rendererRefs struct {
-	metricsViews map[string]bool
-	mvFields     map[string]map[string]bool
-	mvFilters    map[string][]string
-}
-
+// metricsView registers a metrics view reference.
 func (r *rendererRefs) metricsView(mv any) error {
 	if mv, ok := mv.(string); ok {
 		r.metricsViews[mv] = true
 		return nil
 	}
 	return fmt.Errorf("metrics view field is not a string")
-}
-
-func (r *rendererRefs) metricsViewFields(mv, fields any) error {
-	metricsView, ok1 := mv.(string)
-	fs, ok2 := fields.([]interface{})
-	if !ok1 || !ok2 {
-		return fmt.Errorf("metrics view field is not a string or fields is not a list")
-	}
-	if r.mvFields[metricsView] == nil {
-		r.mvFields[metricsView] = make(map[string]bool)
-	}
-	for _, f := range fs {
-		fstr, ok := f.(string)
-		if !ok {
-			return fmt.Errorf("field is not a string")
-		}
-		r.mvFields[metricsView][extractDimension(fstr)] = true
-	}
-	return nil
-}
-
-func (r *rendererRefs) metricsViewField(mv, field any) error {
-	metricsView, ok1 := mv.(string)
-	f, ok2 := field.(string)
-	if !ok1 || !ok2 {
-		return fmt.Errorf("metrics view field is not a string or field is not a string")
-	}
-	if f == "" {
-		return nil
-	}
-	if r.mvFields[metricsView] == nil {
-		r.mvFields[metricsView] = make(map[string]bool)
-	}
-	r.mvFields[metricsView][extractDimension(f)] = true
-
-	return nil
-}
-
-func (r *rendererRefs) metricsViewRowFilter(mv, filter any) error {
-	metricsView, ok1 := mv.(string)
-	f, ok2 := filter.(string)
-	if !ok1 || !ok2 {
-		return fmt.Errorf("metrics view field is not a string or filter is not a string")
-	}
-	if f == "" {
-		return nil
-	}
-	r.mvFilters[metricsView] = append(r.mvFilters[metricsView], fmt.Sprintf("(%s)", f)) // wrap in () to ensure correct precedence when combining multiple filters with OR
-	// Extract fields from dimension_filters SQL expression
-	ex, err := metricssql.ParseFilter(f)
-	if err != nil {
-		return fmt.Errorf("failed to parse dimension_filters SQL expression %q: %w", f, err)
-	}
-	dimFilterFields := metricsview.AnalyzeExpressionFields(ex)
-	if r.mvFields[metricsView] == nil {
-		r.mvFields[metricsView] = make(map[string]bool)
-	}
-	for _, f := range dimFilterFields {
-		r.mvFields[metricsView][extractDimension(f)] = true
-	}
-	return nil
 }

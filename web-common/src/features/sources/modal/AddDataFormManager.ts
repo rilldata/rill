@@ -34,6 +34,7 @@ import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
 import type { ConnectorDriverProperty } from "@rilldata/web-common/runtime-client";
 import type { ClickHouseConnectorType } from "./constants";
 import { applyClickHouseCloudRequirements } from "./utils";
+import type { ActionResult } from "@sveltejs/kit";
 
 // Minimal onUpdate event type carrying Superforms's validated form
 type SuperFormUpdateEvent = {
@@ -243,6 +244,7 @@ export class AddDataFormManager {
     getConnectionTab: () => "parameters" | "dsn";
     setParamsError: (message: string | null, details?: string) => void;
     setDsnError: (message: string | null, details?: string) => void;
+    setShowSaveAnyway?: (value: boolean) => void;
   }) {
     const {
       onClose,
@@ -250,6 +252,7 @@ export class AddDataFormManager {
       getConnectionTab,
       setParamsError,
       setDsnError,
+      setShowSaveAnyway,
     } = args;
     const connector = this.connector;
     const isMultiStepConnector = MULTI_STEP_CONNECTORS.includes(
@@ -267,7 +270,18 @@ export class AddDataFormManager {
         any,
         Record<string, unknown>
       >;
+      result?: Extract<ActionResult, { type: "success" | "failure" }>;
     }) => {
+      // For non-ClickHouse connectors, expose Save Anyway when a submission starts
+      if (
+        isConnectorForm &&
+        connector.name !== "clickhouse" &&
+        typeof setShowSaveAnyway === "function" &&
+        event?.result
+      ) {
+        setShowSaveAnyway(true);
+      }
+
       if (!event.form.valid) return;
 
       const values = event.form.data;
@@ -284,7 +298,7 @@ export class AddDataFormManager {
           onClose();
           return;
         } else if (isMultiStepConnector && stepState.step === "connector") {
-          await submitAddConnectorForm(queryClient, connector, values, true);
+          await submitAddConnectorForm(queryClient, connector, values, false);
           setConnectorConfig(values);
           setStep("source");
           return;
@@ -296,7 +310,7 @@ export class AddDataFormManager {
           }
           onClose();
         } else {
-          await submitAddConnectorForm(queryClient, connector, values, true);
+          await submitAddConnectorForm(queryClient, connector, values, false);
           if (supportsTableExplorer) {
             setStep("explorer");
             return;

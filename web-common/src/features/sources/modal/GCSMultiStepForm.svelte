@@ -17,6 +17,28 @@
   let gcsAuthMethod: GCSAuthMethod = "credentials";
 
   const filteredParamsProperties = properties;
+
+  // Clear irrelevant auth fields when switching methods so preview doesn't retain stale values
+  $: if (gcsAuthMethod === "hmac") {
+    // Switching to HMAC: remove service account JSON from form
+    paramsForm.update(
+      ($form) => {
+        $form.google_application_credentials = "";
+        return $form;
+      },
+      { taint: false },
+    );
+  } else if (gcsAuthMethod === "credentials") {
+    // Switching to Credentials: clear HMAC fields
+    paramsForm.update(
+      ($form) => {
+        $form.key_id = "";
+        $form.secret = "";
+        return $form;
+      },
+      { taint: false },
+    );
+  }
 </script>
 
 <!-- Step 1: Connector configuration -->
