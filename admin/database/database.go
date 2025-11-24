@@ -212,7 +212,7 @@ type DB interface {
 	DeleteAuthorizationCode(ctx context.Context, code string) error
 	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
 
-	InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes []string) (*AuthClient, error)
+	InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes, redirectURIs []string) (*AuthClient, error)
 	FindAuthClient(ctx context.Context, id string) (*AuthClient, error)
 	UpdateAuthClientUsedOn(ctx context.Context, ids []string) error
 
@@ -850,13 +850,14 @@ type InsertNotificationTokenOptions struct {
 
 // AuthClient is a client that requests and consumes auth tokens.
 type AuthClient struct {
-	ID          string
-	DisplayName string    `db:"display_name"`
-	Scope       string    `db:"scope"`
-	GrantTypes  []string  `db:"grant_types"`
-	UsedOn      time.Time `db:"used_on"`
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
+	ID           string
+	DisplayName  string    `db:"display_name"`
+	Scope        string    `db:"scope"`
+	GrantTypes   []string  `db:"grant_types"`
+	RedirectURIs []string  `db:"redirect_uris"`
+	UsedOn       time.Time `db:"used_on"`
+	CreatedOn    time.Time `db:"created_on"`
+	UpdatedOn    time.Time `db:"updated_on"`
 }
 
 // Hard-coded auth client IDs (created in the migrations).
