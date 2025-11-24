@@ -67,8 +67,7 @@ func (c *Connection) ListObjects(ctx context.Context, bucket, path, delimiter st
 	blobListfn := func(ctx context.Context, p string, d string, s uint32, t string) ([]drivers.ObjectStoreEntry, string, error) {
 		return blobBucket.ListObjects(ctx, p, d, s, t)
 	}
-	return drivers.ListObjects(ctx, c.config.PathPrefixes, blobListfn, path, delimiter, pageSize, pageToken, bucket)
-
+	return drivers.ListObjects(ctx, c.config.PathPrefixes, blobListfn, bucket, path, delimiter, pageSize, pageToken)
 }
 
 // ListObjectsForGlob implements drivers.ObjectStore.

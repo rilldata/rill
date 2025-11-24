@@ -179,11 +179,7 @@ func (h *handle) ListObjects(ctx context.Context, bucket, path, delimiter string
 		return nil, "", err
 	}
 	defer blobBucket.Close()
-	blobListfn := func(ctx context.Context, p string, d string, s uint32, t string) ([]drivers.ObjectStoreEntry, string, error) {
-		return blobBucket.ListObjects(ctx, p, d, s, t)
-	}
-	return drivers.ListObjects(ctx, c.config.PathPrefixes, blobListfn, path, delimiter, pageSize, pageToken, bucket)
-
+	return blobBucket.ListObjects(ctx, path, delimiter, pageSize, pageToken)
 }
 
 // ListObjectsForGlob implements drivers.ObjectStore.
@@ -193,7 +189,6 @@ func (h *handle) ListObjectsForGlob(ctx context.Context, bucket, glob string) ([
 		return nil, err
 	}
 	defer blobBucket.Close()
-
 	return blobBucket.ListObjectsForGlob(ctx, glob)
 }
 

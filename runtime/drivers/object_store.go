@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -141,7 +140,11 @@ func ListBucketsFromPathPrefixes(pathPrefixes []string, pageSize uint32, pageTok
 
 type BlobListfn func(ctx context.Context, path, delimiter string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error)
 
-func ListObjects(ctx context.Context, pathPrefixes []string, blobListfn BlobListfn, path, delimiter string, pageSize uint32, pageToken string, bucket string) ([]ObjectStoreEntry, string, error) {
+// ListObjects restricts listing to allowed path prefixes. If the requested path
+// is within an allowed prefix, a normal blob listing is performed. If the path
+// is a parent of allowed prefixes, a synthetic directory listing is returned.
+// Otherwise, access is denied.
+func ListObjects(ctx context.Context, pathPrefixes []string, blobListfn BlobListfn, bucket, path, delimiter string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error) {
 	if delimiter == "" {
 		delimiter = "/"
 	}
@@ -149,81 +152,74 @@ func ListObjects(ctx context.Context, pathPrefixes []string, blobListfn BlobList
 		return blobListfn(ctx, path, delimiter, pageSize, pageToken)
 	}
 
-	// Build allowed map
-	allowed, err := buildAllowedPrefixMap(pathPrefixes)
+	// Extract allowed prefixes for this bucket, reduced to non-nested forms
+	allowedPaths, err := buildAllowedPrefixesForBucket(pathPrefixes, bucket)
 	if err != nil {
 		return nil, "", err
 	}
 
-	// Find prefixes allowed for this bucket
-	allowedPaths, ok := allowed[bucket]
-	if !ok {
-		return nil, "", fmt.Errorf("bucket %q not allowed by path_prefixes", bucket)
-	}
-
-	// Classify prefix relationships
-	matchedParent := []string{} // allowed prefix is parent -> real listing
-	matchedChild := []string{}  // allowed prefix is child -> synthetic listing
+	matchedParent := []string{} // allowed prefix contains requested path → real listing
+	matchedChild := []string{}  // allowed prefix is deeper → synthetic listing
 
 	for _, ap := range allowedPaths {
 		switch {
 		case strings.HasPrefix(path, ap):
-			// Path is deeper than or equal to allowed → directly allowed
 			matchedParent = append(matchedParent, ap)
 
 		case strings.HasPrefix(ap, path):
-			// Path is parent of multiple allowed → synthetic listing needed
 			matchedChild = append(matchedChild, ap)
 		}
 	}
 
-	// Determine access behavior
 	switch {
 	case len(matchedParent) > 0:
-		// List directly at path scope
+		// User is within allowed scope → list real objects
 		return blobListfn(ctx, path, delimiter, pageSize, pageToken)
 
 	case len(matchedChild) > 0:
-		// Path is parent → synthetic "directories"
-		return synthesizeDirectoryListing(path, matchedChild, delimiter, pageSize, pageToken)
+		// User is above allowed scope → list child prefixes instead of objects
+		return listObjectsFromPathPrefixes(path, matchedChild, delimiter, pageSize, pageToken)
 	}
+
 	return nil, "", fmt.Errorf("path %q not allowed by path_prefixes", path)
 }
 
-// synthesizeDirectoryListing groups deeper allowed prefixes into direct child folders
-// under the requested path, applying pagination.
-func synthesizeDirectoryListing(path string, matching []string, delimiter string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error) {
-	childrenSet := make(map[string]struct{})
+// listObjectsFromPathPrefixes returns synthetic directory entries from deeper
+// allowed prefixes. Only the immediate next path segment is returned.
+// Results are sorted and paginated.
+func listObjectsFromPathPrefixes(path string, matching []string, delimiter string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error) {
+	children := make([]string, 0, len(matching))
 	for _, ap := range matching {
-		rest := strings.TrimPrefix(ap, path)        // remove requested prefix base
-		parts := strings.SplitN(rest, delimiter, 2) // only direct children
-		if parts[0] != "" {
-			childrenSet[parts[0]] = struct{}{}
+		rest := strings.TrimPrefix(ap, path) // trim the parent path
+		// take only direct child segment
+		child := strings.SplitN(rest, delimiter, 2)[0]
+		if child != "" {
+			children = append(children, child)
 		}
 	}
 
-	// Convert to sorted list
-	children := make([]string, 0, len(childrenSet))
-	for c := range childrenSet {
-		children = append(children, c)
-	}
 	sort.Strings(children)
 
 	// Pagination
-	start := 0
+	validPageSize := pagination.ValidPageSize(pageSize, DefaultPageSize)
+	startIndex := 0
 	if pageToken != "" {
-		var s int
-		if err := pagination.UnmarshalPageToken(pageToken, &s); err == nil {
-			start = s
+		if err := pagination.UnmarshalPageToken(pageToken, &startIndex); err != nil {
+			return nil, "", fmt.Errorf("invalid page token: %w", err)
 		}
 	}
-	end := start + int(pagination.ValidPageSize(pageSize, DefaultPageSize))
-	if end > len(children) {
-		end = len(children)
+	endIndex := startIndex + validPageSize
+	if endIndex > len(children) {
+		endIndex = len(children)
 	}
 
-	entries := make([]ObjectStoreEntry, 0, end-start)
-	for _, c := range children[start:end] {
+	next := ""
+	if endIndex < len(children) {
+		next = pagination.MarshalPageToken(endIndex)
+	}
+
+	entries := make([]ObjectStoreEntry, 0, endIndex-startIndex)
+	for _, c := range children[startIndex:endIndex] {
 		entries = append(entries, ObjectStoreEntry{
 			Path:      path + c + delimiter,
 			IsDir:     true,
@@ -232,67 +228,43 @@ func synthesizeDirectoryListing(path string, matching []string, delimiter string
 		})
 	}
 
-	var next string
-	if end < len(children) {
-		next = pagination.MarshalPageToken(strconv.Itoa(end))
-	}
-
 	return entries, next, nil
 }
 
-// BuildAllowedPrefixMap constructs a reduced set of allowed path prefixes grouped by bucket
-//
-// Input example:
-//
-//	  []string{
-//	      "s3://my-bucket/foo/",
-//	      "s3://my-bucket/bar/",
-//		  "s3://my-bucket/bar/baz",
-//	      "s3://other-bucket/alpha",
-//	  }
-//
-// Output example:
-//
-//	{
-//	    "my-bucket":   []string{"s3://my-bucket/foo/", "s3://my-bucket/bar/"},
-//	    "other-bucket": []string{"s3://other-bucket/alpha"},
-//	}
-//
-// Returns an error if any prefix is malformed.
-func buildAllowedPrefixMap(pathPrefixes []string) (map[string][]string, error) {
-	result := make(map[string][]string)
+// buildAllowedPrefixesForBucket returns allowed prefixes for the given bucket,
+// removing ones nested under others. Errors if none match or format is invalid.
+func buildAllowedPrefixesForBucket(pathPrefixes []string, bucket string) ([]string, error) {
+	var paths []string
 	for _, p := range pathPrefixes {
-		// Parse prefix and extract bucket + path
 		u, err := url.Parse(p)
 		if err != nil {
 			return nil, fmt.Errorf("invalid path prefix %q: %w", p, err)
 		}
-		bucket := u.Hostname()
-		if bucket == "" {
-			return nil, fmt.Errorf("can't parse bucket in path prefix %q; proper format is <schema>://<bucket>/path", p)
+
+		if u.Hostname() == bucket {
+			paths = append(paths, u.Path)
 		}
-		// Group paths by bucket
-		result[bucket] = append(result[bucket], u.Path)
-	}
-	// Reduce prefixes: remove more specific paths under the same root
-	for bucket, prs := range result {
-		sort.Strings(prs)
-		reduced := make([]string, 0, len(prs))
-		for _, p := range prs {
-			include := true
-			// If prefix starts with an already included shorter prefix, skip it
-			for _, r := range reduced {
-				if strings.HasPrefix(p, r) {
-					include = false
-					break
-				}
-			}
-			if include {
-				reduced = append(reduced, p)
-			}
-		}
-		result[bucket] = reduced
 	}
 
-	return result, nil
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("bucket %q not allowed by path_prefixes", bucket)
+	}
+
+	// Remove nested paths → only root access points remain
+	sort.Strings(paths)
+	reduced := make([]string, 0, len(paths))
+	for _, p := range paths {
+		include := true
+		for _, r := range reduced {
+			if strings.HasPrefix(p, r) {
+				include = false
+				break
+			}
+		}
+		if include {
+			reduced = append(reduced, p)
+		}
+	}
+
+	return reduced, nil
 }
