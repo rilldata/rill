@@ -69,9 +69,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_UTC(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 3.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
 
-	server, instanceId = getMetricsTestServerWithInstanceConfigs(t, "ad_bids", map[string]string{
-		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
-	})
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids")
 	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_dst_metrics",
@@ -80,7 +78,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_UTC(t *testing.T) {
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2024-03-10T00:00:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-13T00:00:00Z"),
 	})
-	// results same as above before setting instance config
+	// results should be same as above
 	require.NoError(t, err)
 	require.Equal(t, 3, len(tr.Data))
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
@@ -127,9 +125,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_PST(t *testing.T) {
 	require.Equal(t, 0.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 0.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
 
-	server, instanceId = getMetricsTestServerWithInstanceConfigs(t, "ad_bids", map[string]string{
-		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
-	})
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids")
 	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_dst_metrics",
@@ -139,7 +135,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_PST(t *testing.T) {
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-13T07:00:00Z"),
 		TimeZone:        "America/Los_Angeles",
 	})
-	// results same as above before setting instance config
+	// results should be same as above
 	require.NoError(t, err)
 	require.Equal(t, 3, len(tr.Data))
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
@@ -186,9 +182,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_IST(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 3.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
 
-	server, instanceId = getMetricsTestServerWithInstanceConfigs(t, "ad_bids", map[string]string{
-		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
-	})
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids")
 	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_dst_metrics",
@@ -198,7 +192,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_IST(t *testing.T) {
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-12T18:30:00Z"),
 		TimeZone:        "Asia/Kolkata",
 	})
-	// results same as above before setting instance config
+	// results should be same as above
 	require.NoError(t, err)
 	require.Equal(t, 3, len(tr.Data))
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))

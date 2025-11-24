@@ -17,7 +17,9 @@ import (
 )
 
 func getMetricsTestServer(t *testing.T, projectName string) (*server.Server, string) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
+	rt, instanceID := testruntime.NewInstanceForProjectWithConfigs(t, projectName, map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
 
 	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
@@ -25,8 +27,8 @@ func getMetricsTestServer(t *testing.T, projectName string) (*server.Server, str
 	return server, instanceID
 }
 
-func getMetricsTestServerWithInstanceConfigs(t *testing.T, projectName string, instConfig map[string]string) (*server.Server, string) {
-	rt, instanceID := testruntime.NewInstanceForProjectWithConfigs(t, projectName, instConfig)
+func getMetricsTestServerWithDefaultInstanceConfigs(t *testing.T, projectName string) (*server.Server, string) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
 
 	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
