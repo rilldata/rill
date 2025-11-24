@@ -145,7 +145,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	}
 
 	// Poll until all deployments are deleted with a timeout.
-	pollCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	pollCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	for {
 		select {
