@@ -175,32 +175,60 @@
     </div>
   {/if}
 
-    <div class="flex-1 overflow-y-auto">
-      <slot name="header" items={filteredItems}>
-        <!-- Optional header slot -->
-      </slot>
+  <div class="flex-1 overflow-y-auto">
+    <slot name="header" items={filteredItems}>
+      <!-- Optional header slot -->
+    </slot>
 
-      <div
-        role="presentation"
-        class="flex flex-col p-1.5"
-        on:mousedown={handleMouseDown}
-      >
-        {#if filteredItems.length === 0}
-          <div class="px-2 py-2 text-xs text-gray-500">
-            <slot name="empty" {searchValue}>
-              {searchValue ? "No matching items" : "No items"}
-            </slot>
-          </div>
-        {:else}
-          {#each filteredItems as item, i (item.id)}
-            {@const isDragItem = dragId === item.id}
-            {@const isDropTarget =
-              dropIndex !== null &&
-              !isDragItem &&
-              i === dropIndex + (i > dragIndex ? 1 : 0)}
-            {@const isLastItem =
-              dropIndex === items.length - 1 &&
-              i === items.length - 1 - (dragIndex === items.length - 1 ? 1 : 0)}
+    <div
+      role="presentation"
+      class="flex flex-col p-1.5"
+      on:mousedown={handleMouseDown}
+    >
+      {#if filteredItems.length === 0}
+        <div class="px-2 py-2 text-xs text-gray-500">
+          <slot name="empty" {searchValue}>
+            {searchValue ? "No matching items" : "No items"}
+          </slot>
+        </div>
+      {:else}
+        {#each filteredItems as item, i (item.id)}
+          {@const isDragItem = dragId === item.id}
+          {@const isDropTarget =
+            dropIndex !== null &&
+            !isDragItem &&
+            i === dropIndex + (i > dragIndex ? 1 : 0)}
+          {@const isLastItem =
+            dropIndex === items.length - 1 &&
+            i === items.length - 1 - (dragIndex === items.length - 1 ? 1 : 0)}
+          {#if onItemClick}
+            <button
+              type="button"
+              data-drag-item
+              data-index={i}
+              data-item-id={item.id}
+              class:sr-only={isDragItem}
+              class:transition-margin={dragIndex !== -1 &&
+                dropIndex !== dragIndex}
+              class:drag-transition={dragIndex !== -1}
+              class:mt-7={isDropTarget}
+              class:mb-7={isLastItem}
+              style:pointer-events={isDragItem ? "none" : "auto"}
+              style:height="{ITEM_HEIGHT}px"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-slate-50 rounded-sm text-left"
+              class:cursor-grab={draggable}
+              class:cursor-not-allowed={draggable && items.length === 1}
+              class:cursor-pointer={!draggable && !!onItemClick}
+              class:cursor-default={!draggable && !onItemClick}
+              on:click={() => handleItemClick(item, i)}
+            >
+              <slot name="item" {item} index={i} {isDragItem}>
+                <span class="truncate flex-1 text-left pointer-events-none">
+                  {item.id}
+                </span>
+              </slot>
+            </button>
+          {:else}
             <div
               data-drag-item
               data-index={i}
@@ -218,19 +246,6 @@
               class:cursor-not-allowed={draggable && items.length === 1}
               class:cursor-pointer={!draggable && !!onItemClick}
               class:cursor-default={!draggable && !onItemClick}
-              on:click={onItemClick ? () => handleItemClick(item, i) : undefined}
-              on:keydown={
-                onItemClick
-                  ? (e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleItemClick(item, i);
-                      }
-                    }
-                  : undefined
-              }
-              role={onItemClick ? "button" : undefined}
-              tabindex={onItemClick ? 0 : undefined}
             >
               <slot name="item" {item} index={i} {isDragItem}>
                 <span class="truncate flex-1 text-left pointer-events-none">
@@ -238,14 +253,15 @@
                 </span>
               </slot>
             </div>
-          {/each}
-        {/if}
-      </div>
-
-      <slot name="footer" items={filteredItems}>
-        <!-- Optional footer slot -->
-      </slot>
+          {/if}
+        {/each}
+      {/if}
     </div>
+
+    <slot name="footer" items={filteredItems}>
+      <!-- Optional footer slot -->
+    </slot>
+  </div>
 </div>
 
 <style lang="postcss">
