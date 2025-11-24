@@ -8,7 +8,7 @@
   // Sometimes LLM response adds markdown syntax around the content, so we need to remove it
   $: sanitisedContext = content
     .replace(/^```markdown\n/, "")
-    .replace(/\n```$/, "");
+    .replace(/\n```$/m, "");
 </script>
 
 <div class="chat-markdown">
