@@ -14,10 +14,11 @@ import (
 )
 
 var (
-	infPattern      = regexp.MustCompile("^(?i)inf$")
-	durationPattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
-	isoTimePattern  = `(?P<year>\d{4})(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2})(:(?P<minute>\d{2})(:(?P<second>\d{2})(\.((?P<milli>\d{3})|(?P<micro>\d{6})|(?P<nano>\d{9})))?Z)?)?)?)?)?`
-	isoTimeRegex    = regexp.MustCompile(isoTimePattern)
+	infPattern             = regexp.MustCompile("^(?i)inf$")
+	iso8601DurationPattern = `P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?`
+	iso8601DurationRegex   = regexp.MustCompile(iso8601DurationPattern)
+	isoTimePattern         = `(?P<year>\d{4})(-(?P<month>\d{2})(-(?P<day>\d{2})(T(?P<hour>\d{2})(:(?P<minute>\d{2})(:(?P<second>\d{2})(\.((?P<milli>\d{3})|(?P<micro>\d{6})|(?P<nano>\d{9})))?Z)?)?)?)?)?`
+	isoTimeRegex           = regexp.MustCompile(isoTimePattern)
 	// nolint:govet // This is suggested usage by the docs.
 	rillTimeLexer = lexer.MustSimple([]lexer.SimpleRule{
 		{"Ref", "ref"},
@@ -25,6 +26,7 @@ var (
 		{"Now", "now"},
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
+		{"ISO8601Duration", iso8601DurationPattern},
 		{"PreviousPeriod", "(?i)p"},
 		{"Offset", `(?i)offset`},
 		// this needs to be after Now and Latest to match to them
@@ -138,6 +140,7 @@ type Interval struct {
 	PeriodToGrain *PeriodToGrainInterval `parser:"| @@"`
 	StartEnd      *StartEndInterval      `parser:"| @@"`
 	Ordinal       *OrdinalInterval       `parser:"| @@"`
+	LegacyIso     *LegacyIsoInterval     `parser:"| @@"`
 	Iso           *IsoInterval           `parser:"| @@)"`
 }
 
@@ -166,8 +169,14 @@ type StartEndInterval struct {
 
 // IsoInterval is an interval formed by ISO timestamps. Allows for partial timestamps in ISOPointInTime.
 type IsoInterval struct {
-	Start *ISOPointInTime `parser:"@@"`
-	End   *ISOPointInTime `parser:"((To | '/' | RangeSeparator) @@)?"`
+	Start *AbsISOPointInTime `parser:"@@"`
+	End   *AbsISOPointInTime `parser:"((To | '/' | RangeSeparator) @@)?"`
+}
+
+type LegacyIsoInterval struct {
+	AbsISO *AbsISOPointInTime          `parser:"( @@"`
+	RelISO *RelativeISO8601PointInTime `parser:"| @@)"`
+	Snap   *string                     `parser:"(Snap @Grain)?"`
 }
 
 type PointInTime struct {
@@ -177,8 +186,7 @@ type PointInTime struct {
 type PointInTimeWithSnap struct {
 	Grain   *GrainPointInTime   `parser:"( @@"`
 	Labeled *LabeledPointInTime `parser:"| @@"`
-	ISO     *ISOPointInTime     `parser:"| @@)"`
-	iso8601 *iso8601PointInTime
+	AbsISO  *AbsISOPointInTime  `parser:"| @@)"`
 
 	Snap *string `parser:"(Snap @Grain"`
 	// A secondary snap after the above snap. This allows specifying a time range bucketed by week but snapped by a higher order grain.
@@ -204,7 +212,7 @@ type LabeledPointInTime struct {
 	Watermark bool `parser:"| @Watermark)"`
 }
 
-type ISOPointInTime struct {
+type AbsISOPointInTime struct {
 	ISO string `parser:"@ISOTime"`
 
 	year   int
@@ -219,8 +227,8 @@ type ISOPointInTime struct {
 	tg timeutil.TimeGrain
 }
 
-type iso8601PointInTime struct {
-	iso string
+type RelativeISO8601PointInTime struct {
+	ISO string `parser:"@ISO8601Duration"`
 
 	year   int
 	month  int
@@ -229,7 +237,6 @@ type iso8601PointInTime struct {
 	hour   int
 	minute int
 	second int
-	nano   int
 }
 
 type Offset struct {
@@ -360,7 +367,7 @@ func ParseISO(duration, offset string, end time.Time, snap timeutil.TimeGrain, p
 			return nil, fmt.Errorf("invalid ISO offset %q: cannot have non-iso for offset", duration)
 		}
 
-		oi := &iso8601PointInTime{iso: offset}
+		oi := &RelativeISO8601PointInTime{ISO: offset}
 		err = oi.parse()
 		if err != nil {
 			return nil, err
@@ -368,19 +375,19 @@ func ParseISO(duration, offset string, end time.Time, snap timeutil.TimeGrain, p
 
 		rt.AnchorOverrides = append(rt.AnchorOverrides, &PointInTime{
 			Points: []*PointInTimeWithSnap{
-				{iso8601: oi},
+				{RelISO: oi},
 			},
 		})
 	}
 
 	if !end.IsZero() {
-		ei := &ISOPointInTime{ISO: end.UTC().Format(time.RFC3339)}
+		ei := &AbsISOPointInTime{ISO: end.UTC().Format(time.RFC3339)}
 		err = ei.parse()
 		if err != nil {
 			return nil, err
 		}
 
-		pt := &PointInTimeWithSnap{ISO: ei}
+		pt := &PointInTimeWithSnap{AbsISO: ei}
 		if snap != timeutil.TimeGrainUnspecified {
 			s := reverseGrainMap[snap]
 			pt.Snap = &s
@@ -471,6 +478,8 @@ func (i *Interval) parse() error {
 	} else if i.PeriodToGrain != nil {
 		// Period-to-date syntax maps to StartEndInterval as well.
 		i.StartEnd = i.PeriodToGrain.expand()
+	} else if i.LegacyIso != nil {
+		return i.LegacyIso.parse()
 	} else if i.Iso != nil {
 		return i.Iso.parse()
 	}
@@ -595,6 +604,10 @@ func (o *StartEndInterval) eval(evalOpts EvalOptions, tm time.Time, tz *time.Loc
 	return start, end, tg
 }
 
+func (l *LegacyIsoInterval) parse() error {
+	if l.AbsISO
+}
+
 func (i *IsoInterval) parse() error {
 	err := i.Start.parse()
 	if err != nil {
@@ -656,10 +669,10 @@ func (p *PointInTime) truncates() bool {
 }
 
 func (p *PointInTimeWithSnap) parse() error {
-	if p.ISO != nil {
-		return p.ISO.parse()
-	} else if p.iso8601 != nil {
-		return p.iso8601.parse()
+	if p.AbsISO != nil {
+		return p.AbsISO.parse()
+	} else if p.RelISO != nil {
+		return p.RelISO.parse()
 	}
 	return nil
 }
@@ -670,10 +683,10 @@ func (p *PointInTimeWithSnap) eval(evalOpts EvalOptions, tm time.Time, tz *time.
 		tm, tg = p.Grain.eval(tm, tz)
 	} else if p.Labeled != nil {
 		tm = p.Labeled.eval(evalOpts)
-	} else if p.ISO != nil {
-		tm, _, tg = p.ISO.eval(tz)
-	} else if p.iso8601 != nil {
-		tm = p.iso8601.eval(evalOpts, tm)
+	} else if p.AbsISO != nil {
+		tm, _, tg = p.AbsISO.eval(tz)
+	} else if p.RelISO != nil {
+		tm = p.RelISO.eval(tm)
 	}
 
 	if p.Snap != nil {
@@ -730,7 +743,7 @@ func (l *LabeledPointInTime) eval(evalOpts EvalOptions) time.Time {
 	return time.Time{}
 }
 
-func (a *ISOPointInTime) parse() error {
+func (a *AbsISOPointInTime) parse() error {
 	match := isoTimeRegex.FindStringSubmatch(a.ISO)
 
 	for i, name := range isoTimeRegex.SubexpNames() {
@@ -782,7 +795,7 @@ func (a *ISOPointInTime) parse() error {
 	return nil
 }
 
-func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
+func (a *AbsISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil.TimeGrain) {
 	// Since we use this to build a time, month and day cannot be zero, hence the max(1, xx)
 	absStart := time.Date(a.year, time.Month(max(1, a.month)), max(1, a.day), a.hour, a.minute, a.second, a.nano, tz)
 	absEnd := timeutil.OffsetTime(absStart, a.tg, 1, tz)
@@ -790,9 +803,9 @@ func (a *ISOPointInTime) eval(tz *time.Location) (time.Time, time.Time, timeutil
 	return absStart, absEnd, a.tg
 }
 
-func (s *iso8601PointInTime) parse() error {
-	match := durationPattern.FindStringSubmatch(s.iso)
-	for i, name := range durationPattern.SubexpNames() {
+func (s *RelativeISO8601PointInTime) parse() error {
+	match := iso8601DurationRegex.FindStringSubmatch(s.ISO)
+	for i, name := range iso8601DurationRegex.SubexpNames() {
 		part := match[i]
 		if i == 0 || name == "" || part == "" {
 			continue
@@ -825,7 +838,7 @@ func (s *iso8601PointInTime) parse() error {
 	return nil
 }
 
-func (s *iso8601PointInTime) eval(evalOpts EvalOptions, tm time.Time) time.Time {
+func (s *RelativeISO8601PointInTime) eval(tm time.Time) time.Time {
 	// This reflects the old duration package. It does not correct for daylight savings.
 	days := 7*s.week + s.day
 	tm = tm.AddDate(-s.year, -s.month, -days)
@@ -932,29 +945,7 @@ func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
 		}
 	}
 
-	// Parse as a regular ISO8601 duration
-	if !durationPattern.MatchString(from) {
-		return nil, nil
-	}
-
-	i := &iso8601PointInTime{iso: from}
-	err := i.parse()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Expression{
-		Interval: &Interval{
-			StartEnd: &StartEndInterval{
-				Start: &PointInTime{
-					Points: []*PointInTimeWithSnap{
-						{iso8601: i},
-					},
-				},
-				End: &PointInTime{},
-			},
-		},
-	}, nil
+	return nil, nil
 }
 
 // truncateWithCorrection truncates time by a grain but corrects for https://en.wikipedia.org/wiki/ISO_week_date#First_week

@@ -93,10 +93,12 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *metricsview.TimeRan
 	var rt *rilltime.Expression
 	if tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != metricsview.TimeGrainUnspecified {
 		rt, err = rilltime.ParseISO(tr.IsoDuration, tr.IsoOffset, tr.End, tr.RoundToGrain.ToTimeutil(), rilltime.ParseOptions{
+			DefaultTimeZone: tz,
 			SmallestGrain: timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
 		})
 	} else {
 		rt, err = rilltime.Parse(tr.Expression, rilltime.ParseOptions{
+			DefaultTimeZone: tz,
 			SmallestGrain: timeutil.TimeGrainFromAPI(e.metricsView.SmallestTimeGrain),
 		})
 	}
