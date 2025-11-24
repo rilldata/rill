@@ -112,6 +112,7 @@ export class DashboardStateDataLoader {
         return getExploreStateFromYAMLConfig(
           exploreSpec,
           metricsViewTimeRangeResp?.timeRangeSummary,
+          metricsViewSpec.smallestTimeGrain,
         );
       },
     );

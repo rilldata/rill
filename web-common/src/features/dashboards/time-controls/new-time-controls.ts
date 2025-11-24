@@ -657,7 +657,7 @@ export function convertLegacyTime(timeString: string) {
 }
 
 export function constructAsOfString(
-  asOf: RillTimeLabel | undefined,
+  asOf: RillTimeLabel | string | undefined,
   grain: V1TimeGrain | undefined | null,
   pad: boolean,
 ): string {
@@ -704,7 +704,7 @@ export function constructNewString({
   currentString: string;
   truncationGrain: V1TimeGrain | undefined | null;
   snapToEnd: boolean;
-  ref: RillTimeLabel | undefined;
+  ref: RillTimeLabel | string | undefined;
 }): string {
   const legacy = isUsingLegacyTime(currentString);
 

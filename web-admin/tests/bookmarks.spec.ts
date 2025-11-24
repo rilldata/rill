@@ -92,7 +92,7 @@ test.describe("Bookmarks", () => {
         // NOTE: comparison time range is not added for filter-only as per requirement
         assertUrlParams(
           adminPage,
-          `view=tdd&tr=6h+as+of+latest%2Fh%2B1h&f=app_site_name IN ('FuboTV','My+Little+Universe')&measure=requests&chart_type=line`,
+          `view=tdd&tr=6h+as+of+latest%2Fh%2B1h&grain=hour&f=app_site_name IN ('FuboTV','My+Little+Universe')&measure=requests&chart_type=line`,
         );
 
         // Open bookmark dropdown and verify the "filled" state for the bookmark
@@ -203,7 +203,7 @@ test.describe("Bookmarks", () => {
         // make sure the url has the correct params
         assertUrlParams(
           adminPage,
-          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
+          `tr=6h+as+of+latest%2Fh%2B1h&compare_tr=rill-PP&grain=hour&f=app_site_name IN ('FuboTV','My+Little+Universe')&expand_dim=app_site_domain`,
         );
 
         // Open bookmark dropdown and verify the "filled" state for the bookmark
