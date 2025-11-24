@@ -100,19 +100,23 @@
 >
   {#if inlineChatContext}
     <div class="inline-chat-context-value">
-      <Tooltip.Root bind:open={tooltipOpen}>
-        <Tooltip.Trigger asChild let:builder>
-          <span
-            {...getAttrs([builder])}
-            use:builderActions={{ builders: [builder] }}
-          >
-            {label}
-          </span>
-        </Tooltip.Trigger>
-        <Tooltip.Content>
-          From {metricsViewName}
-        </Tooltip.Content>
-      </Tooltip.Root>
+      {#if metricsViewName}
+        <Tooltip.Root bind:open={tooltipOpen}>
+          <Tooltip.Trigger asChild let:builder>
+            <span
+              {...getAttrs([builder])}
+              use:builderActions={{ builders: [builder] }}
+            >
+              {label}
+            </span>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            From {metricsViewName}
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {:else}
+        <span>{label}</span>
+      {/if}
       <button on:click={toggleDropdown} type="button">
         <ChevronDownIcon size="12px" />
       </button>

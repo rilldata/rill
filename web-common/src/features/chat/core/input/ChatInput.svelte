@@ -30,19 +30,19 @@
 
   const context = getExploreContext();
 
-  const manager = new ChatInputTextAreaManager(
+  const chatManager = new ChatInputTextAreaManager(
     (newValue) => draftMessageStore.set(newValue),
     () => void sendMessage(),
   );
-  $: manager.setElement(editorElement);
-  $: manager.setConversationManager(conversationManager);
+  $: chatManager.setElement(editorElement);
+  $: chatManager.setConversationManager(conversationManager);
 
   async function sendMessage() {
     if (!canSend) return;
 
     // Message handling with input focus
     try {
-      manager.setPrompt("");
+      chatManager.setPrompt("");
       await currentConversation.sendMessage($context);
       onSend?.();
     } catch (error) {
@@ -51,7 +51,7 @@
 
     // Let the parent component manage the input value
     await tick();
-    manager.focusEditor();
+    chatManager.focusEditor();
   }
 
   function cancelStream() {
@@ -62,13 +62,13 @@
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        manager?.focusEditor();
+        chatManager?.focusEditor();
       }, 100);
     });
   }
 
   onMount(() =>
-    eventBus.on("start-chat", (prompt) => manager.setPrompt(prompt)),
+    eventBus.on("start-chat", (prompt) => chatManager.setPrompt(prompt)),
   );
 </script>
 
@@ -88,8 +88,8 @@
       style:height
       data-placeholder={placeholder}
       class:empty={!$draftMessageStore.length}
-      on:input={manager.updateValue}
-      on:keydown={manager.handleKeydown}
+      on:input={chatManager.updateValue}
+      on:keydown={chatManager.handleKeydown}
     ></div>
   </div>
   <div class="chat-input-footer">

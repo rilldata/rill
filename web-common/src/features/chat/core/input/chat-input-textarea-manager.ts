@@ -8,6 +8,7 @@ import InlineChatContextComponent from "@rilldata/web-common/features/chat/core/
 import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { get } from "svelte/store";
 import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
+import { debounce } from "@rilldata/web-common/lib/create-debouncer.ts";
 
 export class ChatInputTextAreaManager {
   private editorElement: HTMLDivElement;
@@ -38,6 +39,8 @@ export class ChatInputTextAreaManager {
 
   public setPrompt(html: string) {
     this.editorElement.innerHTML = html;
+
+    // Wait till the next tick to ensure DOM is updated after innerHTML change.
     setTimeout(() => {
       // Cleanup any old components
       this.elementToContextComponent.values().forEach((c) => c.$destroy());
@@ -56,52 +59,69 @@ export class ChatInputTextAreaManager {
             focusEditor: this.focusEditor,
           },
         });
-        this.componentAdded(comp, node);
+        this.elementToContextComponent.set(node, comp);
         parent.removeChild(node);
       });
 
-      this.editorElement.focus();
+      this.focusEditor(true);
 
-      setTimeout(this.updateValue);
+      this.updateValue();
     });
   }
 
   public handleKeydown = (event: KeyboardEvent) => {
     if (!get(this.exploreNameStore)) return; // Only supported within an explore right now.
 
-    setTimeout(() => {
-      if (event.key === "Backspace") {
-        this.removeNodes();
-      } else if (event.key === "Escape" && this.isContextMode) {
+    const isEnter = event.key === "Enter" && !event.shiftKey;
+
+    if (this.isContextMode) {
+      if (event.key === "Escape") {
         this.exitContextMode(false, true);
-      }
-
-      if (this.isContextMode) {
-        if (event.key === "Enter") {
-          this.addContextComponent?.selectFirst();
-        } else {
+      } else if (isEnter) {
+        this.addContextComponent?.selectFirst();
+      } else {
+        // Wait for DOM to update.
+        setTimeout(() => {
           this.handleContextMode();
-        }
-        return;
+        });
       }
+      return;
+    }
 
-      // Detect @ for pill mode (or any other trigger character)
-      if (event.key === "@") {
+    if (event.key === "Backspace") {
+      this.removeNodes();
+    } else if (event.key === "@") {
+      // Wait for DOM to update.
+      setTimeout(() => {
         this.handleContextStarted();
-      } else if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        this.onSubmit();
-      }
-    });
+      });
+    } else if (isEnter) {
+      event.preventDefault();
+      this.onSubmit();
+    }
   };
 
-  public updateValue = () => {
-    const value = this.getValue(this.editorElement);
+  // Add a debounce to avoid triggering the onChange callback on every keystroke.
+  public updateValue = debounce(() => {
+    let value = this.getValue(this.editorElement);
+    if (value === "\n") value = "";
     this.onChange(value);
-  };
+  }, 100);
 
-  public focusEditor = () => {
+  public focusEditor = (setToEnd = false) => {
     this.editorElement.focus();
+
+    if (!setToEnd || !this.editorElement.lastChild) return;
+
+    // Set the cursor to the end of the editor.
+    const selection = window.getSelection();
+    if (!selection) return;
+
+    const range = selection.getRangeAt(0);
+    if (!range) return;
+
+    range.setStartAfter(this.editorElement.lastChild);
+    range.setEndAfter(this.editorElement.lastChild);
   };
 
   private contextUpdated = () => {
@@ -121,6 +141,8 @@ export class ChatInputTextAreaManager {
         const ctx = comp.getChatContext();
         return ctx ? convertContextToInlinePrompt(ctx) : "";
       }
+
+      if (node.nodeName === "BR") return "\n";
 
       const prefix = node.nodeName === "DIV" && level !== 0 ? "\n" : "";
       return (
@@ -182,13 +204,11 @@ export class ChatInputTextAreaManager {
     const anchorNode = range.startContainer;
     if (!anchorNode) return;
 
-    // Remove the last character of anchor node to avoid adding a space.
-    anchorNode.textContent =
-      anchorNode.textContent?.slice(0, anchorNode.textContent.length - 1) ?? "";
+    // Remove the `@` character from the previous node.
+    range.setStart(anchorNode, range.startOffset - 1);
+    range.deleteContents();
 
-    // Move the cursor to the end of anchor before adding the node for search text.
-    range.setStartAfter(anchorNode);
-    range.setEndAfter(anchorNode);
+    // Insert a new text node with the `@` character.
     const contextNode = document.createTextNode("@");
     range.insertNode(contextNode);
 
@@ -207,7 +227,10 @@ export class ChatInputTextAreaManager {
 
     // Wait a loop to ensure the component is added to the DOM.
     setTimeout(() => {
-      this.componentAdded(this.addContextComponent!, this.addContextNode!);
+      this.elementToContextComponent.set(
+        this.addContextNode!,
+        this.addContextComponent!,
+      );
 
       // Move the cursor to the end of search text node.
       range.setStartAfter(contextNode);
@@ -247,14 +270,5 @@ export class ChatInputTextAreaManager {
     this.addContextNode = null;
     if (removeContextComponent) this.addContextComponent?.$destroy();
     this.addContextComponent = null;
-  }
-
-  private componentAdded(comp: InlineChatContextComponent, nextNode: Node) {
-    const node = (nextNode as any).previousElementSibling;
-    this.elementToContextComponent.set(node, comp);
-    // Remove the comment for HMR, it interferes with text editing. This is only added in dev mode.
-    if (nextNode.previousSibling?.nodeType === Node.COMMENT_NODE) {
-      nextNode.previousSibling.remove();
-    }
   }
 }

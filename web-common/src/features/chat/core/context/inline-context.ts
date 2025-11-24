@@ -72,8 +72,6 @@ export function convertPromptValueToContext(
   contextValue: string,
 ): InlineChatContext | null {
   const parts = contextValue.matchAll(PARTS_REGEX);
-  if (!parts) return null;
-
   const matchedKeys: string[] = [];
   const matchedValues: string[] = [];
   for (const [, key, value] of parts) {
