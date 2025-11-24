@@ -64,7 +64,7 @@ message ListObjectsRequest {
   string instance_id = 1;
   string connector = 2;
   string bucket = 3 [(validate.rules).string.min_len = 1];
-  string prefix = 4;
+  string path = 4;
   string delimiter = 5;
   uint32 page_size = 6 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 7;
