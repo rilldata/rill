@@ -432,7 +432,7 @@ metrics_view: mv1
 	}
 
 	refreshedOn1 := getAndCheckRefreshedOn()
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "m1"})
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "m1"}, nil)
 	refreshedOn2 := getAndCheckRefreshedOn()
 	require.Greater(t, refreshedOn2, refreshedOn1)
 }

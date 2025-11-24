@@ -250,7 +250,7 @@ path: data/foo.csv
 1,2,3,4,5
 `,
 	})
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"})
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "foo"}, nil)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)

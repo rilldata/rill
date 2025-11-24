@@ -124,9 +124,9 @@ sql: SELECT number as num FROM numbers(10)
 	// Wait a second for the current_timestamp watermark to advance, then refresh the models.
 	// This causes all partitions to be re-processed enabling more rigourous testing of partition overwrites.
 	time.Sleep(time.Second)
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partition_overwrite1"})
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partition_overwrite2"})
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partition_overwrite3"})
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partition_overwrite1"}, nil)
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partition_overwrite2"}, nil)
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partition_overwrite3"}, nil)
 
 	// partition_overwrite should have 100 rows
 	testruntime.RequireResolve(t, rt, id, &testruntime.RequireResolveOptions{

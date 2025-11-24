@@ -64,7 +64,7 @@ func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1
 	require.NoError(t, err)
 }
 
-func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
+func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName, model *runtimev1.RefreshModelTrigger) {
 	ctx := t.Context()
 	ctrl, err := rt.Controller(ctx, id)
 	require.NoError(t, err)
@@ -75,12 +75,16 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 
 	// Create refresh trigger
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
+	spec := &runtimev1.RefreshTriggerSpec{}
+	if model != nil {
+		spec.Models = []*runtimev1.RefreshModelTrigger{model}
+	} else {
+		spec.Resources = []*runtimev1.ResourceName{n}
+	}
 	err = ctrl.Create(ctx, trgName, nil, nil, nil, false, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
-				Spec: &runtimev1.RefreshTriggerSpec{
-					Resources: []*runtimev1.ResourceName{n},
-				},
+				Spec: spec,
 			},
 		},
 	})

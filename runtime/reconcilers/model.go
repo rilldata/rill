@@ -1075,7 +1075,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		partition := partitions[0]
 
 		// Execute the first partition (with returnErr=true because for the first partition, we do not log and skip erroring partitions)
-		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, partition, true)
+		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, incrementalRun, incrementalState, partition, true)
 		if err != nil {
 			return "", nil, false, err
 		}
@@ -1141,7 +1141,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 					// Execute the partition and capture the result in results[workerID]
 					partition := partitions[idx]
-					res, ok, err := r.executePartition(ctx, catalog, executor, self, model, results[workerID], incrementalRun, incrementalState, partition, false)
+					res, ok, err := r.executePartition(ctx, catalog, executor, self, model, incrementalRun, incrementalState, partition, false)
 					if err != nil {
 						return err
 					}
@@ -1193,7 +1193,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 // executePartition processes a drivers.ModelPartition by calling executeSingle and then updating the partition's state in the catalog.
 // The returned bool will be false if execution failed, but the error was written to the partition in the catalog instead of being returned.
-func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
+func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.Model, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
 	// Get partition data
 	data := map[string]any{}
 	err := json.Unmarshal(partition.DataJSON, &data)
@@ -1438,13 +1438,15 @@ func (r *ModelReconciler) preparePartitionsForForceIncrementalRun(ctx context.Co
 		}
 
 		keys := make([]string, len(partitions))
-		for i := startIndex; i < len(partitions); i++ {
+		for i := range partitions {
 			keys[i] = partitions[i].Key
 		}
 
-		err = catalog.UpdateModelPartitionsExecuted(ctx, model.State.PartitionsModelId, keys[startIndex:])
-		if err != nil {
-			return fmt.Errorf("failed to mark partitions as executed: %w", err)
+		if len(keys) > startIndex {
+			err = catalog.UpdateModelPartitionsExecuted(ctx, model.State.PartitionsModelId, keys[startIndex:])
+			if err != nil {
+				return fmt.Errorf("failed to mark partitions as executed: %w", err)
+			}
 		}
 		startIndex = 0
 		afterKey = partitions[len(partitions)-1].Key
