@@ -323,6 +323,14 @@ export async function submitAddConnectorForm(
       // Use the same connector name from the ongoing operation
       const newConnectorName = existingSubmission.connectorName;
 
+      // Pre-mark the target path as "saved anyway" to prevent the in-flight
+      // Test-and-Connect handler from rolling it back in a race.
+      const newConnectorFilePath = getFileAPIPathFromNameAndType(
+        newConnectorName,
+        EntityType.Connector,
+      );
+      savedAnywayPaths.add(newConnectorFilePath);
+
       // Proceed immediately with Save Anyway logic
       await saveConnectorAnyway(
         queryClient,
@@ -340,6 +348,14 @@ export async function submitAddConnectorForm(
     }
   }
 
+  // Pre-register this submission so a subsequent "Save Anyway" can reuse
+  // the exact same connector name, avoiding duplicate files like *_1.yaml.
+  connectorSubmissions.set(uniqueConnectorSubmissionKey, {
+    // Placeholder promise will be updated after we create the real one
+    promise: Promise.resolve(),
+    connectorName: newConnectorName,
+  });
+
   // Create abort controller for this submission
   const abortController = new AbortController();
 
@@ -350,6 +366,8 @@ export async function submitAddConnectorForm(
       newConnectorName,
       EntityType.Connector,
     );
+    // Capture original .env state for potential rollback across all failure modes
+    let originalEnvBlob: string | undefined;
 
     try {
       // Check if operation was aborted
@@ -389,7 +407,9 @@ export async function submitAddConnectorForm(
         );
       }
 
-      const originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
+      // Obtain the original .env blob as early as possible after creating the file,
+      // so that any downstream failure can be rolled back safely.
+      originalEnvBlob = await getOriginalEnvBlob(queryClient, instanceId);
 
       // Create or update the `.env` file
       const newEnvBlob = await updateDotEnvWithSecrets(
@@ -472,6 +492,26 @@ export async function submitAddConnectorForm(
       if (abortController.signal.aborted) {
         console.log("Operation was cancelled");
         return;
+      }
+      // Ensure we roll back the created connector file for any failure before reconciliation,
+      // unless a concurrent Save Anyway has intentionally created it.
+      if (!savedAnywayPaths.has(newConnectorFilePath)) {
+        try {
+          if (typeof originalEnvBlob === "undefined") {
+            // We didn't capture the original .env, so only delete the connector file
+            await runtimeServiceDeleteFile(instanceId, {
+              path: newConnectorFilePath,
+            });
+          } else {
+            await rollbackChanges(
+              instanceId,
+              newConnectorFilePath,
+              originalEnvBlob,
+            );
+          }
+        } catch {
+          // Ignore rollback failures
+        }
       }
       throw error;
     } finally {
