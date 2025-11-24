@@ -11,6 +11,9 @@ import type {
   InlineChatContext,
   MetricsViewMetadata,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import { getLastUsedMetricsViewStore } from "@rilldata/web-common/features/chat/core/get-last-used-metrics-view.ts";
+import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
+import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 
 export function getInlineChatContextMetadata() {
   const metricsViewsQuery = createQuery(
@@ -48,6 +51,8 @@ export function getInlineChatContextMetadata() {
 
 type MetricsViewContextOption = {
   metricsViewContext: InlineChatContext;
+  recentlyUsed: boolean;
+  currentlyActive: boolean;
   measures: InlineChatContext[];
   dimensions: InlineChatContext[];
 };
@@ -94,17 +99,30 @@ export function getInlineChatContextOptions() {
 
 export function getInlineChatContextFilteredOptions(
   searchTextStore: Readable<string>,
+  conversationManager: ConversationManager,
 ) {
   const optionsStore = getInlineChatContextOptions();
+  const lastUsedMetricsViewStore =
+    getLastUsedMetricsViewStore(conversationManager);
+  const activeMetricsViewStore = getActiveMetricsViewNameStore();
 
-  return derived([optionsStore, searchTextStore], ([options, searchText]) => {
-    const filterFunction = (label: string, value: string) =>
-      searchText.length < 2 ||
-      label.toLowerCase().includes(searchText.toLowerCase()) ||
-      value.toLowerCase().includes(searchText.toLowerCase());
+  return derived(
+    [
+      optionsStore,
+      lastUsedMetricsViewStore,
+      activeMetricsViewStore,
+      searchTextStore,
+    ],
+    ([options, lastUserMv, activeMv, searchText]) => {
+      const filterFunction = (label: string, value: string) =>
+        searchText.length < 2 ||
+        label.toLowerCase().includes(searchText.toLowerCase()) ||
+        value.toLowerCase().includes(searchText.toLowerCase());
 
-    return options
-      .map((metricsViewOption) => {
+      let lastUsedMvOption: MetricsViewContextOption | null = null;
+      let activeMvOption: MetricsViewContextOption | null = null;
+
+      const mvOptions = options.map((metricsViewOption) => {
         const filteredMeasures = metricsViewOption.measures.filter((m) =>
           filterFunction(m.label, m.values[1]),
         );
@@ -113,9 +131,10 @@ export function getInlineChatContextFilteredOptions(
           filterFunction(d.label, d.values[1]),
         );
 
+        const metricsViewName = metricsViewOption.metricsViewContext.values[0];
         const metricsViewMatches = filterFunction(
           metricsViewOption.metricsViewContext.label,
-          metricsViewOption.metricsViewContext.values[0],
+          metricsViewName,
         );
 
         if (
@@ -125,12 +144,28 @@ export function getInlineChatContextFilteredOptions(
         )
           return null;
 
-        return {
+        const recentlyUsed = lastUserMv === metricsViewName;
+        const currentlyActive = activeMv === metricsViewName;
+        const option = {
           metricsViewContext: metricsViewOption.metricsViewContext,
+          recentlyUsed,
+          currentlyActive,
           measures: filteredMeasures,
           dimensions: filteredDimensions,
         };
-      })
-      .filter(Boolean) as MetricsViewContextOption[];
-  });
+
+        if (recentlyUsed) lastUsedMvOption = option;
+        if (currentlyActive) activeMvOption = option;
+
+        if (recentlyUsed || currentlyActive) return null; // these are added explicitly
+        return option;
+      });
+
+      if (lastUsedMvOption === activeMvOption) activeMvOption = null;
+
+      return [lastUsedMvOption, activeMvOption, ...mvOptions].filter(
+        Boolean,
+      ) as MetricsViewContextOption[];
+    },
+  );
 }

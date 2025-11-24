@@ -35,6 +35,7 @@
     () => void sendMessage(),
   );
   $: manager.setElement(editorElement);
+  $: manager.setConversationManager(conversationManager);
 
   async function sendMessage() {
     if (!canSend) return;

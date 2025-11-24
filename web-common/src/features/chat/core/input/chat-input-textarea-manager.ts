@@ -7,9 +7,11 @@ import {
 import InlineChatContextComponent from "@rilldata/web-common/features/chat/core/context/InlineChatContext.svelte";
 import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { get } from "svelte/store";
+import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 
 export class ChatInputTextAreaManager {
   private editorElement: HTMLDivElement;
+  private conversationManager: ConversationManager;
 
   private isContextMode = false;
   private addContextComponent: InlineChatContextComponent | null = null;
@@ -30,6 +32,10 @@ export class ChatInputTextAreaManager {
     this.editorElement = editorElement;
   }
 
+  public setConversationManager(conversationManager: ConversationManager) {
+    this.conversationManager = conversationManager;
+  }
+
   public setPrompt(html: string) {
     this.editorElement.innerHTML = html;
     setTimeout(() => {
@@ -44,6 +50,7 @@ export class ChatInputTextAreaManager {
           target: parent as any,
           anchor: node as any,
           props: {
+            conversationManager: this.conversationManager,
             inlineChatContext,
             onUpdate: this.contextUpdated,
             focusEditor: this.focusEditor,
@@ -189,6 +196,7 @@ export class ChatInputTextAreaManager {
       target: contextNode.parentNode as any,
       anchor: contextNode as any,
       props: {
+        conversationManager: this.conversationManager,
         inlineChatContext: null,
         onUpdate: this.contextUpdated,
         focusEditor: this.focusEditor,

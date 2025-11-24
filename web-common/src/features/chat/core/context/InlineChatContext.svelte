@@ -1,18 +1,25 @@
 <script lang="ts">
   import * as Collapsible from "@rilldata/web-common/components/collapsible/index.ts";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2/index.ts";
   import {
     type InlineChatContext,
     inlineChatContextsAreEqual,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-  import { getAttrs, builderActions } from "bits-ui";
+  import { builderActions, getAttrs } from "bits-ui";
   import { ChevronDownIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { writable } from "svelte/store";
   import {
-    getInlineChatContextFilteredOptions, getInlineChatContextMetadata,
+    getInlineChatContextFilteredOptions,
+    getInlineChatContextMetadata,
   } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
-  import { ContextTypeData } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+  import {
+    ChatContextEntryType,
+    ContextTypeData,
+  } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+  import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 
+  export let conversationManager: ConversationManager;
   export let inlineChatContext: InlineChatContext | null = null;
   export let onUpdate: () => void;
   export let focusEditor: () => void;
@@ -21,13 +28,35 @@
   let bottom = 0;
   let chatElement: HTMLSpanElement;
   let open = false;
+  let tooltipOpen = false;
 
   const searchTextStore = writable("");
-  const filteredOptions = getInlineChatContextFilteredOptions(searchTextStore);
+  const filteredOptions = getInlineChatContextFilteredOptions(
+    searchTextStore,
+    conversationManager,
+  );
   const contextMetadataStore = getInlineChatContextMetadata();
 
-  $: typeData = inlineChatContext?.type ? ContextTypeData[inlineChatContext.type] : undefined
-  $: label = typeData?.getLabel(inlineChatContext!, $contextMetadataStore) ?? "";
+  $: typeData = inlineChatContext?.type
+    ? ContextTypeData[inlineChatContext.type]
+    : undefined;
+  $: label =
+    typeData?.getLabel(inlineChatContext!, $contextMetadataStore) ?? "";
+
+  $: isMetricsViewContext =
+    inlineChatContext?.type === ChatContextEntryType.Measures ||
+    inlineChatContext?.type === ChatContextEntryType.Dimensions;
+  $: metricsViewName = isMetricsViewContext
+    ? ContextTypeData[ChatContextEntryType.MetricsView]!.getLabel(
+        inlineChatContext!,
+        $contextMetadataStore,
+      )
+    : "";
+
+  function toggleDropdown() {
+    open = !open;
+    tooltipOpen = false;
+  }
 
   function select(context: InlineChatContext) {
     inlineChatContext = context;
@@ -71,8 +100,20 @@
 >
   {#if inlineChatContext}
     <div class="inline-chat-context-value">
-      <span>{label}</span>
-      <button on:click={() => (open = !open)} type="button">
+      <Tooltip.Root bind:open={tooltipOpen}>
+        <Tooltip.Trigger asChild let:builder>
+          <span
+            {...getAttrs([builder])}
+            use:builderActions={{ builders: [builder] }}
+          >
+            {label}
+          </span>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          From {metricsViewName}
+        </Tooltip.Content>
+      </Tooltip.Root>
+      <button on:click={toggleDropdown} type="button">
         <ChevronDownIcon size="12px" />
       </button>
     </div>
@@ -87,11 +128,14 @@
       ? 'block'
       : 'none'};"
   >
-    {#each $filteredOptions as { metricsViewContext, measures, dimensions } (metricsViewContext.values[0])}
+    {#each $filteredOptions as { metricsViewContext, recentlyUsed, currentlyActive, measures, dimensions } (metricsViewContext.values[0])}
       {@const metricsViewSelected =
         inlineChatContext !== null &&
         inlineChatContextsAreEqual(metricsViewContext, inlineChatContext)}
-      <Collapsible.Root open={$searchTextStore.length > 2}>
+      <Collapsible.Root
+        open={currentlyActive || recentlyUsed || $searchTextStore.length > 2}
+        class="border-b last:border-b-0"
+      >
         <Collapsible.Trigger asChild let:builder>
           <button
             class="context-item metrics-view-context-item"
@@ -106,10 +150,15 @@
               on:click|stopPropagation={() => select(metricsViewContext)}
               class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span class="text-sm">{metricsViewContext.label}</span>
+            <span class="text-sm grow">{metricsViewContext.label}</span>
+            {#if recentlyUsed}
+              <span class="metrics-view-context-label">Recent asked</span>
+            {:else if currentlyActive}
+              <span class="metrics-view-context-label">Current</span>
+            {/if}
           </button>
         </Collapsible.Trigger>
-        <Collapsible.Content class="flex flex-col ml-6 gap-y-0.5">
+        <Collapsible.Content class="flex flex-col ml-5 gap-y-0.5">
           {#each measures as measure (measure.values[1])}
             <button
               class="context-item"
@@ -121,7 +170,7 @@
             </button>
           {/each}
 
-          {#if measures.length > 0}
+          {#if measures.length > 0 && dimensions.length > 0}
             <div class="content-separator"></div>
           {/if}
 
@@ -153,11 +202,11 @@
   }
 
   .inline-chat-context-value {
-    @apply flex flex-row items-center gap-x-0.5;
+    @apply flex flex-row items-center gap-x-0.5 cursor-pointer;
   }
 
   .inline-chat-context-dropdown {
-    @apply flex flex-col fixed p-1.5 z-50 w-[500px] max-h-[500px] overflow-auto;
+    @apply flex flex-col fixed p-1.5 z-50 w-[300px] max-h-[500px] overflow-auto;
     @apply rounded-md bg-popover text-popover-foreground shadow-md;
   }
 
@@ -165,8 +214,12 @@
     @apply font-semibold;
   }
 
+  .metrics-view-context-label {
+    @apply text-xs font-normal text-right text-popover-foreground/60;
+  }
+
   .context-item {
-    @apply flex flex-row items-center gap-x-2 px-2 py-1.5 w-full;
+    @apply flex flex-row items-center gap-x-2 px-2 py-1 w-full;
     @apply cursor-default select-none rounded-sm outline-none;
     @apply text-sm text-left text-wrap break-words;
   }

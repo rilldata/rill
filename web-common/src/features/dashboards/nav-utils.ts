@@ -2,6 +2,9 @@ import { page } from "$app/stores";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import type { Page } from "@sveltejs/kit";
 import { derived } from "svelte/store";
+import { getExploreValidSpecQueryOptions } from "@rilldata/web-common/features/explores/selectors.ts";
+import { createQuery } from "@tanstack/svelte-query";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 const exploreRouteRegex = /\/explore\/(?:\[name]|\[dashboard])/;
 const canvasRouteRegex = /\/explore\/(?:\[name]|\[dashboard])/;
@@ -40,4 +43,17 @@ export function getExploreNameStore() {
     if (dashboardResource?.kind !== ResourceKind.Explore) return "";
     return dashboardResource.name;
   });
+}
+
+export function getActiveMetricsViewNameStore() {
+  const exploreNameStore = getExploreNameStore();
+  const validSpecQuery = createQuery(
+    getExploreValidSpecQueryOptions(exploreNameStore),
+    queryClient,
+  );
+
+  return derived(
+    validSpecQuery,
+    (validSpecSpec) => validSpecSpec.data?.exploreSpec?.metricsView ?? "",
+  );
 }

@@ -12,6 +12,7 @@ export const INLINE_CHAT_CONTEXT_TAG = "inline";
 
 export type InlineChatContext = {
   type: ChatContextEntryType;
+  label?: string;
   // Hierarchy of values.
   // EG, for ChatContextEntryType.DimensionValue, [metricsViewName, dimensionName, ...dimensionValues]
   values: string[];
@@ -39,10 +40,6 @@ export function convertContextToInlinePrompt(ctx: InlineChatContext) {
   switch (ctx.type) {
     case ChatContextEntryType.MetricsView:
       parts.push(`metrics_view="${ctx.values[0]}"`);
-      break;
-
-    case ChatContextEntryType.Explore:
-      // We are not using this in inline chat as of now.
       break;
 
     case ChatContextEntryType.TimeRange:
