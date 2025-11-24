@@ -275,6 +275,9 @@
       dsnError = message;
       dsnErrorDetails = details;
     },
+    setShowSaveAnyway: (value: boolean) => {
+      showSaveAnyway = value;
+    },
   });
 
   async function handleFileUpload(file: File): Promise<string> {
