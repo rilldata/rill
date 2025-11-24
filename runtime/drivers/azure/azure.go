@@ -31,6 +31,21 @@ var spec = drivers.Spec{
 			Placeholder: "Paste your Azure connection string here",
 			Secret:      true,
 		},
+		{
+			Key:    "azure_storage_account",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_sas_token",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
