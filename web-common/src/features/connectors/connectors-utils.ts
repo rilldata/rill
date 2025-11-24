@@ -1,6 +1,11 @@
 import type { V1AnalyzedConnector } from "../../runtime-client";
 
-export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
+export const OLAP_DRIVERS_WITHOUT_MODELING = [
+  "clickhouse",
+  "druid",
+  "pinot",
+  "starrocks",
+];
 
 export function makeFullyQualifiedTableName(
   driver: string,
@@ -17,6 +22,8 @@ export function makeFullyQualifiedTableName(
       return `${database}.${databaseSchema}.${table}`;
     case "pinot":
       return table;
+    case "starrocks":
+      return `${databaseSchema}.${table}`;
     // Non-OLAP connectors: use standard database.schema.table format
     default:
       if (database && databaseSchema) {
@@ -55,6 +62,10 @@ export function makeSufficientlyQualifiedTableName(
     case "pinot":
       // TODO
       return table;
+    case "starrocks":
+      // StarRocks uses database.table format (similar to ClickHouse)
+      if (databaseSchema === "default" || databaseSchema === "") return table;
+      return `${databaseSchema}.${table}`;
     case "mysql":
       // MySQL uses database.table format (no schema concept like PostgreSQL)
       if (database && database !== "default") {
@@ -102,6 +113,8 @@ export function makeTablePreviewHref(
       return `/connector/athena/${connectorName}/${database}/${databaseSchema}/${table}`;
     case "pinot":
       return `/connector/pinot/${connectorName}/${table}`;
+    case "starrocks":
+      return `/connector/starrocks/${connectorName}/${databaseSchema}/${table}`;
     default:
       return null;
   }
