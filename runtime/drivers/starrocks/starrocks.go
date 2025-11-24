@@ -37,7 +37,6 @@ var spec = drivers.Spec{
 			Placeholder: "starrocks://user:password@host:9030/database",
 			Hint:        "Either provide a connection string or fill in the individual fields below",
 			Secret:      true,
-			NoPrompt:    true,
 		},
 		{
 			Key:         "host",

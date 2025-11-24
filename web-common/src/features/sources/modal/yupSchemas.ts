@@ -215,6 +215,21 @@ export const getYupSchema = {
     //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
     //   .required("Connector name is required"),
   }),
+
+  starrocks: yup.object().shape({
+    dsn: yup.string().optional(),
+    host: yup.string().optional(),
+    port: yup
+      .string() // Purposefully using a string input, not a numeric input
+      .matches(/^\d+$/, "Port must be a number")
+      .optional(),
+    username: yup.string().optional(),
+    password: yup.string().optional(),
+    database: yup.string().optional(),
+    ssl: yup.boolean().optional(),
+    log_queries: yup.boolean().optional(),
+    name: yup.string(), // Required for typing
+  }),
 };
 
 export const dsnSchema = yup.object().shape({

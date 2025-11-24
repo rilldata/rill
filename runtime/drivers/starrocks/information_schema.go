@@ -13,6 +13,16 @@ var _ drivers.InformationSchema = (*connection)(nil)
 // ListDatabaseSchemas returns a list of database schemas in StarRocks.
 // StarRocks uses databases (similar to MySQL schemas).
 func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, pageToken string) ([]*drivers.DatabaseSchemaInfo, string, error) {
+	// If a specific database is configured, only return that database
+	if c.configProp.Database != "" {
+		return []*drivers.DatabaseSchemaInfo{
+			{
+				Database:       "",
+				DatabaseSchema: c.configProp.Database,
+			},
+		}, "", nil
+	}
+
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
 	// Query information_schema.schemata to list databases
