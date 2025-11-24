@@ -570,7 +570,7 @@ paths:
                   type: string
               frontendUrl:
                 type: string
-              aiTheme:
+              theme:
                 type: string
             description: |-
               Request message for RuntimeService.EditInstance.
@@ -4612,7 +4612,7 @@ definitions:
           type: string
       frontendUrl:
         type: string
-      aiTheme:
+      theme:
         type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
@@ -5148,7 +5148,7 @@ definitions:
         type: string
       frontendUrl:
         type: string
-      aiTheme:
+      theme:
         type: string
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,

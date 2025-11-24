@@ -185,16 +185,16 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.AIInstructions = rillYAML.AIInstructions
 	inst.ProjectAIConnector = rillYAML.AIConnector
 
-	// Validate ai_theme references an existing theme resource
-	if rillYAML.AITheme != "" {
+	// Validate theme references an existing theme resource
+	if rillYAML.Theme != "" {
 		// Check if theme exists in parsed resources using normalized name (case-insensitive)
-		themeName := parser.ResourceName{Kind: parser.ResourceKindTheme, Name: rillYAML.AITheme}
+		themeName := parser.ResourceName{Kind: parser.ResourceKindTheme, Name: rillYAML.Theme}
 		if _, ok := p.Resources[themeName.Normalized()]; !ok {
-			return fmt.Errorf("ai_theme references theme %q which does not exist", rillYAML.AITheme)
+			return fmt.Errorf("theme references theme %q which does not exist", rillYAML.Theme)
 		}
 	}
 
-	inst.AITheme = rillYAML.AITheme
+	inst.Theme = rillYAML.Theme
 	return r.EditInstance(ctx, inst, restartController)
 }
 

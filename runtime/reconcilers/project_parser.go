@@ -311,28 +311,28 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return parseErrsErr
 	}
 
-	// Check if ai_theme referenced theme changed
-	aiThemeChanged := false
-	if parser.RillYAML.AITheme != "" && diff != nil {
-		referencedTheme := parserpkg.ResourceName{Kind: parserpkg.ResourceKindTheme, Name: parser.RillYAML.AITheme}
+	// Check if theme referenced theme changed
+	themeChanged := false
+	if parser.RillYAML.Theme != "" && diff != nil {
+		referencedTheme := parserpkg.ResourceName{Kind: parserpkg.ResourceKindTheme, Name: parser.RillYAML.Theme}
 		for _, n := range diff.Added {
 			if n.Normalized() == referencedTheme.Normalized() {
-				aiThemeChanged = true
+				themeChanged = true
 				break
 			}
 		}
-		if !aiThemeChanged {
+		if !themeChanged {
 			for _, n := range diff.Modified {
 				if n.Normalized() == referencedTheme.Normalized() {
-					aiThemeChanged = true
+					themeChanged = true
 					break
 				}
 			}
 		}
-		if !aiThemeChanged {
+		if !themeChanged {
 			for _, n := range diff.Deleted {
 				if n.Normalized() == referencedTheme.Normalized() {
-					aiThemeChanged = true
+					themeChanged = true
 					break
 				}
 			}
@@ -340,7 +340,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	}
 
 	// not setting restartController=true when diff is actually nil prevents infinite restarts
-	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded || aiThemeChanged
+	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded || themeChanged
 	if updateConfig {
 		restartController := diff != nil
 		err := r.reconcileProjectConfig(ctx, parser, restartController)

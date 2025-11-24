@@ -520,9 +520,9 @@ export class Instance extends Message$1<Instance> {
   frontendUrl = "";
 
   /**
-   * @generated from field: string ai_theme = 26;
+   * @generated from field: string theme = 26;
    */
-  aiTheme = "";
+  theme = "";
 
   constructor(data?: PartialMessage<Instance>) {
     super();
@@ -549,7 +549,7 @@ export class Instance extends Message$1<Instance> {
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 23, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 26, name: "ai_theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 26, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -878,9 +878,9 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
   frontendUrl = "";
 
   /**
-   * @generated from field: string ai_theme = 19;
+   * @generated from field: string theme = 19;
    */
-  aiTheme = "";
+  theme = "";
 
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
@@ -900,7 +900,7 @@ export class CreateInstanceRequest extends Message$1<CreateInstanceRequest> {
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 18, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 19, name: "ai_theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -1089,9 +1089,9 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
   frontendUrl?: string;
 
   /**
-   * @generated from field: optional string ai_theme = 20;
+   * @generated from field: optional string theme = 20;
    */
-  aiTheme?: string;
+  theme?: string;
 
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
@@ -1111,7 +1111,7 @@ export class EditInstanceRequest extends Message$1<EditInstanceRequest> {
     { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 19, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 20, name: "ai_theme", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 20, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
