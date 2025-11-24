@@ -43,7 +43,7 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		RuntimeAudience:   "",                               // Will be populated after provisioning in startDeploymentInner
 		Status:            database.DeploymentStatusPending, // Initial status is pending so we can return a valid deployment state immediately
 		StatusMessage:     "Provisioning...",
-		DesiredStatus:     database.DeploymentDesiredStatusPending,
+		DesiredStatus:     database.DeploymentStatusRunning,
 	})
 	if err != nil {
 		return nil, err
@@ -59,8 +59,8 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 }
 
 func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment) (*database.Deployment, error) {
-	// Update the desired deployment status to pending
-	depl1, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentDesiredStatusPending)
+	// Update the desired deployment status to running
+	depl1, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +75,8 @@ func (s *Service) StartDeployment(ctx context.Context, depl *database.Deployment
 }
 
 func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Update the deployment desired status to stopping
-	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentDesiredStatusStopping)
+	// Update the deployment desired status to stopped
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusStopped)
 	if err != nil {
 		return err
 	}
@@ -91,8 +91,8 @@ func (s *Service) StopDeployment(ctx context.Context, depl *database.Deployment)
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Update the desired deployment status to pending
-	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentDesiredStatusUpdating)
+	// Update the desired deployment status to running
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusRunning)
 	if err != nil {
 		return err
 	}
@@ -107,8 +107,8 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 }
 
 func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Update the desired deployment status to deleting
-	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentDesiredStatusDeleting)
+	// Update the desired deployment status to deleted
+	_, err := s.DB.UpdateDeploymentDesiredStatus(ctx, depl.ID, database.DeploymentStatusDeleted)
 	if err != nil {
 		return err
 	}
@@ -506,7 +506,7 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 
 func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
 	if depl.RuntimeHost == "" {
-		if depl.Status == database.DeploymentStatusError {
+		if depl.Status == database.DeploymentStatusErrored {
 			return nil, fmt.Errorf("deployment %q has no runtime host: %s", depl.ID, depl.StatusMessage)
 		}
 		return nil, fmt.Errorf("deployment %q has no runtime host", depl.ID)
@@ -602,7 +602,7 @@ func (s *Service) triggerDeploymentReconcileJob(ctx context.Context, deploymentI
 		// If the job fails to be added, we update the deployment status to error.
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		_, err2 := s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, fmt.Sprintf("Failed to Trigger reconcile deployment job: %v", err))
+		_, err2 := s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusErrored, fmt.Sprintf("Failed to Trigger reconcile deployment job: %v", err))
 		s.Logger.Error("failed to schedule reconcile deployment job", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 		return errors.Join(err, err2)
 	}

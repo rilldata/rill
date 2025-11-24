@@ -2091,10 +2091,10 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING
 	case database.DeploymentStatusUpdating:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_UPDATING
-	case database.DeploymentStatusOK:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK
-	case database.DeploymentStatusError:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR
+	case database.DeploymentStatusRunning:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING
+	case database.DeploymentStatusErrored:
+		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERRORED
 	case database.DeploymentStatusStopping:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPING
 	case database.DeploymentStatusStopped:

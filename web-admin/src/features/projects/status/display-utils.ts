@@ -75,14 +75,14 @@ export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
       textClass: "text-purple-600",
       wrapperClass: "bg-purple-50 border-purple-300",
     },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR]: {
+    [V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED]: {
       icon: CancelCircle,
       iconProps: { className: "text-red-600 hover:text-red-500" },
       text: "Error",
       textClass: "text-red-600",
       wrapperClass: "bg-red-50 border-red-300",
     },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_OK]: {
+    [V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING]: {
       icon: CheckCircle,
       iconProps: { className: "text-primary-600 hover:text-primary-500" },
       text: "Ready",

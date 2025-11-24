@@ -706,7 +706,7 @@ func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, stat
 	return res, nil
 }
 
-func (c *connection) UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus database.DeploymentDesiredStatus) (*database.Deployment, error) {
+func (c *connection) UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus database.DeploymentStatus) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET desired_status=$1, desired_status_updated_on=now(), updated_on=now() WHERE id=$2 RETURNING *", desiredStatus, id).StructScan(res)
 	if err != nil {

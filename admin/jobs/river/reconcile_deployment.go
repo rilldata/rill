@@ -43,27 +43,37 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 	var newStatus database.DeploymentStatus
 	switch depl.DesiredStatus {
-	case database.DeploymentDesiredStatusPending:
-		// Check current status to exit early if already running
-		if depl.Status == database.DeploymentStatusOK {
-			return nil
+	case database.DeploymentStatusRunning:
+		// Check current status to either start or update the deployment
+		if depl.Status == database.DeploymentStatusRunning {
+			// Update the deployment status to updating
+			depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusUpdating, "Updating...")
+			if err != nil {
+				return err
+			}
+
+			// Update the deployment by updating its runtime instance and resources.
+			err := w.admin.UpdateDeploymentInner(ctx, depl)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Update the deployment status to pending
+			depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning...")
+			if err != nil {
+				return err
+			}
+
+			// Initialize the deployment (by provisioning a runtime and creating an instance on it)
+			err := w.admin.StartDeploymentInner(ctx, depl)
+			if err != nil {
+				return err
+			}
 		}
 
-		// Update the deployment status to pending
-		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusPending, "Provisioning...")
-		if err != nil {
-			return err
-		}
+		newStatus = database.DeploymentStatusRunning
 
-		// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-		err := w.admin.StartDeploymentInner(ctx, depl)
-		if err != nil {
-			return err
-		}
-
-		newStatus = database.DeploymentStatusOK
-
-	case database.DeploymentDesiredStatusStopping:
+	case database.DeploymentStatusStopped:
 		// Update the deployment status to stopping
 		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusStopping, "Stopping...")
 		if err != nil {
@@ -78,22 +88,7 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 
 		newStatus = database.DeploymentStatusStopped
 
-	case database.DeploymentDesiredStatusUpdating:
-		// Update the deployment status to pending
-		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusUpdating, "Updating...")
-		if err != nil {
-			return err
-		}
-
-		// Update the deployment by updating its runtime instance and resources.
-		err := w.admin.UpdateDeploymentInner(ctx, depl)
-		if err != nil {
-			return err
-		}
-
-		newStatus = database.DeploymentStatusOK
-
-	case database.DeploymentDesiredStatusDeleting:
+	case database.DeploymentStatusDeleted:
 		// Update the deployment status to deleting
 		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusDeleting, "Deleting...")
 		if err != nil {
