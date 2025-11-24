@@ -1,11 +1,11 @@
 <script lang="ts">
   import { afterUpdate } from "svelte";
-  import LoadingSpinner from "../../../../components/icons/LoadingSpinner.svelte";
   import DelayedSpinner from "../../../entity-management/DelayedSpinner.svelte";
   import type { ConversationManager } from "../conversation-manager";
-  import { MessageType, ToolName } from "../types";
+  import ChartBlock from "./chart/ChartBlock.svelte";
   import Error from "./Error.svelte";
-  import Message from "./Message.svelte";
+  import TextMessage from "./text/TextMessage.svelte";
+  import ThinkingBlock from "./thinking/ThinkingBlock.svelte";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -16,34 +16,22 @@
   $: currentConversation = $currentConversationStore;
   $: getConversationQuery = currentConversation.getConversationQuery();
 
-  // Loading states - access the store from the conversation instance
-  $: isStreamingStore = currentConversation.isStreaming;
-  $: isStreaming = $isStreamingStore;
-  $: isConversationLoading = !!$getConversationQuery.isLoading;
-
   // Error handling
-  $: streamErrorStore = currentConversation.streamError;
   $: conversationQueryError = currentConversation.getConversationQueryError();
   $: hasConversationLoadError = !!$conversationQueryError;
+  $: streamErrorStore = currentConversation.streamError;
   $: hasStreamError = !!$streamErrorStore;
 
-  // Data
-  $: messages = $getConversationQuery.data?.messages ?? [];
+  // Message blocks for display
+  $: messageBlocksStore = currentConversation.getMessageBlocks();
+  $: messageBlocks = $messageBlocksStore;
 
-  // Build a map of result messages by parent ID for correlation with calls (excluding router_agent)
+  // Data for ThinkingBlock (still needs result map for CallMessage rendering)
+  $: messages = $getConversationQuery.data?.messages ?? [];
   $: resultMessagesByParentId = new Map(
     messages
-      .filter(
-        (msg) =>
-          msg.type === MessageType.RESULT && msg.tool !== ToolName.ROUTER_AGENT,
-      )
+      .filter((msg) => msg.type === "result" && msg.tool !== "router_agent")
       .map((msg) => [msg.parentId, msg]),
-  );
-
-  // Filter out tool result messages (but keep router_agent results which are assistant responses)
-  $: displayMessages = messages.filter(
-    (msg) =>
-      msg.type !== MessageType.RESULT || msg.tool === ToolName.ROUTER_AGENT,
   );
 
   // Auto-scroll to bottom when messages change or loading state changes
@@ -67,9 +55,9 @@
   class:fullpage={layout === "fullpage"}
   bind:this={messagesContainer}
 >
-  {#if isConversationLoading}
+  {#if $getConversationQuery.isLoading}
     <div class="chat-loading">
-      <DelayedSpinner isLoading={isConversationLoading} size="24px" />
+      <DelayedSpinner isLoading={$getConversationQuery.isLoading} size="24px" />
     </div>
   {:else if hasConversationLoadError}
     <Error
@@ -83,108 +71,99 @@
       <div class="chat-empty-subtitle">Happy to help explore your data</div>
     </div>
   {:else}
-    {#each displayMessages as msg (msg.id)}
-      <Message
-        message={msg}
-        resultMessage={resultMessagesByParentId.get(msg.id)}
-      />
+    {#each messageBlocks as block (block.id)}
+      {#if block.type === "text"}
+        <TextMessage message={block.message} />
+      {:else if block.type === "thinking"}
+        <ThinkingBlock
+          messages={block.messages}
+          {resultMessagesByParentId}
+          isComplete={block.isComplete}
+          duration={block.duration}
+        />
+      {:else if block.type === "chart"}
+        <div class="chart-display">
+          <ChartBlock
+            chartType={block.chartData.chartType}
+            chartSpec={block.chartData.chartSpec}
+          />
+        </div>
+      {/if}
     {/each}
   {/if}
-  {#if isStreaming}
-    <div class="response-loading">
-      <LoadingSpinner size="1.2em" />
-      Thinking...
-    </div>
-  {:else if hasStreamError}
+  {#if hasStreamError}
     <Error headline="Failed to generate response" error={$streamErrorStore} />
   {/if}
 </div>
 
 <style lang="postcss">
   .chat-messages {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    @apply flex-1;
+    @apply flex flex-col gap-2;
     background: var(--surface);
   }
 
-  /* Sidebar layout: messages container scrolls */
   .chat-messages.sidebar {
-    overflow-y: auto;
-    padding: 0rem 1rem 0rem 1rem;
+    @apply overflow-y-auto;
+    @apply px-4;
   }
 
-  /* Fullpage layout: parent scrolls, content centered */
   .chat-messages.fullpage {
-    padding: 1rem 1rem;
-    max-width: 48rem;
-    margin: 0 auto;
-    width: 100%;
-    min-height: 100%;
+    @apply p-4;
+    @apply max-w-3xl mx-auto w-full;
+    @apply min-h-full;
   }
 
   .chat-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    text-align: center;
-    color: #6b7280;
+    @apply flex flex-col;
+    @apply items-center justify-center;
+    @apply h-full text-center;
+    @apply text-gray-500;
   }
 
-  /* Fullpage layout: enhanced empty state */
   .chat-messages.fullpage .chat-empty {
-    padding: 4rem 2rem;
+    @apply py-16 px-8;
   }
 
   .chat-empty-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.25rem;
+    @apply text-base font-semibold;
+    @apply text-gray-700 mb-1;
   }
 
   .chat-messages.fullpage .chat-empty-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 0.5rem;
+    @apply text-2xl font-semibold;
+    @apply text-gray-900 mb-2;
   }
 
   .chat-empty-subtitle {
-    font-size: 0.75rem;
-    color: #6b7280;
+    @apply text-xs text-gray-500;
   }
 
   .chat-messages.fullpage .chat-empty-subtitle {
-    font-size: 1rem;
-    color: #6b7280;
+    @apply text-base text-gray-500;
   }
 
-  /* Responsive: adjust fullpage empty state for mobile */
   @media (max-width: 640px) {
     .chat-messages.fullpage .chat-empty {
-      padding: 2rem 1rem;
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
 
     .chat-messages.fullpage .chat-empty-title {
       font-size: 1.25rem;
+      line-height: 1.75rem;
     }
 
     .chat-messages.fullpage .chat-empty-subtitle {
       font-size: 0.875rem;
+      line-height: 1.25rem;
     }
   }
 
-  .response-loading {
-    display: flex;
-    align-items: center;
-    justify-content: start;
-    color: #3b82f6;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    font-size: 0.875rem;
+  .chart-display {
+    @apply w-full max-w-full;
+    @apply mt-2 self-start;
   }
 </style>
