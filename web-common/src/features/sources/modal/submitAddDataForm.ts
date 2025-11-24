@@ -107,6 +107,22 @@ async function rollbackChanges(
   }
 }
 
+/**
+ * Attempts to roll back connector creation. If the original .env was not captured,
+ * it only deletes the connector file to avoid clobbering a potentially existing .env.
+ */
+async function attemptRollback(
+  instanceId: string,
+  filePath: string,
+  originalEnvBlob: string | undefined,
+) {
+  if (typeof originalEnvBlob === "undefined") {
+    await runtimeServiceDeleteFile(instanceId, { path: filePath });
+  } else {
+    await rollbackChanges(instanceId, filePath, originalEnvBlob);
+  }
+}
+
 async function setOlapConnectorInRillYAML(
   queryClient: QueryClient,
   instanceId: string,
@@ -456,7 +472,7 @@ export async function submitAddConnectorForm(
           // The connector file was already created, so we would delete it
           // unless Save Anyway has already created it intentionally.
           if (!savedAnywayPaths.has(newConnectorFilePath)) {
-            await rollbackChanges(
+            await attemptRollback(
               instanceId,
               newConnectorFilePath,
               originalEnvBlob,
@@ -482,7 +498,7 @@ export async function submitAddConnectorForm(
         );
         if (errorMessage) {
           if (!savedAnywayPaths.has(newConnectorFilePath)) {
-            await rollbackChanges(
+            await attemptRollback(
               instanceId,
               newConnectorFilePath,
               originalEnvBlob,
@@ -512,18 +528,11 @@ export async function submitAddConnectorForm(
       // unless a concurrent Save Anyway has intentionally created it.
       if (!savedAnywayPaths.has(newConnectorFilePath)) {
         try {
-          if (typeof originalEnvBlob === "undefined") {
-            // We didn't capture the original .env, so only delete the connector file
-            await runtimeServiceDeleteFile(instanceId, {
-              path: newConnectorFilePath,
-            });
-          } else {
-            await rollbackChanges(
-              instanceId,
-              newConnectorFilePath,
-              originalEnvBlob,
-            );
-          }
+          await attemptRollback(
+            instanceId,
+            newConnectorFilePath,
+            originalEnvBlob,
+          );
         } catch {
           // Ignore rollback failures
         }
