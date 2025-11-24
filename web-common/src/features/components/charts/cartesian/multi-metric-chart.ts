@@ -38,6 +38,7 @@ export function generateVLMultiMetricChartSpec(
 ): VisualizationSpec {
   const measureField = "Measure";
   const valueField = "value";
+  const measureNormalizedField = "Measure_normalized";
 
   const spec = createMultiLayerBaseSpec();
   const vegaConfig = createConfigWithLegend(config, config.color);
@@ -73,10 +74,10 @@ export function generateVLMultiMetricChartSpec(
 
   // Add comparison-specific transforms
   if (hasComparison) {
-    // Create a clean measure name field (without _prev suffix)
+    // Create a normalized measure name field (without _prev suffix)
     transforms.push({
       calculate: `replace(datum['${measureField}'], '${ComparisonDeltaPreviousSuffix}', '')`,
-      as: "measure_clean",
+      as: measureNormalizedField,
     });
 
     // Create a period field for stacked bar xOffset
@@ -105,9 +106,9 @@ export function generateVLMultiMetricChartSpec(
         .join("") + "datum.value",
   };
 
-  // In comparison mode, use the clean measure name for coloring
+  // In comparison mode, use the normalized measure name for coloring
   // so both current and comparison bars have the same color per measure
-  const colorField = hasComparison ? "measure_clean" : measureField;
+  const colorField = hasComparison ? measureNormalizedField : measureField;
 
   const baseColorEncoding = {
     ...createColorEncoding(config.color, data),
