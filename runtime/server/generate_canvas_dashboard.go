@@ -360,6 +360,94 @@ const comboChartExample = `combo_chart:
     type: "quantitative"
     zeroBasedOrigin: true`
 
+const leaderboardDetailsPrompt = `
+## Leaderboard Component
+
+The leaderboard component displays a ranked table of dimension values based on one or more measures. Leaderboards show ranked data with the top performers highlighted.
+
+**When to use:**
+- Showing top N entities by a specific measure (e.g., top customers by revenue, top products by sales)
+- Ranking categories or groups
+- Displaying tabular data with sorting capabilities
+
+**Key parameters:**
+- ` + "`metrics_view`" + `: The metrics view name to query data from (required)
+- ` + "`dimensions`" + `: Array of dimension fields to display as columns (required, typically 1-2 dimensions)
+- ` + "`measures`" + `: Array of measure fields to display as columns (required, typically 1-3 measures)
+- ` + "`num_rows`" + `: Number of rows to display (default: 7, typically 5-15)
+
+**Important notes:**
+- NEVER use time dimensions in the leaderboard dimensions array - time dimensions are only for temporal charts
+- Use non-time dimensions only (e.g., customer_id, product_name, category, region)
+- The leaderboard automatically sorts by the first measure in descending order
+- Best suited for categorical data analysis, not time-series data
+
+**Example:**
+` + "```yaml" + `
+leaderboard:
+  metrics_view: "<metrics_view_name>"
+  dimensions:
+    - "<dimension1>"
+  measures:
+    - "<measure1>"
+  num_rows: 10
+` + "```" + `
+`
+
+const markdownDetailsPrompt = `
+## Markdown Component
+
+The markdown component allows you to add rich text content, documentation, and context to your canvas dashboards. Use it to provide descriptions, insights, and guidance for dashboard users.
+
+**When to use:**
+- Adding overview and context about the dashboard's purpose
+- Documenting key questions the dashboard answers
+- Providing insights or analysis notes
+- Adding headers, sections, or explanatory text
+
+**Key parameters:**
+- ` + "`content`" + `: The markdown text content (required, supports full markdown syntax)
+- ` + "`alignment`" + `: Optional alignment settings
+  - ` + "`horizontal`" + `: left, center, or right (default: left)
+  - ` + "`vertical`" + `: top, middle, or bottom (default: top)
+
+**Supported markdown features:**
+- Headers (# H1, ## H2, ### H3, etc.)
+- Bold (**text**) and italic (*text*)
+- Lists (bulleted and numbered)
+- Links [text](url)
+- Horizontal rules (---)
+- Tables
+
+**Best practices:**
+- Place markdown components at the top of the dashboard to provide context
+- Add new lines in the content so that markdown is rendered properly
+- Use headers to organize content and create visual hierarchy
+- Keep content concise and focused on key insights
+- Use bullet points for easy scanning
+
+**Example:**
+
+Notice how empty new lines have been added in the content to render properly.
+` + "```yaml" + `
+markdown:
+  content: >-
+    ## Dashboard Overview
+
+    This dashboard shows key performance metrics and trends.
+
+    ---
+
+    ### Key Questions
+    - What are the top performing segments?
+    - How do metrics trend over time?
+    - Which areas need attention?
+  alignment:
+    horizontal: left
+    vertical: top
+` + "```" + `
+`
+
 // chartGuidelinesPrompt contains the visualization guidelines for canvas dashboard generation
 const chartGuidelinesPrompt = `
 
@@ -487,7 +575,7 @@ func canvasDashboardYAMLSystemPrompt() string {
 	template := canvasDashboardYAML{
 		DisplayName: "<human-friendly display name for the dashboard>",
 		Defaults: &canvasDefaults{
-			TimeRange:      "P3D",
+			TimeRange:      "PT24H",
 			ComparisonMode: "time",
 		},
 		Rows: []*canvasRow{
@@ -496,8 +584,25 @@ func canvasDashboardYAMLSystemPrompt() string {
 					{
 						Width: 12,
 						Component: map[string]interface{}{
+							"markdown": map[string]interface{}{
+								"content": "<markdown content>",
+								"alignment": map[string]interface{}{
+									"horizontal": "left",
+									"vertical":   "top",
+								},
+							},
+						},
+					},
+				},
+				Height: "180px",
+			},
+			{
+				Items: []*canvasItem{
+					{
+						Width: 12,
+						Component: map[string]interface{}{
 							"kpi_grid": map[string]interface{}{
-								"measures":    []string{"<measure1>", "<measure2>", "<measure3>", "<measure4>"},
+								"measures":     []string{"<measure1>", "<measure2>", "<measure3>", "<measure4>"},
 								"metrics_view": "<metrics_view_name>",
 								"comparison":   []string{"percent_change", "delta", "previous"},
 							},
@@ -514,7 +619,7 @@ func canvasDashboardYAMLSystemPrompt() string {
 							"leaderboard": map[string]interface{}{
 								"measures":     []string{"<measure1>"},
 								"metrics_view": "<metrics_view_name>",
-								"num_rows":     7,
+								"num_rows":     10,
 								"dimensions":   []string{"<dimension1>"},
 							},
 						},
@@ -522,24 +627,89 @@ func canvasDashboardYAMLSystemPrompt() string {
 					{
 						Width: 6,
 						Component: map[string]interface{}{
-							"stacked_bar": map[string]interface{}{
+							"line_chart": map[string]interface{}{
 								"metrics_view": "<metrics_view_name>",
-								"title":        "<chart title>",
+								"title":        "<descriptive chart title>",
 								"x": map[string]interface{}{
-									"field":    "<time_dimension>",
-									"type":     "temporal",
-									"limit":    10,
-									"showNull": true,
+									"field": "<time_dimension>",
+									"type":  "temporal",
 								},
 								"y": map[string]interface{}{
 									"field":           "<measure1>",
 									"type":            "quantitative",
 									"zeroBasedOrigin": true,
 								},
+								"color": "primary",
+							},
+						},
+					},
+				},
+				Height: "400px",
+			},
+			{
+				Items: []*canvasItem{
+					{
+						Width: 4,
+						Component: map[string]interface{}{
+							"bar_chart": map[string]interface{}{
+								"metrics_view": "<metrics_view_name>",
+								"title":        "<chart title>",
+								"color":        "secondary",
+								"x": map[string]interface{}{
+									"field":    "<dimension2>",
+									"limit":    10,
+									"showNull": true,
+									"type":     "nominal",
+									"sort":     "-y",
+								},
+								"y": map[string]interface{}{
+									"field":           "<measure2>",
+									"type":            "quantitative",
+									"zeroBasedOrigin": true,
+								},
+							},
+						},
+					},
+					{
+						Width: 4,
+						Component: map[string]interface{}{
+							"donut_chart": map[string]interface{}{
+								"metrics_view": "<metrics_view_name>",
+								"title":        "<chart title>",
+								"color": map[string]interface{}{
+									"field": "<dimension1>",
+									"limit": 8,
+									"type":  "nominal",
+								},
+								"innerRadius": 50,
+								"measure": map[string]interface{}{
+									"field":     "<measure1>",
+									"type":      "quantitative",
+									"showTotal": true,
+								},
+							},
+						},
+					},
+					{
+						Width: 4,
+						Component: map[string]interface{}{
+							"area_chart": map[string]interface{}{
+								"metrics_view": "<metrics_view_name>",
+								"title":        "<chart title>",
 								"color": map[string]interface{}{
 									"field": "<dimension1>",
 									"type":  "nominal",
-									"limit": 10,
+									"limit": 3,
+								},
+								"x": map[string]interface{}{
+									"field": "<time_dimension>",
+									"type":  "temporal",
+									"limit": 20,
+								},
+								"y": map[string]interface{}{
+									"field":           "<measure1>",
+									"type":            "quantitative",
+									"zeroBasedOrigin": true,
 								},
 							},
 						},
@@ -555,7 +725,7 @@ func canvasDashboardYAMLSystemPrompt() string {
 	}
 
 	// Format the chart guidelines with all the examples
-	formattedGuidelines := fmt.Sprintf(chartGuidelinesPrompt,
+	formattedChartGuidelines := fmt.Sprintf(chartGuidelinesPrompt,
 		barChartExample,
 		lineChartExample,
 		areaChartExample,
@@ -568,28 +738,51 @@ func canvasDashboardYAMLSystemPrompt() string {
 
 	prompt := fmt.Sprintf(`
 You are an agent whose only task is to create a Canvas dashboard YAML configuration based on a metrics view.
-The canvas should include business-relevant visualizations that help users understand their key metrics.
+The canvas should include business-relevant components and visualizations that help users understand their key metrics.
 
 Your output should only consist of valid YAML in the format below:
 
 %s
 
-# Guidelines:
-1. Row 1 should contain a KPI grid with 2-4 of the most business-relevant measures
-2. Row 2 should contain:
-   - Left (width 6): A leaderboard with the most important NON-TIME dimension and a relevant measure
+# Layout Guidelines:
+
+## Row and Item Structure
+- Canvas dashboards contain multiple rows, each with an 'items' array containing widgets/components
+- Each row has a total span of **12 units**
+- Components can have widths from **3 (minimum)** to **12 (maximum)** units
+- Maximum of **4 components** can fit in a single row (4 × 3 = 12)
+- You can add multiple rows, but keep the dashboard balanced and not overwhelming
+
+## Width Best Practices
+- Full width (12): Use for KPI grids, markdown overviews, or primary visualizations
+- Half width (6): Use for side-by-side comparisons (leaderboard + chart, chart + chart)
+- Third width (4): Use for three equal components in a row
+- Quarter width (3): Use for four equal components in a row (e.g., small KPI cards, small charts)
+
+## Row Height Recommendations
+- Markdown/Text: 120px-200px (depending on content)
+- KPI Grid: 250px-240px
+- Charts: 400px-500px (standard visualization height)
+- Leaderboards: 300px-450px (depending on num_rows)
+
+# Content Guidelines:
+1. Row 1 should have a markdown component at the top to provide dashboard context and overview
+2. Row 2 should contain a KPI grid with 2-4 of the most business-relevant measures
+3. Row 3 should contain:
+   - Left (width 6): A leaderboard with the most important NON-TIME dimension and a relevant measures
    - Right (width 6): A stacked_bar or line_chart showing trends over time (if time dimension exists)
-3. You may add Row 3 or Row 4 with additional relevant charts. You can do half and half with two different visuals
-4. All components must reference the provided metrics_view name
-5. Choose dimensions and measures that would provide the most business value
-6. For charts with time dimension, use the timestamp from the metrics view as the field name
-7. Use descriptive titles for charts
-8. IMPORTANT: The time dimension is SPECIAL - it can ONLY be used in the x-axis field for temporal charts. NEVER use the time dimension in:
+4. You may add Row 4 or Row 5 with additional relevant charts. Pick the right number of component per row as needed.
+5. All components must reference the provided metrics_view name
+6. Choose dimensions and measures that would provide the most business value
+7. For charts with time dimension, use the timestamp from the metrics view as the field name
+8. Use descriptive titles for charts
+9. IMPORTANT: The time dimension is SPECIAL - it can ONLY be used in the x-axis field for temporal charts. NEVER use the time dimension in:
    - Leaderboard dimensions
    - Color fields
    - Any other dimension fields
 
 # Component types available:
+- markdown: For adding text, context, and documentation
 - kpi_grid: For key metrics summary
 - leaderboard: For top rankings
 - stacked_bar: For temporal or categorical comparisons
@@ -599,7 +792,11 @@ Your output should only consist of valid YAML in the format below:
 - heatmap: For two-dimensional distribution
 
 %s
-`, string(out), formattedGuidelines)
+
+%s
+
+%s
+`, string(out), markdownDetailsPrompt, leaderboardDetailsPrompt, formattedChartGuidelines)
 
 	return prompt
 }
