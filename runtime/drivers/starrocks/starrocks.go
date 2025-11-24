@@ -131,13 +131,12 @@ type ConfigProperties struct {
 
 // Validate checks the configuration for errors.
 func (c *ConfigProperties) Validate() error {
+	// If DSN is provided, it takes precedence and we don't validate individual fields
 	if c.DSN != "" {
-		if c.Host != "" || c.Port != 0 || c.Username != "" || c.Password != "" || c.Database != "" {
-			return errors.New("invalid config: DSN is set but other connection fields are also set")
-		}
 		return nil
 	}
 
+	// If DSN is not provided, host is required
 	if c.Host == "" {
 		return errors.New("invalid config: host is required when DSN is not provided")
 	}
@@ -148,7 +147,32 @@ func (c *ConfigProperties) Validate() error {
 // ResolveDSN builds a connection string from individual fields if DSN is not set.
 func (c *ConfigProperties) ResolveDSN() (string, error) {
 	if c.DSN != "" {
-		return c.DSN, nil
+		// Check if DSN uses starrocks:// protocol and convert to MySQL format
+		dsn, err := c.parseDSN(c.DSN)
+		if err != nil {
+			return "", err
+		}
+
+		// Debug: log DSN (without password)
+		if c.Password != "" || strings.Contains(dsn, "@") {
+			// Mask password in DSN
+			parts := strings.Split(dsn, "@")
+			if len(parts) >= 2 {
+				userPass := strings.Split(parts[0], ":")
+				if len(userPass) == 2 {
+					masked := userPass[0] + ":***@" + strings.Join(parts[1:], "@")
+					fmt.Printf("DEBUG: StarRocks DSN (masked): %s\n", masked)
+				} else {
+					fmt.Printf("DEBUG: StarRocks DSN: %s\n", dsn)
+				}
+			} else {
+				fmt.Printf("DEBUG: StarRocks DSN: %s\n", dsn)
+			}
+		} else {
+			fmt.Printf("DEBUG: StarRocks DSN: %s\n", dsn)
+		}
+
+		return dsn, nil
 	}
 
 	// Use mysql.Config to build DSN properly
@@ -177,7 +201,6 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 	dsn := cfg.FormatDSN()
 
 	// Debug: log DSN (without password)
-	// TODO: Remove this debug log
 	if c.Password != "" {
 		fmt.Printf("DEBUG: StarRocks DSN (masked): %s\n", strings.Replace(dsn, c.Password, "***", -1))
 	} else {
@@ -185,6 +208,77 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 	}
 
 	return dsn, nil
+}
+
+// parseDSN parses a StarRocks DSN and converts it to MySQL format.
+// Supports both starrocks:// and standard MySQL DSN formats.
+// starrocks://user:password@host:port/database -> user:password@tcp(host:port)/database?parseTime=true
+func (c *ConfigProperties) parseDSN(dsn string) (string, error) {
+	// If DSN doesn't start with starrocks://, assume it's already in MySQL format
+	if !strings.HasPrefix(dsn, "starrocks://") {
+		return dsn, nil
+	}
+
+	// Remove starrocks:// prefix
+	rest := strings.TrimPrefix(dsn, "starrocks://")
+
+	// Split into user:password@host:port/database parts
+	// Format: [user[:password]@]host[:port]/database
+	var username, password, host, database string
+	var port int = 9030
+
+	// Find @ to separate credentials from host
+	atIdx := strings.Index(rest, "@")
+	var hostPart string
+	if atIdx >= 0 {
+		// Has credentials
+		creds := rest[:atIdx]
+		hostPart = rest[atIdx+1:]
+
+		// Parse credentials
+		colonIdx := strings.Index(creds, ":")
+		if colonIdx >= 0 {
+			username = creds[:colonIdx]
+			password = creds[colonIdx+1:]
+		} else {
+			username = creds
+		}
+	} else {
+		hostPart = rest
+	}
+
+	// Parse host:port/database
+	slashIdx := strings.Index(hostPart, "/")
+	var hostPortPart string
+	if slashIdx >= 0 {
+		hostPortPart = hostPart[:slashIdx]
+		database = hostPart[slashIdx+1:]
+	} else {
+		hostPortPart = hostPart
+	}
+
+	// Parse host:port
+	colonIdx := strings.LastIndex(hostPortPart, ":")
+	if colonIdx >= 0 {
+		host = hostPortPart[:colonIdx]
+		portStr := hostPortPart[colonIdx+1:]
+		if p, err := fmt.Sscanf(portStr, "%d", &port); err != nil || p != 1 {
+			return "", fmt.Errorf("invalid port in StarRocks DSN: %s", portStr)
+		}
+	} else {
+		host = hostPortPart
+	}
+
+	// Build MySQL DSN using mysql.Config
+	cfg := mysql.NewConfig()
+	cfg.User = username
+	cfg.Passwd = password
+	cfg.Net = "tcp"
+	cfg.Addr = fmt.Sprintf("%s:%d", host, port)
+	cfg.DBName = database
+	cfg.ParseTime = true
+
+	return cfg.FormatDSN(), nil
 }
 
 
