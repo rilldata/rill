@@ -371,14 +371,6 @@ export async function submitAddConnectorForm(
     }
   }
 
-  // Pre-register this submission so a subsequent "Save Anyway" can reuse
-  // the exact same connector name, avoiding duplicate files like *_1.yaml.
-  connectorSubmissions.set(uniqueConnectorSubmissionKey, {
-    // Placeholder promise will be updated after we create the real one
-    promise: Promise.resolve(),
-    connectorName: newConnectorName,
-  });
-
   // Create abort controller for this submission
   const abortController = new AbortController();
 
