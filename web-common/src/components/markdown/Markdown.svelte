@@ -7,8 +7,8 @@
 
   // Sometimes LLM response adds markdown syntax around the content, so we need to remove it
   $: sanitisedContext = content
-    .replace(/^```markdown\n/, "")
-    .replace(/\n```$/, "");
+    .replace(/^```markdown\n/m, "")
+    .replace(/\n```$/m, "");
 
   // Safeguard to make sure converter is not undefined/null
   $: converter ??= (c: string) => marked(c);

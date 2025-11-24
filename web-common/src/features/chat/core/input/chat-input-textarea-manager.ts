@@ -1,4 +1,3 @@
-import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
 import {
   convertContextToInlinePrompt,
   convertPromptValueToContext,
@@ -21,7 +20,6 @@ export class ChatInputTextAreaManager {
   >();
 
   private readonly exploreNameStore = getExploreNameStore();
-  private readonly contextMetadataStore = getContextMetadataStore();
 
   public constructor(
     private readonly onChange: (newValue: string) => void,

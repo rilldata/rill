@@ -1,23 +1,27 @@
-import { ChatContextEntryType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
 import {
-  getDimensionDisplayName,
-  getMeasureDisplayName,
-} from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { createQuery } from "@tanstack/svelte-query";
-import { derived, type Readable } from "svelte/store";
+  ChatContextEntryType,
+  ContextTypeData,
+} from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
+  V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
 
 export const INLINE_CHAT_CONTEXT_TAG = "inline";
-const INLINE_CHAT_CONTEXT_TYPE_ATTR = "data-context-type";
-const INLINE_CHAT_CONTEXT_VALUE_ATTR = "data-context-value-";
 
 export type InlineChatContext = {
   type: ChatContextEntryType;
-  label: string;
   // Hierarchy of values.
   // EG, for ChatContextEntryType.DimensionValue, [metricsViewName, dimensionName, ...dimensionValues]
   values: string[];
+};
+
+export type InlineChatContextMetadata = Record<string, MetricsViewMetadata>;
+export type MetricsViewMetadata = {
+  metricsViewSpec: V1MetricsViewSpec;
+  measures: Record<string, MetricsViewSpecMeasure>;
+  dimensions: Record<string, MetricsViewSpecDimension>;
 };
 
 export function inlineChatContextsAreEqual(
@@ -29,144 +33,101 @@ export function inlineChatContextsAreEqual(
   return ctx1.values.every((v, i) => v === ctx2.values[i]);
 }
 
-type MetricsViewContextOption = {
-  metricsViewContext: InlineChatContext;
-  measures: InlineChatContext[];
-  dimensions: InlineChatContext[];
-};
-export function getInlineChatContextOptions() {
-  const metricsViewsQuery = createQuery(
-    getValidMetricsViewsQueryOptions(),
-    queryClient,
-  );
-
-  return derived(metricsViewsQuery, (metricsViewsResp) => {
-    const metricsViews = metricsViewsResp.data ?? [];
-    return metricsViews.map((mv) => {
-      const mvName = mv.meta?.name?.name ?? "";
-      const metricsViewSpec = mv.metricsView?.state?.validSpec ?? {};
-      const mvDisplayName = metricsViewSpec?.displayName || mvName;
-
-      const measures =
-        metricsViewSpec?.measures?.map((m) => ({
-          type: ChatContextEntryType.Measures,
-          label: getMeasureDisplayName(m),
-          values: [mvName, m.name!],
-        })) ?? [];
-
-      const dimensions =
-        metricsViewSpec?.dimensions?.map((d) => ({
-          type: ChatContextEntryType.Dimensions,
-          label: getDimensionDisplayName(d),
-          values: [mvName, d.name!],
-        })) ?? [];
-
-      return {
-        metricsViewContext: {
-          type: ChatContextEntryType.MetricsView,
-          label: mvDisplayName,
-          values: [mvName],
-        },
-        measures,
-        dimensions,
-      };
-    });
-  });
-}
-
-export function getInlineChatContextFilteredOptions(
-  searchTextStore: Readable<string>,
-) {
-  const optionsStore = getInlineChatContextOptions();
-
-  return derived([optionsStore, searchTextStore], ([options, searchText]) => {
-    const filterFunction = (label: string, value: string) =>
-      searchText.length < 2 ||
-      label.toLowerCase().includes(searchText.toLowerCase()) ||
-      value.toLowerCase().includes(searchText.toLowerCase());
-
-    return options
-      .map((metricsViewOption) => {
-        const filteredMeasures = metricsViewOption.measures.filter((m) =>
-          filterFunction(m.label, m.values[1]),
-        );
-
-        const filteredDimensions = metricsViewOption.dimensions.filter((d) =>
-          filterFunction(d.label, d.values[1]),
-        );
-
-        const metricsViewMatches = filterFunction(
-          metricsViewOption.metricsViewContext.label,
-          metricsViewOption.metricsViewContext.values[0],
-        );
-
-        if (
-          !filteredMeasures.length &&
-          !filteredDimensions.length &&
-          !metricsViewMatches
-        )
-          return null;
-
-        return {
-          metricsViewContext: metricsViewOption.metricsViewContext,
-          measures: filteredMeasures,
-          dimensions: filteredDimensions,
-        };
-      })
-      .filter(Boolean) as MetricsViewContextOption[];
-  });
-}
-
-export function convertContextToAttrs(
-  ctx: InlineChatContext,
-): Record<string, string> {
-  const valuesAttrEntries = ctx.values.map((v, i) => [
-    INLINE_CHAT_CONTEXT_VALUE_ATTR + i,
-    v,
-  ]);
-  return Object.fromEntries(
-    [[INLINE_CHAT_CONTEXT_TYPE_ATTR, ctx.type]].concat(valuesAttrEntries),
-  );
-}
-
 export function convertContextToInlinePrompt(ctx: InlineChatContext) {
-  const parts = [`type="${ctx.type}"`];
+  const parts: string[] = [];
 
   switch (ctx.type) {
     case ChatContextEntryType.MetricsView:
+      parts.push(`metrics_view="${ctx.values[0]}"`);
+      break;
+
     case ChatContextEntryType.Explore:
-      parts.push(`name="${ctx.values[0]}"`);
+      // We are not using this in inline chat as of now.
       break;
 
     case ChatContextEntryType.TimeRange:
-      parts.push(`range="${ctx.values[0]}"`);
+      parts.push(`time_range="${ctx.values[0]}"`);
+      break;
+
+    case ChatContextEntryType.Measures:
+      parts.push(`metrics_view="${ctx.values[0]}"`);
+      parts.push(`measure="${ctx.values[1]}"`);
       break;
 
     case ChatContextEntryType.Dimensions:
-    case ChatContextEntryType.Measures:
       parts.push(`metrics_view="${ctx.values[0]}"`);
-      parts.push(`name="${ctx.values[1]}"`);
+      parts.push(`dimension="${ctx.values[1]}"`);
+      break;
+
+    case ChatContextEntryType.DimensionValues:
+      parts.push(`metrics_view="${ctx.values[0]}"`);
+      parts.push(`dimension="${ctx.values[1]}"`);
+      parts.push(...ctx.values.slice(2).map((v, i) => `value_${i}="${v}"`));
       break;
   }
 
   return `<${INLINE_CHAT_CONTEXT_TAG}>${parts.join(" ")}</${INLINE_CHAT_CONTEXT_TAG}>`;
 }
 
-const PARTS_REGEX = /\w+?="([^"]+?)"/g;
+const PARTS_REGEX = /(\w+?)="([^"]+?)"/g;
 
 export function convertPromptValueToContext(
   contextValue: string,
 ): InlineChatContext | null {
   const parts = contextValue.matchAll(PARTS_REGEX);
   if (!parts) return null;
-  const matchedParts = [...parts].map((p) => p[1]);
-  const [type, ...values] = matchedParts;
 
-  const entry = <InlineChatContext>{
+  const matchedKeys: string[] = [];
+  const matchedValues: string[] = [];
+  for (const [, key, value] of parts) {
+    matchedKeys.push(key);
+    matchedValues.push(value);
+  }
+
+  let type: ChatContextEntryType | null = null;
+  if (matchedKeys[0] === "time_range") {
+    type = ChatContextEntryType.TimeRange;
+  } else if (matchedKeys[0] === "metrics_view") {
+    type = ChatContextEntryType.MetricsView;
+
+    if (matchedKeys[1] === "measure") {
+      type = ChatContextEntryType.Measures;
+    } else if (matchedKeys[1] === "dimension" && matchedKeys.length === 2) {
+      type = ChatContextEntryType.Dimensions;
+    } else if (matchedKeys[1] === "dimension" && matchedKeys.length > 2) {
+      type = ChatContextEntryType.DimensionValues;
+    }
+  }
+
+  if (!type) return null;
+
+  return <InlineChatContext>{
     type,
-    values,
-    label: "", // TODO
+    values: matchedValues,
   };
+}
 
-  return entry;
+const ChatContextRegex = new RegExp(
+  `<${INLINE_CHAT_CONTEXT_TAG}>(.*?)</${INLINE_CHAT_CONTEXT_TAG}>`,
+  "gm",
+);
+export function convertPromptWithInlineContextToHTML(
+  prompt: string,
+  meta: InlineChatContextMetadata,
+) {
+  const lines = prompt.split("\n");
+  const htmlLines = lines.map((line) =>
+    line.replaceAll(ChatContextRegex, (raw, contextValue: string) => {
+      const entry = convertPromptValueToContext(contextValue);
+      if (!entry) return raw;
+
+      const data = ContextTypeData[entry.type];
+      if (!data) return raw;
+      const label = data.getLabel(entry, meta);
+
+      // TODO: once we support editing messages, embed other parts of context here.
+      return `<span class="underline">${label}</span>`;
+    }),
+  );
+  return htmlLines.join("<br>");
 }

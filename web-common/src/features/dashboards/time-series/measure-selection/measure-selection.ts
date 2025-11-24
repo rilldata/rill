@@ -1,7 +1,10 @@
 import { ChatContextEntryType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
-import { convertContextToInlinePrompt } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
 import { sidebarActions } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
 import { get, writable } from "svelte/store";
+import {
+  convertContextToInlinePrompt,
+  type InlineChatContext,
+} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
 export class MeasureSelection {
   public readonly measure = writable<string | null>(null);
@@ -30,31 +33,27 @@ export class MeasureSelection {
     return Boolean(get(this.measure));
   }
 
-  public startAnomalyExplanationChat() {
+  public startAnomalyExplanationChat(metricsViewName: string) {
     if (!this.hasSelection()) return;
     const measure = get(this.measure)!;
 
     const measureMention = convertContextToInlinePrompt({
       type: ChatContextEntryType.Measures,
-      value: measure,
-      subValue: null,
-      label: "",
+      values: [metricsViewName, measure],
     });
 
     const start = get(this.start)?.toISOString();
     const end = get(this.end)?.toISOString();
     if (!start) return;
 
-    const timeRangeCtx = {
+    const timeRangeCtx = <InlineChatContext>{
       type: ChatContextEntryType.TimeRange,
-      value: "",
-      subValue: null,
-      label: "",
+      values: [],
     };
     if (end) {
-      timeRangeCtx.value = `${start} to ${end}`;
+      timeRangeCtx.values.push(`${start} to ${end}`);
     } else {
-      timeRangeCtx.value = start;
+      timeRangeCtx.values.push(start);
     }
     const timeRangeMention = convertContextToInlinePrompt(timeRangeCtx);
 

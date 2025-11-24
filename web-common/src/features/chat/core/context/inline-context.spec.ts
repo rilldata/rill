@@ -17,9 +17,8 @@ describe("should convert to and from inline prompt", () => {
       ctx: {
         type: ChatContextEntryType.MetricsView,
         values: ["adbids"],
-        label: "",
       },
-      expectedPrompt: `<inline>type="metrics_view" name="adbids"</inline>`,
+      expectedPrompt: `<inline>metrics_view="adbids"</inline>`,
     },
 
     {
@@ -27,9 +26,8 @@ describe("should convert to and from inline prompt", () => {
       ctx: {
         type: ChatContextEntryType.TimeRange,
         values: ["2025-11-21T00:00:00Z"],
-        label: "",
       },
-      expectedPrompt: `<inline>type="time_range" range="2025-11-21T00:00:00Z"</inline>`,
+      expectedPrompt: `<inline>time_range="2025-11-21T00:00:00Z"</inline>`,
     },
 
     {
@@ -37,9 +35,26 @@ describe("should convert to and from inline prompt", () => {
       ctx: {
         type: ChatContextEntryType.Measures,
         values: ["adbids", "impressions"],
-        label: "",
       },
-      expectedPrompt: `<inline>type="measures" metrics_view="adbids" name="impressions"</inline>`,
+      expectedPrompt: `<inline>metrics_view="adbids" measure="impressions"</inline>`,
+    },
+
+    {
+      title: "dimension",
+      ctx: {
+        type: ChatContextEntryType.Dimensions,
+        values: ["adbids", "publisher"],
+      },
+      expectedPrompt: `<inline>metrics_view="adbids" dimension="publisher"</inline>`,
+    },
+
+    {
+      title: "dimension value",
+      ctx: {
+        type: ChatContextEntryType.DimensionValues,
+        values: ["adbids", "publisher", "Facebook", "Google"],
+      },
+      expectedPrompt: `<inline>metrics_view="adbids" dimension="publisher" value_0="Facebook" value_1="Google"</inline>`,
     },
   ];
 

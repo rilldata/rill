@@ -4,7 +4,9 @@
     ScaleStore,
     SimpleDataGraphicConfiguration,
   } from "@rilldata/web-common/components/data-graphic/state/types";
-  import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+  import {
+    measureSelection,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import MeasureValueMouseover from "@rilldata/web-common/features/dashboards/time-series/MeasureValueMouseover.svelte";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types.ts";
   import { getContext } from "svelte";
@@ -14,6 +16,7 @@
 
   export let data;
   export let measureName: string;
+  export let metricsViewName: string;
   export let xAccessor: string;
   export let yAccessor: string;
   export let internalXMin;
@@ -40,7 +43,7 @@
   function onExplain(e) {
     e.stopPropagation();
     e.preventDefault();
-    measureSelection.startAnomalyExplanationChat();
+    measureSelection.startAnomalyExplanationChat(metricsViewName);
   }
 </script>
 

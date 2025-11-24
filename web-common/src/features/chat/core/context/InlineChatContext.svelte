@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as Collapsible from "@rilldata/web-common/components/collapsible/index.ts";
   import {
-    getInlineChatContextFilteredOptions,
     type InlineChatContext,
     inlineChatContextsAreEqual,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
@@ -9,6 +8,10 @@
   import { ChevronDownIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { writable } from "svelte/store";
+  import {
+    getInlineChatContextFilteredOptions, getInlineChatContextMetadata,
+  } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
+  import { ContextTypeData } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
 
   export let inlineChatContext: InlineChatContext | null = null;
   export let onUpdate: () => void;
@@ -21,6 +24,10 @@
 
   const searchTextStore = writable("");
   const filteredOptions = getInlineChatContextFilteredOptions(searchTextStore);
+  const contextMetadataStore = getInlineChatContextMetadata();
+
+  $: typeData = inlineChatContext?.type ? ContextTypeData[inlineChatContext.type] : undefined
+  $: label = typeData?.getLabel(inlineChatContext!, $contextMetadataStore) ?? "";
 
   function select(context: InlineChatContext) {
     inlineChatContext = context;
@@ -52,7 +59,8 @@
     const rect = chatElement.getBoundingClientRect();
     left = rect.left;
     bottom = window.innerHeight - rect.bottom + 16;
-    open = true;
+
+    if (inlineChatContext === null) open = true;
   });
 </script>
 
@@ -63,7 +71,7 @@
 >
   {#if inlineChatContext}
     <div class="inline-chat-context-value">
-      <span>{inlineChatContext.label}</span>
+      <span>{label}</span>
       <button on:click={() => (open = !open)} type="button">
         <ChevronDownIcon size="12px" />
       </button>

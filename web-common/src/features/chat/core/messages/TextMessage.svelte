@@ -4,8 +4,6 @@
 -->
 <script lang="ts">
   import { page } from "$app/stores";
-  import { convertContextToHtml } from "@rilldata/web-common/features/chat/core/context/conversions.ts";
-  import { getContextMetadataStore } from "@rilldata/web-common/features/chat/core/context/get-context-metadata-store.ts";
   import {
     getCitationUrlRewriter,
     getMetricsResolverQueryToUrlParamsMapperStore,
@@ -15,6 +13,10 @@
   import type { V1Message } from "../../../../runtime-client";
   import { extractMessageText } from "../utils";
   import DOMPurify from "dompurify";
+  import {
+    convertPromptWithInlineContextToHTML,
+  } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
 
   export let message: V1Message;
 
@@ -36,7 +38,7 @@
     ? getCitationUrlRewriter($mapperStore.data)
     : undefined;
 
-  const contextMetadataStore = getContextMetadataStore();
+  const contextMetadataStore = getInlineChatContextMetadata();
 </script>
 
 <div class="chat-message chat-message--{role}">
@@ -45,7 +47,7 @@
       <Markdown {content} converter={convertCitationUrls} />
     {:else}
       {@html DOMPurify.sanitize(
-        convertContextToHtml(content, $contextMetadataStore),
+        convertPromptWithInlineContextToHTML(content, $contextMetadataStore),
       )}
     {/if}
   </div>
