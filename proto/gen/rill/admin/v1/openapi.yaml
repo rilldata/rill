@@ -533,6 +533,7 @@ components:
                 - DEPLOYMENT_STATUS_UPDATING
                 - DEPLOYMENT_STATUS_STOPPING
                 - DEPLOYMENT_STATUS_DELETING
+                - DEPLOYMENT_STATUS_DELETED
             type: string
         v1EditAlertResponse:
             type: object

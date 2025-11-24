@@ -77,6 +77,11 @@ export enum DeploymentStatus {
    * @generated from enum value: DEPLOYMENT_STATUS_DELETING = 8;
    */
   DELETING = 8,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_DELETED = 9;
+   */
+  DELETED = 9,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DeploymentStatus)
 proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
@@ -88,6 +93,7 @@ proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
   { no: 6, name: "DEPLOYMENT_STATUS_UPDATING" },
   { no: 7, name: "DEPLOYMENT_STATUS_STOPPING" },
   { no: 8, name: "DEPLOYMENT_STATUS_DELETING" },
+  { no: 9, name: "DEPLOYMENT_STATUS_DELETED" },
 ]);
 
 /**
