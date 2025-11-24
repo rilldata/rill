@@ -201,41 +201,59 @@
           {@const isLastItem =
             dropIndex === items.length - 1 &&
             i === items.length - 1 - (dragIndex === items.length - 1 ? 1 : 0)}
-          <div
-            data-drag-item
-            data-index={i}
-            data-item-id={item.id}
-            class:sr-only={isDragItem}
-            class:transition-margin={dragIndex !== -1 &&
-              dropIndex !== dragIndex}
-            class:drag-transition={dragIndex !== -1}
-            class:mt-7={isDropTarget}
-            class:mb-7={isLastItem}
-            style:pointer-events={isDragItem ? "none" : "auto"}
-            style:height="{ITEM_HEIGHT}px"
-            class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-slate-50 rounded-sm"
-            class:cursor-grab={draggable}
-            class:cursor-not-allowed={draggable && items.length === 1}
-            class:cursor-pointer={!draggable && !!onItemClick}
-            class:cursor-default={!draggable && !onItemClick}
-            on:click={onItemClick ? () => handleItemClick(item, i) : undefined}
-            on:keydown={onItemClick
-              ? (e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleItemClick(item, i);
-                  }
-                }
-              : undefined}
-            role={onItemClick ? "button" : undefined}
-            tabindex={onItemClick ? 0 : undefined}
-          >
-            <slot name="item" {item} index={i} {isDragItem}>
-              <span class="truncate flex-1 text-left pointer-events-none">
-                {item.id}
-              </span>
-            </slot>
-          </div>
+          {#if onItemClick}
+            <button
+              type="button"
+              data-drag-item
+              data-index={i}
+              data-item-id={item.id}
+              class:sr-only={isDragItem}
+              class:transition-margin={dragIndex !== -1 &&
+                dropIndex !== dragIndex}
+              class:drag-transition={dragIndex !== -1}
+              class:mt-7={isDropTarget}
+              class:mb-7={isLastItem}
+              style:pointer-events={isDragItem ? "none" : "auto"}
+              style:height="{ITEM_HEIGHT}px"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-slate-50 rounded-sm text-left"
+              class:cursor-grab={draggable}
+              class:cursor-not-allowed={draggable && items.length === 1}
+              class:cursor-pointer={!draggable && !!onItemClick}
+              class:cursor-default={!draggable && !onItemClick}
+              on:click={() => handleItemClick(item, i)}
+            >
+              <slot name="item" {item} index={i} {isDragItem}>
+                <span class="truncate flex-1 text-left pointer-events-none">
+                  {item.id}
+                </span>
+              </slot>
+            </button>
+          {:else}
+            <div
+              data-drag-item
+              data-index={i}
+              data-item-id={item.id}
+              class:sr-only={isDragItem}
+              class:transition-margin={dragIndex !== -1 &&
+                dropIndex !== dragIndex}
+              class:drag-transition={dragIndex !== -1}
+              class:mt-7={isDropTarget}
+              class:mb-7={isLastItem}
+              style:pointer-events={isDragItem ? "none" : "auto"}
+              style:height="{ITEM_HEIGHT}px"
+              class="w-full flex gap-x-1 flex-none py-1 pointer-events-auto items-center hover:bg-slate-50 rounded-sm"
+              class:cursor-grab={draggable}
+              class:cursor-not-allowed={draggable && items.length === 1}
+              class:cursor-pointer={!draggable && !!onItemClick}
+              class:cursor-default={!draggable && !onItemClick}
+            >
+              <slot name="item" {item} index={i} {isDragItem}>
+                <span class="truncate flex-1 text-left pointer-events-none">
+                  {item.id}
+                </span>
+              </slot>
+            </div>
+          {/if}
         {/each}
       {/if}
     </div>
