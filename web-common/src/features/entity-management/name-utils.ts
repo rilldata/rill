@@ -23,9 +23,17 @@ export function getName(name: string, others: string[]): string {
   let result = name;
 
   while (set.has(result.toLowerCase())) {
-    result = INCREMENT.exec(result)?.[1]
-      ? result.replace(INCREMENT, (m) => (+m + 1).toString())
-      : `${result}_1`;
+    const match = INCREMENT.exec(result);
+    if (match) {
+      // Special-case for "s3": don't roll over to "s4", append suffix instead.
+      if (result.toLowerCase() === "s3") {
+        result = `${result}_1`;
+      } else {
+        result = result.replace(INCREMENT, (m) => (+m + 1).toString());
+      }
+    } else {
+      result = `${result}_1`;
+    }
   }
 
   return result;
