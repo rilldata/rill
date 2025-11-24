@@ -1,7 +1,9 @@
 package initialize
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -9,6 +11,9 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/spf13/cobra"
 )
+
+//go:embed templates/**/*.mdc
+var templateFS embed.FS
 
 func InitCmd(ch *cmdutil.Helper) *cobra.Command {
 	var olap, template string
@@ -94,46 +99,30 @@ func addCursorRules(force bool, basePath string) error {
 		return err
 	}
 
-	files := map[string]string{
-		".cursor/rules/code-style.md": `# Code Style
-- Use SQL for defining models in .sql files
-- Use YAML for configuration files like rill.yaml, sources, dashboards
-- Follow consistent naming conventions: snake_case for SQL, camelCase for YAML keys
-`,
-		".cursor/rules/project-structure.md": `# Project Structure
-- Place models in models/ directory
-- Place dashboards in dashboards/ directory
-- Place sources in sources/ directory
-- Keep rill.yaml in the root
-`,
-		".cursor/rules/best-practices.md": `# Best Practices
-- Always define sources before models
-- Use metrics views for aggregations
-- Test your dashboards after changes
-`,
-	}
+	// Walk the embedded templates/cursor directory and copy files into .cursor/rules
+	return fs.WalkDir(templateFS, "templates/cursor", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
 
-	for path, content := range files {
-		fp := filepath.Join(basePath, path)
-		if _, err := os.Stat(fp); err == nil {
-			// file exists
-			if !force {
-				// skip existing files
-				continue
-			}
-			if err := os.WriteFile(fp, []byte(content), 0o644); err != nil {
-				return err
-			}
-			continue
-		} else if !os.IsNotExist(err) {
+		name := filepath.Base(path)                             // e.g. "code-style.md"
+		relativePath := filepath.Join(".cursor", "rules", name) // target relative path
+		fp := filepath.Join(basePath, relativePath)
+
+		contentB, err := templateFS.ReadFile(path)
+		if err != nil {
 			return err
 		}
 
-		// file doesn't exist so create
-		if err := os.WriteFile(fp, []byte(content), 0o644); err != nil {
+		if _, err := os.Stat(fp); err == nil && !force {
+			return nil
+		} else if err != nil && !os.IsNotExist(err) {
 			return err
 		}
-	}
 
-	return nil
+		return os.WriteFile(fp, contentB, 0o644)
+	})
 }

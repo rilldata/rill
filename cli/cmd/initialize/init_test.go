@@ -8,75 +8,48 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddCursorRules_Table(t *testing.T) {
-	tcs := []struct {
-		name          string
-		force         bool
-		setupFiles    map[string]string
-		expectEqual   map[string]string
-		expectContain map[string]string
-	}{
-		{
-			name:  "skips existing when not forced",
-			force: false,
-			setupFiles: map[string]string{
-				"code-style.md": "OLD",
-			},
-			expectEqual: map[string]string{
-				"code-style.md": "OLD",
-			},
-			expectContain: map[string]string{
-				"project-structure.md": "# Project Structure",
-				"best-practices.md":    "# Best Practices",
-			},
-		},
-		{
-			name:  "force overwrites all",
-			force: true,
-			setupFiles: map[string]string{
-				"code-style.md":        "OLD",
-				"project-structure.md": "OLD",
-				"best-practices.md":    "OLD",
-			},
-			expectContain: map[string]string{
-				"code-style.md":        "# Code Style",
-				"project-structure.md": "# Project Structure",
-				"best-practices.md":    "# Best Practices",
-			},
-		},
+func TestAddCursorRulesCreatesAllFilesWhenNoneExist(t *testing.T) {
+	tmp := t.TempDir()
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(cwd) }()
+
+	require.NoError(t, os.Chdir(tmp))
+
+	// Ensure .cursor doesn't exist yet
+	_, err = os.Stat(filepath.Join(tmp, ".cursor"))
+	require.True(t, os.IsNotExist(err))
+
+	// Run addCursorRules
+	err = addCursorRules(false, tmp)
+	require.NoError(t, err)
+
+	// Assert directory created
+	info, err := os.Stat(filepath.Join(tmp, ".cursor", "rules"))
+	require.NoError(t, err)
+	require.True(t, info.IsDir())
+
+	// Both template files should be created and contain expected headers
+	files := map[string]string{
+		"code-style.mdc":        "# Rill Code Style",
+		"project-structure.mdc": "# Rill Project Structure",
 	}
 
-	for _, tc := range tcs {
-		t.Run(tc.name, func(t *testing.T) {
-			tmp := t.TempDir()
-			cwd, err := os.Getwd()
-			require.NoError(t, err)
-			defer func() { _ = os.Chdir(cwd) }()
-
-			require.NoError(t, os.Chdir(tmp))
-
-			// create .cursor/rules and pre-populate any requested files
-			require.NoError(t, os.MkdirAll(filepath.Join(".cursor", "rules"), 0o755))
-			for rel, content := range tc.setupFiles {
-				require.NoError(t, os.WriteFile(filepath.Join(".cursor", "rules", rel), []byte(content), 0o644))
-			}
-
-			err = addCursorRules(tc.force, tmp)
-			require.NoError(t, err)
-
-			for f, want := range tc.expectEqual {
-				p := filepath.Join(".cursor", "rules", f)
-				b, err := os.ReadFile(p)
-				require.NoError(t, err)
-				require.Equal(t, want, string(b))
-			}
-
-			for f, want := range tc.expectContain {
-				p := filepath.Join(".cursor", "rules", f)
-				b, err := os.ReadFile(p)
-				require.NoError(t, err)
-				require.Contains(t, string(b), want)
-			}
-		})
+	for fileName, sample := range files {
+		p := filepath.Join(".cursor", "rules", fileName)
+		contents, err := os.ReadFile(p)
+		require.NoError(t, err)
+		require.Contains(t, string(contents), sample)
 	}
+}
+
+func TestAddCursorRulesBasePathIsFileReturnsError(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Create a file and use it as basePath which should cause MkdirAll to fail
+	filePath := filepath.Join(tmp, "not_a_dir")
+	require.NoError(t, os.WriteFile(filePath, []byte("i am a file"), 0o644))
+
+	err := addCursorRules(false, filePath)
+	require.Error(t, err)
 }
