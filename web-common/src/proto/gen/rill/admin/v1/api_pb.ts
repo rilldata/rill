@@ -49,27 +49,51 @@ export enum DeploymentStatus {
   PENDING = 1,
 
   /**
-   * @generated from enum value: DEPLOYMENT_STATUS_OK = 2;
+   * @generated from enum value: DEPLOYMENT_STATUS_RUNNING = 2;
    */
-  OK = 2,
+  RUNNING = 2,
 
   /**
-   * @generated from enum value: DEPLOYMENT_STATUS_ERROR = 4;
+   * @generated from enum value: DEPLOYMENT_STATUS_ERRORED = 4;
    */
-  ERROR = 4,
+  ERRORED = 4,
 
   /**
    * @generated from enum value: DEPLOYMENT_STATUS_STOPPED = 5;
    */
   STOPPED = 5,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_UPDATING = 6;
+   */
+  UPDATING = 6,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_STOPPING = 7;
+   */
+  STOPPING = 7,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_DELETING = 8;
+   */
+  DELETING = 8,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_DELETED = 9;
+   */
+  DELETED = 9,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DeploymentStatus)
 proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
   { no: 0, name: "DEPLOYMENT_STATUS_UNSPECIFIED" },
   { no: 1, name: "DEPLOYMENT_STATUS_PENDING" },
-  { no: 2, name: "DEPLOYMENT_STATUS_OK" },
-  { no: 4, name: "DEPLOYMENT_STATUS_ERROR" },
+  { no: 2, name: "DEPLOYMENT_STATUS_RUNNING" },
+  { no: 4, name: "DEPLOYMENT_STATUS_ERRORED" },
   { no: 5, name: "DEPLOYMENT_STATUS_STOPPED" },
+  { no: 6, name: "DEPLOYMENT_STATUS_UPDATING" },
+  { no: 7, name: "DEPLOYMENT_STATUS_STOPPING" },
+  { no: 8, name: "DEPLOYMENT_STATUS_DELETING" },
+  { no: 9, name: "DEPLOYMENT_STATUS_DELETED" },
 ]);
 
 /**
