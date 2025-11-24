@@ -344,12 +344,12 @@ export async function submitAddConnectorForm(
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
       // Use the same connector name from the ongoing operation
-      const newConnectorName = existingSubmission.connectorName;
+      const existingConnectorName = existingSubmission.connectorName;
 
       // Pre-mark the target path as "saved anyway" to prevent the in-flight
       // Test-and-Connect handler from rolling it back in a race.
       const newConnectorFilePath = getFileAPIPathFromNameAndType(
-        newConnectorName,
+        existingConnectorName,
         EntityType.Connector,
       );
       savedAnywayPaths.add(newConnectorFilePath);
@@ -359,7 +359,7 @@ export async function submitAddConnectorForm(
         queryClient,
         connector,
         formValues,
-        newConnectorName,
+        existingConnectorName,
         instanceId,
       );
       return;
