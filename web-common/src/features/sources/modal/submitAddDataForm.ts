@@ -303,10 +303,33 @@ export async function submitAddConnectorForm(
   // Create a unique key for this connector submission
   const uniqueConnectorSubmissionKey = `${instanceId}:${connector.name}`;
 
-  const newConnectorName = getName(
+  let newConnectorName = getName(
     connector.name as string,
     fileArtifacts.getNamesForKind(ResourceKind.Connector),
   );
+
+  // If this is a Save Anyway submission without an in-flight Test-and-Connect,
+  // prefer the canonical base name if the server confirms it doesn't exist.
+  if (saveAnyway && !connectorSubmissions.get(uniqueConnectorSubmissionKey)) {
+    const baseName = connector.name as string;
+    const basePath = getFileAPIPathFromNameAndType(
+      baseName,
+      EntityType.Connector,
+    );
+    try {
+      await runtimeServiceGetFile(instanceId, { path: basePath });
+      // File exists on server, keep the generated unique name
+    } catch (err: any) {
+      const fileNotFound =
+        err?.response?.data?.message?.includes("no such file");
+      if (fileNotFound) {
+        newConnectorName = baseName;
+      } else {
+        // Unknown error from server – surface it rather than guessing a name
+        throw err;
+      }
+    }
+  }
 
   // Check if there's already an ongoing submission for this connector
   const existingSubmission = connectorSubmissions.get(
