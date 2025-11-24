@@ -80,6 +80,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_UTC(t *testing.T) {
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2024-03-10T00:00:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-13T00:00:00Z"),
 	})
+	// results same as above before setting instance config
 	require.NoError(t, err)
 	require.Equal(t, 3, len(tr.Data))
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
@@ -138,6 +139,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_PST(t *testing.T) {
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-13T07:00:00Z"),
 		TimeZone:        "America/Los_Angeles",
 	})
+	// results same as above before setting instance config
 	require.NoError(t, err)
 	require.Equal(t, 3, len(tr.Data))
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
@@ -196,6 +198,7 @@ func TestServer_MetricsViewTimeSeries_PushDown_IST(t *testing.T) {
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2024-03-12T18:30:00Z"),
 		TimeZone:        "Asia/Kolkata",
 	})
+	// results same as above before setting instance config
 	require.NoError(t, err)
 	require.Equal(t, 3, len(tr.Data))
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
