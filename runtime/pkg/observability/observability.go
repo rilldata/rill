@@ -2,6 +2,7 @@ package observability
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	"go.uber.org/zap"
 )
 
@@ -63,6 +64,9 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		resource.WithFromEnv(),
 	)
 	if err != nil {
+		if errors.Is(err, resource.ErrPartialResource) || errors.Is(err, resource.ErrSchemaURLConflict) {
+			logger.Info("otel resource only partially detected", zap.Error(err))
+		}
 		return nil, err
 	}
 
