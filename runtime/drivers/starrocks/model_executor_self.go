@@ -113,8 +113,6 @@ type ModelOutputProperties struct {
 	Table string `mapstructure:"table"`
 	// Materialize can be "TABLE" or "VIEW".
 	Materialize string `mapstructure:"materialize"`
-	// Database is the target database (optional, uses connection default).
-	Database string `mapstructure:"database"`
 	// Engine specifies the StarRocks table engine (e.g., "DUPLICATE", "PRIMARY", "UNIQUE", "AGGREGATE").
 	Engine string `mapstructure:"engine"`
 	// Keys specifies the key columns for PRIMARY/UNIQUE/AGGREGATE engines.
@@ -148,9 +146,15 @@ func (c *connection) createTableAsSelect(ctx context.Context, name, sql string, 
 		return err
 	}
 
+	// Build fully-qualified table name using connector's database
+	tableName := safeSQLName(name)
+	if c.configProp.Database != "" {
+		tableName = safeSQLName(c.configProp.Database) + "." + tableName
+	}
+
 	if asView {
 		// Create view
-		query := fmt.Sprintf("CREATE VIEW %s AS %s", safeSQLName(name), sql)
+		query := fmt.Sprintf("CREATE VIEW %s AS %s", tableName, sql)
 		_, err = db.ExecContext(ctx, query)
 		return err
 	}
@@ -159,7 +163,7 @@ func (c *connection) createTableAsSelect(ctx context.Context, name, sql string, 
 	// StarRocks supports CTAS: https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE_AS_SELECT/
 	var builder strings.Builder
 	builder.WriteString("CREATE TABLE ")
-	builder.WriteString(safeSQLName(name))
+	builder.WriteString(tableName)
 
 	// Add engine and key configuration
 	if props.Engine != "" {
@@ -203,11 +207,17 @@ func (c *connection) dropTable(ctx context.Context, name string, isView bool) er
 		return err
 	}
 
+	// Build fully-qualified table name using connector's database
+	tableName := safeSQLName(name)
+	if c.configProp.Database != "" {
+		tableName = safeSQLName(c.configProp.Database) + "." + tableName
+	}
+
 	var query string
 	if isView {
-		query = fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name))
+		query = fmt.Sprintf("DROP VIEW IF EXISTS %s", tableName)
 	} else {
-		query = fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(name))
+		query = fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)
 	}
 	_, err = db.ExecContext(ctx, query)
 	return err
@@ -220,11 +230,19 @@ func (c *connection) renameTable(ctx context.Context, oldName, newName string, i
 		return err
 	}
 
+	// Build fully-qualified table names using connector's database
+	oldTableName := safeSQLName(oldName)
+	newTableName := safeSQLName(newName)
+	if c.configProp.Database != "" {
+		oldTableName = safeSQLName(c.configProp.Database) + "." + oldTableName
+		newTableName = safeSQLName(c.configProp.Database) + "." + newTableName
+	}
+
 	if isView {
 		// StarRocks doesn't support RENAME VIEW, so we need to recreate
 		// First get the view definition
 		var createStmt string
-		row := db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(oldName)))
+		row := db.QueryRowContext(ctx, fmt.Sprintf("SHOW CREATE VIEW %s", oldTableName))
 		var viewName string
 		if err := row.Scan(&viewName, &createStmt); err != nil {
 			return fmt.Errorf("failed to get view definition: %w", err)
@@ -238,28 +256,28 @@ func (c *connection) renameTable(ctx context.Context, oldName, newName string, i
 		selectStmt := createStmt[selectIdx+4:]
 
 		// Drop old view
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(oldName))); err != nil {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP VIEW IF EXISTS %s", oldTableName)); err != nil {
 			return err
 		}
 
 		// Drop target view if exists
-		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(newName))); err != nil {
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP VIEW IF EXISTS %s", newTableName)); err != nil {
 			return err
 		}
 
 		// Create new view
-		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE VIEW %s AS %s", safeSQLName(newName), selectStmt))
+		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE VIEW %s AS %s", newTableName, selectStmt))
 		return err
 	}
 
 	// For tables, use ALTER TABLE RENAME
 	// First drop target if exists
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(newName))); err != nil {
+	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", newTableName)); err != nil {
 		return err
 	}
 
 	// Rename table
-	_, err = db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME %s", safeSQLName(oldName), safeSQLName(newName)))
+	_, err = db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME %s", oldTableName, safeSQLName(newName)))
 	return err
 }
 
@@ -270,10 +288,16 @@ func (c *connection) insertIntoTable(ctx context.Context, name, sql string, prop
 		return err
 	}
 
+	// Build fully-qualified table name using connector's database
+	tableName := safeSQLName(name)
+	if c.configProp.Database != "" {
+		tableName = safeSQLName(c.configProp.Database) + "." + tableName
+	}
+
 	strategy := props.IncrementalStrategy
 	if strategy == "" || strategy == drivers.IncrementalStrategyAppend {
 		// Append strategy: simple INSERT
-		query := fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql)
+		query := fmt.Sprintf("INSERT INTO %s %s", tableName, sql)
 		_, err = db.ExecContext(ctx, query)
 		return err
 	}

@@ -166,7 +166,9 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 		schema = c.configProp.Database
 	}
 
-	meta, err := c.GetTable(ctx, db, schema, name)
+	// StarRocks doesn't use the catalog concept for table references
+	// Always pass empty string for db to GetTable
+	meta, err := c.GetTable(ctx, "", schema, name)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +182,7 @@ func (c *connection) Lookup(ctx context.Context, db, schema, name string) (*driv
 	}
 
 	return &drivers.OlapTable{
-		Database:          db,
+		Database:          "", // StarRocks doesn't use catalog in table references
 		DatabaseSchema:    schema,
 		Name:              name,
 		View:              meta.View,
