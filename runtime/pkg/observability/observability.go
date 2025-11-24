@@ -64,10 +64,10 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 		resource.WithFromEnv(),
 	)
 	if err != nil {
-		if errors.Is(err, resource.ErrPartialResource) || errors.Is(err, resource.ErrSchemaURLConflict) {
-			logger.Info("otel resource only partially detected", zap.Error(err))
+		if !errors.Is(err, resource.ErrPartialResource) && !errors.Is(err, resource.ErrSchemaURLConflict) {
+			return nil, err
 		}
-		return nil, err
+		logger.Info("otel resource only partially detected", zap.Error(err))
 	}
 
 	// Create global metrics exporter
