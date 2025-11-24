@@ -248,6 +248,7 @@ const connectorSubmissions = new Map<
   {
     promise: Promise<void>;
     connectorName: string;
+    abortController: AbortController;
   }
 >();
 
@@ -355,7 +356,9 @@ export async function submitAddConnectorForm(
   if (existingSubmission) {
     if (saveAnyway) {
       // If Save Anyway is clicked while Test and Connect is running,
-      // proceed immediately without waiting for the ongoing operation
+      // abort the in-flight operation to prevent duplicate file creation
+      existingSubmission.abortController.abort();
+
       // Clean up the existing submission
       connectorSubmissions.delete(uniqueConnectorSubmissionKey);
 
@@ -452,6 +455,11 @@ export async function submitAddConnectorForm(
       );
 
       if (!saveAnyway) {
+        // Check if operation was aborted before reconciliation
+        if (abortController.signal.aborted) {
+          throw new Error("Operation cancelled");
+        }
+
         // Make sure the file has reconciled before testing the connection
         await runtimeServicePutFileAndWaitForReconciliation(instanceId, {
           path: ".env",
@@ -459,6 +467,11 @@ export async function submitAddConnectorForm(
           create: true,
           createOnly: false,
         });
+
+        // Check if operation was aborted after .env reconciliation
+        if (abortController.signal.aborted) {
+          throw new Error("Operation cancelled");
+        }
 
         // Wait for connector resource-level reconciliation
         // This must happen after .env reconciliation since connectors depend on secrets
@@ -489,6 +502,11 @@ export async function submitAddConnectorForm(
           };
         }
 
+        // Check if operation was aborted before file error check
+        if (abortController.signal.aborted) {
+          throw new Error("Operation cancelled");
+        }
+
         // Check for file errors
         // If the connector file has errors, rollback the changes
         const errorMessage = await fileArtifacts.checkFileErrors(
@@ -508,12 +526,22 @@ export async function submitAddConnectorForm(
         }
       }
 
+      // Check if operation was aborted before updating rill.yaml
+      if (abortController.signal.aborted) {
+        throw new Error("Operation cancelled");
+      }
+
       if (OLAP_ENGINES.includes(connector.name as string)) {
         await setOlapConnectorInRillYAML(
           queryClient,
           instanceId,
           newConnectorName,
         );
+      }
+
+      // Check if operation was aborted before navigation
+      if (abortController.signal.aborted) {
+        throw new Error("Operation cancelled");
       }
 
       // Go to the new connector file
@@ -544,10 +572,11 @@ export async function submitAddConnectorForm(
     }
   })();
 
-  // Store the submission promise
+  // Store the submission promise and abort controller
   connectorSubmissions.set(uniqueConnectorSubmissionKey, {
     promise: submissionPromise,
     connectorName: newConnectorName,
+    abortController,
   });
 
   // Wait for the submission to complete
