@@ -45,8 +45,30 @@
   $: sidebar = $connectorsQuery?.data?.connectors ?? [];
 
   let selectedConnectorName: string | undefined = undefined;
-  $: if (!selectedConnectorName && sidebar.length > 0) {
-    selectedConnectorName = sidebar[0]?.name as string;
+  // Track known connector names to detect newly added connectors
+  let knownConnectorNames: Set<string> = new Set();
+  let hasInitializedSelection = false;
+  $: if (sidebar && sidebar.length > 0) {
+    // On first load, default to the first connector (existing behavior)
+    if (!hasInitializedSelection) {
+      selectedConnectorName = String(sidebar[0]?.name);
+      knownConnectorNames = new Set(sidebar.map((c) => String(c?.name)));
+      hasInitializedSelection = true;
+    } else {
+      // Detect any newly added connector by name and auto-select it
+      const currentNames = new Set(sidebar.map((c) => String(c?.name)));
+      let newlyAddedName: string | undefined = undefined;
+      for (const c of sidebar) {
+        const name = String(c?.name);
+        if (!knownConnectorNames.has(name)) {
+          newlyAddedName = name;
+        }
+      }
+      knownConnectorNames = currentNames;
+      if (newlyAddedName) {
+        selectedConnectorName = newlyAddedName;
+      }
+    }
   }
 </script>
 
