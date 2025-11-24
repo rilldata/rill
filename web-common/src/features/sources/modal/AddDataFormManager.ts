@@ -269,7 +269,7 @@ export class AddDataFormManager {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
-          await submitAddConnectorForm(queryClient, connector, values, true);
+          await submitAddConnectorForm(queryClient, connector, values, false);
           setConnectorConfig(values);
           setStep("source");
           return;
@@ -277,7 +277,7 @@ export class AddDataFormManager {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else {
-          await submitAddConnectorForm(queryClient, connector, values, true);
+          await submitAddConnectorForm(queryClient, connector, values, false);
           onClose();
         }
       } catch (e) {
