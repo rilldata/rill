@@ -75,6 +75,13 @@ export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
       textClass: "text-purple-600",
       wrapperClass: "bg-purple-50 border-purple-300",
     },
+    [V1DeploymentStatus.DEPLOYMENT_STATUS_DELETED]: {
+      icon: InfoCircleFilled,
+      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
+      text: "Deleted",
+      textClass: "text-indigo-600",
+      wrapperClass: "bg-indigo-50 border-indigo-300",
+    },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED]: {
       icon: CancelCircle,
       iconProps: { className: "text-red-600 hover:text-red-500" },
