@@ -179,6 +179,7 @@ func ApplyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metri
 		IsoOffset:     current.IsoOffset,
 		RoundToGrain:  current.RoundToGrain,
 		TimeDimension: current.TimeDimension,
+		TimeZone:      current.TimeZone,
 	}
 
 	if !additional.Start.IsZero() && (timeRange.Start.IsZero() || additional.Start.After(timeRange.Start)) {
@@ -201,6 +202,9 @@ func ApplyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metri
 	}
 	if additional.TimeDimension != "" && timeRange.TimeDimension == "" {
 		timeRange.TimeDimension = additional.TimeDimension
+	}
+	if additional.TimeZone != "" && timeRange.TimeZone == "" {
+		timeRange.TimeZone = additional.TimeZone
 	}
 
 	return timeRange
