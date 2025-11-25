@@ -65,11 +65,6 @@ export const AZURE_AUTH_OPTIONS: {
     label: "Shared Access Signature (SAS) Token",
     description: "Most secure, fine-grained control",
   },
-  {
-    value: "public",
-    label: "Public",
-    description: "Use Azure CLI or anonymous access (local only)",
-  },
 ];
 
 // pre-defined order for sources

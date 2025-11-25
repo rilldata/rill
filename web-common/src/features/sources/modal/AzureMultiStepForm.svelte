@@ -5,10 +5,7 @@
   import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import { ConnectorDriverPropertyType } from "@rilldata/web-common/runtime-client";
   import { normalizeErrors } from "./utils";
-  import {
-    AZURE_AUTH_OPTIONS,
-    type AzureAuthMethod,
-  } from "./constants";
+  import { AZURE_AUTH_OPTIONS, type AzureAuthMethod } from "./constants";
 
   export let properties: any[] = [];
   export let paramsForm: any;
@@ -124,11 +121,6 @@
               alwaysShowError
             />
           </div>
-        {:else if option.value === "public"}
-          <InformationalField
-            description="No credentials required. Works for publicly accessible blobs or when Azure CLI credentials are available locally."
-            hint="Not supported for Rill Cloud deployments."
-          />
         {/if}
       </svelte:fragment>
     </Radio>
@@ -136,14 +128,9 @@
 
   {#each filteredParamsProperties as property (property.key)}
     {@const propertyKey = property.key ?? ""}
-    {#if propertyKey !== "path" &&
-    propertyKey !== "azure_storage_connection_string" &&
-    propertyKey !== "azure_storage_account" &&
-    propertyKey !== "azure_storage_key" &&
-    propertyKey !== "azure_storage_sas_token"}
+    {#if propertyKey !== "path" && propertyKey !== "azure_storage_connection_string" && propertyKey !== "azure_storage_account" && propertyKey !== "azure_storage_key" && propertyKey !== "azure_storage_sas_token"}
       <div class="py-1.5 first:pt-0 last:pb-0">
-        {#if property.type === ConnectorDriverPropertyType.TYPE_STRING ||
-        property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+        {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
           <Input
             id={propertyKey}
             label={property.displayName}
@@ -175,4 +162,3 @@
     {/if}
   {/each}
 </div>
-
