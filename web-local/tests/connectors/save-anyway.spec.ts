@@ -36,12 +36,12 @@ test.describe("Save Anyway feature", () => {
 
     // Wait for navigation to connector file, then for the editor to appear
     await expect(page).toHaveURL(/.*\/files\/connectors\/.*\.yaml/, {
-      timeout: 60000,
+      timeout: 5000,
     });
     const codeEditor = page
       .getByLabel("codemirror editor")
       .getByRole("textbox");
-    await expect(codeEditor).toBeVisible({ timeout: 60000 });
+    await expect(codeEditor).toBeVisible({ timeout: 5000 });
 
     await expect(codeEditor).toBeVisible();
     await expect(codeEditor).toContainText("type: connector");
