@@ -13,9 +13,7 @@
   import type { V1Message } from "../../../../runtime-client";
   import { extractMessageText } from "../utils";
   import DOMPurify from "dompurify";
-  import {
-    convertPromptWithInlineContextToHTML,
-  } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+  import { convertPromptWithInlineContextToHTML } from "@rilldata/web-common/features/chat/core/context/convertors.ts";
   import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/inline-context-data.ts";
 
   export let message: V1Message;

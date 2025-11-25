@@ -1,12 +1,13 @@
 <script lang="ts">
   import { getExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
-  import { ChatInputTextAreaManager } from "@rilldata/web-common/features/chat/core/input/chat-input-textarea-manager.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import SendIcon from "../../../../components/icons/SendIcon.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
+  import { Editor } from "@tiptap/core";
+  import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/chat-plugins.ts";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -14,7 +15,6 @@
   export let height: string | undefined = undefined;
 
   const placeholder = "Ask about your data...";
-  let editorElement: HTMLDivElement;
   let value = "";
 
   $: currentConversationStore = conversationManager.getCurrentConversation();
@@ -30,38 +30,17 @@
 
   const context = getExploreContext();
 
-  let lastPrompt = "";
-  $: syncPrompts($draftMessageStore);
-
-  const chatManager = new ChatInputTextAreaManager(
-    (newValue) => {
-      // Update both the message in conversation and the `lastValue` used to keep input in sync.
-      // This avoids calling `setPrompt` leading to an infinite loop.
-      lastPrompt = newValue;
-      draftMessageStore.set(newValue);
-    },
-    () => void sendMessage(),
-  );
-  $: chatManager.setElement(editorElement);
-  $: chatManager.setConversationManager(conversationManager);
-
-  /**
-   * Changes to conversation's draftMessage outside of the input should be synced back to the input.
-   * This updates the prompt only if the value from prompt is different.
-   */
-  function syncPrompts(newPrompt: string) {
-    if (lastPrompt === newPrompt) return;
-    lastPrompt = newPrompt;
-    chatManager.setPrompt(lastPrompt);
-  }
+  let element: HTMLDivElement;
+  let editor: Editor;
 
   async function sendMessage() {
     if (!canSend) return;
 
     // Message handling with input focus
     try {
-      chatManager.setPrompt("");
-      await currentConversation.sendMessage($context);
+      await currentConversation.sendMessage($context, {
+        onStreamStart: () => editor.commands.setContent(""),
+      });
       onSend?.();
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -69,7 +48,7 @@
 
     // Let the parent component manage the input value
     await tick();
-    chatManager.focusEditor();
+    editor.commands.focus();
   }
 
   function cancelStream() {
@@ -80,14 +59,39 @@
   export function focusInput() {
     tick().then(() => {
       setTimeout(() => {
-        chatManager?.focusEditor();
+        editor?.commands.focus();
       }, 100);
     });
   }
 
-  onMount(() =>
-    eventBus.on("start-chat", (prompt) => chatManager.setPrompt(prompt)),
-  );
+  onMount(() => {
+    editor = new Editor({
+      element,
+      extensions: getEditorPlugins(
+        placeholder,
+        conversationManager,
+        () => void sendMessage(),
+      ),
+      content: "",
+      onTransaction: () => {
+        // force re-render so `editor.isActive` works as expected
+        editor = editor;
+      },
+      onUpdate: ({ editor }) => {
+        draftMessageStore.set(editor.getText());
+      },
+    });
+
+    const offStartChat = eventBus.on("start-chat", (prompt) => {
+      editor.commands.setContent(prompt);
+      editor.commands.focus();
+    });
+
+    return () => {
+      editor.destroy();
+      offStartChat();
+    };
+  });
 </script>
 
 <form
@@ -95,21 +99,12 @@
   class:no-margin={noMargin}
   on:submit|preventDefault={sendMessage}
 >
-  <div class="w-full">
-    <div
-      bind:this={editorElement}
-      contenteditable="true"
-      role="textbox"
-      tabindex="0"
-      class="chat-input"
-      class:fixed-height={!!height}
-      style:height
-      data-placeholder={placeholder}
-      class:empty={!$draftMessageStore.length}
-      on:input={chatManager.updateValue}
-      on:keydown={chatManager.handleKeydown}
-    ></div>
-  </div>
+  <div
+    class="chat-input-container"
+    bind:this={element}
+    class:fixed-height={!!height}
+    style:height
+  />
   <div class="chat-input-footer">
     <div class="grow"></div>
     <div>
@@ -147,17 +142,22 @@
     margin: 0;
   }
 
-  .chat-input {
+  :global(.tiptap) {
     @apply p-2 min-h-[2.5rem] outline-none;
     @apply text-sm leading-relaxed;
   }
 
-  .chat-input.fixed-height {
-    min-height: unset;
-    max-height: unset;
+  .chat-input-container {
+    @apply w-full;
   }
 
-  .chat-input.empty:before {
+  .chat-input-container.fixed-height {
+    min-height: unset;
+    max-height: unset;
+    @apply overflow-auto;
+  }
+
+  :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
     @apply text-gray-400 pointer-events-none absolute;
   }

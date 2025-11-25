@@ -22,8 +22,11 @@ export function prettyFormatTimeRange(
   return `${datePart}${timePart}`;
 }
 
-export function prettyFormatV1TimeRange(timeRange: V1TimeRange | undefined) {
-  if (!timeRange?.start || !timeRange?.end) return "";
+/**
+ * Formates a resolved V1TimeRange. Must contain start and end.
+ */
+export function prettyFormatResolvedV1TimeRange(timeRange: V1TimeRange) {
+  if (!timeRange.start || !timeRange.end) return "";
 
   return prettyFormatTimeRange(
     Interval.fromDateTimes(

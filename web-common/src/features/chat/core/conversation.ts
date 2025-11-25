@@ -113,6 +113,7 @@ export class Conversation {
     const userMessage = this.addOptimisticUserMessage(prompt);
 
     try {
+      options?.onStreamStart?.();
       // Start streaming - this establishes the connection
       const streamPromise = this.startStreaming(prompt, context);
 

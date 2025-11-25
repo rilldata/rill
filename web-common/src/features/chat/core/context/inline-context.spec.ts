@@ -1,9 +1,11 @@
-import { ChatContextEntryType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+import {
+  ChatContextEntryType,
+  type InlineChatContext,
+} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import {
   convertContextToInlinePrompt,
   convertPromptValueToContext,
-  type InlineChatContext,
-} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+} from "@rilldata/web-common/features/chat/core/context/convertors.ts";
 import { describe, it, expect } from "vitest";
 
 describe("should convert to and from inline prompt", () => {
@@ -16,45 +18,38 @@ describe("should convert to and from inline prompt", () => {
       title: "metrics view",
       ctx: {
         type: ChatContextEntryType.MetricsView,
-        values: ["adbids"],
+        metricsView: "adbids",
       },
-      expectedPrompt: `<inline>metrics_view="adbids"</inline>`,
+      expectedPrompt: `<inline>type="metricsView" metricsView="adbids"</inline>`,
     },
 
     {
       title: "time range",
       ctx: {
         type: ChatContextEntryType.TimeRange,
-        values: ["2025-11-21T00:00:00Z"],
+        timeRange: "2025-11-21T00:00:00Z",
       },
-      expectedPrompt: `<inline>time_range="2025-11-21T00:00:00Z"</inline>`,
+      expectedPrompt: `<inline>type="timeRange" timeRange="2025-11-21T00:00:00Z"</inline>`,
     },
 
     {
       title: "measure",
       ctx: {
-        type: ChatContextEntryType.Measures,
-        values: ["adbids", "impressions"],
+        type: ChatContextEntryType.Measure,
+        metricsView: "adbids",
+        measure: "impressions",
       },
-      expectedPrompt: `<inline>metrics_view="adbids" measure="impressions"</inline>`,
+      expectedPrompt: `<inline>type="measure" metricsView="adbids" measure="impressions"</inline>`,
     },
 
     {
       title: "dimension",
       ctx: {
-        type: ChatContextEntryType.Dimensions,
-        values: ["adbids", "publisher"],
+        type: ChatContextEntryType.Dimension,
+        metricsView: "adbids",
+        dimension: "publisher",
       },
-      expectedPrompt: `<inline>metrics_view="adbids" dimension="publisher"</inline>`,
-    },
-
-    {
-      title: "dimension value",
-      ctx: {
-        type: ChatContextEntryType.DimensionValues,
-        values: ["adbids", "publisher", "Facebook", "Google"],
-      },
-      expectedPrompt: `<inline>metrics_view="adbids" dimension="publisher" value_0="Facebook" value_1="Google"</inline>`,
+      expectedPrompt: `<inline>type="dimension" metricsView="adbids" dimension="publisher"</inline>`,
     },
   ];
 

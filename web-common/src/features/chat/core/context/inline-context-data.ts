@@ -2,19 +2,24 @@ import { createQuery } from "@tanstack/svelte-query";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { derived, type Readable } from "svelte/store";
-import { ChatContextEntryType } from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+import {
+  ChatContextEntryType,
+  type InlineChatContext,
+  type InlineChatContextMetadata,
+  type MetricsViewMetadata,
+} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import type {
-  InlineChatContext,
-  MetricsViewMetadata,
-} from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
-import { getLastUsedMetricsViewStore } from "@rilldata/web-common/features/chat/core/get-last-used-metrics-view.ts";
+import { getLastUsedMetricsViewStore } from "@rilldata/web-common/features/chat/core/context/get-last-used-metrics-view.ts";
 import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 
+/**
+ * Creates a store that contains a map of metrics view names to their metadata.
+ * Each metrics view metadata has a reference to its spec, and a map of for measure and dimension spec by their names.
+ */
 export function getInlineChatContextMetadata() {
   const metricsViewsQuery = createQuery(
     getValidMetricsViewsQueryOptions(),
@@ -45,7 +50,7 @@ export function getInlineChatContextMetadata() {
           },
         ];
       }),
-    );
+    ) as InlineChatContextMetadata;
   });
 }
 
@@ -57,6 +62,11 @@ type MetricsViewContextOption = {
   dimensions: InlineChatContext[];
 };
 
+/**
+ * Creates a store that contains a 2-level list of options for each valid metrics view.
+ * 1st level: metrics view context options
+ * 2nd level: measures and dimensions options for each metrics view
+ */
 export function getInlineChatContextOptions() {
   const metricsViewsQuery = createQuery(
     getValidMetricsViewsQueryOptions(),
@@ -71,22 +81,33 @@ export function getInlineChatContextOptions() {
       const mvDisplayName = metricsViewSpec?.displayName || mvName;
 
       const measures =
-        metricsViewSpec?.measures?.map((m) => ({
-          type: ChatContextEntryType.Measures,
-          label: getMeasureDisplayName(m),
-          values: [mvName, m.name!],
-        })) ?? [];
+        metricsViewSpec?.measures?.map(
+          (m) =>
+            <InlineChatContext>{
+              type: ChatContextEntryType.Measure,
+              label: getMeasureDisplayName(m),
+              metricsView: mvName,
+              measure: m.name!,
+              values: [mvName, m.name!],
+            },
+        ) ?? [];
 
       const dimensions =
-        metricsViewSpec?.dimensions?.map((d) => ({
-          type: ChatContextEntryType.Dimensions,
-          label: getDimensionDisplayName(d),
-          values: [mvName, d.name!],
-        })) ?? [];
+        metricsViewSpec?.dimensions?.map(
+          (d) =>
+            <InlineChatContext>{
+              type: ChatContextEntryType.Dimension,
+              label: getDimensionDisplayName(d),
+              metricsView: mvName,
+              dimension: d.name!,
+              values: [mvName, d.name!],
+            },
+        ) ?? [];
 
       return {
         metricsViewContext: {
           type: ChatContextEntryType.MetricsView,
+          metricsView: mvName,
           label: mvDisplayName,
           values: [mvName],
         },
@@ -97,6 +118,10 @@ export function getInlineChatContextOptions() {
   });
 }
 
+/**
+ * Takes a store of search text and a conversation manager and returns a store of filtered metrics view context options.
+ * The returned store contains options for the last used and active metrics views followed by options for all other valid metrics views.
+ */
 export function getInlineChatContextFilteredOptions(
   searchTextStore: Readable<string>,
   conversationManager: ConversationManager,
@@ -115,7 +140,7 @@ export function getInlineChatContextFilteredOptions(
     ],
     ([options, lastUserMv, activeMv, searchText]) => {
       const filterFunction = (label: string, value: string) =>
-        searchText.length < 2 ||
+        searchText.length === 0 ||
         label.toLowerCase().includes(searchText.toLowerCase()) ||
         value.toLowerCase().includes(searchText.toLowerCase());
 
@@ -124,11 +149,11 @@ export function getInlineChatContextFilteredOptions(
 
       const mvOptions = options.map((metricsViewOption) => {
         const filteredMeasures = metricsViewOption.measures.filter((m) =>
-          filterFunction(m.label, m.values[1]),
+          filterFunction(m.label ?? "", m.measure ?? ""),
         );
 
         const filteredDimensions = metricsViewOption.dimensions.filter((d) =>
-          filterFunction(d.label, d.values[1]),
+          filterFunction(d.label ?? "", d.dimension ?? ""),
         );
 
         const metricsViewName = metricsViewOption.metricsViewContext.values[0];
@@ -137,12 +162,11 @@ export function getInlineChatContextFilteredOptions(
           metricsViewName,
         );
 
-        if (
+        const shouldSkipMetricsView =
           !filteredMeasures.length &&
           !filteredDimensions.length &&
-          !metricsViewMatches
-        )
-          return null;
+          !metricsViewMatches;
+        if (shouldSkipMetricsView) return null;
 
         const recentlyUsed = lastUserMv === metricsViewName;
         const currentlyActive = activeMv === metricsViewName;
@@ -161,6 +185,7 @@ export function getInlineChatContextFilteredOptions(
         return option;
       });
 
+      // If the last used metrics view is the active metrics view, remove the active metrics view option from the list.
       if (lastUsedMvOption === activeMvOption) activeMvOption = null;
 
       return [lastUsedMvOption, activeMvOption, ...mvOptions].filter(

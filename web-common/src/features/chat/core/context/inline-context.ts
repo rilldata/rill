@@ -1,7 +1,8 @@
 import {
-  ChatContextEntryType,
-  ContextTypeData,
-} from "@rilldata/web-common/features/chat/core/context/context-type-data.ts";
+  getDimensionDisplayName,
+  getMeasureDisplayName,
+} from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
+import { prettyFormatResolvedV1TimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
@@ -9,14 +10,44 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 
 export const INLINE_CHAT_CONTEXT_TAG = "inline";
+export const INLINE_CHAT_TYPE_ATTR = "data-type";
+export const INLINE_CHAT_METRICS_VIEW_ATTR = "data-metrics-view";
+export const INLINE_CHAT_MEASURE_ATTR = "data-measure";
+export const INLINE_CHAT_DIMENSION_ATTR = "data-dimension";
+export const INLINE_CHAT_TIME_RANGE_ATTR = "data-time-range";
+
+export enum ChatContextEntryType {
+  Explore = "explore",
+  MetricsView = "metricsView",
+  TimeRange = "timeRange",
+  Where = "where",
+  Measure = "measure",
+  Dimension = "dimension",
+  DimensionValues = "dimensionValues",
+}
 
 export type InlineChatContext = {
   type: ChatContextEntryType;
   label?: string;
-  // Hierarchy of values.
-  // EG, for ChatContextEntryType.DimensionValue, [metricsViewName, dimensionName, ...dimensionValues]
-  values: string[];
+  metricsView?: string;
+  measure?: string;
+  dimension?: string;
+  timeRange?: string;
+  values?: string[];
 };
+
+export function inlineChatContextsAreEqual(
+  ctx1: InlineChatContext,
+  ctx2: InlineChatContext,
+) {
+  return (
+    ctx1.type === ctx2.type &&
+    ctx1.metricsView === ctx2.metricsView &&
+    ctx1.measure === ctx2.measure &&
+    ctx1.dimension === ctx2.dimension &&
+    ctx1.timeRange === ctx2.timeRange
+  );
+}
 
 export type InlineChatContextMetadata = Record<string, MetricsViewMetadata>;
 export type MetricsViewMetadata = {
@@ -25,104 +56,48 @@ export type MetricsViewMetadata = {
   dimensions: Record<string, MetricsViewSpecDimension>;
 };
 
-export function inlineChatContextsAreEqual(
-  ctx1: InlineChatContext,
-  ctx2: InlineChatContext,
-) {
-  if (ctx1.type !== ctx2.type) return false;
-  if (ctx1.values.length !== ctx2.values.length) return false;
-  return ctx1.values.every((v, i) => v === ctx2.values[i]);
-}
+type ContextConfigPerType = {
+  getLabel: (ctx: InlineChatContext, meta: InlineChatContextMetadata) => string;
+};
 
-export function convertContextToInlinePrompt(ctx: InlineChatContext) {
-  const parts: string[] = [];
+export const InlineContextConfig: Partial<
+  Record<ChatContextEntryType, ContextConfigPerType>
+> = {
+  [ChatContextEntryType.MetricsView]: {
+    getLabel: (ctx, meta) =>
+      meta[ctx.metricsView!]?.metricsViewSpec?.displayName || ctx.metricsView!,
+  },
 
-  switch (ctx.type) {
-    case ChatContextEntryType.MetricsView:
-      parts.push(`metrics_view="${ctx.values[0]}"`);
-      break;
+  [ChatContextEntryType.TimeRange]: {
+    getLabel: (ctx) => {
+      if (!ctx.timeRange) return "";
+      const [start, end] = ctx.timeRange.split(" to ");
+      return prettyFormatResolvedV1TimeRange({
+        start: start,
+        end: end ?? start,
+      });
+    },
+  },
 
-    case ChatContextEntryType.TimeRange:
-      parts.push(`time_range="${ctx.values[0]}"`);
-      break;
+  [ChatContextEntryType.Measure]: {
+    getLabel: (ctx, meta) => {
+      const mes = meta[ctx.metricsView!]?.measures[ctx.measure!];
+      return getMeasureDisplayName(mes) || ctx.measure!;
+    },
+  },
 
-    case ChatContextEntryType.Measures:
-      parts.push(`metrics_view="${ctx.values[0]}"`);
-      parts.push(`measure="${ctx.values[1]}"`);
-      break;
+  [ChatContextEntryType.Dimension]: {
+    getLabel: (ctx, meta) => {
+      const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
+      return getDimensionDisplayName(dim) || ctx.dimension!;
+    },
+  },
 
-    case ChatContextEntryType.Dimensions:
-      parts.push(`metrics_view="${ctx.values[0]}"`);
-      parts.push(`dimension="${ctx.values[1]}"`);
-      break;
-
-    case ChatContextEntryType.DimensionValues:
-      parts.push(`metrics_view="${ctx.values[0]}"`);
-      parts.push(`dimension="${ctx.values[1]}"`);
-      parts.push(...ctx.values.slice(2).map((v, i) => `value_${i}="${v}"`));
-      break;
-  }
-
-  return `<${INLINE_CHAT_CONTEXT_TAG}>${parts.join(" ")}</${INLINE_CHAT_CONTEXT_TAG}>`;
-}
-
-const PARTS_REGEX = /(\w+?)="([^"]+?)"/g;
-
-export function convertPromptValueToContext(
-  contextValue: string,
-): InlineChatContext | null {
-  const parts = contextValue.matchAll(PARTS_REGEX);
-  const matchedKeys: string[] = [];
-  const matchedValues: string[] = [];
-  for (const [, key, value] of parts) {
-    matchedKeys.push(key);
-    matchedValues.push(value);
-  }
-
-  let type: ChatContextEntryType | null = null;
-  if (matchedKeys[0] === "time_range") {
-    type = ChatContextEntryType.TimeRange;
-  } else if (matchedKeys[0] === "metrics_view") {
-    type = ChatContextEntryType.MetricsView;
-
-    if (matchedKeys[1] === "measure") {
-      type = ChatContextEntryType.Measures;
-    } else if (matchedKeys[1] === "dimension" && matchedKeys.length === 2) {
-      type = ChatContextEntryType.Dimensions;
-    } else if (matchedKeys[1] === "dimension" && matchedKeys.length > 2) {
-      type = ChatContextEntryType.DimensionValues;
-    }
-  }
-
-  if (!type) return null;
-
-  return <InlineChatContext>{
-    type,
-    values: matchedValues,
-  };
-}
-
-const ChatContextRegex = new RegExp(
-  `<${INLINE_CHAT_CONTEXT_TAG}>(.*?)</${INLINE_CHAT_CONTEXT_TAG}>`,
-  "gm",
-);
-export function convertPromptWithInlineContextToHTML(
-  prompt: string,
-  meta: InlineChatContextMetadata,
-) {
-  const lines = prompt.split("\n");
-  const htmlLines = lines.map((line) =>
-    line.replaceAll(ChatContextRegex, (raw, contextValue: string) => {
-      const entry = convertPromptValueToContext(contextValue);
-      if (!entry) return raw;
-
-      const data = ContextTypeData[entry.type];
-      if (!data) return raw;
-      const label = data.getLabel(entry, meta);
-
-      // TODO: once we support editing messages, embed other parts of context here.
-      return `<span class="underline">${label}</span>`;
-    }),
-  );
-  return htmlLines.join("<br>");
-}
+  [ChatContextEntryType.DimensionValues]: {
+    getLabel: (ctx, meta) => {
+      const dim = meta[ctx.metricsView!]?.dimensions[ctx.dimension!];
+      const dimLabel = getDimensionDisplayName(dim) || ctx.dimension!;
+      return dimLabel + ": " + (ctx.values ?? []).join(", ");
+    },
+  },
+};
