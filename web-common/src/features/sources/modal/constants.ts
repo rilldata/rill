@@ -18,6 +18,11 @@ export const CONNECTION_TAB_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export type GCSAuthMethod = "credentials" | "hmac";
+export type AzureAuthMethod =
+  | "connection_string"
+  | "storage_key"
+  | "sas_token"
+  | "public";
 
 export const GCS_AUTH_OPTIONS: {
   value: GCSAuthMethod;
@@ -36,6 +41,34 @@ export const GCS_AUTH_OPTIONS: {
     label: "HMAC keys",
     description:
       "Use HMAC access key and secret for S3-compatible authentication.",
+  },
+];
+
+export const AZURE_AUTH_OPTIONS: {
+  value: AzureAuthMethod;
+  label: string;
+  description: string;
+  hint?: string;
+}[] = [
+  {
+    value: "connection_string",
+    label: "Connection String",
+    description: "Alternative for cloud deployment",
+  },
+  {
+    value: "storage_key",
+    label: "Storage Account Key",
+    description: "Recommended for cloud deployment",
+  },
+  {
+    value: "sas_token",
+    label: "Shared Access Signature (SAS) Token",
+    description: "Most secure, fine-grained control",
+  },
+  {
+    value: "public",
+    label: "Public",
+    description: "Use Azure CLI or anonymous access (local only)",
   },
 ];
 

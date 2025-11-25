@@ -22,6 +22,7 @@
   import { connectorStepStore } from "./connectorStepStore";
   import FormRenderer from "./FormRenderer.svelte";
   import YamlPreview from "./YamlPreview.svelte";
+  import AzureMultiStepForm from "./AzureMultiStepForm.svelte";
   import GCSMultiStepForm from "./GCSMultiStepForm.svelte";
   import { AddDataFormManager } from "./AddDataFormManager";
   import { hasOnlyDsn } from "./utils";
@@ -390,6 +391,13 @@
                 paramsErrors={$paramsErrors}
                 {onStringInputChange}
                 {handleFileUpload}
+              />
+            {:else if connector.name === "azure"}
+              <AzureMultiStepForm
+                properties={filteredParamsProperties}
+                {paramsForm}
+                paramsErrors={$paramsErrors}
+                {onStringInputChange}
               />
             {:else}
               <FormRenderer
