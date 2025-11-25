@@ -16,6 +16,7 @@ import (
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/oauth"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"go.uber.org/zap"
 )
 
@@ -65,7 +66,14 @@ func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clien
 	}
 
 	// Build the redirection URI with the authorization code as per OAuth2 spec, state is URL-encoded
-	redirectWithCode := fmt.Sprintf("%s?code=%s&state=%s", normalizedRedirect, code, r.URL.Query().Get("state"))
+	redirectWithCode, err := urlutil.WithQuery(normalizedRedirect, map[string]string{
+		"code":  code,
+		"state": r.URL.Query().Get("state"),
+	})
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to build redirect URI, %w", err))
+		return
+	}
 
 	// Redirect the user agent to the redirect URI with the authorization code
 	http.Redirect(w, r, redirectWithCode, http.StatusFound)
