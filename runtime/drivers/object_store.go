@@ -196,12 +196,13 @@ func ListObjects(ctx context.Context, pathPrefixes []string, blobListfn BlobList
 // the first child segment is returned as a synthetic directory. Results are
 // paginated.
 func listObjectsFromPathPrefixes(ctx context.Context, matchingPathPrefixes []string, blobListfn BlobListfn, path, delimiter string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error) {
-	result := make([]ObjectStoreEntry, 0, len(matchingPathPrefixes))
+	result := make([]ObjectStoreEntry, 0)
 	for _, ap := range matchingPathPrefixes {
 		rest := strings.TrimPrefix(ap, path)
 		// If 'rest' has no delimiter (e.g. "y="), list real blobs under that prefix.
 		// Otherwise, return only the first child segment as a synthetic directory.
 		if !strings.Contains(rest, delimiter) {
+			// we are list all prefix without pagination it will become too complex if we add pagination here.
 			objs, _, err := blobListfn(ctx, ap, delimiter, uint32(math.MaxInt32), "")
 			if err != nil {
 				return nil, "", err
