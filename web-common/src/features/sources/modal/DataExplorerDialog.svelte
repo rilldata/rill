@@ -86,7 +86,7 @@
       {:else}
         <h3 class="text-lg font-semibold">Connected successfully!</h3>
         <p class="mt-1 text-sm text-muted-foreground">
-          Pick a table to power your first model.
+          Pick a table to create a model.
         </p>
       {/if}
     </div>
@@ -131,7 +131,7 @@
   <section class="flex-1 flex flex-col gap-4 p-4">
     <div class="flex flex-col gap-1">
       <h2 class="text-lg font-semibold">Data explorer</h2>
-      <p class="text-slate-500 text-sm">Pick a table to power your model</p>
+      <p class="text-slate-500 text-sm">Pick a table to create a model</p>
     </div>
 
     <div class="border border-gray-200 rounded-md overflow-y-auto py-2">
