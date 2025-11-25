@@ -26,6 +26,7 @@ import {
 import {
   connectorStepStore,
   setConnectorConfig,
+  setConnectorInstanceName,
   setStep,
 } from "./connectorStepStore";
 import { get } from "svelte/store";
@@ -45,6 +46,7 @@ type SuperFormUpdateEvent = {
 type ConnectorStepState = {
   step: "connector" | "source";
   connectorConfig: Record<string, unknown> | null;
+  connectorInstanceName: string | null;
 };
 
 export class AddDataFormManager {
@@ -191,6 +193,7 @@ export class AddDataFormManager {
     const stepState = get(connectorStepStore) as ConnectorStepState;
     if (!this.isMultiStepConnector || stepState.step !== "connector") return;
     setConnectorConfig(get(this.params.form) as Record<string, unknown>);
+    setConnectorInstanceName(null);
     setStep("source");
   }
 
@@ -295,8 +298,14 @@ export class AddDataFormManager {
           await submitAddSourceForm(queryClient, connector, values);
           onClose();
         } else if (isMultiStepConnector && stepState.step === "connector") {
-          await submitAddConnectorForm(queryClient, connector, values, false);
+          const connectorInstanceName = await submitAddConnectorForm(
+            queryClient,
+            connector,
+            values,
+            false,
+          );
           setConnectorConfig(values);
+          setConnectorInstanceName(connectorInstanceName);
           setStep("source");
           return;
         } else if (this.formType === "source") {
@@ -387,6 +396,7 @@ export class AddDataFormManager {
     clickhouseConnectorType?: ClickHouseConnectorType;
     clickhouseParamsValues?: Record<string, unknown>;
     clickhouseDsnValues?: Record<string, unknown>;
+    connectorInstanceName?: string;
   }): string {
     const connector = this.connector;
     const {
@@ -402,6 +412,7 @@ export class AddDataFormManager {
       clickhouseConnectorType,
       clickhouseParamsValues,
       clickhouseDsnValues,
+      connectorInstanceName,
     } = ctx;
 
     const getConnectorYamlPreview = (values: Record<string, unknown>) => {
@@ -441,7 +452,10 @@ export class AddDataFormManager {
       });
     };
 
-    const getSourceYamlPreview = (values: Record<string, unknown>) => {
+    const getSourceYamlPreview = (
+      values: Record<string, unknown>,
+      options?: { connectorInstanceName?: string },
+    ) => {
       // For multi-step connectors in step 2, filter out connector properties
       let filteredValues = values;
       if (isMultiStepConnector && stepState?.step === "source") {
@@ -461,7 +475,11 @@ export class AddDataFormManager {
       );
       const isRewrittenToDuckDb = rewrittenConnector.name === "duckdb";
       if (isRewrittenToDuckDb) {
-        return compileSourceYAML(rewrittenConnector, rewrittenFormValues);
+        return compileSourceYAML(
+          rewrittenConnector,
+          rewrittenFormValues,
+          options?.connectorInstanceName,
+        );
       }
       return getConnectorYamlPreview(rewrittenFormValues);
     };
@@ -484,14 +502,22 @@ export class AddDataFormManager {
           ...(stepState?.connectorConfig || {}),
           ...paramsFormValues,
         } as Record<string, unknown>;
-        return getSourceYamlPreview(combinedValues);
+        return getSourceYamlPreview(combinedValues, {
+          connectorInstanceName:
+            connectorInstanceName ||
+            stepState?.connectorInstanceName ||
+            undefined,
+        });
       }
     }
 
     const currentValues =
       onlyDsn || connectionTab === "dsn" ? dsnFormValues : paramsFormValues;
     if (isConnectorForm) return getConnectorYamlPreview(currentValues);
-    return getSourceYamlPreview(currentValues);
+    return getSourceYamlPreview(currentValues, {
+      connectorInstanceName:
+        connectorInstanceName || stepState?.connectorInstanceName || undefined,
+    });
   }
 
   /**

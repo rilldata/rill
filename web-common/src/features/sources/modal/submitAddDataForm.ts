@@ -24,6 +24,7 @@ import {
   updateDotEnvWithSecrets,
   updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
+import { connectorStepStore } from "./connectorStepStore";
 import {
   runtimeServicePutFileAndWaitForReconciliation,
   waitForResourceReconciliation,
@@ -199,12 +200,19 @@ export async function submitAddSourceForm(
   );
 
   let connectorInstanceName: string | undefined;
+  const stepState = get(connectorStepStore);
+  if (stepState?.step === "source") {
+    connectorInstanceName = stepState.connectorInstanceName || undefined;
+  }
   const connectorName = connector.name as string;
 
   // Resolve the connector instance name(s) for create_secrets_from_connectors.
   // For supported remote storage sources (e.g., S3, Azure), look up available
   // connectors and use their instance names.
-  if (connectorName === "s3" || connectorName === "azure") {
+  if (
+    !connectorInstanceName &&
+    (connectorName === "s3" || connectorName === "azure")
+  ) {
     connectorInstanceName = await resolveConnectorInstanceName(
       queryClient,
       instanceId,
@@ -353,7 +361,7 @@ export async function submitAddConnectorForm(
   connector: V1ConnectorDriver,
   formValues: AddDataFormValues,
   saveAnyway: boolean = false,
-): Promise<void> {
+): Promise<string> {
   const instanceId = get(runtime).instanceId;
   await beforeSubmitForm(instanceId, connector);
 
@@ -388,12 +396,12 @@ export async function submitAddConnectorForm(
         newConnectorName,
         instanceId,
       );
-      return;
+      return newConnectorName;
     } else if (!existingSubmission.completed) {
       // If Test and Connect is clicked while another operation is running,
       // wait for it to complete
       await existingSubmission.promise;
-      return;
+      return existingSubmission.connectorName;
     }
   }
 
@@ -550,4 +558,5 @@ export async function submitAddConnectorForm(
 
   // Wait for the submission to complete
   await submissionPromise;
+  return newConnectorName;
 }

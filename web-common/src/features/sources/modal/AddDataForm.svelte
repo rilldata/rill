@@ -265,6 +265,7 @@
     clickhouseConnectorType,
     clickhouseParamsValues: $clickhouseParamsForm,
     clickhouseDsnValues: $clickhouseDsnForm,
+    connectorInstanceName: stepState?.connectorInstanceName ?? undefined,
   });
   $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton =
