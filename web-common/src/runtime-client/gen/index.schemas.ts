@@ -2531,7 +2531,7 @@ export type ConnectorServiceListBucketsParams = {
 };
 
 export type ConnectorServiceListObjectsParams = {
-  prefix?: string;
+  path?: string;
   delimiter?: string;
   pageSize?: number;
   pageToken?: string;

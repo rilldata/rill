@@ -42,7 +42,7 @@ func (s *Server) ListObjects(ctx context.Context, req *runtimev1.ListObjectsRequ
 	if !ok {
 		return nil, fmt.Errorf("connector %q does not implement object store", req.Connector)
 	}
-	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Prefix, req.Delimiter, req.PageSize, req.PageToken)
+	objects, nextToken, err := os.ListObjects(ctx, req.Bucket, req.Path, req.Delimiter, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, err
 	}

@@ -125,9 +125,9 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
   bucket = "";
 
   /**
-   * @generated from field: string prefix = 4;
+   * @generated from field: string path = 4;
    */
-  prefix = "";
+  path = "";
 
   /**
    * @generated from field: string delimiter = 5;
@@ -155,7 +155,7 @@ export class ListObjectsRequest extends Message<ListObjectsRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 7, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },

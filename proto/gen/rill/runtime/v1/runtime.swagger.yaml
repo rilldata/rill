@@ -609,7 +609,7 @@ paths:
           in: path
           required: true
           type: string
-        - name: prefix
+        - name: path
           in: query
           required: false
           type: string

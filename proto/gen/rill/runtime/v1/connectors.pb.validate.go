@@ -286,7 +286,7 @@ func (m *ListObjectsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Prefix
+	// no validation rules for Path
 
 	// no validation rules for Delimiter
 
