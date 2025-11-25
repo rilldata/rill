@@ -90,7 +90,7 @@
         </p>
       {/if}
     </div>
-    <div class="first:pt-0 last:pb-0 px-4">
+    <div class="first:pt-0 px-4 pb-4">
       <div class="flex flex-col gap-4">
         {#if sidebar.length > 0}
           {#each sidebar as c (c.name)}
