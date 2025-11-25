@@ -60,10 +60,19 @@ export default [
     },
   },
   {
+    files: ["web-common/**/*.{ts,tsx,js,svelte}"],
+    languageOptions: {
+      parserOptions: {
+        project: "./web-common/tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
     ignores: [
       "**/.storybook/*",
       "**/.svelte-kit/",
-      "**/gen/*",
+      "**/gen/**",
       "**/node_modules",
       "**/playwright.config.js",
       "**/postcss.config.cjs",
