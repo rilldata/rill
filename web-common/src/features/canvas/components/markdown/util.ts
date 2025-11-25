@@ -59,7 +59,12 @@ export function formatResolvedContent(
 
   return text.replace(
     formatPattern,
-    (fullMatch, metricsViewName: string, measureName: string, valueStr: string) => {
+    (
+      fullMatch,
+      metricsViewName: string,
+      measureName: string,
+      valueStr: string,
+    ) => {
       const metricsView = metricsViews[metricsViewName];
       if (!metricsView) {
         return fullMatch;
@@ -122,7 +127,10 @@ export function buildRequestBody(params: {
   const additionalWhereByMetricsView: Record<string, V1Expression> = {};
   const metricsViewNames = Object.keys(metricsViews);
 
-  if (metricsViewNames.length > 0 && (globalWhereFilter || globalDimensionThresholdFilters.length > 0)) {
+  if (
+    metricsViewNames.length > 0 &&
+    (globalWhereFilter || globalDimensionThresholdFilters.length > 0)
+  ) {
     for (const metricsViewName of metricsViewNames) {
       const metricsView = metricsViews[metricsViewName];
       const mvSpec = metricsView?.state?.validSpec;

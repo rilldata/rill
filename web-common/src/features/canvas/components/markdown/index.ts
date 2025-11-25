@@ -64,7 +64,8 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           optional: true,
           showInUI: true,
           label: "Apply measure value formatting",
-          description: "Format measure values according to their format settings",
+          description:
+            "Format measure values according to their format settings",
         },
       },
       filter: {},
