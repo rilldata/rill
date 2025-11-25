@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/url"
 	"sort"
 	"strings"
@@ -163,13 +164,13 @@ func ListObjects(ctx context.Context, pathPrefixes []string, blobListfn BlobList
 		return nil, "", err
 	}
 
-	matchedParent := []string{} // allowed prefix contains requested path → real listing
-	matchedChild := []string{}  // allowed prefix is deeper → synthetic listing
+	pathInAllowedPrefix := false // allowed prefix contains requested path → real listing
+	matchedChild := []string{}   // allowed prefix is deeper → synthetic listing
 
 	for _, ap := range allowedPaths {
 		switch {
 		case strings.HasPrefix(path, ap):
-			matchedParent = append(matchedParent, ap)
+			pathInAllowedPrefix = true
 
 		case strings.HasPrefix(ap, path):
 			matchedChild = append(matchedChild, ap)
@@ -177,34 +178,44 @@ func ListObjects(ctx context.Context, pathPrefixes []string, blobListfn BlobList
 	}
 
 	switch {
-	case len(matchedParent) > 0:
+	case pathInAllowedPrefix:
 		// User is within allowed scope → list real objects
 		return blobListfn(ctx, path, delimiter, pageSize, pageToken)
 
 	case len(matchedChild) > 0:
 		// User is above allowed scope → list child prefixes instead of objects
-		return listObjectsFromPathPrefixes(path, matchedChild, delimiter, pageSize, pageToken)
+		return listObjectsFromPathPrefixes(ctx, matchedChild, blobListfn, path, delimiter, pageSize, pageToken)
 	}
 
 	return nil, "", fmt.Errorf("path %q not allowed by path_prefixes", path)
 }
 
-// listObjectsFromPathPrefixes returns synthetic directory entries from deeper
-// allowed prefixes. Only the immediate next path segment is returned.
-// Results are sorted and paginated.
-func listObjectsFromPathPrefixes(path string, matching []string, delimiter string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error) {
-	children := make([]string, 0, len(matching))
-	for _, ap := range matching {
-		rest := strings.TrimPrefix(ap, path) // trim the parent path
-		// take only direct child segment
-		child := strings.SplitN(rest, delimiter, 2)[0]
-		if child != "" {
-			children = append(children, child)
+// listObjectsFromPathPrefixes returns directory entries for allowed prefixes
+// that are deeper than the requested path. If the remaining part of the prefix
+// has no delimiter, real blobs under that prefix are listed. Otherwise, only
+// the first child segment is returned as a synthetic directory. Results are
+// paginated.
+func listObjectsFromPathPrefixes(ctx context.Context, matchingPathPrefixes []string, blobListfn BlobListfn, path, delimiter string, pageSize uint32, pageToken string) ([]ObjectStoreEntry, string, error) {
+	result := make([]ObjectStoreEntry, 0, len(matchingPathPrefixes))
+	for _, ap := range matchingPathPrefixes {
+		rest := strings.TrimPrefix(ap, path)
+		// If 'rest' has no delimiter (e.g. "y="), list real blobs under that prefix.
+		// Otherwise, return only the first child segment as a synthetic directory.
+		if !strings.Contains(rest, delimiter) {
+			objs, _, err := blobListfn(ctx, ap, delimiter, uint32(math.MaxInt32), "")
+			if err != nil {
+				return nil, "", err
+			}
+			result = append(result, objs...)
+		} else {
+			result = append(result, ObjectStoreEntry{
+				Path:      path + strings.SplitN(rest, delimiter, 2)[0] + delimiter,
+				IsDir:     true,
+				Size:      0,
+				UpdatedOn: time.Time{},
+			})
 		}
 	}
-
-	sort.Strings(children)
-
 	// Pagination
 	validPageSize := pagination.ValidPageSize(pageSize, DefaultPageSize)
 	startIndex := 0
@@ -214,26 +225,16 @@ func listObjectsFromPathPrefixes(path string, matching []string, delimiter strin
 		}
 	}
 	endIndex := startIndex + validPageSize
-	if endIndex > len(children) {
-		endIndex = len(children)
+	if endIndex > len(result) {
+		endIndex = len(result)
 	}
 
 	next := ""
-	if endIndex < len(children) {
+	if endIndex < len(result) {
 		next = pagination.MarshalPageToken(endIndex)
 	}
 
-	entries := make([]ObjectStoreEntry, 0, endIndex-startIndex)
-	for _, c := range children[startIndex:endIndex] {
-		entries = append(entries, ObjectStoreEntry{
-			Path:      path + c + delimiter,
-			IsDir:     true,
-			Size:      0,
-			UpdatedOn: time.Time{},
-		})
-	}
-
-	return entries, next, nil
+	return result[startIndex:endIndex], next, nil
 }
 
 // buildAllowedPrefixesForBucket returns allowed prefixes for the given bucket,
