@@ -79,25 +79,23 @@
   >
     <div class="sticky top-0 z-10 bg-[#FAFAFA] p-4 border-gray-200">
       {#if sidebar.length > 0}
-        <h3 class="text-sm font-semibold text-gray-700">Existing connectors</h3>
-        <p class="mt-1 text-xs text-slate-500">
-          Choose data from an existing connector create a new one.
+        <h3 class="text-lg font-semibold">Existing connectors</h3>
+        <p class="mt-4 text-sm text-muted-foreground">
+          Choose data from an existing connector or create a new one.
         </p>
       {:else}
-        <h3 class="text-sm font-semibold text-gray-700">
-          Connected successfully!
-        </h3>
-        <p class="mt-1 text-xs text-slate-500">
+        <h3 class="text-lg font-semibold">Connected successfully!</h3>
+        <p class="mt-1 text-sm text-muted-foreground">
           Pick a table to power your first model.
         </p>
       {/if}
     </div>
-    <div class="first:pt-0 last:pb-0 p-4">
+    <div class="first:pt-0 last:pb-0 px-4">
       <div class="flex flex-col gap-4">
         {#if sidebar.length > 0}
           {#each sidebar as c (c.name)}
             <button
-              class="w-full text-left text-sm px-4 py-3 rounded-2xl border transition-colors flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+              class="w-full text-left text-sm px-4 py-3 h-[40px] text-sm font-medium text-foreground rounded-[10px] border transition-colors flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
               class:border-gray-200={selectedConnectorName !== c.name}
               class:border-indigo-500={selectedConnectorName === c.name}
               class:bg-indigo-50={selectedConnectorName === c.name}
