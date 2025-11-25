@@ -45,6 +45,39 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 	t.Run("testPathRootLevelOfAllowedPrefix", func(t *testing.T) { testPathRootLevelOfAllowedPrefix(t, objectStore, bucket) })
 }
 
+func TestObjectStoreHMAC(t *testing.T) {
+	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
+	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	objectStore, ok := conn.AsObjectStore()
+	require.True(t, ok)
+	bucket := "integration-test.rilldata.com"
+	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
+	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
+	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
+	t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
+	t.Run("testListObjectsNoMatch", func(t *testing.T) { testListObjectsNoMatch(t, objectStore, bucket) })
+}
+
+func TestObjectStoreHMACPathPrefixes(t *testing.T) {
+	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
+	cfg["path_prefixes"] = "gcs://integration-test.rilldata.com/glob_test/"
+	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	objectStore, ok := conn.AsObjectStore()
+	require.True(t, ok)
+	bucket := "integration-test.rilldata.com"
+
+	t.Run("testPathSameAllowedPrefix", func(t *testing.T) { testPathSameAllowedPrefix(t, objectStore, bucket) })
+	t.Run("testPathWithInAllowedPrefix", func(t *testing.T) { testPathWithInAllowedPrefix(t, objectStore, bucket) })
+	t.Run("testPathOutsideAllowedPrefix", func(t *testing.T) { testPathOutsideAllowedPrefix(t, objectStore, bucket) })
+	t.Run("testPathRootLevelOfAllowedPrefix", func(t *testing.T) { testPathRootLevelOfAllowedPrefix(t, objectStore, bucket) })
+}
+
 func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
 	Path := "glob_test/"
