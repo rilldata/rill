@@ -1,13 +1,13 @@
 <script lang="ts">
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import ResourceGraphCanvas from "./ResourceGraphCanvas.svelte";
+  import GraphCanvas from "../graph-canvas/GraphCanvas.svelte";
   import GraphOverlay from "./GraphOverlay.svelte";
   import {
     partitionResourcesByMetrics,
     partitionResourcesBySeeds,
     type ResourceGraphGrouping,
-  } from "./build-resource-graph";
+  } from "../graph-canvas/graph-builder";
   import {
     coerceResourceKind,
     ResourceKind,
@@ -17,13 +17,13 @@
     isKindToken,
     tokenForKind,
     tokenForSeedString,
-  } from "./seed-utils";
+  } from "../navigation/seed-parser";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils";
-  import SummaryCountsGraph from "./SummaryCountsGraph.svelte";
+  import SummaryGraph from "../summary/SummaryGraph.svelte";
   import { onDestroy } from "svelte";
-  import { UI_CONFIG, FIT_VIEW_CONFIG } from "./graph-config";
+  import { UI_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
 
   export let resources: V1Resource[] | undefined;
   export let isLoading = false;
@@ -149,7 +149,7 @@
     })());
 
   // Memoization wrapper for summary data to avoid Svelte reactivity issues with Set/object equality.
-  // Without this, the SummaryCountsGraph component would re-render on every resource array change
+  // Without this, the SummaryGraph component would re-render on every resource array change
   // even if counts haven't actually changed. The summaryEquals function does shallow comparison
   // of counts while checking resources array reference equality.
   let summaryMemo: SummaryMemo = {
@@ -385,7 +385,7 @@
       dashboards={dashboardsCount}
     >
       <div class="top-summary">
-        <SummaryCountsGraph
+        <SummaryGraph
           sources={summaryMemo.sources}
           metrics={summaryMemo.metrics}
           models={summaryMemo.models}
@@ -433,7 +433,7 @@
             />
           {:else if isExpanded}
             <!-- Inline expansion within grid -->
-            <ResourceGraphCanvas
+            <GraphCanvas
               flowId={group.id}
               resources={group.resources}
               title={null}
@@ -459,7 +459,7 @@
           {:else}
             <!-- Collapsed card view -->
             <slot name="graph-item" {group} {index}>
-              <ResourceGraphCanvas
+              <GraphCanvas
                 flowId={group.id}
                 resources={group.resources}
                 title={null}

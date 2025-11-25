@@ -6,8 +6,8 @@
   import { ResourceKind } from "../entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import WorkspaceCrumb from "./WorkspaceCrumb.svelte";
-  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
-  import { ALLOWED_FOR_GRAPH } from "@rilldata/web-common/features/resource-graph/seed-utils";
+  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/embedding/ResourceGraphOverlay.svelte";
+  import { ALLOWED_FOR_GRAPH } from "@rilldata/web-common/features/resource-graph/navigation/seed-parser";
 
   export let resource: V1Resource | undefined;
   export let filePath: string;

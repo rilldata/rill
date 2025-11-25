@@ -11,11 +11,14 @@
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { writable } from "svelte/store";
   import { onMount, onDestroy } from "svelte";
-  import { buildResourceGraph } from "./build-resource-graph";
-  import { traverseUpstream, traverseDownstream } from "./graph-traversal";
+  import { buildResourceGraph } from "./graph-builder";
+  import {
+    traverseUpstream,
+    traverseDownstream,
+  } from "../shared/traversal/graph-traversal";
   import ResourceNode from "./ResourceNode.svelte";
-  import type { ResourceNodeData } from "./types";
-  import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "./graph-config";
+  import type { ResourceNodeData } from "../shared/types";
+  import { UI_CONFIG, EDGE_CONFIG, FIT_VIEW_CONFIG } from "../shared/config";
 
   export let resources: V1Resource[] = [];
   export let title: string | null = null;
@@ -77,7 +80,7 @@
   import { createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher<{ expand: void }>();
   // Tie Svelte Flow theme to the app theme
-  import { themeControl } from "../themes/theme-control";
+  import { themeControl } from "../../themes/theme-control";
   // Derive Svelte Flow color mode from global theme
   $: flowColorMode = ($themeControl === "dark" ? "dark" : "light") as
     | "dark"

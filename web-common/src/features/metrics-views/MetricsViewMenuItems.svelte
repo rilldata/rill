@@ -17,7 +17,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
   import { GitBranch } from "lucide-svelte";
-  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/resource-graph-quick-view-store";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
 
   export let filePath: string;
 

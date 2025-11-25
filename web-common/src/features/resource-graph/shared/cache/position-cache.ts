@@ -17,7 +17,7 @@ import {
   debugLog,
   PERFORMANCE_CONFIG,
   CACHE_CONFIG,
-} from "./graph-config";
+} from "../config";
 
 /**
  * Structure of persisted cache data.

@@ -8,10 +8,10 @@
   } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/base.css";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import SummaryCountNode from "./SummaryCountNode.svelte";
+  import SummaryNode from "./SummaryNode.svelte";
   import { writable } from "svelte/store";
   import { onMount, onDestroy } from "svelte";
-  import { themeControl } from "../themes/theme-control";
+  import { themeControl } from "../../themes/theme-control";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { goto } from "$app/navigation";
 
@@ -163,7 +163,7 @@
   }
 
   const nodeTypes: NodeTypes = {
-    "summary-count": SummaryCountNode as NodeTypes[string],
+    "summary-count": SummaryNode as NodeTypes[string],
   };
   $: flowColorMode = ($themeControl === "dark" ? "dark" : "light") as
     | "dark"

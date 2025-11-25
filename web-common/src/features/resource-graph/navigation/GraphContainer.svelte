@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import ResourceGraph from "./ResourceGraph.svelte";
+  import ResourceGraph from "../embedding/ResourceGraph.svelte";
   export let seeds: string[] | undefined;
 
   $: ({ instanceId } = $runtime);

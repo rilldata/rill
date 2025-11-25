@@ -6,7 +6,7 @@
     resourceIconMapping,
   } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import type { ResourceNodeData } from "./types";
+  import type { ResourceNodeData } from "../shared/types";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { goto } from "$app/navigation";

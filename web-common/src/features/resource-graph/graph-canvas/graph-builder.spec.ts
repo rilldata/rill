@@ -3,7 +3,7 @@ import {
   buildResourceGraph,
   partitionResourcesBySeeds,
   partitionResourcesByMetrics,
-} from "./build-resource-graph";
+} from "./graph-builder";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 

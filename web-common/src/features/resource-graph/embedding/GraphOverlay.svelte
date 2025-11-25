@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { ResourceGraphGrouping } from "./build-resource-graph";
-  import ResourceGraphCanvas from "./ResourceGraphCanvas.svelte";
+  import type { ResourceGraphGrouping } from "../graph-canvas/graph-builder";
+  import GraphCanvas from "../graph-canvas/GraphCanvas.svelte";
   import { createEventDispatcher } from "svelte";
-  import { FIT_VIEW_CONFIG } from "./graph-config";
+  import { FIT_VIEW_CONFIG } from "../shared/config";
 
   export let group: ResourceGraphGrouping | null = null;
   export let open = false;
@@ -65,7 +65,7 @@
         </button>
       {/if}
 
-      <ResourceGraphCanvas
+      <GraphCanvas
         flowId={group.id}
         resources={group.resources}
         title={null}

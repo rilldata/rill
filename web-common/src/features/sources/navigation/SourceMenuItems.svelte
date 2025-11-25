@@ -31,7 +31,7 @@
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
   import { createSqlModelFromTable } from "../../connectors/code-utils";
-  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/resource-graph-quick-view-store";
+  import { openResourceGraphQuickView } from "@rilldata/web-common/features/resource-graph/quick-view/quick-view-store";
 
   export let filePath: string;
 

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import ResourceGraphOverlay from "@rilldata/web-common/features/resource-graph/ResourceGraphOverlay.svelte";
+  import ResourceGraphOverlay from "../embedding/ResourceGraphOverlay.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     closeResourceGraphQuickView,
     resourceGraphQuickViewState,
-  } from "@rilldata/web-common/features/resource-graph/resource-graph-quick-view-store";
+  } from "./quick-view-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 

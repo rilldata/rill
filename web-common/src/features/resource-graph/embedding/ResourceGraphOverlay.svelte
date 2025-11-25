@@ -3,7 +3,7 @@
   import { X, GitBranch } from "lucide-svelte";
   import ResourceGraph from "./ResourceGraph.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { ALLOWED_FOR_GRAPH } from "./seed-utils";
+  import { ALLOWED_FOR_GRAPH } from "../navigation/seed-parser";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { tick } from "svelte";
 

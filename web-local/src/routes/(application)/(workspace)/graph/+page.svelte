@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ResourceGraphContainer from "@rilldata/web-common/features/resource-graph/ResourceGraphContainer.svelte";
+  import GraphContainer from "@rilldata/web-common/features/resource-graph/navigation/GraphContainer.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import { page } from "$app/stores";
 
@@ -22,7 +22,7 @@
   </div>
 
   <div slot="body" class="graph-wrapper">
-    <ResourceGraphContainer {seeds} />
+    <GraphContainer {seeds} />
   </div>
 </WorkspaceContainer>
 

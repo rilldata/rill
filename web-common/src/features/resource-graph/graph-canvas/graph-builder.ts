@@ -13,9 +13,9 @@ import type {
   V1Resource,
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
-import type { ResourceNodeData } from "./types";
-import { graphCache } from "./cache-manager";
-import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "./graph-config";
+import type { ResourceNodeData } from "../shared/types";
+import { graphCache } from "../shared/cache/position-cache";
+import { NODE_CONFIG, DAGRE_CONFIG, EDGE_CONFIG } from "../shared/config";
 
 // Use centralized configuration
 const MIN_NODE_WIDTH = NODE_CONFIG.MIN_WIDTH;

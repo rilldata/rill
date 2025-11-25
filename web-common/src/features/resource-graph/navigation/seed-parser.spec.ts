@@ -6,7 +6,7 @@ import {
   tokenForSeedString,
   expandSeedsByKind,
   ALLOWED_FOR_GRAPH,
-} from "./seed-utils";
+} from "./seed-parser";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
