@@ -113,7 +113,12 @@ type ConfigProperties struct {
 	RoleARN         string `mapstructure:"aws_role_arn"`
 	RoleSessionName string `mapstructure:"aws_role_session_name"`
 	ExternalID      string `mapstructure:"aws_external_id"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	// A list of bucket path prefixes that this connector is allowed to access.
+	// Useful when different buckets or bucket prefixes use different credentials,
+	// allowing the system to select the appropriate connector based on the bucket path.
+	// Example formats: `s3://my-bucket/` `s3://my-bucket/path/` `s3://my-bucket/path/prefix`
+	PathPrefixes    []string `mapstructure:"path_prefixes"`
+	AllowHostAccess bool     `mapstructure:"allow_host_access"`
 }
 
 // Open implements drivers.Driver

@@ -10,8 +10,3 @@ decorators:
 openapi:
   schemasExpansionLevel: 2
   showExtensions: true
-
-# Point to the filtered public API spec
-apis:
-  public@v1:
-    root: api/openapi.yaml

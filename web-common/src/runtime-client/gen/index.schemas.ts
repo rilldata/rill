@@ -2605,6 +2605,13 @@ export type RuntimeServiceCompleteStreaming200 = {
   error?: RpcStatus;
 };
 
+export type RuntimeServiceListConversationsParams = {
+  /**
+   * Optional search pattern for filtering by user agent.
+   */
+  userAgentPattern?: string;
+};
+
 export type RuntimeServiceListFilesParams = {
   glob?: string;
 };

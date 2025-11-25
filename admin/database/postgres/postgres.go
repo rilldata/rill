@@ -668,9 +668,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, owner_user_id, environment, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
+		INSERT INTO deployments (project_id, owner_user_id, environment, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message, desired_status, desired_status_updated_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now()) RETURNING *`,
+		opts.ProjectID, opts.OwnerUserID, opts.Environment, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, opts.DesiredStatus,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -700,6 +700,15 @@ func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *data
 func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentDesiredStatus(ctx context.Context, id string, desiredStatus database.DeploymentStatus) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET desired_status=$1, desired_status_updated_on=now(), updated_on=now() WHERE id=$2 RETURNING *", desiredStatus, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
@@ -1087,7 +1096,7 @@ func (c *connection) DeleteManagedUsergroupsMemberUser(ctx context.Context, orgI
 	return nil
 }
 
-func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int) ([]*database.UserAuthToken, error) {
+func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID string, limit int, refresh *bool) ([]*database.UserAuthToken, error) {
 	var qry strings.Builder
 	qry.WriteString(`
 		SELECT
@@ -1098,11 +1107,18 @@ func (c *connection) FindUserAuthTokens(ctx context.Context, userID, afterID str
 		WHERE t.user_id = $1 AND (t.expires_on IS NULL OR t.expires_on > now())
 	`)
 	args := []any{userID}
+
+	// Filter by refresh token status if specified
+	if refresh != nil {
+		qry.WriteString(" AND t.refresh = $2")
+		args = append(args, *refresh)
+	}
+
 	if afterID != "" {
-		qry.WriteString(" AND t.id > $2 ORDER BY t.id LIMIT $3")
+		qry.WriteString(fmt.Sprintf(" AND t.id > $%d ORDER BY t.id LIMIT $%d", len(args)+1, len(args)+2))
 		args = append(args, afterID, limit)
 	} else {
-		qry.WriteString(" ORDER BY t.id LIMIT $2")
+		qry.WriteString(fmt.Sprintf(" ORDER BY t.id LIMIT $%d", len(args)+1))
 		args = append(args, limit)
 	}
 
@@ -1130,9 +1146,9 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expires_on)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpiresOn,
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, refresh, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.Refresh, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("auth token", err)
@@ -1151,6 +1167,21 @@ func (c *connection) UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
+}
+
+func (c *connection) DeleteAllUserAuthTokens(ctx context.Context, userID string) (int, error) {
+	qry := "DELETE FROM user_auth_tokens WHERE user_id=$1"
+	args := []any{userID}
+
+	res, err := c.getDB(ctx).ExecContext(ctx, qry, args...)
+	if err != nil {
+		return 0, parseErr("delete all auth tokens", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, parseErr("delete all auth tokens", err)
+	}
+	return int(n), nil
 }
 
 func (c *connection) DeleteUserAuthTokensByUserAndRepresentingUser(ctx context.Context, userID, representingUserID string) error {
@@ -1702,6 +1733,37 @@ func (c *connection) DeleteAuthorizationCode(ctx context.Context, code string) e
 func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM authorization_codes WHERE expires_on + $1 < now()", retention)
 	return parseErr("authorization code", err)
+}
+
+func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes []string) (*database.AuthClient, error) {
+	if grantTypes == nil {
+		grantTypes = []string{}
+	}
+	dto := &authClientDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`INSERT INTO auth_clients (display_name, scope, grant_types) VALUES ($1, $2, $3) RETURNING *`,
+		displayName, scope, grantTypes).StructScan(dto)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return dto.AsModel()
+}
+
+func (c *connection) FindAuthClient(ctx context.Context, id string) (*database.AuthClient, error) {
+	dto := &authClientDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM auth_clients WHERE id = $1", id).StructScan(dto)
+	if err != nil {
+		return nil, parseErr("auth client", err)
+	}
+	return dto.AsModel()
+}
+
+func (c *connection) UpdateAuthClientUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE auth_clients SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("auth client", err)
+	}
+	return nil
 }
 
 func (c *connection) FindOrganizationRoles(ctx context.Context) ([]*database.OrganizationRole, error) {
@@ -3302,6 +3364,21 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 	}
 
 	return o.OrganizationInvite, nil
+}
+
+type authClientDTO struct {
+	*database.AuthClient
+	GrantTypes pgtype.TextArray `db:"grant_types"`
+}
+
+func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
+	if dto.AuthClient == nil {
+		dto.AuthClient = &database.AuthClient{}
+	}
+	if err := dto.GrantTypes.AssignTo(&dto.AuthClient.GrantTypes); err != nil {
+		return nil, err
+	}
+	return dto.AuthClient, nil
 }
 
 type billingIssueDTO struct {
