@@ -108,17 +108,11 @@ func (s *Server) GenerateCanvasDashboardFile(ctx context.Context, req *runtimev1
 		}
 	}
 
-	// Log the generated YAML for debugging
-	previewLen := len(data)
-	if previewLen > 500 {
-		previewLen = 500
-	}
 	s.logger.Info("Generated canvas dashboard YAML",
 		zap.String("metrics_view", req.MetricsViewName),
 		zap.String("path", req.Path),
 		zap.Bool("ai_succeeded", aiSucceeded),
 		zap.Int("yaml_length", len(data)),
-		zap.String("yaml_preview", data[:previewLen]),
 		observability.ZapCtx(ctx),
 	)
 
