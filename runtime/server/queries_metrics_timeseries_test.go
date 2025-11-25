@@ -69,7 +69,9 @@ func TestServer_MetricsViewTimeSeries_PushDown_UTC(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 3.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
 
-	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids")
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids", map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
 	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_dst_metrics",
@@ -125,7 +127,9 @@ func TestServer_MetricsViewTimeSeries_PushDown_PST(t *testing.T) {
 	require.Equal(t, 0.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 0.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
 
-	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids")
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids", map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
 	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_dst_metrics",
@@ -182,7 +186,9 @@ func TestServer_MetricsViewTimeSeries_PushDown_IST(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data[2].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 3.0, tr.Data[2].Records.Fields["measure_2"].GetNumberValue())
 
-	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids")
+	server, instanceId = getMetricsTestServerWithDefaultInstanceConfigs(t, "ad_bids", map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
 	tr, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_dst_metrics",
@@ -272,6 +278,29 @@ func TestServer_Timeseries(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.Data
+	require.Equal(t, 1, len(results))
+	require.Equal(t, 1.0, results[0].Records.Fields["max_clicks"].GetNumberValue())
+
+	// repeat the test with pushdown null filling
+	server, instanceID = getMetricsTestServerWithDefaultInstanceConfigs(t, "timeseries", map[string]string{
+		"rill.metrics.timeseries_null_filling_implementation": "pushdown",
+	})
+
+	response, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceID,
+		MetricsViewName: "timeseries",
+		MeasureNames:    []string{"max_clicks"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2019-12-02T00:00:00Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		Where: expressionpb.In(
+			expressionpb.Identifier("device"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("android")), expressionpb.Value(structpb.NewStringValue("iphone"))},
+		),
+	})
+
+	require.NoError(t, err)
+	results = response.Data
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 1.0, results[0].Records.Fields["max_clicks"].GetNumberValue())
 }
