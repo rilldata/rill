@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	goruntime "runtime"
@@ -945,6 +946,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			opts.MaxIterations = 1
 		}
 	}
+	if opts.MaxIterations == 1 && len(opts.Tools) > 0 {
+		return errors.New("max iterations must be greater than 1 when using tools")
+	}
 
 	// Prepare tool definitions.
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
@@ -1065,7 +1069,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			final := i+1 == opts.MaxIterations
 			if final {
 				tools = nil
-				messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
+				if i != 0 {
+					messages = append(messages, NewTextCompletionMessage(RoleUser, "Tool call limit reached. Provide a final response without additional tool calls."))
+				}
 			}
 
 			// Truncate messages to fit within LLM context window.
