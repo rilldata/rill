@@ -19,6 +19,7 @@ export const defaultMarkdownAlignment: ComponentAlignment = {
 export interface MarkdownSpec extends ComponentCommonProperties {
   content: string;
   alignment?: ComponentAlignment;
+  apply_formatting?: boolean;
 }
 
 export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
@@ -34,6 +35,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
       description: "",
       content: "Your text",
       alignment: defaultMarkdownAlignment,
+      // Don't set apply_formatting in default - it defaults to false when missing
     };
     super(resource, parent, path, defaultSpec);
   }
@@ -57,6 +59,13 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
             defaultAlignment: defaultMarkdownAlignment,
           },
         },
+        apply_formatting: {
+          type: "boolean",
+          optional: true,
+          showInUI: true,
+          label: "Apply measure value formatting",
+          description: "Format measure values according to their format settings",
+        },
       },
       filter: {},
     };
@@ -79,6 +88,7 @@ Start writing in **Markdown** and see your text beautifully formatted! 🚀`;
     return {
       content: defaultContent,
       alignment: defaultMarkdownAlignment,
+      // Don't set apply_formatting - it defaults to false when missing
     };
   }
 }
