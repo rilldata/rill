@@ -195,20 +195,23 @@ export class CanvasEntity {
     this.unsubscriber = this.specStore.subscribe((spec) => {
       const filePath = spec.data?.filePath;
 
-      console.log(spec.data);
-
-      console.log({ spec: spec.data });
-
       if (spec.data?.metricsViews) {
-        this.filterManager = new FilterManager(
-          spec.data?.metricsViews,
-          spec.data.canvas?.pinnedFilters ?? [],
-          spec.data.canvas?.defaultPreset?.filterExpr ?? {},
-        );
+        if (this.filterManager) {
+          this.filterManager.updateConfig(
+            spec.data?.metricsViews,
+            spec.data.canvas?.pinnedFilters ?? [],
+            spec.data.canvas?.defaultPreset?.filterExpr ?? {},
+          );
+        } else {
+          this.filterManager = new FilterManager(
+            spec.data?.metricsViews,
+            spec.data.canvas?.pinnedFilters ?? [],
+            spec.data.canvas?.defaultPreset?.filterExpr ?? {},
+          );
+        }
       }
 
       Object.entries(spec.data?.metricsViews ?? {}).forEach(([mvName, mv]) => {
-        console.log(`Metrics View: ${mvName}`);
         console.log(mv);
         if (!mv) return;
         this.metricsFilters[mvName] = new Filters(
@@ -220,12 +223,6 @@ export class CanvasEntity {
 
       this.pinnedFilters.set(new Set(spec.data?.canvas?.pinnedFilters ?? []));
 
-      Object.entries(
-        spec.data?.canvas?.defaultPreset?.filterExpr ?? {},
-      ).forEach(([metricsViewName, expr]) => {
-        console.log(getFiltersFromText(expr));
-      });
-
       if (!filePath) {
         return;
       }
@@ -233,17 +230,13 @@ export class CanvasEntity {
       if (!this.fileArtifact) {
         const fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-        console.log("HUH???");
-
         if (!fileArtifact) {
           return;
         }
 
-        console.log("YEAH YEAH");
         this.fileArtifact = fileArtifact;
 
         if (!this.parsedContent) {
-          console.log("SETTING UP PARSED CONTENT STORE");
           this.parsedContent = derived(
             fileArtifact.editorContent,
             (editorContent) => {
@@ -318,8 +311,6 @@ export class CanvasEntity {
     );
     const response = await queryClient.fetchQuery(options);
 
-    // console.log({ response });
-
     const defaultSearchParams = new URLSearchParams();
 
     Object.entries(
@@ -382,7 +373,6 @@ export class CanvasEntity {
           throw redirect(307, homeBookmarkUrlSearch);
         }
       } else if (defaultSearchParams.toString()) {
-        // console.log("what");
         if (builderContext) {
           await goto(`?${defaultSearchParams.toString()}`, {
             replaceState: true,

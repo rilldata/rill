@@ -272,7 +272,6 @@ export class TimeControls {
       selectedTimezone,
     );
 
-    console.log(initialRange);
     const didSet = false;
 
     // const didSet = this.set.range(

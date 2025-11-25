@@ -44,12 +44,13 @@
         addTemporaryFilter,
         applyDimensionContainsMode,
         removeDimensionFilter,
+        clearAllFilters,
       },
       filters: {
         whereFilter,
         setMeasureFilter,
         removeMeasureFilter,
-        clearAllFilters,
+        // clearAllFilters,
         dimensionHasFilter,
         temporaryFilters,
         allDimensionFilterItems,
@@ -131,6 +132,8 @@
     set.range(`${start.toISOString()},${end.toISOString()}`);
     set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
+
+  $: console.log({ dimensions });
 </script>
 
 <div
@@ -291,7 +294,7 @@
         <FilterButton
           allDimensions={Array.from($_allDimensions.values())}
           filteredSimpleMeasures={$allSimpleMeasures}
-          dimensionHasFilter={$dimensionHasFilter}
+          dimensionHasFilter={(name) => dimensions.has(name)}
           measureHasFilter={$measureHasFilter}
           setTemporaryFilterName={(n) => {
             justAdded = true;

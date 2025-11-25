@@ -12,11 +12,7 @@
   $: ({
     canvasEntity: {
       clearDefaultFilters,
-      filterManager: {
-        _allDimensions,
-        _defaultUIFilters,
-        allMetricsViewNamesPrefix,
-      },
+      filterManager: { _defaultUIFilters },
       timeControls: { interval: _interval },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -24,8 +20,6 @@
   $: ({ dimensions } = $_defaultUIFilters);
 
   $: interval = $_interval;
-
-  $: console.log({ dimensions });
 </script>
 
 <div class="flex-col flex h-full">
@@ -34,8 +28,6 @@
       The filters listed below are saved as your default view and will
       automatically apply each time you open this dashboard in Rill Cloud.
     </p>
-
-    <!-- {JSON.stringify(Array.from(dimensions.values()))} -->
 
     <div class="flex flex-col gap-y-2 w-full flex-none">
       {#each dimensions as [name, entry] (name)}
