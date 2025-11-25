@@ -4045,6 +4045,11 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
+      pinnedFilters:
+        type: array
+        items:
+          type: string
+        title: Pinned filters
   v1CanvasState:
     type: object
     properties:

@@ -11,8 +11,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { toggleDimensionFilterValue } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters.ts";
 import {
-  type DimensionFilterItem,
   getDimensionFiltersMap,
+  type DimensionFilterItem,
 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -20,6 +20,7 @@ import {
   createAndExpression,
   createInExpression,
   createLikeExpression,
+  forEachIdentifier,
   getValuesInExpression,
   isExpressionUnsupported,
   matchExpressionByName,
@@ -31,7 +32,9 @@ import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   MetricsViewSpecDimension,
+  V1CanvasPresetFilterExpr,
   V1Expression,
+  V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import {
   type MetricsViewSpecMeasure,
@@ -46,6 +49,524 @@ import {
 } from "svelte/store";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
 import type { SearchParamsStore } from "./canvas-entity";
+import { goto } from "$app/navigation";
+
+export type CanvasDimensionFilter = {
+  dimensions: Map<string, MetricsViewSpecDimension>;
+  mode: DimensionFilterMode;
+  selectedValues: string[];
+  inputText: string | undefined;
+  isInclude: boolean;
+  pinned: boolean;
+};
+
+type UIFilters = {
+  dimensions: Map<string, CanvasDimensionFilter>;
+  measures: Map<string, MeasureFilterItem>;
+};
+
+// wip - bgh
+export class FilterManager {
+  metricsViewFilters: Map<string, NewFilters> = new Map();
+  private pinnedFilters = writable<Map<string, CanvasDimensionFilter>>(
+    new Map(),
+  );
+  temporaryFilters = writable<Map<string, CanvasDimensionFilter>>(new Map());
+  _allDimensions = writable(
+    new Map<
+      string,
+      MetricsViewSpecDimension & { metricsViewNames: string[] }
+    >(),
+  );
+  _dimensionFilterKeys: Readable<string[]>;
+  _defaultUIFilters: Readable<UIFilters>;
+  _defaultExpression: Readable<V1Expression>;
+  allMetricsViewNamesPrefix = writable<string>("");
+  _activeUIFilters: Readable<UIFilters>;
+  _activeExpression: Readable<V1Expression>;
+
+  applyDimensionContainsMode = async (
+    dimensionName: string,
+    searchText: string,
+    metricsViewNames: string[],
+  ) => {
+    const searchParams = new URLSearchParams();
+
+    metricsViewNames.forEach((name) => {
+      const filterClass = this.metricsViewFilters.get(name);
+      if (!filterClass) return;
+      const string = filterClass.applyDimensionContainsMode(
+        dimensionName,
+        searchText,
+      );
+      if (string) {
+        searchParams.set(`${ExploreStateURLParams.Filters}.${name}`, string);
+      }
+    });
+    const string = searchParams.toString();
+
+    if (!string) {
+      await goto(`?default=true`);
+    } else {
+      await goto(`?${string}`);
+    }
+  };
+
+  removeDimensionFilter = async (
+    dimensionName: string,
+    metricsViewNames: string[],
+  ) => {
+    const searchParams = new URLSearchParams();
+    metricsViewNames.forEach((name) => {
+      const filterClass = this.metricsViewFilters.get(name);
+      if (!filterClass) return;
+      const string = filterClass.removeDimensionFilter(dimensionName);
+      if (string) {
+        searchParams.set(`${ExploreStateURLParams.Filters}.${name}`, string);
+      }
+    });
+    const string = searchParams.toString();
+
+    if (!string) {
+      // Weird behavior when removing last filter
+      // Need to consider other options - bgh
+      await goto(`?default=true`);
+    } else {
+      await goto(`?${string}`);
+    }
+  };
+
+  addTemporaryFilter = (dimensionName: string) => {
+    const foundDimensions = new Map<string, MetricsViewSpecDimension>();
+
+    this.metricsViewFilters.entries().forEach(([name, filters]) => {
+      const foundDimension = filters.dimensionMap.get(dimensionName);
+      if (foundDimension) {
+        foundDimensions.set(name, foundDimension);
+      }
+    });
+    this.temporaryFilters.update((tempFilters) => {
+      tempFilters.set(dimensionName, {
+        mode: DimensionFilterMode.Select,
+        selectedValues: [],
+        dimensions: foundDimensions,
+        isInclude: true,
+        inputText: undefined,
+        pinned: false,
+      });
+      return tempFilters;
+    });
+  };
+
+  constructor(
+    metricsViews: Record<string, V1MetricsView | undefined>,
+    pinnedFilters?: string[],
+    defaultFilters?: V1CanvasPresetFilterExpr,
+  ) {
+    const allMetricsViewNames = Object.keys(metricsViews);
+    const allMetricsViewNamesPrefix = allMetricsViewNames.join(".");
+    this.allMetricsViewNamesPrefix.set(allMetricsViewNamesPrefix);
+
+    Object.entries(metricsViews).forEach(([name, mv]) => {
+      if (mv) {
+        mv.state?.validSpec?.dimensions?.forEach((dim) => {
+          const dimName = dim.name;
+          if (!dimName) return;
+          this._allDimensions.update((allDims) => {
+            allDims.set(`${allMetricsViewNamesPrefix}-${dimName}`, {
+              ...dim,
+              metricsViewNames: allMetricsViewNames,
+            });
+            return allDims;
+          });
+        });
+        this.metricsViewFilters.set(
+          name,
+          new NewFilters(mv, name, defaultFilters?.[name]),
+        );
+      }
+    });
+
+    if (pinnedFilters) {
+      const map = new Map();
+
+      pinnedFilters.forEach((f) => {
+        const foundDimensions = new Map();
+
+        this.metricsViewFilters.entries().forEach(([name, filters]) => {
+          const foundDimension = filters.dimensionMap.get(f);
+          if (foundDimension) {
+            foundDimensions.set(name, foundDimension);
+          }
+        });
+        map.set(f, {
+          mode: DimensionFilterMode.Select,
+          selectedValues: [],
+          isInclude: true,
+          inputText: undefined,
+          dimensions: foundDimensions,
+          pinned: true,
+        });
+      });
+      this.pinnedFilters.set(map);
+    }
+
+    this._defaultUIFilters = derived(
+      [
+        ...Array.from(this.metricsViewFilters.values()).map(
+          (f) => f.parsedDefaultFilters,
+        ),
+      ],
+      (expr) => {
+        return expr[0];
+      },
+    );
+
+    this._activeUIFilters = derived(
+      [
+        this.pinnedFilters,
+        this.temporaryFilters,
+        ...Array.from(this.metricsViewFilters.values()).map((f) => f.parsed),
+      ],
+      ([pinnedFilters, temporaryFilters, ...filters]) => {
+        const effective = filters[0];
+
+        pinnedFilters.entries().forEach(([name, filter]) => {
+          const existing = effective.dimensions.get(name);
+          if (!existing) {
+            effective.dimensions.set(name, filter);
+          } else {
+            existing.pinned = true;
+          }
+        });
+
+        temporaryFilters.forEach((keyedFilter, name) => {
+          const existing = effective.dimensions.get(name);
+          if (!existing) {
+            effective.dimensions.set(name, keyedFilter);
+          }
+        });
+
+        return effective;
+      },
+    );
+  }
+
+  toggleDimensionFilterMode = async (
+    dimensionName: string,
+    metricsViewNames: string[],
+  ) => {
+    const searchParams = new URLSearchParams();
+
+    metricsViewNames.forEach((name) => {
+      const filterClass = this.metricsViewFilters.get(name);
+
+      if (!filterClass) return;
+      const string = filterClass.toggleDimensionFilterMode(dimensionName);
+
+      if (!string) return;
+
+      searchParams.set(`${ExploreStateURLParams.Filters}.${name}`, string);
+    });
+
+    const string = searchParams.toString();
+
+    if (!string) {
+      await goto(`?default=true`);
+    } else {
+      await goto(`?${string}`);
+    }
+  };
+
+  applyDimensionInListMode = async (
+    dimensionName: string,
+    values: string[],
+    metricsViewNames: string[],
+  ) => {
+    const searchParams = new URLSearchParams();
+
+    metricsViewNames.forEach((name) => {
+      const filterClass = this.metricsViewFilters.get(name);
+
+      if (!filterClass) return;
+      const string = filterClass.applyDimensionInListMode(
+        dimensionName,
+        values,
+      );
+
+      if (!string) return;
+
+      searchParams.set(`${ExploreStateURLParams.Filters}.${name}`, string);
+    });
+
+    const string = searchParams.toString();
+
+    if (!string) {
+      await goto(`?default=true`);
+    } else {
+      await goto(`?${string}`);
+    }
+  };
+
+  toggleMultipleDimensionValueSelections = async (
+    dimensionName: string,
+    dimensionValues: string[],
+    metricsViewNames: string[],
+    keepPillVisible?: boolean,
+    isExclusiveFilter?: boolean,
+  ) => {
+    const searchParams = new URLSearchParams();
+
+    metricsViewNames.forEach((name) => {
+      const filterClass = this.metricsViewFilters.get(name);
+
+      if (!filterClass) return;
+      const string = filterClass.toggleMultipleDimensionValueSelections(
+        dimensionName,
+        dimensionValues,
+        keepPillVisible,
+        isExclusiveFilter,
+      );
+
+      if (!string) return;
+
+      searchParams.set(`${ExploreStateURLParams.Filters}.${name}`, string);
+    });
+
+    const string = searchParams.toString();
+
+    if (!string) {
+      await goto(`?default=true`);
+    } else {
+      await goto(`?${string}`);
+    }
+  };
+}
+
+type ParsedFilters = {
+  string: string;
+  where: V1Expression;
+  measures: Map<string, MeasureFilterItem>;
+  dimensions: Map<string, CanvasDimensionFilter>;
+  dimensionsWithInlistFilter: string[];
+  dimensionThresholdFilters: DimensionThresholdFilter[];
+};
+
+const parsedFilterBase: ParsedFilters = {
+  where: {
+    cond: {
+      op: "OPERATION_AND",
+      exprs: [],
+    },
+  },
+  string: "",
+  dimensionsWithInlistFilter: [],
+  dimensionThresholdFilters: [],
+  measures: new Map(),
+  dimensions: new Map(),
+};
+
+// wip - bgh
+export class NewFilters {
+  parsed = writable<ParsedFilters>(parsedFilterBase);
+  parsedDefaultFilters = writable<ParsedFilters>(parsedFilterBase);
+  dimensionMap: Map<string, MetricsViewSpecDimension> = new Map();
+
+  constructor(
+    private metricsView: V1MetricsView,
+    private metricsViewName: string,
+    defaultExpression?: string,
+  ) {
+    this.metricsView.state?.validSpec?.dimensions?.forEach((dim) => {
+      if (!dim.name) return;
+      this.dimensionMap.set(dim.name, dim);
+    });
+
+    if (defaultExpression) {
+      this.parsedDefaultFilters.set(this.parseFilterString(defaultExpression));
+    }
+  }
+
+  removeDimensionFilter = (dimensionName: string) => {
+    const {
+      where: wf,
+      dimensionThresholdFilters,
+      dimensionsWithInlistFilter,
+    } = get(this.parsed);
+    const exprIdx = wf.cond?.exprs?.findIndex(
+      (e) => e.cond?.exprs?.[0].ident === dimensionName,
+    );
+    if (exprIdx === undefined || exprIdx === -1) return;
+    wf.cond?.exprs?.splice(exprIdx, 1);
+
+    return getFilterParam(
+      wf,
+      dimensionThresholdFilters,
+      dimensionsWithInlistFilter,
+    );
+  };
+
+  applyDimensionContainsMode = (dimensionName: string, searchText: string) => {
+    const {
+      where: wf,
+      dimensionThresholdFilters,
+      dimensionsWithInlistFilter,
+    } = get(this.parsed);
+
+    const exprIndex = wf.cond?.exprs?.findIndex(
+      (e) => e.cond?.exprs?.[0].ident === dimensionName,
+    );
+
+    if (exprIndex === undefined || exprIndex === -1) {
+      wf.cond!.exprs!.push(
+        createLikeExpression(dimensionName, `%${searchText}%`, false),
+      );
+    } else {
+      const operation = wf.cond!.exprs![exprIndex].cond!.op;
+      const isExclude =
+        operation === V1Operation.OPERATION_NLIKE ||
+        operation === V1Operation.OPERATION_NIN;
+      wf.cond!.exprs![exprIndex] = createLikeExpression(
+        dimensionName,
+        `%${searchText}%`,
+        isExclude,
+      );
+    }
+    return getFilterParam(
+      wf,
+      dimensionThresholdFilters,
+      dimensionsWithInlistFilter,
+    );
+  };
+
+  parseFilterString(filterString: string) {
+    const { expr, dimensionsWithInlistFilter } =
+      getFiltersFromText(filterString);
+
+    const { dimensionThresholdFilters } = splitWhereFilter(expr);
+
+    const processed = processExpression({
+      expr,
+      dimensionMap: this.dimensionMap,
+      metricsViewName: this.metricsViewName,
+      dimensionsWithInlistFilter,
+    });
+
+    return {
+      string: filterString,
+      where: expr,
+      dimensionsWithInlistFilter,
+      dimensionThresholdFilters,
+      ...processed,
+    };
+  }
+
+  onFilterStringChange(filterString: string) {
+    this.parsed.set(this.parseFilterString(filterString));
+  }
+
+  toggleDimensionFilterMode = (dimensionName: string) => {
+    const {
+      dimensionsWithInlistFilter,
+      where: wf,
+      dimensionThresholdFilters,
+    } = get(this.parsed);
+
+    if (!wf.cond?.exprs) return;
+    const exprIdx = wf.cond.exprs.findIndex(
+      (e) => e.cond?.exprs?.[0].ident === dimensionName,
+    );
+    if (exprIdx === -1) return;
+    wf.cond.exprs[exprIdx] = negateExpression(wf.cond.exprs[exprIdx]);
+
+    return getFilterParam(
+      wf,
+      dimensionThresholdFilters,
+      dimensionsWithInlistFilter,
+    );
+  };
+
+  toggleMultipleDimensionValueSelections = (
+    dimensionName: string,
+    dimensionValues: string[],
+    keepPillVisible?: boolean,
+    isExclusiveFilter?: boolean,
+    exclude: boolean = false,
+  ) => {
+    const {
+      where: wf,
+      dimensionsWithInlistFilter,
+      dimensionThresholdFilters,
+    } = get(this.parsed);
+
+    let exprIndex =
+      wf.cond?.exprs?.findIndex(
+        (e) => e.cond?.exprs?.[0].ident === dimensionName,
+      ) ?? -1;
+    let expr = wf.cond?.exprs?.[exprIndex];
+
+    const wasLikeFilter =
+      expr?.cond?.op === V1Operation.OPERATION_LIKE ||
+      expr?.cond?.op === V1Operation.OPERATION_NLIKE;
+    if (!expr?.cond?.exprs || wasLikeFilter) {
+      expr = createInExpression(dimensionName, [], exclude);
+      wf.cond?.exprs?.push(expr);
+      exprIndex = wf.cond!.exprs!.length - 1;
+    }
+
+    const wasInListFilter = dimensionsWithInlistFilter.includes(dimensionName);
+    if (wasInListFilter) {
+      dimensionsWithInlistFilter.filter((d) => d !== dimensionName);
+    }
+
+    dimensionValues.forEach((dimensionValue) => {
+      toggleDimensionFilterValue(expr, dimensionValue, !!isExclusiveFilter);
+    });
+
+    if (expr?.cond?.exprs?.length === 1) {
+      wf.cond?.exprs?.splice(exprIndex, 1);
+
+      if (keepPillVisible) {
+        // this.setTemporaryFilterName(dimensionName);
+      }
+    }
+
+    return getFilterParam(
+      wf,
+      dimensionThresholdFilters,
+      dimensionsWithInlistFilter,
+    );
+  };
+
+  applyDimensionInListMode = (dimensionName: string, values: string[]) => {
+    const {
+      where: wf,
+      dimensionThresholdFilters,
+      dimensionsWithInlistFilter,
+    } = get(this.parsed);
+    const isExclude = false;
+
+    const expr = createInExpression(dimensionName, values, isExclude);
+
+    dimensionsWithInlistFilter.push(dimensionName);
+
+    const exprIndex =
+      wf.cond?.exprs?.findIndex(
+        (e) => e.cond?.exprs?.[0].ident === dimensionName,
+      ) ?? -1;
+    if (exprIndex === undefined || exprIndex === -1) {
+      wf.cond!.exprs!.push(expr);
+    } else {
+      wf.cond!.exprs![exprIndex] = expr;
+    }
+
+    return getFilterParam(
+      wf,
+      dimensionThresholdFilters,
+      dimensionsWithInlistFilter,
+    );
+  };
+}
 
 export class Filters {
   private metricsView: MetricsViewSelectors;
@@ -83,11 +604,13 @@ export class Filters {
   allDimensions: Readable<Map<string, MetricsViewSpecDimension>>;
   allMeasures: Readable<Map<string, MetricsViewSpecMeasure>>;
   temporaryFilters = writable<Set<string>>(new Set());
+  pinnedFilters: Readable<Set<string>> = writable(new Set());
 
   constructor(
     metricsView: MetricsViewSelectors,
     public searchParamsStore: SearchParamsStore,
     public componentName?: string,
+    public metricsViewName?: string,
   ) {
     // -----------------------------
     // Initialize writable stores
@@ -190,11 +713,18 @@ export class Filters {
         this.dimensionFilterItems,
         this.allDimensions,
         this.dimensionFilterExcludeMode,
+        this.pinnedFilters,
       ],
-      ([tempFilters, dimensionFilters, $allDimensions, $excludeMode]) => {
+      ([
+        tempFilters,
+        dimensionFilters,
+        $allDimensions,
+        $excludeMode,
+        pinnedFilters,
+      ]) => {
         const merged = structuredClone(dimensionFilters);
 
-        tempFilters.forEach((tempFilter) => {
+        [...tempFilters, ...pinnedFilters].forEach((tempFilter) => {
           const hasFilter = merged.has(tempFilter);
 
           if (tempFilter && $allDimensions.has(tempFilter) && !hasFilter) {
@@ -316,15 +846,23 @@ export class Filters {
     );
 
     this.searchParamsStore.subscribe((searchParams) => {
-      const filterText = searchParams.get(ExploreStateURLParams.Filters);
-      if (!this.componentName) {
-        const tempFilters = searchParams.get(
-          ExploreStateURLParams.TemporaryFilters,
-        );
-        this.temporaryFilters.set(new Set(tempFilters?.split(",") ?? []));
-      }
+      const names = get(this.metricsView.metricViewNames);
 
-      this.setFiltersFromText(filterText ?? "");
+      names.forEach((mvName) => {
+        const filtersKey = mvName
+          ? `${ExploreStateURLParams.Filters}.${mvName}`
+          : ExploreStateURLParams.Filters;
+        const tempFiltersKey = mvName
+          ? `${ExploreStateURLParams.TemporaryFilters}.${mvName}`
+          : ExploreStateURLParams.TemporaryFilters;
+        const filterText = searchParams.get(filtersKey);
+        if (!this.componentName) {
+          const tempFilters = searchParams.get(tempFiltersKey);
+          this.temporaryFilters.set(new Set(tempFilters?.split(",") ?? []));
+        }
+
+        this.setFiltersFromText(filterText ?? "");
+      });
     });
   }
 
@@ -403,6 +941,9 @@ export class Filters {
         dtfs,
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -425,6 +966,9 @@ export class Filters {
         dtfs,
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -439,6 +983,9 @@ export class Filters {
         this.searchParamsStore.set(
           ExploreStateURLParams.TemporaryFilters,
           Array.from(tempFilters).join(","),
+          undefined,
+          undefined,
+          get(this.metricsView.metricViewNames),
         );
       }
     }
@@ -513,6 +1060,9 @@ export class Filters {
         get(this.dimensionThresholdFilters),
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -540,6 +1090,9 @@ export class Filters {
         get(this.dimensionThresholdFilters),
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -567,6 +1120,9 @@ export class Filters {
         get(this.dimensionThresholdFilters),
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -592,6 +1148,9 @@ export class Filters {
         get(this.dimensionThresholdFilters),
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -609,6 +1168,9 @@ export class Filters {
         get(this.dimensionThresholdFilters),
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -628,6 +1190,9 @@ export class Filters {
           get(this.dimensionThresholdFilters),
           get(this.dimensionsWithInlistFilter),
         ),
+        undefined,
+        undefined,
+        get(this.metricsView.metricViewNames),
       );
       return;
     }
@@ -643,6 +1208,9 @@ export class Filters {
         get(this.dimensionThresholdFilters),
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -673,6 +1241,9 @@ export class Filters {
         get(this.dimensionThresholdFilters),
         get(this.dimensionsWithInlistFilter),
       ),
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
     );
   };
 
@@ -686,7 +1257,13 @@ export class Filters {
 
   clearAllFilters = () => {
     this.temporaryFilters.set(new Set());
-    this.searchParamsStore.set(ExploreStateURLParams.Filters, undefined);
+    this.searchParamsStore.set(
+      ExploreStateURLParams.Filters,
+      undefined,
+      undefined,
+      undefined,
+      get(this.metricsView.metricViewNames),
+    );
   };
 
   setTemporaryFilterName = (name: string) => {
@@ -698,7 +1275,13 @@ export class Filters {
         return tempFilters.add(name);
       });
     } else {
-      this.searchParamsStore.set(ExploreStateURLParams.TemporaryFilters, name);
+      this.searchParamsStore.set(
+        ExploreStateURLParams.TemporaryFilters,
+        name,
+        undefined,
+        undefined,
+        get(this.metricsView.metricViewNames),
+      );
     }
   };
 
@@ -710,7 +1293,7 @@ export class Filters {
   };
 }
 
-function getFilterParam(
+export function getFilterParam(
   whereFilter: V1Expression,
   dtf: DimensionThresholdFilter[],
   dimensionsWithInlistFilter: string[],
@@ -728,4 +1311,75 @@ function getFilterParam(
     mergedFilters,
     dimensionsWithInlistFilter,
   );
+}
+
+function processExpression({
+  expr,
+  dimensionMap,
+  metricsViewName,
+  dimensionsWithInlistFilter,
+}: {
+  expr: V1Expression;
+  dimensionMap: Map<string, MetricsViewSpecDimension>;
+  metricsViewName: string;
+  dimensionsWithInlistFilter: string[];
+}): UIFilters {
+  return {
+    measures: new Map(),
+    dimensions: getCanvasDimensionFiltersMap(
+      dimensionMap,
+      expr,
+      dimensionsWithInlistFilter,
+      metricsViewName,
+    ),
+  };
+}
+
+export function getCanvasDimensionFiltersMap(
+  dimensionIdMap: Map<string, MetricsViewSpecDimension>,
+  filter: V1Expression | undefined,
+  dimensionsWithInlistFilter: string[],
+  metricsViewName: string,
+): Map<string, CanvasDimensionFilter> {
+  if (!filter) return new Map();
+  const filteredDimensions: Map<string, CanvasDimensionFilter> = new Map();
+  const addedDimension = new Set<string>();
+  forEachIdentifier(filter, (e, ident) => {
+    if (addedDimension.has(ident) || !dimensionIdMap.has(ident)) return;
+    const dim = dimensionIdMap.get(ident);
+    if (!dim) {
+      return;
+    }
+    addedDimension.add(ident);
+
+    const op = e.cond?.op;
+    if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
+      const isInListMode = dimensionsWithInlistFilter.includes(ident);
+      filteredDimensions.set(ident, {
+        dimensions: new Map([[metricsViewName, dim]]),
+
+        mode: isInListMode
+          ? DimensionFilterMode.InList
+          : DimensionFilterMode.Select,
+        selectedValues: getValuesInExpression(e),
+        isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+        inputText: undefined,
+        pinned: false,
+      });
+    } else if (
+      op === V1Operation.OPERATION_LIKE ||
+      op === V1Operation.OPERATION_NLIKE
+    ) {
+      filteredDimensions.set(ident, {
+        mode: DimensionFilterMode.Contains,
+        selectedValues: [],
+        inputText: e.cond?.exprs?.[1]?.val?.toString?.() ?? "",
+        isInclude: e.cond?.op === V1Operation.OPERATION_LIKE,
+        dimensions: new Map([[metricsViewName, dim]]),
+        pinned: false,
+      });
+    }
+  });
+
+  return filteredDimensions;
 }

@@ -4776,6 +4776,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * Pinned filters
+   *
+   * @generated from field: repeated string pinned_filters = 16;
+   */
+  pinnedFilters: string[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4799,6 +4806,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 18, name: "rows", kind: "message", T: CanvasRow, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

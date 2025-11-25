@@ -47,6 +47,7 @@
   export let smallChip = false;
   export let whereFilter: V1Expression;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
+  export let pinned = false;
   export let onRemove: () => void;
   export let onApplyInList: (values: string[]) => void;
   export let onSelect: (value: string) => void;
@@ -386,12 +387,13 @@
       <Chip
         builders={[builder]}
         type="dimension"
+        gray={pinned && selectedValues.length === 0 && !inputText}
         active={open}
         exclude={curExcludeMode}
         label={`${name} filter`}
         theme
         {onRemove}
-        removable={!readOnly}
+        removable={!readOnly && !pinned}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
         1

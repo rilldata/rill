@@ -29,6 +29,7 @@ type CanvasYAML struct {
 	TimeZones            []string               `yaml:"time_zones"`
 	Filters              struct {
 		Enable *bool `yaml:"enable"`
+		Pinned []string `yaml:"pinned"`
 	}
 	Defaults *struct {
 		TimeRange           string `yaml:"time_range"`
@@ -279,6 +280,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Variables = variables
 	r.CanvasSpec.Rows = rows
 	r.CanvasSpec.SecurityRules = rules
+	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {

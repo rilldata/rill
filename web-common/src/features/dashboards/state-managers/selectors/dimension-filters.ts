@@ -137,6 +137,7 @@ export type DimensionFilterItem = {
   inputText?: string;
   isInclude: boolean;
   metricsViewNames?: string[];
+  pinned?: boolean;
 };
 export function getDimensionFilterItems(
   dashData: AtLeast<DashboardDataSources, "dashboard">,

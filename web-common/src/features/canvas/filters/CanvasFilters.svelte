@@ -15,8 +15,11 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
-  import { fly } from "svelte/transition";
+  // import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
+  import { DimensionFilterMode } from "../../dashboards/filters/dimension-filters/constants";
+  // import PreviewButton from "../../explores/PreviewButton.svelte";
+  import LeaderboardIcon from "../icons/LeaderboardIcon.svelte";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -31,16 +34,21 @@
   $: ({ instanceId } = $runtime);
   $: ({
     canvasEntity: {
-      filters: {
-        whereFilter,
+      setDefaultFilters,
+      filterManager: {
+        _allDimensions,
+        _activeUIFilters,
         toggleMultipleDimensionValueSelections,
+        toggleDimensionFilterMode,
         applyDimensionInListMode,
+        addTemporaryFilter,
         applyDimensionContainsMode,
         removeDimensionFilter,
-        toggleDimensionFilterMode,
+      },
+      filters: {
+        whereFilter,
         setMeasureFilter,
         removeMeasureFilter,
-        setTemporaryFilterName,
         clearAllFilters,
         dimensionHasFilter,
         temporaryFilters,
@@ -74,6 +82,8 @@
   $: defaultTimeRange = $spec?.defaultPreset?.timeRange;
   $: availableTimeZones = $spec?.timeZones ?? [];
   $: timeRanges = $spec?.timeRanges ?? [];
+
+  $: ({ dimensions } = $_activeUIFilters);
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -127,57 +137,74 @@
   class="flex flex-col gap-y-2 size-full pointer-events-none"
   style:max-width="{maxWidth}px"
 >
-  <div
-    class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2 pointer-events-auto w-fit"
-  >
-    <Calendar size="16px" />
-    <SuperPill
-      context={canvasName}
-      allTimeRange={$allTimeRange}
-      {selectedRangeAlias}
-      showPivot={false}
-      minTimeGrain={$minTimeGrain}
-      {defaultTimeRange}
-      {availableTimeZones}
-      {timeRanges}
-      complete={false}
-      {interval}
-      {timeStart}
-      {timeEnd}
-      {activeTimeGrain}
-      {activeTimeZone}
-      canPanLeft={canPan.left}
-      canPanRight={canPan.right}
-      watermark={undefined}
-      allowCustomTimeRange={$spec?.allowCustomTimeRange}
-      {showDefaultItem}
-      applyRange={(timeRange) => {
-        const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
-        set.range(string);
-      }}
-      onSelectRange={set.range}
-      onTimeGrainSelect={set.grain}
-      onSelectTimeZone={set.zone}
-      {onPan}
-    />
-    <CanvasComparisonPill
-      allTimeRange={$allTimeRange}
-      {selectedTimeRange}
-      {selectedComparisonTimeRange}
-      {activeTimeZone}
-      minTimeGrain={$minTimeGrain}
-      showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
-        false}
-      onDisplayTimeComparison={set.comparison}
-      onSetSelectedComparisonRange={(range) => {
-        if (range.name === "CUSTOM_COMPARISON_RANGE") {
-          const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
-          set.comparison(stringRange);
-        } else if (range.name) {
-          set.comparison(range.name);
-        }
-      }}
-    />
+  <div class="p-2 flex justify-between size-full py-0">
+    <div class="flex items-center size-full">
+      <div class="flex-none h-full pt-1.5">
+        <Calendar size="16px" />
+      </div>
+      <div
+        class="flex flex-wrap gap-x-2 gap-y-1.5 pl-2 pointer-events-auto size-full pr-2"
+      >
+        <SuperPill
+          context={canvasName}
+          allTimeRange={$allTimeRange}
+          {selectedRangeAlias}
+          showPivot={false}
+          minTimeGrain={$minTimeGrain}
+          {defaultTimeRange}
+          {availableTimeZones}
+          {timeRanges}
+          complete={false}
+          {interval}
+          {timeStart}
+          {timeEnd}
+          {activeTimeGrain}
+          {activeTimeZone}
+          canPanLeft={canPan.left}
+          canPanRight={canPan.right}
+          watermark={undefined}
+          allowCustomTimeRange={$spec?.allowCustomTimeRange}
+          {showDefaultItem}
+          applyRange={(timeRange) => {
+            const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
+            set.range(string);
+          }}
+          onSelectRange={set.range}
+          onTimeGrainSelect={set.grain}
+          onSelectTimeZone={set.zone}
+          {onPan}
+        />
+        <CanvasComparisonPill
+          allTimeRange={$allTimeRange}
+          {selectedTimeRange}
+          {selectedComparisonTimeRange}
+          {activeTimeZone}
+          minTimeGrain={$minTimeGrain}
+          showTimeComparison={$comparisonRangeStateStore?.showTimeComparison ??
+            false}
+          onDisplayTimeComparison={set.comparison}
+          onSetSelectedComparisonRange={(range) => {
+            if (range.name === "CUSTOM_COMPARISON_RANGE") {
+              const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
+              set.comparison(stringRange);
+            } else if (range.name) {
+              set.comparison(range.name);
+            }
+          }}
+        />
+      </div>
+    </div>
+
+    <Button
+      label="Preview"
+      type="secondary"
+      preload={false}
+      compact
+      onClick={setDefaultFilters}
+    >
+      <LeaderboardIcon size="16px" color="currentColor" />
+      <div class="flex gap-x-1 items-center">Save as default</div>
+    </Button>
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
@@ -188,49 +215,61 @@
     >
       {#if isComplexFilter}
         <AdvancedFilter advancedFilter={$whereFilter} />
-      {:else if !allDimensionFilters.size && !allMeasureFilters.length}
+        <!-- {:else if !allDimensionFilters.size && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
           class="ui-copy-disabled grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
           No filters selected
-        </div>
+        </div> -->
       {:else}
-        {#each allDimensionFilters as [name, { isInclude, label, mode, selectedValues, inputText, metricsViewNames }] (name)}
-          {@const dimension = $allDimensions.find(
-            (d) => d.name === name || d.column === name,
-          )}
-          {@const dimensionName = dimension?.name || dimension?.column}
-          <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName && metricsViewNames?.length}
-              <DimensionFilter
-                {metricsViewNames}
-                {readOnly}
-                {name}
-                {label}
-                {mode}
-                {selectedValues}
-                {inputText}
-                {timeStart}
-                {timeEnd}
-                openOnMount={justAdded}
-                timeControlsReady={!!$timeRangeStateStore}
-                excludeMode={!isInclude}
-                whereFilter={$whereFilter}
-                onRemove={() => removeDimensionFilter(name)}
-                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
-                onSelect={(value) =>
-                  toggleMultipleDimensionValueSelections(name, [value], true)}
-                onMultiSelect={(values) =>
-                  toggleMultipleDimensionValueSelections(name, values, true)}
-                onApplyInList={(values) =>
-                  applyDimensionInListMode(name, values)}
-                onApplyContainsMode={(searchText) =>
-                  applyDimensionContainsMode(name, searchText)}
-              />
-            {/if}
-          </div>
+        {#each dimensions as [id, entry] (id)}
+          {@const metricsViewNames = Array.from(entry.dimensions.keys())}
+          {@const dimension = entry.dimensions.get(metricsViewNames[0])}
+          {@const name = dimension?.name || id}
+          {#if dimension}
+            <DimensionFilter
+              {metricsViewNames}
+              {readOnly}
+              {name}
+              label={dimension.displayName ||
+                dimension.name ||
+                dimension.column ||
+                "Unnamed Dimension"}
+              mode={entry.mode}
+              selectedValues={entry.selectedValues}
+              inputText={entry.inputText}
+              {timeStart}
+              pinned={entry.pinned}
+              {timeEnd}
+              openOnMount={justAdded}
+              timeControlsReady={!!$timeRangeStateStore}
+              excludeMode={entry.isInclude === false}
+              whereFilter={$whereFilter}
+              onRemove={() => removeDimensionFilter(name, metricsViewNames)}
+              onToggleFilterMode={() =>
+                toggleDimensionFilterMode(name, metricsViewNames)}
+              onSelect={(value) =>
+                toggleMultipleDimensionValueSelections(
+                  name,
+                  [value],
+                  metricsViewNames,
+                  true,
+                )}
+              onMultiSelect={(values) =>
+                toggleMultipleDimensionValueSelections(
+                  name,
+                  values,
+                  metricsViewNames,
+                  true,
+                )}
+              onApplyInList={(values) =>
+                applyDimensionInListMode(name, values, metricsViewNames)}
+              onApplyContainsMode={(searchText) =>
+                applyDimensionContainsMode(name, searchText, metricsViewNames)}
+            />
+          {/if}
         {/each}
         {#each allMeasureFilters as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
           <div animate:flip={{ duration: 200 }}>
@@ -250,13 +289,13 @@
 
       {#if !readOnly}
         <FilterButton
-          allDimensions={$allDimensions}
+          allDimensions={Array.from($_allDimensions.values())}
           filteredSimpleMeasures={$allSimpleMeasures}
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}
           setTemporaryFilterName={(n) => {
             justAdded = true;
-            setTemporaryFilterName(n);
+            addTemporaryFilter(n);
           }}
         />
         <!-- if filters are present, place a chip at the end of the flex container 
