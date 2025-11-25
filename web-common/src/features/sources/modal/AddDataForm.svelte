@@ -287,7 +287,9 @@
   });
   $: isClickhouse = connector.name === "clickhouse";
   $: shouldShowSaveAnywayButton =
-    isConnectorForm && (showSaveAnyway || clickhouseShowSaveAnyway);
+    isConnectorForm &&
+    (showSaveAnyway || clickhouseShowSaveAnyway) &&
+    stepState.step !== "explorer";
   $: saveAnywayLoading = isClickhouse
     ? clickhouseSubmitting && saveAnyway
     : submitting && saveAnyway;
