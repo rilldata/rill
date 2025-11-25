@@ -67,6 +67,9 @@ export const getYupSchema = {
 
   azure: yup.object().shape({
     azure_storage_connection_string: yup.string(),
+    azure_storage_account: yup.string(),
+    azure_storage_key: yup.string(),
+    azure_storage_sas_token: yup.string(),
     path: yup
       .string()
       .matches(
