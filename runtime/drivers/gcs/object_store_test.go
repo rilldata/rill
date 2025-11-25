@@ -8,11 +8,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestObjectStore(t *testing.T) {
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs")
 	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
@@ -29,6 +31,7 @@ func TestObjectStore(t *testing.T) {
 }
 
 func TestObjectStorePathPrefixes(t *testing.T) {
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs")
 	cfg["path_prefixes"] = "gcs://integration-test.rilldata.com/glob_test/"
 	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -46,6 +49,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 }
 
 func TestObjectStoreHMAC(t *testing.T) {
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
 	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
@@ -62,6 +66,7 @@ func TestObjectStoreHMAC(t *testing.T) {
 }
 
 func TestObjectStoreHMACPathPrefixes(t *testing.T) {
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
 	cfg["path_prefixes"] = "gcs://integration-test.rilldata.com/glob_test/"
 	conn, err := drivers.Open("gcs", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())

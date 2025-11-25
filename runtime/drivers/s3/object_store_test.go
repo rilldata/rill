@@ -8,11 +8,13 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestObjectStore(t *testing.T) {
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "s3")
 	conn, err := drivers.Open("s3", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
@@ -29,6 +31,7 @@ func TestObjectStore(t *testing.T) {
 }
 
 func TestObjectStorePathPrefixes(t *testing.T) {
+	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "s3")
 	cfg["path_prefixes"] = "s3://integration-test.rilldata.com/glob_test/"
 	conn, err := drivers.Open("s3", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
