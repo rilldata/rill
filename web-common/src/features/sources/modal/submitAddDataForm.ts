@@ -147,6 +147,42 @@ async function getOriginalEnvBlob(
   }
 }
 
+async function resolveConnectorInstanceName(
+  queryClient: QueryClient,
+  instanceId: string,
+  driverName: string,
+): Promise<string | undefined> {
+  try {
+    const analyzeConnectorsQueryKey =
+      getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+    const analyzeConnectorsQueryFn = async () =>
+      runtimeServiceAnalyzeConnectors(instanceId);
+    const connectors = await queryClient.fetchQuery({
+      queryKey: analyzeConnectorsQueryKey,
+      queryFn: analyzeConnectorsQueryFn,
+    });
+
+    const matchingConnectorNames =
+      connectors?.connectors
+        ?.filter((c) => c.driver?.name === driverName)
+        .map((c) => c.name)
+        .filter(Boolean) ?? [];
+
+    if (matchingConnectorNames.length === 0) return undefined;
+
+    // Prefer an instance literally named after the driver (e.g., "s3" or "azure") if present,
+    // otherwise pick the first one.
+    const preferred =
+      matchingConnectorNames.find((name) => name === driverName) ??
+      matchingConnectorNames[0];
+
+    return preferred as string;
+  } catch {
+    // If lookup fails, return undefined and rely on auto-detection.
+    return undefined;
+  }
+}
+
 export async function submitAddSourceForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
@@ -162,36 +198,18 @@ export async function submitAddSourceForm(
     formValues,
   );
 
-  // Resolve the connector instance name(s) for create_secrets_from_connectors.
-  // For S3 sources, look up available S3 connectors and use their instance names.
   let connectorInstanceName: string | undefined;
-  if (connector.name === "s3") {
-    try {
-      const analyzeConnectorsQueryKey =
-        getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
-      const analyzeConnectorsQueryFn = async () =>
-        runtimeServiceAnalyzeConnectors(instanceId);
-      const connectors = await queryClient.fetchQuery({
-        queryKey: analyzeConnectorsQueryKey,
-        queryFn: analyzeConnectorsQueryFn,
-      });
+  const connectorName = connector.name as string;
 
-      const s3ConnectorNames =
-        connectors?.connectors
-          ?.filter((c) => c.driver?.name === "s3")
-          .map((c) => c.name)
-          .filter(Boolean) ?? [];
-
-      if (s3ConnectorNames.length > 0) {
-        // Prefer an instance literally named "s3" if present, otherwise pick the first one.
-        const preferred = (s3ConnectorNames.find((name) => name === "s3") ??
-          s3ConnectorNames[0]) as string;
-        connectorInstanceName = preferred;
-      }
-    } catch {
-      // If lookup fails, leave connectorInstanceName undefined and rely on auto-detection.
-      connectorInstanceName = undefined;
-    }
+  // Resolve the connector instance name(s) for create_secrets_from_connectors.
+  // For supported remote storage sources (e.g., S3, Azure), look up available
+  // connectors and use their instance names.
+  if (connectorName === "s3" || connectorName === "azure") {
+    connectorInstanceName = await resolveConnectorInstanceName(
+      queryClient,
+      instanceId,
+      connectorName,
+    );
   }
 
   // Make a new <source>.yaml file
