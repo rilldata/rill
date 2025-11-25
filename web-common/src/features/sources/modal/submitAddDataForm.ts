@@ -37,7 +37,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileSourceYAML, prepareSourceFormData } from "../sourceUtils";
-import { OLAP_ENGINES } from "./constants";
+import { CONNECTORS_USING_INSTANCE_SECRETS, OLAP_ENGINES } from "./constants";
 
 interface AddDataFormValues {
   // name: string; // Commenting out until we add user-provided names for Connectors
@@ -211,7 +211,7 @@ export async function submitAddSourceForm(
   // connectors and use their instance names.
   if (
     !connectorInstanceName &&
-    (connectorName === "s3" || connectorName === "azure")
+    CONNECTORS_USING_INSTANCE_SECRETS.includes(connectorName)
   ) {
     connectorInstanceName = await resolveConnectorInstanceName(
       queryClient,

@@ -66,6 +66,9 @@ export const OLAP_ENGINES = [
 
 export const ALL_CONNECTORS = [...SOURCES, ...OLAP_ENGINES];
 
+// Connectors that rely on existing connector instances for secrets resolution
+export const CONNECTORS_USING_INSTANCE_SECRETS = ["s3", "azure"];
+
 // Connectors that support multi-step forms (connector -> source)
 export const MULTI_STEP_CONNECTORS = ["gcs", "s3"];
 
