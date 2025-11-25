@@ -21,9 +21,6 @@
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
   import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
-  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-  import { getFiltersForOtherDimensions } from "@rilldata/web-common/features/dashboards/selectors";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
@@ -31,6 +28,8 @@
     useAllSearchResultsCount,
     useDimensionSearch,
   } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
+  import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   export let name: string;
   export let metricsViewNames: string[];
@@ -45,7 +44,7 @@
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
-  export let whereFilter: V1Expression;
+  export let whereFilter: Map<string, V1Expression>;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let pinned = false;
   export let onRemove: () => void;
@@ -54,6 +53,7 @@
   export let onMultiSelect: (values: string[]) => void;
   export let onApplyContainsMode: (inputText: string) => void = () => {};
   export let onToggleFilterMode: () => void;
+  export let onPinFilter: () => void = () => {};
   export let isUrlTooLongAfterInListFilter: (
     values: string[],
   ) => boolean = () => false;
@@ -101,13 +101,7 @@
       timeStart,
       timeEnd,
       enabled: enableSearchQuery,
-      additionalFilter: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(whereFilter, name),
-          [],
-        ),
-        undefined,
-      ),
+      metricsViewWheres: whereFilter,
     },
   );
   $: ({
@@ -134,13 +128,8 @@
       timeStart,
       timeEnd,
       enabled: enableSearchCountQuery,
-      additionalFilter: sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(whereFilter, name),
-          [],
-        ),
-        undefined,
-      ),
+
+      metricsViewWheres: whereFilter,
     },
   );
   $: ({
@@ -435,6 +424,22 @@
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
+      <div
+        class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
+      >
+        <b> {label}</b>
+        <Button
+          type="secondary"
+          square
+          small
+          onClick={() => {
+            console.log("pin filter clicked");
+            onPinFilter();
+          }}
+        >
+          <Pin />
+        </Button>
+      </div>
       <div class="flex flex-row">
         <DimensionFilterModeSelector
           bind:mode={curMode}

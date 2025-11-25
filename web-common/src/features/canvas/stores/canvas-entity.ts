@@ -277,7 +277,7 @@ export class CanvasEntity {
     this.filterManager.metricsViewFilters.forEach((filters, mvName) => {
       const paramKey = `${ExploreStateURLParams.Filters}.${mvName}`;
       const filterString = urlParams.get(paramKey) ?? "";
-      if (!filterString) return;
+      // if (!filterString) return;
       filters.onFilterStringChange(filterString);
     });
 

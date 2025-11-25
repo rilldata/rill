@@ -4,22 +4,20 @@
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
-  import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";
   import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
-  import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { DateTime, Interval } from "luxon";
   import { flip } from "svelte/animate";
-  // import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
-  import { DimensionFilterMode } from "../../dashboards/filters/dimension-filters/constants";
-  // import PreviewButton from "../../explores/PreviewButton.svelte";
   import LeaderboardIcon from "../icons/LeaderboardIcon.svelte";
+  import CanvasFilterButton from "../../dashboards/filters/CanvasFilterButton.svelte";
+  import { derived } from "svelte/store";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
   export let readOnly = false;
   export let maxWidth: number;
@@ -34,10 +32,10 @@
   $: ({ instanceId } = $runtime);
   $: ({
     canvasEntity: {
-      setDefaultFilters,
       filterManager: {
         _allDimensions,
         _activeUIFilters,
+        metricsViewFilters,
         toggleMultipleDimensionValueSelections,
         toggleDimensionFilterMode,
         applyDimensionInListMode,
@@ -45,15 +43,12 @@
         applyDimensionContainsMode,
         removeDimensionFilter,
         clearAllFilters,
+        pinFilter,
       },
       filters: {
-        whereFilter,
+        // whereFilter,
         setMeasureFilter,
         removeMeasureFilter,
-        // clearAllFilters,
-        dimensionHasFilter,
-        temporaryFilters,
-        allDimensionFilterItems,
         allMeasureFilterItems,
         measureHasFilter,
       },
@@ -84,7 +79,7 @@
   $: availableTimeZones = $spec?.timeZones ?? [];
   $: timeRanges = $spec?.timeRanges ?? [];
 
-  $: ({ dimensions } = $_activeUIFilters);
+  $: ({ dimensions, hasFilters, complexFilters } = $_activeUIFilters);
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -93,18 +88,9 @@
       )
     : Interval.invalid("Unable to parse time range");
 
-  $: allDimensionFilters = $allDimensionFilterItems;
-
   $: allMeasureFilters = $allMeasureFilterItems;
 
   $: canPan = $_canPan;
-
-  // hasFilter only checks for complete filters and excludes temporary ones
-  $: hasFilters =
-    allDimensionFilters.size + allMeasureFilters.length >
-    $temporaryFilters.size;
-
-  $: isComplexFilter = isExpressionUnsupported($whereFilter);
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -133,7 +119,17 @@
     set.comparison(TimeComparisonOption.CONTIGUOUS);
   }
 
-  $: console.log({ dimensions });
+  $: filterMap = derived(
+    Array.from(metricsViewFilters.values()).map((p) => p.parsed),
+    ($metricsViewFilters) => {
+      const map = new Map<string, V1Expression>();
+      $metricsViewFilters.forEach((expr, i) => {
+        const mvName = Array.from(metricsViewFilters.keys())[i];
+        map.set(mvName, expr.where);
+      });
+      return map;
+    },
+  );
 </script>
 
 <div
@@ -197,17 +193,6 @@
         />
       </div>
     </div>
-
-    <Button
-      label="Preview"
-      type="secondary"
-      preload={false}
-      compact
-      onClick={setDefaultFilters}
-    >
-      <LeaderboardIcon size="16px" color="currentColor" />
-      <div class="flex gap-x-1 items-center">Save as default</div>
-    </Button>
   </div>
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
@@ -216,83 +201,90 @@
     <div
       class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 pointer-events-auto"
     >
-      {#if isComplexFilter}
-        <AdvancedFilter advancedFilter={$whereFilter} />
-        <!-- {:else if !allDimensionFilters.size && !allMeasureFilters.length}
+      {#if !hasFilters}
         <div
-          in:fly={{ duration: 200, x: 8 }}
           class="ui-copy-disabled grid ml-1 items-center"
           style:min-height={ROW_HEIGHT}
         >
           No filters selected
-        </div> -->
-      {:else}
-        {#each dimensions as [id, entry] (id)}
-          {@const metricsViewNames = Array.from(entry.dimensions.keys())}
-          {@const dimension = entry.dimensions.get(metricsViewNames[0])}
-          {@const name = dimension?.name || id}
-          {#if dimension}
-            <DimensionFilter
-              {metricsViewNames}
-              {readOnly}
-              {name}
-              label={dimension.displayName ||
-                dimension.name ||
-                dimension.column ||
-                "Unnamed Dimension"}
-              mode={entry.mode}
-              selectedValues={entry.selectedValues}
-              inputText={entry.inputText}
-              {timeStart}
-              pinned={entry.pinned}
-              {timeEnd}
-              openOnMount={justAdded}
-              timeControlsReady={!!$timeRangeStateStore}
-              excludeMode={entry.isInclude === false}
-              whereFilter={$whereFilter}
-              onRemove={() => removeDimensionFilter(name, metricsViewNames)}
-              onToggleFilterMode={() =>
-                toggleDimensionFilterMode(name, metricsViewNames)}
-              onSelect={(value) =>
-                toggleMultipleDimensionValueSelections(
-                  name,
-                  [value],
-                  metricsViewNames,
-                  true,
-                )}
-              onMultiSelect={(values) =>
-                toggleMultipleDimensionValueSelections(
-                  name,
-                  values,
-                  metricsViewNames,
-                  true,
-                )}
-              onApplyInList={(values) =>
-                applyDimensionInListMode(name, values, metricsViewNames)}
-              onApplyContainsMode={(searchText) =>
-                applyDimensionContainsMode(name, searchText, metricsViewNames)}
-            />
-          {/if}
-        {/each}
-        {#each allMeasureFilters as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
-          <div animate:flip={{ duration: 200 }}>
-            <MeasureFilter
-              allDimensions={dimensionsForMeasure || $allDimensions}
-              {name}
-              {label}
-              {dimensionName}
-              {filter}
-              onRemove={() => removeMeasureFilter(dimensionName, name)}
-              onApply={({ dimension, oldDimension, filter }) =>
-                handleMeasureFilterApply(dimension, name, oldDimension, filter)}
-            />
-          </div>
-        {/each}
+        </div>
       {/if}
 
+      {#each complexFilters as filter, i (i)}
+        <AdvancedFilter advancedFilter={filter} />
+      {/each}
+
+      {#each dimensions as [id, entry] (id)}
+        {@const metricsViewNames = Array.from(entry.dimensions.keys())}
+        {@const dimension = entry.dimensions.get(metricsViewNames[0])}
+        {@const name = dimension?.name || id}
+
+        {#if dimension}
+          <DimensionFilter
+            {metricsViewNames}
+            {readOnly}
+            {name}
+            label={dimension.displayName ||
+              dimension.name ||
+              dimension.column ||
+              "Unnamed Dimension"}
+            mode={entry.mode}
+            selectedValues={entry.selectedValues}
+            inputText={entry.inputText}
+            {timeStart}
+            pinned={entry.pinned}
+            {timeEnd}
+            openOnMount={justAdded}
+            timeControlsReady={!!$timeRangeStateStore}
+            excludeMode={entry.isInclude === false}
+            whereFilter={$filterMap}
+            onRemove={() => removeDimensionFilter(name, metricsViewNames)}
+            onToggleFilterMode={() =>
+              toggleDimensionFilterMode(name, metricsViewNames)}
+            onSelect={(value) =>
+              toggleMultipleDimensionValueSelections(
+                name,
+                [value],
+                metricsViewNames,
+                true,
+              )}
+            onMultiSelect={(values) =>
+              toggleMultipleDimensionValueSelections(
+                name,
+                values,
+                metricsViewNames,
+                true,
+              )}
+            onApplyInList={(values) =>
+              applyDimensionInListMode(name, values, metricsViewNames)}
+            onApplyContainsMode={(searchText) =>
+              applyDimensionContainsMode(name, searchText, metricsViewNames)}
+            onPinFilter={() => {
+              console.log("pin filter");
+              pinFilter(id, metricsViewNames);
+            }}
+          />
+        {/if}
+      {/each}
+
+      {#each allMeasureFilters as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
+        <div animate:flip={{ duration: 200 }}>
+          <MeasureFilter
+            allDimensions={dimensionsForMeasure || $allDimensions}
+            {name}
+            {label}
+            {dimensionName}
+            {filter}
+            onRemove={() => removeMeasureFilter(dimensionName, name)}
+            onApply={({ dimension, oldDimension, filter }) =>
+              handleMeasureFilterApply(dimension, name, oldDimension, filter)}
+          />
+        </div>
+      {/each}
+
       {#if !readOnly}
-        <FilterButton
-          allDimensions={Array.from($_allDimensions.values())}
+        <CanvasFilterButton
+          allDimensions={$_allDimensions}
           filteredSimpleMeasures={$allSimpleMeasures}
           dimensionHasFilter={(name) => dimensions.has(name)}
           measureHasFilter={$measureHasFilter}
