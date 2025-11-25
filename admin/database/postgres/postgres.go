@@ -1735,14 +1735,17 @@ func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retent
 	return parseErr("authorization code", err)
 }
 
-func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes []string) (*database.AuthClient, error) {
+func (c *connection) InsertAuthClient(ctx context.Context, displayName, scope string, grantTypes, redirectURIs []string) (*database.AuthClient, error) {
 	if grantTypes == nil {
 		grantTypes = []string{}
 	}
+	if redirectURIs == nil {
+		redirectURIs = []string{}
+	}
 	dto := &authClientDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`INSERT INTO auth_clients (display_name, scope, grant_types) VALUES ($1, $2, $3) RETURNING *`,
-		displayName, scope, grantTypes).StructScan(dto)
+		`INSERT INTO auth_clients (display_name, scope, grant_types, redirect_uris) VALUES ($1, $2, $3, $4) RETURNING *`,
+		displayName, scope, grantTypes, redirectURIs).StructScan(dto)
 	if err != nil {
 		return nil, parseErr("auth client", err)
 	}
@@ -3368,7 +3371,8 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 
 type authClientDTO struct {
 	*database.AuthClient
-	GrantTypes pgtype.TextArray `db:"grant_types"`
+	GrantTypes   pgtype.TextArray `db:"grant_types"`
+	RedirectURIs pgtype.TextArray `db:"redirect_uris"`
 }
 
 func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
@@ -3376,6 +3380,9 @@ func (dto *authClientDTO) AsModel() (*database.AuthClient, error) {
 		dto.AuthClient = &database.AuthClient{}
 	}
 	if err := dto.GrantTypes.AssignTo(&dto.AuthClient.GrantTypes); err != nil {
+		return nil, err
+	}
+	if err := dto.RedirectURIs.AssignTo(&dto.AuthClient.RedirectURIs); err != nil {
 		return nil, err
 	}
 	return dto.AuthClient, nil
