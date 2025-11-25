@@ -46,20 +46,18 @@ func (t *RouterAgent) Spec() *mcp.Tool {
 	}
 }
 
-func (t *RouterAgent) CheckAccess(ctx context.Context) bool {
-	s := GetSession(ctx)
-
+func (t *RouterAgent) CheckAccess(ctx context.Context) (bool, error) {
 	// Must be allowed to use AI features
+	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.UseAI) {
-		return false
+		return false, nil
 	}
 
 	// Only allow for rill user agents since it's not useful in MCP contexts.
 	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
-		return false
+		return false, nil
 	}
-
-	return true
+	return true, nil
 }
 
 func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*RouterAgentResult, error) {
@@ -78,8 +76,12 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 		must(s.Tool(DeveloperAgentName)),
 	}
 	candidates = slices.DeleteFunc(candidates, func(agent *CompiledTool) bool {
-		return !agent.CheckAccess(ctx)
+		ok, _ := agent.CheckAccess(ctx)
+		return !ok
 	})
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 
 	// Find agent to invoke
 	switch {

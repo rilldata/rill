@@ -37,9 +37,9 @@ func (t *GetMetricsView) Spec() *mcp.Tool {
 	}
 }
 
-func (t *GetMetricsView) CheckAccess(ctx context.Context) bool {
+func (t *GetMetricsView) CheckAccess(ctx context.Context) (bool, error) {
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.ReadObjects)
+	return s.Claims().Can(runtime.ReadObjects), nil
 }
 
 func (t *GetMetricsView) Handler(ctx context.Context, args *GetMetricsViewArgs) (*GetMetricsViewResult, error) {

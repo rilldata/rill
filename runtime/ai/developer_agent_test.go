@@ -16,6 +16,8 @@ func TestDeveloperShopify(t *testing.T) {
 		Files: map[string]string{
 			"rill.yaml": `
 olap_connector: duckdb
+features:
+  developer_agent: true
 `,
 			"connectors/duckdb.yaml": `
 type: connector
