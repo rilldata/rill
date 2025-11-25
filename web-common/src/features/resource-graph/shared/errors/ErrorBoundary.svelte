@@ -6,7 +6,7 @@
     getRecoveryAction,
     type ErrorContext,
     ErrorSeverity,
-  } from "./graph-error-handling";
+  } from "./error-handling";
   import type { ComponentType, SvelteComponentTyped } from "svelte";
   type FallbackComponent = ComponentType<
     SvelteComponentTyped<{ error: Error | null }>
