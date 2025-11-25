@@ -54,8 +54,9 @@ func TestResolveTemplatedString_MetricsSQL(t *testing.T) {
 	startTime, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
 	endTime, _ := time.Parse(time.RFC3339, "2024-02-01T00:00:00Z")
 	additionalTimeRange := &runtimev1.TimeRange{
-		Start: timestamppb.New(startTime),
-		End:   timestamppb.New(endTime),
+		Start:         timestamppb.New(startTime),
+		End:           timestamppb.New(endTime),
+		TimeDimension: "order_date",
 	}
 
 	files := map[string]string{
@@ -146,7 +147,7 @@ Orders: {{ metrics_sql "SELECT total_orders FROM mv1" }}`,
 			useFormatTokens:     false,
 			additionalWhere:     nil,
 			additionalTimeRange: additionalTimeRange,
-			expected:            []string{"Revenue: 700"},
+			expected:            []string{"Revenue: 300"},
 			expectEqual:         true,
 		},
 	}

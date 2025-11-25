@@ -164,6 +164,7 @@ func convertProtoTimeRange(tr *runtimev1.TimeRange) *metricsview.TimeRange {
 		IsoOffset:     tr.IsoOffset,
 		RoundToGrain:  metricsview.TimeGrainFromProto(tr.RoundToGrain),
 		TimeDimension: tr.TimeDimension,
+		TimeZone:      tr.TimeZone,
 	}
 	if tr.Start != nil {
 		res.Start = tr.Start.AsTime()

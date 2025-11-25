@@ -197,6 +197,7 @@ type TimeRange struct {
 	IsoOffset     string    `mapstructure:"iso_offset"`
 	RoundToGrain  TimeGrain `mapstructure:"round_to_grain"`
 	TimeDimension string    `mapstructure:"time_dimension"` // optional time dimension to use for time-based operations, if not specified, the default time dimension in the metrics view is used
+	TimeZone      string    `mapstructure:"time_zone"`      // optional timezone for time-based operations
 }
 
 func (tr *TimeRange) IsZero() bool {

@@ -120,9 +120,9 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		query.TimeZone = props.TimeZone
 	}
 
-	// Build the options for the metrics resolver
-	metricProps := map[string]any{}
-	if err := mapstructure.WeakDecode(query, &metricProps); err != nil {
+	// Encode the query to a map for the metrics resolver
+	metricProps, err := query.AsMap()
+	if err != nil {
 		return nil, err
 	}
 	resolverOpts := &runtime.ResolverOptions{
@@ -174,6 +174,7 @@ func ApplyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metri
 		IsoOffset:     current.IsoOffset,
 		RoundToGrain:  current.RoundToGrain,
 		TimeDimension: current.TimeDimension,
+		TimeZone:      current.TimeZone,
 	}
 
 	if !additional.Start.IsZero() && (timeRange.Start.IsZero() || additional.Start.After(timeRange.Start)) {
@@ -196,6 +197,9 @@ func ApplyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metri
 	}
 	if additional.TimeDimension != "" && timeRange.TimeDimension == "" {
 		timeRange.TimeDimension = additional.TimeDimension
+	}
+	if additional.TimeZone != "" && timeRange.TimeZone == "" {
+		timeRange.TimeZone = additional.TimeZone
 	}
 
 	return timeRange

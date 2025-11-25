@@ -72,7 +72,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 			}
 
 			// Get component resource.
-			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: item.Component}, false)
+			cmp, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: item.Component}, true)
 			if err != nil {
 				if errors.Is(err, drivers.ErrResourceNotFound) {
 					return nil, status.Errorf(codes.Internal, "component %q in valid spec not found", item.Component)
