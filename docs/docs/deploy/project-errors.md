@@ -16,7 +16,7 @@ When you deploy to Rill Cloud, projects can encounter errors—from missing cred
 Before diving into troubleshooting, it's helpful to understand Rill's error management approach:
 
 - **Visibility:** View project status at the resource level via the `Status` tab or [`rill project status`](/reference/cli/project/status) CLI command
-- **Isolation:** Errors are contained to individual resources—if one dashboard fails, others remain available
+- **Isolation:** Errors are contained to individual resource trees—if one dashboard fails, others remain available
 - **Fallback:** Rill attempts to serve from the most recent valid state when possible
 
 :::tip Check upstream dependencies

@@ -22,9 +22,9 @@ Rill bridges this gap by bringing fast, interactive analytics directly to your d
 Rill automatically turns your SQL data models into interactive, exploratory dashboards. It ingests data from your external sources into an embedded, high-performance OLAP engine. By defining metrics and dimensions upfront, Rill aggregates and optimizes the data, creating a responsive interface that allows users to slice and dice billions of records instantly without waiting for query processing.
 
 This approach means engineering teams can:
-1.   **Orchestrate data** out of cloud data warehouses or object stores into the fast serving layer.
-2.   **Define metrics & dimensions** in SQL to automatically aggregate and prune raw tables.
-4.  **Deploy** without managing separate BI servers or database infrastructure.
+1.   **Orchestrate data** out of cloud [data warehouses](/build/connectors/data-source#data-warehouses) or [object stores](/build/connectors#object-storage) into the fast serving layer.
+2.   **Define metrics & dimensions** in [metrics view](/build/metrics-view) to automatically aggregate and prune raw tables.
+3.  **Deploy** your [project to Rill Cloud](/deploy/deploy-dashboard) without managing separate BI servers or database infrastructure.
 
 ## Built for Operational Analytics
 
