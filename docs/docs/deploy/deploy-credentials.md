@@ -5,11 +5,11 @@ sidebar_label: Configure Deployment Credentials
 sidebar_position: 10
 ---
 
-:::tip Dev/prod setup
+:::tip Development and Production setup
 
-We recommend reviewing the [Dev/Prod Setup](/build/connectors/templating) documentation before deploying your project to Rill Cloud to ensure that your local testing and production environments have been separated. 
+We recommend reviewing the [Development/Production Setup](/build/connectors/templating) documentation before deploying your project to Rill Cloud to ensure that your local development and production environments have been separated. 
 
-This will ensure that your shared dashboard will be decoupled from your dev environment, and you can further develop your dashboards locally without worrying about data availability.
+This will ensure that your shared dashboard will be decoupled from your local Rill Developer environment, and you can further develop your dashboards locally without worrying about data availability.
 
 :::
 
@@ -40,7 +40,7 @@ Updated project variables
 
 :::info Separating development and production credentials
 
-As a general best practice, it is strongly recommended to use service accounts and dedicated service credentials for projects deployed to Rill Cloud, especially when used in a production capacity. This is covered in more detail in our [Dev/Prod Setup documentation](/build/connectors/templating).
+As a general best practice, it is strongly recommended to use service accounts and dedicated service credentials for projects deployed to Rill Cloud, especially when used in a production capacity. This is covered in more detail in our [Development/Production Setup documentation](/build/connectors/templating).
 
 :::
 
