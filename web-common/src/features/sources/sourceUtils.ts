@@ -18,6 +18,7 @@ materialize: true`;
 export function compileSourceYAML(
   connector: V1ConnectorDriver,
   formValues: Record<string, unknown>,
+  connectorInstanceName?: string,
 ) {
   // Get the secret property keys
   const secretPropertyKeys =
@@ -73,8 +74,14 @@ export function compileSourceYAML(
     })
     .join("\n");
 
+  // Add create_secrets_from_connectors for S3 models
+  // Use the provided connector instance name if available
+  const createSecretsLine = connectorInstanceName
+    ? `\ncreate_secrets_from_connectors: ${connectorInstanceName}`
+    : "";
+
   return (
-    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}\n\n` +
+    `${SOURCE_MODEL_FILE_TOP}\n\nconnector: ${connector.name}${createSecretsLine}\n\n` +
     compiledKeyValues
   );
 }

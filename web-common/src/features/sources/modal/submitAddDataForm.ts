@@ -10,7 +10,9 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   type V1ConnectorDriver,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetFileQueryKey,
+  runtimeServiceAnalyzeConnectors,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
   runtimeServicePutFile,
@@ -160,6 +162,38 @@ export async function submitAddSourceForm(
     formValues,
   );
 
+  // Resolve the connector instance name(s) for create_secrets_from_connectors.
+  // For S3 sources, look up available S3 connectors and use their instance names.
+  let connectorInstanceName: string | undefined;
+  if (connector.name === "s3") {
+    try {
+      const analyzeConnectorsQueryKey =
+        getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId);
+      const analyzeConnectorsQueryFn = async () =>
+        runtimeServiceAnalyzeConnectors(instanceId);
+      const connectors = await queryClient.fetchQuery({
+        queryKey: analyzeConnectorsQueryKey,
+        queryFn: analyzeConnectorsQueryFn,
+      });
+
+      const s3ConnectorNames =
+        connectors?.connectors
+          ?.filter((c) => c.driver?.name === "s3")
+          .map((c) => c.name)
+          .filter(Boolean) ?? [];
+
+      if (s3ConnectorNames.length > 0) {
+        // Prefer an instance literally named "s3" if present, otherwise pick the first one.
+        const preferred = (s3ConnectorNames.find((name) => name === "s3") ??
+          s3ConnectorNames[0]) as string;
+        connectorInstanceName = preferred;
+      }
+    } catch {
+      // If lookup fails, leave connectorInstanceName undefined and rely on auto-detection.
+      connectorInstanceName = undefined;
+    }
+  }
+
   // Make a new <source>.yaml file
   const newSourceFilePath = getFileAPIPathFromNameAndType(
     newSourceName,
@@ -167,7 +201,11 @@ export async function submitAddSourceForm(
   );
   await runtimeServicePutFile(instanceId, {
     path: newSourceFilePath,
-    blob: compileSourceYAML(rewrittenConnector, rewrittenFormValues),
+    blob: compileSourceYAML(
+      rewrittenConnector,
+      rewrittenFormValues,
+      connectorInstanceName,
+    ),
     create: true,
     createOnly: false,
   });
