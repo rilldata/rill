@@ -55,8 +55,8 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("project %q is not currently deployed", name)
 			}
 
-			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-				ch.PrintfWarn("Deployment status not OK: %s\n", depl.Status.String())
+			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
+				ch.PrintfWarn("Deployment status not RUNNING: %s\n", depl.Status.String())
 				return nil
 			}
 
