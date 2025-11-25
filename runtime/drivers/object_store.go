@@ -148,6 +148,11 @@ func ListObjects(ctx context.Context, pathPrefixes []string, blobListfn BlobList
 	if delimiter == "" {
 		delimiter = "/"
 	}
+
+	if path == "." || path == "/" {
+		path = ""
+	}
+
 	if len(pathPrefixes) == 0 {
 		return blobListfn(ctx, path, delimiter, pageSize, pageToken)
 	}
@@ -240,9 +245,9 @@ func buildAllowedPrefixesForBucket(pathPrefixes []string, bucket string) ([]stri
 		if err != nil {
 			return nil, fmt.Errorf("invalid path prefix %q: %w", p, err)
 		}
-
+		p := strings.TrimPrefix(u.Path, "/")
 		if u.Hostname() == bucket {
-			paths = append(paths, u.Path)
+			paths = append(paths, p)
 		}
 	}
 

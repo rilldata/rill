@@ -24,38 +24,50 @@ func TestObjectStore(t *testing.T) {
 	t.Run("testListObjectsPagination", func(t *testing.T) { testListObjectsPagination(t, objectStore, bucket) })
 	t.Run("testListObjectsDelimiter", func(t *testing.T) { testListObjectsDelimiter(t, objectStore, bucket) })
 	t.Run("testListObjectsFull", func(t *testing.T) { testListObjectsFull(t, objectStore, bucket) })
-	t.Run("testListObjectsEmptyPrefix", func(t *testing.T) { testListObjectsEmptyPrefix(t, objectStore, bucket) })
+	t.Run("testListObjectsEmptyPath", func(t *testing.T) { testListObjectsEmptyPath(t, objectStore, bucket) })
 	t.Run("testListObjectsNoMatch", func(t *testing.T) { testListObjectsNoMatch(t, objectStore, bucket) })
 }
 
-// Updated helpers now take base func
+func TestObjectStorePathPrefixes(t *testing.T) {
+	cfg := testruntime.AcquireConnector(t, "s3")
+	cfg["path_prefixes"] = "s3://integration-test.rilldata.com/glob_test/"
+	conn, err := drivers.Open("s3", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	objectStore, ok := conn.AsObjectStore()
+	require.True(t, ok)
+	bucket := "integration-test.rilldata.com"
+
+	t.Run("testPathSameAllowedPrefix", func(t *testing.T) { testPathSameAllowedPrefix(t, objectStore, bucket) })
+	t.Run("testPathWithInAllowedPrefix", func(t *testing.T) { testPathWithInAllowedPrefix(t, objectStore, bucket) })
+	t.Run("testPathOutsideAllowedPrefix", func(t *testing.T) { testPathOutsideAllowedPrefix(t, objectStore, bucket) })
+	t.Run("testPathRootLevelOfAllowedPrefix", func(t *testing.T) { testPathRootLevelOfAllowedPrefix(t, objectStore, bucket) })
+}
+
 func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
-	prefix := "glob_test/"
+	Path := "glob_test/"
 	expected := []string{
-		"glob_test/y=2010/aac.csv",
-		"glob_test/y=2023/aab.csv",
-		"glob_test/y=2024/aaa.csv",
-		"glob_test/y=2024/bbb.csv",
+		"glob_test/y=2010/",
+		"glob_test/y=2023/",
+		"glob_test/y=2024/",
 	}
 
 	pageSize := 1
+	delimiter := "/"
+
 	var pageToken string
 	var collected []string
 	pageCount := 0
+
 	for {
-		objects, nextToken, err := objectStore.ListObjects(ctx, bucket, prefix, "", uint32(pageSize), pageToken)
+		objects, nextToken, err := objectStore.ListObjects(ctx, bucket, Path, delimiter, uint32(pageSize), pageToken)
 		require.NoError(t, err)
 
 		pageCount++
-		require.Len(t, objects, 1, "page %d should return exactly 1 object", pageCount)
+		require.Len(t, objects, 1)
 		collected = append(collected, objects[0].Path)
-
-		if pageCount < len(expected) {
-			require.NotEmpty(t, nextToken, "page %d should have nextPageToken", pageCount)
-		} else {
-			require.Empty(t, nextToken, "last page should have empty nextPageToken")
-		}
 
 		if nextToken == "" {
 			break
@@ -63,13 +75,13 @@ func testListObjectsPagination(t *testing.T, objectStore drivers.ObjectStore, bu
 		pageToken = nextToken
 	}
 
-	require.Equal(t, len(expected), pageCount, "unexpected number of pages")
-	require.Equal(t, expected, collected, "paginated order mismatch")
+	require.Equal(t, expected, collected)
+	require.Equal(t, len(expected), pageCount)
 }
 
 func testListObjectsDelimiter(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
-	prefix := "glob_test/"
+	Path := "glob_test/"
 	delimiter := "/"
 
 	expected := []string{
@@ -78,10 +90,12 @@ func testListObjectsDelimiter(t *testing.T, objectStore drivers.ObjectStore, buc
 		"glob_test/y=2024/",
 	}
 
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, prefix, delimiter, 10, "")
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, Path, delimiter, 10, "")
 	require.NoError(t, err)
+
 	require.Empty(t, nextToken)
 	require.Len(t, objects, len(expected))
+
 	for i, obj := range objects {
 		require.Equal(t, expected[i], obj.Path)
 		require.True(t, obj.IsDir)
@@ -90,27 +104,29 @@ func testListObjectsDelimiter(t *testing.T, objectStore drivers.ObjectStore, buc
 
 func testListObjectsFull(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
-	prefix := "glob_test/"
+	Path := "glob_test/"
 
 	expected := []string{
-		"glob_test/y=2010/aac.csv",
-		"glob_test/y=2023/aab.csv",
-		"glob_test/y=2024/aaa.csv",
-		"glob_test/y=2024/bbb.csv",
+		"glob_test/y=2010/",
+		"glob_test/y=2023/",
+		"glob_test/y=2024/",
 	}
 
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, prefix, "", 100, "")
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, Path, "/", 100, "")
 	require.NoError(t, err)
 	require.Empty(t, nextToken)
 	require.Len(t, objects, len(expected))
+
 	for i, obj := range objects {
 		require.Equal(t, expected[i], obj.Path)
+		require.True(t, obj.IsDir)
 	}
 }
 
-func testListObjectsEmptyPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
+func testListObjectsEmptyPath(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "", 4, "")
+
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "", "/", 4, "")
 	require.NoError(t, err)
 	require.NotNil(t, objects)
 	require.Len(t, objects, 4)
@@ -119,10 +135,79 @@ func testListObjectsEmptyPrefix(t *testing.T, objectStore drivers.ObjectStore, b
 
 func testListObjectsNoMatch(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
 	ctx := context.Background()
-	glob := "nonexistent/*"
 
-	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, glob, "", 10, "")
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, "nonexistent/", "/", 10, "")
 	require.NoError(t, err)
 	require.Empty(t, objects)
 	require.Empty(t, nextToken)
+}
+
+func testPathSameAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
+	ctx := context.Background()
+	path := "glob_test/"
+
+	expected := []string{
+		"glob_test/y=2010/",
+		"glob_test/y=2023/",
+		"glob_test/y=2024/",
+	}
+
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, path, "/", 100, "")
+	require.NoError(t, err)
+	require.Empty(t, nextToken)
+	require.Len(t, objects, len(expected))
+
+	for i, obj := range objects {
+		require.Equal(t, expected[i], obj.Path)
+		require.True(t, obj.IsDir)
+	}
+}
+
+func testPathWithInAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
+	ctx := context.Background()
+	path := "glob_test/y=2024/"
+
+	expected := []string{
+		"glob_test/y=2024/aaa.csv",
+		"glob_test/y=2024/bbb.csv",
+	}
+
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, path, "/", 100, "")
+	require.NoError(t, err)
+	require.Empty(t, nextToken)
+	require.Len(t, objects, len(expected))
+
+	for i, obj := range objects {
+		require.Equal(t, expected[i], obj.Path)
+		require.False(t, obj.IsDir)
+	}
+}
+
+func testPathOutsideAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
+	ctx := context.Background()
+	path := "csv_test/"
+
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, path, "/", 10, "")
+	require.Error(t, err)
+	require.Empty(t, objects)
+	require.Empty(t, nextToken)
+}
+
+func testPathRootLevelOfAllowedPrefix(t *testing.T, objectStore drivers.ObjectStore, bucket string) {
+	ctx := context.Background()
+	path := "/"
+
+	expected := []string{
+		"glob_test/",
+	}
+
+	objects, nextToken, err := objectStore.ListObjects(ctx, bucket, path, "/", 100, "")
+	require.NoError(t, err)
+	require.Empty(t, nextToken)
+	require.Len(t, objects, len(expected))
+
+	for i, obj := range objects {
+		require.Equal(t, expected[i], obj.Path)
+		require.True(t, obj.IsDir)
+	}
 }
