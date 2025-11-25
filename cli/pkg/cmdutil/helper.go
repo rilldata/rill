@@ -472,8 +472,8 @@ func (h *Helper) OpenRuntimeClient(ctx context.Context, org, project string, loc
 		if depl == nil {
 			return nil, "", fmt.Errorf("project %q is not currently deployed", project)
 		}
-		if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-			return nil, "", fmt.Errorf("deployment status not OK: %s", depl.Status.String())
+		if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
+			return nil, "", fmt.Errorf("deployment status not RUNNING: %s", depl.Status.String())
 		}
 
 		host = depl.RuntimeHost
