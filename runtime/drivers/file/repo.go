@@ -17,7 +17,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -206,66 +205,40 @@ func (c *connection) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 		return &drivers.RepoStatus{}, nil
 	}
 
-	// if there is a origin set, try with native git configurations
-	remote, err := gitutil.ExtractGitRemote(c.root, "origin", false)
-	if err == nil && remote.URL != "" {
-		err = gitutil.GitFetch(ctx, c.root, nil)
-		if err == nil {
-			// if native git fetch succeeds, return the status
-			gs, err := gitutil.RunGitStatus(c.root, "origin")
-			if err != nil {
-				return nil, err
-			}
-			return &drivers.RepoStatus{
-				IsGitRepo:     true,
-				Branch:        gs.Branch,
-				RemoteURL:     gs.RemoteURL,
-				LocalChanges:  gs.LocalChanges,
-				LocalCommits:  gs.LocalCommits,
-				RemoteCommits: gs.RemoteCommits,
-			}, nil
-		}
-	}
+	c.gitMu.Lock()
+	defer c.gitMu.Unlock()
 
-	// if native git fetch fails, try with ephemeral token - this may be a managed git project
+	gitPath, subPath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		// should not happen because we already checked isGitRepo
+		return nil, err
+	}
 
 	// Get authenticated admin client
 	if c.driverConfig.AccessToken == "" {
-		// if the user is not authenticated, we cannot fetch the project
-		// return the best effort status
-		gs, err := gitutil.RunGitStatus(c.root, "origin")
+		// if not authenticated do not return local/remote changes info
+		st, err := gitutil.RunGitStatus(gitPath, subPath, "origin")
 		if err != nil {
 			return nil, err
 		}
 		return &drivers.RepoStatus{
-			IsGitRepo: true,
-			Branch:    gs.Branch,
-			RemoteURL: gs.RemoteURL,
+			Branch:    st.Branch,
+			RemoteURL: st.RemoteURL,
+			Subpath:   subPath,
 		}, nil
 	}
 
+	// get ephemeral git credentials
 	config, err := c.loadGitConfig(ctx)
-	if err != nil {
-		if !errors.Is(err, drivers.ErrNotFound) {
-			return nil, err
-		}
-		// If the project is not found return the best effort status
-		gs, err := gitutil.RunGitStatus(c.root, "origin")
-		if err != nil {
-			return nil, err
-		}
-		return &drivers.RepoStatus{
-			IsGitRepo: true,
-			Branch:    gs.Branch,
-			RemoteURL: gs.RemoteURL,
-		}, nil
-	}
-
-	err = gitutil.GitFetch(ctx, c.root, config)
 	if err != nil {
 		return nil, err
 	}
-	gs, err := gitutil.RunGitStatus(c.root, config.RemoteName())
+	// set remote
+	err = gitutil.GitFetch(ctx, gitPath, config)
+	if err != nil {
+		return nil, err
+	}
+	gs, err := gitutil.RunGitStatus(gitPath, subPath, config.RemoteName())
 	if err != nil {
 		return nil, err
 	}
@@ -286,34 +259,30 @@ func (c *connection) Pull(ctx context.Context, opts *drivers.PullOptions) error 
 	if !c.isGitRepo() || !opts.UserTriggered {
 		return nil
 	}
+
+	if c.driverConfig.AccessToken == "" {
+		return errors.New("must authenticate before performing this action")
+	}
+
 	c.gitMu.Lock()
 	defer c.gitMu.Unlock()
 
-	origin, err := gitutil.ExtractGitRemote(c.root, "origin", false)
-	if err == nil && origin.URL != "" {
-		out, err := gitutil.RunGitPull(ctx, c.root, opts.DiscardChanges, "", "origin")
-		if err == nil && strings.Contains(out, "Already up to date") {
-			return nil
-		}
+	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		// Not a git repo
+		return err
 	}
-	// if native git pull fails, try with ephemeral token - this may be a managed git project
-
-	if c.driverConfig.AccessToken == "" {
-		// This should ideally not happen since otherwise user would not be able to clone the repo
-		return nil
+	if c.gitConfig.Subpath != subpath {
+		// should not happen
+		return errors.New("detected subpath within git repo does not match project subpath")
 	}
 
-	gitConfig, err := c.loadGitConfig(ctx)
+	remote, err := c.gitConfig.FullyQualifiedRemote()
 	if err != nil {
 		return err
 	}
 
-	remote, err := gitConfig.FullyQualifiedRemote()
-	if err != nil {
-		return err
-	}
-
-	_, err = gitutil.RunGitPull(ctx, c.root, opts.DiscardChanges, remote, gitConfig.RemoteName())
+	_, err = gitutil.RunGitPull(ctx, gitPath, opts.DiscardChanges, remote, c.gitConfig.RemoteName())
 	if err != nil {
 		return err
 	}
@@ -330,57 +299,52 @@ func (c *connection) CommitAndPush(ctx context.Context, message string, force bo
 	c.gitMu.Lock()
 	defer c.gitMu.Unlock()
 
-	remote, err := gitutil.ExtractGitRemote(c.root, "origin", false)
-	if err == nil && remote.URL != "" {
-		st, err := gitutil.RunGitStatus(c.root, "origin")
-		if err != nil {
-			return err
-		}
-		if st.RemoteCommits > 0 && !force {
-			return nil
-		}
-
-		// generate git signature
-		author, err := gitutil.NativeGitSignature(ctx, c.root)
-		if err == nil {
-			err = gitutil.CommitAndForcePush(ctx, c.root, &gitutil.Config{Remote: st.RemoteURL, DefaultBranch: st.Branch}, message, author)
-			if err == nil {
-				return nil
-			}
-		}
-	}
-	// if native git push fails, try with ephemeral token - this may be a managed git project
-
-	// Get authenticated admin client
-	if c.driverConfig.AccessToken == "" {
-		// This should ideally not happen since otherwise user would not be able to clone the repo
-		return nil
+	gitPath, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err != nil {
+		// Not a git repo - checked above
+		return err
 	}
 
-	config, err := c.loadGitConfig(ctx)
+	if c.gitConfig.Subpath != subpath {
+		// should not happen
+		return errors.New("detected subpath within git repo does not match project subpath")
+	}
+
+	author, err := c.gitSignature(ctx, gitPath)
 	if err != nil {
 		return err
 	}
 
 	// fetch the status again
-	gs, err := gitutil.RunGitStatus(c.root, config.RemoteName())
+	gs, err := gitutil.RunGitStatus(gitPath, subpath, c.gitConfig.RemoteName())
 	if err != nil {
 		return err
 	}
 	if gs.RemoteCommits > 0 && !force {
-		return drivers.ErrRemoteAhead
+		return errors.New("cannot push with remote commits present, please pull first")
 	}
 
-	author, err := c.gitSignature(ctx, c.root)
-	if err != nil {
-		return err
+	if force {
+		// Instead of a force push, we do a merge with favourLocal=true to ensure we don't loose history.
+		// This is not euivalent to a force push but is safer for users.
+		if c.gitConfig.Subpath != "" {
+			// force pushing in a monorepo can overwrite other subpaths
+			// we can check for changes in other subpaths but it is tricky and error prone
+			// monorepo setups are advanced use cases and we can require users to manually resolve remote changes
+			return fmt.Errorf("cannot overwrite remote changes in a monorepo setup. Merge remote changes manually")
+		}
+		err := gitutil.RunUpstreamMerge(ctx, c.gitConfig.RemoteName(), c.root, c.gitConfig.DefaultBranch, true)
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		return gitutil.CommitAndPush(ctx, c.root, c.gitConfig, message, author)
+	} else {
+		err := gitutil.RunUpstreamMerge(ctx, c.gitConfig.RemoteName(), c.root, c.gitConfig.DefaultBranch, false)
+		if err != nil {
+			return fmt.Errorf("local is behind remote and failed to sync with remote: %w", err)
+		}
+		return gitutil.CommitAndPush(ctx, c.root, c.gitConfig, message, author)
 	}
-
-	err = gitutil.CommitAndForcePush(ctx, c.root, config, message, author)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -404,36 +368,66 @@ func (c *connection) loadGitConfig(ctx context.Context) (*gitutil.Config, error)
 	if c.gitConfig != nil && !c.gitConfig.IsExpired() {
 		return c.gitConfig, nil
 	}
-	config, err := dotrillcloud.GetAll(c.root, c.driverConfig.AdminURL)
-	if err != nil {
-		return nil, err
-	}
-	if config == nil || config.ProjectID == "" {
-		return nil, drivers.ErrNotFound
-	}
-	proj, err := c.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-		Id: config.ProjectID,
-	})
-	if err != nil {
-		return nil, err
+
+	// Build request
+	req := &adminv1.ListProjectsForFingerprintRequest{
+		DirectoryName: filepath.Base(c.root),
 	}
 
-	resp, err := c.admin.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
-		Organization: proj.Project.OrgName,
-		Project:      proj.Project.Name,
+	// extract subpath
+	repoRoot, subpath, err := gitutil.InferRepoRootAndSubpath(c.root)
+	if err == nil {
+		req.SubPath = subpath
+	}
+
+	// extract remotes
+	remote, err := gitutil.ExtractRemotes(repoRoot, false)
+	if err == nil {
+		for _, r := range remote {
+			if r.Name == "__rill_remote" {
+				req.RillMgdGitRemote = r.URL
+			} else {
+				gitRemote, err := r.Github()
+				if err == nil {
+					req.GitRemote = gitRemote
+				}
+			}
+		}
+	}
+	resp, err := c.admin.ListProjectsForFingerprint(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.Projects) == 0 {
+		return nil, nil
+	}
+
+	orgFiltered := make([]*adminv1.Project, 0)
+	for _, p := range resp.Projects {
+		if p.OrgName == c.driverConfig.Org {
+			orgFiltered = append(orgFiltered, p)
+		}
+	}
+	if len(orgFiltered) == 0 {
+		return nil, nil
+	}
+	p := orgFiltered[0]
+	creds, err := c.admin.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
+		Org:     p.OrgName,
+		Project: p.Name,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	c.gitConfig = &gitutil.Config{
-		Remote:            resp.GitRepoUrl,
-		Username:          resp.GitUsername,
-		Password:          resp.GitPassword,
-		PasswordExpiresAt: resp.GitPasswordExpiresAt.AsTime(),
-		DefaultBranch:     resp.GitProdBranch,
-		Subpath:           resp.GitSubpath,
-		ManagedRepo:       resp.GitManagedRepo,
+		Remote:            creds.GitRepoUrl,
+		Username:          creds.GitUsername,
+		Password:          creds.GitPassword,
+		PasswordExpiresAt: creds.GitPasswordExpiresAt.AsTime(),
+		DefaultBranch:     creds.GitProdBranch,
+		Subpath:           creds.GitSubpath,
+		ManagedRepo:       creds.GitManagedRepo,
 	}
 	return c.gitConfig, nil
 }

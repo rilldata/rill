@@ -442,7 +442,7 @@ func (r *repo) Status(ctx context.Context) (*drivers.RepoStatus, error) {
 	}
 
 	// run git status
-	st, err := gitutil.RunGitStatus(r.git.repoDir, "origin")
+	st, err := gitutil.RunGitStatus(r.git.repoDir, "origin", r.git.subpath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Git status: %w", err)
 	}

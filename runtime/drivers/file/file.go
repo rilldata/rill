@@ -58,6 +58,7 @@ type configProperties struct {
 	DSN             string `mapstructure:"dsn"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 	AdminURL        string `mapstructure:"admin_url"`
+	Org             string `mapstructure:"org"`
 	AccessToken     string `mapstructure:"access_token"`
 }
 

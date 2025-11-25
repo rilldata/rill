@@ -111,6 +111,7 @@ type RepoStatus struct {
 	IsGitRepo     bool
 	Branch        string
 	RemoteURL     string
+	Subpath       string
 	ManagedRepo   bool
 	LocalChanges  bool // true if there are local changes (staged, unstaged, or untracked)
 	LocalCommits  int32
