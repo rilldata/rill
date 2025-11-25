@@ -24671,6 +24671,10 @@ func (m *ListUserAuthTokensRequest) validate(all bool) error {
 
 	// no validation rules for SuperuserForceAccess
 
+	if m.Refresh != nil {
+		// no validation rules for Refresh
+	}
+
 	if len(errors) > 0 {
 		return ListUserAuthTokensRequestMultiError(errors)
 	}
@@ -25397,6 +25401,227 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RevokeUserAuthTokenResponseValidationError{}
+
+// Validate checks the field values on RevokeAllUserAuthTokensRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevokeAllUserAuthTokensRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeAllUserAuthTokensRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RevokeAllUserAuthTokensRequestMultiError, or nil if none found.
+func (m *RevokeAllUserAuthTokensRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeAllUserAuthTokensRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetUserId()) < 1 {
+		err := RevokeAllUserAuthTokensRequestValidationError{
+			field:  "UserId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for SuperuserForceAccess
+
+	if len(errors) > 0 {
+		return RevokeAllUserAuthTokensRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeAllUserAuthTokensRequestMultiError is an error wrapping multiple
+// validation errors returned by RevokeAllUserAuthTokensRequest.ValidateAll()
+// if the designated constraints aren't met.
+type RevokeAllUserAuthTokensRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeAllUserAuthTokensRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeAllUserAuthTokensRequestMultiError) AllErrors() []error { return m }
+
+// RevokeAllUserAuthTokensRequestValidationError is the validation error
+// returned by RevokeAllUserAuthTokensRequest.Validate if the designated
+// constraints aren't met.
+type RevokeAllUserAuthTokensRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeAllUserAuthTokensRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeAllUserAuthTokensRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeAllUserAuthTokensRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeAllUserAuthTokensRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeAllUserAuthTokensRequestValidationError) ErrorName() string {
+	return "RevokeAllUserAuthTokensRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeAllUserAuthTokensRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeAllUserAuthTokensRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeAllUserAuthTokensRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeAllUserAuthTokensRequestValidationError{}
+
+// Validate checks the field values on RevokeAllUserAuthTokensResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevokeAllUserAuthTokensResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeAllUserAuthTokensResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RevokeAllUserAuthTokensResponseMultiError, or nil if none found.
+func (m *RevokeAllUserAuthTokensResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeAllUserAuthTokensResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for TokensRevoked
+
+	if len(errors) > 0 {
+		return RevokeAllUserAuthTokensResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeAllUserAuthTokensResponseMultiError is an error wrapping multiple
+// validation errors returned by RevokeAllUserAuthTokensResponse.ValidateAll()
+// if the designated constraints aren't met.
+type RevokeAllUserAuthTokensResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeAllUserAuthTokensResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeAllUserAuthTokensResponseMultiError) AllErrors() []error { return m }
+
+// RevokeAllUserAuthTokensResponseValidationError is the validation error
+// returned by RevokeAllUserAuthTokensResponse.Validate if the designated
+// constraints aren't met.
+type RevokeAllUserAuthTokensResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeAllUserAuthTokensResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeAllUserAuthTokensResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeAllUserAuthTokensResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeAllUserAuthTokensResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeAllUserAuthTokensResponseValidationError) ErrorName() string {
+	return "RevokeAllUserAuthTokensResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeAllUserAuthTokensResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeAllUserAuthTokensResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeAllUserAuthTokensResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeAllUserAuthTokensResponseValidationError{}
 
 // Validate checks the field values on RevokeRepresentativeAuthTokensRequest
 // with the rules defined in the proto definition for this message. If any
@@ -32616,6 +32841,8 @@ func (m *PullVirtualRepoRequest) validate(all bool) error {
 
 	// no validation rules for PageToken
 
+	// no validation rules for SuperuserForceAccess
+
 	if len(errors) > 0 {
 		return PullVirtualRepoRequestMultiError(errors)
 	}
@@ -32833,6 +33060,459 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PullVirtualRepoResponseValidationError{}
+
+// Validate checks the field values on GetVirtualFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetVirtualFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetVirtualFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetVirtualFileRequestMultiError, or nil if none found.
+func (m *GetVirtualFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetVirtualFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	// no validation rules for Environment
+
+	// no validation rules for Path
+
+	// no validation rules for SuperuserForceAccess
+
+	if len(errors) > 0 {
+		return GetVirtualFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetVirtualFileRequestMultiError is an error wrapping multiple validation
+// errors returned by GetVirtualFileRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetVirtualFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetVirtualFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetVirtualFileRequestMultiError) AllErrors() []error { return m }
+
+// GetVirtualFileRequestValidationError is the validation error returned by
+// GetVirtualFileRequest.Validate if the designated constraints aren't met.
+type GetVirtualFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetVirtualFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetVirtualFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetVirtualFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetVirtualFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetVirtualFileRequestValidationError) ErrorName() string {
+	return "GetVirtualFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetVirtualFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetVirtualFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetVirtualFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetVirtualFileRequestValidationError{}
+
+// Validate checks the field values on GetVirtualFileResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetVirtualFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetVirtualFileResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetVirtualFileResponseMultiError, or nil if none found.
+func (m *GetVirtualFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetVirtualFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetFile()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetVirtualFileResponseValidationError{
+					field:  "File",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetVirtualFileResponseValidationError{
+					field:  "File",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFile()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetVirtualFileResponseValidationError{
+				field:  "File",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetVirtualFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetVirtualFileResponseMultiError is an error wrapping multiple validation
+// errors returned by GetVirtualFileResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetVirtualFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetVirtualFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetVirtualFileResponseMultiError) AllErrors() []error { return m }
+
+// GetVirtualFileResponseValidationError is the validation error returned by
+// GetVirtualFileResponse.Validate if the designated constraints aren't met.
+type GetVirtualFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetVirtualFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetVirtualFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetVirtualFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetVirtualFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetVirtualFileResponseValidationError) ErrorName() string {
+	return "GetVirtualFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetVirtualFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetVirtualFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetVirtualFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetVirtualFileResponseValidationError{}
+
+// Validate checks the field values on DeleteVirtualFileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteVirtualFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteVirtualFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteVirtualFileRequestMultiError, or nil if none found.
+func (m *DeleteVirtualFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteVirtualFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	// no validation rules for Environment
+
+	// no validation rules for Path
+
+	// no validation rules for SuperuserForceAccess
+
+	if len(errors) > 0 {
+		return DeleteVirtualFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteVirtualFileRequestMultiError is an error wrapping multiple validation
+// errors returned by DeleteVirtualFileRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DeleteVirtualFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteVirtualFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteVirtualFileRequestMultiError) AllErrors() []error { return m }
+
+// DeleteVirtualFileRequestValidationError is the validation error returned by
+// DeleteVirtualFileRequest.Validate if the designated constraints aren't met.
+type DeleteVirtualFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteVirtualFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteVirtualFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteVirtualFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteVirtualFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteVirtualFileRequestValidationError) ErrorName() string {
+	return "DeleteVirtualFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteVirtualFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteVirtualFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteVirtualFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteVirtualFileRequestValidationError{}
+
+// Validate checks the field values on DeleteVirtualFileResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteVirtualFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteVirtualFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteVirtualFileResponseMultiError, or nil if none found.
+func (m *DeleteVirtualFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteVirtualFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeleteVirtualFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteVirtualFileResponseMultiError is an error wrapping multiple validation
+// errors returned by DeleteVirtualFileResponse.ValidateAll() if the
+// designated constraints aren't met.
+type DeleteVirtualFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteVirtualFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteVirtualFileResponseMultiError) AllErrors() []error { return m }
+
+// DeleteVirtualFileResponseValidationError is the validation error returned by
+// DeleteVirtualFileResponse.Validate if the designated constraints aren't met.
+type DeleteVirtualFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteVirtualFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteVirtualFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteVirtualFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteVirtualFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteVirtualFileResponseValidationError) ErrorName() string {
+	return "DeleteVirtualFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteVirtualFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteVirtualFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteVirtualFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteVirtualFileResponseValidationError{}
 
 // Validate checks the field values on GetReportMetaRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -43350,6 +44030,8 @@ func (m *UserAuthToken) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Refresh
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

@@ -194,3 +194,38 @@ func (i *Instance) Config() (InstanceConfig, error) {
 
 	return res, nil
 }
+
+func (i *Instance) ResolveConnectors() []*runtimev1.Connector {
+	var res []*runtimev1.Connector
+	res = append(res, i.Connectors...)
+	res = append(res, i.ProjectConnectors...)
+	// implicit connectors
+	vars := i.ResolveVariables(true)
+	for k := range vars {
+		if !strings.HasPrefix(k, "connector.") {
+			continue
+		}
+
+		parts := strings.Split(k, ".")
+		if len(parts) <= 2 {
+			continue
+		}
+
+		// Implicitly defined connectors always have the same name as the driver
+		name := parts[1]
+		found := false
+		for _, c := range res {
+			if c.Name == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			res = append(res, &runtimev1.Connector{
+				Type: name,
+				Name: name,
+			})
+		}
+	}
+	return res
+}

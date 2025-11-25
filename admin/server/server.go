@@ -221,11 +221,8 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		mux.Handle("/metrics", promhttp.Handler())
 	}
 
-	// Server public JWKS for runtime JWT verification
-	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
-
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	s.authenticator.RegisterEndpoints(mux, s.limiter)
+	s.authenticator.RegisterEndpoints(mux, s.limiter, s.issuer)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
@@ -428,13 +425,8 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
 		return time.Minute * 2
 	}
-	switch fullMethodName {
-	case
-		"/rill.admin.v1.AdminService/CreateProject",
-		"/rill.admin.v1.AdminService/UpdateProject",
-		"/rill.admin.v1.AdminService/RedeployProject",
-		"/rill.admin.v1.AdminService/TriggerRedeploy":
-		return time.Minute * 5
+	if fullMethodName == "/rill.admin.v1.AdminService/DeleteProject" {
+		return time.Minute * 4
 	}
 	return time.Minute
 }

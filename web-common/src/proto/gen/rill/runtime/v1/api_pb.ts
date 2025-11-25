@@ -4355,6 +4355,13 @@ export class ListConversationsRequest extends Message$1<ListConversationsRequest
    */
   instanceId = "";
 
+  /**
+   * Optional search pattern for filtering by user agent.
+   *
+   * @generated from field: string user_agent_pattern = 2;
+   */
+  userAgentPattern = "";
+
   constructor(data?: PartialMessage<ListConversationsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4364,6 +4371,7 @@ export class ListConversationsRequest extends Message$1<ListConversationsRequest
   static readonly typeName = "rill.runtime.v1.ListConversationsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_agent_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConversationsRequest {

@@ -935,6 +935,8 @@ message Message {
 // Request message for RuntimeService.ListConversations
 message ListConversationsRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Optional search pattern for filtering by user agent.
+  string user_agent_pattern = 2;
 }
 
 // Response message for RuntimeService.ListConversations

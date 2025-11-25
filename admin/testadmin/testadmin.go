@@ -191,7 +191,7 @@ func (f *Fixture) NewUserWithEmail(t *testing.T, emailAddr string) (*database.Us
 	u, err := f.Admin.CreateOrUpdateUser(ctx, emailAddr, name, "")
 	require.NoError(t, err)
 
-	tkn, err := f.Admin.IssueUserAuthToken(ctx, u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil)
+	tkn, err := f.Admin.IssueUserAuthToken(ctx, u.ID, database.AuthClientIDRillWeb, "Test session", nil, nil, false)
 	require.NoError(t, err)
 
 	return u, f.NewClient(t, tkn.Token().String())
