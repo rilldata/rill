@@ -213,9 +213,15 @@ func (c *ConfigProperties) ResolveDSN() (string, error) {
 // parseDSN parses a StarRocks DSN and converts it to MySQL format.
 // Supports both starrocks:// and standard MySQL DSN formats.
 // starrocks://user:password@host:port/database -> user:password@tcp(host:port)/database?parseTime=true
+// Also extracts database name and stores it in ConfigProperties.Database for later use.
 func (c *ConfigProperties) parseDSN(dsn string) (string, error) {
 	// If DSN doesn't start with starrocks://, assume it's already in MySQL format
 	if !strings.HasPrefix(dsn, "starrocks://") {
+		// Parse MySQL DSN to extract database name
+		cfg, err := mysql.ParseDSN(dsn)
+		if err == nil && cfg.DBName != "" && c.Database == "" {
+			c.Database = cfg.DBName
+		}
 		return dsn, nil
 	}
 
@@ -267,6 +273,11 @@ func (c *ConfigProperties) parseDSN(dsn string) (string, error) {
 		}
 	} else {
 		host = hostPortPart
+	}
+
+	// Store database in ConfigProperties for later use (e.g., GetTable, Lookup)
+	if database != "" && c.Database == "" {
+		c.Database = database
 	}
 
 	// Build MySQL DSN using mysql.Config
