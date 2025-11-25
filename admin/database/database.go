@@ -1005,7 +1005,7 @@ type OrganizationInvite struct {
 	OrgID           string    `db:"org_id"`
 	OrgRoleID       string    `db:"org_role_id"`
 	UsergroupIDs    []string  `db:"usergroup_ids"`
-	InvitedByUserID string    `db:"invited_by_user_id"`
+	InvitedByUserID *string   `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
 
@@ -1013,8 +1013,8 @@ type OrganizationInvite struct {
 type OrganizationInviteWithRole struct {
 	ID        string
 	Email     string
-	RoleName  string `db:"role_name"`
-	InvitedBy string `db:"invited_by"`
+	RoleName  string  `db:"role_name"`
+	InvitedBy *string `db:"invited_by"`
 }
 
 // ProjectInvite represents an outstanding invitation to join a project.
@@ -1025,7 +1025,7 @@ type ProjectInvite struct {
 	OrgInviteID     string    `db:"org_invite_id"`
 	ProjectID       string    `db:"project_id"`
 	ProjectRoleID   string    `db:"project_role_id"`
-	InvitedByUserID string    `db:"invited_by_user_id"`
+	InvitedByUserID *string   `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
 
@@ -1033,9 +1033,9 @@ type ProjectInvite struct {
 type ProjectInviteWithRole struct {
 	ID          string
 	Email       string
-	RoleName    string `db:"role_name"`
-	OrgRoleName string `db:"org_role_name"`
-	InvitedBy   string `db:"invited_by"`
+	RoleName    string  `db:"role_name"`
+	OrgRoleName string  `db:"org_role_name"`
+	InvitedBy   *string `db:"invited_by"`
 }
 
 type ProjectsQuotaUsage struct {
