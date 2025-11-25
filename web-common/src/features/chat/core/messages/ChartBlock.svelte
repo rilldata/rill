@@ -6,12 +6,12 @@
   } from "@rilldata/web-common/features/components/charts";
   import {
     ResourceKind,
-    useFilteredResources,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard";
   import { Theme } from "@rilldata/web-common/features/themes/theme";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { readable } from "svelte/store";
 
@@ -54,19 +54,22 @@
     hasTimeSeries: true,
   });
 
-  $: themesQuery = useFilteredResources(instanceId, ResourceKind.Theme);
+  $: defaultThemeQuery = createRuntimeServiceGetInstance(
+    instanceId,
+    undefined,
+    {
+      query: {
+        select: (data) => data?.instance?.theme,
+      },
+    },
+    queryClient,
+  );
 
-  $: themeNames = ($themesQuery?.data ?? [])
-    .map((theme) => theme.meta?.name?.name ?? "")
-    .filter((string) => !string.endsWith("--theme"));
-
-  $: themeName =
-    themeNames.find((name) => name.toLowerCase().startsWith("default")) ??
-    themeNames?.[0];
+  $: themeName = $defaultThemeQuery?.data;
 
   $: themeQuery = useResource(
     instanceId,
-    themeName,
+    themeName!,
     ResourceKind.Theme,
     {
       enabled: !!themeName,
