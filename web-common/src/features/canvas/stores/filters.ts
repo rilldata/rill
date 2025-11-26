@@ -397,7 +397,9 @@ export class FilterManager {
         );
 
         merged.hasFilters =
-          merged.hasClearableFilters || pinnedFilters.size > 0;
+          merged.hasClearableFilters ||
+          pinnedFilters.size > 0 ||
+          temporaryFilterKeys.size > 0;
 
         return merged;
       },
