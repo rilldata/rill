@@ -35,9 +35,9 @@ func (t *QueryMetricsViewSummary) Spec() *mcp.Tool {
 	}
 }
 
-func (t *QueryMetricsViewSummary) CheckAccess(ctx context.Context) bool {
+func (t *QueryMetricsViewSummary) CheckAccess(ctx context.Context) (bool, error) {
 	s := GetSession(ctx)
-	return s.Claims().Can(runtime.ReadMetrics)
+	return s.Claims().Can(runtime.ReadMetrics), nil
 }
 
 func (t *QueryMetricsViewSummary) Handler(ctx context.Context, args *QueryMetricsViewSummaryArgs) (*QueryMetricsViewSummaryResult, error) {
