@@ -64,20 +64,19 @@ func (t *AnalystAgent) Spec() *mcp.Tool {
 	}
 }
 
-func (t *AnalystAgent) CheckAccess(ctx context.Context) bool {
+func (t *AnalystAgent) CheckAccess(ctx context.Context) (bool, error) {
+	// Must be allowed to use AI and query metrics
 	s := GetSession(ctx)
-
-	// Must be allowed to use AI features
-	if !s.Claims().Can(runtime.UseAI) {
-		return false
+	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.ReadMetrics) {
+		return false, nil
 	}
 
 	// Only allow for rill user agents since it's not useful in MCP contexts.
 	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }
 
 func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*AnalystAgentResult, error) {
