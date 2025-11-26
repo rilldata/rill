@@ -4,6 +4,7 @@
   import DimensionFilterReadOnlyChip from "../../dashboards/filters/dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
+  import MeasureFilterReadOnlyChip from "../../dashboards/filters/measure-filters/MeasureFilterReadOnlyChip.svelte";
 
   export let canvasName: string;
 
@@ -17,7 +18,7 @@
     },
   } = getCanvasStore(canvasName, instanceId));
 
-  $: ({ dimensions } = $_defaultUIFilters);
+  $: ({ dimensions, measures } = $_defaultUIFilters);
 
   $: interval = $_interval;
 </script>
@@ -30,9 +31,9 @@
     </p>
 
     <div class="flex flex-col gap-y-2 w-full flex-none">
-      {#each dimensions as [name, entry] (name)}
-        {@const metricsViewNames = Array.from(entry.dimensions.keys())}
-        {@const dimension = entry.dimensions.get(metricsViewNames[0])}
+      {#each dimensions as [id, filterData] (id)}
+        {@const metricsViewNames = Array.from(filterData.dimensions.keys())}
+        {@const dimension = filterData.dimensions.get(metricsViewNames[0])}
 
         {#if dimension && dimension.name}
           <DimensionFilterReadOnlyChip
@@ -42,12 +43,27 @@
               dimension.name ||
               dimension.column ||
               "Unnamed Dimension"}
-            mode={entry.mode}
-            values={entry.selectedValues}
-            inputText={entry.inputText}
-            isInclude={entry.isInclude}
+            mode={filterData.mode}
+            values={filterData.selectedValues ?? []}
+            inputText={filterData.inputText}
+            isInclude={filterData.isInclude === true}
             timeStart={interval?.start?.toISO()}
             timeEnd={interval?.end?.toISO()}
+          />
+        {/if}
+      {/each}
+
+      {#each measures as [id, filterData] (id)}
+        {@const metricsViewNames = Array.from(
+          filterData?.measures?.keys() ?? [],
+        )}
+        {@const measure = filterData.measures?.get(metricsViewNames[0])}
+
+        {#if measure && measure.name}
+          <MeasureFilterReadOnlyChip
+            dimensionName={filterData.dimensionName}
+            label={filterData.label}
+            filter={filterData.filter}
           />
         {/if}
       {/each}

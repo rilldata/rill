@@ -230,8 +230,8 @@ export class FilterManager {
           (f) => f.parsedDefaultFilters,
         ),
       ],
-      (expr) => {
-        return expr[0];
+      (filters) => {
+        return this.convertToUIFilters(filters, new Set(), new Set());
       },
     );
 
@@ -242,169 +242,178 @@ export class FilterManager {
         ...Array.from(this.metricsViewFilters.values()).map((f) => f.parsed),
       ],
       ([pinnedFilters, temporaryFilterKeys, ...parsedFilters]) => {
-        const parsedMap = new Map<string, ParsedFilters>();
-        parsedFilters.forEach((parsed) => {
-          parsedMap.set(parsed.metricsViewName, parsed);
+        return this.convertToUIFilters(
+          parsedFilters,
+          temporaryFilterKeys,
+          pinnedFilters,
+        );
+      },
+    );
+  }
+
+  convertToUIFilters = (
+    parsedFilters: ParsedFilters[],
+    temporaryFilterKeys: Set<string>,
+    pinnedFilters: Set<string>,
+  ): UIFilters => {
+    const parsedMap = new Map<string, ParsedFilters>();
+    parsedFilters.forEach((parsed) => {
+      parsedMap.set(parsed.metricsViewName, parsed);
+    });
+
+    const merged = {
+      dimensions: new Map<string, DimensionFilterItem>(),
+      measures: new Map<string, MeasureFilterItem>(),
+      complexFilters: [],
+      hasFilters: false,
+      hasClearableFilters: false,
+    };
+
+    const allMeasures = get(this._allMeasures);
+
+    allMeasures.forEach((measures, key) => {
+      const filters: MeasureFilterItem[] = [];
+
+      const measureMap = allMeasures.get(key);
+      const metricsViewNames = measureMap ? Array.from(measureMap.keys()) : [];
+
+      const measureSpecs = Array.from(measureMap?.values() || []);
+
+      // Needs work - bgh
+      if (temporaryFilterKeys.has(key)) {
+        merged.measures.set(key, {
+          dimensionName: "",
+          dimensions: undefined,
+          name: key.split("::")[1],
+          label: measureSpecs[0].displayName ?? "",
+          pinned: false,
+          measures: measureMap,
+          metricsViewNames: metricsViewNames,
         });
+        return;
+      }
 
-        const merged = {
-          dimensions: new Map<string, DimensionFilterItem>(),
-          measures: new Map<string, MeasureFilterItem>(),
-          complexFilters: [],
-          hasFilters: false,
-          hasClearableFilters: false,
-        };
+      const pinned = pinnedFilters.has(key);
 
-        const allMeasures = get(this._allMeasures);
+      measures.forEach((measure, metricsViewName) => {
+        const parsed = parsedMap.get(metricsViewName);
+        if (!parsed) return;
 
-        allMeasures.forEach((measures, key) => {
-          const filters: MeasureFilterItem[] = [];
-
-          const measureMap = allMeasures.get(key);
-          const metricsViewNames = measureMap
-            ? Array.from(measureMap.keys())
-            : [];
-
-          const measureSpecs = Array.from(measureMap?.values() || []);
-
-          // Needs work - bgh
-          if (temporaryFilterKeys.has(key)) {
-            merged.measures.set(key, {
+        const dimFilter = parsed.measures.get(measure.name as string);
+        if (!dimFilter) {
+          if (pinned) {
+            filters.push({
               dimensionName: "",
               dimensions: undefined,
               name: key.split("::")[1],
               label: measureSpecs[0].displayName ?? "",
-              pinned: false,
+              pinned: true,
               measures: measureMap,
               metricsViewNames: metricsViewNames,
             });
-            return;
           }
+        } else {
+          if (pinned) {
+            dimFilter.pinned = true;
+          }
+          filters.push(dimFilter);
+        }
+      });
 
-          const pinned = pinnedFilters.has(key);
+      if (filters.length === 0) return;
+      // if (
+      //   filters.every(
+      //     (f) =>
+      //       f.measure === filters[0].measure &&
+      //       f.operation === filters[0].operation &&
+      //       f.type === filters[0].type,
+      //   )
+      // ) {
+      merged.measures.set(key, {
+        ...filters[0],
+        measures: measures,
+      });
+      // } else {
+      //   // mixed filters - need to resolve
+      // }
+    });
 
-          measures.forEach((measure, metricsViewName) => {
-            const parsed = parsedMap.get(metricsViewName);
-            if (!parsed) return;
+    const allDimensions = get(this._allDimensions);
 
-            const dimFilter = parsed.measures.get(measure.name as string);
-            if (!dimFilter) {
-              if (pinned) {
-                filters.push({
-                  dimensionName: "",
-                  dimensions: undefined,
-                  name: key.split("::")[1],
-                  label: measureSpecs[0].displayName ?? "",
-                  pinned: true,
-                  measures: measureMap,
-                  metricsViewNames: metricsViewNames,
-                });
-              }
-            } else {
-              if (pinned) {
-                dimFilter.pinned = true;
-              }
-              filters.push(dimFilter);
-            }
-          });
+    // can improve efficiency at a later date - bgh
+    allDimensions.forEach((dimensions, key) => {
+      const filters: DimensionFilterItem[] = [];
 
-          if (filters.length === 0) return;
-          // if (
-          //   filters.every(
-          //     (f) =>
-          //       f.measure === filters[0].measure &&
-          //       f.operation === filters[0].operation &&
-          //       f.type === filters[0].type,
-          //   )
-          // ) {
-          merged.measures.set(key, {
-            ...filters[0],
-            measures: measures,
-          });
-          // } else {
-          //   // mixed filters - need to resolve
-          // }
+      if (temporaryFilterKeys.has(key)) {
+        filters.push({
+          mode: DimensionFilterMode.Select,
+          selectedValues: [],
+          dimensions: dimensions,
+          isInclude: true,
+          inputText: undefined,
+          pinned: false,
         });
 
-        const allDimensions = get(this._allDimensions);
+        merged.dimensions.set(key, {
+          ...filters[0],
+          dimensions: dimensions,
+        });
+        return;
+      }
 
-        // can improve efficiency at a later date - bgh
-        allDimensions.forEach((dimensions, key) => {
-          const filters: DimensionFilterItem[] = [];
+      const pinned = pinnedFilters.has(key);
 
-          if (temporaryFilterKeys.has(key)) {
+      dimensions.forEach((dimension, metricsViewName) => {
+        const parsed = parsedMap.get(metricsViewName);
+        if (!parsed) return;
+
+        const dimFilter = parsed.dimensions.get(dimension.name as string);
+        if (!dimFilter) {
+          if (pinned) {
             filters.push({
               mode: DimensionFilterMode.Select,
               selectedValues: [],
               dimensions: dimensions,
               isInclude: true,
               inputText: undefined,
-              pinned: false,
+              pinned: true,
             });
-
-            merged.dimensions.set(key, {
-              ...filters[0],
-              dimensions: dimensions,
-            });
-            return;
           }
-
-          const pinned = pinnedFilters.has(key);
-
-          dimensions.forEach((dimension, metricsViewName) => {
-            const parsed = parsedMap.get(metricsViewName);
-            if (!parsed) return;
-
-            const dimFilter = parsed.dimensions.get(dimension.name as string);
-            if (!dimFilter) {
-              if (pinned) {
-                filters.push({
-                  mode: DimensionFilterMode.Select,
-                  selectedValues: [],
-                  dimensions: dimensions,
-                  isInclude: true,
-                  inputText: undefined,
-                  pinned: true,
-                });
-              }
-            } else {
-              if (pinned) {
-                dimFilter.pinned = true;
-              }
-              filters.push(dimFilter);
-            }
-          });
-
-          if (filters.length === 0) return;
-          if (
-            filters.every(
-              (f) =>
-                f.isInclude === filters[0].isInclude &&
-                f.mode === filters[0].mode,
-            )
-          ) {
-            merged.dimensions.set(key, {
-              ...filters[0],
-              dimensions: dimensions,
-            });
-          } else {
-            // mixed filters - need to resolve
+        } else {
+          if (pinned) {
+            dimFilter.pinned = true;
           }
+          filters.push(dimFilter);
+        }
+      });
+
+      if (filters.length === 0) return;
+      if (
+        filters.every(
+          (f) =>
+            f.isInclude === filters[0].isInclude && f.mode === filters[0].mode,
+        )
+      ) {
+        merged.dimensions.set(key, {
+          ...filters[0],
+          dimensions: dimensions,
         });
+      } else {
+        // mixed filters - need to resolve
+      }
+    });
 
-        merged.hasClearableFilters = parsedFilters.some(
-          (p) => p.dimensions.size > 0 || p.measures.size > 0,
-        );
-
-        merged.hasFilters =
-          merged.hasClearableFilters ||
-          pinnedFilters.size > 0 ||
-          temporaryFilterKeys.size > 0;
-
-        return merged;
-      },
+    merged.hasClearableFilters = parsedFilters.some(
+      (p) => p.dimensions.size > 0 || p.measures.size > 0,
     );
-  }
+
+    merged.hasFilters =
+      merged.hasClearableFilters ||
+      pinnedFilters.size > 0 ||
+      temporaryFilterKeys.size > 0;
+
+    return merged;
+  };
 
   actions = {
     applyDimensionContainsMode: async (
