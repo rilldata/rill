@@ -210,7 +210,7 @@ func (s *Server) generateCanvasDashboardYAMLWithAI(ctx context.Context, instance
 	}
 	if doc.Defaults == nil {
 		doc.Defaults = &canvasDefaults{
-			TimeRange:      "P3D",
+			TimeRange:      "P7D",
 			ComparisonMode: "time",
 		}
 	}
@@ -415,7 +415,7 @@ The markdown component allows you to add rich text content, documentation, and c
 
 **Best practices:**
 - Place markdown components at the top of the dashboard to provide context
-- Add new lines in the content so that markdown is rendered properly
+- Add empty new line between each markdown feature to render properly
 - Use headers to organize content and create visual hierarchy
 - Keep content concise and focused on key insights
 - Use bullet points for easy scanning
@@ -428,14 +428,8 @@ markdown:
   content: >-
     ## Dashboard Overview
 
-    This dashboard shows key performance metrics and trends.
+    This dashboard provides a comprehensive overview of bidding activity, spend, win rates across your advertising inventory.
 
-    ---
-
-    ### Key Questions
-    - What are the top performing segments?
-    - How do metrics trend over time?
-    - Which areas need attention?
   alignment:
     horizontal: left
     vertical: top
@@ -569,7 +563,7 @@ func canvasDashboardYAMLSystemPrompt() string {
 	template := canvasDashboardYAML{
 		DisplayName: "<human-friendly display name for the dashboard>",
 		Defaults: &canvasDefaults{
-			TimeRange:      "PT24H",
+			TimeRange:      "P7D",
 			ComparisonMode: "time",
 		},
 		Rows: []*canvasRow{
