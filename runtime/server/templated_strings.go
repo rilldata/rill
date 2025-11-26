@@ -37,20 +37,30 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		User:      claims.UserAttributes,
 		Variables: inst.ResolveVariables(false),
 		State:     make(map[string]any),
-		CallbackFuncs: map[string]any{
-			"metrics_sql": func(sql string) (string, error) {
-				value, metricsViewName, fieldName, err := s.executeMetricsSQL(ctx, req.InstanceId, claims, sql, req.AdditionalWhereByMetricsView, req.AdditionalTimeRange)
-				if err != nil {
-					return "", err
-				}
+		Resolve: func(ref parser.ResourceName) (string, error) {
+			return ref.Name, nil
+		},
+	}
 
-				// Return format token or raw value based on request
-				if req.UseFormatTokens {
-					return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, metricsViewName, fieldName, value), nil
-				}
+	templateData.CallbackFuncs = map[string]any{
+		"metrics_sql": func(sql string) (string, error) {
+			// Resolve any templates in the SQL string
+			resolvedSQL, err := parser.ResolveTemplate(sql, templateData, false)
+			if err != nil {
+				return "", fmt.Errorf("failed to resolve SQL template: %w", err)
+			}
 
-				return fmt.Sprintf("%v", value), nil
-			},
+			value, metricsViewName, fieldName, err := s.executeMetricsSQL(ctx, req.InstanceId, claims, resolvedSQL, req.AdditionalWhereByMetricsView, req.AdditionalTimeRange)
+			if err != nil {
+				return "", err
+			}
+
+			// Return format token or raw value based on request
+			if req.UseFormatTokens {
+				return fmt.Sprintf(`__RILL__FORMAT__(%q, %q, %v)`, metricsViewName, fieldName, value), nil
+			}
+
+			return fmt.Sprintf("%v", value), nil
 		},
 	}
 

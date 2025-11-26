@@ -150,6 +150,25 @@ Orders: {{ metrics_sql "SELECT total_orders FROM mv1" }}`,
 			expected:            []string{"Revenue: 300"},
 			expectEqual:         true,
 		},
+		{
+			name:            "WithRefs",
+			body:            `Revenue in US and UK from 2024-01-01 to 2024-02-01: {{ metrics_sql "SELECT total_revenue FROM {{ ref \"mv1\" }}" }}`,
+			useFormatTokens: false,
+			additionalWhere: map[string]*runtimev1.Expression{
+				"mv1": filterMv1,
+			},
+			additionalTimeRange: additionalTimeRange,
+			expected:            []string{"Revenue in US and UK from 2024-01-01 to 2024-02-01: 300"},
+			expectEqual:         true,
+		},
+		{
+			name:            "WithMultipleRefs",
+			body:            `{{ metrics_sql "SELECT total_revenue FROM {{ ref \"mv1\" }}" }} and {{ metrics_sql "SELECT total_sales FROM {{ ref \"mv2\" }}" }}`,
+			useFormatTokens: false,
+			additionalWhere: nil,
+			expected:        []string{"700 and 900"},
+			expectEqual:     true,
+		},
 	}
 
 	for _, tc := range tt {
