@@ -28,7 +28,7 @@ type AnalystAgentArgs struct {
 	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
 	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
 	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"-"`
+	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
 	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
 	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 }
@@ -54,6 +54,7 @@ func (r *AnalystAgentResult) ToLLM() *aiv1.ContentBlock {
 }
 
 func (t *AnalystAgent) Spec() *mcp.Tool {
+	// It can't automatically infer schemas that use the metricsview.Expression type, so we manually do that here.
 	inputSchema, err := jsonschema.For[*AnalystAgentArgs](&jsonschema.ForOptions{
 		TypeSchemas: metricsview.TypeSchemas(),
 	})

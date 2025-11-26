@@ -435,8 +435,8 @@ var timeDecodeFunc mapstructure.DecodeHookFunc = func(from reflect.Type, to refl
 	return data, nil
 }
 
-// TypeSchemas returns a map of JSON schemas for this packages query types (currently Query and Expression).
-// This is designed to integrate with jsonschema.ForOptions to enable JSON schema inference on types that have sub-fields this package's types.
+// TypeSchemas returns a map of JSON schemas for this package's query types (currently Query and Expression).
+// This is designed to integrate with jsonschema.ForOptions to enable JSON schema inference on types that have sub-fields that use this package's types.
 func TypeSchemas() map[reflect.Type]*jsonschema.Schema {
 	// Query schema
 	queryType := reflect.TypeFor[Query]()

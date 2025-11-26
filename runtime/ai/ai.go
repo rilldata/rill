@@ -235,7 +235,7 @@ func (t *CompiledTool) AsProto() (*aiv1.Tool, error) {
 		outputSchema = string(outputSchemaBytes)
 
 		// For consistency with input schema, skip object schemas without explicit properties.
-		if s, ok := t.Spec.OutputSchema.(*jsonschema.Schema); ok && s.Properties == nil {
+		if s, ok := t.Spec.OutputSchema.(*jsonschema.Schema); ok && s != nil && s.Properties == nil {
 			outputSchema = ""
 		}
 	}
@@ -257,14 +257,14 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 		var err error
 		spec.InputSchema, err = schemaFor[In](false)
 		if err != nil {
-			panic(fmt.Sprintf("failed to generate input schema for tool %q: %v", spec.Name, err))
+			panic(fmt.Sprintf("failed to infer input schema for tool %q: %v", spec.Name, err))
 		}
 	}
 	if spec.OutputSchema == nil {
 		var err error
 		spec.OutputSchema, err = schemaFor[Out](true)
 		if err != nil {
-			panic(fmt.Sprintf("failed to generate input schema for tool %q: %v", spec.Name, err))
+			panic(fmt.Sprintf("failed to infer output schema for tool %q: %v", spec.Name, err))
 		}
 	}
 

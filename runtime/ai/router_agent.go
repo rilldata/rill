@@ -37,6 +37,7 @@ type RouterAgentResult struct {
 }
 
 func (t *RouterAgent) Spec() *mcp.Tool {
+	// It can't automatically infer schemas that use the metricsview.Expression type (which is used in AnalystAgentArgs), so we manually do that here.
 	inputSchema, err := jsonschema.For[*RouterAgentArgs](&jsonschema.ForOptions{
 		TypeSchemas: metricsview.TypeSchemas(),
 	})

@@ -204,10 +204,16 @@ func TestListTools(t *testing.T) {
 	}
 
 	// Extra checks for some specific expected tools
-	require.NotNil(t, tools[ai.RouterAgentName])
-	require.NotEmpty(t, tools[ai.RouterAgentName].Meta.AsMap())
-	require.NotNil(t, tools[ai.AnalystAgentName])
-	require.NotEmpty(t, tools[ai.AnalystAgentName].Meta.AsMap())
-	require.NotNil(t, tools[ai.QueryMetricsViewName])
-	require.NotEmpty(t, tools[ai.QueryMetricsViewName].Meta.AsMap())
+	names := []string{
+		ai.RouterAgentName,
+		ai.AnalystAgentName,
+		ai.QueryMetricsViewName,
+	}
+	for _, name := range names {
+		tool, ok := tools[name]
+		require.Truef(t, ok, "expected tool %q to be present", name)
+		require.NotEmpty(t, tool.Meta.AsMap())
+		require.NotEmpty(t, tool.InputSchema)
+		require.NotEmpty(t, tool.OutputSchema)
+	}
 }
