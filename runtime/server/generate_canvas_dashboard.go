@@ -411,7 +411,6 @@ The markdown component allows you to add rich text content, documentation, and c
 - Lists (bulleted and numbered)
 - Links [text](url)
 - Horizontal rules (---)
-- Tables
 
 **Best practices:**
 - Place markdown components at the top of the dashboard to provide context
@@ -425,11 +424,12 @@ The markdown component allows you to add rich text content, documentation, and c
 Notice how empty new lines have been added in the content to render properly.
 ` + "```yaml" + `
 markdown:
-  content: >-
+  content: |
     ## Dashboard Overview
 
     This dashboard provides a comprehensive overview of bidding activity, spend, win rates across your advertising inventory.
 
+    ---
   alignment:
     horizontal: left
     vertical: top
@@ -762,9 +762,10 @@ Your output should only consist of valid YAML in the format below:
 4. You may add Row 4 or Row 5 with additional relevant charts. Pick the right number of component per row as needed.
 5. All components must reference the provided metrics_view name
 6. Choose dimensions and measures that would provide the most business value
-7. For charts with time dimension, use the timestamp from the metrics view as the field name
-8. Use descriptive titles for charts
-9. IMPORTANT: The time dimension is SPECIAL - it can ONLY be used in the x-axis field for temporal charts. NEVER use the time dimension in:
+7. Only use valid and available measures and dimensions names provided by the user
+8. For charts with time dimension, use the timestamp from the metrics view as the field name
+9. Use descriptive titles for charts
+10. IMPORTANT: The time dimension is SPECIAL - it can ONLY be used in the x-axis field for temporal charts. NEVER use the time dimension in:
    - Leaderboard dimensions
    - Color fields
    - Any other dimension fields
