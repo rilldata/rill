@@ -44,6 +44,14 @@ window.addEventListener("message", (event) => {
     console.log("State changed to:", params.state);
   }
 
+  if (method === "navigation") {
+    console.log("Navigated from:", params.from, "to:", params.to);
+  }
+
+  if (method === "resized") {
+    console.log("Iframe resized to:", params.width, "x", params.height);
+  }
+
   // responses
   if (id && result) {
     console.log("Response to request:", result);
@@ -116,6 +124,36 @@ Fired whenever the internal state of the iframe changes.
 { "method": "stateChanged", "params": { "state": "<rill state string>" } }
 ```
 
+### `navigation({ from: string | null, to: string })`
+
+Fired whenever a user navigates between dashboards. This event is only emitted when navigation is enabled in the embed configuration.
+
+- `from`: The name of the dashboard the user navigated from, or `null` if navigating from the dashboard listing page
+- `to`: The name of the dashboard the user navigated to
+
+This event fires for all dashboard navigation scenarios:
+- Navigating from one explore dashboard to another
+- Navigating from one canvas dashboard to another
+- Navigating from an explore dashboard to a canvas dashboard (or vice versa)
+- Navigating from the dashboard listing page to any dashboard
+
+```json
+{ "method": "navigation", "params": { "from": "dashboard-name", "to": "another-dashboard-name" } }
+```
+
+Example when navigating from the listing page:
+```json
+{ "method": "navigation", "params": { "from": null, "to": "dashboard-name" } }
+```
+
+### `resized({ width: number, height: number })`
+
+Fired whenever the iframe content is resized.
+
+```json
+{ "method": "resized", "params": { "width": 1200, "height": 800 } }
+```
+
 
 ## Error Handling
 
@@ -174,6 +212,14 @@ window.addEventListener("message", async (event) => {
 
   if (event.data?.method === "stateChanged") {
     console.log("State changed:", event.data.params.state);
+  }
+
+  if (event.data?.method === "navigation") {
+    console.log("Navigated from:", event.data.params.from, "to:", event.data.params.to);
+  }
+
+  if (event.data?.method === "resized") {
+    console.log("Iframe resized:", event.data.params.width, "x", event.data.params.height);
   }
 });
 ```
