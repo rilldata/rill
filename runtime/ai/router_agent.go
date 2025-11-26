@@ -36,12 +36,12 @@ type RouterAgentResult struct {
 
 func (t *RouterAgent) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "router_agent",
+		Name:        RouterAgentName,
 		Title:       "Router Agent",
 		Description: "Agent that routes messages to the appropriate handler agent.",
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Routing prompt…",
-			"openai/toolInvocation/invoked":  "Prompt completed",
+			"openai/toolInvocation/invoking": "Routing prompt...",
+			"openai/toolInvocation/invoked":  "Routed prompt",
 		},
 	}
 }

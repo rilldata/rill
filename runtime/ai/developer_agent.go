@@ -26,9 +26,13 @@ type DeveloperAgentResult struct {
 
 func (t *DeveloperAgent) Spec() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "developer_agent",
+		Name:        DeveloperAgentName,
 		Title:       "Developer Agent",
 		Description: "Agent that assists with development tasks.",
+		Meta: map[string]any{
+			"openai/toolInvocation/invoking": "Developing...",
+			"openai/toolInvocation/invoked":  "Development completed",
+		},
 	}
 }
 
@@ -39,7 +43,7 @@ func (t *DeveloperAgent) CheckAccess(ctx context.Context) (bool, error) {
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
 	// Pre-invoke file listing
 	s := GetSession(ctx)
-	_, err := s.CallTool(ctx, RoleAssistant, "list_files", nil, &ListFilesArgs{})
+	_, err := s.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +64,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	var response string
 	err = s.Complete(ctx, "Developer loop", &response, &CompleteOptions{
 		Messages:      messages,
-		Tools:         []string{"list_files", "read_file", "develop_model", "develop_metrics_view"},
+		Tools:         []string{ListFilesName, ReadFileName, DevelopModelName, DevelopMetricsViewName},
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})

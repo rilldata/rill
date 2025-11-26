@@ -58,8 +58,8 @@ func (t *AnalystAgent) Spec() *mcp.Tool {
 		Title:       "Analyst Agent",
 		Description: "Agent that assists with data analysis tasks.",
 		Meta: map[string]any{
-			"openai/toolInvocation/invoking": "Analyzing…",
-			"openai/toolInvocation/invoked":  "Completed analysis",
+			"openai/toolInvocation/invoking": "Analyzing...",
+			"openai/toolInvocation/invoked":  "Analysis completed",
 		},
 	}
 }
@@ -95,14 +95,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 		metricsViewName = metricsView.Meta.Name.Name
 
-		_, err = s.CallTool(ctx, RoleAssistant, "query_metrics_view_summary", nil, &QueryMetricsViewSummaryArgs{
+		_, err = s.CallTool(ctx, RoleAssistant, QueryMetricsViewSummaryName, nil, &QueryMetricsViewSummaryArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		_, err = s.CallTool(ctx, RoleAssistant, "get_metrics_view", nil, &GetMetricsViewArgs{
+		_, err = s.CallTool(ctx, RoleAssistant, GetMetricsViewName, nil, &GetMetricsViewArgs{
 			MetricsView: metricsViewName,
 		})
 		if err != nil {
@@ -112,7 +112,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 
 	// If no specific dashboard is being explored, we pre-invoke the list_metrics_views tool.
 	if first && args.Explore == "" {
-		_, err := s.CallTool(ctx, RoleAssistant, "list_metrics_views", nil, &ListMetricsViewsArgs{})
+		_, err := s.CallTool(ctx, RoleAssistant, ListMetricsViewsName, nil, &ListMetricsViewsArgs{})
 		if err != nil {
 			return nil, err
 		}
@@ -121,9 +121,9 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {
-		tools = append(tools, "list_metrics_views", "get_metrics_view")
+		tools = append(tools, ListMetricsViewsName, GetMetricsViewName)
 	}
-	tools = append(tools, "query_metrics_view_summary", "query_metrics_view", "create_chart")
+	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, CreateChartName)
 
 	// Build completion messages
 	systemPrompt, err := t.systemPrompt(ctx, metricsViewName, args)
