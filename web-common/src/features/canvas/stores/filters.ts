@@ -111,7 +111,7 @@ function mergeFilters<T>(
 // wip - bgh
 export class FilterManager {
   metricsViewFilters: Map<string, NewFilters> = new Map();
-  pinnedFilters = writable<Map<string, DimensionFilterItem>>(new Map());
+  _pinnedFilterKeys = writable<Set<string>>(new Set());
   _temporaryFilterKeys = writable<Set<string>>(new Set());
   _allDimensions = writable<DimensionLookup>(new Map());
   _allMeasures = writable<MeasureLookup>(new Map());
@@ -127,23 +127,6 @@ export class FilterManager {
   > = new Map();
   metricsViewNameMeasureMap: Map<string, Map<string, MetricsViewSpecMeasure>> =
     new Map();
-
-  pinFilter = (dimensionName: string, metricsViewNames: string[]) => {
-    const allDimensions = get(this._allDimensions);
-    const dimensions = allDimensions.get(dimensionName);
-    if (!dimensions) return;
-    this.pinnedFilters.update((pinned) => {
-      pinned.set(dimensionName, {
-        mode: DimensionFilterMode.Select,
-        selectedValues: [],
-        isInclude: true,
-        inputText: undefined,
-        dimensions,
-        pinned: true,
-      });
-      return pinned;
-    });
-  };
 
   updateConfig(
     metricsViews: Record<string, V1MetricsView | undefined>,
@@ -212,7 +195,7 @@ export class FilterManager {
     this._allDimensions.set(mergedDimensions);
 
     if (pinnedFilters) {
-      const map = new Map();
+      const keys = new Set<string>();
 
       pinnedFilters.forEach((filterName) => {
         const foundDimensions = new Map();
@@ -228,18 +211,9 @@ export class FilterManager {
 
         const filterKey = `${Array.from(foundDimensions.keys()).join("//")}::${filterName}`;
 
-        console.log({ filterKey });
-
-        map.set(filterKey, {
-          mode: DimensionFilterMode.Select,
-          selectedValues: [],
-          isInclude: true,
-          inputText: undefined,
-          dimensions: foundDimensions,
-          pinned: true,
-        });
+        keys.add(filterKey);
       });
-      this.pinnedFilters.set(map);
+      this._pinnedFilterKeys.set(keys);
     }
   }
 
@@ -263,7 +237,7 @@ export class FilterManager {
 
     this._activeUIFilters = derived(
       [
-        this.pinnedFilters,
+        this._pinnedFilterKeys,
         this._temporaryFilterKeys,
         ...Array.from(this.metricsViewFilters.values()).map((f) => f.parsed),
       ],
@@ -307,7 +281,7 @@ export class FilterManager {
             return;
           }
 
-          const pinned = pinnedFilters.get(key);
+          const pinned = pinnedFilters.has(key);
 
           measures.forEach((measure, metricsViewName) => {
             const parsed = parsedMap.get(metricsViewName);
@@ -316,7 +290,15 @@ export class FilterManager {
             const dimFilter = parsed.measures.get(measure.name as string);
             if (!dimFilter) {
               if (pinned) {
-                filters.push(pinned);
+                filters.push({
+                  dimensionName: "",
+                  dimensions: undefined,
+                  name: key.split("::")[1],
+                  label: measureSpecs[0].displayName ?? "",
+                  pinned: true,
+                  measures: measureMap,
+                  metricsViewNames: metricsViewNames,
+                });
               }
             } else {
               if (pinned) {
@@ -351,12 +333,7 @@ export class FilterManager {
           const filters: DimensionFilterItem[] = [];
 
           if (temporaryFilterKeys.has(key)) {
-            // const dimensions = allDimensions.get(key);
-
-            // if (!dimensions) return;
-            // const ident =
             filters.push({
-              // ident:
               mode: DimensionFilterMode.Select,
               selectedValues: [],
               dimensions: dimensions,
@@ -372,7 +349,7 @@ export class FilterManager {
             return;
           }
 
-          const pinned = pinnedFilters.get(key);
+          const pinned = pinnedFilters.has(key);
 
           dimensions.forEach((dimension, metricsViewName) => {
             const parsed = parsedMap.get(metricsViewName);
@@ -381,7 +358,14 @@ export class FilterManager {
             const dimFilter = parsed.dimensions.get(dimension.name as string);
             if (!dimFilter) {
               if (pinned) {
-                filters.push(pinned);
+                filters.push({
+                  mode: DimensionFilterMode.Select,
+                  selectedValues: [],
+                  dimensions: dimensions,
+                  isInclude: true,
+                  inputText: undefined,
+                  pinned: true,
+                });
               }
             } else {
               if (pinned) {
@@ -507,7 +491,7 @@ export class FilterManager {
 
       await this.applyFiltersToUrl(map);
     },
-    toggleMultipleDimensionValueSelections: async (
+    toggleDimensionValueSelections: async (
       dimensionName: string,
       dimensionValues: string[],
       metricsViewNames: string[],
@@ -523,7 +507,7 @@ export class FilterManager {
 
         if (!filterClass) return;
 
-        const string = filterClass.toggleMultipleDimensionValueSelections(
+        const string = filterClass.toggleDimensionValueSelections(
           dimensionName,
           dimensionValues,
           keepPillVisible,
@@ -579,6 +563,21 @@ export class FilterManager {
       });
 
       await this.applyFiltersToUrl(newFilters, true);
+    },
+    toggleFilterPin: (
+      name: string,
+
+      metricsViewNames: string[],
+    ) => {
+      this._pinnedFilterKeys.update((pinned) => {
+        const key = metricsViewNames.sort().join("//") + "::" + name;
+        if (pinned.has(key)) {
+          pinned.delete(key);
+        } else {
+          pinned.add(key);
+        }
+        return pinned;
+      });
     },
   };
 
@@ -785,7 +784,7 @@ export class NewFilters {
     );
   };
 
-  toggleMultipleDimensionValueSelections = (
+  toggleDimensionValueSelections = (
     dimensionName: string,
     dimensionValues: string[],
     keepPillVisible?: boolean,
@@ -867,7 +866,6 @@ export class NewFilters {
   };
 
   setMeasureFilter = (dimensionName: string, filter: MeasureFilterEntry) => {
-    console.log("here I am ", { dimensionName, filter });
     const {
       where: wf,
       dimensionThresholdFilters: dtfs,
@@ -875,12 +873,8 @@ export class NewFilters {
       dimensionFilter,
     } = get(this.parsed);
 
-    console.log("what");
-
     const dimIdx = dtfs.findIndex((dtf) => dtf.name === dimensionName);
     let dimThresholdFilter = dtfs[dimIdx];
-
-    console.log({ dimThresholdFilter: structuredClone(dimThresholdFilter) });
 
     if (!dimThresholdFilter) {
       dimThresholdFilter = { name: dimensionName, filters: [] };
@@ -892,8 +886,6 @@ export class NewFilters {
         filters.splice(exprIdx, 1);
       }
     }
-
-    console.log({ dimThresholdFilter });
 
     const exprIdx = dimThresholdFilter.filters.findIndex(
       (f) => f.measure === filter.measure,
@@ -1755,10 +1747,9 @@ export function getDimensionFilterItemsMap(
   const addedDimension = new Set<string>();
 
   forEachIdentifier(filter, (e, ident) => {
-    console.log({ ident });
     if (addedDimension.has(ident) || !dimensionIdMap.has(ident)) return;
     const dim = dimensionIdMap.get(ident);
-    console.log({ dim });
+
     if (!dim) {
       return;
     }

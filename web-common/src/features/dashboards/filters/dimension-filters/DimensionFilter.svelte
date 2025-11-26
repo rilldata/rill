@@ -33,22 +33,23 @@
   import type { DimensionFilterItem } from "../../state-managers/selectors/dimension-filters";
   import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filters";
 
+  type Actions = FilterManager["actions"];
+
   export let filterData: DimensionFilterItem;
+  export let expressionMap: Map<string, V1Expression>;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
   export let smallChip = false;
-  export let whereFilter: Map<string, V1Expression>;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
-  export let pinned = false;
-  export let onRemove: FilterManager["actions"]["removeDimensionFilter"];
-  export let onApplyInList: FilterManager["actions"]["applyDimensionInListMode"];
-  export let onSelect: FilterManager["actions"]["toggleMultipleDimensionValueSelections"];
-  export let onApplyContainsMode: FilterManager["actions"]["applyDimensionContainsMode"];
-  export let onToggleFilterMode: FilterManager["actions"]["toggleDimensionFilterMode"];
-  export let onPinFilter: () => void = () => {};
+  export let removeDimensionFilter: Actions["removeDimensionFilter"];
+  export let applyDimensionInListMode: Actions["applyDimensionInListMode"];
+  export let toggleDimensionValueSelections: Actions["toggleDimensionValueSelections"];
+  export let applyDimensionContainsMode: Actions["applyDimensionContainsMode"];
+  export let toggleDimensionFilterMode: Actions["toggleDimensionFilterMode"];
+  export let toggleFilterPin: Actions["toggleFilterPin"];
   export let isUrlTooLongAfterInListFilter: (
     values: string[],
   ) => boolean = () => false;
@@ -59,6 +60,7 @@
     inputText,
     isInclude,
     dimensions,
+    pinned,
   } = filterData);
 
   $: metricsViewNames = Array.from(dimensions.keys());
@@ -111,7 +113,7 @@
       timeStart,
       timeEnd,
       enabled: enableSearchQuery,
-      metricsViewWheres: whereFilter,
+      metricsViewWheres: expressionMap,
     },
   );
   $: ({
@@ -139,7 +141,7 @@
       timeEnd,
       enabled: enableSearchCountQuery,
 
-      metricsViewWheres: whereFilter,
+      metricsViewWheres: expressionMap,
     },
   );
   $: ({
@@ -267,7 +269,7 @@
 
       if (selectedValues.length === 0 && !inputText) {
         // filter was cleared. so remove the filter
-        await onRemove(name, metricsViewNames);
+        await removeDimensionFilter(name, metricsViewNames);
       } else {
         // reset the settings on unmount (but not for Select mode)
         resetFilterSettings(mode, sanitisedSearchText);
@@ -298,7 +300,11 @@
         if (!allSelected && effectiveSelectedValues.includes(dimensionValue))
           return;
 
-        onSelect(name, [dimensionValue], metricsViewNames);
+        toggleDimensionValueSelections(
+          name,
+          [dimensionValue],
+          metricsViewNames,
+        );
       });
     }
   }
@@ -313,16 +319,20 @@
         break;
       case DimensionFilterMode.InList:
         if (searchedBulkValues.length === 0) return;
-        await onApplyInList(name, searchedBulkValues, metricsViewNames);
+        await applyDimensionInListMode(
+          name,
+          searchedBulkValues,
+          metricsViewNames,
+        );
         if (curExcludeMode !== excludeMode)
-          await onToggleFilterMode(name, metricsViewNames);
+          await toggleDimensionFilterMode(name, metricsViewNames);
         open = false;
         break;
       case DimensionFilterMode.Contains:
         if (curSearchText.length === 0) return;
-        await onApplyContainsMode(name, curSearchText, metricsViewNames);
+        await applyDimensionContainsMode(name, curSearchText, metricsViewNames);
         if (curExcludeMode !== excludeMode)
-          await onToggleFilterMode(name, metricsViewNames);
+          await toggleDimensionFilterMode(name, metricsViewNames);
         open = false;
         break;
     }
@@ -334,7 +344,7 @@
     const proxyValues = new Set(selectedValuesProxy);
 
     // Apply all changes
-    await onSelect(
+    await toggleDimensionValueSelections(
       name,
       [...currentValues, ...proxyValues].filter((value) => {
         const wasSelected = currentValues.has(value);
@@ -347,7 +357,7 @@
 
     // Handle exclude mode toggle
     if (curExcludeMode !== excludeMode) {
-      await onToggleFilterMode(name, metricsViewNames);
+      await toggleDimensionFilterMode(name, metricsViewNames);
     }
   }
 
@@ -360,15 +370,15 @@
         selectedValuesProxy = [...selectedValuesProxy, value];
       }
     } else {
-      await onSelect(name, [value], metricsViewNames);
+      await toggleDimensionValueSelections(name, [value], metricsViewNames);
     }
   }
 </script>
 
 <svelte:window
-  on:keydown={(e) => {
+  on:keydown={async (e) => {
     if (e.key === "Enter") {
-      onApply();
+      await onApply();
     }
   }}
 />
@@ -395,7 +405,7 @@
         exclude={curExcludeMode}
         label={`${name} filter`}
         theme
-        onRemove={() => onRemove(name, metricsViewNames)}
+        onRemove={() => removeDimensionFilter(name, metricsViewNames)}
         removable={!readOnly && !pinned}
         {readOnly}
         removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
@@ -447,8 +457,7 @@
           square
           small
           onClick={() => {
-            console.log("pin filter clicked");
-            onPinFilter();
+            toggleFilterPin(name, metricsViewNames);
           }}
         >
           <Pin />

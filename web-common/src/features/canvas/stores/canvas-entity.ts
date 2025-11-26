@@ -234,14 +234,32 @@ export class CanvasEntity {
     const yaml = get(this.parsedContent);
     const filterMap = new YAMLMap();
 
-    const pinnedFilters = get(this.filterManager.pinnedFilters);
+    const pinnedFilters = get(this.filterManager._pinnedFilterKeys);
 
-    yaml.setIn(
-      ["filters", "pinned"],
-      Array.from(pinnedFilters.values()).map(
-        (f) => Array.from(f.dimensions.values())[0]?.name ?? "",
-      ),
+    const genericPinnedKeys = Array.from(pinnedFilters).map(
+      (f) => f.split("::")[1],
     );
+
+    if (genericPinnedKeys.length > 0) {
+      yaml.setIn(["filters", "pinned"], genericPinnedKeys);
+    } else {
+      try {
+        yaml.deleteIn(["filters", "pinned"]);
+      } catch {
+        // no-op
+      }
+
+      if (
+        yaml.get("filters") instanceof YAMLMap &&
+        yaml.get("filters").items.length === 0
+      ) {
+        try {
+          yaml.deleteIn(["filters"]);
+        } catch {
+          // no-op
+        }
+      }
+    }
 
     this.filterManager.metricsViewFilters
       .entries()

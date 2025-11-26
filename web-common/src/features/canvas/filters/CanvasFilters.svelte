@@ -37,7 +37,7 @@
         _activeUIFilters,
         metricsViewFilters,
         actions: {
-          toggleMultipleDimensionValueSelections,
+          toggleDimensionValueSelections,
           toggleDimensionFilterMode,
           applyDimensionInListMode,
           addTemporaryFilter,
@@ -45,9 +45,9 @@
           removeDimensionFilter,
           setMeasureFilter,
           removeMeasureFilter,
+          toggleFilterPin,
         },
         clearAllFilters,
-        pinFilter,
       },
       filters: {
         // setMeasureFilter,
@@ -226,21 +226,21 @@
         <AdvancedFilter advancedFilter={filter} />
       {/each}
 
-      {#each dimensions as [id, entry] (id)}
+      {#each dimensions as [id, filterData] (id)}
         <DimensionFilter
           {readOnly}
-          filterData={entry}
+          {filterData}
           {timeStart}
           {timeEnd}
           openOnMount={justAdded}
           timeControlsReady={!!$timeRangeStateStore}
-          whereFilter={$filterMap}
-          onRemove={removeDimensionFilter}
-          onToggleFilterMode={toggleDimensionFilterMode}
-          onSelect={toggleMultipleDimensionValueSelections}
-          onApplyInList={applyDimensionInListMode}
-          onApplyContainsMode={applyDimensionContainsMode}
-          onPinFilter={pinFilter}
+          expressionMap={$filterMap}
+          {removeDimensionFilter}
+          {toggleDimensionFilterMode}
+          {toggleDimensionValueSelections}
+          {applyDimensionInListMode}
+          {applyDimensionContainsMode}
+          {toggleFilterPin}
         />
       {/each}
 
