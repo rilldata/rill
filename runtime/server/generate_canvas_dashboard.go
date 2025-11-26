@@ -471,7 +471,7 @@ Colors can be specified in two ways depending on the chart type and requirements
 ### 1. Single Color String
 For bar_chart, stacked_bar, line_chart, and area_chart types in single measure mode and only 1 dimensions is involved. That is, there is no color dimension, only the X-axis dimension is present:
 - Named colors: "primary" or "secondary"
-- CSS color values: "#FF5733", "rgb(255, 87, 51)", "hsl(12, 100%, 60%)"
+- CSS color values: "#FF5733", "rgb(255, 87, 51)", "hsl(12, 100%%, 60%%)"
 - **Note**: If no color field object is provided, a color string MUST be included for the mentioned chart types
 
 ### 2. Field-Based Color Object
