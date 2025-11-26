@@ -84,7 +84,7 @@ You can now create dashboards directly for the connector panel. This will create
 
 :::
 
-You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#openai). If you want to disable AI from your environment, please set the following in the `rill.yaml`:
+You can define your own OpenAI key by creating a [connector file](/reference/project-files/connectors#openai). If you want to disable metrics view generation with AI from your environment, please set the following in the `rill.yaml`:
 
 
 ```yaml
