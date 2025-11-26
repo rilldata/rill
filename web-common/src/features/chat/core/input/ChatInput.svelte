@@ -8,6 +8,7 @@
   import type { ConversationManager } from "../conversation-manager";
   import { Editor } from "@tiptap/core";
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/chat-plugins.ts";
+  import { Button } from "@rilldata/web-common/components/button";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -64,6 +65,11 @@
     });
   }
 
+  function startMention() {
+    (editor.commands as any).startMention();
+    editor.view.state.tr;
+  }
+
   onMount(() => {
     editor = new Editor({
       element,
@@ -106,6 +112,9 @@
     style:height
   />
   <div class="chat-input-footer">
+    <button class="text-base ml-1" type="button" on:click={startMention}>
+      @
+    </button>
     <div class="grow"></div>
     <div>
       {#if canCancel}

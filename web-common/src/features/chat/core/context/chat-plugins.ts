@@ -20,6 +20,7 @@ import {
   type InlineChatContext,
   normalizeInlineChatContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
+import type { Transaction } from "prosemirror-state";
 
 export function getEditorPlugins(
   placeholder: string,
@@ -117,6 +118,22 @@ const InlineContextExtension = Mention.extend({
     };
   },
 
+  addCommands() {
+    return {
+      startMention:
+        () =>
+        ({ tr, view, commands }) => {
+          commands.focus();
+          // Only focus the editor if context is already open.
+          if ((this.options as any).sharedEditorStore.contextOpen) return false;
+
+          tr.insertText("@");
+          view.dispatchEvent(new KeyboardEvent("keyup", { key: "@" }));
+          return true;
+        },
+    };
+  },
+
   parseHTML() {
     return [
       {
@@ -191,6 +208,7 @@ export function configureInlineContextTipTapExtension(
   sharedEditorStore: SharedEditorStore,
 ) {
   let comp: InlineChatContextPicker | null = null;
+  let selected = false;
 
   return InlineContextExtension.configure(<Partial<MentionOptions>>{
     manager,
@@ -204,6 +222,7 @@ export function configureInlineContextTipTapExtension(
           const rect = props.clientRect?.();
           const left = rect?.left ?? 0;
           const bottom = window.innerHeight - (rect?.bottom ?? 0) + 16;
+          selected = false;
 
           comp = new InlineChatContextPicker({
             target: document.body,
@@ -212,6 +231,7 @@ export function configureInlineContextTipTapExtension(
               left,
               bottom,
               onSelect: (item) => {
+                selected = true;
                 props.command(item as unknown as MentionNodeAttrs);
               },
               focusEditor: () => props.editor.commands.focus(),
@@ -230,6 +250,7 @@ export function configureInlineContextTipTapExtension(
           comp = null;
           sharedEditorStore.contextOpen = false;
 
+          if (!selected) return;
           // Remove the query text and replace with space.
           // This is not automatically removed by tiptap
           editor.view.dispatch(
