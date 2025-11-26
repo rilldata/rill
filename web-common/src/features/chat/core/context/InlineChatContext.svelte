@@ -9,11 +9,13 @@
     type InlineChatContext,
   } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
   import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
-  import AddInlineChatDropdown from "@rilldata/web-common/features/chat/core/context/AddInlineChatDropdown.svelte";
+  import InlineChatContextPicker from "@rilldata/web-common/features/chat/core/context/InlineChatContextPicker.svelte";
 
   export let conversationManager: ConversationManager;
-  export let inlineChatContext: InlineChatContext | null = null;
+  export let selectedChatContext: InlineChatContext;
   export let onSelect: (ctx: InlineChatContext) => void;
+  export let onDropdownToggle: (open: boolean) => void;
+  export let focusEditor: () => void;
 
   let left = 0;
   let bottom = 0;
@@ -23,27 +25,26 @@
 
   const contextMetadataStore = getInlineChatContextMetadata();
 
-  $: typeData = inlineChatContext?.type
-    ? InlineContextConfig[inlineChatContext.type]
+  $: typeData = selectedChatContext.type
+    ? InlineContextConfig[selectedChatContext.type]
     : undefined;
   $: label =
-    typeData?.getLabel(inlineChatContext!, $contextMetadataStore) ?? "";
+    typeData?.getLabel(selectedChatContext!, $contextMetadataStore) ?? "";
 
   $: isMetricsViewContext =
-    inlineChatContext?.type === ChatContextEntryType.Measure ||
-    inlineChatContext?.type === ChatContextEntryType.Dimension;
+    selectedChatContext.type === ChatContextEntryType.Measure ||
+    selectedChatContext.type === ChatContextEntryType.Dimension;
   $: metricsViewName = isMetricsViewContext
     ? InlineContextConfig[ChatContextEntryType.MetricsView]!.getLabel(
-        inlineChatContext!,
+        selectedChatContext,
         $contextMetadataStore,
       )
     : "";
 
   $: supportsEditing =
-    !inlineChatContext ||
-    inlineChatContext.type === ChatContextEntryType.MetricsView ||
-    inlineChatContext.type === ChatContextEntryType.Measure ||
-    inlineChatContext.type === ChatContextEntryType.Dimension;
+    selectedChatContext.type === ChatContextEntryType.MetricsView ||
+    selectedChatContext.type === ChatContextEntryType.Measure ||
+    selectedChatContext.type === ChatContextEntryType.Dimension;
 
   function toggleDropdown() {
     const rect = chatElement.getBoundingClientRect();
@@ -51,49 +52,72 @@
     bottom = window.innerHeight - rect.bottom + 16;
 
     open = !open;
+    onDropdownToggle(open);
     tooltipOpen = false;
   }
+
+  /**
+   * Called from editor plugins. Used to make sure opening another component's dropdowns closes this.
+   */
+  export function closeDropdown() {
+    open = false;
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === "Escape") {
+      open = false;
+      onDropdownToggle(false);
+      focusEditor();
+    }
+  }
 </script>
+
+<svelte:window on:keydown={handleKeyDown} />
 
 <span
   bind:this={chatElement}
   class="inline-chat-context"
   contenteditable="false"
 >
-  {#if inlineChatContext}
-    <div class="inline-chat-context-value">
-      {#if metricsViewName}
-        <Tooltip.Root bind:open={tooltipOpen}>
-          <Tooltip.Trigger asChild let:builder>
-            <span
-              {...getAttrs([builder])}
-              use:builderActions={{ builders: [builder] }}
-            >
-              {label}
-            </span>
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            From {metricsViewName}
-          </Tooltip.Content>
-        </Tooltip.Root>
-      {:else}
-        <span>{label}</span>
-      {/if}
-      {#if supportsEditing}
-        <button on:click={toggleDropdown} type="button">
-          <ChevronDownIcon size="12px" />
-        </button>
-      {/if}
-    </div>
-  {/if}
+  <svelte:element
+    this={supportsEditing ? "button" : "div"}
+    class="inline-chat-context-value"
+    class:cursor-default={!supportsEditing}
+    on:click={toggleDropdown}
+    type="button"
+    role="button"
+    tabindex="-1"
+  >
+    {#if metricsViewName}
+      <Tooltip.Root bind:open={tooltipOpen}>
+        <Tooltip.Trigger asChild let:builder>
+          <span
+            {...getAttrs([builder])}
+            use:builderActions={{ builders: [builder] }}
+          >
+            {label}
+          </span>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          From {metricsViewName}
+        </Tooltip.Content>
+      </Tooltip.Root>
+    {:else}
+      <span>{label}</span>
+    {/if}
+    {#if supportsEditing}
+      <ChevronDownIcon size="12px" />
+    {/if}
+  </svelte:element>
 
   {#if supportsEditing && open}
-    <AddInlineChatDropdown
+    <InlineChatContextPicker
       {conversationManager}
       {left}
       {bottom}
-      {inlineChatContext}
+      {selectedChatContext}
       {onSelect}
+      {focusEditor}
     />
   {/if}
 </span>
@@ -104,6 +128,6 @@
   }
 
   .inline-chat-context-value {
-    @apply flex flex-row items-center gap-x-0.5 cursor-pointer;
+    @apply flex flex-row items-center gap-x-0.5;
   }
 </style>

@@ -2,8 +2,8 @@ import Mention, {
   type MentionNodeAttrs,
   type MentionOptions,
 } from "@tiptap/extension-mention";
-import { Extension, mergeAttributes } from "@tiptap/core";
-import AddInlineChatDropdown from "@rilldata/web-common/features/chat/core/context/AddInlineChatDropdown.svelte";
+import { Extension } from "@tiptap/core";
+import InlineChatContextPicker from "@rilldata/web-common/features/chat/core/context/InlineChatContextPicker.svelte";
 import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import InlineChatContextComponent from "@rilldata/web-common/features/chat/core/context/InlineChatContext.svelte";
 import {
@@ -17,12 +17,8 @@ import Text from "@tiptap/extension-text";
 import { Placeholder, UndoRedo } from "@tiptap/extensions";
 import {
   INLINE_CHAT_CONTEXT_TAG,
-  INLINE_CHAT_DIMENSION_ATTR,
-  INLINE_CHAT_MEASURE_ATTR,
-  INLINE_CHAT_METRICS_VIEW_ATTR,
-  INLINE_CHAT_TIME_RANGE_ATTR,
-  INLINE_CHAT_TYPE_ATTR,
   type InlineChatContext,
+  normalizeInlineChatContext,
 } from "@rilldata/web-common/features/chat/core/context/inline-context.ts";
 
 export function getEditorPlugins(
@@ -30,6 +26,8 @@ export function getEditorPlugins(
   conversationManager: ConversationManager,
   onSubmit: () => void,
 ) {
+  const sharedEditorStore = new SharedEditorStore();
+
   return [
     Document,
     Paragraph,
@@ -37,9 +35,12 @@ export function getEditorPlugins(
     Placeholder.configure({
       placeholder,
     }),
-    configureInlineContextTipTapExtension(conversationManager),
+    configureInlineContextTipTapExtension(
+      conversationManager,
+      sharedEditorStore,
+    ),
+    EditorSubmitExtension.configure({ onSubmit, sharedEditorStore }),
     UndoRedo,
-    EditorSubmitExtension.configure({ onSubmit }),
   ];
 }
 
@@ -47,6 +48,7 @@ export function getEditorPlugins(
  * Hooks into the editor's shortcut system.
  * Maps Shift-Enter to the editor's enter command.
  * Maps Enter to the submit action calling the onSubmit callback.
+ * Also suppresses up and down arrow keys when context picker is open.
  */
 const EditorSubmitExtension = Extension.create(() => {
   let isShiftEnter = false;
@@ -57,6 +59,7 @@ const EditorSubmitExtension = Extension.create(() => {
     addOptions() {
       return {
         onSubmit: () => {},
+        sharedEditorStore: <SharedEditorStore>{},
       };
     },
 
@@ -64,14 +67,25 @@ const EditorSubmitExtension = Extension.create(() => {
       return {
         Enter: () => {
           if (!isShiftEnter) {
-            this.options.onSubmit?.();
+            // Suppress enter to submit when context picker is open
+            if (!this.options.sharedEditorStore.contextOpen) {
+              this.options.onSubmit?.();
+            }
+            return true;
           }
           isShiftEnter = false;
-          return true;
+          return false;
         },
         "Shift-Enter": () => {
           isShiftEnter = true;
           return this.editor.commands.enter();
+        },
+        // Suppress up and down when context picker is open
+        ArrowDown: () => {
+          return this.options.sharedEditorStore.contextOpen;
+        },
+        ArrowUp: () => {
+          return this.options.sharedEditorStore.contextOpen;
         },
       };
     },
@@ -88,29 +102,18 @@ const InlineContextExtension = Mention.extend({
     return {
       ...this.parent?.(),
       manager: null as ConversationManager | null,
+      sharedEditorStore: <SharedEditorStore>{},
     };
   },
 
   // Mapping for attributes. We need to map values in InlineChatContext to html attribute and vice-versa.
   addAttributes() {
     return {
-      type: createAttributeEntry(null, "type", INLINE_CHAT_TYPE_ATTR),
-      metricsView: createAttributeEntry(
-        null,
-        "metricsView",
-        INLINE_CHAT_METRICS_VIEW_ATTR,
-      ),
-      measure: createAttributeEntry(null, "measure", INLINE_CHAT_MEASURE_ATTR),
-      dimension: createAttributeEntry(
-        null,
-        "dimension",
-        INLINE_CHAT_DIMENSION_ATTR,
-      ),
-      timeRange: createAttributeEntry(
-        null,
-        "timeRange",
-        INLINE_CHAT_TIME_RANGE_ATTR,
-      ),
+      type: createAttributeEntry(null, "type"),
+      metricsView: createAttributeEntry(null, "metricsView"),
+      measure: createAttributeEntry(null, "measure"),
+      dimension: createAttributeEntry(null, "dimension"),
+      timeRange: createAttributeEntry(null, "timeRange"),
     };
   },
 
@@ -123,7 +126,7 @@ const InlineContextExtension = Mention.extend({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [INLINE_CHAT_CONTEXT_TAG, HTMLAttributes];
+    return [INLINE_CHAT_CONTEXT_TAG, HTMLAttributes, ""];
   },
 
   renderText({ node }) {
@@ -131,14 +134,16 @@ const InlineContextExtension = Mention.extend({
   },
 
   addNodeView() {
-    return ({ node, getPos, view }) => {
+    return ({ node, getPos, view, editor }) => {
       // Create a wrapper div to render the component.
       // We need this since svelte only takes a target wrapper.
       const target = document.createElement("div");
       // We need this here to make sure the component is rendered inline.
       target.className = "inline-block";
 
-      view.dispatch(view.state.tr.deleteSelection());
+      // TODO: fix type so that InlineContextExtension has manager in options
+      const sharedEditorStore = (this.options as any)
+        .sharedEditorStore as SharedEditorStore;
 
       // Create the inline chat context component. Pass the wrapper as the target.
       const comp = new InlineChatContextComponent({
@@ -146,22 +151,30 @@ const InlineContextExtension = Mention.extend({
         props: {
           // TODO: fix type so that InlineContextExtension has manager in options
           conversationManager: (this.options as any).manager,
-          inlineChatContext: node.attrs as InlineChatContext,
-          onSelect: (inlineChatContext) => {
+          selectedChatContext: normalizeInlineChatContext(
+            node.attrs as InlineChatContext,
+          ),
+          onSelect: (selectedChatContext) => {
             const pos = getPos();
             if (!pos) return;
 
             // Dispatch a transaction to update the node attributes with the new context.
             view.dispatch(
-              getTransactionForContext(inlineChatContext, view, pos),
+              getTransactionForContext(selectedChatContext, view, pos),
             );
+            editor.commands.focus();
           },
+          onDropdownToggle: (isOpen) =>
+            sharedEditorStore.dropdownToggled(comp, isOpen),
+          focusEditor: () => editor.commands.focus(),
         },
       });
+      sharedEditorStore.componentAdded(comp);
 
       return {
         dom: target,
         destroy() {
+          sharedEditorStore.componentsRemoved(comp);
           comp.$destroy();
         },
       };
@@ -171,18 +184,20 @@ const InlineContextExtension = Mention.extend({
 
 /**
  * Configures the InlineContextExtension to show a dropdown when the user types "@".
- * Renders the AddInlineChatDropdown svelte component.
+ * Renders the InlineChatContextPicker svelte component.
  */
 export function configureInlineContextTipTapExtension(
   manager: ConversationManager,
+  sharedEditorStore: SharedEditorStore,
 ) {
-  let comp: AddInlineChatDropdown | null = null;
+  let comp: InlineChatContextPicker | null = null;
 
   return InlineContextExtension.configure(<Partial<MentionOptions>>{
     manager,
-    deleteTriggerWithBackspace: true,
+    sharedEditorStore,
     suggestion: {
       char: "@",
+      allowSpaces: true,
       items: () => [],
       render: () => ({
         onStart: (props) => {
@@ -190,7 +205,7 @@ export function configureInlineContextTipTapExtension(
           const left = rect?.left ?? 0;
           const bottom = window.innerHeight - (rect?.bottom ?? 0) + 16;
 
-          comp = new AddInlineChatDropdown({
+          comp = new InlineChatContextPicker({
             target: document.body,
             props: {
               conversationManager: manager,
@@ -199,19 +214,65 @@ export function configureInlineContextTipTapExtension(
               onSelect: (item) => {
                 props.command(item as unknown as MentionNodeAttrs);
               },
+              focusEditor: () => props.editor.commands.focus(),
             },
           });
+          sharedEditorStore.contextOpen = true;
         },
+
         onUpdate(props) {
-          comp?.$set({ searchText: props.text });
+          comp?.$set({ searchText: props.query });
         },
-        onExit: () => {
-          comp?.$destroy();
+
+        onExit: ({ editor, range }) => {
+          if (!comp) return;
+          comp.$destroy();
           comp = null;
+          sharedEditorStore.contextOpen = false;
+
+          // Remove the query text and replace with space.
+          // This is not automatically removed by tiptap
+          editor.view.dispatch(
+            editor.view.state.tr.replaceRangeWith(
+              range.from + 1,
+              range.to + 1,
+              editor.state.schema.text(" "),
+            ),
+          );
         },
       }),
     },
   });
+}
+
+/**
+ * Used to share data across plugins of editor.
+ * It is used to keep track of the state of the context picker dropdowns.
+ * It also keeps track of the components that are currently rendered and makes sure only one dropdown is open at a time.
+ */
+class SharedEditorStore {
+  public contextOpen: boolean = false;
+  private components: InlineChatContextComponent[] = [];
+
+  public componentAdded(comp: InlineChatContextComponent) {
+    this.components.push(comp);
+  }
+
+  public componentsRemoved(comp: InlineChatContextComponent) {
+    this.components = this.components.filter((c) => c !== comp);
+    this.contextOpen = false;
+  }
+
+  public dropdownToggled(comp: InlineChatContextComponent, isOpen: boolean) {
+    this.contextOpen = isOpen;
+    if (!isOpen) return;
+
+    // If the dropdown for the current component was opened, close dropdowns for all other components.
+    this.components.forEach((c) => {
+      if (c === comp) return;
+      c.closeDropdown();
+    });
+  }
 }
 
 function getTransactionForContext(
@@ -231,18 +292,12 @@ function getTransactionForContext(
   return tr;
 }
 
-function createAttributeEntry(
-  defaultValue: string | null,
-  key: string,
-  attr: string,
-) {
+function createAttributeEntry(defaultValue: string | null, key: string) {
   return {
     default: defaultValue,
     parseHTML: (element: HTMLElement) =>
-      element.getAttribute(attr) ?? // Parsing from html attribute.
+      element.getAttribute(key) ?? // Parsing from html attribute.
       parseInlineAttr(element.innerHTML, key) ?? // Parsing from inline prompt.
       defaultValue,
-    renderHTML: (attributes: Record<string, string>) =>
-      mergeAttributes(attributes, { [attr]: attributes[key] }),
   };
 }

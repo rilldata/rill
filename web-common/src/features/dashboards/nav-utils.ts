@@ -7,7 +7,7 @@ import { createQuery } from "@tanstack/svelte-query";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 const exploreRouteRegex = /\/explore\/(?:\[name]|\[dashboard])/;
-const canvasRouteRegex = /\/explore\/(?:\[name]|\[dashboard])/;
+const canvasRouteRegex = /\/canvas\/(?:\[name]|\[dashboard])/;
 
 export function getDashboardResourceFromPage(pageLike: {
   params: Page["params"] | null;

@@ -1,7 +1,7 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { getValidMetricsViewsQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { derived, type Readable } from "svelte/store";
+import { derived, type Readable, writable, type Writable } from "svelte/store";
 import {
   ChatContextEntryType,
   type InlineChatContext,
@@ -12,7 +12,7 @@ import {
   getDimensionDisplayName,
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName.ts";
-import { getLastUsedMetricsViewStore } from "@rilldata/web-common/features/chat/core/context/get-last-used-metrics-view.ts";
+import { getLastUsedMetricsViewNameStore } from "@rilldata/web-common/features/chat/core/context/get-last-used-metrics-view.ts";
 import type { ConversationManager } from "@rilldata/web-common/features/chat/core/conversation-manager.ts";
 import { getActiveMetricsViewNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 
@@ -54,7 +54,7 @@ export function getInlineChatContextMetadata() {
   });
 }
 
-type MetricsViewContextOption = {
+export type MetricsViewContextOption = {
   metricsViewContext: InlineChatContext;
   recentlyUsed: boolean;
   currentlyActive: boolean;
@@ -88,7 +88,6 @@ export function getInlineChatContextOptions() {
               label: getMeasureDisplayName(m),
               metricsView: mvName,
               measure: m.name!,
-              values: [mvName, m.name!],
             },
         ) ?? [];
 
@@ -100,7 +99,6 @@ export function getInlineChatContextOptions() {
               label: getDimensionDisplayName(d),
               metricsView: mvName,
               dimension: d.name!,
-              values: [mvName, d.name!],
             },
         ) ?? [];
 
@@ -109,7 +107,6 @@ export function getInlineChatContextOptions() {
           type: ChatContextEntryType.MetricsView,
           metricsView: mvName,
           label: mvDisplayName,
-          values: [mvName],
         },
         measures,
         dimensions,
@@ -128,7 +125,7 @@ export function getInlineChatContextFilteredOptions(
 ) {
   const optionsStore = getInlineChatContextOptions();
   const lastUsedMetricsViewStore =
-    getLastUsedMetricsViewStore(conversationManager);
+    getLastUsedMetricsViewNameStore(conversationManager);
   const activeMetricsViewStore = getActiveMetricsViewNameStore();
 
   return derived(
@@ -156,7 +153,8 @@ export function getInlineChatContextFilteredOptions(
           filterFunction(d.label ?? "", d.dimension ?? ""),
         );
 
-        const metricsViewName = metricsViewOption.metricsViewContext.values[0];
+        const metricsViewName =
+          metricsViewOption.metricsViewContext.metricsView;
         const metricsViewMatches = filterFunction(
           metricsViewOption.metricsViewContext.label,
           metricsViewName,

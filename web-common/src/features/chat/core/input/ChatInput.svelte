@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
+  import { getActiveExploreContext } from "@rilldata/web-common/features/chat/core/context/explore-context.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { onMount, tick } from "svelte";
   import IconButton from "../../../../components/button/IconButton.svelte";
@@ -28,7 +28,7 @@
   $: canSend = !disabled && value.trim();
   $: canCancel = $isStreamingStore;
 
-  const context = getExploreContext();
+  const context = getActiveExploreContext();
 
   let element: HTMLDivElement;
   let editor: Editor;

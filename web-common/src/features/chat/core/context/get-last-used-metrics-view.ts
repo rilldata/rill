@@ -8,7 +8,10 @@ import {
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { MessageType } from "@rilldata/web-common/features/chat/core/types.ts";
 
-export function getLastUsedMetricsViewStore(
+/**
+ * Looks at the last conversation and returns the metrics view used in the last message or tool call.
+ */
+export function getLastUsedMetricsViewNameStore(
   conversationManager: ConversationManager,
 ) {
   const lastConversationQuery = createQuery(
@@ -28,6 +31,9 @@ export function getLastUsedMetricsViewStore(
   });
 }
 
+/**
+ * Returns the last updated conversation ID.
+ */
 function getLatestConversationQueryOptions(
   conversationManager: ConversationManager,
 ) {

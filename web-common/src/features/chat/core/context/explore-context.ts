@@ -3,9 +3,15 @@ import { useStableExploreState } from "@rilldata/web-common/features/dashboards/
 import { isExpressionEmpty } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { createStableTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import type { RuntimeServiceCompleteBody } from "@rilldata/web-common/runtime-client";
-import { derived } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 
-export function getExploreContext() {
+/**
+ * Creates a store that contains the active explore context sent to the Complete API.
+ * It returns the RuntimeServiceCompleteBody that is passed to the API directly.
+ */
+export function getActiveExploreContext(): Readable<
+  Partial<RuntimeServiceCompleteBody>
+> {
   const exploreNameStore = getExploreNameStore();
 
   const exploreState = useStableExploreState(exploreNameStore);
