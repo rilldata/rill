@@ -11,76 +11,6 @@ consumes:
 produces:
   - application/json
 paths:
-  /v1/bigquery/datasets:
-    get:
-      summary: BigQueryListDatasets list all datasets in a bigquery project
-      operationId: ConnectorService_BigQueryListDatasets
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1BigQueryListDatasetsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/bigquery/tables:
-    get:
-      summary: BigQueryListTables list all tables in a bigquery project:dataset
-      operationId: ConnectorService_BigQueryListTables
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1BigQueryListTablesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: dataset
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
   /v1/connectors/database_schemas:
     get:
       summary: ListDatabaseSchemas list all schemas across databases
@@ -280,116 +210,6 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/gcs/bucket/{bucket}/objects:
-    get:
-      summary: GCSListObjects lists objects for the given bucket.
-      operationId: ConnectorService_GCSListObjects
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GCSListObjectsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: bucket
-          in: path
-          required: true
-          type: string
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-        - name: prefix
-          in: query
-          required: false
-          type: string
-        - name: startOffset
-          in: query
-          required: false
-          type: string
-        - name: endOffset
-          in: query
-          required: false
-          type: string
-        - name: delimiter
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/gcs/buckets:
-    get:
-      summary: GCSListBuckets lists buckets accessible with the configured credentials.
-      operationId: ConnectorService_GCSListBuckets
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GCSListBucketsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/gcs/credentials_info:
-    get:
-      summary: GCSGetCredentialsInfo returns metadata for the given bucket.
-      operationId: ConnectorService_GCSGetCredentialsInfo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GCSGetCredentialsInfoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
   /v1/health:
     get:
       summary: Health runs a health check on the runtime.
@@ -752,6 +572,84 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/connectors/{connector}/buckets:
+    get:
+      summary: ListBuckets lists buckets accessible with the configured credentials.
+      operationId: ConnectorService_ListBuckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListBucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/instances/{instanceId}/connectors/{connector}/buckets/{bucket}/objects:
+    get:
+      summary: ListObjects lists objects for the given bucket.
+      operationId: ConnectorService_ListObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: bucket
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: query
+          required: false
+          type: string
+        - name: delimiter
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/instances/{instanceId}/connectors/analyze:
     get:
       summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
@@ -3213,140 +3111,6 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/s3/bucket/{bucket}/metadata:
-    get:
-      summary: S3GetBucketMetadata returns metadata for the given bucket.
-      operationId: ConnectorService_S3GetBucketMetadata
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1S3GetBucketMetadataResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: bucket
-          in: path
-          required: true
-          type: string
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/s3/bucket/{bucket}/objects:
-    get:
-      summary: S3ListBuckets lists objects for the given bucket.
-      operationId: ConnectorService_S3ListObjects
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1S3ListObjectsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: bucket
-          in: path
-          required: true
-          type: string
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-        - name: prefix
-          in: query
-          required: false
-          type: string
-        - name: startAfter
-          in: query
-          required: false
-          type: string
-        - name: delimiter
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/s3/buckets:
-    get:
-      summary: S3ListBuckets lists buckets accessible with the configured credentials.
-      operationId: ConnectorService_S3ListBuckets
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1S3ListBucketsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
-  /v1/s3/credentials_info:
-    get:
-      summary: S3GetCredentialsInfo returns metadata for the given bucket.
-      operationId: ConnectorService_S3GetCredentialsInfo
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1S3GetCredentialsInfoResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-        - name: connector
-          in: query
-          required: false
-          type: string
-      tags:
-        - ConnectorService
 definitions:
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
@@ -3915,24 +3679,6 @@ definitions:
       - ASSERTION_STATUS_FAIL
       - ASSERTION_STATUS_ERROR
     default: ASSERTION_STATUS_UNSPECIFIED
-  v1BigQueryListDatasetsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
-  v1BigQueryListTablesResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
   v1BuiltinMeasure:
     type: string
     enum:
@@ -4973,45 +4719,6 @@ definitions:
       - FILE_EVENT_DELETE
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
-  v1GCSGetCredentialsInfoResponse:
-    type: object
-    properties:
-      exist:
-        type: boolean
-      projectId:
-        type: string
-  v1GCSListBucketsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      buckets:
-        type: array
-        items:
-          type: string
-  v1GCSListObjectsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      objects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1GCSObject'
-  v1GCSObject:
-    type: object
-    properties:
-      name:
-        type: string
-      modifiedOn:
-        type: string
-        format: date-time
-      size:
-        type: string
-        format: int64
-      isDir:
-        type: boolean
   v1GenerateMetricsViewFileResponse:
     type: object
     properties:
@@ -5227,6 +4934,15 @@ definitions:
       jwt:
         type: string
     title: Response message for RuntimeService.IssueDevJWT
+  v1ListBucketsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      buckets:
+        type: array
+        items:
+          type: string
   v1ListConnectorDriversResponse:
     type: object
     properties:
@@ -5294,6 +5010,16 @@ definitions:
           $ref: '#/definitions/v1Connector'
         description: 'Note: In this list, the Connector.config property will always be empty.'
     title: Response message for RuntimeService.ListNotifierConnectors
+  v1ListObjectsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      objects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Object'
   v1ListResourcesResponse:
     type: object
     properties:
@@ -6479,6 +6205,19 @@ definitions:
           $ref: '#/definitions/v1OlapTableInfo'
       nextPageToken:
         type: string
+  v1Object:
+    type: object
+    properties:
+      name:
+        type: string
+      modifiedOn:
+        type: string
+        format: date-time
+      size:
+        type: string
+        format: int64
+      isDir:
+        type: boolean
   v1OlapTableInfo:
     type: object
     properties:
@@ -6975,50 +6714,6 @@ definitions:
         type: string
       name:
         type: string
-  v1S3GetBucketMetadataResponse:
-    type: object
-    properties:
-      region:
-        type: string
-  v1S3GetCredentialsInfoResponse:
-    type: object
-    properties:
-      exist:
-        type: boolean
-      provider:
-        type: string
-  v1S3ListBucketsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      buckets:
-        type: array
-        items:
-          type: string
-  v1S3ListObjectsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      objects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1S3Object'
-  v1S3Object:
-    type: object
-    properties:
-      name:
-        type: string
-      modifiedOn:
-        type: string
-        format: date-time
-      size:
-        type: string
-        format: int64
-      isDir:
-        type: boolean
   v1Schedule:
     type: object
     properties:
