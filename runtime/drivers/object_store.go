@@ -3,7 +3,6 @@ package drivers
 import (
 	"context"
 	"fmt"
-	"math"
 	"net/url"
 	"sort"
 	"strings"
@@ -203,7 +202,12 @@ func listObjectsFromPathPrefixes(ctx context.Context, matchingPathPrefixes []str
 		// Otherwise, return only the first child segment as a synthetic directory.
 		if !strings.Contains(rest, delimiter) {
 			// we are list all prefix without pagination it will become too complex if we add pagination here.
-			objs, _, err := blobListfn(ctx, ap, delimiter, uint32(math.MaxInt32), "")
+			objs, err := pagination.CollectAll(ctx,
+				func(ctx context.Context, pz uint32, tk string) ([]ObjectStoreEntry, string, error) {
+					return blobListfn(ctx, ap, delimiter, pz, tk)
+				},
+				DefaultPageSize,
+			)
 			if err != nil {
 				return nil, "", err
 			}
