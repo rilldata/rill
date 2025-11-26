@@ -297,7 +297,8 @@ func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 }
 
 func (d Dialect) SupportsILike() bool {
-	return d != DialectDruid && d != DialectPinot
+	// StarRocks uses MySQL syntax which doesn't support ILIKE
+	return d != DialectDruid && d != DialectPinot && d != DialectStarRocks
 }
 
 // RequiresCastForLike returns true if the dialect requires an expression used in a LIKE or ILIKE condition to explicitly be cast to type TEXT.
@@ -322,6 +323,11 @@ func (d Dialect) GetRegexMatchFunction() string {
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	if d == DialectDuckDB {
 		return d.EscapeIdentifier(table)
+	}
+	// StarRocks doesn't use catalog in table references, only schema.table
+	// The 'db' parameter would be interpreted as a catalog, which causes errors
+	if d == DialectStarRocks {
+		db = ""
 	}
 	var sb strings.Builder
 	if db != "" {
@@ -472,6 +478,10 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 func (d Dialect) JoinOnExpression(lhs, rhs string) string {
 	if d == DialectClickHouse {
 		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
+	}
+	// StarRocks uses MySQL's NULL-safe equal operator
+	if d == DialectStarRocks {
+		return fmt.Sprintf("%s <=> %s", lhs, rhs)
 	}
 	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
@@ -656,6 +666,18 @@ func (d Dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeG
 		}
 		sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(alias)))
 		return sb.String(), args, nil
+	case DialectStarRocks:
+		// StarRocks uses UNION ALL for generating time series
+		var sb strings.Builder
+		first := true
+		for t := start; t.Before(end); t = timeutil.OffsetTime(t, timeutil.TimeGrainFromAPI(grain), 1, tz) {
+			if !first {
+				sb.WriteString(" UNION ALL ")
+			}
+			sb.WriteString(fmt.Sprintf("SELECT CAST('%s' AS DATETIME) AS %s", t.Format(time.DateTime), d.EscapeIdentifier(alias)))
+			first = false
+		}
+		return sb.String(), nil, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -853,6 +875,8 @@ func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
 	case DialectPinot:
 		return true, fmt.Sprintf("CAST(%d AS TIMESTAMP)", t.UnixMilli())
+	case DialectStarRocks:
+		return true, fmt.Sprintf("CAST('%s' AS DATETIME)", t.Format(time.DateTime))
 	default:
 		return false, ""
 	}
