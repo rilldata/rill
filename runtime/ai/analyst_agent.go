@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -27,7 +28,7 @@ type AnalystAgentArgs struct {
 	Explore    string                  `json:"explore" yaml:"explore" jsonschema:"Optional explore dashboard name. If provided, the exploration will be limited to this dashboard."`
 	Dimensions []string                `json:"dimensions" yaml:"dimensions" jsonschema:"Optional list of dimensions for queries. If provided, the queries will be limited to these dimensions."`
 	Measures   []string                `json:"measures" yaml:"measures" jsonschema:"Optional list of measures for queries. If provided, the queries will be limited to these measures."`
-	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"Optional filter for queries. If provided, this filter will be applied to all queries."`
+	Where      *metricsview.Expression `json:"filters" yaml:"filters" jsonschema:"-"`
 	TimeStart  time.Time               `json:"time_start" yaml:"time_start" jsonschema:"Optional start time for queries. time_end must be provided if time_start is provided."`
 	TimeEnd    time.Time               `json:"time_end" yaml:"time_end" jsonschema:"Optional end time for queries. time_start must be provided if time_end is provided."`
 }
@@ -53,10 +54,18 @@ func (r *AnalystAgentResult) ToLLM() *aiv1.ContentBlock {
 }
 
 func (t *AnalystAgent) Spec() *mcp.Tool {
+	inputSchema, err := jsonschema.For[*AnalystAgentArgs](&jsonschema.ForOptions{
+		TypeSchemas: metricsview.TypeSchemas(),
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to infer input schema: %w", err))
+	}
+
 	return &mcp.Tool{
 		Name:        AnalystAgentName,
 		Title:       "Analyst Agent",
 		Description: "Agent that assists with data analysis tasks.",
+		InputSchema: inputSchema,
 		Meta: map[string]any{
 			"openai/toolInvocation/invoking": "Analyzing...",
 			"openai/toolInvocation/invoked":  "Analysis completed",

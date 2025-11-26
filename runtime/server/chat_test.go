@@ -4,8 +4,10 @@ import (
 	"context"
 	"testing"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
@@ -182,4 +184,30 @@ measures:
 	})
 	require.NoError(t, err)
 	require.Len(t, list7.Conversations, 2)
+}
+
+func TestListTools(t *testing.T) {
+	// Create test server
+	srv, instanceID := getTestServer(t)
+
+	// List tools
+	res, err := srv.ListTools(testCtx(), &runtimev1.ListToolsRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.Greater(t, len(res.Tools), 0)
+
+	// Check tool info is populated
+	tools := make(map[string]*aiv1.Tool)
+	for _, tool := range res.Tools {
+		require.NotEmpty(t, tool.Name)
+		require.NotEmpty(t, tool.Description)
+		tools[tool.Name] = tool
+	}
+
+	// Extra checks for some specific expected tools
+	require.NotNil(t, tools[ai.RouterAgentName])
+	require.NotEmpty(t, tools[ai.RouterAgentName].Meta.AsMap())
+	require.NotNil(t, tools[ai.AnalystAgentName])
+	require.NotEmpty(t, tools[ai.AnalystAgentName].Meta.AsMap())
+	require.NotNil(t, tools[ai.QueryMetricsViewName])
+	require.NotEmpty(t, tools[ai.QueryMetricsViewName].Meta.AsMap())
 }

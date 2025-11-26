@@ -7,9 +7,11 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 const RouterAgentName = "router_agent"
@@ -23,7 +25,7 @@ type RouterAgent struct {
 var _ Tool[*RouterAgentArgs, *RouterAgentResult] = (*RouterAgent)(nil)
 
 type RouterAgentArgs struct {
-	Prompt           string            `json:"prompt"`
+	Prompt           string            `json:"prompt" jsonschema:"The user's prompt to be routed."`
 	Agent            string            `json:"agent,omitempty" jsonschema:"Optional agent to route the request to. If not specified, the system will infer the best agent."`
 	AnalystAgentArgs *AnalystAgentArgs `json:"analyst_agent_args,omitempty" jsonschema:"Arguments to pass to the analyst agent if the selected agent is analyst_agent."`
 	SkipHandoff      bool              `json:"skip_handoff,omitempty" jsonschema:"If true, the agent will only do routing, but won't handover to the selected agent. Useful for testing or debugging."`
@@ -35,6 +37,13 @@ type RouterAgentResult struct {
 }
 
 func (t *RouterAgent) Spec() *mcp.Tool {
+	inputSchema, err := jsonschema.For[*RouterAgentArgs](&jsonschema.ForOptions{
+		TypeSchemas: metricsview.TypeSchemas(),
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to infer input schema: %w", err))
+	}
+
 	return &mcp.Tool{
 		Name:        RouterAgentName,
 		Title:       "Router Agent",
@@ -43,6 +52,7 @@ func (t *RouterAgent) Spec() *mcp.Tool {
 			"openai/toolInvocation/invoking": "Routing prompt...",
 			"openai/toolInvocation/invoked":  "Routed prompt",
 		},
+		InputSchema: inputSchema,
 	}
 }
 
